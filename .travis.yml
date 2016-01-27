@@ -1,0 +1,21 @@
+language: java
+sudo: false
+
+jdk:
+  - oraclejdk7
+
+install: true
+script: ./travis.sh
+
+env:
+  matrix:
+    - TARGET=CI
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
+    # for integration tests and analysis
+    - $HOME/.sonar
+
+notifications:
+  email: false
