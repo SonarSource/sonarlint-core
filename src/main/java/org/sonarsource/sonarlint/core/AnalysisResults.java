@@ -21,4 +21,10 @@ package org.sonarsource.sonarlint.core;
 
 public interface AnalysisResults {
 
+  /**
+   * Number of file analyzed. This number can be different than number of provided {@link AnalysisConfiguration.InputFile} since
+   * file with no matching language are excluded.
+   */
+  int fileCount();
+
 }

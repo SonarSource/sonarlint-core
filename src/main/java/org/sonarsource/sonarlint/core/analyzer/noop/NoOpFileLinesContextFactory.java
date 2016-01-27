@@ -19,20 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.noop;
 
-import javax.annotation.CheckForNull;
-import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.test.MutableTestable;
-import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.measures.FileLinesContext;
+import org.sonar.api.measures.FileLinesContextFactory;
+import org.sonar.api.resources.Resource;
 
-public class TestableBuilder extends PerspectiveBuilder<MutableTestable> {
+public class NoOpFileLinesContextFactory implements FileLinesContextFactory {
 
-  public TestableBuilder() {
-    super(MutableTestable.class);
-  }
-
-  @CheckForNull
   @Override
-  public MutableTestable loadPerspective(Class<MutableTestable> perspectiveClass, InputComponent component) {
-    return null;
+  public FileLinesContext createFor(Resource model) {
+    return new NoOpFileLinesContext();
   }
+
+  @Override
+  public FileLinesContext createFor(InputFile inputFile) {
+    return new NoOpFileLinesContext();
+  }
+
 }

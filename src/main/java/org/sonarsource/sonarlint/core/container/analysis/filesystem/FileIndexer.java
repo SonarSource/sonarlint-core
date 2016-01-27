@@ -27,6 +27,7 @@ import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
 /**
@@ -37,12 +38,14 @@ public class FileIndexer {
 
   private final InputFileBuilder inputFileBuilder;
   private final AnalysisConfiguration analysisConfiguration;
+  private final DefaultAnalysisResult analysisResult;
 
   private ProgressReport progressReport;
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration) {
+  public FileIndexer(InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration, DefaultAnalysisResult analysisResult) {
     this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
+    this.analysisResult = analysisResult;
   }
 
   void index(SonarLintFileSystem fileSystem) {
@@ -54,6 +57,7 @@ public class FileIndexer {
     indexFiles(fileSystem, progress, analysisConfiguration.inputFiles());
 
     progressReport.stop(progress.count() + " files indexed");
+    analysisResult.setFileCount(progress.count());
 
   }
 

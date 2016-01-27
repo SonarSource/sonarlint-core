@@ -23,4 +23,16 @@ import org.sonarsource.sonarlint.core.AnalysisResults;
 
 public class DefaultAnalysisResult implements AnalysisResults {
 
+  private int fileCount;
+
+  public DefaultAnalysisResult setFileCount(int fileCount) {
+    this.fileCount = fileCount;
+    return this;
+  }
+
+  @Override
+  public int fileCount() {
+    return fileCount;
+  }
+
 }

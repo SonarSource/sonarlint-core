@@ -29,11 +29,11 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssuableFactory;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
-import org.sonarsource.sonarlint.core.analyzer.noop.DefaultFileLinesContextFactory;
+import org.sonarsource.sonarlint.core.analyzer.noop.NoOpFileLinesContextFactory;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpHighlightableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpSymbolizableBuilder;
-import org.sonarsource.sonarlint.core.analyzer.noop.TestPlanBuilder;
-import org.sonarsource.sonarlint.core.analyzer.noop.TestableBuilder;
+import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestPlanBuilder;
+import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.BatchExtensionDictionnary;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
@@ -44,17 +44,16 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileSystemLogger;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
 import org.sonarsource.sonarlint.core.container.global.ExtensionUtils;
-import org.sonarsource.sonarlint.core.index.BatchComponentCache;
 
 public class AnalysisContainer extends ComponentContainer {
 
@@ -74,8 +73,7 @@ public class AnalysisContainer extends ComponentContainer {
     add(
       new ProjectProvider(),
       // DefaultIndex.class,
-      DefaultFileLinesContextFactory.class,
-      BatchComponentCache.class,
+      NoOpFileLinesContextFactory.class,
 
       // temp
       new AnalysisTempFolderProvider(),
@@ -84,8 +82,8 @@ public class AnalysisContainer extends ComponentContainer {
       PathResolver.class,
 
       // tests
-      TestPlanBuilder.class,
-      TestableBuilder.class,
+      NoOpTestPlanBuilder.class,
+      NoOpTestableBuilder.class,
 
       // lang
       Languages.class,

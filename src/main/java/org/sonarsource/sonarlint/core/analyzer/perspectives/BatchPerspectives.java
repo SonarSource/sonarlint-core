@@ -26,15 +26,12 @@ import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.component.Perspective;
 import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.resources.Resource;
-import org.sonarsource.sonarlint.core.index.BatchComponentCache;
 
 public class BatchPerspectives implements ResourcePerspectives {
 
   private final Map<Class<?>, PerspectiveBuilder<?>> builders = Maps.newHashMap();
-  private final BatchComponentCache componentCache;
 
-  public BatchPerspectives(PerspectiveBuilder[] builders, BatchComponentCache componentCache) {
-    this.componentCache = componentCache;
+  public BatchPerspectives(PerspectiveBuilder[] builders) {
     for (PerspectiveBuilder builder : builders) {
       this.builders.put(builder.getPerspectiveClass(), builder);
     }

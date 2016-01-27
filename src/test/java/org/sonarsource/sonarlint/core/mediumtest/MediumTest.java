@@ -35,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.AnalysisResults;
 import org.sonarsource.sonarlint.core.IssueListener;
 import org.sonarsource.sonarlint.core.SonarLintClient;
 
@@ -134,7 +135,7 @@ public class MediumTest {
       true);
 
     final List<IssueListener.Issue> issues = new ArrayList<>();
-    batch.analyze(
+    AnalysisResults results = batch.analyze(
       new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
         ImmutableMap.<String, String>of("sonar.junit.reportsPath", "reports/")),
       new IssueListener() {
@@ -145,6 +146,8 @@ public class MediumTest {
           issues.add(issue);
         }
       });
+
+    assertThat(results.fileCount()).isEqualTo(2);
 
     assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
       tuple("squid:S106", 4, inputFile.path()),

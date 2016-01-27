@@ -17,7 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.index;
+package org.sonarsource.sonarlint.core.analyzer.noop;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import javax.annotation.CheckForNull;
+import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.test.MutableTestPlan;
+import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
+
+public class NoOpTestPlanBuilder extends PerspectiveBuilder<MutableTestPlan> {
+
+  public NoOpTestPlanBuilder() {
+    super(MutableTestPlan.class);
+  }
+
+  @CheckForNull
+  @Override
+  public MutableTestPlan loadPerspective(Class<MutableTestPlan> perspectiveClass, InputComponent component) {
+    return null;
+  }
+
+}
