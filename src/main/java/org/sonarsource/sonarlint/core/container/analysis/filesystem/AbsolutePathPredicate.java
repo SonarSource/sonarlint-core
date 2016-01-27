@@ -17,24 +17,39 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analyzer.noop;
+package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import javax.annotation.CheckForNull;
-import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.source.Highlightable;
-import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import org.sonar.api.batch.fs.FileSystem.Index;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.utils.PathUtils;
 
-public class NoOpHighlightableBuilder extends PerspectiveBuilder<Highlightable> {
+/**
+ * @since 4.2
+ */
+class AbsolutePathPredicate extends AbstractFilePredicate {
 
-  private static final NoOpHighlightable NO_OP_HIGHLIGHTABLE = new NoOpHighlightable();
+  private final String path;
 
-  public NoOpHighlightableBuilder() {
-    super(Highlightable.class);
+  AbsolutePathPredicate(String path) {
+    this.path = PathUtils.sanitize(path);
   }
 
-  @CheckForNull
   @Override
-  public Highlightable loadPerspective(Class<Highlightable> perspectiveClass, InputComponent component) {
-    return NO_OP_HIGHLIGHTABLE;
+  public boolean apply(InputFile f) {
+    return path.equals(f.absolutePath());
+  }
+
+  @Override
+  public Iterable<InputFile> get(Index index) {
+    InputFile f = ((InputPathCache) index).inputFile(Paths.get(path));
+    return f != null ? Arrays.asList(f) : Collections.<InputFile>emptyList();
+  }
+
+  @Override
+  public int priority() {
+    return USE_INDEX;
   }
 }

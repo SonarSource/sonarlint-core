@@ -21,8 +21,12 @@ package org.sonarsource.sonarlint.core.mediumtest;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +35,10 @@ import org.sonarsource.sonarlint.core.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.IssueListener;
 import org.sonarsource.sonarlint.core.SonarLintClient;
 
-public class JavaScriptMediumTest {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
+public class AnalyzerMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -56,6 +63,11 @@ public class JavaScriptMediumTest {
       public boolean isTest() {
         return false;
       }
+
+      @Override
+      public Charset charset() {
+        return StandardCharsets.UTF_8;
+      }
     };
 
     batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
@@ -79,7 +91,13 @@ public class JavaScriptMediumTest {
 
     File baseDir = temp.newFolder();
     final File file = new File(baseDir, "Foo.java");
-    FileUtils.write(file, "public class Foo { public void foo() { int x; System.out.println(\"Foo\");}}");
+    FileUtils.write(file, "public class Foo {\n"
+      + "  public void foo() {\n"
+      + "    int x;\n"
+      + "    System.out.println(\"Foo\");\n"
+      + "    System.out.println(\"Foo\"); //NOSONAR\n"
+      + "  }\n"
+      + "}");
     AnalysisConfiguration.InputFile inputFile = new AnalysisConfiguration.InputFile() {
 
       @Override
@@ -91,16 +109,28 @@ public class JavaScriptMediumTest {
       public boolean isTest() {
         return false;
       }
+
+      @Override
+      public Charset charset() {
+        return StandardCharsets.UTF_8;
+      }
     };
 
+    final List<IssueListener.Issue> issues = new ArrayList<>();
     batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
 
       @Override
       public void handle(Issue issue) {
         System.out.println(issue);
+        issues.add(issue);
       }
 
     });
+
+    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
+      tuple("squid:S106", 4, file.toPath()),
+      tuple("squid:S1220", null, file.toPath()),
+      tuple("squid:S1481", 3, file.toPath()));
     batch.stop();
   }
 }

@@ -17,24 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analyzer.noop;
+package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import javax.annotation.CheckForNull;
-import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.source.Highlightable;
-import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
+import org.sonar.api.batch.fs.FilePredicate;
+import org.sonar.api.batch.fs.FileSystem.Index;
+import org.sonar.api.batch.fs.InputFile;
 
-public class NoOpHighlightableBuilder extends PerspectiveBuilder<Highlightable> {
+class TruePredicate extends AbstractFilePredicate {
 
-  private static final NoOpHighlightable NO_OP_HIGHLIGHTABLE = new NoOpHighlightable();
+  static final FilePredicate TRUE = new TruePredicate();
 
-  public NoOpHighlightableBuilder() {
-    super(Highlightable.class);
+  @Override
+  public boolean apply(InputFile inputFile) {
+    return true;
   }
 
-  @CheckForNull
   @Override
-  public Highlightable loadPerspective(Class<Highlightable> perspectiveClass, InputComponent component) {
-    return NO_OP_HIGHLIGHTABLE;
+  public Iterable<InputFile> get(Index index) {
+    return index.inputFiles();
+  }
+
+  @Override
+  public Iterable<InputFile> filter(Iterable<InputFile> target) {
+    return target;
   }
 }

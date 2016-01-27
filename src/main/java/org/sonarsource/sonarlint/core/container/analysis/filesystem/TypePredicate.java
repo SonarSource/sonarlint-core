@@ -19,42 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import org.sonar.api.batch.BatchSide;
-import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 
-@BatchSide
-public class ModuleInputFileCache extends DefaultFileSystem.Cache {
+/**
+ * @since 4.2
+ */
+class TypePredicate extends AbstractFilePredicate {
 
-  private final InputPathCache inputPathCache;
+  private final InputFile.Type type;
 
-  public ModuleInputFileCache(InputPathCache projectCache) {
-    this.inputPathCache = projectCache;
+  TypePredicate(InputFile.Type type) {
+    this.type = type;
   }
 
   @Override
-  public Iterable<InputFile> inputFiles() {
-    return inputPathCache.allFiles();
+  public boolean apply(InputFile f) {
+    return type == f.type();
   }
 
-  @Override
-  public InputFile inputFile(String relativePath) {
-    return inputPathCache.getFile(relativePath);
-  }
-
-  @Override
-  public InputDir inputDir(String relativePath) {
-    return inputPathCache.getDir(relativePath);
-  }
-
-  @Override
-  protected void doAdd(InputFile inputFile) {
-    inputPathCache.put(inputFile);
-  }
-
-  @Override
-  protected void doAdd(InputDir inputDir) {
-    inputPathCache.put(inputDir);
-  }
 }

@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Map;
+import javax.annotation.CheckForNull;
 
 public class AnalysisConfiguration {
 
@@ -40,7 +42,17 @@ public class AnalysisConfiguration {
 
     Path path();
 
+    /**
+     * Flag an input file as test file. Analyzers may apply different rules on test files.
+     */
+    @CheckForNull
     boolean isTest();
+
+    /**
+     * Charset to be used to read file content. If null it means the charset is unknown and analysis will likely use JVM default encoding to read the file.
+     */
+    @CheckForNull
+    Charset charset();
 
   }
 

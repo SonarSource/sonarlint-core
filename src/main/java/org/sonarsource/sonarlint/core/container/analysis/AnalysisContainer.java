@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.batch.fs.internal.FileMetadata;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.resources.Project;
@@ -44,20 +43,18 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.PhaseExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.ComponentIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultModuleFileSystem;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileSystemLogger;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilderFactory;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetectionFactory;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.ModuleInputFileCache;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
 import org.sonarsource.sonarlint.core.container.global.ExtensionUtils;
 import org.sonarsource.sonarlint.core.index.BatchComponentCache;
-import org.sonarsource.sonarlint.core.index.DefaultIndex;
 
 public class AnalysisContainer extends ComponentContainer {
 
@@ -76,7 +73,7 @@ public class AnalysisContainer extends ComponentContainer {
   private void addBatchComponents() {
     add(
       new ProjectProvider(),
-      DefaultIndex.class,
+      // DefaultIndex.class,
       DefaultFileLinesContextFactory.class,
       BatchComponentCache.class,
 
@@ -84,7 +81,6 @@ public class AnalysisContainer extends ComponentContainer {
       new AnalysisTempFolderProvider(),
 
       // file system
-      InputPathCache.class,
       PathResolver.class,
 
       // tests
@@ -101,15 +97,14 @@ public class AnalysisContainer extends ComponentContainer {
       SensorsExecutor.class,
 
       // file system
-      ModuleInputFileCache.class,
+      InputPathCache.class,
       FileExclusions.class,
-      InputFileBuilderFactory.class,
+      InputFileBuilder.class,
       FileMetadata.class,
-      LanguageDetectionFactory.class,
+      LanguageDetection.class,
       FileIndexer.class,
-      ComponentIndexer.class,
       FileSystemLogger.class,
-      DefaultModuleFileSystem.class,
+      SonarLintFileSystem.class,
 
       SensorOptimizer.class,
 

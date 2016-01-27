@@ -22,9 +22,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 import java.io.Serializable;
 import java.util.Collection;
 import org.sonar.api.batch.SensorContext;
-import org.sonar.api.batch.SonarIndex;
 import org.sonar.api.batch.fs.FileSystem;
-import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -34,19 +32,17 @@ import org.sonar.api.design.Dependency;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.measures.MeasuresFilter;
 import org.sonar.api.measures.Metric;
-import org.sonar.api.resources.Directory;
 import org.sonar.api.resources.File;
+import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
 
-  private final SonarIndex index;
   private final Project project;
 
-  public LtsApiSensorContext(SonarIndex index, Project project, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage) {
+  public LtsApiSensorContext(Project project, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage) {
     super(settings, fs, activeRules, sensorStorage);
-    this.index = index;
     this.project = project;
 
   }
@@ -125,7 +121,7 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   @Override
   public Resource getResource(Resource resource) {
-    return index.getResource(resource);
+    throw unsupported();
   }
 
   @Override
@@ -164,15 +160,62 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   }
 
   @Override
-  public Resource getResource(InputPath inputPath) {
-    Resource r;
-    if (inputPath instanceof InputDir) {
-      r = Directory.create(((InputDir) inputPath).relativePath());
-    } else if (inputPath instanceof InputFile) {
-      r = File.create(((InputFile) inputPath).relativePath());
+  public Resource getResource(final InputPath inputPath) {
+    if (inputPath.isFile()) {
+      return new File(inputPath.absolutePath()) {
+        public String getEffectiveKey() {
+          return inputPath.key();
+        };
+      };
     } else {
-      throw new IllegalArgumentException("Unknow input path type: " + inputPath);
+      return new Resource() {
+
+        @Override
+        public String getEffectiveKey() {
+          return inputPath.key();
+        }
+
+        @Override
+        public String getName() {
+          return null;
+        }
+
+        @Override
+        public String getLongName() {
+          return null;
+        }
+
+        @Override
+        public String getDescription() {
+          return null;
+        }
+
+        @Override
+        public Language getLanguage() {
+          return null;
+        }
+
+        @Override
+        public String getScope() {
+          return null;
+        }
+
+        @Override
+        public String getQualifier() {
+          return null;
+        }
+
+        @Override
+        public Resource getParent() {
+          return null;
+        }
+
+        @Override
+        public boolean matchFilePattern(String antPattern) {
+          return false;
+        }
+
+      };
     }
-    return getResource(r);
   }
 }

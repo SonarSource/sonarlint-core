@@ -20,48 +20,52 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import java.nio.file.Path;
 import java.util.Map;
-import javax.annotation.CheckForNull;
+import java.util.Set;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 
-/**
- * Cache of all files and dirs. This cache is shared amongst all project modules. Inclusion and
- * exclusion patterns are already applied.
- */
 @BatchSide
-public class InputPathCache {
+public class InputPathCache extends DefaultFileSystem.Cache {
 
-  private final Map<String, InputFile> inputFileCache = Maps.newLinkedHashMap();
-  private final Map<String, InputDir> inputDirCache = Maps.newLinkedHashMap();
+  private final Map<Path, InputFile> inputFileCache = Maps.newLinkedHashMap();
+  private final Set<InputDir> inputDirCache = Sets.newHashSet();
 
-  public Iterable<InputFile> allFiles() {
+  @Override
+  public Iterable<InputFile> inputFiles() {
     return inputFileCache.values();
   }
 
   public Iterable<InputDir> allDirs() {
-    return inputDirCache.values();
+    return inputDirCache;
   }
 
-  public InputPathCache put(InputFile inputFile) {
-    inputFileCache.put(inputFile.relativePath(), inputFile);
-    return this;
+  @Override
+  public void doAdd(InputFile inputFile) {
+    inputFileCache.put(inputFile.path(), inputFile);
   }
 
-  public InputPathCache put(InputDir inputDir) {
-    inputDirCache.put(inputDir.relativePath(), inputDir);
-    return this;
+  @Override
+  public void doAdd(InputDir inputDir) {
+    inputDirCache.add(inputDir);
   }
 
-  @CheckForNull
-  public InputFile getFile(String relativePath) {
-    return inputFileCache.get(relativePath);
+  @Override
+  public InputFile inputFile(String relativePath) {
+    throw new UnsupportedOperationException("Unsupported in SonarLint");
   }
 
-  @CheckForNull
-  public InputDir getDir(String relativePath) {
-    return inputDirCache.get(relativePath);
+  @Override
+  public InputDir inputDir(String relativePath) {
+    throw new UnsupportedOperationException("Unsupported in SonarLint");
+  }
+
+  public InputFile inputFile(Path path) {
+    return inputFileCache.get(path);
   }
 
 }

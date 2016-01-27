@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.resources.Project;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultModuleFileSystem;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileSystemLogger;
 
 public final class PhaseExecutor {
@@ -29,10 +29,10 @@ public final class PhaseExecutor {
   private final SensorsExecutor sensorsExecutor;
   private final SensorContext sensorContext;
   private final FileSystemLogger fsLogger;
-  private final DefaultModuleFileSystem fs;
+  private final SonarLintFileSystem fs;
 
   public PhaseExecutor(SensorsExecutor sensorsExecutor, SensorContext sensorContext,
-    FileSystemLogger fsLogger, DefaultModuleFileSystem fs) {
+    FileSystemLogger fsLogger, SonarLintFileSystem fs) {
     this.sensorsExecutor = sensorsExecutor;
     this.sensorContext = sensorContext;
     this.fsLogger = fsLogger;

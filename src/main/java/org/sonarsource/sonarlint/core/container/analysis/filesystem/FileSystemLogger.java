@@ -30,9 +30,9 @@ import org.sonar.api.batch.BatchSide;
 @BatchSide
 public class FileSystemLogger {
 
-  private final DefaultModuleFileSystem fs;
+  private final SonarLintFileSystem fs;
 
-  public FileSystemLogger(DefaultModuleFileSystem fs) {
+  public FileSystemLogger(SonarLintFileSystem fs) {
     this.fs = fs;
   }
 

@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analyzer.perspectives;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.SonarIndex;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.component.Perspective;
 import org.sonar.api.component.ResourcePerspectives;
@@ -32,11 +31,9 @@ import org.sonarsource.sonarlint.core.index.BatchComponentCache;
 public class BatchPerspectives implements ResourcePerspectives {
 
   private final Map<Class<?>, PerspectiveBuilder<?>> builders = Maps.newHashMap();
-  private final SonarIndex resourceIndex;
   private final BatchComponentCache componentCache;
 
-  public BatchPerspectives(PerspectiveBuilder[] builders, SonarIndex resourceIndex, BatchComponentCache componentCache) {
-    this.resourceIndex = resourceIndex;
+  public BatchPerspectives(PerspectiveBuilder[] builders, BatchComponentCache componentCache) {
     this.componentCache = componentCache;
     for (PerspectiveBuilder builder : builders) {
       this.builders.put(builder.getPerspectiveClass(), builder);
@@ -46,21 +43,13 @@ public class BatchPerspectives implements ResourcePerspectives {
   @Override
   @CheckForNull
   public <P extends Perspective> P as(Class<P> perspectiveClass, Resource resource) {
-    Resource indexedResource = resource;
-    if (resource.getEffectiveKey() == null) {
-      indexedResource = resourceIndex.getResource(resource);
-    }
-    if (indexedResource != null) {
-      PerspectiveBuilder<P> builder = builderFor(perspectiveClass);
-      return builder.loadPerspective(perspectiveClass, componentCache.get(indexedResource));
-    }
-    return null;
+    throw new UnsupportedOperationException("Not supported in SonarLint");
   }
 
   @Override
   public <P extends Perspective> P as(Class<P> perspectiveClass, InputPath inputPath) {
     PerspectiveBuilder<P> builder = builderFor(perspectiveClass);
-    return builder.loadPerspective(perspectiveClass, componentCache.get(inputPath));
+    return builder.loadPerspective(perspectiveClass, inputPath);
   }
 
   private <T extends Perspective> PerspectiveBuilder<T> builderFor(Class<T> clazz) {

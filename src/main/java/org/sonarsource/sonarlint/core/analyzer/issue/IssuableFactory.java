@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.issue.Issuable;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
 
 /**
  * Create the perspective {@link Issuable} on components.
@@ -39,7 +39,7 @@ public class IssuableFactory extends PerspectiveBuilder<Issuable> {
   }
 
   @Override
-  public Issuable loadPerspective(Class<Issuable> perspectiveClass, BatchComponent component) {
+  public Issuable loadPerspective(Class<Issuable> perspectiveClass, InputComponent component) {
     return new DefaultIssuable(component, sensorContext);
   }
 }

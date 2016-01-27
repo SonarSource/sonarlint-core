@@ -40,19 +40,15 @@ import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.IssueListener;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
-import org.sonarsource.sonarlint.core.index.BatchComponentCache;
 
 public class DefaultSensorStorage implements SensorStorage {
 
-  private final BatchComponentCache componentCache;
   private final ActiveRules activeRules;
   private final Rules rules;
   private final IssueFilters filters;
   private final IssueListener issueListener;
 
-  public DefaultSensorStorage(BatchComponentCache componentCache, ActiveRules activeRules, Rules rules, IssueFilters filters, IssueListener issueListener) {
-    this.componentCache = componentCache;
+  public DefaultSensorStorage(ActiveRules activeRules, Rules rules, IssueFilters filters, IssueListener issueListener) {
     this.activeRules = activeRules;
     this.rules = rules;
     this.filters = filters;
@@ -67,7 +63,6 @@ public class DefaultSensorStorage implements SensorStorage {
   @Override
   public void store(Issue issue) {
     InputComponent inputComponent = issue.primaryLocation().inputComponent();
-    BatchComponent component = componentCache.get(inputComponent);
 
     Rule rule = validateRule(issue);
     ActiveRule activeRule = activeRules.find(issue.ruleKey());

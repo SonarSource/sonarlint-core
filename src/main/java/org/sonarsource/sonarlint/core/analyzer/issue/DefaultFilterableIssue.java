@@ -46,7 +46,7 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public RuleKey ruleKey() {
-    throw unsupported();
+    return rawIssue.ruleKey();
   }
 
   @Override

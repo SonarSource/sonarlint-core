@@ -19,20 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import org.sonar.api.batch.BatchSide;
-import org.sonar.api.config.Settings;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.internal.PathPattern;
 
-@BatchSide
-public class LanguageDetectionFactory {
-  private final Settings settings;
-  private final LanguagesRepository languages;
+/**
+ * @since 4.2
+ */
+class PathPatternPredicate extends AbstractFilePredicate {
 
-  public LanguageDetectionFactory(Settings settings, LanguagesRepository languages) {
-    this.settings = settings;
-    this.languages = languages;
+  private final PathPattern pattern;
+
+  PathPatternPredicate(PathPattern pattern) {
+    this.pattern = pattern;
   }
 
-  public LanguageDetection create() {
-    return new LanguageDetection(settings, languages);
+  @Override
+  public boolean apply(InputFile f) {
+    return pattern.match(f);
   }
+
 }

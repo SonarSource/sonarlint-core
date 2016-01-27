@@ -21,21 +21,18 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import java.util.Collections;
 import java.util.List;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
 
-/**
- * @since 3.6
- */
 public class DefaultIssuable implements Issuable {
 
-  private final BatchComponent component;
+  private final InputComponent component;
   private final SensorContext sensorContext;
 
-  DefaultIssuable(BatchComponent component, SensorContext sensorContext) {
+  DefaultIssuable(InputComponent component, SensorContext sensorContext) {
     this.component = component;
     this.sensorContext = sensorContext;
   }
@@ -43,7 +40,7 @@ public class DefaultIssuable implements Issuable {
   @Override
   public IssueBuilder newIssueBuilder() {
     DefaultIssue newIssue = (DefaultIssue) sensorContext.newIssue();
-    return new DeprecatedIssueBuilderWrapper(component.inputComponent(), newIssue);
+    return new DeprecatedIssueBuilderWrapper(component, newIssue);
   }
 
   @Override

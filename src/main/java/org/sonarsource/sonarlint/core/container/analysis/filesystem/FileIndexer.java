@@ -19,19 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.InputFile.Type;
-import org.sonar.api.batch.fs.internal.DefaultInputDir;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
@@ -42,60 +35,46 @@ import org.sonarsource.sonarlint.core.util.ProgressReport;
 @BatchSide
 public class FileIndexer {
 
-  private final InputFileBuilderFactory inputFileBuilderFactory;
+  private final InputFileBuilder inputFileBuilder;
   private final AnalysisConfiguration analysisConfiguration;
 
   private ProgressReport progressReport;
-  private List<Future<Void>> tasks;
 
-  public FileIndexer(InputFileBuilderFactory inputFileBuilderFactory, AnalysisConfiguration analysisConfiguration) {
-    this.inputFileBuilderFactory = inputFileBuilderFactory;
+  public FileIndexer(InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration) {
+    this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
   }
 
-  void index(DefaultModuleFileSystem fileSystem) {
+  void index(SonarLintFileSystem fileSystem) {
     progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
     progressReport.start("Index files");
 
     Progress progress = new Progress();
 
-    InputFileBuilder inputFileBuilder = inputFileBuilderFactory.create(fileSystem);
-    indexFiles(fileSystem, progress, inputFileBuilder, analysisConfiguration.inputFiles());
+    indexFiles(fileSystem, progress, analysisConfiguration.inputFiles());
 
     progressReport.stop(progress.count() + " files indexed");
 
   }
 
-  private void indexFiles(DefaultModuleFileSystem fileSystem, Progress progress, InputFileBuilder inputFileBuilder, Iterable<AnalysisConfiguration.InputFile> inputFiles) {
+  private void indexFiles(SonarLintFileSystem fileSystem, Progress progress, Iterable<AnalysisConfiguration.InputFile> inputFiles) {
     for (AnalysisConfiguration.InputFile file : inputFiles) {
-      indexFile(inputFileBuilder, fileSystem, progress, file);
+      indexFile(fileSystem, progress, file);
     }
   }
 
-  private void indexFile(InputFileBuilder inputFileBuilder, DefaultModuleFileSystem fileSystem, Progress progress, AnalysisConfiguration.InputFile file) {
-    DefaultInputFile inputFile = inputFileBuilder.create(file.path().toFile());
+  private void indexFile(SonarLintFileSystem fileSystem, Progress progress, AnalysisConfiguration.InputFile file) {
+    SonarLintInputFile inputFile = inputFileBuilder.create(file);
     if (inputFile != null) {
-      // Set basedir on input file prior to adding it to the FS since exclusions filters may require the absolute path
-      inputFile.setModuleBaseDir(fileSystem.baseDirPath());
-      indexFile(inputFileBuilder, fileSystem, progress, inputFile, file.isTest() ? Type.TEST : Type.MAIN);
+      indexFile(fileSystem, progress, inputFile);
     }
   }
 
-  private void indexFile(final InputFileBuilder inputFileBuilder, final DefaultModuleFileSystem fs, final Progress status, final DefaultInputFile inputFile,
-    final InputFile.Type type) {
-
-    DefaultInputFile completedInputFile = inputFileBuilder.completeAndComputeMetadata(inputFile, type);
-    if (completedInputFile != null) {
-      fs.add(completedInputFile);
-      status.markAsIndexed(completedInputFile);
-      File parentDir = completedInputFile.file().getParentFile();
-      String relativePath = new PathResolver().relativePath(fs.baseDir(), parentDir);
-      if (relativePath != null) {
-        DefaultInputDir inputDir = new DefaultInputDir(fs.moduleKey(), relativePath);
-        fs.add(inputDir);
-      }
-    }
-
+  private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {
+    fs.add(inputFile);
+    status.markAsIndexed(inputFile);
+    SonarLintInputDir inputDir = new SonarLintInputDir(inputFile.path().getParent());
+    fs.add(inputDir);
   }
 
   private class Progress {
@@ -107,7 +86,7 @@ public class FileIndexer {
           + "disjoint sets for main and test files");
       }
       indexed.add(inputFile.path());
-      progressReport.message(indexed.size() + " files indexed...  (last one was " + inputFile.relativePath() + ")");
+      progressReport.message(indexed.size() + " files indexed...  (last one was " + inputFile.absolutePath() + ")");
     }
 
     int count() {

@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.analyzer.perspectives;
 
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.BatchSide;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.component.Perspective;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
 
 @BatchSide
 public abstract class PerspectiveBuilder<T extends Perspective> {
@@ -38,5 +38,5 @@ public abstract class PerspectiveBuilder<T extends Perspective> {
   }
 
   @CheckForNull
-  public abstract T loadPerspective(Class<T> perspectiveClass, BatchComponent component);
+  public abstract T loadPerspective(Class<T> perspectiveClass, InputComponent component);
 }

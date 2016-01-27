@@ -20,9 +20,8 @@
 package org.sonarsource.sonarlint.core.analyzer.perspectives;
 
 import org.junit.Test;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.component.Perspective;
-import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +30,7 @@ public class PerspectiveBuilderTest {
   public void testGetPerspectiveClass() throws Exception {
     PerspectiveBuilder<FakePerspective> builder = new PerspectiveBuilder<FakePerspective>(FakePerspective.class) {
       @Override
-      public FakePerspective loadPerspective(Class<FakePerspective> perspectiveClass, BatchComponent component) {
+      public FakePerspective loadPerspective(Class<FakePerspective> perspectiveClass, InputComponent component) {
         return null;
       }
     };

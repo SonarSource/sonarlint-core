@@ -50,7 +50,7 @@ public class ComponentIndexer {
     this.componentCache = componentCache;
   }
 
-  public void execute(DefaultModuleFileSystem fs) {
+  public void execute(SonarLintFileSystem fs) {
     module.setBaseDir(fs.baseDir());
 
     for (InputFile inputFile : fs.inputFiles()) {

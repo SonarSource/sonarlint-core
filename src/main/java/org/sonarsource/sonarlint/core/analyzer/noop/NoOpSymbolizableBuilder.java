@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.analyzer.noop;
 
 import javax.annotation.CheckForNull;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.source.Symbolizable;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
 
 public class NoOpSymbolizableBuilder extends PerspectiveBuilder<Symbolizable> {
 
@@ -34,7 +34,7 @@ public class NoOpSymbolizableBuilder extends PerspectiveBuilder<Symbolizable> {
 
   @CheckForNull
   @Override
-  public Symbolizable loadPerspective(Class<Symbolizable> perspectiveClass, BatchComponent component) {
+  public Symbolizable loadPerspective(Class<Symbolizable> perspectiveClass, InputComponent component) {
     return NO_OP_SYMBOLIZABLE;
   }
 }

@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.analyzer.noop;
 
 import javax.annotation.CheckForNull;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.test.MutableTestPlan;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.PerspectiveBuilder;
-import org.sonarsource.sonarlint.core.index.BatchComponent;
 
 public class TestPlanBuilder extends PerspectiveBuilder<MutableTestPlan> {
 
@@ -32,7 +32,7 @@ public class TestPlanBuilder extends PerspectiveBuilder<MutableTestPlan> {
 
   @CheckForNull
   @Override
-  public MutableTestPlan loadPerspective(Class<MutableTestPlan> perspectiveClass, BatchComponent component) {
+  public MutableTestPlan loadPerspective(Class<MutableTestPlan> perspectiveClass, InputComponent component) {
     return null;
   }
 
