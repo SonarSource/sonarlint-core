@@ -42,64 +42,72 @@ public interface IssueListener {
       return severity;
     }
 
-    public void setSeverity(String severity) {
+    public Issue setSeverity(String severity) {
       this.severity = severity;
+      return this;
     }
 
     public Integer getStartLine() {
       return startLine;
     }
 
-    public void setStartLine(Integer startLine) {
+    public Issue setStartLine(Integer startLine) {
       this.startLine = startLine;
+      return this;
     }
 
     public Integer getStartLineOffset() {
       return startLineOffset;
     }
 
-    public void setStartLineOffset(Integer startLineOffset) {
+    public Issue setStartLineOffset(Integer startLineOffset) {
       this.startLineOffset = startLineOffset;
+      return this;
     }
 
     public Integer getEndLine() {
       return endLine;
     }
 
-    public void setEndLine(Integer endLine) {
+    public Issue setEndLine(Integer endLine) {
       this.endLine = endLine;
+      return this;
     }
 
     public Integer getEndLineOffset() {
       return endLineOffset;
     }
 
-    public void setEndLineOffset(Integer endLineOffset) {
+    public Issue setEndLineOffset(Integer endLineOffset) {
       this.endLineOffset = endLineOffset;
+      return this;
     }
 
     public String getMessage() {
       return message;
     }
 
-    public void setMessage(String message) {
+    public Issue setMessage(String message) {
       this.message = message;
+      return this;
     }
 
     public String getRuleKey() {
       return ruleKey;
     }
 
-    public void setRuleKey(String ruleKey) {
+    public Issue setRuleKey(String ruleKey) {
       this.ruleKey = ruleKey;
+      return this;
     }
 
     public String getRuleName() {
       return ruleName;
     }
 
-    public void setRuleName(String ruleName) {
+    public Issue setRuleName(String ruleName) {
       this.ruleName = ruleName;
+      return this;
     }
 
     /**
@@ -110,8 +118,9 @@ public interface IssueListener {
       return filePath;
     }
 
-    public void setFilePath(Path filePath) {
+    public Issue setFilePath(Path filePath) {
       this.filePath = filePath;
+      return this;
     }
 
     @Override
