@@ -43,7 +43,7 @@ public class BatchPerspectives implements ResourcePerspectives {
   @Override
   @CheckForNull
   public <P extends Perspective> P as(Class<P> perspectiveClass, Resource resource) {
-    throw new UnsupportedOperationException("Not supported in SonarLint");
+    return null;
   }
 
   @Override

@@ -97,12 +97,12 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   @Override
   public Measure saveMeasure(Measure measure) {
-    throw unsupported();
+    return null;
   }
 
   @Override
   public Measure saveMeasure(Metric metric, Double value) {
-    throw unsupported();
+    return null;
   }
 
   @Override
@@ -131,17 +131,17 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   @Override
   public Measure saveMeasure(Resource resource, Metric metric, Double value) {
-    throw unsupported();
+    return null;
   }
 
   @Override
   public Measure saveMeasure(Resource resource, Measure measure) {
-    throw unsupported();
+    return null;
   }
 
   @Override
   public Dependency saveDependency(Dependency dependency) {
-    throw unsupported();
+    return null;
   }
 
   @Override
