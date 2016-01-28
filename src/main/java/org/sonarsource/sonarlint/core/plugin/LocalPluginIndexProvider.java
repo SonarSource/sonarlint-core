@@ -21,10 +21,8 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -47,9 +45,8 @@ public class LocalPluginIndexProvider implements PluginIndexProvider {
       private PluginReference toPlugin(URL input) {
         try {
           PluginReference ref = new PluginReference();
-          Path plugin = Paths.get(input.toURI());
-          try (FileInputStream fis = new FileInputStream(plugin.toFile())) {
-            ref.setHash(DigestUtils.md5Hex(fis));
+          try (InputStream is = input.openStream()) {
+            ref.setHash(DigestUtils.md5Hex(is));
           }
           ref.setDownloadUrl(input);
           return ref;
