@@ -43,14 +43,14 @@ public class NoPluginMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private SonarLintClient batch;
+  private SonarLintClient sonarlint;
   private File baseDir;
 
   @Before
   public void prepare() throws IOException {
-    batch = SonarLintClient.builder()
+    sonarlint = SonarLintClient.builder()
       .build();
-    batch.start();
+    sonarlint.start();
 
     baseDir = temp.newFolder();
   }
@@ -58,7 +58,7 @@ public class NoPluginMediumTest {
   @After
   public void stop() {
 
-    batch.stop();
+    sonarlint.stop();
   }
 
   @Test
@@ -66,7 +66,7 @@ public class NoPluginMediumTest {
 
     AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
-    AnalysisResults results = batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    AnalysisResults results = sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
         @Override
         public void handle(Issue issue) {

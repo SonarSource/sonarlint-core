@@ -46,13 +46,13 @@ public class LogMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private SonarLintClient batch;
+  private SonarLintClient sonarlint;
   private File baseDir;
   private Multimap<Level, String> logs = LinkedListMultimap.create();
 
   @Before
   public void prepare() throws IOException {
-    batch = SonarLintClient.builder()
+    sonarlint = SonarLintClient.builder()
       .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
       .setLogOutput(new LogOutput() {
 
@@ -62,7 +62,7 @@ public class LogMediumTest {
         }
       })
       .build();
-    batch.start();
+    sonarlint.start();
 
     baseDir = temp.newFolder();
   }
@@ -70,7 +70,7 @@ public class LogMediumTest {
   @After
   public void stop() {
 
-    batch.stop();
+    sonarlint.stop();
   }
 
   @Test
@@ -78,7 +78,7 @@ public class LogMediumTest {
 
     AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
-    batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
+    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
       @Override
       public void handle(Issue issue) {
       }
@@ -88,9 +88,9 @@ public class LogMediumTest {
 
     logs.clear();
 
-    batch.setVerbose(true);
+    sonarlint.setVerbose(true);
 
-    batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
+    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
       @Override
       public void handle(Issue issue) {
       }

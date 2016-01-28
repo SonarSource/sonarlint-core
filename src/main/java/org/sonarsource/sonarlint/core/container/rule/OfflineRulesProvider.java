@@ -26,6 +26,7 @@ import org.sonar.api.batch.rule.internal.RulesBuilder;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
+import org.sonar.markdown.Markdown;
 
 public class OfflineRulesProvider extends ProviderAdapter {
   private Rules singleton = null;
@@ -38,7 +39,7 @@ public class OfflineRulesProvider extends ProviderAdapter {
         for (org.sonar.api.server.rule.RulesDefinition.Rule ruleDef : repoDef.rules()) {
           NewRule newRule = builder.add(RuleKey.of(ruleDef.repository().key(), ruleDef.key()))
             .setInternalKey(ruleDef.internalKey())
-            .setDescription(ruleDef.htmlDescription())
+            .setDescription(ruleDef.htmlDescription() != null ? ruleDef.htmlDescription() : Markdown.convertToHtml(ruleDef.markdownDescription()))
             .setSeverity(ruleDef.severity())
             .setName(ruleDef.name());
           for (Param p : ruleDef.params()) {

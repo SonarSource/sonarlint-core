@@ -77,6 +77,18 @@ public final class SonarLintClient {
     return this;
   }
 
+  /**
+   * Return rule description.
+   * @param ruleKey See {@link IssueListener.Issue#getRuleKey()}
+   * @return Html rule description
+   * @throws IllegalArgumentException if ruleKey is unknown
+   * @since 1.0
+   */
+  public String getHtmlRuleDescription(String ruleKey) {
+    checkStarted();
+    return globalContainer.getHtmlRuleDescription(ruleKey);
+  }
+
   public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
     checkNotNull(configuration);
     Preconditions.checkNotNull(issueListener);
@@ -90,7 +102,7 @@ public final class SonarLintClient {
 
   private void checkStarted() {
     if (!started) {
-      throw new IllegalStateException("Batch is not started. Unable to execute task.");
+      throw new IllegalStateException("SonarLint client is not started.");
     }
   }
 

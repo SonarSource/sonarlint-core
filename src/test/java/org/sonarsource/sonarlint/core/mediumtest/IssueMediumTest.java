@@ -46,16 +46,16 @@ public class IssueMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private SonarLintClient batch;
+  private SonarLintClient sonarlint;
   private File baseDir;
 
   @Before
   public void prepare() throws IOException {
-    batch = SonarLintClient.builder()
+    sonarlint = SonarLintClient.builder()
       .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
       .addPlugin(this.getClass().getResource("/sonar-java-plugin-3.9.jar"))
       .build();
-    batch.start();
+    sonarlint.start();
 
     baseDir = temp.newFolder();
   }
@@ -63,18 +63,20 @@ public class IssueMediumTest {
   @After
   public void stop() {
 
-    batch.stop();
+    sonarlint.stop();
   }
 
   @Test
   public void simpleJavaScript() throws Exception {
+
+    assertThat(sonarlint.getHtmlRuleDescription("javascript:UnusedVariable")).contains("<p>", "If a local variable is declared but not used");
 
     AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
       + "  var x;\n"
       + "}", false);
 
     final List<IssueListener.Issue> issues = new ArrayList<>();
-    batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
+    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
       @Override
       public void handle(Issue issue) {
         issues.add(issue);
@@ -98,7 +100,7 @@ public class IssueMediumTest {
       false);
 
     final List<IssueListener.Issue> issues = new ArrayList<>();
-    batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
+    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
 
       @Override
       public void handle(Issue issue) {
@@ -117,7 +119,7 @@ public class IssueMediumTest {
     AnalysisConfiguration.InputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
 
     final List<IssueListener.Issue> issues = new ArrayList<>();
-    batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
+    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
       ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), new IssueListener() {
 
         @Override
@@ -160,7 +162,7 @@ public class IssueMediumTest {
       true);
 
     final List<IssueListener.Issue> issues = new ArrayList<>();
-    AnalysisResults results = batch.analyze(
+    AnalysisResults results = sonarlint.analyze(
       new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
         ImmutableMap.<String, String>of("sonar.junit.reportsPath", "reports/")),
       new IssueListener() {

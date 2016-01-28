@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.container.global;
 import java.util.List;
 import org.sonar.api.SonarPlugin;
 import org.sonar.api.batch.rule.ActiveRules;
+import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.AnalysisConfiguration;
@@ -99,6 +101,14 @@ public class GlobalContainer extends ComponentContainer {
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
     return defaultAnalysisResult;
+  }
+
+  public String getHtmlRuleDescription(String ruleKey) {
+    Rule rule = rules.find(RuleKey.parse(ruleKey));
+    if (rule == null) {
+      throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
+    }
+    return rule.description();
   }
 
 }
