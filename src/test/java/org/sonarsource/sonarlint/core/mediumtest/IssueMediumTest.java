@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.SonarLintClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-public class MediumTest {
+public class IssueMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -67,21 +67,26 @@ public class MediumTest {
   }
 
   @Test
-  public void testJavaScript() throws Exception {
+  public void simpleJavaScript() throws Exception {
 
-    AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
+    AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
+      + "  var x;\n"
+      + "}", false);
 
+    final List<IssueListener.Issue> issues = new ArrayList<>();
     batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
       @Override
       public void handle(Issue issue) {
-        System.out.println(issue);
+        issues.add(issue);
       }
     });
+    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
+      tuple("javascript:UnusedVariable", 2, inputFile.path()));
 
   }
 
   @Test
-  public void testJava() throws Exception {
+  public void simpleJava() throws Exception {
     AnalysisConfiguration.InputFile inputFile = prepareInputFile("Foo.java",
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -97,7 +102,6 @@ public class MediumTest {
 
       @Override
       public void handle(Issue issue) {
-        System.out.println(issue);
         issues.add(issue);
       }
     });
@@ -106,6 +110,27 @@ public class MediumTest {
       tuple("squid:S106", 4, inputFile.path()),
       tuple("squid:S1220", null, inputFile.path()),
       tuple("squid:S1481", 3, inputFile.path()));
+  }
+
+  @Test
+  public void simpleJavaWithBytecode() throws Exception {
+    AnalysisConfiguration.InputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
+
+    final List<IssueListener.Issue> issues = new ArrayList<>();
+    batch.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
+      ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+
+    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
+      tuple("squid:S106", 5, inputFile.path()),
+      tuple("squid:S1220", null, inputFile.path()),
+      tuple("squid:UnusedPrivateMethod", 8, inputFile.path()),
+      tuple("squid:S1186", 8, inputFile.path()));
   }
 
   @Test
@@ -142,7 +167,6 @@ public class MediumTest {
 
         @Override
         public void handle(Issue issue) {
-          System.out.println(issue);
           issues.add(issue);
         }
       });
@@ -159,11 +183,16 @@ public class MediumTest {
   private AnalysisConfiguration.InputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content);
+    AnalysisConfiguration.InputFile inputFile = createInputFile(file.toPath(), isTest);
+    return inputFile;
+  }
+
+  private AnalysisConfiguration.InputFile createInputFile(final Path path, final boolean isTest) {
     AnalysisConfiguration.InputFile inputFile = new AnalysisConfiguration.InputFile() {
 
       @Override
       public Path path() {
-        return file.toPath();
+        return path;
       }
 
       @Override

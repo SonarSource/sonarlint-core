@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Map;
 import javax.annotation.CheckForNull;
+import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 
 public class AnalysisConfiguration {
 
@@ -73,6 +74,11 @@ public class AnalysisConfiguration {
 
   public Iterable<InputFile> inputFiles() {
     return inputFiles;
+  }
+
+  @Override
+  public String toString() {
+    return ReflectionToStringBuilder.toString(this);
   }
 
 }

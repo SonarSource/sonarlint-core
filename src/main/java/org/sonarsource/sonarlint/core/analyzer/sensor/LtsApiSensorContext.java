@@ -32,10 +32,12 @@ import org.sonar.api.design.Dependency;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.measures.MeasuresFilter;
 import org.sonar.api.measures.Metric;
+import org.sonar.api.resources.Directory;
 import org.sonar.api.resources.File;
 import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
+import org.sonar.api.utils.PathUtils;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
 
@@ -121,7 +123,7 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   @Override
   public Resource getResource(Resource resource) {
-    throw unsupported();
+    return resource;
   }
 
   @Override
@@ -163,9 +165,20 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   public Resource getResource(final InputPath inputPath) {
     if (inputPath.isFile()) {
       return new File(inputPath.absolutePath()) {
+        @Override
         public String getEffectiveKey() {
           return inputPath.key();
         }
+
+        @Override
+        public String getPath() {
+          return inputPath.absolutePath();
+        }
+
+        @Override
+        public org.sonar.api.resources.Directory getParent() {
+          return Directory.create(PathUtils.sanitize(inputPath.path().getParent().toString()));
+        };
       };
     } else {
       return new Resource() {
@@ -173,6 +186,11 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
         @Override
         public String getEffectiveKey() {
           return inputPath.key();
+        }
+
+        @Override
+        public String getPath() {
+          return inputPath.absolutePath();
         }
 
         @Override
