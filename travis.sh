@@ -17,7 +17,7 @@ function strongEcho {
 case "$TARGET" in
 
 CI)
-  if [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
+  if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     strongEcho 'Build and analyze commit in master'
     # this commit is master must be built and analyzed (with upload of report)
     export MAVEN_OPTS="-Xmx1G -Xms128m"
@@ -28,7 +28,7 @@ CI)
       -Dsonar.login=$SONAR_TOKEN \
       -B -e -V
 
-  elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
+  elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN-}" ]; then
     strongEcho 'Build and analyze pull request'
     # this pull request must be built and analyzed (without upload of report)
     mvn org.jacoco:jacoco-maven-plugin:prepare-agent verify sonar:sonar \
