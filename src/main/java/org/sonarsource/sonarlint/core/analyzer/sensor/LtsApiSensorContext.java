@@ -165,7 +165,7 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
       return new File(inputPath.absolutePath()) {
         public String getEffectiveKey() {
           return inputPath.key();
-        };
+        }
       };
     } else {
       return new Resource() {

@@ -26,18 +26,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.sonar.api.CoreProperties;
@@ -101,56 +93,6 @@ public class FileMetadata {
       return lines;
     }
 
-  }
-
-  private static class LineHashComputer extends CharHandler {
-    private final MessageDigest lineMd5Digest = DigestUtils.getMd5Digest();
-    private final CharsetEncoder encoder;
-    private final StringBuilder sb = new StringBuilder();
-    private final LineHashConsumer consumer;
-    private final File file;
-    private int line = 1;
-
-    public LineHashComputer(LineHashConsumer consumer, File f) {
-      this.consumer = consumer;
-      this.file = f;
-      this.encoder = StandardCharsets.UTF_8.newEncoder()
-        .onMalformedInput(CodingErrorAction.REPLACE)
-        .onUnmappableCharacter(CodingErrorAction.REPLACE);
-    }
-
-    @Override
-    protected void handleIgnoreEoL(char c) {
-      if (!Character.isWhitespace(c)) {
-        sb.append(c);
-      }
-    }
-
-    @Override
-    protected void newLine() {
-      processBuffer();
-      sb.setLength(0);
-      line++;
-    }
-
-    @Override
-    protected void eof() {
-      if (this.line > 0) {
-        processBuffer();
-      }
-    }
-
-    private void processBuffer() {
-      try {
-        if (sb.length() > 0) {
-          ByteBuffer encoded = encoder.encode(CharBuffer.wrap(sb));
-          lineMd5Digest.update(encoded.array(), 0, encoded.limit());
-          consumer.consume(line, lineMd5Digest.digest());
-        }
-      } catch (CharacterCodingException e) {
-        throw new IllegalStateException("Error encoding line hash in file: " + file.getAbsolutePath(), e);
-      }
-    }
   }
 
   private static class LineOffsetCounter extends CharHandler {
@@ -279,18 +221,5 @@ public class FileMetadata {
       this.originalLineOffsets = Ints.toArray(originalLineOffsets);
       this.lastValidOffset = lastValidOffset;
     }
-  }
-
-  public interface LineHashConsumer {
-
-    void consume(int lineIdx, @Nullable byte[] hash);
-
-  }
-
-  /**
-   * Compute a MD5 hash of each line of the file after removing of all blank chars
-   */
-  public static void computeLineHashesForIssueTracking(SonarLintInputFile f, LineHashConsumer consumer) {
-    readFile(f.file(), f.charset(), new LineHashComputer(consumer, f.file()));
   }
 }

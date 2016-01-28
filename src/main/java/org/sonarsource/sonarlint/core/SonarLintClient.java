@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import java.net.URL;
@@ -32,6 +33,8 @@ import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 import org.sonarsource.sonarlint.core.plugin.LocalPluginIndexProvider;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Entry point for SonarLint.
@@ -75,6 +78,8 @@ public final class SonarLintClient {
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
+    checkNotNull(configuration);
+    Preconditions.checkNotNull(issueListener);
     checkStarted();
     try {
       return globalContainer.analyze(configuration, issueListener);

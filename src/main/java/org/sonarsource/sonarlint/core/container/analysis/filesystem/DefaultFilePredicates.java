@@ -67,7 +67,7 @@ public class DefaultFilePredicates implements FilePredicates {
 
   @Override
   public FilePredicate matchesPathPattern(String inclusionPattern) {
-    return new PathPatternPredicate(PathPattern.create("file:" + inclusionPattern));
+    return new PathPatternPredicate(PathPattern.create(toAbsolutePattern(inclusionPattern)));
   }
 
   @Override
@@ -77,9 +77,19 @@ public class DefaultFilePredicates implements FilePredicates {
     }
     FilePredicate[] predicates = new FilePredicate[inclusionPatterns.length];
     for (int i = 0; i < inclusionPatterns.length; i++) {
-      predicates[i] = new PathPatternPredicate(PathPattern.create("file:" + inclusionPatterns[i]));
+      predicates[i] = new PathPatternPredicate(PathPattern.create(toAbsolutePattern(inclusionPatterns[i])));
     }
     return or(predicates);
+  }
+
+  private String toAbsolutePattern(String pattern) {
+    if (pattern.startsWith("file:")) {
+      return pattern;
+    }
+    if (pattern.startsWith("**")) {
+      return "file:" + pattern;
+    }
+    return "file:**/" + pattern;
   }
 
   @Override
