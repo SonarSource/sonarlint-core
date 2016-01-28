@@ -19,20 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import org.picocontainer.Startable;
-
-import org.sonar.api.resources.Languages;
-
-import javax.annotation.CheckForNull;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import javax.annotation.CheckForNull;
+import org.picocontainer.Startable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sonar.api.resources.Languages;
 
 /**
  * Languages repository using {@link Languages}
  * @since 4.4
  */
 public class DefaultLanguagesRepository implements LanguagesRepository, Startable {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultLanguagesRepository.class);
 
   private Languages languages;
 
@@ -43,7 +44,7 @@ public class DefaultLanguagesRepository implements LanguagesRepository, Startabl
   @Override
   public void start() {
     if (languages.all().length == 0) {
-      throw new IllegalStateException("No language plugins are installed.");
+      LOG.warn("No analyzers installed");
     }
   }
 

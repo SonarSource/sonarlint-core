@@ -27,6 +27,11 @@ import org.sonar.api.server.rule.RulesDefinition;
 public class OfflinePluginRulesLoader {
   private final RulesDefinition.Context context;
 
+  public OfflinePluginRulesLoader() {
+    // No plugin installed
+    context = new RulesDefinition.Context();
+  }
+
   public OfflinePluginRulesLoader(RulesDefinition[] pluginDefs) {
 
     context = new RulesDefinition.Context();

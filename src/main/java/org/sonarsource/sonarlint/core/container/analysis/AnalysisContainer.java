@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileSystemLogger;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
@@ -101,7 +100,6 @@ public class AnalysisContainer extends ComponentContainer {
       FileMetadata.class,
       LanguageDetection.class,
       FileIndexer.class,
-      FileSystemLogger.class,
       SonarLintFileSystem.class,
 
       SensorOptimizer.class,
