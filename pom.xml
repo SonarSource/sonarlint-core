@@ -10,7 +10,9 @@
   <groupId>org.sonarsource.sonarlint</groupId>
   <artifactId>sonarlint-core</artifactId>
   <version>1.0-SNAPSHOT</version>
+  <packaging>bundle</packaging>
   <name>SonarLint Core Library</name>
+  <description>Library used by SonarLint clients (CLI, Eclipse, ...)</description>
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -159,6 +161,24 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.5.3</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Import-Package>
+              !*
+            </Import-Package>
+            <_exportcontents>
+              org.sonarsource.sonarlint.core;version="${project.version}"
+            </_exportcontents>
+            <_failok>true</_failok>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>
