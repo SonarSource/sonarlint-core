@@ -58,7 +58,7 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
     throw unsupported();
   }
 
-  private UnsupportedOperationException unsupported() {
+  private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Unsupported in SonarLint");
   }
 

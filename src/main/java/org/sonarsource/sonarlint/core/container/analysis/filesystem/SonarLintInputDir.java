@@ -58,7 +58,7 @@ public class SonarLintInputDir extends DefaultInputDir {
     throw unsupported();
   }
 
-  private UnsupportedOperationException unsupported() {
+  private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Unsupported in SonarLint");
   }
 

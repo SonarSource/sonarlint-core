@@ -74,7 +74,7 @@ public class SonarLintInputFile extends DefaultInputFile {
     throw unsupported();
   }
 
-  private UnsupportedOperationException unsupported() {
+  private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Unsupported in SonarLint");
   }
 

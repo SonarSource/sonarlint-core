@@ -62,7 +62,7 @@ public class OfflineActiveRulesProvider extends ProviderAdapter {
     return singleton;
   }
 
-  private void registerProfilesForLanguage(ActiveRulesBuilder builder, String language, List<RulesProfile> defs) {
+  private static void registerProfilesForLanguage(ActiveRulesBuilder builder, String language, List<RulesProfile> defs) {
     for (Map.Entry<String, Collection<RulesProfile>> entry : profilesByName(defs).entrySet()) {
       String name = entry.getKey();
       if ("Sonar way".equals(name)) {
@@ -84,7 +84,7 @@ public class OfflineActiveRulesProvider extends ProviderAdapter {
     }
   }
 
-  private ListMultimap<String, RulesProfile> profilesByLanguage(ProfileDefinition[] profileDefinitions) {
+  private static ListMultimap<String, RulesProfile> profilesByLanguage(ProfileDefinition[] profileDefinitions) {
     ListMultimap<String, RulesProfile> byLang = ArrayListMultimap.create();
     for (ProfileDefinition definition : profileDefinitions) {
       ValidationMessages validation = ValidationMessages.create();

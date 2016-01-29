@@ -105,7 +105,7 @@ public class RuleFinderCompatibility implements RuleFinder {
     return rule != null ? Arrays.asList(rule) : Collections.<Rule>emptyList();
   }
 
-  private Collection<Rule> byInternalKey(RuleQuery query) {
+  private static Collection<Rule> byInternalKey(RuleQuery query) {
     throw new UnsupportedOperationException("Unable to find rule by internal key");
   }
 

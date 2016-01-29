@@ -19,13 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
@@ -34,7 +35,6 @@ import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import com.google.common.annotations.VisibleForTesting;
 
 public class PluginDownloader {
 
@@ -71,7 +71,7 @@ public class PluginDownloader {
   File download(final PluginReference pluginReference) {
     final URL url = pluginReference.getDownloadUrl();
     try {
-      return fileCache.get(StringUtils.substringAfterLast(url.getFile(), "/"), pluginReference.getHash(), new FileDownloader(url));
+      return fileCache.get(StringUtils.substringAfterLast(url.getFile(), "/"), pluginReference.getHash(), new FileDownloader(url)).toFile();
     } catch (Exception e) {
       throw new IllegalStateException("Fail to download plugin: " + url, e);
     }
@@ -85,14 +85,14 @@ public class PluginDownloader {
     }
 
     @Override
-    public void download(String filename, File toFile) throws IOException {
+    public void download(String filename, Path toFile) throws IOException {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Download plugin {} to {}", url, toFile);
       } else {
         LOG.info("Download {}", StringUtils.substringAfterLast(url.getFile(), "/"));
       }
 
-      FileUtils.copyURLToFile(url, toFile);
+      FileUtils.copyURLToFile(url, toFile.toFile());
     }
   }
 }

@@ -43,16 +43,16 @@ public final class SonarLintClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintClient.class);
 
+  private final List<Object> globalComponents;
   private boolean started = false;
-  private final GlobalContainer globalContainer;
+  private GlobalContainer globalContainer;
 
   private SonarLintClient(Builder builder) {
-    List<Object> components = Lists.newArrayList();
-    components.add(new GlobalConfiguration(builder.sonarUserHome, builder.workDir));
-    components.add(new LocalPluginIndexProvider(builder.pluginUrls));
-    components.addAll(builder.components);
+    globalComponents = Lists.newArrayList();
+    globalComponents.add(new GlobalConfiguration(builder.sonarUserHome, builder.workDir));
+    globalComponents.add(new LocalPluginIndexProvider(builder.pluginUrls));
+    globalComponents.addAll(builder.components);
     LoggingConfigurator.init(builder.verbose, builder.logOutput);
-    this.globalContainer = GlobalContainer.create(components);
   }
 
   /**
@@ -67,6 +67,7 @@ public final class SonarLintClient {
       throw new IllegalStateException("SonarLint Engine is already started");
     }
 
+    this.globalContainer = GlobalContainer.create(globalComponents);
     try {
       globalContainer.startComponents();
     } catch (RuntimeException e) {
@@ -102,11 +103,11 @@ public final class SonarLintClient {
 
   private void checkStarted() {
     if (!started) {
-      throw new IllegalStateException("SonarLint client is not started.");
+      throw new IllegalStateException("SonarLint Engine is not started");
     }
   }
 
-  private RuntimeException handleException(RuntimeException t) {
+  private static RuntimeException handleException(RuntimeException t) {
     if (LOG.isDebugEnabled()) {
       return t;
     }
@@ -121,15 +122,13 @@ public final class SonarLintClient {
   }
 
   public synchronized void stop() {
-    doStop(false);
-  }
-
-  private void doStop(boolean swallowException) {
     checkStarted();
     try {
-      globalContainer.stopComponents(swallowException);
+      globalContainer.stopComponents(false);
     } catch (RuntimeException e) {
       throw handleException(e);
+    } finally {
+      this.globalContainer = null;
     }
     this.started = false;
   }

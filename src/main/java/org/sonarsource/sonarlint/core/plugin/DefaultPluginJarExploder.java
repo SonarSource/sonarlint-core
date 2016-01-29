@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
+import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.ZipUtils;
@@ -59,9 +59,9 @@ public class DefaultPluginJarExploder extends PluginJarExploder {
         try {
           // Recheck in case of concurrent processes
           if (!destDir.exists()) {
-            File tempDir = fileCache.createTempDir();
-            ZipUtils.unzip(cachedFile, tempDir, newLibFilter());
-            FileUtils.moveDirectory(tempDir, destDir);
+            Path tempDir = fileCache.createTempDir();
+            ZipUtils.unzip(cachedFile, tempDir.toFile(), newLibFilter());
+            FileUtils.moveDirectory(tempDir.toFile(), destDir);
           }
         } finally {
           lock.release();

@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.LogOutput.Level;
 import org.sonarsource.sonarlint.core.SonarLintClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class LogMediumTest {
 
@@ -54,6 +55,7 @@ public class LogMediumTest {
   public void prepare() throws IOException {
     sonarlint = SonarLintClient.builder()
       .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
+      .setVerbose(false)
       .setLogOutput(new LogOutput() {
 
         @Override
@@ -69,7 +71,6 @@ public class LogMediumTest {
 
   @After
   public void stop() {
-
     sonarlint.stop();
   }
 
@@ -97,6 +98,45 @@ public class LogMediumTest {
     });
 
     assertThat(logs.get(Level.DEBUG)).isNotEmpty();
+  }
+
+  @Test
+  public void alreadyStartedStopped() {
+    try {
+      sonarlint.start();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("SonarLint Engine is already started");
+    }
+
+    sonarlint.stop();
+
+    try {
+      sonarlint.stop();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("SonarLint Engine is not started");
+    }
+
+    sonarlint.start();
+  }
+
+  @Test
+  public void handleException() throws Exception {
+
+    AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
+
+    try {
+      sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
+        @Override
+        public void handle(Issue issue) {
+          throw new IllegalStateException("Fake");
+        }
+      });
+    } catch (Exception e) {
+      assertThat(e).hasCause(new IllegalStateException("Fake"));
+    }
+
   }
 
   private AnalysisConfiguration.InputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

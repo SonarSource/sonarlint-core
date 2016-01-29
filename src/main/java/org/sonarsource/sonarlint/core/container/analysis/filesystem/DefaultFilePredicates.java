@@ -82,7 +82,7 @@ public class DefaultFilePredicates implements FilePredicates {
     return or(predicates);
   }
 
-  private String toAbsolutePattern(String pattern) {
+  private static String toAbsolutePattern(String pattern) {
     if (pattern.startsWith("file:")) {
       return pattern;
     }

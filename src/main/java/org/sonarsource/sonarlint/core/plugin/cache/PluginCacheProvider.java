@@ -29,7 +29,7 @@ public class PluginCacheProvider extends ProviderAdapter {
   public PluginCache provide(GlobalConfiguration globalConfiguration) {
     if (cache == null) {
       Path cacheDir = globalConfiguration.getSonarLintUserHome().resolve("cache");
-      cache = PluginCache.create(cacheDir.toFile());
+      cache = PluginCache.create(cacheDir);
     }
     return cache;
   }

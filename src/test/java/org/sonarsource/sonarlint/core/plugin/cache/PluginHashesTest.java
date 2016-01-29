@@ -19,12 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin.cache;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +27,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
-
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -42,7 +35,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class PluginHashesTest {
 
@@ -62,8 +60,7 @@ public class PluginHashesTest {
     for (int index = 0; index < 100; index++) {
       String random = randomString();
       assertThat(hash(random)).as(random).isEqualTo(
-        DigestUtils.md5Hex(random).toLowerCase()
-        );
+        DigestUtils.md5Hex(random).toLowerCase());
     }
   }
 
@@ -83,8 +80,7 @@ public class PluginHashesTest {
     for (int index = 0; index < 100; index++) {
       String random = randomString();
       assertThat(PluginHashes.toHex(random.getBytes())).as(random).isEqualTo(
-        Hex.encodeHexString(random.getBytes()).toLowerCase()
-        );
+        Hex.encodeHexString(random.getBytes()).toLowerCase());
     }
   }
 
@@ -96,7 +92,7 @@ public class PluginHashesTest {
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage("Fail to compute hash of: " + file.getAbsolutePath());
 
-    new PluginHashes().of(file);
+    new PluginHashes().of(file.toPath());
   }
 
   @Test
@@ -123,6 +119,6 @@ public class PluginHashesTest {
   }
 
   private String hashFile(File f) {
-    return new PluginHashes().of(f);
+    return new PluginHashes().of(f.toPath());
   }
 }

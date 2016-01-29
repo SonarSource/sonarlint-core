@@ -29,9 +29,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.AnalysisConfiguration;
@@ -44,25 +44,25 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class IssueMediumTest {
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-  private SonarLintClient sonarlint;
-  private File baseDir;
+  @ClassRule
+  public static TemporaryFolder temp = new TemporaryFolder();
+  private static SonarLintClient sonarlint;
+  private static File baseDir;
 
-  @Before
-  public void prepare() throws IOException {
+  @BeforeClass
+  public static void prepare() throws IOException {
     sonarlint = SonarLintClient.builder()
-      .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
-      .addPlugin(this.getClass().getResource("/sonar-java-plugin-3.9.jar"))
+      .addPlugin(IssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"))
+      .addPlugin(IssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"))
+      .setSonarLintUserHome(temp.newFolder().toPath())
       .build();
     sonarlint.start();
 
     baseDir = temp.newFolder();
   }
 
-  @After
-  public void stop() {
-
+  @AfterClass
+  public static void stop() {
     sonarlint.stop();
   }
 

@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.plugin.cache;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 
 /**
@@ -33,11 +33,11 @@ public class PluginHashes {
 
   private static final int STREAM_BUFFER_LENGTH = 1024;
 
-  public String of(File file) {
+  public String of(Path file) {
     try {
-      return of(new FileInputStream(file));
+      return of(Files.newInputStream(file));
     } catch (IOException e) {
-      throw new IllegalStateException("Fail to compute hash of: " + file.getAbsolutePath(), e);
+      throw new IllegalStateException("Fail to compute hash of: " + file, e);
     }
   }
 
