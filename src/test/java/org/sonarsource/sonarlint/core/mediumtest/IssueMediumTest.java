@@ -75,6 +75,7 @@ public class IssueMediumTest {
 
     AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
       + "  var x;\n"
+      + "  var y; //NOSONAR\n"
       + "}", false);
 
     final List<IssueListener.Issue> issues = new ArrayList<>();
