@@ -28,6 +28,26 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 public class LocalPluginIndexProvider implements PluginIndexProvider {
 
+  private static final class UrlToPluginReference implements Function<URL, PluginReference> {
+    @Override
+    public PluginReference apply(URL input) {
+      return toPlugin(input);
+    }
+
+    private static PluginReference toPlugin(URL input) {
+      try {
+        PluginReference ref = new PluginReference();
+        try (InputStream is = input.openStream()) {
+          ref.setHash(DigestUtils.md5Hex(is));
+        }
+        ref.setDownloadUrl(input);
+        return ref;
+      } catch (Exception e) {
+        throw new IllegalStateException("Unable to load local plugins", e);
+      }
+    }
+  }
+
   private final List<URL> pluginUrls;
 
   public LocalPluginIndexProvider(List<URL> pluginUrls) {
@@ -36,24 +56,6 @@ public class LocalPluginIndexProvider implements PluginIndexProvider {
 
   @Override
   public List<PluginReference> references() {
-    return Lists.transform(pluginUrls, new Function<URL, PluginReference>() {
-      @Override
-      public PluginReference apply(URL input) {
-        return toPlugin(input);
-      }
-
-      private PluginReference toPlugin(URL input) {
-        try {
-          PluginReference ref = new PluginReference();
-          try (InputStream is = input.openStream()) {
-            ref.setHash(DigestUtils.md5Hex(is));
-          }
-          ref.setDownloadUrl(input);
-          return ref;
-        } catch (Exception e) {
-          throw new IllegalStateException("Unable to load local plugins", e);
-        }
-      }
-    });
+    return Lists.transform(pluginUrls, new UrlToPluginReference());
   }
 }

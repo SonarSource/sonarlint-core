@@ -23,7 +23,6 @@ import java.security.SecureRandom;
 
 /**
  * NOT thread safe
- * About 10x faster than {@link UuidFactoryImpl}
  * It does not take into account the MAC address to calculate the ids, so it is machine-independent.
  */
 public class UuidFactoryFast {

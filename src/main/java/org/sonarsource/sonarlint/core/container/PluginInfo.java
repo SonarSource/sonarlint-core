@@ -342,7 +342,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     if (!key.equals(info.key)) {
       return false;
     }
-    return !(version != null ? !version.equals(info.version) : info.version != null);
+    return !(version != null ? !version.equals(info.version) : (info.version != null));
 
   }
 

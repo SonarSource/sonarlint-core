@@ -39,7 +39,6 @@ import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.server.ServerSide;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
-import org.sonarsource.sonarlint.core.container.ContainerPopulator.Container;
 
 @BatchSide
 @ServerSide
@@ -106,10 +105,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     this.propertyDefinitions = parent.propertyDefinitions;
     this.componentKeys = new ComponentKeys();
     addSingleton(this);
-  }
-
-  protected void setParent(ComponentContainer parent) {
-    this.parent = parent;
   }
 
   public void execute() {

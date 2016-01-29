@@ -39,6 +39,13 @@ import org.sonar.api.server.rule.RulesDefinition.Repository;
 
 public class RuleFinderCompatibility implements RuleFinder {
 
+  private static Function<RulesDefinition.Rule, Rule> ruleTransformer = new Function<RulesDefinition.Rule, Rule>() {
+    @Override
+    public Rule apply(@Nonnull RulesDefinition.Rule input) {
+      return toRule(input);
+    }
+  };
+
   private final RulesDefinition.Context context;
 
   public RuleFinderCompatibility(OfflinePluginRulesLoader rules) {
@@ -77,7 +84,7 @@ public class RuleFinderCompatibility implements RuleFinder {
   public Collection<Rule> findAll(RuleQuery query) {
     if (query.getConfigKey() != null) {
       if (query.getRepositoryKey() != null && query.getKey() == null) {
-        return byInternalKey(query);
+        throw new UnsupportedOperationException("Unable to find rule by internal key");
       }
     } else if (query.getRepositoryKey() != null) {
       if (query.getKey() != null) {
@@ -90,23 +97,13 @@ public class RuleFinderCompatibility implements RuleFinder {
   }
 
   private Collection<Rule> byRepository(RuleQuery query) {
-    return Collections2.transform(context.repository(query.getRepositoryKey()).rules(), ruleTransformer);
+    Repository repository = context.repository(query.getRepositoryKey());
+    return repository != null ? Collections2.transform(repository.rules(), ruleTransformer) : Collections.<Rule>emptyList();
   }
-
-  private static Function<RulesDefinition.Rule, Rule> ruleTransformer = new Function<RulesDefinition.Rule, Rule>() {
-    @Override
-    public Rule apply(@Nonnull RulesDefinition.Rule input) {
-      return toRule(input);
-    }
-  };
 
   private Collection<Rule> byKey(RuleQuery query) {
     Rule rule = findByKey(query.getRepositoryKey(), query.getKey());
     return rule != null ? Arrays.asList(rule) : Collections.<Rule>emptyList();
-  }
-
-  private static Collection<Rule> byInternalKey(RuleQuery query) {
-    throw new UnsupportedOperationException("Unable to find rule by internal key");
   }
 
   @CheckForNull

@@ -72,8 +72,7 @@ public class ExtensionInstaller {
   }
 
   private String className(Object extension) {
-    String className = extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
-    return className;
+    return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
   }
 
   private static void doInstall(ComponentContainer container, ExtensionMatcher matcher, @Nullable PluginInfo pluginInfo, Object extension) {

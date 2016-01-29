@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin.cache;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -105,12 +104,7 @@ public class PluginCache {
 
   private static void renameQuietly(Path sourceFile, Path targetFile) {
     try {
-      try {
-        Files.move(sourceFile, targetFile, StandardCopyOption.ATOMIC_MOVE);
-      } catch (AtomicMoveNotSupportedException e) {
-        LOG.warn("Atomic rename from {} to {} not supported", sourceFile, targetFile);
-        Files.move(sourceFile, targetFile);
-      }
+      rename(sourceFile, targetFile);
     } catch (Exception e) {
       // Check if the file was cached by another process during download
       if (Files.notExists(targetFile)) {
@@ -119,16 +113,17 @@ public class PluginCache {
     }
   }
 
-  private Path hashDir(String hash) {
-    return cacheDir.resolve(hash);
+  private static void rename(Path sourceFile, Path targetFile) throws IOException {
+    try {
+      Files.move(sourceFile, targetFile, StandardCopyOption.ATOMIC_MOVE);
+    } catch (AtomicMoveNotSupportedException e) {
+      LOG.warn("Atomic rename from {} to {} not supported", sourceFile, targetFile);
+      Files.move(sourceFile, targetFile);
+    }
   }
 
-  private static void mkdirQuietly(File hashDir) {
-    try {
-      Files.createDirectories(hashDir.toPath());
-    } catch (IOException e) {
-      throw new IllegalStateException("Fail to create cache directory: " + hashDir, e);
-    }
+  private Path hashDir(String hash) {
+    return cacheDir.resolve(hash);
   }
 
   private Path newTempFile() {
@@ -143,7 +138,7 @@ public class PluginCache {
     try {
       return Files.createTempDirectory(tmpDirInCacheDir, null);
     } catch (Exception e) {
-      throw new IllegalStateException("Failed to create directory in " + tmpDirInCacheDir);
+      throw new IllegalStateException("Failed to create directory in " + tmpDirInCacheDir, e);
     }
   }
 

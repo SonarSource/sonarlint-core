@@ -77,7 +77,7 @@ public class PluginDownloader {
     }
   }
 
-  private class FileDownloader implements PluginCache.Downloader {
+  private static class FileDownloader implements PluginCache.Downloader {
     private URL url;
 
     FileDownloader(URL url) {

@@ -41,6 +41,64 @@ import org.sonar.api.utils.PathUtils;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
 
+  private final class FakeResourceForSonarLint extends Resource {
+    private final InputPath inputPath;
+
+    private FakeResourceForSonarLint(InputPath inputPath) {
+      this.inputPath = inputPath;
+    }
+
+    @Override
+    public String getEffectiveKey() {
+      return inputPath.key();
+    }
+
+    @Override
+    public String getPath() {
+      return inputPath.absolutePath();
+    }
+
+    @Override
+    public String getName() {
+      return null;
+    }
+
+    @Override
+    public String getLongName() {
+      return null;
+    }
+
+    @Override
+    public String getDescription() {
+      return null;
+    }
+
+    @Override
+    public Language getLanguage() {
+      return null;
+    }
+
+    @Override
+    public String getScope() {
+      return null;
+    }
+
+    @Override
+    public String getQualifier() {
+      return null;
+    }
+
+    @Override
+    public Resource getParent() {
+      return null;
+    }
+
+    @Override
+    public boolean matchFilePattern(String antPattern) {
+      return false;
+    }
+  }
+
   private final Project project;
 
   public LtsApiSensorContext(Project project, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage) {
@@ -187,64 +245,12 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
         @Override
         public org.sonar.api.resources.Directory getParent() {
           return Directory.create(PathUtils.sanitize(inputPath.path().getParent().toString()));
-        };
+        }
       };
       f.setKey(inputPath.key());
       return f;
     } else {
-      return new Resource() {
-
-        @Override
-        public String getEffectiveKey() {
-          return inputPath.key();
-        }
-
-        @Override
-        public String getPath() {
-          return inputPath.absolutePath();
-        }
-
-        @Override
-        public String getName() {
-          return null;
-        }
-
-        @Override
-        public String getLongName() {
-          return null;
-        }
-
-        @Override
-        public String getDescription() {
-          return null;
-        }
-
-        @Override
-        public Language getLanguage() {
-          return null;
-        }
-
-        @Override
-        public String getScope() {
-          return null;
-        }
-
-        @Override
-        public String getQualifier() {
-          return null;
-        }
-
-        @Override
-        public Resource getParent() {
-          return null;
-        }
-
-        @Override
-        public boolean matchFilePattern(String antPattern) {
-          return false;
-        }
-
-      };
+      return new FakeResourceForSonarLint(inputPath);
     }
   }
 }
