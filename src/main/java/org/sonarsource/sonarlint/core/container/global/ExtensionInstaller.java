@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.container.global;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.SonarPlugin;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -28,6 +30,8 @@ import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 
 public class ExtensionInstaller {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ExtensionInstaller.class);
 
   private final DefaultPluginRepository pluginRepository;
 
@@ -41,7 +45,11 @@ public class ExtensionInstaller {
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       SonarPlugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
       for (Object extension : plugin.getExtensions()) {
-        doInstall(container, matcher, pluginInfo, extension);
+        if (!blacklisted(extension)) {
+          doInstall(container, matcher, pluginInfo, extension);
+        } else {
+          LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
+        }
       }
     }
     List<ExtensionProvider> providers = container.getComponentsByType(ExtensionProvider.class);
@@ -56,6 +64,16 @@ public class ExtensionInstaller {
       }
     }
     return this;
+  }
+
+  private boolean blacklisted(Object extension) {
+    String className = className(extension);
+    return className.contains("JaCoCo") || className.contains("Surefire") || className.contains("Coverage") || className.contains("COV") || className.contains("PhpUnit");
+  }
+
+  private String className(Object extension) {
+    String className = extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
+    return className;
   }
 
   private static void doInstall(ComponentContainer container, ExtensionMatcher matcher, @Nullable PluginInfo pluginInfo, Object extension) {

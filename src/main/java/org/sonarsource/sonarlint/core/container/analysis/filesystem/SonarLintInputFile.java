@@ -38,7 +38,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public String relativePath() {
-    throw unsupported();
+    return absolutePath();
   }
 
   @Override

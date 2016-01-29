@@ -54,7 +54,9 @@ public class IssueMediumTest {
     sonarlint = SonarLintClient.builder()
       .addPlugin(IssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"))
       .addPlugin(IssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"))
+      .addPlugin(IssueMediumTest.class.getResource("/sonar-php-plugin-2.7.jar"))
       .setSonarLintUserHome(temp.newFolder().toPath())
+      .setVerbose(true)
       .build();
     sonarlint.start();
 
@@ -84,6 +86,28 @@ public class IssueMediumTest {
     });
     assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
       tuple("javascript:UnusedVariable", 2, inputFile.path()));
+
+  }
+
+  @Test
+  public void simplePhp() throws Exception {
+
+    AnalysisConfiguration.InputFile inputFile = prepareInputFile("foo.php", "<?php\n"
+      + "function writeMsg($fname) {\n"
+      + "    $i = 0; // NOSONAR\n"
+      + "    echo \"Hello world!\";\n"
+      + "}\n"
+      + "?>", false);
+
+    final List<IssueListener.Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
+      @Override
+      public void handle(Issue issue) {
+        issues.add(issue);
+      }
+    });
+    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
+      tuple("php:S1172", 2, inputFile.path()));
 
   }
 

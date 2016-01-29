@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.util.Collection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
@@ -27,6 +29,8 @@ import org.sonar.api.resources.Project;
 
 @BatchSide
 public class SensorsExecutor {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SensorsExecutor.class);
 
   private Project module;
   private BatchExtensionDictionnary selector;
@@ -46,6 +50,7 @@ public class SensorsExecutor {
   }
 
   private void executeSensor(SensorContext context, Sensor sensor) {
+    LOG.debug("Execute Sensor: " + sensor.toString());
     sensor.analyse(module, context);
   }
 }

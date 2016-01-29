@@ -123,6 +123,14 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   @Override
   public Resource getResource(Resource resource) {
+    String absolutePath = resource.getKey();
+    if (!absolutePath.startsWith("/")) {
+      absolutePath = "/" + absolutePath;
+    }
+    resource
+      .setEffectiveKey(absolutePath)
+      .setPath(absolutePath)
+      .setKey(absolutePath);
     return resource;
   }
 
@@ -164,7 +172,8 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   @Override
   public Resource getResource(final InputPath inputPath) {
     if (inputPath.isFile()) {
-      return new File(inputPath.absolutePath()) {
+      File f = new File(inputPath.absolutePath()) {
+
         @Override
         public String getEffectiveKey() {
           return inputPath.key();
@@ -180,6 +189,8 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
           return Directory.create(PathUtils.sanitize(inputPath.path().getParent().toString()));
         };
       };
+      f.setKey(inputPath.key());
+      return f;
     } else {
       return new Resource() {
 
