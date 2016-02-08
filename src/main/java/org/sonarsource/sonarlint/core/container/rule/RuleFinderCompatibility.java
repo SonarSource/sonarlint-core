@@ -32,6 +32,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rules.Rule;
 import org.sonar.api.rules.RuleFinder;
+import org.sonar.api.rules.RulePriority;
 import org.sonar.api.rules.RuleQuery;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
@@ -111,12 +112,14 @@ public class RuleFinderCompatibility implements RuleFinder {
     return ar == null ? null : toRuleNotNull(ar);
   }
 
-  private static Rule toRuleNotNull(RulesDefinition.Rule ar) {
-    Rule rule = Rule.create(ar.repository().key(), ar.key())
-      .setName(ar.name())
-      .setLanguage(ar.repository().language())
-      .setConfigKey(ar.internalKey());
-    for (Param param : ar.params()) {
+  private static Rule toRuleNotNull(RulesDefinition.Rule ruleDef) {
+    Rule rule = Rule.create(ruleDef.repository().key(), ruleDef.key())
+      .setName(ruleDef.name())
+      .setSeverity(RulePriority.valueOf(ruleDef.severity()))
+      .setLanguage(ruleDef.repository().language())
+      .setIsTemplate(ruleDef.template())
+      .setConfigKey(ruleDef.internalKey());
+    for (Param param : ruleDef.params()) {
       rule.createParameter(param.key()).setDefaultValue(param.defaultValue()).setDescription(param.description());
     }
     return rule;

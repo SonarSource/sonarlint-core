@@ -133,10 +133,10 @@ public class IssueMediumTest {
       }
     });
 
-    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
-      tuple("squid:S106", 4, inputFile.path()),
-      tuple("squid:S1220", null, inputFile.path()),
-      tuple("squid:S1481", 3, inputFile.path()));
+    assertThat(issues).extracting("ruleKey", "startLine", "filePath", "severity").containsOnly(
+      tuple("squid:S106", 4, inputFile.path(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile.path(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile.path(), "MAJOR"));
   }
 
   @Test
