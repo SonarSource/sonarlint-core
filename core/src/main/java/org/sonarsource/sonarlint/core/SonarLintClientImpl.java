@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,7 @@ import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
+import org.sonarsource.sonarlint.core.client.api.SonarLintException;
 import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 import org.sonarsource.sonarlint.core.plugin.LocalPluginIndexProvider;
@@ -93,17 +96,17 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   private static RuntimeException handleException(RuntimeException t) {
-    if (LOG.isDebugEnabled()) {
-      return t;
-    }
-
+    StringWriter errors = new StringWriter();
+    t.printStackTrace(new PrintWriter(errors));
     for (Throwable y : Throwables.getCausalChain(t)) {
       if (y instanceof MessageException) {
-        return (MessageException) y;
+        LOG.debug(errors.toString());
+        return new SonarLintException(y.getMessage());
       }
     }
 
-    return t;
+    LOG.error(errors.toString());
+    return new SonarLintException(t.getMessage());
   }
 
   @Override

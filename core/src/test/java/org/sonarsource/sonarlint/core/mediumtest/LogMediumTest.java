@@ -39,8 +39,10 @@ import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
+import org.sonarsource.sonarlint.core.client.api.SonarLintException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -127,7 +129,7 @@ public class LogMediumTest {
   }
 
   @Test
-  public void handleException() throws Exception {
+  public void convertInternalExceptionToSonarLintException() throws Exception {
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
@@ -138,8 +140,10 @@ public class LogMediumTest {
           throw new IllegalStateException("Fake");
         }
       });
+      fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).hasCause(new IllegalStateException("Fake"));
+      assertThat(e).isExactlyInstanceOf(SonarLintException.class);
+      assertThat(logs.get(Level.ERROR).iterator().next()).contains("Fake");
     }
 
   }
