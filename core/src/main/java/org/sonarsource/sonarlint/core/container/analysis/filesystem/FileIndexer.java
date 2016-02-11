@@ -69,9 +69,7 @@ public class FileIndexer {
 
   private void indexFile(SonarLintFileSystem fileSystem, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
-    if (inputFile != null) {
-      indexFile(fileSystem, progress, inputFile);
-    }
+    indexFile(fileSystem, progress, inputFile);
   }
 
   private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {
@@ -86,8 +84,7 @@ public class FileIndexer {
 
     synchronized void markAsIndexed(SonarLintInputFile inputFile) {
       if (indexed.contains(inputFile.path())) {
-        throw MessageException.of("File " + inputFile + " can't be indexed twice. Please check that inclusion/exclusion patterns produce "
-          + "disjoint sets for main and test files");
+        throw MessageException.of("File " + inputFile + " can't be indexed twice.");
       }
       indexed.add(inputFile.path());
       progressReport.message(indexed.size() + " files indexed...  (last one was " + inputFile.absolutePath() + ")");

@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.mediumtest;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -38,6 +40,8 @@ import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.Issue;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
 
@@ -49,11 +53,20 @@ public class NoPluginMediumTest {
   public TemporaryFolder temp = new TemporaryFolder();
   private SonarLintClient sonarlint;
   private File baseDir;
+  private Multimap<LogOutput.Level, String> logs = LinkedListMultimap.create();
 
   @Before
   public void prepare() throws IOException {
     sonarlint = SonarLintClientLoader.load(null);
-    sonarlint.start(GlobalConfiguration.builder().build());
+    sonarlint.start(GlobalConfiguration.builder()
+      .setLogOutput(new LogOutput() {
+
+        @Override
+        public void log(String formattedMessage, Level level) {
+          logs.put(level, formattedMessage);
+        }
+      })
+      .build());
 
     baseDir = temp.newFolder();
   }
@@ -65,7 +78,7 @@ public class NoPluginMediumTest {
   }
 
   @Test
-  public void testEmptyAnalysis() throws Exception {
+  public void dont_fail_if_no_plugin() throws Exception {
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
@@ -76,8 +89,8 @@ public class NoPluginMediumTest {
         }
       });
 
-    assertThat(results.fileCount()).isEqualTo(0);
-
+    assertThat(results.fileCount()).isEqualTo(1);
+    assertThat(logs.get(Level.WARN)).contains("No analyzers installed");
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
