@@ -28,6 +28,9 @@ import javax.annotation.Nullable;
  */
 public class SonarLintClientLoader {
 
+  private SonarLintClientLoader() {
+  }
+
   public static SonarLintClient load(@Nullable ClassLoader classloader) {
     ServiceLoader<SonarLintClient> slLoader = classloader != null ? ServiceLoader.load(SonarLintClient.class, classloader) : ServiceLoader.load(SonarLintClient.class);
     slLoader.reload();

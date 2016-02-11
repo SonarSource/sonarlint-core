@@ -41,7 +41,7 @@ import org.sonar.api.utils.PathUtils;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
 
-  private final class FakeResourceForSonarLint extends Resource {
+  private static final class FakeResourceForSonarLint extends Resource {
     private final InputPath inputPath;
 
     private FakeResourceForSonarLint(InputPath inputPath) {
