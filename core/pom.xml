@@ -63,6 +63,10 @@
           <groupId>jfree</groupId>
           <artifactId>jfreechart</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.woodstox</groupId>
+          <artifactId>woodstox-core-lgpl</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
