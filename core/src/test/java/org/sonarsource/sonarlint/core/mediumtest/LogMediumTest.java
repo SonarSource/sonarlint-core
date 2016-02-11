@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
 import org.sonarsource.sonarlint.core.client.api.SonarLintException;
@@ -48,6 +47,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public class LogMediumTest {
+
+  private final class MyCustomException extends RuntimeException {
+    private MyCustomException(String message) {
+      super(message);
+    }
+  }
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -137,13 +142,13 @@ public class LogMediumTest {
       sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
         @Override
         public void handle(Issue issue) {
-          throw new IllegalStateException("Fake");
+          throw new MyCustomException("Fake");
         }
       });
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(SonarLintException.class);
-      assertThat(logs.get(Level.ERROR).iterator().next()).contains("Fake");
+      assertThat(e).isExactlyInstanceOf(SonarLintException.class)
+        .hasCause(new SonarLintException("org.sonarsource.sonarlint.core.mediumtest.LogMediumTest$MyCustomException", "Fake", null));
     }
 
   }

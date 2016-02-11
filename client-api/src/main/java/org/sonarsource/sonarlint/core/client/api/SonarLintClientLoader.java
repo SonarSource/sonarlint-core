@@ -33,11 +33,11 @@ public class SonarLintClientLoader {
     slLoader.reload();
     Iterator<SonarLintClient> commandsIterator = slLoader.iterator();
     if (!commandsIterator.hasNext()) {
-      throw new SonarLintException("Unable to locate SonarLintClient service");
+      throw new IllegalStateException("Unable to locate SonarLintClient service");
     }
     SonarLintClient client = commandsIterator.next();
     if (commandsIterator.hasNext()) {
-      throw new SonarLintException("More than one SonarLintClient service in classpath");
+      throw new IllegalStateException("More than one SonarLintClient service in classpath");
     }
     return client;
   }

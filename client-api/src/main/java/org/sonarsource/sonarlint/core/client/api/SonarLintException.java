@@ -21,8 +21,16 @@ package org.sonarsource.sonarlint.core.client.api;
 
 public class SonarLintException extends RuntimeException {
 
-  public SonarLintException(String msg) {
-    super(msg);
+  private final String originalClassToString;
+
+  public SonarLintException(String originalClassToString, String msg, Throwable cause) {
+    super(msg, cause);
+    this.originalClassToString = originalClassToString;
+  }
+
+  @Override
+  public String toString() {
+    return originalClassToString;
   }
 
 }
