@@ -48,8 +48,8 @@ public class InputFileBuilder {
     }
     defaultInputFile.setLanguage(lang);
 
-    Charset charset = inputFile.charset();
-    defaultInputFile.initMetadata(fileMetadata.readMetadata(inputFile.path().toFile(), charset != null ? charset : Charset.defaultCharset()));
+    Charset charset = inputFile.getCharset();
+    defaultInputFile.initMetadata(fileMetadata.readMetadata(inputFile.getPath().toFile(), charset != null ? charset : Charset.defaultCharset()));
     return defaultInputFile;
   }
 

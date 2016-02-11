@@ -35,7 +35,7 @@ public interface SonarLintClient {
 
   /**
    * Return rule description.
-   * @param ruleKey See {@link IssueListener.Issue#getRuleKey()}
+   * @param ruleKey See {@link Issue#getRuleKey()}
    * @return Html rule description
    * @throws IllegalArgumentException if ruleKey is unknown
    * @since 1.0

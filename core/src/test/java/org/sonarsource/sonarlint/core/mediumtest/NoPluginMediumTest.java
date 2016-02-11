@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.Issue;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
@@ -85,7 +86,7 @@ public class NoPluginMediumTest {
     ClientInputFile inputFile = new ClientInputFile() {
 
       @Override
-      public Path path() {
+      public Path getPath() {
         return file.toPath();
       }
 
@@ -95,8 +96,13 @@ public class NoPluginMediumTest {
       }
 
       @Override
-      public Charset charset() {
+      public Charset getCharset() {
         return StandardCharsets.UTF_8;
+      }
+
+      @Override
+      public <G> G getClientObject() {
+        return null;
       }
     };
     return inputFile;
