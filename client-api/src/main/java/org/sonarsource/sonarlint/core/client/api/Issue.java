@@ -19,36 +19,34 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-import java.nio.charset.Charset;
-import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 
-/**
- * InputFile as provided by client
- * @since 1.1
- */
-public interface ClientInputFile {
+public interface Issue {
+
+  String getSeverity();
+
+  @CheckForNull
+  Integer getStartLine();
+
+  @CheckForNull
+  Integer getStartLineOffset();
+
+  @CheckForNull
+  Integer getEndLine();
+
+  @CheckForNull
+  Integer getEndLineOffset();
+
+  String getMessage();
+
+  String getRuleKey();
+
+  String getRuleName();
 
   /**
-   * Absolute path to the physical file.
-   */
-  Path getPath();
-
-  /**
-   * Flag an input file as test file. Analyzers may apply different rules on test files.
+   * @return null for global issues
    */
   @CheckForNull
-  boolean isTest();
-
-  /**
-   * Charset to be used to read file content. If null it means the charset is unknown and analysis will likely use JVM default encoding to read the file.
-   */
-  @CheckForNull
-  Charset getCharset();
-
-  /**
-   * Allow clients to pass their own object to ease mapping of issues.
-   */
-  <G> G getClientObject();
+  ClientInputFile getInputFile();
 
 }

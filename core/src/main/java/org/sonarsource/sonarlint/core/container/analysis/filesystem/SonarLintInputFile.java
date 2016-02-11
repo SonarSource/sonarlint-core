@@ -36,6 +36,10 @@ public class SonarLintInputFile extends DefaultInputFile {
     this.clientInputFile = clientInputFile;
   }
 
+  public ClientInputFile getClientInputFile() {
+    return clientInputFile;
+  }
+
   @Override
   public String relativePath() {
     return absolutePath();
@@ -53,7 +57,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public Path path() {
-    return clientInputFile.path();
+    return clientInputFile.getPath();
   }
 
   @Override
@@ -80,7 +84,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public Charset charset() {
-    Charset charset = clientInputFile.charset();
+    Charset charset = clientInputFile.getCharset();
     return charset != null ? charset : Charset.defaultCharset();
   }
 

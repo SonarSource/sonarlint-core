@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.Issue;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
@@ -83,15 +84,15 @@ public class IssueMediumTest {
       + "  var y; //NOSONAR\n"
       + "}", false);
 
-    final List<IssueListener.Issue> issues = new ArrayList<>();
+    final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
       @Override
       public void handle(Issue issue) {
         issues.add(issue);
       }
     });
-    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
-      tuple("javascript:UnusedVariable", 2, inputFile.path()));
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
 
   }
 
@@ -105,15 +106,15 @@ public class IssueMediumTest {
       + "}\n"
       + "?>", false);
 
-    final List<IssueListener.Issue> issues = new ArrayList<>();
+    final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
       @Override
       public void handle(Issue issue) {
         issues.add(issue);
       }
     });
-    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
-      tuple("php:S1172", 2, inputFile.path()));
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("php:S1172", 2, inputFile.getPath()));
 
   }
 
@@ -129,7 +130,7 @@ public class IssueMediumTest {
         + "}",
       false);
 
-    final List<IssueListener.Issue> issues = new ArrayList<>();
+    final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
 
       @Override
@@ -138,17 +139,17 @@ public class IssueMediumTest {
       }
     });
 
-    assertThat(issues).extracting("ruleKey", "startLine", "filePath", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.path(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.path(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.path(), "MAJOR"));
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
   }
 
   @Test
   public void simpleJavaWithBytecode() throws Exception {
     ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
 
-    final List<IssueListener.Issue> issues = new ArrayList<>();
+    final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
       ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), new IssueListener() {
 
@@ -158,11 +159,11 @@ public class IssueMediumTest {
         }
       });
 
-    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
-      tuple("squid:S106", 5, inputFile.path()),
-      tuple("squid:S1220", null, inputFile.path()),
-      tuple("squid:UnusedPrivateMethod", 8, inputFile.path()),
-      tuple("squid:S1186", 8, inputFile.path()));
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("squid:S106", 5, inputFile.getPath()),
+      tuple("squid:S1220", null, inputFile.getPath()),
+      tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
+      tuple("squid:S1186", 8, inputFile.getPath()));
   }
 
   @Test
@@ -191,7 +192,7 @@ public class IssueMediumTest {
         + "}",
       true);
 
-    final List<IssueListener.Issue> issues = new ArrayList<>();
+    final List<Issue> issues = new ArrayList<>();
     AnalysisResults results = sonarlint.analyze(
       new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
         ImmutableMap.<String, String>of("sonar.junit.reportsPath", "reports/")),
@@ -205,11 +206,11 @@ public class IssueMediumTest {
 
     assertThat(results.fileCount()).isEqualTo(2);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "filePath").containsOnly(
-      tuple("squid:S106", 4, inputFile.path()),
-      tuple("squid:S1220", null, inputFile.path()),
-      tuple("squid:S1481", 3, inputFile.path()),
-      tuple("squid:S2187", 1, inputFileTest.path()));
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("squid:S106", 4, inputFile.getPath()),
+      tuple("squid:S1220", null, inputFile.getPath()),
+      tuple("squid:S1481", 3, inputFile.getPath()),
+      tuple("squid:S2187", 1, inputFileTest.getPath()));
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
@@ -223,7 +224,7 @@ public class IssueMediumTest {
     ClientInputFile inputFile = new ClientInputFile() {
 
       @Override
-      public Path path() {
+      public Path getPath() {
         return path;
       }
 
@@ -233,8 +234,13 @@ public class IssueMediumTest {
       }
 
       @Override
-      public Charset charset() {
+      public Charset getCharset() {
         return StandardCharsets.UTF_8;
+      }
+
+      @Override
+      public <G> G getClientObject() {
+        return null;
       }
     };
     return inputFile;
