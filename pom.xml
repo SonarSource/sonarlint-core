@@ -17,6 +17,10 @@
     <name>SonarSource</name>
     <url>http://www.sonarsource.com/</url>
   </organization>
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://jira.sonarsource.com/browse/SLCORE</url>
+  </issueManagement>
 
   <modules>
     <module>client-api</module>
