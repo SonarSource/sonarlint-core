@@ -43,9 +43,6 @@ public class InputFileBuilder {
     SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile);
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     String lang = langDetection.language(defaultInputFile);
-    if (lang == null) {
-      return null;
-    }
     defaultInputFile.setLanguage(lang);
 
     Charset charset = inputFile.getCharset();
