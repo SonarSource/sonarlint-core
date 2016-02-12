@@ -66,7 +66,12 @@ public class AnalysisConfiguration {
     sb.append("  baseDir: ").append(baseDir).append("\n");
     sb.append("  workDir: ").append(workDir).append("\n");
     sb.append("  extraProperties: ").append(extraProperties).append("\n");
-    sb.append("  inputFiles: ").append(inputFiles).append("\n");
+    sb.append("  inputFiles: [\n");
+    for (ClientInputFile inputFile : inputFiles) {
+      sb.append("    ").append(inputFile.getPath().toString()).append("\n");
+    }
+    sb.append("  ]\n");
+    sb.append("]\n");
     return sb.toString();
   }
 
