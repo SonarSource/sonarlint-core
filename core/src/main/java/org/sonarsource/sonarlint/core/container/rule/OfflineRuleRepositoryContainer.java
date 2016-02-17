@@ -24,6 +24,7 @@ import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.XMLProfileParser;
 import org.sonar.api.server.rule.RulesDefinition;
+import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
@@ -33,6 +34,7 @@ public class OfflineRuleRepositoryContainer extends ComponentContainer {
 
   private Rules rules;
   private ActiveRules activeRules;
+  private Context ruleDefinitions;
 
   public OfflineRuleRepositoryContainer(ComponentContainer parent) {
     super(parent);
@@ -68,6 +70,8 @@ public class OfflineRuleRepositoryContainer extends ComponentContainer {
   public void doAfterStart() {
     rules = getComponentByType(Rules.class);
     activeRules = getComponentByType(ActiveRules.class);
+    OfflinePluginRulesLoader offlineRulesLoader = getComponentByType(OfflinePluginRulesLoader.class);
+    ruleDefinitions = offlineRulesLoader.getContext();
   }
 
   public Rules getRules() {
@@ -76,5 +80,9 @@ public class OfflineRuleRepositoryContainer extends ComponentContainer {
 
   public ActiveRules getActiveRules() {
     return activeRules;
+  }
+
+  public Context getRulesDefinitions() {
+    return ruleDefinitions;
   }
 }

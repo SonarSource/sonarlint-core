@@ -19,17 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.sonar.api.SonarPlugin;
+import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.server.rule.RulesDefinition.Context;
+import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
@@ -46,6 +53,7 @@ public class GlobalContainer extends ComponentContainer {
 
   private Rules rules;
   private ActiveRules activeRules;
+  private Context rulesDefinitions;
 
   public static GlobalContainer create(List<?> extensions) {
     GlobalContainer container = new GlobalContainer();
@@ -81,6 +89,7 @@ public class GlobalContainer extends ComponentContainer {
     container.execute();
     rules = container.getRules();
     activeRules = container.getActiveRules();
+    rulesDefinitions = container.getRulesDefinitions();
   }
 
   private void installPlugins() {
@@ -103,12 +112,61 @@ public class GlobalContainer extends ComponentContainer {
     return defaultAnalysisResult;
   }
 
-  public String getHtmlRuleDescription(String ruleKey) {
-    Rule rule = rules.find(RuleKey.parse(ruleKey));
+  public RuleDetails getRuleDetails(String ruleKeyStr) {
+    RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
+    Rule rule = rules.find(ruleKey);
     if (rule == null) {
       throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
     }
-    return rule.description();
+    return new DefaultRuleDetails(rule);
+  }
+
+  public Collection<String> getActiveRuleKeys() {
+    List<String> result = new ArrayList<>();
+    for (ActiveRule ar : activeRules.findAll()) {
+      result.add(ar.ruleKey().toString());
+    }
+    return result;
+  }
+
+  private class DefaultRuleDetails implements RuleDetails {
+
+    private final Rule rule;
+    private String language;
+    private Set<String> tags;
+
+    public DefaultRuleDetails(Rule rule) {
+      this.rule = rule;
+      Repository repo = rulesDefinitions.repository(rule.key().repository());
+      this.language = repo.language();
+      this.tags = repo.rule(rule.key().rule()).tags();
+    }
+
+    @Override
+    public String getName() {
+      return rule.name();
+    }
+
+    @Override
+    public String getHtmlDescription() {
+      return rule.description();
+    }
+
+    @Override
+    public String getLanguage() {
+      return language;
+    }
+
+    @Override
+    public String getSeverity() {
+      return rule.severity();
+    }
+
+    @Override
+    public String[] getTags() {
+      return tags.toArray(new String[0]);
+    }
+
   }
 
 }

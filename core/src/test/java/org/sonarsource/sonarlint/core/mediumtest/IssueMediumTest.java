@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.Issue;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
 
@@ -77,7 +78,12 @@ public class IssueMediumTest {
   @Test
   public void simpleJavaScript() throws Exception {
 
-    assertThat(sonarlint.getHtmlRuleDescription("javascript:UnusedVariable")).contains("<p>", "If a local variable is declared but not used");
+    RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable");
+    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
+    assertThat(ruleDetails.getLanguage()).isEqualTo("js");
+    assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
+    assertThat(ruleDetails.getTags()).containsOnly("unused");
+    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
       + "  var x;\n"

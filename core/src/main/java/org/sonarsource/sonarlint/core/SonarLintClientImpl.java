@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintException;
 import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
@@ -71,9 +73,15 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   @Override
-  public String getHtmlRuleDescription(String ruleKey) {
+  public RuleDetails getRuleDetails(String ruleKey) {
     checkStarted();
-    return globalContainer.getHtmlRuleDescription(ruleKey);
+    return globalContainer.getRuleDetails(ruleKey);
+  }
+
+  @Override
+  public Collection<String> getActiveRuleKeys() {
+    checkStarted();
+    return globalContainer.getActiveRuleKeys();
   }
 
   @Override

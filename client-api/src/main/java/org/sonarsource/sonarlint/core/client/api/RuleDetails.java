@@ -19,36 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-import java.util.Collection;
-
 /**
- * Entry point for SonarLint.
+ * @since1.2
  */
-public interface SonarLintClient {
+public interface RuleDetails {
 
-  void start(GlobalConfiguration globalConfig);
+  String getName();
 
-  void stop();
+  String getHtmlDescription();
 
-  /**
-   * Change verbosity at runtime
-   */
-  void setVerbose(boolean verbose);
+  String getLanguage();
 
-  /**
-   * Return rule details.
-   * @param ruleKey See {@link Issue#getRuleKey()}
-   * @return Rule details
-   * @throws IllegalArgumentException if ruleKey is unknown
-   * @since 1.2
-   */
-  RuleDetails getRuleDetails(String ruleKey);
+  String getSeverity();
 
-  /**
-   * Return list of all active rule keys.
-   */
-  Collection<String> getActiveRuleKeys();
-
-  AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener);
+  String[] getTags();
 
 }
