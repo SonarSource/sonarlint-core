@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import java.util.Collection;
@@ -28,16 +27,19 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.MessageException;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 import org.sonarsource.sonarlint.core.client.api.SonarLintException;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.SyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
-import org.sonarsource.sonarlint.core.plugin.LocalPluginIndexProvider;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,7 +49,13 @@ public final class SonarLintClientImpl implements SonarLintClient {
 
   private final List<Object> globalComponents = Lists.newArrayList();
   private boolean started = false;
+  private final GlobalConfiguration globalConfig;
   private GlobalContainer globalContainer;
+
+  public SonarLintClientImpl(GlobalConfiguration globalConfig) {
+    this.globalConfig = globalConfig;
+    LoggingConfigurator.init(globalConfig.isVerbose(), globalConfig.getLogOutput());
+  }
 
   @Override
   public synchronized void setVerbose(boolean verbose) {
@@ -55,15 +63,11 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   @Override
-  public synchronized void start(GlobalConfiguration globalConfig) {
+  public synchronized void start() {
     if (started) {
       throw new IllegalStateException("SonarLint Engine is already started");
     }
-
-    globalComponents.add(globalConfig);
-    globalComponents.add(new LocalPluginIndexProvider(globalConfig.getPluginUrls()));
-    LoggingConfigurator.init(globalConfig.isVerbose(), globalConfig.getLogOutput());
-    this.globalContainer = GlobalContainer.create(globalComponents);
+    this.globalContainer = GlobalContainer.create(globalConfig, globalComponents);
     try {
       globalContainer.startComponents();
     } catch (RuntimeException e) {
@@ -87,7 +91,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
   @Override
   public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
     checkNotNull(configuration);
-    Preconditions.checkNotNull(issueListener);
+    checkNotNull(issueListener);
     checkStarted();
     try {
       return globalContainer.analyze(configuration, issueListener);
@@ -96,9 +100,62 @@ public final class SonarLintClientImpl implements SonarLintClient {
     }
   }
 
+  @Override
+  public SyncStatus getSyncStatus() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public void sync(ServerConfiguration serverConfig) {
+    checkNotNull(serverConfig);
+    checkStopped();
+    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+    try {
+      connectedContainer.startComponents();
+    } catch (RuntimeException e) {
+      throw handleException(e);
+    }
+    try {
+      connectedContainer.sync();
+    } finally {
+      try {
+        connectedContainer.stopComponents(false);
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      }
+    }
+  }
+
+  @Override
+  public ValidationResult validateCredentials(ServerConfiguration serverConfig) {
+    checkNotNull(serverConfig);
+    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+    try {
+      connectedContainer.startComponents();
+    } catch (RuntimeException e) {
+      throw handleException(e);
+    }
+    try {
+      return connectedContainer.validateCredentials();
+    } finally {
+      try {
+        connectedContainer.stopComponents(false);
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      }
+    }
+  }
+
   private void checkStarted() {
     if (!started) {
       throw new IllegalStateException("SonarLint Engine is not started");
+    }
+  }
+
+  private void checkStopped() {
+    if (started) {
+      throw new IllegalStateException("SonarLint Engine should be stopped");
     }
   }
 

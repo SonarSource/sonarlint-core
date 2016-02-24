@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,17 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+public interface ValidationResult {
 
-public class AnalysisSettings extends Settings {
+  boolean status();
 
-  public AnalysisSettings(AnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions);
-    addProperties(config.extraProperties());
-  }
+  int statusCode();
+
+  String message();
 
 }

@@ -33,15 +33,19 @@ import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.rule.OfflineRuleRepositoryContainer;
+import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePluginIndexProvider;
+import org.sonarsource.sonarlint.core.container.unconnected.ClientPluginIndexProvider;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -55,8 +59,16 @@ public class GlobalContainer extends ComponentContainer {
   private ActiveRules activeRules;
   private Context rulesDefinitions;
 
-  public static GlobalContainer create(List<?> extensions) {
+  public static GlobalContainer create(GlobalConfiguration globalConfig, List<?> extensions) {
     GlobalContainer container = new GlobalContainer();
+    container.add(globalConfig);
+    String serverId = globalConfig.getServerId();
+    if (serverId != null) {
+      container.add(StorageManager.class);
+      container.add(StoragePluginIndexProvider.class);
+    } else {
+      container.add(new ClientPluginIndexProvider(globalConfig.getPluginUrls()));
+    }
     container.add(extensions);
     return container;
   }

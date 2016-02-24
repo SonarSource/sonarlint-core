@@ -39,13 +39,13 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
-import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class DefaultSensorStorage implements SensorStorage {
 
-  private final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.Issue {
+  private final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.analysis.Issue {
     private final String severity;
     private final ActiveRule activeRule;
     private final String primaryMessage;
@@ -145,7 +145,7 @@ public class DefaultSensorStorage implements SensorStorage {
     final String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
 
     if (filters.accept(inputComponent.key(), issue)) {
-      org.sonarsource.sonarlint.core.client.api.Issue newIssue = new DefaultClientIssue(severity, activeRule, primaryMessage, issue.primaryLocation().textRange(),
+      org.sonarsource.sonarlint.core.client.api.analysis.Issue newIssue = new DefaultClientIssue(severity, activeRule, primaryMessage, issue.primaryLocation().textRange(),
         inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null);
       issueListener.handle(newIssue);
     }

@@ -71,9 +71,9 @@ public class PluginDownloader {
   File download(final PluginReference pluginReference) {
     final URL url = pluginReference.getDownloadUrl();
     try {
-      return fileCache.get(StringUtils.substringAfterLast(url.getFile(), "/"), pluginReference.getHash(), new FileDownloader(url)).toFile();
+      return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new FileDownloader(url)).toFile();
     } catch (Exception e) {
-      throw new IllegalStateException("Fail to download plugin: " + url, e);
+      throw new IllegalStateException("Fail to download plugin " + pluginReference.getFilename() + " using URL: " + url, e);
     }
   }
 

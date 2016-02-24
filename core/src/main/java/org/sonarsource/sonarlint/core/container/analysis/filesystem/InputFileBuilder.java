@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import java.nio.charset.Charset;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.fs.InputFile.Type;
-import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
 
 public class InputFileBuilder {
 

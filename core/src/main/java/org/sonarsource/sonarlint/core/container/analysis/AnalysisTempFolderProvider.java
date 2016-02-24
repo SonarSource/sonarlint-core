@@ -27,7 +27,7 @@ import org.picocontainer.PicoContainer;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.internal.DefaultTempFolder;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 
 public class AnalysisTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
   static final String TMP_NAME = ".sonartmp";

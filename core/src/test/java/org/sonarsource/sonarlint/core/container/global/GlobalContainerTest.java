@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GlobalContainerTest {
 
   private GlobalContainer createContainer(List<Object> extensions) {
-    GlobalContainer container = GlobalContainer.create(extensions);
+    GlobalContainer container = GlobalContainer.create(GlobalConfiguration.builder().build(), extensions);
     container.doBeforeStart();
     return container;
   }

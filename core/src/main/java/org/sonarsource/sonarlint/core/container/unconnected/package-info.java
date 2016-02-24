@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,38 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.unconnected;
 
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import javax.annotation.CheckForNull;
-
-/**
- * InputFile as provided by client
- * @since 1.1
- */
-public interface ClientInputFile {
-
-  /**
-   * Absolute path to the physical file.
-   */
-  Path getPath();
-
-  /**
-   * Flag an input file as test file. Analyzers may apply different rules on test files.
-   */
-  @CheckForNull
-  boolean isTest();
-
-  /**
-   * Charset to be used to read file content. If null it means the charset is unknown and analysis will likely use JVM default encoding to read the file.
-   */
-  @CheckForNull
-  Charset getCharset();
-
-  /**
-   * Allow clients to pass their own object to ease mapping of issues.
-   */
-  <G> G getClientObject();
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.MessageException;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 

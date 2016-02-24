@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.container.unconnected;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -25,8 +25,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.sonar.api.internal.apachecommons.lang.StringUtils;
+import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider;
 
-public class LocalPluginIndexProvider implements PluginIndexProvider {
+/**
+ * List of plugins are provided by client
+ */
+public class ClientPluginIndexProvider implements PluginIndexProvider {
 
   private static final class UrlToPluginReference implements Function<URL, PluginReference> {
     @Override
@@ -41,6 +46,7 @@ public class LocalPluginIndexProvider implements PluginIndexProvider {
           ref.setHash(DigestUtils.md5Hex(is));
         }
         ref.setDownloadUrl(input);
+        ref.setFilename(StringUtils.substringAfterLast(input.getFile(), "/"));
         return ref;
       } catch (Exception e) {
         throw new IllegalStateException("Unable to load local plugins", e);
@@ -50,7 +56,7 @@ public class LocalPluginIndexProvider implements PluginIndexProvider {
 
   private final List<URL> pluginUrls;
 
-  public LocalPluginIndexProvider(List<URL> pluginUrls) {
+  public ClientPluginIndexProvider(List<URL> pluginUrls) {
     this.pluginUrls = pluginUrls;
   }
 

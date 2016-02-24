@@ -17,14 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.client.api.analysis;
 
-public interface AnalysisResults {
-
-  /**
-   * Number of file analyzed. This number can be different than number of provided {@link ClientInputFile} since
-   * file with no matching language are excluded.
-   */
-  int fileCount();
-
+public interface IssueListener {
+  void handle(Issue issue);
 }

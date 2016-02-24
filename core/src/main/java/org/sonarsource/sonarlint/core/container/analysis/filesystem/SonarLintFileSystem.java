@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.resources.Project;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 
 public class SonarLintFileSystem extends DefaultFileSystem {
 

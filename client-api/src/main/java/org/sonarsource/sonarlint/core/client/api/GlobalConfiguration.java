@@ -34,19 +34,24 @@ import javax.annotation.concurrent.Immutable;
 public class GlobalConfiguration {
 
   public static final String DEFAULT_WORK_DIR = "work";
+  public static final String DEFAULT_STORAGE_DIR = "storage";
 
   private final boolean verbose;
   private final LogOutput logOutput;
   private final List<URL> pluginUrls;
   private final Path sonarLintUserHome;
   private final Path workDir;
+  private final String serverId;
+  private final Path storageRoot;
 
   private GlobalConfiguration(Builder builder) {
-    this.sonarLintUserHome = builder.sonarUserHome != null ? builder.sonarUserHome : findHome();
+    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : findHome();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
     this.verbose = builder.verbose;
     this.logOutput = builder.logOutput;
     this.pluginUrls = builder.pluginUrls;
+    this.serverId = builder.serverId;
+    this.storageRoot = builder.storageRoot != null ? builder.storageRoot : this.sonarLintUserHome.resolve(DEFAULT_STORAGE_DIR);
   }
 
   public static Builder builder() {
@@ -61,6 +66,10 @@ public class GlobalConfiguration {
     return workDir;
   }
 
+  public Path getStorageRoot() {
+    return storageRoot;
+  }
+
   public boolean isVerbose() {
     return verbose;
   }
@@ -68,6 +77,11 @@ public class GlobalConfiguration {
   @CheckForNull
   public LogOutput getLogOutput() {
     return logOutput;
+  }
+
+  @CheckForNull
+  public String getServerId() {
+    return serverId;
   }
 
   public List<URL> getPluginUrls() {
@@ -87,9 +101,11 @@ public class GlobalConfiguration {
     private List<Object> components = new ArrayList<>();
     private boolean verbose = false;
     private LogOutput logOutput;
-    private Path sonarUserHome;
+    private Path sonarlintUserHome;
     private Path workDir;
     private List<URL> pluginUrls = new ArrayList<>();
+    private String serverId;
+    private Path storageRoot;
 
     private Builder() {
     }
@@ -118,7 +134,7 @@ public class GlobalConfiguration {
      * Override default user home (~/.sonarlint)
      */
     public Builder setSonarLintUserHome(Path sonarUserHome) {
-      this.sonarUserHome = sonarUserHome;
+      this.sonarlintUserHome = sonarUserHome;
       return this;
     }
 
@@ -131,12 +147,34 @@ public class GlobalConfiguration {
     }
 
     public Builder addPlugins(URL... pluginUrls) {
+      checkNoServer();
+
       Collections.addAll(this.pluginUrls, pluginUrls);
       return this;
     }
 
+    private void checkNoServer() {
+      if (serverId != null) {
+        throw new UnsupportedOperationException("Unable to manually add plugins in connected mode");
+      }
+    }
+
     public Builder addPlugin(URL pluginUrl) {
+      checkNoServer();
       this.pluginUrls.add(pluginUrl);
+      return this;
+    }
+
+    public Builder setServerId(String serverId) {
+      if (!pluginUrls.isEmpty()) {
+        throw new UnsupportedOperationException("Manual plugins already configured");
+      }
+      this.serverId = serverId;
+      return this;
+    }
+
+    public Builder setStorageRoot(Path storageRoot) {
+      this.storageRoot = storageRoot;
       return this;
     }
 

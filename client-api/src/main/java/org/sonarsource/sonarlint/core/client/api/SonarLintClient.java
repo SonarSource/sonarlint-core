@@ -20,13 +20,21 @@
 package org.sonarsource.sonarlint.core.client.api;
 
 import java.util.Collection;
+import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.SyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
 /**
  * Entry point for SonarLint.
  */
 public interface SonarLintClient {
 
-  void start(GlobalConfiguration globalConfig);
+  void start();
 
   void stop();
 
@@ -50,5 +58,27 @@ public interface SonarLintClient {
   Collection<String> getActiveRuleKeys();
 
   AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener);
+
+  /**
+   * Check it is possible to reach server with provided configuration
+   * @since 2.0
+   */
+  ValidationResult validateCredentials(ServerConfiguration serverConfig);
+
+  /**
+   * Sync current server
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  void sync(ServerConfiguration serverConfig);
+
+  /**
+   * Get information about current sync state
+   * @return null if server was never synced
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode and if this server was never synced (see {@link #alreadySynced()})
+   */
+  @CheckForNull
+  SyncStatus getSyncStatus();
 
 }

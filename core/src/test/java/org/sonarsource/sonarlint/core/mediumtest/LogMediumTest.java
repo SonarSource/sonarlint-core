@@ -34,15 +34,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.SonarLintClientImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.Issue;
-import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
 import org.sonarsource.sonarlint.core.client.api.SonarLintException;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -64,8 +64,6 @@ public class LogMediumTest {
 
   @Before
   public void prepare() throws IOException {
-    sonarlint = SonarLintClientLoader.load(null);
-
     config = GlobalConfiguration.builder()
       .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
       .setVerbose(false)
@@ -77,7 +75,8 @@ public class LogMediumTest {
         }
       })
       .build();
-    sonarlint.start(config);
+    sonarlint = new SonarLintClientImpl(config);
+    sonarlint.start();
 
     baseDir = temp.newFolder();
   }
@@ -116,7 +115,7 @@ public class LogMediumTest {
   @Test
   public void alreadyStartedStopped() {
     try {
-      sonarlint.start(config);
+      sonarlint.start();
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("SonarLint Engine is already started");
@@ -131,7 +130,7 @@ public class LogMediumTest {
       assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("SonarLint Engine is not started");
     }
 
-    sonarlint.start(config);
+    sonarlint.start();
   }
 
   @Test

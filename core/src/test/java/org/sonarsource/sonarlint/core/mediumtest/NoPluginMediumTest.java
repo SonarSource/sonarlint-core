@@ -34,16 +34,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.SonarLintClientImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.Issue;
-import org.sonarsource.sonarlint.core.client.api.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClientLoader;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,8 +57,7 @@ public class NoPluginMediumTest {
 
   @Before
   public void prepare() throws IOException {
-    sonarlint = SonarLintClientLoader.load(null);
-    sonarlint.start(GlobalConfiguration.builder()
+    sonarlint = new SonarLintClientImpl(GlobalConfiguration.builder()
       .setLogOutput(new LogOutput() {
 
         @Override
@@ -67,6 +66,7 @@ public class NoPluginMediumTest {
         }
       })
       .build());
+    sonarlint.start();
 
     baseDir = temp.newFolder();
   }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,36 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.connected;
 
-import javax.annotation.CheckForNull;
-
-public interface Issue {
-
-  String getSeverity();
-
-  @CheckForNull
-  Integer getStartLine();
-
-  @CheckForNull
-  Integer getStartLineOffset();
-
-  @CheckForNull
-  Integer getEndLine();
-
-  @CheckForNull
-  Integer getEndLineOffset();
-
-  String getMessage();
-
-  String getRuleKey();
-
-  String getRuleName();
-
-  /**
-   * @return null for global issues
-   */
-  @CheckForNull
-  ClientInputFile getInputFile();
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -17,17 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.storage;
 
-import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-
-public class AnalysisSettings extends Settings {
-
-  public AnalysisSettings(AnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions);
-    addProperties(config.extraProperties());
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

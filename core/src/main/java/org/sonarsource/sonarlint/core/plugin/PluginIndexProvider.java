@@ -30,21 +30,33 @@ public interface PluginIndexProvider {
 
     private String hash;
     private URL downloadUrl;
+    private String filename;
 
     public String getHash() {
       return hash;
     }
 
-    public void setHash(String hash) {
+    public PluginReference setHash(String hash) {
       this.hash = hash;
+      return this;
     }
 
     public URL getDownloadUrl() {
       return downloadUrl;
     }
 
-    public void setDownloadUrl(URL downloadUrl) {
+    public PluginReference setDownloadUrl(URL downloadUrl) {
       this.downloadUrl = downloadUrl;
+      return this;
+    }
+
+    public String getFilename() {
+      return filename;
+    }
+
+    public PluginReference setFilename(String filename) {
+      this.filename = filename;
+      return this;
     }
 
   }
