@@ -47,3 +47,7 @@ message PluginReferences {
     string filename = 3;
   }
 }
+
+message GlobalProperties {
+  map<string, string> properties = 1;
+}

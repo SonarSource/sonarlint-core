@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core.container.analysis;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class AnalysisSettings extends Settings {
 
@@ -30,4 +33,10 @@ public class AnalysisSettings extends Settings {
     addProperties(config.extraProperties());
   }
 
+  public AnalysisSettings(StorageManager storage, AnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    super(propertyDefinitions);
+    GlobalProperties globalProps = ProtobufUtil.readFile(storage.getGlobalPropertiesPath(), GlobalProperties.parser());
+    addProperties(globalProps.getProperties());
+    addProperties(config.extraProperties());
+  }
 }

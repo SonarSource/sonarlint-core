@@ -26,6 +26,8 @@ import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 
 public class StorageManager {
 
+  public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
+  public static final String PROPERTIES_PB = "properties.pb";
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path projectStorageRoot;
@@ -56,7 +58,11 @@ public class StorageManager {
   }
 
   public Path getPluginReferencesPath() {
-    return globalStorageRoot.resolve("plugin_references.pb");
+    return globalStorageRoot.resolve(PLUGIN_REFERENCES_PB);
+  }
+
+  public Path getGlobalPropertiesPath() {
+    return globalStorageRoot.resolve(PROPERTIES_PB);
   }
 
 }

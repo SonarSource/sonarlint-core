@@ -19,10 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.gson.stream.JsonReader;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
@@ -33,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -44,6 +48,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerStatus;
@@ -78,7 +83,12 @@ public class GlobalSync {
     }
 
     ProtobufUtil.writeToFile(fetchServerStatus(), temp.resolve("server_status.pb"));
-    ProtobufUtil.writeToFile(fetchPlugins(), temp.resolve("plugin_references.pb"));
+    GlobalProperties globalProperties = fetchGlobalProperties();
+    ProtobufUtil.writeToFile(globalProperties, temp.resolve(StorageManager.PROPERTIES_PB));
+
+    Set<String> allowedPlugins = getAllowedPlugins(globalProperties);
+
+    ProtobufUtil.writeToFile(fetchPlugins(allowedPlugins), temp.resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
       .setClientUserAgent(serverConfig.getUserAgent())
@@ -98,6 +108,14 @@ public class GlobalSync {
     } catch (IOException e) {
       throw new IllegalStateException("Unable to move directory " + temp + " to " + dest, e);
     }
+  }
+
+  private Set<String> getAllowedPlugins(GlobalProperties globalProperties) {
+    if (globalProperties.getProperties().containsKey("sonarlint.plugins.whitelist")) {
+      String[] list = globalProperties.getProperties().get("sonarlint.plugins.whitelist").split(",");
+      return ImmutableSet.copyOf(list);
+    }
+    return ImmutableSet.of("java", "javascript", "php");
   }
 
   private void deleteDirectory(Path dest) {
@@ -145,7 +163,41 @@ public class GlobalSync {
     }
   }
 
-  public PluginReferences fetchPlugins() {
+  public GlobalProperties fetchGlobalProperties() {
+    WsResponse response = wsClient.get("api/properties?format=json");
+    if (response.isSuccessful()) {
+      String responseStr = response.content();
+      try (JsonReader reader = new JsonReader(new StringReader(responseStr))) {
+        GlobalProperties.Builder builder = GlobalProperties.newBuilder();
+        reader.beginArray();
+        while (reader.hasNext()) {
+          reader.beginObject();
+          String key = null;
+          String value = null;
+          while (reader.hasNext()) {
+            String propName = reader.nextName();
+            if ("key".equals(propName)) {
+              key = reader.nextString();
+            } else if ("value".equals(propName)) {
+              value = reader.nextString();
+            } else {
+              reader.skipValue();
+            }
+          }
+          builder.getMutableProperties().put(key, value);
+          reader.endObject();
+        }
+        reader.endArray();
+        return builder.build();
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
+      }
+    } else {
+      throw new IllegalStateException("Unable to get global properties: " + response.code() + " " + response.content());
+    }
+  }
+
+  public PluginReferences fetchPlugins(Set<String> allowedPlugins) {
     WsResponse response = wsClient.get("deploy/plugins/index.txt");
     if (response.isSuccessful()) {
       PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -157,8 +209,10 @@ public class GlobalSync {
         if (fields.length >= 2) {
           String[] nameAndHash = StringUtils.split(fields[1], "|");
           String key = fields[0];
-          // TODO handle plugin exclusions by key
-
+          if (!allowedPlugins.contains(key)) {
+            LOG.debug("Plugin {} is not in the SonarLint whitelist. Skip it.", key);
+            continue;
+          }
           String filename = nameAndHash[0];
           String hash = nameAndHash[1];
           builder.addReference(PluginReference.newBuilder()
