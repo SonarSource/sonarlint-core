@@ -19,38 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class StorageManager {
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
+  public static final String RULES_PB = "rules.pb";
+  public static final String ACTIVE_RULES_FOLDER = "active_rules";
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path projectStorageRoot;
 
   public StorageManager(GlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(configuration.getServerId());
-    try {
-      Files.createDirectories(serverStorageRoot);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create storage directory: " + serverStorageRoot, e);
-    }
+    FileUtils.forceMkDirs(serverStorageRoot);
     globalStorageRoot = serverStorageRoot.resolve("global");
-    try {
-      Files.createDirectories(globalStorageRoot);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create global storage directory: " + globalStorageRoot, e);
-    }
+    FileUtils.forceMkDirs(globalStorageRoot);
     projectStorageRoot = serverStorageRoot.resolve("projects");
-    try {
-      Files.createDirectories(projectStorageRoot);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create project storage directory: " + projectStorageRoot, e);
-    }
+    FileUtils.forceMkDirs(projectStorageRoot);
+
+    // TODO Check storage status for current server
   }
 
   public Path getGlobalStorageRoot() {
@@ -63,6 +54,14 @@ public class StorageManager {
 
   public Path getGlobalPropertiesPath() {
     return globalStorageRoot.resolve(PROPERTIES_PB);
+  }
+
+  public Path getRulesPath() {
+    return globalStorageRoot.resolve(RULES_PB);
+  }
+
+  public Path getActiveRulesPath(String qProfileKey) {
+    return globalStorageRoot.resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
   }
 
 }

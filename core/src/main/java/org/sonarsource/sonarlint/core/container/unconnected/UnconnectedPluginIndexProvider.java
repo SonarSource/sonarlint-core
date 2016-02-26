@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider;
 /**
  * List of plugins are provided by client
  */
-public class ClientPluginIndexProvider implements PluginIndexProvider {
+public class UnconnectedPluginIndexProvider implements PluginIndexProvider {
 
   private static final class UrlToPluginReference implements Function<URL, PluginReference> {
     @Override
@@ -56,7 +56,7 @@ public class ClientPluginIndexProvider implements PluginIndexProvider {
 
   private final List<URL> pluginUrls;
 
-  public ClientPluginIndexProvider(List<URL> pluginUrls) {
+  public UnconnectedPluginIndexProvider(List<URL> pluginUrls) {
     this.pluginUrls = pluginUrls;
   }
 

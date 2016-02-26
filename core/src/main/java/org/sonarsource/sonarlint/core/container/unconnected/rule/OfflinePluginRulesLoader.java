@@ -17,23 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis;
+package org.sonarsource.sonarlint.core.container.unconnected.rule;
 
-import java.util.Map;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.container.global.UserProperties;
+import org.sonar.api.server.rule.RulesDefinition;
 
 /**
- * Batch properties that are specific to an analysis (for example
- * coming from sonar-project.properties).
+ * Load rules directly from plugins {@link RulesDefinition}
  */
-public class AnalysisProperties extends UserProperties {
-  public AnalysisProperties(Map<String, String> properties) {
-    this(properties, null);
+public class OfflinePluginRulesLoader {
+  private final RulesDefinition.Context context;
+
+  public OfflinePluginRulesLoader() {
+    // No plugin installed
+    context = new RulesDefinition.Context();
   }
-  
-  public AnalysisProperties(Map<String, String> properties, @Nullable String pathToSecretKey) {
-    super(properties, pathToSecretKey);
+
+  public OfflinePluginRulesLoader(RulesDefinition[] pluginDefs) {
+
+    context = new RulesDefinition.Context();
+    for (RulesDefinition pluginDefinition : pluginDefs) {
+      pluginDefinition.define(context);
+    }
+  }
+
+  public RulesDefinition.Context getContext() {
+    return context;
   }
 
 }

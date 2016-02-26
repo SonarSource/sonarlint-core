@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,21 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.container.storage;
 
-/**
- * @since 1.2
- */
-public interface RuleDetails {
+import org.picocontainer.injectors.ProviderAdapter;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-  String getName();
+public class StorageRulesProvider extends ProviderAdapter {
 
-  String getHtmlDescription();
+  private Sonarlint.Rules rulesFromStorage;
 
-  String getLanguage();
-
-  String getSeverity();
-
-  String[] getTags();
+  public Sonarlint.Rules provide(StorageManager storageManager) {
+    if (rulesFromStorage == null) {
+      rulesFromStorage = ProtobufUtil.readFile(storageManager.getRulesPath(), Sonarlint.Rules.parser());
+    }
+    return rulesFromStorage;
+  }
 
 }

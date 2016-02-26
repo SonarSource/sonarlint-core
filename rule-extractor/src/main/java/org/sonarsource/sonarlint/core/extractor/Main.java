@@ -32,8 +32,8 @@ import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.SonarLintClientImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration.Builder;
+import org.sonarsource.sonarlint.core.container.unconnected.UnconnectedGlobalContainer;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
 
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJson;
 
@@ -45,15 +45,15 @@ public class Main {
     for (String arg : args) {
       pluginPaths.add(Paths.get(arg));
     }
-    SonarLintClient client = new SonarLintClientImpl();
     Builder builder = GlobalConfiguration.builder();
     for (Path path : pluginPaths) {
       builder.addPlugin(path.toUri().toURL());
     }
-    client.start(builder.build());
+    SonarLintClientImpl client = new SonarLintClientImpl(builder.build());
+    client.start();
 
     Table<String, String, RuleDetails> rulesByKeyAndLanguage = TreeBasedTable.create();
-    for (String ruleKeyStr : client.getActiveRuleKeys()) {
+    for (String ruleKeyStr : ((UnconnectedGlobalContainer) client.getGlobalContainer()).getActiveRuleKeys()) {
       RuleDetails ruleDetails = client.getRuleDetails(ruleKeyStr);
       RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
       rulesByKeyAndLanguage.put(ruleKey.rule(), ruleDetails.getLanguage(), ruleDetails);

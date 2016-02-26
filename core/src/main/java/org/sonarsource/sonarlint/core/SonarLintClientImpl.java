@@ -20,9 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import java.util.Collection;
-import java.util.List;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +44,6 @@ public final class SonarLintClientImpl implements SonarLintClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintClientImpl.class);
 
-  private final List<Object> globalComponents = Lists.newArrayList();
   private boolean started = false;
   private final GlobalConfiguration globalConfig;
   private GlobalContainer globalContainer;
@@ -62,12 +58,17 @@ public final class SonarLintClientImpl implements SonarLintClient {
     LoggingConfigurator.setVerbose(verbose);
   }
 
+  public GlobalContainer getGlobalContainer() {
+    checkStarted();
+    return globalContainer;
+  }
+
   @Override
   public synchronized void start() {
     if (started) {
       throw new IllegalStateException("SonarLint Engine is already started");
     }
-    this.globalContainer = GlobalContainer.create(globalConfig, globalComponents);
+    this.globalContainer = GlobalContainer.create(globalConfig);
     try {
       globalContainer.startComponents();
     } catch (RuntimeException e) {
@@ -80,12 +81,6 @@ public final class SonarLintClientImpl implements SonarLintClient {
   public RuleDetails getRuleDetails(String ruleKey) {
     checkStarted();
     return globalContainer.getRuleDetails(ruleKey);
-  }
-
-  @Override
-  public Collection<String> getActiveRuleKeys() {
-    checkStarted();
-    return globalContainer.getActiveRuleKeys();
   }
 
   @Override
@@ -193,7 +188,6 @@ public final class SonarLintClientImpl implements SonarLintClient {
       throw handleException(e);
     } finally {
       this.globalContainer = null;
-      this.globalComponents.clear();
     }
     this.started = false;
   }

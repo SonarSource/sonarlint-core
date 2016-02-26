@@ -23,6 +23,11 @@ import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.connected.sync.GlobalPropertiesSync;
+import org.sonarsource.sonarlint.core.container.connected.sync.GlobalSync;
+import org.sonarsource.sonarlint.core.container.connected.sync.PluginReferencesSync;
+import org.sonarsource.sonarlint.core.container.connected.sync.RulesSync;
+import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
@@ -45,6 +50,9 @@ public class ConnectedContainer extends ComponentContainer {
       AuthenticationChecker.class,
       SonarLintWsClient.class,
       GlobalSync.class,
+      PluginReferencesSync.class,
+      GlobalPropertiesSync.class,
+      RulesSync.class,
       new PluginCacheProvider(),
       PluginHashes.class,
       StorageManager.class);

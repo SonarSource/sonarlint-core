@@ -51,3 +51,36 @@ message PluginReferences {
 message GlobalProperties {
   map<string, string> properties = 1;
 }
+
+message Rules {
+  map<string,Rule> rules_by_key = 1;
+  map<string, QProfile> qprofilesByKey = 2;
+  map<string, string> defaultQProfilesByLanguage = 3;
+    
+  message Rule {
+    string repo = 1;
+    string key = 2;
+    string name = 3;
+    string severity = 4;
+    string lang = 5;
+    string internal_key = 6;
+    string html_desc = 7;
+    bool is_template = 8;
+    string template_key = 9;
+  }
+  
+  message QProfile {
+    string key = 1;
+  }
+}
+
+message ActiveRules {
+  map<string,ActiveRule> active_rules_by_key = 1;
+  
+  message ActiveRule {
+    string repo = 1;
+    string key = 2;
+    string severity = 3;
+    map<string,string> params = 4;
+  }
+}

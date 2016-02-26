@@ -43,10 +43,8 @@ public class SonarLintWsClient {
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
 
   private final HttpWsClient client;
-  private final ServerConfiguration serverConfig;
 
   public SonarLintWsClient(ServerConfiguration serverConfig) {
-    this.serverConfig = serverConfig;
     client = buildClient(serverConfig);
   }
 
@@ -71,19 +69,21 @@ public class SonarLintWsClient {
     WsResponse response = client.wsConnector().call(request);
     long duration = System2.INSTANCE.now() - startTime;
     LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
-    failIfUnauthorized(response);
+    handleError(response);
     return response;
   }
 
-  private void failIfUnauthorized(WsResponse response) {
-    if (response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-      throw MessageException.of("Not authorized. Please check server credentials.");
+  private void handleError(WsResponse response) {
+    if (!response.isSuccessful()) {
+      if (response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+        throw MessageException.of("Not authorized. Please check server credentials.");
+      }
+      if (response.code() == HttpURLConnection.HTTP_FORBIDDEN) {
+        // Details are in response content
+        throw MessageException.of(tryParseAsJsonError(response.content()));
+      }
+      throw new IllegalStateException("Error " + response.code() + " on " + response.requestUrl() + (response.hasContent() ? ": " + tryParseAsJsonError(response.content()) : ""));
     }
-    if (response.code() == HttpURLConnection.HTTP_FORBIDDEN) {
-      // Details are in response content
-      throw MessageException.of(tryParseAsJsonError(response.content()));
-    }
-    response.failIfNotSuccessful();
   }
 
   private static String tryParseAsJsonError(String responseContent) {

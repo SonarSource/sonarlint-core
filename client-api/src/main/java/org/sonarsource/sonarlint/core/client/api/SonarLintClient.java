@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-import java.util.Collection;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
@@ -51,11 +50,6 @@ public interface SonarLintClient {
    * @since 1.2
    */
   RuleDetails getRuleDetails(String ruleKey);
-
-  /**
-   * Return list of all active rule keys.
-   */
-  Collection<String> getActiveRuleKeys();
 
   AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener);
 
