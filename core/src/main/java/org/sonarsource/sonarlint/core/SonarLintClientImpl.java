@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.base.Throwables;
+import java.util.List;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +34,14 @@ import org.sonarsource.sonarlint.core.client.api.SonarLintException;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.SyncStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
+import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
 import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -44,9 +50,10 @@ public final class SonarLintClientImpl implements SonarLintClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintClientImpl.class);
 
-  private boolean started = false;
+  private volatile boolean started = false;
   private final GlobalConfiguration globalConfig;
   private GlobalContainer globalContainer;
+  private final ReadWriteLock rwl = new ReentrantReadWriteLock();
 
   public SonarLintClientImpl(GlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -54,91 +61,205 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   @Override
-  public synchronized void setVerbose(boolean verbose) {
-    LoggingConfigurator.setVerbose(verbose);
+  public void setVerbose(boolean verbose) {
+    rwl.writeLock().lock();
+    try {
+      LoggingConfigurator.setVerbose(verbose);
+    } finally {
+      rwl.writeLock().unlock();
+    }
   }
 
   public GlobalContainer getGlobalContainer() {
-    checkStarted();
-    return globalContainer;
+    rwl.readLock().lock();
+    try {
+      checkStarted();
+      return globalContainer;
+    } finally {
+      rwl.readLock().unlock();
+    }
   }
 
   @Override
   public synchronized void start() {
-    if (started) {
-      throw new IllegalStateException("SonarLint Engine is already started");
-    }
-    this.globalContainer = GlobalContainer.create(globalConfig);
+    rwl.writeLock().lock();
     try {
-      globalContainer.startComponents();
-    } catch (RuntimeException e) {
-      throw handleException(e);
+      if (started) {
+        throw new IllegalStateException("SonarLint Engine is already started");
+      }
+      this.globalContainer = GlobalContainer.create(globalConfig);
+      try {
+        globalContainer.startComponents();
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      }
+      this.started = true;
+    } finally {
+      rwl.writeLock().unlock();
     }
-    this.started = true;
   }
 
   @Override
   public RuleDetails getRuleDetails(String ruleKey) {
-    checkStarted();
-    return globalContainer.getRuleDetails(ruleKey);
+    rwl.readLock().lock();
+    try {
+      checkStarted();
+      return globalContainer.getRuleDetails(ruleKey);
+    } finally {
+      rwl.readLock().unlock();
+    }
   }
 
   @Override
   public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
     checkNotNull(configuration);
     checkNotNull(issueListener);
-    checkStarted();
+    rwl.readLock().lock();
     try {
-      return globalContainer.analyze(configuration, issueListener);
-    } catch (RuntimeException e) {
-      throw handleException(e);
+      checkStarted();
+      try {
+        return globalContainer.analyze(configuration, issueListener);
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      }
+    } finally {
+      rwl.readLock().unlock();
     }
   }
 
   @Override
-  public SyncStatus getSyncStatus() {
-    // TODO Auto-generated method stub
-    return null;
+  public GlobalSyncStatus getSyncStatus() {
+    checkMode();
+    rwl.readLock().lock();
+    try {
+      checkStarted();
+      return ((StorageGlobalContainer) globalContainer).getSyncStatus();
+    } finally {
+      rwl.readLock().unlock();
+    }
   }
 
   @Override
   public void sync(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    checkStopped();
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+    checkMode();
+    rwl.writeLock().lock();
     try {
-      connectedContainer.startComponents();
-    } catch (RuntimeException e) {
-      throw handleException(e);
-    }
-    try {
-      connectedContainer.sync();
-    } finally {
+      checkStopped();
+      ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
       try {
-        connectedContainer.stopComponents(false);
+        connectedContainer.startComponents();
       } catch (RuntimeException e) {
         throw handleException(e);
       }
+      try {
+        connectedContainer.sync();
+      } finally {
+        try {
+          connectedContainer.stopComponents(false);
+        } catch (RuntimeException e) {
+          throw handleException(e);
+        }
+      }
+    } finally {
+      rwl.writeLock().unlock();
+    }
+  }
+
+  private void checkMode() {
+    if (globalConfig.getServerId() == null) {
+      throw new UnsupportedOperationException("Unable to sync in unconnected mode");
     }
   }
 
   @Override
   public ValidationResult validateCredentials(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+    checkMode();
+    rwl.readLock().lock();
     try {
-      connectedContainer.startComponents();
-    } catch (RuntimeException e) {
-      throw handleException(e);
-    }
-    try {
-      return connectedContainer.validateCredentials();
-    } finally {
+      ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
       try {
-        connectedContainer.stopComponents(false);
+        connectedContainer.startComponents();
       } catch (RuntimeException e) {
         throw handleException(e);
       }
+      try {
+        return connectedContainer.validateCredentials();
+      } finally {
+        try {
+          connectedContainer.stopComponents(false);
+        } catch (RuntimeException e) {
+          throw handleException(e);
+        }
+      }
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
+
+  @Override
+  public List<RemoteModule> searchModule(ServerConfiguration serverConfig, String exactKeyOrPartialName) {
+    checkNotNull(serverConfig);
+    checkMode();
+    rwl.readLock().lock();
+    try {
+      ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+      try {
+        connectedContainer.startComponents();
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      }
+      try {
+        return connectedContainer.searchModule(exactKeyOrPartialName);
+      } finally {
+        try {
+          connectedContainer.stopComponents(false);
+        } catch (RuntimeException e) {
+          throw handleException(e);
+        }
+      }
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
+
+  @Override
+  public void syncModule(ServerConfiguration serverConfig, String moduleKey) {
+    checkNotNull(serverConfig);
+    checkMode();
+    rwl.writeLock().lock();
+    try {
+      checkStopped();
+      ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+      try {
+        connectedContainer.startComponents();
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      }
+      try {
+        connectedContainer.syncModule(moduleKey);
+      } finally {
+        try {
+          connectedContainer.stopComponents(false);
+        } catch (RuntimeException e) {
+          throw handleException(e);
+        }
+      }
+    } finally {
+      rwl.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
+    checkMode();
+    rwl.readLock().lock();
+    try {
+      checkStarted();
+      return ((StorageGlobalContainer) globalContainer).getModuleSyncStatus(moduleKey);
+    } finally {
+      rwl.readLock().unlock();
     }
   }
 
@@ -180,16 +301,21 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   @Override
-  public synchronized void stop() {
-    checkStarted();
+  public void stop() {
+    rwl.writeLock().lock();
     try {
-      globalContainer.stopComponents(false);
-    } catch (RuntimeException e) {
-      throw handleException(e);
+      checkStarted();
+      try {
+        globalContainer.stopComponents(false);
+      } catch (RuntimeException e) {
+        throw handleException(e);
+      } finally {
+        this.globalContainer = null;
+      }
+      this.started = false;
     } finally {
-      this.globalContainer = null;
+      rwl.writeLock().unlock();
     }
-    this.started = false;
   }
 
 }

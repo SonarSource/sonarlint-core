@@ -46,9 +46,12 @@ public class FileUtils {
     }
   }
 
-  public static void deleteDirectory(Path dest) {
+  public static void deleteDirectory(Path dir) {
+    if (!Files.exists(dir)) {
+      return;
+    }
     try {
-      Files.walkFileTree(dest, new SimpleFileVisitor<Path>() {
+      Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
           Files.delete(file);
@@ -63,7 +66,7 @@ public class FileUtils {
 
       });
     } catch (IOException e) {
-      throw new IllegalStateException("Unable to delete directory " + dest, e);
+      throw new IllegalStateException("Unable to delete directory " + dir, e);
     }
   }
 

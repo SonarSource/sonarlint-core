@@ -19,13 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
+import java.util.List;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.SyncStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
 /**
@@ -70,9 +73,32 @@ public interface SonarLintClient {
    * Get information about current sync state
    * @return null if server was never synced
    * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode and if this server was never synced (see {@link #alreadySynced()})
+   * @throws UnsupportedOperationException for unconnected mode
    */
   @CheckForNull
-  SyncStatus getSyncStatus();
+  GlobalSyncStatus getSyncStatus();
+
+  /**
+   * Find module by exact key of by partial name. This is not using storage, so it will fail is server is not reachable.
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  List<RemoteModule> searchModule(ServerConfiguration serverConfig, String exactKeyOrPartialName);
+
+  /**
+   * Sync given module
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  void syncModule(ServerConfiguration serverConfig, String moduleKey);
+
+  /**
+   * Get information about module sync state
+   * @return null if module was never synced
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  @CheckForNull
+  ModuleSyncStatus getModuleSyncStatus(String moduleKey);
 
 }

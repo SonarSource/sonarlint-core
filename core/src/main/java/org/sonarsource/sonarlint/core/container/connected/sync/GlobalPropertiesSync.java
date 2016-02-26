@@ -41,37 +41,33 @@ public class GlobalPropertiesSync {
 
   public Set<String> fetchGlobalPropertiesTo(Path dest) {
     WsResponse response = wsClient.get("api/properties?format=json");
-    if (response.isSuccessful()) {
-      String responseStr = response.content();
-      try (JsonReader reader = new JsonReader(new StringReader(responseStr))) {
-        GlobalProperties.Builder builder = GlobalProperties.newBuilder();
-        reader.beginArray();
+    String responseStr = response.content();
+    try (JsonReader reader = new JsonReader(new StringReader(responseStr))) {
+      GlobalProperties.Builder builder = GlobalProperties.newBuilder();
+      reader.beginArray();
+      while (reader.hasNext()) {
+        reader.beginObject();
+        String key = null;
+        String value = null;
         while (reader.hasNext()) {
-          reader.beginObject();
-          String key = null;
-          String value = null;
-          while (reader.hasNext()) {
-            String propName = reader.nextName();
-            if ("key".equals(propName)) {
-              key = reader.nextString();
-            } else if ("value".equals(propName)) {
-              value = reader.nextString();
-            } else {
-              reader.skipValue();
-            }
+          String propName = reader.nextName();
+          if ("key".equals(propName)) {
+            key = reader.nextString();
+          } else if ("value".equals(propName)) {
+            value = reader.nextString();
+          } else {
+            reader.skipValue();
           }
-          builder.getMutableProperties().put(key, value);
-          reader.endObject();
         }
-        reader.endArray();
-        GlobalProperties globalProperties = builder.build();
-        ProtobufUtil.writeToFile(globalProperties, dest.resolve(StorageManager.PROPERTIES_PB));
-        return getPluginWhitelist(globalProperties);
-      } catch (IOException e) {
-        throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
+        builder.getMutableProperties().put(key, value);
+        reader.endObject();
       }
-    } else {
-      throw new IllegalStateException("Unable to get global properties: " + response.code() + " " + response.content());
+      reader.endArray();
+      GlobalProperties globalProperties = builder.build();
+      ProtobufUtil.writeToFile(globalProperties, dest.resolve(StorageManager.PROPERTIES_PB));
+      return getPluginWhitelist(globalProperties);
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
     }
   }
 

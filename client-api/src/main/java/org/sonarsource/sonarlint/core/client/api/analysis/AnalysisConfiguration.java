@@ -23,21 +23,31 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
 public class AnalysisConfiguration {
 
+  private final String moduleKey;
   private final Iterable<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path workDir;
+  // TODO baseDir is only used to please Sensor API. To be removed when having a dedicated SonarLint API.
   private final Path baseDir;
 
-  public AnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+  public AnalysisConfiguration(@Nullable String moduleKey, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+    this.moduleKey = moduleKey;
     this.baseDir = baseDir;
     this.workDir = workDir;
     this.inputFiles = inputFiles;
     this.extraProperties = new LinkedHashMap<>(extraProperties);
+  }
+
+  @CheckForNull
+  public String moduleKey() {
+    return moduleKey;
   }
 
   public Map<String, String> extraProperties() {

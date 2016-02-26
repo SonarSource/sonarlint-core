@@ -91,11 +91,12 @@ public class LogMediumTest {
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
-    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
-      @Override
-      public void handle(Issue issue) {
-      }
-    });
+    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new IssueListener() {
+        @Override
+        public void handle(Issue issue) {
+        }
+      });
 
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
 
@@ -103,11 +104,12 @@ public class LogMediumTest {
 
     sonarlint.setVerbose(true);
 
-    sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
-      @Override
-      public void handle(Issue issue) {
-      }
-    });
+    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new IssueListener() {
+        @Override
+        public void handle(Issue issue) {
+        }
+      });
 
     assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
   }
@@ -139,12 +141,13 @@ public class LogMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
     try {
-      sonarlint.analyze(new AnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()), new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          throw new MyCustomException("Fake");
-        }
-      });
+      sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+        new IssueListener() {
+          @Override
+          public void handle(Issue issue) {
+            throw new MyCustomException("Fake");
+          }
+        });
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(SonarLintException.class)

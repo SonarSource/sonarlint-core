@@ -22,21 +22,20 @@ package org.sonarsource.sonarlint.core.container.connected.sync;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Set;
-import org.apache.commons.io.IOUtils;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.SyncStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
+import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalSync {
 
@@ -67,11 +66,11 @@ public class GlobalSync {
       throw new IllegalStateException("Unable to create temp directory", e);
     }
 
-    ServerStatus serverStatus = fetchServerStatus();
+    ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
       throw new IllegalStateException("Server not ready (" + serverStatus.getStatus() + ")");
     }
-    ProtobufUtil.writeToFile(serverStatus, temp.resolve("server_status.pb"));
+    ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
     Set<String> allowedPlugins = globalPropertiesSync.fetchGlobalPropertiesTo(temp);
 
@@ -81,37 +80,29 @@ public class GlobalSync {
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
       .setClientUserAgent(serverConfig.getUserAgent())
-      .setSonarlintCoreVersion(readSlCoreVersion())
+      .setSonarlintCoreVersion(VersionUtils.readSlCoreVersion())
       .setSyncTimestamp(new Date().getTime())
       .build();
-    ProtobufUtil.writeToFile(syncStatus, temp.resolve("sync_status.pb"));
+    ProtobufUtil.writeToFile(syncStatus, temp.resolve(StorageManager.SYNC_STATUS_PB));
 
     Path dest = storageManager.getGlobalStorageRoot();
     FileUtils.deleteDirectory(dest);
     FileUtils.moveDir(temp, dest);
   }
 
-  private String readSlCoreVersion() {
-    try {
-      return IOUtils.toString(this.getClass().getResourceAsStream("/sl_core_version.txt"), StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to read library version", e);
-    }
-  }
-
-  public ServerStatus fetchServerStatus() {
+  public ServerInfos fetchServerInfos() {
     WsResponse response = wsClient.get("api/system/status");
     if (response.isSuccessful()) {
       String responseStr = response.content();
       try {
-        ServerStatus.Builder builder = ServerStatus.newBuilder();
+        ServerInfos.Builder builder = ServerInfos.newBuilder();
         JsonFormat.parser().merge(responseStr, builder);
         return builder.build();
       } catch (InvalidProtocolBufferException e) {
-        throw new IllegalStateException("Unable to parse server status from: " + response.content(), e);
+        throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
       }
     } else {
-      throw new IllegalStateException("Unable to get server status: " + response.code() + " " + response.content());
+      throw new IllegalStateException("Unable to get server infos: " + response.code() + " " + response.content());
     }
   }
 

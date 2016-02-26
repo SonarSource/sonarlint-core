@@ -19,13 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import java.util.List;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.sync.GlobalPropertiesSync;
 import org.sonarsource.sonarlint.core.container.connected.sync.GlobalSync;
 import org.sonarsource.sonarlint.core.container.connected.sync.PluginReferencesSync;
+import org.sonarsource.sonarlint.core.container.connected.sync.ProjectSync;
 import org.sonarsource.sonarlint.core.container.connected.sync.RulesSync;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -50,12 +54,14 @@ public class ConnectedContainer extends ComponentContainer {
       AuthenticationChecker.class,
       SonarLintWsClient.class,
       GlobalSync.class,
+      ProjectSync.class,
       PluginReferencesSync.class,
       GlobalPropertiesSync.class,
       RulesSync.class,
       new PluginCacheProvider(),
       PluginHashes.class,
-      StorageManager.class);
+      StorageManager.class,
+      ModuleFinder.class);
   }
 
   public ValidationResult validateCredentials() {
@@ -64,6 +70,18 @@ public class ConnectedContainer extends ComponentContainer {
 
   public void sync() {
     getComponentByType(GlobalSync.class).sync();
+  }
+
+  public List<RemoteModule> searchModule(String exactKeyOrPartialName) {
+    return getComponentByType(ModuleFinder.class).searchModules(exactKeyOrPartialName);
+  }
+
+  public void syncModule(String moduleKey) {
+    GlobalSyncStatus syncStatus = getComponentByType(StorageManager.class).getGlobalSyncStatus();
+    if (syncStatus == null) {
+      throw new IllegalStateException("Please sync server first");
+    }
+    getComponentByType(ProjectSync.class).sync(moduleKey);
   }
 
 }

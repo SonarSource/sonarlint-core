@@ -21,25 +21,48 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Map;
 import org.picocontainer.injectors.ProviderAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
+import org.sonar.api.resources.Languages;
 import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
 
 public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
+  private static final Logger LOG = LoggerFactory.getLogger(SonarQubeActiveRulesProvider.class);
+
   private ActiveRules activeRules;
 
-  public ActiveRules provide(Sonarlint.Rules storageRules, StorageManager storageManager, Rules rules) {
+  public ActiveRules provide(Sonarlint.Rules storageRules, StorageManager storageManager, Rules rules, AnalysisConfiguration analysisConfiguration, Languages languages) {
     if (activeRules == null) {
       ActiveRulesBuilder builder = new ActiveRulesBuilder();
 
-      for (Map.Entry<String, String> entry : storageRules.getDefaultQProfilesByLanguage().entrySet()) {
-        org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(entry.getValue()),
+      Map<String, String> qProfilesByLanguage;
+
+      if (analysisConfiguration.moduleKey() == null) {
+        LOG.debug("Use default quality profiles:");
+        qProfilesByLanguage = storageRules.getDefaultQProfilesByLanguage();
+      } else {
+        LOG.debug("Quality profiles:");
+        qProfilesByLanguage = storageManager.readModuleConfigFromStorage(analysisConfiguration.moduleKey()).getQprofilePerLanguage();
+      }
+
+      for (Map.Entry<String, String> entry : qProfilesByLanguage.entrySet()) {
+        String language = entry.getKey();
+        if (languages.get(language) == null) {
+          continue;
+        }
+        String qProfileKey = entry.getValue();
+        int arCount = 0;
+
+        org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
           Sonarlint.ActiveRules.parser());
         for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKey().entrySet()) {
           ActiveRule activeRule = arEntry.getValue();
@@ -47,7 +70,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
           Rule rule = rules.find(ruleKey);
           Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKey().get(ruleKey.toString());
           NewActiveRule newActiveRule = builder.create(ruleKey)
-            .setLanguage(entry.getKey())
+            .setLanguage(language)
             .setName(rule.name())
             .setInternalKey(rule.internalKey())
             .setTemplateRuleKey(storageRule.getTemplateKey())
@@ -56,7 +79,9 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
             newActiveRule.setParam(param.getKey(), param.getValue());
           }
           newActiveRule.activate();
+          arCount++;
         }
+        LOG.debug("  * " + language + ": " + qProfileKey + " (" + arCount + " rules)");
       }
 
       activeRules = builder.build();

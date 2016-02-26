@@ -32,7 +32,7 @@ message SyncStatus {
   int64 sync_timestamp = 3;
 }
 
-message ServerStatus {
+message ServerInfos {
   string id = 1;
   string version = 2;
   string status = 3;
@@ -83,4 +83,9 @@ message ActiveRules {
     string severity = 3;
     map<string,string> params = 4;
   }
+}
+
+message ModuleConfiguration {
+  map<string, string> qprofile_per_language = 1;
+  map<string, string> properties = 2;
 }

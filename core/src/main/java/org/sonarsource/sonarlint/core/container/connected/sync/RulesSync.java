@@ -70,7 +70,7 @@ public class RulesSync {
         rulesBuilder.getMutableDefaultQProfilesByLanguage().put(qp.getLanguage(), qp.getKey());
       }
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to load rules", e);
+      throw new IllegalStateException("Failed to load default quality profiles", e);
     } finally {
       IOUtils.closeQuietly(contentStream);
     }

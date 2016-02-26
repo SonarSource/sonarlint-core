@@ -19,33 +19,54 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
+import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class StorageManager {
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
+  public static final String CONFIGURATION_PB = "configuration.pb";
   public static final String RULES_PB = "rules.pb";
+  public static final String SYNC_STATUS_PB = "sync_status.pb";
+  public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
-  private final Path projectStorageRoot;
+  private final Path moduleStorageRoot;
+  private final GlobalSyncStatus syncStatus;
 
   public StorageManager(GlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(configuration.getServerId());
     FileUtils.forceMkDirs(serverStorageRoot);
     globalStorageRoot = serverStorageRoot.resolve("global");
     FileUtils.forceMkDirs(globalStorageRoot);
-    projectStorageRoot = serverStorageRoot.resolve("projects");
-    FileUtils.forceMkDirs(projectStorageRoot);
-
-    // TODO Check storage status for current server
+    moduleStorageRoot = serverStorageRoot.resolve("modules");
+    FileUtils.forceMkDirs(moduleStorageRoot);
+    syncStatus = initSyncStatus();
   }
 
   public Path getGlobalStorageRoot() {
     return globalStorageRoot;
+  }
+
+  public Path getModuleStorageRoot(String moduleKey) {
+    return moduleStorageRoot.resolve(moduleKey);
+  }
+
+  public Path getModuleConfigurationPath(String moduleKey) {
+    return getModuleStorageRoot(moduleKey).resolve(CONFIGURATION_PB);
+  }
+
+  public Path getModuleSyncStatusPath(String moduleKey) {
+    return getModuleStorageRoot(moduleKey).resolve(SYNC_STATUS_PB);
   }
 
   public Path getPluginReferencesPath() {
@@ -64,4 +85,77 @@ public class StorageManager {
     return globalStorageRoot.resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
   }
 
+  public Path getSyncStatusPath() {
+    return globalStorageRoot.resolve(SYNC_STATUS_PB);
+  }
+
+  public Path getServerInfoPath() {
+    return globalStorageRoot.resolve(SERVER_INFO_PB);
+  }
+
+  @CheckForNull
+  public GlobalSyncStatus getGlobalSyncStatus() {
+    return syncStatus;
+  }
+
+  @CheckForNull
+  private GlobalSyncStatus initSyncStatus() {
+    Path syncStatusPath = getSyncStatusPath();
+    if (Files.exists(syncStatusPath)) {
+      final Sonarlint.SyncStatus syncStatusFromStorage = ProtobufUtil.readFile(syncStatusPath, Sonarlint.SyncStatus.parser());
+      final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfoPath(), Sonarlint.ServerInfos.parser());
+      return new GlobalSyncStatus() {
+
+        @Override
+        public String getServerVersion() {
+          return serverInfoFromStorage.getVersion();
+        }
+
+        @Override
+        public Date getLastSyncDate() {
+          return new Date(syncStatusFromStorage.getSyncTimestamp());
+        }
+      };
+    }
+    return null;
+  }
+
+  public Sonarlint.Rules readRulesFromStorage() {
+    try {
+      return ProtobufUtil.readFile(getRulesPath(), Sonarlint.Rules.parser());
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to read rules from storage. Try to sync the server.", e);
+    }
+  }
+
+  public Sonarlint.GlobalProperties readGlobalPropertiesFromStorage() {
+    try {
+      return ProtobufUtil.readFile(getGlobalPropertiesPath(), Sonarlint.GlobalProperties.parser());
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to read global properties from storage. Try to sync the server.", e);
+    }
+  }
+
+  public Sonarlint.ModuleConfiguration readModuleConfigFromStorage(String moduleKey) {
+    try {
+      return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to read module configuration from storage. Try to sync the module " + moduleKey, e);
+    }
+  }
+
+  public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
+    Path syncStatusPath = getModuleSyncStatusPath(moduleKey);
+    if (Files.exists(syncStatusPath)) {
+      final Sonarlint.SyncStatus syncStatusFromStorage = ProtobufUtil.readFile(syncStatusPath, Sonarlint.SyncStatus.parser());
+      return new ModuleSyncStatus() {
+
+        @Override
+        public Date getLastSyncDate() {
+          return new Date(syncStatusFromStorage.getSyncTimestamp());
+        }
+      };
+    }
+    return null;
+  }
 }

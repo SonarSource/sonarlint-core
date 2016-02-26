@@ -34,7 +34,6 @@ import org.sonar.api.utils.System2;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.HttpWsClient;
-import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
@@ -61,15 +60,20 @@ public class SonarLintWsClient {
   }
 
   public WsResponse get(String path) {
-    return call(new GetRequest(path));
+    WsResponse response = rawGet(path);
+    handleError(response);
+    return response;
   }
 
-  private WsResponse call(WsRequest request) {
+  /**
+   * Execute GET and don't check response
+   */
+  public WsResponse rawGet(String path) {
     long startTime = System2.INSTANCE.now();
+    GetRequest request = new GetRequest(path);
     WsResponse response = client.wsConnector().call(request);
     long duration = System2.INSTANCE.now() - startTime;
     LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
-    handleError(response);
     return response;
   }
 
