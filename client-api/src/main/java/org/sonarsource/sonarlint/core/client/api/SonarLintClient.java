@@ -36,8 +36,16 @@ import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
  */
 public interface SonarLintClient {
 
+  // COMMON TO UNCONNECTED AND CONNECTED MODES
+
+  /**
+   * Load analyzers and be ready to start analysis using {@link #analyze(AnalysisConfiguration, IssueListener)}
+   */
   void start();
 
+  /**
+   * Unload everything.
+   */
   void stop();
 
   /**
@@ -54,20 +62,12 @@ public interface SonarLintClient {
    */
   RuleDetails getRuleDetails(String ruleKey);
 
+  /**
+   * Trigger an analysis
+   */
   AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener);
 
-  /**
-   * Check it is possible to reach server with provided configuration
-   * @since 2.0
-   */
-  ValidationResult validateCredentials(ServerConfiguration serverConfig);
-
-  /**
-   * Sync current server
-   * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
-   */
-  void sync(ServerConfiguration serverConfig);
+  // ONLY FOR CONNECTED MODE
 
   /**
    * Get information about current sync state
@@ -79,20 +79,6 @@ public interface SonarLintClient {
   GlobalSyncStatus getSyncStatus();
 
   /**
-   * Find module by exact key of by partial name. This is not using storage, so it will fail is server is not reachable.
-   * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
-   */
-  List<RemoteModule> searchModule(ServerConfiguration serverConfig, String exactKeyOrPartialName);
-
-  /**
-   * Sync given module
-   * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
-   */
-  void syncModule(ServerConfiguration serverConfig, String moduleKey);
-
-  /**
    * Get information about module sync state
    * @return null if module was never synced
    * @since 2.0
@@ -100,5 +86,36 @@ public interface SonarLintClient {
    */
   @CheckForNull
   ModuleSyncStatus getModuleSyncStatus(String moduleKey);
+
+  // REQUIRES SERVER TO BE REACHABLE
+
+  /**
+   * Check it is possible to reach server with provided configuration
+   * @since 2.0
+   */
+  ValidationResult validateCredentials(ServerConfiguration serverConfig);
+
+  /**
+   * Find module by exact key of by partial name. This is not using storage, so it will fail is server is not reachable.
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  List<RemoteModule> searchModule(ServerConfiguration serverConfig, String exactKeyOrPartialName);
+
+  // REQUIRES SERVER TO BE REACHABLE AND SONARLINT CLIENT SHOULD BE STOPPED
+
+  /**
+   * Sync current server. Client should be stopped ({@link #stop()} during the sync process.
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  void sync(ServerConfiguration serverConfig);
+
+  /**
+   * Sync given module. Client should be stopped ({@link #stop()} during the sync process.
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  void syncModule(ServerConfiguration serverConfig, String moduleKey);
 
 }
