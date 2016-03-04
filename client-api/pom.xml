@@ -30,7 +30,9 @@
             <Import-Package>
               !*
             </Import-Package>
-            <Export-Package>org.sonarsource.sonarlint.core.client.api;version="${project.version}"</Export-Package>
+            <Export-Package>org.sonarsource.sonarlint.core.client.api;version="${project.version}",
+            org.sonarsource.sonarlint.core.client.api.analysis;version="${project.version}",
+            org.sonarsource.sonarlint.core.client.api.connected;version="${project.version}"</Export-Package>
             <_failok>true</_failok>
             <_nouses>true</_nouses>
           </instructions>
