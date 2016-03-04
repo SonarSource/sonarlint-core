@@ -56,12 +56,12 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   @Override
   public InputFile inputFile(String relativePath) {
-    throw new UnsupportedOperationException("Unsupported in SonarLint");
+    return null;
   }
 
   @Override
   public InputDir inputDir(String relativePath) {
-    throw new UnsupportedOperationException("Unsupported in SonarLint");
+    return null;
   }
 
   public InputFile inputFile(Path path) {
