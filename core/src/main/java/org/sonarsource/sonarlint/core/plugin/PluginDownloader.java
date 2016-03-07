@@ -32,7 +32,6 @@ import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 

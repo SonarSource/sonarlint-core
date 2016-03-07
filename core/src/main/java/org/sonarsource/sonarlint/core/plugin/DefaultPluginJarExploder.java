@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.ZipUtils;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 @BatchSide

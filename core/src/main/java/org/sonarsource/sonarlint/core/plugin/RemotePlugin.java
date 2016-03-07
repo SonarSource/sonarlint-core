@@ -24,7 +24,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 
 public class RemotePlugin {
   private String pluginKey;

@@ -30,8 +30,6 @@ import java.util.Set;
 import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.SonarPlugin;
 import org.sonar.api.utils.log.Loggers;
-import org.sonar.updatecenter.common.Version;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 
 import static java.util.Arrays.asList;
 

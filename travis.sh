@@ -52,6 +52,10 @@ CI)
   fi
   ;;
 
+IT)
+  mvn clean verify -Prun-its -Dsonar.runtimeVersion=$SQ_VERSION
+  ;;
+
 
 *)
   echo "Unexpected TARGET value: $TARGET"

@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT</name>
+  <language>java</language>
+  <rules>
+    <rule>
+      <!-- System.out -->
+      <repositoryKey>squid</repositoryKey>
+      <key>S106</key>
+      <priority>MAJOR</priority>
+    </rule>
+    <!-- Static private method -->
+    <rule>
+      <repositoryKey>squid</repositoryKey>
+      <key>S2325</key>
+      <priority>MAJOR</priority>
+      <parameters />
+    </rule>
+  </rules>
+</profile>

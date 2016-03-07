@@ -27,7 +27,6 @@ import org.picocontainer.Startable;
 import org.sonar.api.SonarPlugin;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 
 /**
  * Orchestrates the installation and loading of plugins

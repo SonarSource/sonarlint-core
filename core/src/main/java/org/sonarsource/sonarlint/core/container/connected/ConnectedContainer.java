@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.container.connected.sync.PluginReferencesS
 import org.sonarsource.sonarlint.core.container.connected.sync.ProjectSync;
 import org.sonarsource.sonarlint.core.container.connected.sync.RulesSync;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
+import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
@@ -51,6 +52,7 @@ public class ConnectedContainer extends ComponentContainer {
     add(
       globalConfig,
       serverConfiguration,
+      new GlobalTempFolderProvider(),
       AuthenticationChecker.class,
       SonarLintWsClient.class,
       GlobalSync.class,

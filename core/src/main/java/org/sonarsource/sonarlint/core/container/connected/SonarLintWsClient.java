@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.System2;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
@@ -80,11 +79,11 @@ public class SonarLintWsClient {
   private void handleError(WsResponse response) {
     if (!response.isSuccessful()) {
       if (response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-        throw MessageException.of("Not authorized. Please check server credentials.");
+        throw new IllegalStateException("Not authorized. Please check server credentials.");
       }
       if (response.code() == HttpURLConnection.HTTP_FORBIDDEN) {
         // Details are in response content
-        throw MessageException.of(tryParseAsJsonError(response.content()));
+        throw new IllegalStateException(tryParseAsJsonError(response.content()));
       }
       throw new IllegalStateException("Error " + response.code() + " on " + response.requestUrl() + (response.hasContent() ? ": " + tryParseAsJsonError(response.content()) : ""));
     }

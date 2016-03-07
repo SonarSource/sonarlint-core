@@ -26,10 +26,10 @@ import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
 import org.sonarsource.sonarlint.core.container.unconnected.UnconnectedGlobalContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
 public abstract class GlobalContainer extends ComponentContainer {
 

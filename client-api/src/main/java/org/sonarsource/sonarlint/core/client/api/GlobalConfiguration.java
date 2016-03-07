@@ -173,6 +173,9 @@ public class GlobalConfiguration {
       return this;
     }
 
+    /**
+     * Override default storage dir (~/.sonarlint/storage)
+     */
     public Builder setStorageRoot(Path storageRoot) {
       this.storageRoot = storageRoot;
       return this;

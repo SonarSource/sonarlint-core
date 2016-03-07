@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.SonarPlugin;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
 public class ExtensionInstaller {
 

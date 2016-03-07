@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.ZipUtils;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

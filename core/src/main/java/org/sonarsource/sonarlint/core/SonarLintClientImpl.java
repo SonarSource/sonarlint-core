@@ -19,14 +19,12 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.base.Throwables;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
@@ -276,17 +274,6 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   private static RuntimeException handleException(RuntimeException t) {
-    if (LOG.isDebugEnabled()) {
-      // In DEBUG mode always return full exception
-      return convertToSonarLintException(t);
-    }
-
-    for (Throwable y : Throwables.getCausalChain(t)) {
-      if (y instanceof MessageException) {
-        return convertToSonarLintException(y);
-      }
-    }
-
     return convertToSonarLintException(t);
   }
 

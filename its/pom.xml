@@ -1,0 +1,46 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonarsource.sonarlint.core</groupId>
+    <artifactId>sonarlint-core-parent</artifactId>
+    <version>2.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>sonarlint-core-its</artifactId>
+  <name>SonarLint Core - ITs</name>
+  <description>Integration tests</description>
+  <properties>
+    <sonar.skip>true</sonar.skip>
+    <skipTests>true</skipTests>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-core</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonarsource.orchestrator</groupId>
+      <artifactId>sonar-orchestrator</artifactId>
+      <version>3.10.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>2.3.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <properties>
+        <skipTests>false</skipTests>
+      </properties>
+    </profile>
+  </profiles>
+
+</project>

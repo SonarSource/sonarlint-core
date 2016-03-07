@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
@@ -37,8 +37,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
-import org.sonar.updatecenter.common.PluginManifest;
-import org.sonar.updatecenter.common.Version;
 
 public class PluginInfo implements Comparable<PluginInfo> {
 

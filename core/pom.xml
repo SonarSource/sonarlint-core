@@ -92,11 +92,11 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>org.sonarsource.update-center</groupId>
       <artifactId>sonar-update-center-common</artifactId>
       <version>1.15</version>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

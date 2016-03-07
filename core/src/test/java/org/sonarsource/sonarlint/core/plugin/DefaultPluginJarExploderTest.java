@@ -27,7 +27,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 

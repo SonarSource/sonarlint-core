@@ -25,6 +25,7 @@
     <module>client-api</module>
     <module>core</module>
     <module>rule-extractor</module>
+    <module>its</module>
   </modules>
 
   <build>

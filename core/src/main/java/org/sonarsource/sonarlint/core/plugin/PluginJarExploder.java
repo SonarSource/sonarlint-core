@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.zip.ZipEntry;
 import org.sonar.api.utils.ZipUtils;
-import org.sonarsource.sonarlint.core.container.PluginInfo;
 
 import static org.apache.commons.io.FileUtils.listFiles;
 

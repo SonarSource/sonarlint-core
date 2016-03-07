@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+package org.sonarsource.sonarlint.core.plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,8 +32,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.ZipUtils;
-import org.sonar.updatecenter.common.PluginManifest;
-import org.sonar.updatecenter.common.Version;
 
 import static com.google.common.collect.Ordering.natural;
 import static org.assertj.core.api.Assertions.assertThat;

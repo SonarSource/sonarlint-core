@@ -21,11 +21,10 @@ package org.sonarsource.sonarlint.core.container.connected.sync;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Set;
+import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -46,9 +45,10 @@ public class GlobalSync {
   private final PluginReferencesSync pluginReferenceSync;
   private final GlobalPropertiesSync globalPropertiesSync;
   private final RulesSync rulesSync;
+  private final TempFolder tempFolder;
 
   public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, GlobalConfiguration globalConfig, ServerConfiguration serverConfig,
-    PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync, RulesSync rulesSync) {
+    PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync, RulesSync rulesSync, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.globalConfig = globalConfig;
@@ -56,15 +56,11 @@ public class GlobalSync {
     this.pluginReferenceSync = pluginReferenceSync;
     this.globalPropertiesSync = globalPropertiesSync;
     this.rulesSync = rulesSync;
+    this.tempFolder = tempFolder;
   }
 
   public void sync() {
-    Path temp;
-    try {
-      temp = Files.createTempDirectory(globalConfig.getWorkDir(), "sync");
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create temp directory", e);
-    }
+    Path temp = tempFolder.newDir().toPath();
 
     ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
