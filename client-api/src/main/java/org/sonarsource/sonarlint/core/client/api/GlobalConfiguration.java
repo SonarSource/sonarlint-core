@@ -30,6 +30,11 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * To use SonarLint in connected mode please provide a server id that will identify the storage.
+ * To use in standalone mode please provide list of plugin URLs.  
+ *
+ */
 @Immutable
 public class GlobalConfiguration {
 
@@ -98,7 +103,6 @@ public class GlobalConfiguration {
   }
 
   public static final class Builder {
-    private List<Object> components = new ArrayList<>();
     private boolean verbose = false;
     private LogOutput logOutput;
     private Path sonarlintUserHome;
@@ -112,16 +116,6 @@ public class GlobalConfiguration {
 
     public Builder setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
-      return this;
-    }
-
-    public Builder addComponents(Object... components) {
-      Collections.addAll(this.components, components);
-      return this;
-    }
-
-    public Builder addComponent(Object component) {
-      this.components.add(component);
       return this;
     }
 
@@ -153,16 +147,16 @@ public class GlobalConfiguration {
       return this;
     }
 
-    private void checkNoServer() {
-      if (serverId != null) {
-        throw new UnsupportedOperationException("Unable to manually add plugins in connected mode");
-      }
-    }
-
     public Builder addPlugin(URL pluginUrl) {
       checkNoServer();
       this.pluginUrls.add(pluginUrl);
       return this;
+    }
+
+    private void checkNoServer() {
+      if (serverId != null) {
+        throw new UnsupportedOperationException("Server id already configured");
+      }
     }
 
     public Builder setServerId(String serverId) {

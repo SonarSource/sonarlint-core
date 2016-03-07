@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -40,18 +39,16 @@ public class GlobalSync {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
-  private final GlobalConfiguration globalConfig;
   private final ServerConfiguration serverConfig;
   private final PluginReferencesSync pluginReferenceSync;
   private final GlobalPropertiesSync globalPropertiesSync;
   private final RulesSync rulesSync;
   private final TempFolder tempFolder;
 
-  public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, GlobalConfiguration globalConfig, ServerConfiguration serverConfig,
+  public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, ServerConfiguration serverConfig,
     PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync, RulesSync rulesSync, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
-    this.globalConfig = globalConfig;
     this.serverConfig = serverConfig;
     this.pluginReferenceSync = pluginReferenceSync;
     this.globalPropertiesSync = globalPropertiesSync;
@@ -76,7 +73,7 @@ public class GlobalSync {
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
       .setClientUserAgent(serverConfig.getUserAgent())
-      .setSonarlintCoreVersion(VersionUtils.readSlCoreVersion())
+      .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setSyncTimestamp(new Date().getTime())
       .build();
     ProtobufUtil.writeToFile(syncStatus, temp.resolve(StorageManager.SYNC_STATUS_PB));

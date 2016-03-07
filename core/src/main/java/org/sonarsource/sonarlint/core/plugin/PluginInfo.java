@@ -108,24 +108,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
   @CheckForNull
   private Version minimalSqVersion;
 
-  @CheckForNull
-  private String description;
-
-  @CheckForNull
-  private String organizationName;
-
-  @CheckForNull
-  private String organizationUrl;
-
-  @CheckForNull
-  private String license;
-
-  @CheckForNull
-  private String homepageUrl;
-
-  @CheckForNull
-  private String issueTrackerUrl;
-
   private boolean useChildFirstClassLoader;
 
   @CheckForNull
@@ -180,36 +162,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return mainClass;
   }
 
-  @CheckForNull
-  public String getDescription() {
-    return description;
-  }
-
-  @CheckForNull
-  public String getOrganizationName() {
-    return organizationName;
-  }
-
-  @CheckForNull
-  public String getOrganizationUrl() {
-    return organizationUrl;
-  }
-
-  @CheckForNull
-  public String getLicense() {
-    return license;
-  }
-
-  @CheckForNull
-  public String getHomepageUrl() {
-    return homepageUrl;
-  }
-
-  @CheckForNull
-  public String getIssueTrackerUrl() {
-    return issueTrackerUrl;
-  }
-
   public boolean isUseChildFirstClassLoader() {
     return useChildFirstClassLoader;
   }
@@ -248,36 +200,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
    */
   public PluginInfo setMainClass(String mainClass) {
     this.mainClass = mainClass;
-    return this;
-  }
-
-  public PluginInfo setDescription(@Nullable String description) {
-    this.description = description;
-    return this;
-  }
-
-  public PluginInfo setOrganizationName(@Nullable String s) {
-    this.organizationName = s;
-    return this;
-  }
-
-  public PluginInfo setOrganizationUrl(@Nullable String s) {
-    this.organizationUrl = s;
-    return this;
-  }
-
-  public PluginInfo setLicense(@Nullable String license) {
-    this.license = license;
-    return this;
-  }
-
-  public PluginInfo setHomepageUrl(@Nullable String s) {
-    this.homepageUrl = s;
-    return this;
-  }
-
-  public PluginInfo setIssueTrackerUrl(@Nullable String s) {
-    this.issueTrackerUrl = s;
     return this;
   }
 
@@ -382,16 +304,10 @@ public class PluginInfo implements Comparable<PluginInfo> {
     info.setVersion(Version.create(manifest.getVersion()));
 
     // optional fields
-    info.setDescription(manifest.getDescription());
-    info.setLicense(manifest.getLicense());
-    info.setOrganizationName(manifest.getOrganization());
-    info.setOrganizationUrl(manifest.getOrganizationUrl());
     String minSqVersion = manifest.getSonarVersion();
     if (minSqVersion != null) {
       info.setMinimalSqVersion(Version.create(minSqVersion));
     }
-    info.setHomepageUrl(manifest.getHomepage());
-    info.setIssueTrackerUrl(manifest.getIssueTrackerUrl());
     info.setUseChildFirstClassLoader(manifest.isUseChildFirstClassLoader());
     info.setBasePlugin(manifest.getBasePlugin());
     info.setImplementationBuild(manifest.getImplementationBuild());

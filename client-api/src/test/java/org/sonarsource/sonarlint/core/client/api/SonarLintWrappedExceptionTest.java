@@ -19,9 +19,37 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-public class SonarLintException extends RuntimeException {
+import org.junit.Test;
 
-  public SonarLintException(String msg, Throwable cause) {
-    super(msg, cause);
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class SonarLintWrappedExceptionTest {
+
+  @Test
+  public void wrap() {
+    try {
+      throw SonarLintWrappedException.build(new MyCustomException("Foo"));
+    } catch (Exception e) {
+      assertThat(e).hasMessage("Foo").hasNoCause().isInstanceOf(SonarLintWrappedException.class);
+    }
+
+    try {
+      throw SonarLintWrappedException.build(new MyCustomException("Foo", new MyCustomException("Cause")));
+    } catch (Exception e) {
+      assertThat(e).hasMessage("Foo").isInstanceOf(SonarLintWrappedException.class).hasCauseInstanceOf(SonarLintWrappedException.class);
+    }
   }
+
+  private static class MyCustomException extends RuntimeException {
+
+    public MyCustomException(String message) {
+      super(message);
+    }
+
+    public MyCustomException(String message, Throwable cause) {
+      super(message, cause);
+    }
+
+  }
+
 }

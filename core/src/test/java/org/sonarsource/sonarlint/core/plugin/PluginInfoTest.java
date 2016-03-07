@@ -146,13 +146,7 @@ public class PluginInfoTest {
     assertThat(pluginInfo.getJarFile()).isSameAs(jarFile);
     assertThat(pluginInfo.getMainClass()).isEqualTo("org.foo.FooPlugin");
     assertThat(pluginInfo.getBasePlugin()).isNull();
-    assertThat(pluginInfo.getDescription()).isNull();
-    assertThat(pluginInfo.getHomepageUrl()).isNull();
     assertThat(pluginInfo.getImplementationBuild()).isNull();
-    assertThat(pluginInfo.getIssueTrackerUrl()).isNull();
-    assertThat(pluginInfo.getLicense()).isNull();
-    assertThat(pluginInfo.getOrganizationName()).isNull();
-    assertThat(pluginInfo.getOrganizationUrl()).isNull();
     assertThat(pluginInfo.getMinimalSqVersion()).isNull();
     assertThat(pluginInfo.getRequiredPlugins()).isEmpty();
   }
@@ -166,26 +160,14 @@ public class PluginInfoTest {
     manifest.setMainClass("org.fb.FindbugsPlugin");
     manifest.setBasePlugin("findbugs");
     manifest.setSonarVersion("4.5.1");
-    manifest.setDescription("the desc");
-    manifest.setHomepage("http://fbcontrib.org");
-    manifest.setImplementationBuild("SHA1");
-    manifest.setLicense("LGPL");
-    manifest.setOrganization("SonarSource");
-    manifest.setOrganizationUrl("http://sonarsource.com");
-    manifest.setIssueTrackerUrl("http://jira.com");
     manifest.setRequirePlugins(new String[] {"java:2.0", "pmd:1.3"});
+    manifest.setImplementationBuild("SHA1");
 
     File jarFile = temp.newFile();
     PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getBasePlugin()).isEqualTo("findbugs");
-    assertThat(pluginInfo.getDescription()).isEqualTo("the desc");
-    assertThat(pluginInfo.getHomepageUrl()).isEqualTo("http://fbcontrib.org");
     assertThat(pluginInfo.getImplementationBuild()).isEqualTo("SHA1");
-    assertThat(pluginInfo.getIssueTrackerUrl()).isEqualTo("http://jira.com");
-    assertThat(pluginInfo.getLicense()).isEqualTo("LGPL");
-    assertThat(pluginInfo.getOrganizationName()).isEqualTo("SonarSource");
-    assertThat(pluginInfo.getOrganizationUrl()).isEqualTo("http://sonarsource.com");
     assertThat(pluginInfo.getMinimalSqVersion().getName()).isEqualTo("4.5.1");
     assertThat(pluginInfo.getRequiredPlugins()).extracting("key").containsOnly("java", "pmd");
   }

@@ -78,7 +78,7 @@ public class ProjectSync {
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
       .setClientUserAgent(serverConfig.getUserAgent())
-      .setSonarlintCoreVersion(VersionUtils.readSlCoreVersion())
+      .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setSyncTimestamp(new Date().getTime())
       .build();
     ProtobufUtil.writeToFile(syncStatus, temp.resolve(StorageManager.SYNC_STATUS_PB));

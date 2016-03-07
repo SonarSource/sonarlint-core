@@ -22,13 +22,12 @@ package org.sonarsource.sonarlint.core;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
-import org.sonarsource.sonarlint.core.client.api.SonarLintException;
+import org.sonarsource.sonarlint.core.client.api.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
@@ -89,7 +88,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         globalContainer.startComponents();
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       }
       this.started = true;
     } finally {
@@ -118,7 +117,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         return globalContainer.analyze(configuration, issueListener);
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       }
     } finally {
       rwl.readLock().unlock();
@@ -148,7 +147,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         connectedContainer.startComponents();
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       }
       try {
         connectedContainer.sync();
@@ -156,7 +155,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
         try {
           connectedContainer.stopComponents(false);
         } catch (RuntimeException e) {
-          throw handleException(e);
+          throw SonarLintWrappedException.build(e);
         }
       }
     } finally {
@@ -180,7 +179,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         connectedContainer.startComponents();
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       }
       try {
         return connectedContainer.validateCredentials();
@@ -188,7 +187,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
         try {
           connectedContainer.stopComponents(false);
         } catch (RuntimeException e) {
-          throw handleException(e);
+          throw SonarLintWrappedException.build(e);
         }
       }
     } finally {
@@ -206,7 +205,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         connectedContainer.startComponents();
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       }
       try {
         return connectedContainer.searchModule(exactKeyOrPartialName);
@@ -214,7 +213,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
         try {
           connectedContainer.stopComponents(false);
         } catch (RuntimeException e) {
-          throw handleException(e);
+          throw SonarLintWrappedException.build(e);
         }
       }
     } finally {
@@ -233,7 +232,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         connectedContainer.startComponents();
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       }
       try {
         connectedContainer.syncModule(moduleKey);
@@ -241,7 +240,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
         try {
           connectedContainer.stopComponents(false);
         } catch (RuntimeException e) {
-          throw handleException(e);
+          throw SonarLintWrappedException.build(e);
         }
       }
     } finally {
@@ -273,20 +272,6 @@ public final class SonarLintClientImpl implements SonarLintClient {
     }
   }
 
-  private static RuntimeException handleException(RuntimeException t) {
-    return convertToSonarLintException(t);
-  }
-
-  private static RuntimeException convertToSonarLintException(@Nullable Throwable t) {
-    if (t == null) {
-      return null;
-    }
-    Throwable cause = convertToSonarLintException(t.getCause());
-    SonarLintException sonarLintException = new SonarLintException(t.toString(), t.getMessage(), cause);
-    sonarLintException.setStackTrace(t.getStackTrace());
-    return sonarLintException;
-  }
-
   @Override
   public void stop() {
     rwl.writeLock().lock();
@@ -295,7 +280,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
       try {
         globalContainer.stopComponents(false);
       } catch (RuntimeException e) {
-        throw handleException(e);
+        throw SonarLintWrappedException.build(e);
       } finally {
         this.globalContainer = null;
       }

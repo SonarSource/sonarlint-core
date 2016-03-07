@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.SonarLintClientImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
-import org.sonarsource.sonarlint.core.client.api.SonarLintException;
+import org.sonarsource.sonarlint.core.client.api.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
@@ -150,8 +150,8 @@ public class LogMediumTest {
         });
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(SonarLintException.class)
-        .hasCause(new SonarLintException("org.sonarsource.sonarlint.core.mediumtest.LogMediumTest$MyCustomException", "Fake", null));
+      assertThat(e).isExactlyInstanceOf(SonarLintWrappedException.class)
+        .hasCause(SonarLintWrappedException.build(new MyCustomException("Fake")));
     }
 
   }

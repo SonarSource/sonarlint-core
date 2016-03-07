@@ -73,12 +73,19 @@ public class AnalysisConfiguration {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
+    if (moduleKey != null) {
+      sb.append("  moduleKey: ").append(moduleKey).append("\n");
+    }
     sb.append("  baseDir: ").append(baseDir).append("\n");
     sb.append("  workDir: ").append(workDir).append("\n");
     sb.append("  extraProperties: ").append(extraProperties).append("\n");
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles) {
-      sb.append("    ").append(inputFile.getPath().toString()).append("\n");
+      sb.append("    ").append(inputFile.getPath().toString());
+      if (inputFile.isTest()) {
+        sb.append(" [test]");
+      }
+      sb.append("\n");
     }
     sb.append("  ]\n");
     sb.append("]\n");

@@ -19,9 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-public class SonarLintException extends RuntimeException {
+/**
+ * Client should not depend on this technical class
+ */
+public class SonarLintWrappedException extends SonarLintException {
 
-  public SonarLintException(String msg, Throwable cause) {
+  private final String originalClassToString;
+
+  private SonarLintWrappedException(String originalClassToString, String msg, Throwable cause) {
     super(msg, cause);
+    this.originalClassToString = originalClassToString;
   }
+
+  public static SonarLintWrappedException build(Throwable t) {
+    if (t == null) {
+      return null;
+    }
+    Throwable cause = build(t.getCause());
+    SonarLintWrappedException sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
+    sonarLintException.setStackTrace(t.getStackTrace());
+    return sonarLintException;
+  }
+
+  @Override
+  public String toString() {
+    return originalClassToString;
+  }
+
 }

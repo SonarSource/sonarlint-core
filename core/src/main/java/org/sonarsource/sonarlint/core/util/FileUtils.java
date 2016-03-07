@@ -35,14 +35,11 @@ public class FileUtils {
 
   public static void moveDir(Path temp, Path dest) {
     try {
-      try {
-        Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE);
-      } catch (AtomicMoveNotSupportedException e) {
-        // TODO will not work for non empty directory on different FS
-        Files.move(temp, dest);
-      }
+      Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE);
+    } catch (AtomicMoveNotSupportedException e) {
+      throw new IllegalStateException("Atomic move not supported for " + temp + " to " + dest, e);
     } catch (IOException e) {
-      throw new IllegalStateException("Unable to move directory " + temp + " to " + dest, e);
+      throw new IllegalStateException("Unable to move " + temp + " to " + dest, e);
     }
   }
 

@@ -36,17 +36,9 @@ public final class PluginManifest {
   public static final String KEY = "Plugin-Key";
   public static final String MAIN_CLASS = "Plugin-Class";
   public static final String NAME = "Plugin-Name";
-  public static final String DESCRIPTION = "Plugin-Description";
-  public static final String ORGANIZATION = "Plugin-Organization";
-  public static final String ORGANIZATION_URL = "Plugin-OrganizationUrl";
-  public static final String LICENSE = "Plugin-License";
   public static final String VERSION = "Plugin-Version";
   public static final String SONAR_VERSION = "Sonar-Version";
   public static final String DEPENDENCIES = "Plugin-Dependencies";
-  public static final String HOMEPAGE = "Plugin-Homepage";
-  public static final String TERMS_CONDITIONS_URL = "Plugin-TermsConditionsUrl";
-  public static final String BUILD_DATE = "Plugin-BuildDate";
-  public static final String ISSUE_TRACKER_URL = "Plugin-IssueTrackerUrl";
   public static final String REQUIRE_PLUGINS = "Plugin-RequirePlugins";
 
   /**
@@ -64,35 +56,15 @@ public final class PluginManifest {
    */
   public static final String IMPLEMENTATION_BUILD = "Implementation-Build";
 
-  /**
-   * @since 1.4
-   */
-  public static final String SOURCES_URL = "Plugin-SourcesUrl";
-
-  /**
-   * @since 1.4
-   */
-  public static final String DEVELOPERS = "Plugin-Developers";
-
   private String key;
   private String name;
   private String mainClass;
-  private String description;
-  private String organization;
-  private String organizationUrl;
-  private String license;
   private String version;
   private String sonarVersion;
   private String[] dependencies;
-  private String homepage;
-  private String termsConditionsUrl;
-  private Date buildDate;
-  private String issueTrackerUrl;
   private boolean useChildFirstClassLoader;
   private String basePlugin;
   private String implementationBuild;
-  private String sourcesUrl;
-  private String[] developers;
   private String[] requirePlugins;
 
   /**
@@ -125,7 +97,6 @@ public final class PluginManifest {
 
   public PluginManifest() {
     dependencies = new String[0];
-    developers = new String[0];
     useChildFirstClassLoader = false;
     requirePlugins = new String[0];
   }
@@ -135,26 +106,14 @@ public final class PluginManifest {
     this.key = PluginKeyUtils.sanitize(attributes.getValue(KEY));
     this.mainClass = attributes.getValue(MAIN_CLASS);
     this.name = attributes.getValue(NAME);
-    this.description = attributes.getValue(DESCRIPTION);
-    this.license = attributes.getValue(LICENSE);
-    this.organization = attributes.getValue(ORGANIZATION);
-    this.organizationUrl = attributes.getValue(ORGANIZATION_URL);
     this.version = attributes.getValue(VERSION);
-    this.homepage = attributes.getValue(HOMEPAGE);
-    this.termsConditionsUrl = attributes.getValue(TERMS_CONDITIONS_URL);
     this.sonarVersion = attributes.getValue(SONAR_VERSION);
-    this.issueTrackerUrl = attributes.getValue(ISSUE_TRACKER_URL);
-    this.buildDate = FormatUtils.toDate(attributes.getValue(BUILD_DATE), true);
     this.useChildFirstClassLoader = StringUtils.equalsIgnoreCase(attributes.getValue(USE_CHILD_FIRST_CLASSLOADER), "true");
     this.basePlugin = attributes.getValue(BASE_PLUGIN);
     this.implementationBuild = attributes.getValue(IMPLEMENTATION_BUILD);
-    this.sourcesUrl = attributes.getValue(SOURCES_URL);
 
     String deps = attributes.getValue(DEPENDENCIES);
     this.dependencies = StringUtils.split(StringUtils.defaultString(deps), ' ');
-
-    String devs = attributes.getValue(DEVELOPERS);
-    this.developers = StringUtils.split(StringUtils.defaultString(devs), ',');
 
     String requires = attributes.getValue(REQUIRE_PLUGINS);
     this.requirePlugins = StringUtils.split(StringUtils.defaultString(requires), ',');
@@ -193,41 +152,6 @@ public final class PluginManifest {
     return this;
   }
 
-  public String getDescription() {
-    return description;
-  }
-
-  public PluginManifest setDescription(String description) {
-    this.description = description;
-    return this;
-  }
-
-  public String getOrganization() {
-    return organization;
-  }
-
-  public PluginManifest setOrganization(String organization) {
-    this.organization = organization;
-    return this;
-  }
-
-  public String getOrganizationUrl() {
-    return organizationUrl;
-  }
-
-  public PluginManifest setOrganizationUrl(String url) {
-    this.organizationUrl = url;
-    return this;
-  }
-
-  public String getLicense() {
-    return license;
-  }
-
-  public PluginManifest setLicense(String license) {
-    this.license = license;
-    return this;
-  }
 
   public String getVersion() {
     return version;
@@ -262,42 +186,6 @@ public final class PluginManifest {
 
   public PluginManifest setDependencies(String[] dependencies) {
     this.dependencies = dependencies != null ? dependencies.clone() : null;
-    return this;
-  }
-
-  public Date getBuildDate() {
-    return buildDate != null ? new Date(buildDate.getTime()) : null;
-  }
-
-  public PluginManifest setBuildDate(Date buildDate) {
-    this.buildDate = buildDate != null ? new Date(buildDate.getTime()) : null;
-    return this;
-  }
-
-  public String getHomepage() {
-    return homepage;
-  }
-
-  public PluginManifest setHomepage(String homepage) {
-    this.homepage = homepage;
-    return this;
-  }
-
-  public String getTermsConditionsUrl() {
-    return termsConditionsUrl;
-  }
-
-  public PluginManifest setTermsConditionsUrl(String termsConditionsUrl) {
-    this.termsConditionsUrl = termsConditionsUrl;
-    return this;
-  }
-
-  public String getIssueTrackerUrl() {
-    return issueTrackerUrl;
-  }
-
-  public PluginManifest setIssueTrackerUrl(String issueTrackerUrl) {
-    this.issueTrackerUrl = issueTrackerUrl;
     return this;
   }
 
@@ -343,36 +231,6 @@ public final class PluginManifest {
    */
   public PluginManifest setImplementationBuild(String implementationBuild) {
     this.implementationBuild = implementationBuild;
-    return this;
-  }
-
-  /**
-   * @since 1.4
-   */
-  public String getSourcesUrl() {
-    return sourcesUrl;
-  }
-
-  /**
-   * @since 1.4
-   */
-  public PluginManifest setSourcesUrl(String sourcesUrl) {
-    this.sourcesUrl = sourcesUrl;
-    return this;
-  }
-
-  /**
-   * @since 1.4
-   */
-  public String[] getDevelopers() {
-    return developers;
-  }
-
-  /**
-   * @since 1.4
-   */
-  public PluginManifest setDevelopers(String[] developers) {
-    this.developers = developers;
     return this;
   }
 
