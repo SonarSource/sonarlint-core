@@ -159,12 +159,22 @@ public class GlobalConfiguration {
       }
     }
 
+    /**
+     * Unique identifier for server used for local storage. Only accept a-zA-Z0-9_ characters.
+     */
     public Builder setServerId(String serverId) {
       if (!pluginUrls.isEmpty()) {
         throw new UnsupportedOperationException("Manual plugins already configured");
       }
+      validate(serverId);
       this.serverId = serverId;
       return this;
+    }
+
+    private static void validate(String serverId) {
+      if (!serverId.matches("\\A[a-zA-Z0-9_]+\\z")) {
+        throw new IllegalArgumentException("'" + serverId + "' is not a valid server ID");
+      }
     }
 
     /**

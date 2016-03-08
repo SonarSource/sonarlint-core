@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration.Builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -92,6 +93,23 @@ public class GlobalConfigurationTest {
       .setServerId("myServer")
       .build();
     assertThat(config.getServerId()).isEqualTo("myServer");
+  }
+
+  @Test
+  public void validateServerId() throws Exception {
+    Builder builder = GlobalConfiguration.builder();
+    expectFailure(builder, "my Server");
+    expectFailure(builder, "my:server");
+    expectFailure(builder, "");
+  }
+
+  private void expectFailure(Builder builder, String serverId) {
+    try {
+      builder.setServerId(serverId);
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).hasMessage("'" + serverId + "' is not a valid server ID");
+    }
   }
 
   @Test

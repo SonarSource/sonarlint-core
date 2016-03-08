@@ -25,9 +25,12 @@ public class VersionUtils {
   }
 
   public static String getLibraryVersion() {
-    String version = VersionUtils.class.getPackage().getImplementationVersion();
-    // Return null in UT since JAR is not packaged
-    return version != null ? version : "Unknown";
+    String version = "unknown";
+    Package packageInfo = VersionUtils.class.getPackage();
+    if (packageInfo != null && packageInfo.getImplementationVersion() != null) {
+      version = packageInfo.getImplementationVersion();
+    }
+    return version;
   }
 
 }
