@@ -26,10 +26,10 @@ import java.util.Date;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.SyncStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
@@ -39,17 +39,15 @@ public class GlobalSync {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
-  private final ServerConfiguration serverConfig;
   private final PluginReferencesSync pluginReferenceSync;
   private final GlobalPropertiesSync globalPropertiesSync;
   private final RulesSync rulesSync;
   private final TempFolder tempFolder;
 
-  public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, ServerConfiguration serverConfig,
-    PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync, RulesSync rulesSync, TempFolder tempFolder) {
+  public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync,
+    RulesSync rulesSync, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
-    this.serverConfig = serverConfig;
     this.pluginReferenceSync = pluginReferenceSync;
     this.globalPropertiesSync = globalPropertiesSync;
     this.rulesSync = rulesSync;
@@ -57,12 +55,15 @@ public class GlobalSync {
   }
 
   public void sync() {
-    Path temp = tempFolder.newDir().toPath();
-
     ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
       throw new IllegalStateException("Server not ready (" + serverStatus.getStatus() + ")");
     }
+    Version serverVersion = Version.create(serverStatus.getVersion());
+    if (serverVersion.compareTo(Version.create("5.2")) < 0) {
+      throw new UnsupportedOperationException("SonarQube server version should be 5.2+");
+    }
+    Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
     Set<String> allowedPlugins = globalPropertiesSync.fetchGlobalPropertiesTo(temp);
@@ -72,7 +73,7 @@ public class GlobalSync {
     rulesSync.fetchRulesTo(temp);
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
-      .setClientUserAgent(serverConfig.getUserAgent())
+      .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setSyncTimestamp(new Date().getTime())
       .build();
@@ -83,19 +84,15 @@ public class GlobalSync {
     FileUtils.moveDir(temp, dest);
   }
 
-  public ServerInfos fetchServerInfos() {
+  private ServerInfos fetchServerInfos() {
     WsResponse response = wsClient.get("api/system/status");
-    if (response.isSuccessful()) {
-      String responseStr = response.content();
-      try {
-        ServerInfos.Builder builder = ServerInfos.newBuilder();
-        JsonFormat.parser().merge(responseStr, builder);
-        return builder.build();
-      } catch (InvalidProtocolBufferException e) {
-        throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
-      }
-    } else {
-      throw new IllegalStateException("Unable to get server infos: " + response.code() + " " + response.content());
+    String responseStr = response.content();
+    try {
+      ServerInfos.Builder builder = ServerInfos.newBuilder();
+      JsonFormat.parser().merge(responseStr, builder);
+      return builder.build();
+    } catch (InvalidProtocolBufferException e) {
+      throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
     }
   }
 

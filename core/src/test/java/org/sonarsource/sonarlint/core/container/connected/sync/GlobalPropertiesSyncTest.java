@@ -39,7 +39,7 @@ public class GlobalPropertiesSyncTest {
 
   @Test
   public void testFetchGlobalPropsDefaultPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.mockResponse("api/properties?format=json", "[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
       + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
       + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]");
 
@@ -55,7 +55,7 @@ public class GlobalPropertiesSyncTest {
 
   @Test
   public void testFetchGlobalPropsPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.mockResponse("api/properties?format=json", "[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
       + "{\"key\": \"sonarlint.plugins.whitelist\",\"value\": \"java\"}]");
 
     Path destDir = temp.newFolder().toPath();
@@ -65,7 +65,7 @@ public class GlobalPropertiesSyncTest {
 
   @Test(expected = IllegalStateException.class)
   public void invalidResponse() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.mockResponse("api/properties?format=json", "foo bar");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "foo bar");
 
     Path destDir = temp.newFolder().toPath();
     new GlobalPropertiesSync(wsClient).fetchGlobalPropertiesTo(destDir);

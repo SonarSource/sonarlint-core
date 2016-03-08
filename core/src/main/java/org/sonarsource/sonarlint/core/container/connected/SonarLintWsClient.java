@@ -41,8 +41,10 @@ public class SonarLintWsClient {
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
 
   private final HttpWsClient client;
+  private final String userAgent;
 
   public SonarLintWsClient(ServerConfiguration serverConfig) {
+    this.userAgent = serverConfig.getUserAgent();
     client = buildClient(serverConfig);
   }
 
@@ -102,6 +104,10 @@ public class SonarLintWsClient {
     } catch (Exception e) {
       return responseContent;
     }
+  }
+
+  public String getUserAgent() {
+    return userAgent;
   }
 
 }

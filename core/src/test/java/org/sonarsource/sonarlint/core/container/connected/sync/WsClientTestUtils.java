@@ -27,12 +27,26 @@ import static org.mockito.Mockito.when;
 
 public class WsClientTestUtils {
 
-  public static SonarLintWsClient mockResponse(String url, String response) {
+  public static SonarLintWsClient createMockWithResponse(String url, String response) {
     SonarLintWsClient wsClient = mock(SonarLintWsClient.class);
+    when(wsClient.getUserAgent()).thenReturn("UT");
+    return addResponse(wsClient, url, response);
+  }
+
+  public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, String response) {
     WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsResponse.content())
       .thenReturn(response);
+    return wsClient;
+  }
+
+  public static SonarLintWsClient createMockWithStreamResponse(String url, String resourcePath) {
+    SonarLintWsClient wsClient = mock(SonarLintWsClient.class);
+    when(wsClient.getUserAgent()).thenReturn("UT");
+    WsResponse wsResponse = mock(WsResponse.class);
+    when(wsClient.get(url)).thenReturn(wsResponse);
+    when(wsResponse.contentStream()).thenReturn(WsClientTestUtils.class.getResourceAsStream(resourcePath));
     return wsClient;
   }
 

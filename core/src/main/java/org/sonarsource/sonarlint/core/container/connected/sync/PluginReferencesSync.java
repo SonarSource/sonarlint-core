@@ -52,36 +52,29 @@ public class PluginReferencesSync {
 
   public void fetchPluginsTo(Path dest, Set<String> allowedPlugins) {
     WsResponse response = wsClient.get("deploy/plugins/index.txt");
-    if (response.isSuccessful()) {
-      PluginReferences.Builder builder = PluginReferences.newBuilder();
-      String responseStr = response.content();
-      Scanner scanner = new Scanner(responseStr);
-      while (scanner.hasNextLine()) {
-        String line = scanner.nextLine();
-        String[] fields = StringUtils.split(line, ",");
-        if (fields.length >= 2) {
-          String[] nameAndHash = StringUtils.split(fields[1], "|");
-          String key = fields[0];
-          if (!allowedPlugins.contains(key)) {
-            LOG.debug("Plugin {} is not in the SonarLint whitelist. Skip it.", key);
-            continue;
-          }
-          String filename = nameAndHash[0];
-          String hash = nameAndHash[1];
-          builder.addReference(PluginReference.newBuilder()
-            .setKey(key)
-            .setHash(hash)
-            .setFilename(filename)
-            .build());
-          pluginCache.get(filename, hash, new SonarQubeServerPluginDownloader(key));
-        }
+    PluginReferences.Builder builder = PluginReferences.newBuilder();
+    String responseStr = response.content();
+    Scanner scanner = new Scanner(responseStr);
+    while (scanner.hasNextLine()) {
+      String line = scanner.nextLine();
+      String[] fields = StringUtils.split(line, ",");
+      String[] nameAndHash = StringUtils.split(fields[1], "|");
+      String key = fields[0];
+      if (!allowedPlugins.contains(key)) {
+        LOG.debug("Plugin {} is not in the SonarLint whitelist. Skip it.", key);
+        continue;
       }
-      scanner.close();
-      ProtobufUtil.writeToFile(builder.build(), dest.resolve(StorageManager.PLUGIN_REFERENCES_PB));
-    } else {
-      throw new IllegalStateException("Unable to get plugin list: " + response.code() + " " + response.content());
+      String filename = nameAndHash[0];
+      String hash = nameAndHash[1];
+      builder.addReference(PluginReference.newBuilder()
+        .setKey(key)
+        .setHash(hash)
+        .setFilename(filename)
+        .build());
+      pluginCache.get(filename, hash, new SonarQubeServerPluginDownloader(key));
     }
-
+    scanner.close();
+    ProtobufUtil.writeToFile(builder.build(), dest.resolve(StorageManager.PLUGIN_REFERENCES_PB));
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Downloader {

@@ -33,7 +33,7 @@ public class StorageManager {
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
-  public static final String CONFIGURATION_PB = "configuration.pb";
+  public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
   public static final String RULES_PB = "rules.pb";
   public static final String SYNC_STATUS_PB = "sync_status.pb";
   public static final String SERVER_INFO_PB = "server_info.pb";
@@ -58,11 +58,12 @@ public class StorageManager {
   }
 
   public Path getModuleStorageRoot(String moduleKey) {
+    // FIXME doesn't work when module key contains "/" for example
     return moduleStorageRoot.resolve(moduleKey);
   }
 
   public Path getModuleConfigurationPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(CONFIGURATION_PB);
+    return getModuleStorageRoot(moduleKey).resolve(MODULE_CONFIGURATION_PB);
   }
 
   public Path getModuleSyncStatusPath(String moduleKey) {

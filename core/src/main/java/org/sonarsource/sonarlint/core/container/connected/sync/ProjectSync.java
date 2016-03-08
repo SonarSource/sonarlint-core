@@ -23,17 +23,15 @@ import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Set;
 import org.apache.commons.io.IOUtils;
+import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -48,23 +46,15 @@ public class ProjectSync {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
-  private final GlobalConfiguration globalConfig;
-  private final ServerConfiguration serverConfig;
+  private final TempFolder tempFolder;
 
-  public ProjectSync(StorageManager storageManager, SonarLintWsClient wsClient, GlobalConfiguration globalConfig, ServerConfiguration serverConfig) {
+  public ProjectSync(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
-    this.globalConfig = globalConfig;
-    this.serverConfig = serverConfig;
+    this.tempFolder = tempFolder;
   }
 
   public void sync(String moduleKey) {
-    Path temp;
-    try {
-      temp = Files.createTempDirectory(globalConfig.getWorkDir(), "sync");
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create temp directory", e);
-    }
 
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
     Set<String> qProfileKeys = storageManager.readRulesFromStorage().getQprofilesByKey().keySet();
@@ -74,10 +64,11 @@ public class ProjectSync {
     fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
     fetchProjectProperties(moduleKey, globalProps, builder);
 
-    ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.CONFIGURATION_PB));
+    Path temp = tempFolder.newDir().toPath();
+    ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
-      .setClientUserAgent(serverConfig.getUserAgent())
+      .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setSyncTimestamp(new Date().getTime())
       .build();
@@ -115,26 +106,31 @@ public class ProjectSync {
       reader.beginArray();
       while (reader.hasNext()) {
         reader.beginObject();
-        String key = null;
-        String value = null;
-        while (reader.hasNext()) {
-          String propName = reader.nextName();
-          if ("key".equals(propName)) {
-            key = reader.nextString();
-          } else if ("value".equals(propName)) {
-            value = reader.nextString();
-          } else {
-            reader.skipValue();
-          }
-        }
-        if (!globalProps.getProperties().containsKey(key) || !globalProps.getProperties().get(key).equals(value)) {
-          projectConfigurationBuilder.getMutableProperties().put(key, value);
-        }
+        parseProperty(globalProps, projectConfigurationBuilder, reader);
         reader.endObject();
       }
       reader.endArray();
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse project properties from: " + response.content(), e);
+    }
+  }
+
+  private void parseProperty(GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder, JsonReader reader) throws IOException {
+    String key = null;
+    String value = null;
+    while (reader.hasNext()) {
+      String propName = reader.nextName();
+      if ("key".equals(propName)) {
+        key = reader.nextString();
+      } else if ("value".equals(propName)) {
+        value = reader.nextString();
+      } else {
+        reader.skipValue();
+      }
+    }
+    // Storage optimisation: don't store properties having same value than global properties
+    if (!globalProps.getProperties().containsKey(key) || !globalProps.getProperties().get(key).equals(value)) {
+      projectConfigurationBuilder.getMutableProperties().put(key, value);
     }
   }
 
