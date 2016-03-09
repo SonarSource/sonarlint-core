@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-import java.util.List;
+import java.util.Map;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
@@ -78,7 +78,7 @@ public interface SonarLintEngine {
    * Get information about current sync state
    * @return null if server was never synced
    * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
+   * @throws UnsupportedOperationException for standalone mode
    */
   @CheckForNull
   GlobalSyncStatus getSyncStatus();
@@ -87,17 +87,17 @@ public interface SonarLintEngine {
    * Get information about module sync state
    * @return null if module was never synced
    * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
+   * @throws UnsupportedOperationException for standalone mode
    */
   @CheckForNull
   ModuleSyncStatus getModuleSyncStatus(String moduleKey);
 
   /**
-   * Find module. First result is exact key match then partial key matches then fulltext name matches.
+   * Return all modules by key
    * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
+   * @throws UnsupportedOperationException for standalone mode
    */
-  List<RemoteModule> searchModule(String searchString);
+  Map<String, RemoteModule> allModulesByKey();
 
   // REQUIRES SERVER TO BE REACHABLE
 
@@ -112,14 +112,14 @@ public interface SonarLintEngine {
   /**
    * Sync current server.
    * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
+   * @throws UnsupportedOperationException for standalone mode
    */
-  void sync(ServerConfiguration serverConfig);
+  GlobalSyncStatus sync(ServerConfiguration serverConfig);
 
   /**
    * Sync given module.
    * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
+   * @throws UnsupportedOperationException for standalone mode
    */
   void syncModule(ServerConfiguration serverConfig, String moduleKey);
 

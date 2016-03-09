@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
@@ -145,7 +146,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   }
 
   @Override
-  public void sync(ServerConfiguration serverConfig) {
+  public GlobalSyncStatus sync(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
@@ -153,17 +154,21 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     changeState(State.SYNCING);
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
-      connectedContainer.startComponents();
-      connectedContainer.sync();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.build(e);
-    } finally {
       try {
-        connectedContainer.stopComponents(false);
-      } catch (Exception e) {
-        // Ignore
+        connectedContainer.startComponents();
+        connectedContainer.sync();
+      } catch (RuntimeException e) {
+        throw SonarLintWrappedException.build(e);
+      } finally {
+        try {
+          connectedContainer.stopComponents(false);
+        } catch (Exception e) {
+          // Ignore
+        }
+        start();
       }
-      start();
+      return ((StorageGlobalContainer) globalContainer).getSyncStatus();
+    } finally {
       rwl.writeLock().unlock();
     }
   }
@@ -200,11 +205,11 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   }
 
   @Override
-  public List<RemoteModule> searchModule(String searchString) {
+  public Map<String, RemoteModule> allModulesByKey() {
     checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return ((StorageGlobalContainer) globalContainer).searchModule(searchString);
+      return ((StorageGlobalContainer) globalContainer).allModulesByKey();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.build(e);
     } finally {
@@ -217,7 +222,6 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
-    stop();
     changeState(State.SYNCING);
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
@@ -231,7 +235,6 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       } catch (Exception e) {
         // Ignore
       }
-      start();
       rwl.writeLock().unlock();
     }
   }

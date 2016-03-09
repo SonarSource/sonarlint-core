@@ -20,9 +20,8 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 
 public class StorageGlobalContainer extends GlobalContainer {
 
-  private static final int MAX_SEARCH_RESULTS = 10;
   private static final Logger LOG = LoggerFactory.getLogger(StorageGlobalContainer.class);
 
   public static StorageGlobalContainer create(GlobalConfiguration globalConfig) {
@@ -137,30 +135,12 @@ public class StorageGlobalContainer extends GlobalContainer {
     return getComponentByType(StorageManager.class).getModuleSyncStatus(moduleKey);
   }
 
-  public List<RemoteModule> searchModule(String searchString) {
-    List<RemoteModule> results = new ArrayList<>();
+  public Map<String, RemoteModule> allModulesByKey() {
+    Map<String, RemoteModule> results = new HashMap<>();
     ModuleList readModuleListFromStorage = getComponentByType(StorageManager.class).readModuleListFromStorage();
     Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKey();
-    if (modulesByKey.containsKey(searchString)) {
-      results.add(new DefaultRemoteModule(modulesByKey.get(searchString)));
-    }
-    // First pass to search for key substring
     for (Map.Entry<String, Sonarlint.ModuleList.Module> entry : modulesByKey.entrySet()) {
-      if (results.size() > MAX_SEARCH_RESULTS) {
-        break;
-      }
-      if (entry.getKey().contains(searchString)) {
-        results.add(new DefaultRemoteModule(entry.getValue()));
-      }
-    }
-    // Second pass to search for name substring
-    for (Sonarlint.ModuleList.Module module : modulesByKey.values()) {
-      if (results.size() >= MAX_SEARCH_RESULTS) {
-        break;
-      }
-      if (module.getName().contains(searchString)) {
-        results.add(new DefaultRemoteModule(module));
-      }
+      results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));
     }
     return results;
   }
