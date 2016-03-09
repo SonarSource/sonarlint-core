@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected.rule;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rules;
@@ -30,13 +30,13 @@ import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
 import org.sonarsource.sonarlint.core.container.global.ExtensionUtils;
 
-public class OfflineRuleRepositoryContainer extends ComponentContainer {
+public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   private Rules rules;
   private ActiveRules activeRules;
   private Context ruleDefinitions;
 
-  public OfflineRuleRepositoryContainer(ComponentContainer parent) {
+  public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
     super(parent);
   }
 
@@ -47,11 +47,11 @@ public class OfflineRuleRepositoryContainer extends ComponentContainer {
   }
 
   private void addCoreComponents() {
-    add(OfflinePluginRulesLoader.class,
-      new OfflineRulesProvider(),
+    add(StandalonePluginRulesLoader.class,
+      new StandaloneRulesProvider(),
       RuleFinderCompatibility.class,
       XMLProfileParser.class,
-      new OfflineActiveRulesProvider());
+      new StandaloneActiveRulesProvider());
   }
 
   private void addPluginExtensions() {
@@ -70,7 +70,7 @@ public class OfflineRuleRepositoryContainer extends ComponentContainer {
   public void doAfterStart() {
     rules = getComponentByType(Rules.class);
     activeRules = getComponentByType(ActiveRules.class);
-    OfflinePluginRulesLoader offlineRulesLoader = getComponentByType(OfflinePluginRulesLoader.class);
+    StandalonePluginRulesLoader offlineRulesLoader = getComponentByType(StandalonePluginRulesLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
   }
 

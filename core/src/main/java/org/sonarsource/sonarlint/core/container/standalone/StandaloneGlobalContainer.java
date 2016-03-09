@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected;
+package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.unconnected.rule.OfflineRuleRepositoryContainer;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -50,16 +50,16 @@ import org.sonarsource.sonarlint.core.plugin.PluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
-public class UnconnectedGlobalContainer extends GlobalContainer {
+public class StandaloneGlobalContainer extends GlobalContainer {
 
   private Rules rules;
   private ActiveRules activeRules;
   private Context rulesDefinitions;
 
-  public static UnconnectedGlobalContainer create(GlobalConfiguration globalConfig) {
-    UnconnectedGlobalContainer container = new UnconnectedGlobalContainer();
+  public static StandaloneGlobalContainer create(GlobalConfiguration globalConfig) {
+    StandaloneGlobalContainer container = new StandaloneGlobalContainer();
     container.add(globalConfig);
-    container.add(new UnconnectedPluginIndexProvider(globalConfig.getPluginUrls()));
+    container.add(new StandalonePluginIndexProvider(globalConfig.getPluginUrls()));
     return container;
   }
 
@@ -87,7 +87,7 @@ public class UnconnectedGlobalContainer extends GlobalContainer {
   }
 
   private void loadRulesAndActiveRulesFromPlugins() {
-    OfflineRuleRepositoryContainer container = new OfflineRuleRepositoryContainer(this);
+    StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
     rules = container.getRules();
     activeRules = container.getActiveRules();

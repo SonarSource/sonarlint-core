@@ -34,6 +34,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -75,19 +76,16 @@ public class ConnectedModeTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
 
-  private static SonarLintClient client;
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
+
+  private SonarLintClient client;
 
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
     sonarUserHome = temp.newFolder().toPath();
-    client = new SonarLintClientImpl(GlobalConfiguration.builder()
-      .setServerId("orchestrator")
-      .setSonarLintUserHome(sonarUserHome)
-      .build());
 
     removeGroupPermission("anyone", "scan");
 
@@ -103,9 +101,17 @@ public class ConnectedModeTest {
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
   }
 
+  @Before
+  public void start() {
+    FileUtils.deleteQuietly(sonarUserHome.toFile());
+    client = new SonarLintClientImpl(GlobalConfiguration.builder()
+      .setServerId("orchestrator")
+      .setSonarLintUserHome(sonarUserHome)
+      .build());
+  }
+
   @After
   public void stop() {
-    FileUtils.deleteQuietly(sonarUserHome.toFile());
     try {
       client.stop();
     } catch (Exception e) {
@@ -134,8 +140,6 @@ public class ConnectedModeTest {
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    client.start();
-
     assertThat(client.getSyncStatus()).isNotNull();
     assertThat(client.getSyncStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
@@ -158,8 +162,6 @@ public class ConnectedModeTest {
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build(), PROJECT_KEY);
 
-    client.start();
-
     assertThat(client.getModuleSyncStatus(PROJECT_KEY)).isNotNull();
   }
 
@@ -176,8 +178,6 @@ public class ConnectedModeTest {
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build(), PROJECT_KEY);
-
-    client.start();
 
     ClientInputFile inputFile = new ClientInputFile() {
 

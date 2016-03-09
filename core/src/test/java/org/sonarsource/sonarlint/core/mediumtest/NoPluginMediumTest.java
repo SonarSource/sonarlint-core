@@ -66,7 +66,6 @@ public class NoPluginMediumTest {
         }
       })
       .build());
-    sonarlint.start();
 
     baseDir = temp.newFolder();
   }

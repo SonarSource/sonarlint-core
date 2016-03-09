@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,7 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.container.unconnected;
+package org.sonarsource.sonarlint.core.client.api;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.sonarsource.sonarlint.core.client.api.SonarLintClient.State;
+
+public interface StateListener {
+
+  public void stateChanged(State newState);
+}

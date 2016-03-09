@@ -36,17 +36,22 @@ import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
  */
 public interface SonarLintClient {
 
-  // COMMON TO UNCONNECTED AND CONNECTED MODES
+  enum State {
+    UNKNOW,
+    SYNCING,
+    NOT_SYNCED,
+    SYNCED
+  }
 
-  /**
-   * Load analyzers and be ready to start analysis using {@link #analyze(AnalysisConfiguration, IssueListener)}
-   */
-  void start();
+  State getState();
 
-  /**
-   * Unload everything.
-   */
   void stop();
+
+  void addStateListener(StateListener listener);
+
+  void removeStateListener(StateListener listener);
+
+  // COMMON TO UNCONNECTED AND CONNECTED MODES
 
   /**
    * Change verbosity at runtime
@@ -97,7 +102,7 @@ public interface SonarLintClient {
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
-   * Check it is possible to reach server with provided configuration
+   * Check if it is possible to reach server with provided configuration
    * @since 2.0
    */
   ValidationResult validateCredentials(ServerConfiguration serverConfig);
@@ -105,14 +110,14 @@ public interface SonarLintClient {
   // REQUIRES SERVER TO BE REACHABLE AND SONARLINT CLIENT SHOULD BE STOPPED
 
   /**
-   * Sync current server. Client should be stopped ({@link #stop()} during the sync process.
+   * Sync current server.
    * @since 2.0
    * @throws UnsupportedOperationException for unconnected mode
    */
   void sync(ServerConfiguration serverConfig);
 
   /**
-   * Sync given module. Client should be stopped ({@link #stop()} during the sync process.
+   * Sync given module.
    * @since 2.0
    * @throws UnsupportedOperationException for unconnected mode
    */

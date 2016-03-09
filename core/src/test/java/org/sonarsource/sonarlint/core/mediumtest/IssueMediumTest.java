@@ -65,7 +65,6 @@ public class IssueMediumTest {
       .setVerbose(true)
       .build();
     sonarlint = new SonarLintClientImpl(config);
-    sonarlint.start();
 
     baseDir = temp.newFolder();
   }

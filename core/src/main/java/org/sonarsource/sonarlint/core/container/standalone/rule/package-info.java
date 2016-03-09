@@ -18,6 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 @ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.container.unconnected.rule;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import javax.annotation.ParametersAreNonnullByDefault;

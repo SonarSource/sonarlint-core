@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected;
+package org.sonarsource.sonarlint.core.container.standalone;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider;
 /**
  * List of plugins are provided by client
  */
-public class UnconnectedPluginIndexProvider implements PluginIndexProvider {
+public class StandalonePluginIndexProvider implements PluginIndexProvider {
 
   private static final class UrlToPluginReference implements Function<URL, PluginReference> {
     @Override
@@ -56,7 +56,7 @@ public class UnconnectedPluginIndexProvider implements PluginIndexProvider {
 
   private final List<URL> pluginUrls;
 
-  public UnconnectedPluginIndexProvider(List<URL> pluginUrls) {
+  public StandalonePluginIndexProvider(List<URL> pluginUrls) {
     this.pluginUrls = pluginUrls;
   }
 

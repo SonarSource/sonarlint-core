@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected.rule;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
@@ -49,7 +49,7 @@ public class RuleFinderCompatibility implements RuleFinder {
 
   private final RulesDefinition.Context context;
 
-  public RuleFinderCompatibility(OfflinePluginRulesLoader rules) {
+  public RuleFinderCompatibility(StandalonePluginRulesLoader rules) {
     this.context = rules.getContext();
   }
 

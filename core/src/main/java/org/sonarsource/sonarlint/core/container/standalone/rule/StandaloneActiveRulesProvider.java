@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected.rule;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ArrayListMultimap;
@@ -43,7 +43,7 @@ import org.sonar.api.utils.ValidationMessages;
  * Loads the rules that are activated on the Quality profiles
  * used by the current project and builds {@link org.sonar.api.batch.rule.ActiveRules}.
  */
-public class OfflineActiveRulesProvider extends ProviderAdapter {
+public class StandaloneActiveRulesProvider extends ProviderAdapter {
   private ActiveRules singleton = null;
 
   public ActiveRules provide(ProfileDefinition[] profileDefinitions) {

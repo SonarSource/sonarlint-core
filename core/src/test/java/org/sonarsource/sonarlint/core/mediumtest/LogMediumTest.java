@@ -76,7 +76,6 @@ public class LogMediumTest {
       })
       .build();
     sonarlint = new SonarLintClientImpl(config);
-    sonarlint.start();
 
     baseDir = temp.newFolder();
   }
@@ -112,27 +111,6 @@ public class LogMediumTest {
       });
 
     assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
-  }
-
-  @Test
-  public void alreadyStartedStopped() {
-    try {
-      sonarlint.start();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("SonarLint Engine is already started");
-    }
-
-    sonarlint.stop();
-
-    try {
-      sonarlint.stop();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("SonarLint Engine is not started");
-    }
-
-    sonarlint.start();
   }
 
   @Test

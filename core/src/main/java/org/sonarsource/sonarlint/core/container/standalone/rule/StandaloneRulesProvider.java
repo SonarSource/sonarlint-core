@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected.rule;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.rule.Rules;
@@ -28,10 +28,10 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
 
-public class OfflineRulesProvider extends ProviderAdapter {
+public class StandaloneRulesProvider extends ProviderAdapter {
   private Rules singleton = null;
 
-  public Rules provide(OfflinePluginRulesLoader pluginRulesLoader) {
+  public Rules provide(StandalonePluginRulesLoader pluginRulesLoader) {
     if (singleton == null) {
       RulesBuilder builder = new RulesBuilder();
 

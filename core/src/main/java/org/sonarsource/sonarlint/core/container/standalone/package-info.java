@@ -17,31 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.unconnected.rule;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.standalone;
 
-import org.sonar.api.server.rule.RulesDefinition;
-
-/**
- * Load rules directly from plugins {@link RulesDefinition}
- */
-public class OfflinePluginRulesLoader {
-  private final RulesDefinition.Context context;
-
-  public OfflinePluginRulesLoader() {
-    // No plugin installed
-    context = new RulesDefinition.Context();
-  }
-
-  public OfflinePluginRulesLoader(RulesDefinition[] pluginDefs) {
-
-    context = new RulesDefinition.Context();
-    for (RulesDefinition pluginDefinition : pluginDefs) {
-      pluginDefinition.define(context);
-    }
-  }
-
-  public RulesDefinition.Context getContext() {
-    return context;
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

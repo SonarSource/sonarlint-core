@@ -32,7 +32,7 @@ import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.SonarLintClientImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration.Builder;
-import org.sonarsource.sonarlint.core.container.unconnected.UnconnectedGlobalContainer;
+import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJson;
@@ -53,7 +53,7 @@ public class Main {
     client.start();
 
     Table<String, String, RuleDetails> rulesByKeyAndLanguage = TreeBasedTable.create();
-    for (String ruleKeyStr : ((UnconnectedGlobalContainer) client.getGlobalContainer()).getActiveRuleKeys()) {
+    for (String ruleKeyStr : ((StandaloneGlobalContainer) client.getGlobalContainer()).getActiveRuleKeys()) {
       RuleDetails ruleDetails = client.getRuleDetails(ruleKeyStr);
       RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
       rulesByKeyAndLanguage.put(ruleKey.rule(), ruleDetails.getLanguage(), ruleDetails);
