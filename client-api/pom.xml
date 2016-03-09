@@ -16,6 +16,7 @@
       <version>3.0.1</version>
       <scope>provided</scope>
     </dependency>
+    <!-- unit tests -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
