@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-import org.sonarsource.sonarlint.core.client.api.SonarLintClient.State;
+import org.sonarsource.sonarlint.core.client.api.SonarLintEngine.State;
 
 public interface StateListener {
 

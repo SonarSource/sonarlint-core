@@ -34,11 +34,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.SonarLintClientImpl;
+import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.LogOutput.Level;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
+import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
@@ -51,13 +51,13 @@ public class NoPluginMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private SonarLintClient sonarlint;
+  private SonarLintEngine sonarlint;
   private File baseDir;
   private Multimap<LogOutput.Level, String> logs = LinkedListMultimap.create();
 
   @Before
   public void prepare() throws IOException {
-    sonarlint = new SonarLintClientImpl(GlobalConfiguration.builder()
+    sonarlint = new SonarLintEngineImpl(GlobalConfiguration.builder()
       .setLogOutput(new LogOutput() {
 
         @Override

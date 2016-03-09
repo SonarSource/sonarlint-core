@@ -34,10 +34,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.SonarLintClientImpl;
+import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
+import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
@@ -51,7 +51,7 @@ public class IssueMediumTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-  private static SonarLintClient sonarlint;
+  private static SonarLintEngine sonarlint;
   private static File baseDir;
 
   @BeforeClass
@@ -64,7 +64,7 @@ public class IssueMediumTest {
       .setSonarLintUserHome(temp.newFolder().toPath())
       .setVerbose(true)
       .build();
-    sonarlint = new SonarLintClientImpl(config);
+    sonarlint = new SonarLintEngineImpl(config);
 
     baseDir = temp.newFolder();
   }

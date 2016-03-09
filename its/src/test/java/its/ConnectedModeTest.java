@@ -46,9 +46,9 @@ import org.sonarqube.ws.client.HttpWsClient;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.AddUserWsRequest;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarsource.sonarlint.core.SonarLintClientImpl;
+import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
+import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
@@ -79,7 +79,7 @@ public class ConnectedModeTest {
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
 
-  private SonarLintClient client;
+  private SonarLintEngine engine;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -104,7 +104,7 @@ public class ConnectedModeTest {
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
-    client = new SonarLintClientImpl(GlobalConfiguration.builder()
+    engine = new SonarLintEngineImpl(GlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .build());
@@ -113,7 +113,7 @@ public class ConnectedModeTest {
   @After
   public void stop() {
     try {
-      client.stop();
+      engine.stop();
     } catch (Exception e) {
       // Ignore
     }
@@ -122,7 +122,7 @@ public class ConnectedModeTest {
   @Test
   public void syncNoAuth() throws Exception {
     try {
-      client.sync(ServerConfiguration.builder()
+      engine.sync(ServerConfiguration.builder()
         .url(ORCHESTRATOR.getServer().getUrl())
         .userAgent("SonarLint ITs")
         .build());
@@ -134,46 +134,46 @@ public class ConnectedModeTest {
 
   @Test
   public void globalSync() throws Exception {
-    client.sync(ServerConfiguration.builder()
+    engine.sync(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    assertThat(client.getSyncStatus()).isNotNull();
-    assertThat(client.getSyncStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
+    assertThat(engine.getSyncStatus()).isNotNull();
+    assertThat(engine.getSyncStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
-    assertThat(client.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are two important requirements");
+    assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are two important requirements");
 
-    assertThat(client.getModuleSyncStatus(PROJECT_KEY)).isNull();
+    assertThat(engine.getModuleSyncStatus(PROJECT_KEY)).isNull();
   }
 
   @Test
   public void syncProject() throws Exception {
-    client.sync(ServerConfiguration.builder()
+    engine.sync(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    client.syncModule(ServerConfiguration.builder()
+    engine.syncModule(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build(), PROJECT_KEY);
 
-    assertThat(client.getModuleSyncStatus(PROJECT_KEY)).isNotNull();
+    assertThat(engine.getModuleSyncStatus(PROJECT_KEY)).isNotNull();
   }
 
   @Test
   public void analysisUseQualityProfile() throws Exception {
-    client.sync(ServerConfiguration.builder()
+    engine.sync(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    client.syncModule(ServerConfiguration.builder()
+    engine.syncModule(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
@@ -204,7 +204,7 @@ public class ConnectedModeTest {
 
     final List<Issue> issues = new ArrayList<>();
 
-    client.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
+    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
       ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
 
         @Override

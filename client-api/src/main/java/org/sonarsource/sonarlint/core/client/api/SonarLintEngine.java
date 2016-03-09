@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 /**
  * Entry point for SonarLint.
  */
-public interface SonarLintClient {
+public interface SonarLintEngine {
 
   enum State {
     UNKNOW,

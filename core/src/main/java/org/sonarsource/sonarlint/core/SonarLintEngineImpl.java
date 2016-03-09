@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
+import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.StateListener;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class SonarLintClientImpl implements SonarLintClient {
+public final class SonarLintEngineImpl implements SonarLintEngine {
 
   private final GlobalConfiguration globalConfig;
   private GlobalContainer globalContainer;
@@ -51,7 +51,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
   private final List<StateListener> listeners = new ArrayList<>();
   private State state = State.UNKNOW;
 
-  public SonarLintClientImpl(GlobalConfiguration globalConfig) {
+  public SonarLintEngineImpl(GlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
     LoggingConfigurator.init(globalConfig.isVerbose(), globalConfig.getLogOutput());
     start();
@@ -169,9 +169,13 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   private void checkConnectedMode() {
-    if (globalConfig.getServerId() == null) {
+    if (!isConnectedMode()) {
       throw new UnsupportedOperationException("Requires to be in connected mode");
     }
+  }
+
+  private boolean isConnectedMode() {
+    return globalConfig.getServerId() != null;
   }
 
   @Override
