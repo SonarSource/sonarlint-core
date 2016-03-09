@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ProjectSyncTest {
+public class ModuleConfigSyncTest {
 
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
   @Rule
@@ -78,7 +78,7 @@ public class ProjectSyncTest {
 
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    ProjectSync projectSync = new ProjectSync(storageManager, wsClient, tempFolder);
+    ModuleConfigSync projectSync = new ModuleConfigSync(storageManager, wsClient, tempFolder);
 
     projectSync.sync(MODULE_KEY_WITH_BRANCH);
 

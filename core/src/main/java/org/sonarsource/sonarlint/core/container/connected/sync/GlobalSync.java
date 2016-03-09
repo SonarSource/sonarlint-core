@@ -43,14 +43,16 @@ public class GlobalSync {
   private final GlobalPropertiesSync globalPropertiesSync;
   private final RulesSync rulesSync;
   private final TempFolder tempFolder;
+  private final ModuleListSync moduleListSync;
 
   public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync,
-    RulesSync rulesSync, TempFolder tempFolder) {
+    RulesSync rulesSync, ModuleListSync moduleListSync, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.pluginReferenceSync = pluginReferenceSync;
     this.globalPropertiesSync = globalPropertiesSync;
     this.rulesSync = rulesSync;
+    this.moduleListSync = moduleListSync;
     this.tempFolder = tempFolder;
   }
 
@@ -71,6 +73,7 @@ public class GlobalSync {
     pluginReferenceSync.fetchPluginsTo(temp, allowedPlugins);
 
     rulesSync.fetchRulesTo(temp);
+    moduleListSync.fetchModulesList(temp);
 
     SyncStatus syncStatus = SyncStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())

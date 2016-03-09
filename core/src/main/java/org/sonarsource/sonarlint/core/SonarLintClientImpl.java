@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintClient;
@@ -44,8 +42,6 @@ import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class SonarLintClientImpl implements SonarLintClient {
-
-  private static final Logger LOG = LoggerFactory.getLogger(SonarLintClientImpl.class);
 
   private volatile boolean started = false;
   private final GlobalConfiguration globalConfig;
@@ -126,7 +122,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
 
   @Override
   public GlobalSyncStatus getSyncStatus() {
-    checkMode();
+    checkConnectedMode();
     rwl.readLock().lock();
     try {
       checkStarted();
@@ -139,7 +135,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
   @Override
   public void sync(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    checkMode();
+    checkConnectedMode();
     rwl.writeLock().lock();
     try {
       checkStopped();
@@ -163,16 +159,16 @@ public final class SonarLintClientImpl implements SonarLintClient {
     }
   }
 
-  private void checkMode() {
+  private void checkConnectedMode() {
     if (globalConfig.getServerId() == null) {
-      throw new UnsupportedOperationException("Unable to sync in unconnected mode");
+      throw new UnsupportedOperationException("Requires to be in connected mode");
     }
   }
 
   @Override
   public ValidationResult validateCredentials(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    checkMode();
+    checkConnectedMode();
     rwl.readLock().lock();
     try {
       ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
@@ -196,25 +192,15 @@ public final class SonarLintClientImpl implements SonarLintClient {
   }
 
   @Override
-  public List<RemoteModule> searchModule(ServerConfiguration serverConfig, String exactKeyOrPartialName) {
-    checkNotNull(serverConfig);
-    checkMode();
+  public List<RemoteModule> searchModule(String searchString) {
+    checkConnectedMode();
     rwl.readLock().lock();
     try {
-      ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+      checkStarted();
       try {
-        connectedContainer.startComponents();
+        return ((StorageGlobalContainer) globalContainer).searchModule(searchString);
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.build(e);
-      }
-      try {
-        return connectedContainer.searchModule(exactKeyOrPartialName);
-      } finally {
-        try {
-          connectedContainer.stopComponents(false);
-        } catch (RuntimeException e) {
-          throw SonarLintWrappedException.build(e);
-        }
       }
     } finally {
       rwl.readLock().unlock();
@@ -224,7 +210,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
   @Override
   public void syncModule(ServerConfiguration serverConfig, String moduleKey) {
     checkNotNull(serverConfig);
-    checkMode();
+    checkConnectedMode();
     rwl.writeLock().lock();
     try {
       checkStopped();
@@ -250,7 +236,7 @@ public final class SonarLintClientImpl implements SonarLintClient {
 
   @Override
   public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
-    checkMode();
+    checkConnectedMode();
     rwl.readLock().lock();
     try {
       checkStarted();

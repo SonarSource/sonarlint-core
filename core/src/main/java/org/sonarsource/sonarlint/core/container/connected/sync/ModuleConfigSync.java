@@ -42,13 +42,13 @@ import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-public class ProjectSync {
+public class ModuleConfigSync {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
   private final TempFolder tempFolder;
 
-  public ProjectSync(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
+  public ModuleConfigSync(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.tempFolder = tempFolder;

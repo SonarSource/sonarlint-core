@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
@@ -38,6 +39,7 @@ public class StorageManager {
   public static final String SYNC_STATUS_PB = "sync_status.pb";
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
+  public static final String MODULE_LIST_PB = "module_list.pb";
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path moduleStorageRoot;
@@ -58,8 +60,27 @@ public class StorageManager {
   }
 
   public Path getModuleStorageRoot(String moduleKey) {
-    // FIXME doesn't work when module key contains "/" for example
-    return moduleStorageRoot.resolve(moduleKey);
+    return moduleStorageRoot.resolve(encodeForFs(moduleKey));
+  }
+
+  private String encodeForFs(String moduleKey) {
+    char fileSep = File.separatorChar;
+    char escape = '%';
+    int len = moduleKey.length();
+    StringBuilder sb = new StringBuilder(len);
+    for (int i = 0; i < len; i++) {
+      char ch = moduleKey.charAt(i);
+      if (ch < ' ' || ch >= 0x7F || ch == fileSep || (ch == '.' && i == 0) || ch == escape) {
+        sb.append(escape);
+        if (ch < 0x10) {
+          sb.append('0');
+        }
+        sb.append(Integer.toHexString(ch));
+      } else {
+        sb.append(ch);
+      }
+    }
+    return sb.toString();
   }
 
   public Path getModuleConfigurationPath(String moduleKey) {
@@ -76,6 +97,10 @@ public class StorageManager {
 
   public Path getGlobalPropertiesPath() {
     return globalStorageRoot.resolve(PROPERTIES_PB);
+  }
+
+  public Path getModuleListPath() {
+    return globalStorageRoot.resolve(MODULE_LIST_PB);
   }
 
   public Path getRulesPath() {
@@ -158,5 +183,13 @@ public class StorageManager {
       };
     }
     return null;
+  }
+
+  public Sonarlint.ModuleList readModuleListFromStorage() {
+    try {
+      return ProtobufUtil.readFile(getModuleListPath(), Sonarlint.ModuleList.parser());
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to read module list from storage. Try to sync the server.", e);
+    }
   }
 }

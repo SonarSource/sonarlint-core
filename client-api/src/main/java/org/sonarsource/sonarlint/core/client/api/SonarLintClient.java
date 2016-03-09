@@ -87,6 +87,13 @@ public interface SonarLintClient {
   @CheckForNull
   ModuleSyncStatus getModuleSyncStatus(String moduleKey);
 
+  /**
+   * Find module. First result is exact key match then partial key matches then fulltext name matches.
+   * @since 2.0
+   * @throws UnsupportedOperationException for unconnected mode
+   */
+  List<RemoteModule> searchModule(String searchString);
+
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
@@ -94,13 +101,6 @@ public interface SonarLintClient {
    * @since 2.0
    */
   ValidationResult validateCredentials(ServerConfiguration serverConfig);
-
-  /**
-   * Find module by exact key of by partial name. This is not using storage, so it will fail is server is not reachable.
-   * @since 2.0
-   * @throws UnsupportedOperationException for unconnected mode
-   */
-  List<RemoteModule> searchModule(ServerConfiguration serverConfig, String exactKeyOrPartialName);
 
   // REQUIRES SERVER TO BE REACHABLE AND SONARLINT CLIENT SHOULD BE STOPPED
 

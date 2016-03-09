@@ -20,7 +20,10 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.rule.RuleKey;
@@ -33,6 +36,7 @@ import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
@@ -46,9 +50,12 @@ import org.sonarsource.sonarlint.core.plugin.PluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 
 public class StorageGlobalContainer extends GlobalContainer {
 
+  private static final int MAX_SEARCH_RESULTS = 10;
   private static final Logger LOG = LoggerFactory.getLogger(StorageGlobalContainer.class);
 
   public static StorageGlobalContainer create(GlobalConfiguration globalConfig) {
@@ -128,6 +135,56 @@ public class StorageGlobalContainer extends GlobalContainer {
 
   public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
     return getComponentByType(StorageManager.class).getModuleSyncStatus(moduleKey);
+  }
+
+  public List<RemoteModule> searchModule(String searchString) {
+    List<RemoteModule> results = new ArrayList<>();
+    ModuleList readModuleListFromStorage = getComponentByType(StorageManager.class).readModuleListFromStorage();
+    Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKey();
+    if (modulesByKey.containsKey(searchString)) {
+      results.add(new DefaultRemoteModule(modulesByKey.get(searchString)));
+    }
+    // First pass to search for key substring
+    for (Map.Entry<String, Sonarlint.ModuleList.Module> entry : modulesByKey.entrySet()) {
+      if (results.size() > MAX_SEARCH_RESULTS) {
+        break;
+      }
+      if (entry.getKey().contains(searchString)) {
+        results.add(new DefaultRemoteModule(entry.getValue()));
+      }
+    }
+    // Second pass to search for name substring
+    for (Sonarlint.ModuleList.Module module : modulesByKey.values()) {
+      if (results.size() >= MAX_SEARCH_RESULTS) {
+        break;
+      }
+      if (module.getName().contains(searchString)) {
+        results.add(new DefaultRemoteModule(module));
+      }
+    }
+    return results;
+  }
+
+  private static class DefaultRemoteModule implements RemoteModule {
+
+    private final String key;
+    private final String name;
+
+    public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
+      this.key = module.getKey();
+      this.name = module.getName();
+    }
+
+    @Override
+    public String getKey() {
+      return key;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+
   }
 
 }

@@ -45,7 +45,7 @@ public class GlobalSyncTest {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
     GlobalSync globalSync = new GlobalSync(mock(StorageManager.class), wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(TempFolder.class));
+      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), mock(TempFolder.class));
 
     try {
       globalSync.sync();
@@ -60,7 +60,7 @@ public class GlobalSyncTest {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.1\",\"status\": \"UP\"}");
 
     GlobalSync globalSync = new GlobalSync(mock(StorageManager.class), wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(TempFolder.class));
+      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), mock(TempFolder.class));
 
     try {
       globalSync.sync();
@@ -75,7 +75,7 @@ public class GlobalSyncTest {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "bla bla");
 
     GlobalSync globalSync = new GlobalSync(mock(StorageManager.class), wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(TempFolder.class));
+      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), mock(TempFolder.class));
 
     try {
       globalSync.sync();
@@ -97,13 +97,13 @@ public class GlobalSyncTest {
     StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
     GlobalSync globalSync = new GlobalSync(storageManager, wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), tempFolder);
+      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), tempFolder);
 
     globalSync.sync();
 
     SyncStatus syncStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SYNC_STATUS_PB), SyncStatus.parser());
     assertThat(syncStatus.getClientUserAgent()).isEqualTo("UT");
-    assertThat(syncStatus.getSonarlintCoreVersion()).isEqualTo("Unknown");
+    assertThat(syncStatus.getSonarlintCoreVersion()).isEqualTo("unknown");
     assertThat(syncStatus.getSyncTimestamp()).isNotEqualTo(0);
 
     ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SERVER_INFO_PB), ServerInfos.parser());

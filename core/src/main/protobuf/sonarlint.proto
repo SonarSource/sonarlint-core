@@ -85,6 +85,15 @@ message ActiveRules {
   }
 }
 
+message ModuleList {
+  map<string,Module> modules_by_key = 1;
+  
+  message Module {
+    string key = 1;
+    string name = 2;
+  }
+}
+
 message ModuleConfiguration {
   map<string, string> qprofile_per_language = 1;
   map<string, string> properties = 2;
