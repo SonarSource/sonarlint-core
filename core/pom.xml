@@ -244,6 +244,9 @@
           <exists>src/main/protobuf</exists>
         </file>
       </activation>
+      <properties>
+        <sonar.exclusions>target/generated-sources/protobuf/**</sonar.exclusions>
+      </properties>
       <build>
         <plugins>
           <plugin>
