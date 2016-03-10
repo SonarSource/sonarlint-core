@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,15 +40,20 @@ import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-public class IssueMediumTest {
+public class ConnectedIssueMediumTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -55,13 +61,46 @@ public class IssueMediumTest {
   private static File baseDir;
 
   @BeforeClass
-  public static void prepare() throws IOException {
+  public static void prepare() throws Exception {
+    Path slHome = temp.newFolder().toPath();
+    Path pluginCache = slHome.resolve("plugins");
+
+    Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
+    PluginCache cache = PluginCache.create(pluginCache);
+
+    PluginReferences.Builder builder = PluginReferences.newBuilder();
+    builder.addReference(PluginReference.newBuilder()
+      .setFilename("sonar-javascript-plugin-2.8.jar")
+      .setHash("0f87170f4cec0f7fc51b6572530153f9")
+      .setKey("javascript")
+      .build());
+    cache.get("sonar-javascript-plugin-2.8.jar", "0f87170f4cec0f7fc51b6572530153f9", new Downloader() {
+
+      @Override
+      public void download(String filename, Path toFile) throws IOException {
+        FileUtils.copyURLToFile(ConnectedIssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"), toFile.toFile());
+      }
+    });
+
+    builder.addReference(PluginReference.newBuilder()
+      .setFilename("sonar-java-plugin-3.9.jar")
+      .setHash("db224331b6753d63cb31f2b58c93914c")
+      .setKey("java")
+      .build());
+    cache.get("sonar-java-plugin-3.9.jar", "db224331b6753d63cb31f2b58c93914c", new Downloader() {
+
+      @Override
+      public void download(String filename, Path toFile) throws IOException {
+        FileUtils.copyURLToFile(ConnectedIssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"), toFile.toFile());
+      }
+    });
+
+    ProtobufUtil.writeToFile(builder.build(), storage.resolve("localhost").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     GlobalConfiguration config = GlobalConfiguration.builder()
-      .addPlugin(IssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"))
-      .addPlugin(IssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"))
-      .addPlugin(IssueMediumTest.class.getResource("/sonar-php-plugin-2.7.jar"))
-      .setSonarLintUserHome(temp.newFolder().toPath())
+      .setServerId("localhost")
+      .setSonarLintUserHome(slHome)
+      .setStorageRoot(storage)
       .setVerbose(true)
       .build();
     sonarlint = new SonarLintEngineImpl(config);
@@ -81,7 +120,6 @@ public class IssueMediumTest {
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
-    assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
@@ -99,29 +137,6 @@ public class IssueMediumTest {
       });
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
-
-  }
-
-  @Test
-  public void simplePhp() throws Exception {
-
-    ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
-      + "function writeMsg($fname) {\n"
-      + "    $i = 0; // NOSONAR\n"
-      + "    echo \"Hello world!\";\n"
-      + "}\n"
-      + "?>", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("php:S1172", 2, inputFile.getPath()));
 
   }
 
@@ -151,74 +166,6 @@ public class IssueMediumTest {
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
-  }
-
-  @Test
-  public void simpleJavaWithBytecode() throws Exception {
-    ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
-      ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("squid:S106", 5, inputFile.getPath()),
-      tuple("squid:S1220", null, inputFile.getPath()),
-      tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
-      tuple("squid:S1186", 8, inputFile.getPath()));
-  }
-
-  @Test
-  public void testJavaSurefireDontCrashAnalysis() throws Exception {
-
-    File surefireReport = new File(baseDir, "reports/TEST-FooTest.xml");
-    FileUtils.write(surefireReport, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-      "<testsuite name=\"FooTest\" time=\"0.121\" tests=\"1\" errors=\"0\" skipped=\"0\" failures=\"0\">\n" +
-      "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
-      "</testsuite>");
-
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}",
-      false);
-
-    ClientInputFile inputFileTest = prepareInputFile("FooTest.java",
-      "public class FooTest {\n"
-        + "  public void testFoo() {\n"
-        + "  }\n"
-        + "}",
-      true);
-
-    final List<Issue> issues = new ArrayList<>();
-    AnalysisResults results = sonarlint.analyze(
-      new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
-        ImmutableMap.<String, String>of("sonar.junit.reportsPath", "reports/")),
-      new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-
-    assertThat(results.fileCount()).isEqualTo(2);
-
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath()),
-      tuple("squid:S1220", null, inputFile.getPath()),
-      tuple("squid:S1481", 3, inputFile.getPath()),
-      tuple("squid:S2187", 1, inputFileTest.getPath()));
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

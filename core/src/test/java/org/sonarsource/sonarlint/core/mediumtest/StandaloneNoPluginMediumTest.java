@@ -47,7 +47,7 @@ import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class NoPluginMediumTest {
+public class StandaloneNoPluginMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
