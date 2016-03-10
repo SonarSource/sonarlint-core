@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -107,20 +108,20 @@ public class TextSearchIndex<T> {
   }
 
   private List<T> prepareResult(List<DictEntry> entries) {
-    Map<T, Float> projectToScore = new HashMap<>();
+    Map<T, Double> projectToScore = new HashMap<>();
 
     for (DictEntry e : entries) {
-      Float score = projectToScore.get(e.obj);
+      Double score = projectToScore.get(e.obj);
       if (score == null) {
-        score = 0.0f;
+        score = 0.0;
       }
 
-      score += 1.0f / objToWordFrequency.get(e.obj);
+      score += 1.0 / objToWordFrequency.get(e.obj);
       projectToScore.put(e.obj, score);
     }
 
     List<ScorableObject> scoredProjects = new LinkedList<>();
-    for (Entry<T, Float> e : projectToScore.entrySet()) {
+    for (Entry<T, Double> e : projectToScore.entrySet()) {
       scoredProjects.add(new ScorableObject(e.getKey(), e.getValue()));
     }
 
@@ -201,7 +202,7 @@ public class TextSearchIndex<T> {
 
     for (String s : split) {
       if (!s.isEmpty()) {
-        terms.add(s.toLowerCase());
+        terms.add(s.toLowerCase(Locale.ENGLISH));
       }
     }
 
@@ -228,10 +229,10 @@ public class TextSearchIndex<T> {
   }
 
   private class ScorableObject {
-    float score;
+    double score;
     T obj;
 
-    public ScorableObject(T obj, float score) {
+    public ScorableObject(T obj, double score) {
       this.score = score;
       this.obj = obj;
     }
