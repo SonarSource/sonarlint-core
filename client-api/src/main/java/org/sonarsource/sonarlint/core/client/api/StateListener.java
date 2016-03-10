@@ -23,5 +23,5 @@ import org.sonarsource.sonarlint.core.client.api.SonarLintEngine.State;
 
 public interface StateListener {
 
-  public void stateChanged(State newState);
+  void stateChanged(State newState);
 }

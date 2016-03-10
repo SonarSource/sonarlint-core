@@ -64,7 +64,7 @@ public class BatchExtensionDictionnary {
     return result;
   }
 
-  private Phase.Name evaluatePhase(Object extension) {
+  private static Phase.Name evaluatePhase(Object extension) {
     Object extensionToEvaluate;
     if (extension instanceof SensorWrapper) {
       extensionToEvaluate = ((SensorWrapper) extension).wrappedSensor();
@@ -179,7 +179,7 @@ public class BatchExtensionDictionnary {
     return results;
   }
 
-  private void evaluateClass(Class extensionClass, Class annotationClass, List<Object> results) {
+  private static void evaluateClass(Class extensionClass, Class annotationClass, List<Object> results) {
     Annotation annotation = extensionClass.getAnnotation(annotationClass);
     if (annotation != null) {
       if (annotation.annotationType().isAssignableFrom(DependsUpon.class)) {
