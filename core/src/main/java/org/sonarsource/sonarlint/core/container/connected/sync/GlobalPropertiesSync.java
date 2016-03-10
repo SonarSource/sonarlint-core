@@ -47,19 +47,7 @@ public class GlobalPropertiesSync {
       reader.beginArray();
       while (reader.hasNext()) {
         reader.beginObject();
-        String key = null;
-        String value = null;
-        while (reader.hasNext()) {
-          String propName = reader.nextName();
-          if ("key".equals(propName)) {
-            key = reader.nextString();
-          } else if ("value".equals(propName)) {
-            value = reader.nextString();
-          } else {
-            reader.skipValue();
-          }
-        }
-        builder.getMutableProperties().put(key, value);
+        parseProperty(reader, builder);
         reader.endObject();
       }
       reader.endArray();
@@ -69,6 +57,22 @@ public class GlobalPropertiesSync {
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
     }
+  }
+
+  private void parseProperty(JsonReader reader, GlobalProperties.Builder builder) throws IOException {
+    String key = null;
+    String value = null;
+    while (reader.hasNext()) {
+      String propName = reader.nextName();
+      if ("key".equals(propName)) {
+        key = reader.nextString();
+      } else if ("value".equals(propName)) {
+        value = reader.nextString();
+      } else {
+        reader.skipValue();
+      }
+    }
+    builder.getMutableProperties().put(key, value);
   }
 
   private Set<String> getPluginWhitelist(GlobalProperties globalProperties) {
