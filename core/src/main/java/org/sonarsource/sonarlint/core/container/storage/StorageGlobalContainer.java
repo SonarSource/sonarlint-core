@@ -30,6 +30,7 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.StorageException;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
@@ -96,12 +97,12 @@ public class StorageGlobalContainer extends GlobalContainer {
   public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
     GlobalSyncStatus syncStatus = getSyncStatus();
     if (syncStatus == null) {
-      throw new IllegalStateException("Please sync server prior to run the analysis");
+      throw new StorageException("Missing global data. Please sync server.", null);
     }
     if (configuration.moduleKey() != null) {
       ModuleSyncStatus moduleSyncStatus = getModuleSyncStatus(configuration.moduleKey());
       if (moduleSyncStatus == null) {
-        throw new IllegalStateException("Please sync module " + configuration.moduleKey() + " prior to run the analysis");
+        throw new StorageException("Missing module data. Please sync module '" + configuration.moduleKey() + "'.", null);
       }
     }
     AnalysisContainer analysisContainer = new AnalysisContainer(this);

@@ -147,27 +147,15 @@ public class StorageManager {
   }
 
   public Sonarlint.Rules readRulesFromStorage() {
-    try {
-      return ProtobufUtil.readFile(getRulesPath(), Sonarlint.Rules.parser());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to read rules from storage. Try to sync the server.", e);
-    }
+    return ProtobufUtil.readFile(getRulesPath(), Sonarlint.Rules.parser());
   }
 
   public Sonarlint.GlobalProperties readGlobalPropertiesFromStorage() {
-    try {
-      return ProtobufUtil.readFile(getGlobalPropertiesPath(), Sonarlint.GlobalProperties.parser());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to read global properties from storage. Try to sync the server.", e);
-    }
+    return ProtobufUtil.readFile(getGlobalPropertiesPath(), Sonarlint.GlobalProperties.parser());
   }
 
   public Sonarlint.ModuleConfiguration readModuleConfigFromStorage(String moduleKey) {
-    try {
-      return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to read module configuration from storage. Try to sync the module " + moduleKey, e);
-    }
+    return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
   }
 
   public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
@@ -186,10 +174,6 @@ public class StorageManager {
   }
 
   public Sonarlint.ModuleList readModuleListFromStorage() {
-    try {
-      return ProtobufUtil.readFile(getModuleListPath(), Sonarlint.ModuleList.parser());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to read module list from storage. Try to sync the server.", e);
-    }
+    return ProtobufUtil.readFile(getModuleListPath(), Sonarlint.ModuleList.parser());
   }
 }

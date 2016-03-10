@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.sonarsource.sonarlint.core.client.api.StorageException;
 
 public class ProtobufUtil {
   private ProtobufUtil() {
@@ -36,7 +37,7 @@ public class ProtobufUtil {
     try (InputStream input = Files.newInputStream(file)) {
       return parser.parseFrom(input);
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to read file: " + file, e);
+      throw new StorageException("Failed to read file: " + file, e);
     }
   }
 
@@ -44,7 +45,7 @@ public class ProtobufUtil {
     try (OutputStream out = Files.newOutputStream(toFile)) {
       message.writeTo(out);
     } catch (IOException e) {
-      throw new IllegalStateException("Unable to write protocol buffer data to file " + toFile, e);
+      throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
     }
   }
 }

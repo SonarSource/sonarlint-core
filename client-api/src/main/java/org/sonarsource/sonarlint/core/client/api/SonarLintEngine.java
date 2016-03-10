@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
 /**
@@ -113,6 +114,7 @@ public interface SonarLintEngine {
    * Sync current server.
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
+   * @throws UnsupportedServerException if server version is to low
    */
   GlobalSyncStatus sync(ServerConfiguration serverConfig);
 

@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.client.WsResponse;
+import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -37,6 +38,7 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalSync {
 
+  private static final String MIN_SQ_VERSION = "5.2";
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
   private final PluginReferencesSync pluginReferenceSync;
@@ -62,8 +64,8 @@ public class GlobalSync {
       throw new IllegalStateException("Server not ready (" + serverStatus.getStatus() + ")");
     }
     Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareTo(Version.create("5.2")) < 0) {
-      throw new UnsupportedOperationException("SonarQube server version should be 5.2+");
+    if (serverVersion.compareTo(Version.create(MIN_SQ_VERSION)) < 0) {
+      throw new UnsupportedServerException("SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION);
     }
     Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
