@@ -235,6 +235,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       } catch (Exception e) {
         // Ignore
       }
+      changeState(((StorageGlobalContainer) globalContainer).getSyncStatus() != null ? State.SYNCED : State.NOT_SYNCED);
       rwl.writeLock().unlock();
     }
   }
