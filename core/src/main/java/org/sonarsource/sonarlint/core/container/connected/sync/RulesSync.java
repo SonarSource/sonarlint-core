@@ -43,7 +43,8 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class RulesSync {
-  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY";
+  private static final String RULES_SEARCH_URL =
+    "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY";
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf?defaults=true";
 
   private final SonarLintWsClient wsClient;

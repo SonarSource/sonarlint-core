@@ -71,7 +71,7 @@ public class ExtensionInstaller {
     return className.contains("JaCoCo") || className.contains("Surefire") || className.contains("Coverage") || className.contains("COV") || className.contains("PhpUnit");
   }
 
-  private String className(Object extension) {
+  private static String className(Object extension) {
     return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
   }
 

@@ -115,7 +115,7 @@ public class ModuleConfigSync {
     }
   }
 
-  private void parseProperty(GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder, JsonReader reader) throws IOException {
+  private static void parseProperty(GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder, JsonReader reader) throws IOException {
     String key = null;
     String value = null;
     while (reader.hasNext()) {

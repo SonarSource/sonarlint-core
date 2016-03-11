@@ -66,20 +66,24 @@ public class StandaloneActiveRulesProvider extends ProviderAdapter {
     for (Map.Entry<String, Collection<RulesProfile>> entry : profilesByName(defs).entrySet()) {
       String name = entry.getKey();
       if ("Sonar way".equals(name)) {
-        for (RulesProfile rp : entry.getValue()) {
-          for (ActiveRule ar : rp.getActiveRules()) {
-            NewActiveRule newAr = builder.create(RuleKey.of(ar.getRepositoryKey(), ar.getRuleKey()))
-              .setLanguage(language)
-              .setName(ar.getRule().getName())
-              .setSeverity(ar.getSeverity().name())
-              .setInternalKey(ar.getConfigKey())
-              .setTemplateRuleKey(ar.getRule().getKey());
-            for (ActiveRuleParam param : ar.getActiveRuleParams()) {
-              newAr.setParam(param.getKey(), param.getValue());
-            }
-            newAr.activate();
-          }
+        extracted(builder, language, entry);
+      }
+    }
+  }
+
+  private static void extracted(ActiveRulesBuilder builder, String language, Map.Entry<String, Collection<RulesProfile>> entry) {
+    for (RulesProfile rp : entry.getValue()) {
+      for (ActiveRule ar : rp.getActiveRules()) {
+        NewActiveRule newAr = builder.create(RuleKey.of(ar.getRepositoryKey(), ar.getRuleKey()))
+          .setLanguage(language)
+          .setName(ar.getRule().getName())
+          .setSeverity(ar.getSeverity().name())
+          .setInternalKey(ar.getConfigKey())
+          .setTemplateRuleKey(ar.getRule().getKey());
+        for (ActiveRuleParam param : ar.getActiveRuleParams()) {
+          newAr.setParam(param.getKey(), param.getValue());
         }
+        newAr.activate();
       }
     }
   }

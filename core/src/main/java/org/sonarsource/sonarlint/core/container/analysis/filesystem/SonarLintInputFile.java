@@ -88,7 +88,7 @@ public class SonarLintInputFile extends DefaultInputFile {
     return charset != null ? charset : Charset.defaultCharset();
   }
 
-  public SonarLintInputFile initMetadata(Metadata metadata) {
+  public SonarLintInputFile init(Metadata metadata) {
     this.setLines(metadata.lines);
     this.setLastValidOffset(metadata.lastValidOffset);
     this.setOriginalLineOffsets(metadata.originalLineOffsets);

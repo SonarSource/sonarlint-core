@@ -59,7 +59,7 @@ public class GlobalPropertiesSync {
     }
   }
 
-  private void parseProperty(JsonReader reader, GlobalProperties.Builder builder) throws IOException {
+  private static void parseProperty(JsonReader reader, GlobalProperties.Builder builder) throws IOException {
     String key = null;
     String value = null;
     while (reader.hasNext()) {
@@ -75,7 +75,7 @@ public class GlobalPropertiesSync {
     builder.getMutableProperties().put(key, value);
   }
 
-  private Set<String> getPluginWhitelist(GlobalProperties globalProperties) {
+  private static Set<String> getPluginWhitelist(GlobalProperties globalProperties) {
     if (globalProperties.getProperties().containsKey("sonarlint.plugins.whitelist")) {
       String[] list = globalProperties.getProperties().get("sonarlint.plugins.whitelist").split(",");
       return ImmutableSet.copyOf(list);

@@ -149,7 +149,7 @@ public class BatchExtensionDictionnary {
     return result;
   }
 
-  private void completePhaseDependencies(DirectAcyclicGraph dag, Object extension) {
+  private static void completePhaseDependencies(DirectAcyclicGraph dag, Object extension) {
     Phase.Name phase = evaluatePhase(extension);
     dag.add(extension, phase);
     for (Phase.Name name : Phase.Name.values()) {
@@ -202,15 +202,12 @@ public class BatchExtensionDictionnary {
       if (result != null) {
         if (result instanceof Class<?>) {
           results.addAll(componentContainer.getComponentsByType((Class<?>) result));
-
         } else if (result instanceof Collection<?>) {
           results.addAll((Collection<?>) result);
-
         } else if (result.getClass().isArray()) {
           for (int i = 0; i < Array.getLength(result); i++) {
             results.add(Array.get(result, i));
           }
-
         } else {
           results.add(result);
         }

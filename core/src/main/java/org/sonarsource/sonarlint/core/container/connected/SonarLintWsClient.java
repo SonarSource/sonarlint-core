@@ -87,7 +87,8 @@ public class SonarLintWsClient {
         // Details are in response content
         throw new IllegalStateException(tryParseAsJsonError(response.content()));
       }
-      throw new IllegalStateException("Error " + response.code() + " on " + response.requestUrl() + (response.hasContent() ? ": " + tryParseAsJsonError(response.content()) : ""));
+      throw new IllegalStateException(
+        "Error " + response.code() + " on " + response.requestUrl() + (response.hasContent() ? (": " + tryParseAsJsonError(response.content())) : ""));
     }
   }
 

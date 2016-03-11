@@ -63,7 +63,7 @@ public class StorageManager {
     return moduleStorageRoot.resolve(encodeForFs(moduleKey));
   }
 
-  private String encodeForFs(String moduleKey) {
+  private static String encodeForFs(String moduleKey) {
     char fileSep = File.separatorChar;
     char escape = '%';
     int len = moduleKey.length();

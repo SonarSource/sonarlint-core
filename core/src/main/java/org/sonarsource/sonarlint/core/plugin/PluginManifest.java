@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -33,13 +32,13 @@ import org.apache.commons.lang.builder.ReflectionToStringBuilder;
  */
 public final class PluginManifest {
 
-  public static final String KEY = "Plugin-Key";
-  public static final String MAIN_CLASS = "Plugin-Class";
-  public static final String NAME = "Plugin-Name";
-  public static final String VERSION = "Plugin-Version";
-  public static final String SONAR_VERSION = "Sonar-Version";
-  public static final String DEPENDENCIES = "Plugin-Dependencies";
-  public static final String REQUIRE_PLUGINS = "Plugin-RequirePlugins";
+  public static final String KEY_ATTRIBUTE = "Plugin-Key";
+  public static final String MAIN_CLASS_ATTRIBUTE = "Plugin-Class";
+  public static final String NAME_ATTRIBUTE = "Plugin-Name";
+  public static final String VERSION_ATTRIBUTE = "Plugin-Version";
+  public static final String SONAR_VERSION_ATTRIBUTE = "Sonar-Version";
+  public static final String DEPENDENCIES_ATTRIBUTE = "Plugin-Dependencies";
+  public static final String REQUIRE_PLUGINS_ATTRIBUTE = "Plugin-RequirePlugins";
 
   /**
    * @since 0.3
@@ -103,19 +102,19 @@ public final class PluginManifest {
 
   private void loadManifest(Manifest manifest) {
     Attributes attributes = manifest.getMainAttributes();
-    this.key = PluginKeyUtils.sanitize(attributes.getValue(KEY));
-    this.mainClass = attributes.getValue(MAIN_CLASS);
-    this.name = attributes.getValue(NAME);
-    this.version = attributes.getValue(VERSION);
-    this.sonarVersion = attributes.getValue(SONAR_VERSION);
+    this.key = PluginKeyUtils.sanitize(attributes.getValue(KEY_ATTRIBUTE));
+    this.mainClass = attributes.getValue(MAIN_CLASS_ATTRIBUTE);
+    this.name = attributes.getValue(NAME_ATTRIBUTE);
+    this.version = attributes.getValue(VERSION_ATTRIBUTE);
+    this.sonarVersion = attributes.getValue(SONAR_VERSION_ATTRIBUTE);
     this.useChildFirstClassLoader = StringUtils.equalsIgnoreCase(attributes.getValue(USE_CHILD_FIRST_CLASSLOADER), "true");
     this.basePlugin = attributes.getValue(BASE_PLUGIN);
     this.implementationBuild = attributes.getValue(IMPLEMENTATION_BUILD);
 
-    String deps = attributes.getValue(DEPENDENCIES);
+    String deps = attributes.getValue(DEPENDENCIES_ATTRIBUTE);
     this.dependencies = StringUtils.split(StringUtils.defaultString(deps), ' ');
 
-    String requires = attributes.getValue(REQUIRE_PLUGINS);
+    String requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
     this.requirePlugins = StringUtils.split(StringUtils.defaultString(requires), ',');
   }
 
@@ -151,7 +150,6 @@ public final class PluginManifest {
     this.requirePlugins = requirePlugins != null ? requirePlugins.clone() : null;
     return this;
   }
-
 
   public String getVersion() {
     return version;
