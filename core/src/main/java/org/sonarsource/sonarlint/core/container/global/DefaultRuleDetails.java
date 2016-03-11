@@ -24,18 +24,25 @@ import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 
 public class DefaultRuleDetails implements RuleDetails {
 
+  private final String key;
   private final String language;
   private final Set<String> tags;
   private final String name;
   private final String htmlDescription;
   private final String severity;
 
-  public DefaultRuleDetails(String name, String htmlDescription, String severity, String language, Set<String> tags) {
+  public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, String language, Set<String> tags) {
+    this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
     this.severity = severity;
     this.language = language;
     this.tags = tags;
+  }
+
+  @Override
+  public String getKey() {
+    return key;
   }
 
   @Override

@@ -24,6 +24,8 @@ package org.sonarsource.sonarlint.core.client.api;
  */
 public interface RuleDetails {
 
+  String getKey();
+
   String getName();
 
   String getHtmlDescription();

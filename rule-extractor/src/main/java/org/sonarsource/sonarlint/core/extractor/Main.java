@@ -19,19 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.extractor;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration.Builder;
+import org.sonarsource.sonarlint.core.client.api.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 
@@ -39,13 +44,25 @@ import static org.apache.commons.lang3.StringEscapeUtils.escapeJson;
 
 public class Main {
 
+  private static final Map<String, String> languages = ImmutableMap.of("java", "Java", "js", "JavaScript", "php", "PHP");
+
   public static void main(String[] args) throws MalformedURLException {
 
+    String version = args[0];
+
     List<Path> pluginPaths = new ArrayList<>();
-    for (String arg : args) {
-      pluginPaths.add(Paths.get(arg));
+    for (int i = 1; i < args.length; i++) {
+      pluginPaths.add(Paths.get(args[i]));
     }
-    Builder builder = GlobalConfiguration.builder();
+    Builder builder = GlobalConfiguration.builder()
+      .setLogOutput(new LogOutput() {
+
+        @Override
+        public void log(String formattedMessage, Level level) {
+          // Ignore
+        }
+
+      });
     for (Path path : pluginPaths) {
       builder.addPlugin(path.toUri().toURL());
     }
@@ -60,7 +77,12 @@ public class Main {
     }
 
     try {
-      System.out.print("[");
+      System.out.print("{");
+      System.out.print("\"version\": \"");
+      System.out.print(version);
+      System.out.print("\",");
+
+      System.out.print("\"rules\": [");
       boolean first = true;
       for (String ruleKey : rulesByKeyAndLanguage.rowKeySet()) {
         if (!first) {
@@ -68,10 +90,21 @@ public class Main {
         }
         first = false;
         System.out.print("{");
-        System.out.print("\"Key\": \"");
+        System.out.print("\"key\": \"");
         System.out.print(ruleKey);
         System.out.print("\",");
-        System.out.print("\"Data\": {");
+        System.out.print("\"title\": \"");
+        System.out.print(escapeJson(rulesByKeyAndLanguage.row(ruleKey).values().iterator().next().getName()));
+        System.out.print("\",");
+
+        Set<String> mergedTags = new HashSet<>();
+        for (RuleDetails rule : rulesByKeyAndLanguage.row(ruleKey).values()) {
+          mergedTags.addAll(Arrays.asList(rule.getTags()));
+        }
+        writeTags(mergedTags);
+        System.out.print(",");
+
+        System.out.print("\"implementations\": [");
 
         boolean firstLang = true;
         for (Map.Entry<String, RuleDetails> detailPerLanguage : rulesByKeyAndLanguage.row(ruleKey).entrySet()) {
@@ -80,36 +113,52 @@ public class Main {
           }
           firstLang = false;
           RuleDetails ruleDetails = detailPerLanguage.getValue();
-          System.out.print("\"" + detailPerLanguage.getKey() + "\": {");
-          System.out.print("\"Title\": \"");
+          System.out.print("{");
+          System.out.print("\"key\": \"");
+          System.out.print(ruleDetails.getKey());
+          System.out.print("\",");
+          System.out.print("\"language\": \"");
+          System.out.print(languageLabel(detailPerLanguage.getKey()));
+          System.out.print("\",");
+          System.out.print("\"title\": \"");
           System.out.print(escapeJson(ruleDetails.getName()));
           System.out.print("\",");
-          System.out.print("\"Description\": \"");
+          System.out.print("\"description\": \"");
           System.out.print(escapeJson(ruleDetails.getHtmlDescription()));
           System.out.print("\",");
-          System.out.print("\"Severity\": \"");
+          System.out.print("\"severity\": \"");
           System.out.print(StringUtils.capitalize(ruleDetails.getSeverity().toLowerCase()));
           System.out.print("\",");
-          System.out.print("\"Tags\": [");
-          boolean firstTag = true;
-          for (String tag : ruleDetails.getTags()) {
-            if (!firstTag) {
-              System.out.print(",");
-            }
-            firstTag = false;
-            System.out.print("\"" + escapeJson(tag) + "\"");
-          }
-          System.out.print("]");
+          String[] tags = ruleDetails.getTags();
+          writeTags(Arrays.asList(tags));
           System.out.print("}");
         }
-        System.out.print("}");
+        System.out.print("]");
         System.out.print("}");
       }
       System.out.print("]");
+      System.out.print("}");
     } finally {
       client.stop();
     }
 
+  }
+
+  private static String languageLabel(String languageKey) {
+    return languages.containsKey(languageKey) ? languages.get(languageKey) : languageKey;
+  }
+
+  private static void writeTags(Iterable<String> tags) {
+    System.out.print("\"tags\": [");
+    boolean firstTag = true;
+    for (String tag : tags) {
+      if (!firstTag) {
+        System.out.print(",");
+      }
+      firstTag = false;
+      System.out.print("\"" + escapeJson(tag) + "\"");
+    }
+    System.out.print("]");
   }
 
 }
