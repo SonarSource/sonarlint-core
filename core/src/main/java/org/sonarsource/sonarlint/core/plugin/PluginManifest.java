@@ -71,18 +71,12 @@ public final class PluginManifest {
    */
   public PluginManifest(File file) throws IOException {
     this();
-    JarFile jar = null;
-    try {
-      jar = new JarFile(file);
+    try (JarFile jar = new JarFile(file);) {
       if (jar.getManifest() != null) {
         loadManifest(jar.getManifest());
       }
     } catch (Exception e) {
       throw new IllegalStateException("Unable to read plugin manifest from jar : " + file.getAbsolutePath(), e);
-    } finally {
-      if (jar != null) {
-        jar.close();
-      }
     }
   }
 

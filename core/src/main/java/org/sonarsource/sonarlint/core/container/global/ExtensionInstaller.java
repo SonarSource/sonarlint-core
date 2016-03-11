@@ -66,7 +66,7 @@ public class ExtensionInstaller {
     return this;
   }
 
-  private boolean blacklisted(Object extension) {
+  private static boolean blacklisted(Object extension) {
     String className = className(extension);
     return className.contains("JaCoCo") || className.contains("Surefire") || className.contains("Coverage") || className.contains("COV") || className.contains("PhpUnit");
   }

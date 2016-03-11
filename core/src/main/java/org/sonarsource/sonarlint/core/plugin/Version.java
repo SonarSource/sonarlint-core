@@ -116,7 +116,7 @@ public class Version implements Comparable<Version> {
     int c = compareToIgnoreQualifier(other);
     if (c == 0) {
       if ("".equals(qualifier)) {
-        c = ("".equals(other.qualifier) ? 0 : 1);
+        c = "".equals(other.qualifier) ? 0 : 1;
       } else if ("".equals(other.qualifier)) {
         c = -1;
       } else {
