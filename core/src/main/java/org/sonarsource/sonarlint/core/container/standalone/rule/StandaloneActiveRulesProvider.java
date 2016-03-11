@@ -66,12 +66,12 @@ public class StandaloneActiveRulesProvider extends ProviderAdapter {
     for (Map.Entry<String, Collection<RulesProfile>> entry : profilesByName(defs).entrySet()) {
       String name = entry.getKey();
       if ("Sonar way".equals(name)) {
-        extracted(builder, language, entry);
+        registerProfile(builder, language, entry);
       }
     }
   }
 
-  private static void extracted(ActiveRulesBuilder builder, String language, Map.Entry<String, Collection<RulesProfile>> entry) {
+  private static void registerProfile(ActiveRulesBuilder builder, String language, Map.Entry<String, Collection<RulesProfile>> entry) {
     for (RulesProfile rp : entry.getValue()) {
       for (ActiveRule ar : rp.getActiveRules()) {
         NewActiveRule newAr = builder.create(RuleKey.of(ar.getRepositoryKey(), ar.getRuleKey()))

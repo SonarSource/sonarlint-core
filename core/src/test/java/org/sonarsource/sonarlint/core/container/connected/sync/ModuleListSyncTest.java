@@ -19,41 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.sync;
 
-import com.google.gson.Gson;
-import java.nio.file.Path;
-import org.sonarqube.ws.client.WsResponse;
+import java.io.File;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
 
-public class ModuleListSync {
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private final SonarLintWsClient wsClient;
+public class ModuleListSyncTest {
 
-  public ModuleListSync(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+
+  @Test
+  public void sync_modules() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/projects/index?format=json&subprojects=true", "/sync/all_projects.json");
+
+    File tempDir = temp.newFolder();
+
+    ModuleListSync moduleListSync = new ModuleListSync(wsClient);
+    moduleListSync.fetchModulesList(tempDir.toPath());
+
+    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
+    assertThat(moduleList.getModulesByKey()).hasSize(1559);
   }
-
-  public void fetchModulesList(Path dest) {
-    WsResponse response = wsClient.get("api/projects/index?format=json&subprojects=true");
-    DefaultModule[] results = new Gson().fromJson(response.contentReader(), DefaultModule[].class);
-    ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
-    Builder moduleBuilder = ModuleList.Module.newBuilder();
-    for (DefaultModule module : results) {
-      moduleBuilder.clear();
-      moduleListBuilder.getMutableModulesByKey().put(module.k, moduleBuilder
-        .setKey(module.k)
-        .setName(module.nm)
-        .build());
-    }
-    ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
-  }
-
-  private static class DefaultModule {
-    String k;
-    String nm;
-  }
-
 }
