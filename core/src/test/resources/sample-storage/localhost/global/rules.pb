@@ -1,4 +1,1558 @@
 
+™
+common-xml:FailedUnitTestsã
+
+common-xmlFailedUnitTests!Failed unit tests should be fixed"MAJOR*xml:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.
+‰
+common-xml:DuplicatedBlocksƒ
+
+common-xmlDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*xml:dAn issue is created on a file as soon as there is at least one block of duplicated code on this file
+Ä
+common-xml:SkippedUnitTests‡
+
+common-xmlSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*xml:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.
+é
+%common-xml:InsufficientCommentDensity‰
+
+common-xmlInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*xml:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.
+”
+#common-xml:InsufficientLineCoverage´
+
+common-xmlInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*xml:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.
+ﬁ
+%common-xml:InsufficientBranchCoverage¥
+
+common-xmlInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*xml:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.
+™
+common-web:FailedUnitTestsã
+
+common-webFailedUnitTests!Failed unit tests should be fixed"MAJOR*web:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.
+Ä
+common-web:SkippedUnitTests‡
+
+common-webSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*web:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.
+‰
+common-web:DuplicatedBlocksƒ
+
+common-webDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*web:dAn issue is created on a file as soon as there is at least one block of duplicated code on this file
+é
+%common-web:InsufficientCommentDensity‰
+
+common-webInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*web:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.
+”
+#common-web:InsufficientLineCoverage´
+
+common-webInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*web:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.
+ﬁ
+%common-web:InsufficientBranchCoverage¥
+
+common-webInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*web:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.
+õ
+xml:IllegalTabCheckÉ
+xmlIllegalTabCheck(Tabulation characters should not be used"MINOR*xml:¥<p>
+  Developers should not need to configure the tab width of their text editors in order to be able to read source code.
+  So the use of tabulation character must be banned.
+</p>
+É
+xml:XmlSchemaCheckÏ
+xmlXmlSchemaCheckXML schemas should be valid"MAJOR*xml:©<p>
+  This rule allows validation of XML files against XML Schema using Xerces parser.
+</p>
+
+<p>
+  The "schemas" parameter can be set to:
+  <ul>
+    <li>the namespace or short name of a built-in schema (ex: xhtml1-strict or http://www.w3.org/1999/xhtml)</li>
+    <li>the URL to a schema (ex: http://www.springframework.org/schema/beans/spring-beans-3.2.xsd)</li>
+    <li>the relative path to a schema on the filesystem (ex: schemas/xsd/mycustomschema.xsd)</li>
+  </ul>
+  <br/>
+  Default value: <code>autodetect</code>. In this case, the parser will try to load the schema based on the doctype or the namespace declaration in the document.
+</p>
+
+<p>
+  Files to be validated by the schema can be specified through inclusion pattern using the "filePattern" parameter.
+</p>
+
+<p>
+Built-in schemas:
+</p>
+
+<table class="table table-bordered">
+<thead class="bordered">
+<tr><th>Description</th><th>Namespace or Short name</th><th>Doctype</th></tr>
+</thead>
+<tbody>
+<tr><td>XML</td><td>http://www.w3.org/2001/xml.xsd</td><td>&nbsp;</td></tr>
+<tr><td>XML</td><td>http://www.w3.org/XML/1998/namespace</td><td>&nbsp;</td></tr>
+<tr><td>XHTML1.0 Strict</td><td>http://www.w3.org/1999/xhtml</td><td>&nbsp;</td></tr>
+<tr><td>XHTML1.0 Strict</td><td>xhtml1-strict</td><td>-//W3C//DTD XHTML 1.0 Strict//EN</td></tr>
+<tr><td>XHTML1.0 Transitional</td><td>xhtml1-transitional</td><td>-//W3C//DTD XHTML 1.0 Transitional//EN</td></tr>
+<tr><td>XHTML1.0 Frameset</td><td>xhtml1-frameset</td><td>-//W3C//DTD XHTML 1.0 Frameset//EN</td></tr>
+<tr><td>XHTML1.1</td><td>&nbsp;</td><td>-//W3C//DTD XHTML 1.1 Strict//EN</td></tr>
+<tr><td>JSF Core</td><td>http://java.sun.com/jsf/core</td><td>&nbsp;</td></tr>
+<tr><td>JSF HTML Basic</td><td>http://java.sun.com/jsf/html</td><td>&nbsp;</td></tr>
+<tr><td>JSF Facelets</td><td>http://java.sun.com/jsf/facelets</td><td>&nbsp;</td></tr>
+<tr><td>Maven Project Model</td><td>http://maven.apache.org/POM/4.0.0</td><td>&nbsp;</td></tr>
+</tbody>
+</table>@
+≤
+xml:XPathCheckü
+xml
+XPathCheck
+XPath rule"MAJOR*xml:Ò<p>
+  This rule allows the definition of custom rules using XPath expressions.
+
+<p>
+  Issues are created depending on the return value of the XPath expression. If the XPath expression returns:
+  <ul>
+    <li>a single or list of AST nodes, then a line issue with the given message is created for each node</li>
+    <li>a boolean, then a file issue with the given message is created only if the boolean is true</li>
+    <li>anything else, no issue is created</li>
+  </ul>
+</p>
+
+<p>
+Here is an example of an XPath expression to log an issue on each 'td' tag using the 'nowrap' deprecated attribute:
+<pre>//td[@nowrap]</pre>
+</p>@
+Ê
+xml:NewlineCheck—
+xmlNewlineCheck#Newlines should follow each element"MINOR*xml:ä<p>
+  Each element should be on a line to itself.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;parent&gt;&lt;child /&gt;&lt;/parent&gt &lt;!-- Noncompliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;parent&gt;
+  &lt;child /&gt;
+&lt;/parent&gt;
+</pre>
+±
+xml:IndentCheckù
+xmlIndentCheck+Source code should be indented consistently"MINOR*xml:œ<p>
+  Proper indentation is a simple and effective way to improve the code's readability. Consistent indentation among the developers on a team also reduces the differences that are committed to source control systems, making code reviews easier.
+</p>
+
+<p>
+  By default this rule checks that each block of code is indented but not the size of this indent. The parameter "indentSize" allows the expected indent size to be defined. Only the first line of a badly indented section is reported.
+</p>
+
+<p>
+  The following code illustrates this rule when the expected indent size is set to 2:
+</p>
+˜
+	xml:S1778È
+xmlS1778OXML files containing a prolog header should start first with "<?xml" characters"MAJOR*xml:˝<p>
+The prolog header is the following piece of code starting some XML documents:
+</p>
+<pre>
+&lt;?xml version="y.x" encoding="zzzzz"?&gt;
+</pre>
+
+<p>
+This requirement is explicitly defined in the XML specification:
+</p>
+<blockquote>
+Because each XML entity not accompanied by external encoding information and not in UTF-8 or UTF-16 encoding must begin with an XML encoding declaration, in which the first characters must be '&lt;?xml', any conforming processor can detect, after two to four octets of input, which of the following cases apply.
+</blockquote>
+
+<h2>Noncompliant Code Sample</h2>
+<pre>
+&lt;!-- Generated file --&gt;
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;firstNode&gt;;
+  content
+&lt;/firstNode&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!-- Generated file --&gt;
+&lt;firstNode&gt;
+  content
+&lt;/firstNode&gt;
+</pre>
+©
+Web:IllegalNamespaceCheckã
+WebIllegalNamespaceCheck;Disallowed namespaces should not be used in XHTML documents"MAJOR*web:£<p>This rule allows to ban declaration of some namespaces in the root element of XHML documents.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<p>
+In this example the value of the "namespaces" parameter is set to "http://java.sun.com/jsf/facelets".
+</p>
+
+<pre>
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://java.sun.com/jsf/facelets"    &lt;!-- Noncompliant --&gt;
+        xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:f="http://java.sun.com/jsf/core"&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:f="http://java.sun.com/jsf/core"&gt;
+</pre>
+Ñ
+Web:PageWithoutTitleCheckÊ
+WebPageWithoutTitleCheck&"title" should be present in all pages"MAJOR*web:ì<p>
+  Titles are important because they are displayed in search engine results as well as the browser's toolbar.
+</p>
+
+<p>
+This rule verifies that the <code>&lt;head&gt;</code> tag contains a <code>&lt;title&gt;</code> one, and the <code>&lt;html&gt;</code> tag a <code>&lt;head&gt;</code> one.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;html&gt;         &lt;!-- Non-Compliant --&gt;
+
+&lt;body&gt;
+...
+&lt;/body&gt;
+
+&lt;/html&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;html&gt;         &lt;!-- Compliant --&gt;
+
+&lt;head&gt;
+  &lt;title&gt;Some relevant title&lt;/title&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+...
+&lt;/body&gt;
+
+&lt;/html&gt;
+</pre>
+Í
+Web:FrameWithoutTitleCheckÀ
+WebFrameWithoutTitleCheck*"<frames>" should have a "title" attribute"MAJOR*web:Û<p>
+  Frames allow different web pages to be put together on the same visual space. Users without disabilities can easily scan the contents of all frames at once. However, visually impaired users using screen readers hear the page content linearly.
+</p>
+<p>
+The <code>title</code> attribute is used to list all the page's frames, enabling those users to easily navigate between them.
+Therefore, the <code>&lt;frame&gt;</code> and <code>&lt;iframe&gt;</code> tags should always have a <code>title</code> attribute.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;frame src="index.php?p=menu"&gt;                                      &lt;-- Non-Compliant --&gt;
+&lt;frame src="index.php?p=home" name="contents"&gt;                      &lt;-- Non-Compliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;frame src="index.php?p=menu" title="Navigation menu"&gt;              &lt;-- Compliant --&gt;
+&lt;frame src="index.php?p=home" title="Main content" name="contents"&gt; &lt;-- Compliant --&gt;
+</pre>
+Ç
+Web:UnclosedTagCheckÈ
+WebUnclosedTagCheckAll HTML tags should be closed"MINOR*web:£<p>
+Even if all browsers are fault-tolerant, HTML tags should be closed to prevent any unexpected behavior.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;Test Page    &lt;!-- Noncompliant; title not closed --&gt;
+  &lt;!-- Noncompliant; head not closed --&gt;
+  &lt;body&gt;
+    &lt;em&gt;Emphasized Text  &lt;!-- Noncompliant; em not closed --&gt;
+  &lt;!-- Noncompliant; body not closed --&gt;
+&lt;/html&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;Test Page&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;em&gt;Emphasized Text&lt;/em&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+÷
+Web:MaxLineLengthCheckª
+WebMaxLineLengthCheckLines should not be too long"MINOR*web:v<p>
+Having to scroll horizontally makes it harder to get a quick overview and understanding of any piece of code.
+</p>
+¸
+Web:ChildElementRequiredCheck⁄
+WebChildElementRequiredCheckChild element should be used"MAJOR*web:ã<p>
+  This rule checks that the specified child elements are present inside the specified parent elements.
+</p>
+<p>
+  Given a parent/child combination of <code>&lt;head&gt;</code>/<code>&lt;title&gt;</code>:
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;html&gt;
+  &lt;head&gt;
+  &lt;/head&gt;  &lt;!-- Noncompliant; no title element --&gt;
+  &lt;body&gt;
+    ...
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;My Page&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    ...
+</pre>@
+ß
+Web:RequiredAttributeCheckà
+WebRequiredAttributeCheck"Required attributes should be used"MAJOR*web:∏<p>
+  This rule checks that the specified attributes are present in HTML tags.
+</p>
+<p>
+  For a required attribute list of: <code>img.alt,img.height,img.width</code>
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;img src="/images/queen.png"&gt; &lt;!-- Noncompliant; missing all required attributes --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;img src="/images/queen.png" width="60" height="85" alt="Elizabeth II"&gt;
+</pre>
+ù
+Web:AvoidHtmlCommentCheckˇ
+WebAvoidHtmlCommentCheck HTML comments should not be used"MAJOR*web:≤<p>
+  Using HTML-style comments in a page that will be generated or interpolated server-side before being served
+  to the user increases the risk of exposing data that should be kept private.
+  For instance, a developer comment or line of debugging information that's left in a page could easily (and has) inadvertently expose:
+</p>
+<ul>
+  <li>Version numbers and host names</li>
+  <li>Full, server-side path names</li>
+  <li>Sensitive user data</li>
+</ul>
+<p>
+  Because every other language has its own native comment format, there is no justification for using HTML-style comments in anything other than a pure HTML or XML file.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;%
+      out.write("&lt;!-- ${username} --&gt;");  // Noncompliant
+  %&gt;
+  &lt;!-- &lt;% out.write(userId) %&gt; --&gt;  // Noncompliant
+  &lt;!-- #{userPhone} --&gt;  // Noncompliant
+  &lt;!-- ${userAddress} --&gt; // Noncompliant
+
+  &lt;!-- Replace 'world' with name --&gt; // Noncompliant
+  &lt;h2&gt;Hello world!&lt;/h2&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;%-- Replace 'world' with name %&gt;  // Compliant
+  &lt;h2&gt;Hello world!&lt;/h2&gt;
+</pre>
+
+<h2>See</h2>
+<ul>
+  <li><a href="http://cwe.mitre.org/data/definitions/615.html">MITRE, CWE-615</a> - Information Exposure Through Comments</li>
+  <li><a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
+</ul>
+Ì
+Web:IllegalElementCheck—
+WebIllegalElementCheck&Disallowed elements should not be used"MAJOR*web:Ä<p>
+  This rule checks that the specified HTML elements are not present.
+</p>
+<p>
+  For a disallowed list of "font,center":
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;center&gt;&lt;font color="red"&gt;Hello World!&lt;/font&gt;&lt;/center&gt; &lt;!-- Noncompliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;div class="centerRed"&gt;Hello World!&lt;/div&gt;
+</pre>
+î
+Web:ServerSideImageMapsCheckÛ
+
+WebServerSideImageMapsCheck=Server-side image maps ("ismap" attribute) should not be used"MAJOR*web:Ü
+<p>
+The <code>ismap</code> attribute in an <code>img</code> tag creates a server-side image map: The browser sends the coordinates of the clicked point to the server.
+For any person who cannot use a mouse, this form of navigation is inaccessible because it is the position of the cursor on the image that determines the action.
+</p>
+<p>
+On the other hand, client-side image maps, which use the <code>usemap</code> attribute allow for each clickable area to specify an alternate text, enabling accessibility for the blind.
+Further, in terms of separation of concerns, it is definitely better to leave the task of mapping pixels to links to the client.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;a href="click_on_world_map.php" target="_self"&gt;
+  &lt;img src="world_map.png" ismap&gt;                   &lt;!-- Non-Compliant --&gt;
+&lt;/a&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;img src="world_map.png" usemap="#world_map"&gt;       &lt;!-- Compliant --&gt;
+
+&lt;map name="world_map"&gt;
+  &lt;area shape="rect" coords="0,0,10,10" href="france.html" alt="France"&gt;
+  &lt;area shape="circle" coords="20,20,10" href="spain.html" alt="Spain"&gt;
+  &lt;area shape="circle" coords="30,30,8" href="england.html" alt="England"&gt;
+  &lt;!-- ... --&gt;
+&lt;/map&gt;
+</pre>
+™
+Web:DoctypePresenceCheckç
+WebDoctypePresenceCheck<A <!DOCTYPE> declaration should appear before the <html> tag"MAJOR*web:•<p>
+The <code>&lt;!DOCTYPE&gt;</code> declaration tells the web browser which (X)HTML version is being used on the page, and therefore how to interpret the various elements.
+Validators also rely on it to know which rules to enforce.
+It should always preceed the <code>&lt;html&gt;</code> tag.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;html&gt;            &lt;!-- Noncompliant --&gt;
+...
+&lt;/html&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;            &lt;!-- Compliant --&gt;
+...
+&lt;/html&gt;
+</pre>
+§
+Web:WhiteSpaceAroundCheckÜ
+WebWhiteSpaceAroundCheck*White space should be used in JSP/JSF tags"MINOR*web:Ø<p>
+  The proper use of white space makes a major contribution to code readability.
+  This rule check that there is a space character after the beginning and before the end of each comment
+  (<code>&lt;!-- ... --&gt;</code>), directive (<code>&lt;%@ ... %&gt;</code>), and expression (<code>&lt;% ... %&gt;</code>).
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;!--Do the thing--&gt;  &lt;!-- Noncompliant; missing space at beginning and end of text--&gt;
+&lt;%@page import="java.io.*,java.util.*" %&gt; &lt;!-- Noncompliant; missing space at beginning --&gt;
+&lt;% String title = "My Page";%&gt; &lt;!-- Noncompliant; missing space at end --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;!-- Do the thing --&gt;
+&lt;%@ page import="java.io.*,java.util.*" %&gt;
+&lt;% String title = "My Page"; %&gt;
+</pre>
+¸
+Web:DoubleQuotesCheck‚
+WebDoubleQuotesCheckGAttributes should be quoted using double quotes rather than single ones"MINOR*web:Ú<p>
+Checker to find use of single quote where double quote is preferred.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;div id='header'&gt;&lt;/div&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;div id="header"&gt;&lt;/div&gt;
+</pre>
+ˇ
+Web:UnsupportedTagsInHtml5Check€
+WebUnsupportedTagsInHtml5Check/Elements deprecated in HTML5 should not be used"MAJOR*web:˘<p>
+With the advent of HTML5, many old elements were deprecated. To ensure the best user experience, deprecated elements should not be used. This rule checks for the following deprecated elements:
+</p>
+
+<table>
+  <tr><th>Element</th><th>Remediation Action</th></tr>
+  <tr><td><code>basefont</code>, <code>big</code>, <code>blink</code>, <code>center</code>, <code>font</code>, <code>marquee</code>, <code>multicol</code>, <code>nobr</code>, <code>spacer</code>, <code>tt</code></td><td>use CSS</td></tr>
+  <tr><td><code>acronym</code></td><td>use <code>abbr</code></td></tr>
+  <tr><td><code>applet</code></td><td>use <code>embed</code> or <code>object</code></td></tr>
+  <tr><td><code>bgsound</code></td><td>use <code>audio</code></td></tr>
+  <tr><td><code>frame</code>, <code>frameset</code>, <code>noframes</code></td><td>restructure the page to remove frames</td></tr>
+  <tr><td><code>isindex</code></td><td>use form controls</td></tr>
+  <tr><td><code>dir</code></td><td>use <code>ul</code></td></tr>
+  <tr><td><code>hgroup</code></td><td>use <code>header</code> or <code>div</code></td></tr>
+  <tr><td><code>listing</code></td><td>use <code>pre</code> and <code>code</code></td></tr>
+  <tr><td><code>nextid</code></td><td>use GUIDS</td></tr>
+  <tr><td><code>noembed</code></td><td>use <code>object</code> instead of <code>embed</code> when fallback is necessary</td></tr>
+  <tr><td><code>plaintext</code></td><td>use the "text/plain" MIME type</td></tr>
+  <tr><td><code>strike</code></td><td>use <code>del</code> or <code>s</code></td></tr>
+  <tr><td><code>xmp</code></td><td>use <code>pre</code> or <code>code</code>, and escape "&lt;" and "&nbsp;" characters</td></tr>
+</table>
+
+<h2>See</h2>
+<ul>
+  <li>W3C, <a href="http://www.w3.org/TR/html5-diff">Obsolete Features</a></li>
+  <li>WHATWG, <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/obsolete.html">Obsolete Features</a></li>
+</ul>
+í
+Web:TableWithoutCaptionCheckÒ
+WebTableWithoutCaptionCheck+"<table>" tags should contain a "<caption>""MAJOR*web:ñ<p>
+In order to be accessible to visually impaired users, it is important that tables have a caption briefly describing its contents.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;table&gt;                                                         &lt;!-- Non-Compliant --&gt;
+  ...
+&lt;table&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;table&gt;                                                         &lt;!-- Compliant --&gt;
+  &lt;caption&gt;New York City Marathon Results 2013&lt;/caption&gt;
+  ...
+&lt;table&gt;
+</pre>
+‰
+Web:FileLengthCheckÃ
+WebFileLengthCheck$Files should not have too many lines"MAJOR*web:Å<p>
+  A source file that grows too much tends to aggregate too many responsibilities and inevitably becomes harder to understand and therefore to maintain.
+  Above a specific threshold, it is strongly advised to refactor it into smaller pieces of code which focus on well defined tasks.
+  Those smaller files will not only be easier to understand but also probably easier to test.
+</p>
+Ú<
+	Web:S1827‰<
+WebS18271Attributes deprecated in HTML5 should not be used"MAJOR*web:ñ<<p>
+  With the advent of HTML5, many old attributes were deprecated.
+  To ensure the best user experience, deprecated attributes should not be used. This rule checks for the following deprecated attributes, where CSS should be used instead.
+</p>
+
+<h3>Attributes</h3>
+<table>
+  <tr><th>Attribute</th><th>Removed from</th></tr>
+  <tr><td><code>accept</code></td><td><code>form</code></td></tr>
+  <tr><td><code>align</code></td><td><code>caption</code>, <code>col</code>, <code>div</code>, <code>embed</code>, <code>h1-h6</code>, <code>hr</code>, <code>iframe</code>, <code>img</code>, <code>input</code>, <code>legend</code>, <code>object</code>, <code>p</code>, <code>table</code>, <code>tbody</code>, <code>thead</code>, <code>tfoot</code>, <code>td</code>, <code>th</code>, <code>tr</code></td></tr>
+  <tr><td><code>alink</code></td><td><code>body</code></td></tr>
+  <tr><td><code>allowtransparency</code></td><td><code>iframe</code></td></tr>
+  <tr><td><code>archive</code></td><td><code>object</code></td></tr>
+  <tr><td><code>axis</code></td><td><code>td</code>, <code>th</code></td></tr>
+  <tr><td><code>background</code></td><td><code>body</code>, <code>table</code>, <code>thead</code>, <code>tbody</code>, <code>tfoot</code>, <code>tr</code>, <code>td</code>, <code>th</code></td></tr>
+  <tr><td><code>bgcolor</code></td><td><code>body</code>, <code>table</code>, <code>td</code>, <code>th</code>, <code>tr</code></td></tr>
+  <tr><td><code>border</code></td><td><code>img</code> (<code>border="0"</code> allowed), <code>object</code></td></tr>
+  <tr><td><code>bordercolor</code></td><td><code>table</code></td></tr>
+  <tr><td><code>cellpadding</code></td><td><code>table</code></td></tr>
+  <tr><td><code>cellspacing</code></td><td><code>table</code></td></tr>
+  <tr><td><code>char</code></td><td><code>col</code>, <code>tbody</code>, <code>thead</code>, <code>tfoot</code>, <code>td</code>, <code>th</code>, <code>tr</code></td></tr>
+  <tr><td><code>charoff</code></td><td><code>col</code>, <code>tbody</code>, <code>thead</code>, <code>tfoot</code>, <code>td</code>, <code>th</code>, <code>tr</code></td></tr>
+  <tr><td><code>charset</code></td><td><code>a</code>, <code>link</code></td></tr>
+  <tr><td><code>classid</code></td><td><code>object</code></td></tr>
+  <tr><td><code>clear</code></td><td><code>br</code></td></tr>
+  <tr><td><code>code</code></td><td><code>object</code></td></tr>
+  <tr><td><code>codebase</code></td><td><code>object</code></td></tr>
+  <tr><td><code>codetype</code></td><td><code>object</code></td></tr>
+  <tr><td><code>color</code></td><td><code>hr</code></td></tr>
+  <tr><td><code>compact</code></td><td><code>dl</code>, <code>ol</code>, <code>ul</code></td></tr>
+  <tr><td><code>coords</code></td><td><code>a</code></td></tr>
+  <tr><td><code>datafld</code></td><td><code>a</code>, <code>applet</code>, <code>button</code>, <code>div</code>, <code>fieldset</code>, <code>frame</code>, <code>iframe</code>, <code>img</code>, <code>input</code>, <code>label</code>, <code>legend</code>, <code>marquee</code>, <code>object</code>, <code>param</code>, <code>select</code>, <code>span</code>, <code>textarea</code></td></tr>
+  <tr><td><code>dataformatas</code></td><td><code>button</code>, <code>div</code>, <code>input</code>, <code>label</code>, <code>legend</code>, <code>marquee</code>, <code>object</code>, <code>option</code>, <code>select</code>, <code>span</code>, <code>table</code></td></tr>
+  <tr><td><code>datapagesize</code></td><td><code>table</code></td></tr>
+  <tr><td><code>datasrc</code></td><td><code>a</code>, <code>applet</code>, <code>button</code>, <code>div</code>, <code>frame</code>, <code>iframe</code>, <code>img</code>, <code>input</code>, <code>label</code>, <code>legend</code>, <code>marquee</code>, <code>object</code>, <code>option</code>, <code>select</code>, <code>span</code>, <code>table</code>, <code>textarea</code></td></tr>
+  <tr><td><code>declare</code></td><td><code>object</code></td></tr>
+  <tr><td><code>event</code></td><td><code>script</code></td></tr>
+  <tr><td><code>for</code></td><td><code>script</code></td></tr>
+  <tr><td><code>frame</code></td><td><code>table</code></td></tr>
+  <tr><td><code>frameborder</code></td><td><code>iframe</code></td></tr>
+  <tr><td><code>height</code></td><td><code>td</code>, <code>th</code></td></tr>
+  <tr><td><code>hspace</code></td><td><code>embed</code>, <code>iframe</code>, <code>img</code>, <code>input</code>, <code>object</code></td></tr>
+  <tr><td><code>ismap</code></td><td><code>input</code></td></tr>
+  <tr><td><code>langauge</code></td><td><code>script</code> (<code>language="javascript"</code>, case insensitive, allowed)</td></tr>
+  <tr><td><code>link</code></td><td><code>body</code></td></tr>
+  <tr><td><code>lowsrc</code></td><td><code>img</code></td></tr>
+  <tr><td><code>marginbottom</code></td><td><code>body</code></td></tr>
+  <tr><td><code>marginheight</code></td><td><code>body</code>, <code>iframe</code></td></tr>
+  <tr><td><code>marginleft</code></td><td><code>body</code></td></tr>
+  <tr><td><code>marginright</code></td><td><code>body</code></td></tr>
+  <tr><td><code>margintop</code></td><td><code>body</code></td></tr>
+  <tr><td><code>marginwidth</code></td><td><code>body</code>, <code>iframe</code></td></tr>
+  <tr><td><code>methods</code></td><td><code>a</code>, <code>link</code></td></tr>
+  <tr><td><code>name</code></td><td><code>a</code> (<code>name="[a's element id]"</code> allowed), <code>embed</code>, <code>img</code>, <code>option</code></td></tr>
+  <tr><td><code>nohref</code></td><td><code>area</code></td></tr>
+  <tr><td><code>noshade</code></td><td><code>hr</code></td></tr>
+  <tr><td><code>nowrap</code></td><td><code>td</code>, <code>th</code></td></tr>
+  <tr><td><code>profile</code></td><td><code>head</code></td></tr>
+  <tr><td><code>rules</code></td><td><code>table</code></td></tr>
+  <tr><td><code>scheme</code></td><td><code>meta</code></td></tr>
+  <tr><td><code>scope</code></td><td><code>td</code></td></tr>
+  <tr><td><code>scrolling</code></td><td><code>iframe</code></td></tr>
+  <tr><td><code>shape</code></td><td><code>a</code></td></tr>
+  <tr><td><code>size</code></td><td><code>hr</code></td></tr>
+  <tr><td><code>standby</code></td><td><code>object</code></td></tr>
+  <tr><td><code>summary</code></td><td><code>table</code></td></tr>
+  <tr><td><code>target</code></td><td><code>link</code></td></tr>
+  <tr><td><code>text</code></td><td><code>body</code></td></tr>
+  <tr><td><code>type</code></td><td><code>li</code>, <code>param</code>, <code>ul</code></td></tr>
+  <tr><td><code>urn</code></td><td><code>a</code>, <code>link</code></td></tr>
+  <tr><td><code>usemap</code></td><td><code>input</code></td></tr>
+  <tr><td><code>valign</code></td><td><code>col</code>, <code>tbody</code>, <code>thead</code>, <code>tfoot</code>, <code>td</code>, <code>th</code>, <code>tr</code></td></tr>
+  <tr><td><code>valuetype</code></td><td><code>param</code></td></tr>
+  <tr><td><code>version</code></td><td><code>html</code></td></tr>
+  <tr><td><code>vlink</code></td><td><code>body</code></td></tr>
+  <tr><td><code>vspace</code></td><td><code>embed</code>, <code>iframe</code>, <code>img</code>, <code>input</code>, <code>object</code></td></tr>
+  <tr><td><code>width</code></td><td><code>col</code>, <code>hr</code>, <code>pre</code>, <code>table</code>, <code>td</code>, <code>th</code></td></tr>
+</table>
+
+<h2>See</h2>
+<ul>
+  <li>W3C, <a href="http://www.w3.org/TR/html5-diff">Differences in HTML5</a></li>
+  <li>W3C, <a href="http://www.w3.org/TR/html5/obsolete.html">Obsolete Features</a></li>
+  <li>WHATWG, <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/obsolete.html">Obsolete Features</a></li>
+</ul>
+⁄
+Web:ParentElementRequiredCheck∑
+WebParentElementRequiredCheckParent elements should be used"MAJOR*web:f<p>
+  This rule checks that required HTML parent elements are present for certain child elements.
+</p>@
+˝
+Web:IllegalTagLibsCheck·
+WebIllegalTagLibsCheck'Disallowed "taglibs" should not be used"CRITICAL*web:å<p>
+  This rule checks that the disallowed tag libraries are not used.
+</p>
+<p>
+  Given the default parameter for this rule:
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;%@ taglib uri="http://java.sun.com/jstl/sql" prefix="prefixOfTag" &gt; &lt;!-- Noncompliant --&gt;
+&lt;jsp:directive.taglib uri="http://java.sun.com/jstl/sql" prefix="prefixOfTag" /&gt; &lt;!-- Noncompliant --&gt;
+</pre>
+…
+
+Web:BoldAndItalicTagsCheck™
+
+WebBoldAndItalicTagsCheck<<strong> and <em> tags should be used instead of <b> and <i>"MAJOR*web:¿	<p>
+  The &lt;strong&gt;/&lt;b&gt; and&lt;em&gt;/&lt;i&gt; tags have exactly the same effect in most web browsers, but there is a fundamental difference between them: &lt;strong> and &lt;em&gt; have a semantic meaning whereas &lt;b&gt; and &lt;i&gt; only convey styling information like CSS.
+</p>
+
+<p>
+When &lt;b&gt; can have simply no effect on a some device with limited display or when a screen reader software is used by a blind person, &lt;strong&gt; will:
+</p>
+
+<ul>
+ <li>Speak with lower tone when using a screen reader such as Jaws</li>
+ <li>And display the text bold in normal browsers</li>
+</ul>
+
+<p>Consequently:</p>
+
+<ul>
+ <li>in order to convey semantics, the &lt;b&gt; and &lt;i&gt; tags shall never be used,</li>
+ <li>in order to convey styling information, the &lt;b&gt; and &lt;i&gt; should be avoided and CSS should be used instead.</li>
+</ul>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;i&gt;car&lt;/i&gt;                 &lt;!-- Noncompliant --&gt;
+&lt;b&gt;train&lt;/b&gt;               &lt;!-- Noncompliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;em&gt;car&lt;/em&gt;               &lt;!-- Compliant --&gt;
+&lt;strong&gt;train&lt;/strong&gt;     &lt;!-- Compliant --&gt;
+</pre>
+Û
+Web:DynamicJspIncludeCheck‘
+WebDynamicJspIncludeCheck#Dynamic includes should not be used"CRITICAL*web:Ä<p>
+  Content that doesn't change or that doesn't change often should be included using a mechanism which won't try to interpret it.
+  Specifically, <code>&lt;%@ include file="..." %&gt;</code>, which includes the file in the JSP servlet translation phase (i.e. it happens once),
+  should be used instead of <code>&lt;jsp:include page="..." /&gt;</code>, which includes the page on the file, when the content is being served to the user.
+</p>
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;jsp:include page="header.jsp"&gt;  &lt;!-- Noncompliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;%@ include file="header.jsp"&gt;
+</pre>
+»
+Web:AvoidCommentedOutCodeCheck•
+WebAvoidCommentedOutCodeCheck.Sections of code should not be "commented out""MAJOR*web:≈<p>Programmers should not comment out code as it bloats programs and reduces readability.
+  Unused code should be deleted and can be retrieved from source control history if required.</p>
+
+<h2>See</h2>
+<ul>
+  <li>MISRA C:2004, 2.4 - Sections of code should not be "commented out".</li>
+  <li>MISRA C++:2008, 2-7-2 - Sections of code shall not be "commented out" using C-style comments.</li>
+  <li>MISRA C++:2008, 2-7-3 - Sections of code should not be "commented out" using C++ comments.</li>
+  <li>MISRA C:2012, Dir. 4.4 - Sections of code should not be "commented out"</li>
+</ul>
+Õ
+Web:MetaRefreshCheck¥
+WebMetaRefreshCheckDMeta tags should not be used to refresh the page nor for redirection"MAJOR*web:»<p>
+Use of <code>&lt;meta http-equiv="refresh"&gt;</code> is discouraged by the World Wide Web Consortium (W3C).
+If a user clicks the 'Back' button, some browers will go back to the redirecting page, which will prevent the user from actually going back.
+</p>
+
+<p>
+To refresh the page, a better alternative is to use Ajax, to refresh only what needs to be refreshed and not the whole page.
+To redirect to another page, using the HTTP response status code 301 'Moved Permanently' and 302 'Found' is a better option.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;head&gt;
+  &lt;meta http-equiv="refresh" content="5"&gt;   &lt;!-- Non-Compliant --&gt;
+  &lt;meta name="description" content="..."&gt;
+&lt;/head&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;head&gt;
+  &lt;meta name="description" content="..."&gt;
+&lt;/head&gt;
+</pre>
+Ó
+,Web:MouseEventWithoutKeyboardEquivalentCheckΩ
+Web(MouseEventWithoutKeyboardEquivalentCheck7Mouse events should have a corresponding keyboard event"MAJOR*web:∆<p>
+Offering the same experience with the mouse and the keyboard allow users to pick their preferred device.
+Additionally, users of assistive technology will also be able to browse the site even if they cannot use the mouse.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;a onClick="doSomething();" ...&gt;                                &lt;!-- Non-Compliant - 'onKeyPress' missing --&gt;
+&lt;a onMouseover="doSomething();" ...&gt;                            &lt;!-- Non-Compliant - 'onFocus' missing --&gt;
+&lt;a onMouseout="doSomething();" ...&gt;                             &lt;!-- Non-Compliant - 'onBlur' missing --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;a onClick="doSomething();" onKeyPress="doSomething();" ...&gt;    &lt;!-- Compliant --&gt;
+&lt;a onMouseover="doSomething();" onFocus="doSomething();" ...&gt;   &lt;!-- Compliant --&gt;
+&lt;a onMouseout="doSomething();" onBlur="doSomething();" ...&gt;     &lt;!-- Compliant --&gt;
+</pre>
+˘
+Web:HeaderCheckÂ
+WebHeaderCheck/Copyright and license headers should be defined"BLOCKER*web:ë<p>
+  Each source file should start with a header stating file ownership and the license which must be used to distribute the application.
+  This rule must be fed with the header text that is expected at the beginning of every file.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;html&gt;                                    &lt;!-- Non-Compliant --&gt;
+...
+&lt;/html&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;!-- Copyright 2013 SonarSource SA --&gt;    &lt;!-- Compliant --&gt;
+&lt;html&gt;
+...
+&lt;/html&gt;
+</pre>
+¶
+	Web:S1436ò
+WebS1436MAn element with a specific "id" attribute should be present in each HTML page"MAJOR*web:¨<p>
+This rule allows you to make sure that each HTML page contains an element with your configured ID, regardless of element type.
+This rule is useful, for instance, if your design requires a placeholder to be present in each page, for example to dynamically insert a footer.
+</p>
+
+<h2>Compliant Solution</h2>
+
+<p>In the following example, the expected ID is "#footer":</p>
+<pre>
+&lt;div id="#footer"&gt;
+...
+&lt;/div&gt;
+</pre>@
+Õ
+Web:LinkToNothingCheck≤
+WebLinkToNothingCheck3Links should not target "#" or "javascript:void(0)""MAJOR*web:’<p>
+  There are two ways to build a link that has the sole purpose of running JavaScript code.
+  The goal of this rule is to ban such patterns in order to support browsing with JavaScript disabled.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;a href="#" onclick="alert('Clicked!'); return false;"&gt;Run JavaScript Code&lt;/a&gt; &lt;!-- Noncompliant --&gt;
+&lt;a href="javascript:void(0)" onclick="alert('Clicked!'); return false;"&gt;Run JavaScript Code&lt;/a&gt;  &lt;!-- Noncompliant --&gt;
+&lt;a id="inPageAnchor"&gt;Jump down the page to me&lt;/a&gt;  &lt;!-- Compliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;a id="inPageAnchor"&gt;Jump down the page to me&lt;/a&gt;  &lt;!-- Compliant --&gt;
+</pre>
+ß
+Web:ParentElementIllegalCheckÖ
+WebParentElementIllegalCheckParent Element Illegal"MAJOR*web:º<p>
+  This rule is deprecated, use <code>Web:ChildElementIllegalCheck</code> instead.
+</p>
+<p>
+Checker for illegal parent element.
+<br/>
+E.g.: title must not have parent element body.
+</p>@
+œ
+ Web:TableHeaderHasIdOrScopeCheck™
+WebTableHeaderHasIdOrScopeCheckB<th> table headers tags should have an 'id' or a 'scope' attribute"MAJOR*web:¥<p>
+Associating table headers with a row, column, or a group of rows or columns enables screen reader softwares to announce the header prior to the data.
+This considerably increases the accessibility of tables to visually impaired users.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;table border="1"&gt;
+  &lt;caption&gt;Contact Information&lt;/caption&gt;
+  &lt;tr&gt;
+    &lt;td&gt;&lt;/td&gt;
+    &lt;th&gt;Name&lt;/th&gt;                                          &lt;!-- Non-Compliant --&gt;
+    &lt;th&gt;Phone#&lt;/th&gt;                                        &lt;!-- Non-Compliant --&gt;
+    &lt;th&gt;City&lt;/th&gt;                                          &lt;!-- Non-Compliant --&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;1.&lt;/td&gt;
+    &lt;th&gt;Joel Garner&lt;/th&gt;                                   &lt;!-- Non-Compliant --&gt;
+    &lt;td&gt;412-212-5421&lt;/td&gt;
+    &lt;td&gt;Pittsburgh&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;2.&lt;/td&gt;
+    &lt;th&gt;Clive Lloyd&lt;/th&gt;                                   &lt;!-- Non-Compliant --&gt;
+    &lt;td&gt;410-306-1420&lt;/td&gt;
+    &lt;td&gt;Baltimore&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;table border="1"&gt;
+  &lt;caption&gt;Contact Information&lt;/caption&gt;
+  &lt;tr&gt;
+    &lt;td&gt;&lt;/td&gt;
+    &lt;th scope="col"&gt;Name&lt;/th&gt;                              &lt;!-- Compliant --&gt;
+    &lt;th scope="col"&gt;Phone#&lt;/th&gt;                            &lt;!-- Compliant --&gt;
+    &lt;th scope="col"&gt;City&lt;/th&gt;                              &lt;!-- Compliant --&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;1.&lt;/td&gt;
+    &lt;th scope="row"&gt;Joel Garner&lt;/th&gt;                       &lt;!-- Compliant --&gt;
+    &lt;td&gt;412-212-5421&lt;/td&gt;
+    &lt;td&gt;Pittsburgh&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;2.&lt;/td&gt;
+    &lt;th scope="row"&gt;Clive Lloyd&lt;/th&gt;                       &lt;!-- Compliant --&gt;
+    &lt;td&gt;410-306-1420&lt;/td&gt;
+    &lt;td&gt;Baltimore&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+
+<p>or:</p>
+
+<pre>
+&lt;table border="1"&gt;
+  &lt;caption&gt;Contact Information&lt;/caption&gt;
+  &lt;tr&gt;
+    &lt;td&gt;&lt;/td&gt;
+    &lt;th id="name"&gt;Name&lt;/th&gt;                                &lt;!-- Compliant --&gt;
+    &lt;th id="phone"&gt;Phone#&lt;/th&gt;                             &lt;!-- Compliant --&gt;
+    &lt;th id="city"&gt;City&lt;/th&gt;                                &lt;!-- Compliant --&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;1.&lt;/td&gt;
+    &lt;th id="person1" headers="name"&gt;Joel Garner&lt;/th&gt;       &lt;!-- Compliant --&gt;
+    &lt;td headers="phone person1"&gt;412-212-5421&lt;/td&gt;
+    &lt;td headers="city person1"&gt;Pittsburgh&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;2.&lt;/td&gt;
+    &lt;th id="person2" headers="name"&gt;Clive Lloyd&lt;/th&gt;       &lt;!-- Compliant --&gt;
+    &lt;td headers="phone person2"&gt;410-306-1420&lt;/td&gt;
+    &lt;td headers="city person2"&gt;Baltimore&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+∫
+Web:ChildElementIllegalCheckô
+WebChildElementIllegalCheck,Disallowed child elements should not be used"MAJOR*web:ª<p>
+  This rule checks that the specified child tag does not appear as a direct child of the specified parent.
+</p>
+<p>
+  Assuming a parent/child combination of <code>&lt;head&gt;</code>/<code>&lt;body&gt;</code>:
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;head&gt;
+  ...
+  &lt;body&gt;  &lt;!-- Noncompliant --&gt;
+    ...
+  &lt;/body&gt;
+&lt;/head&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;head&gt;
+  ...
+&lt;/head&gt;
+</pre>@
+√
+Web:NonConsecutiveHeadingCheck†
+WebNonConsecutiveHeadingCheck5Heading tags should be used starting from H1 until H6"MAJOR*web:π<p>
+Heading tags are used by search engines and screen reader softwares to construct an outline of the page.
+Starting at <code>&lt;h1&gt;</code> and not skipping any level eases this automatic construction.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;h2&gt;My Title&lt;/h2&gt;     &lt;!-- Non-Compliant - h1 is not being used --&gt;
+
+&lt;h3&gt;My Sub Title&lt;/h3&gt; &lt;!-- Compliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;h1&gt;My Title&lt;/h1&gt;     &lt;!-- Compliant --&gt;
+
+&lt;h2&gt;My Sub Title&lt;/h2&gt; &lt;!-- Compliant --&gt;
+</pre>
+Ø	
+Web:ImgWithoutAltCheckî	
+WebImgWithoutAltCheck6Images tags and buttons should have an "alt" attribute"MAJOR*web:¥<p>
+The <code>alt</code> attribute provides a textual alternative to an image.
+It is used whenever the actual image cannot be rendered.
+Common reasons for that include:
+</p>
+
+<ul>
+  <li>The image can no longer be found</li>
+  <li>Visually impaired users using a screen reader software</li>
+  <li>Images loading is disabled, to reduce data consumption on mobile phones</li>
+</ul>
+
+<p>
+  Empty <code>alt</code> attributes are not allowed, since purely decorative images should be specified using CSS, not using the <code>img</code> tag.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;img src="foo.png" /&gt;                                           &lt;!-- Noncompliant --&gt;
+&lt;img src="foo.png" alt="" /&gt;                                    &lt;!-- Noncompliant --&gt;
+&lt;input type="image" src="bar.png" /&gt;                            &lt;!-- Noncompliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;img src="foo.png" alt="Some textual description of foo.png" /&gt;
+&lt;input type="image" src="bar.png" alt="Textual description of bar.png" /&gt;
+</pre>
+ƒ
+Web:InlineStyleCheck´
+WebInlineStyleCheck(The "style" attribute should not be used"MINOR*web:€<p>
+  The goal of this rule is to ban the usage of HTML "style" property to make sure that all CSS styles are defined in CSS classes.
+  Consolidating all styling into classes makes it easier to read, understand and maintain.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;body&gt;
+  &lt;h1 style="color: blue;"&gt;Hello World!&lt;/h1&gt;  &lt;!-- Noncompliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;head&gt;
+    &lt;style&gt;
+      h1 {
+        color: blue;
+      }
+    &lt;/style&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1 style="color: blue;"&gt;Hello World!&lt;/h1&gt;
+</pre>
+Â
+	Web:S1829◊
+WebS1829*Web pages should not contain absolute URIs"CRITICAL*web:ç<p>
+  It is considered best-practice to use relative URLs in web pages to prevent having to update the addresses if the web address in use changes.
+  Moreover, if some absolute URLs are missed in such a process, it will obviously impact the user experience.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;img src="http://www.myserver.com/smiley.gif" alt="Smiley face" height="42" width="42" /&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;img src="smiley.gif" alt="Smiley face" height="42" width="42" /&gt;
+</pre>
+∑
+Web:ComplexityCheckü
+WebComplexityCheckFiles should not be too complex"MAJOR*web:Ÿ<p>
+  Checks cyclomatic complexity against a specified limit.
+  The complexity is measured by counting decision tags (such as if and forEach) and boolean operators in expressions (&quot;&amp;&amp;&quot; and &quot;||&quot;),
+  plus one for the body of the document. It is a measure of the minimum number of possible paths to render the page.
+</p>
+û
+Web:MultiplePageDirectivesCheck˙
+WebMultiplePageDirectivesCheck-Multiple "page" directives should not be used"MINOR*web:ö<p>
+  While you can use as many <code>page</code> directives as you like, it is more readable to set multiple page attributes in a single directive.
+</p>
+<p>
+  The exception to this rule is when multiple packages are being imported.
+  In that case, imports may be done in separate directives and all other attributes should be set in a single, additional directive.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;%@ page session="false" %&gt;
+&lt;%@ page import="java.util.*" %&gt;
+&lt;%@ page errorPage="error.jsp" %&gt; &lt;!-- Noncompliant --&gt;
+&lt;%@ page import="java.text.*" %&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;%@ page session="false"
+                   errorPage="error.jsp" %&gt;
+&lt;%@ page import="java.util.*" %&gt;
+&lt;%@ page import="java.text.*" %&gt;
+</pre>
+…
+Web:LongJavaScriptCheck≠
+WebLongJavaScriptCheck<Javascript scriptlets should not have too many lines of code"CRITICAL*web:√<p>
+  Long pieces of JavaScript should be located in dedicated *.js source files.
+  This makes maintenance of both the script and the pages that use it easier.
+  Additionally, it offers some efficiencies in serving the files, since it takes better advantage of
+  browser caching to only re-serve the parts of a web page that have actually changed.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;head&gt;
+  ...
+  &lt;script type="text/javascript" language="JavaScript"&gt;
+    function doTheThing(arg1) {
+    ...
+    ...
+    }
+
+    function doTheOtherThing(arg1) {
+    ...
+    }
+
+    function andSoOn() {
+    ...
+    }
+  &lt;/script&gt;
+&lt;/head&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;head&gt;
+  ...
+  &lt;script type="text/javascript" language="JavaScript" src="myLongScript.js"&gt; &lt;/script&gt;
+&lt;/head&gt;
+</pre>
+§
+
+,Web:LinksIdenticalTextsDifferentTargetsCheckÛ	
+Web(LinksIdenticalTextsDifferentTargetsCheck8Links with identical texts should have identical targets"MAJOR*web:˚<p>
+  When links with different targets are given identical link text, this can produce confusion for users of assistive technologies,
+  some of which provide users the ability to view a list of all links on the page.
+  When this list of links is presented to the user they may be left not knowing the links go to different destinations.
+  Even if they do realize the links go to different destinations, they may be left not knowing which link to follow to go to the destination they desire.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;a href="a.html"&gt;qux&lt;/a&gt;
+&lt;a href="b.html"&gt;qux&lt;/a&gt;          &lt;!-- Noncompliant; same text, different targets --&gt;
+
+&lt;a href="c.html"&gt;foo&lt;/a&gt;
+&lt;a href="d.html"&gt;foo&lt;/a&gt;          &lt;!-- Noncompliant; same text, different targets --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;a href="a.html"&gt;qux&lt;/a&gt;
+&lt;a href="b.html"&gt;qaz&lt;/a&gt;          &lt;!-- Compliant; different text, different targets --&gt;
+
+&lt;a href="c.html"&gt;foo&lt;/a&gt;
+&lt;a href="c.html"&gt;foo&lt;/a&gt;          &lt;!-- Compliant; same text, same targets --&gt;
+</pre>
+‰
+	Web:S1443÷
+WebS1443J"autocomplete" should be set to "off" on input elements of type "password""CRITICAL*web:Ï<p>
+Most browsers automatically fill the content of input elements of type 'password' when this password has already been provided in the past.
+</p>
+
+<p>
+Imagine that user B takes control of a machine belonging to a user A.
+Accessing a secured web site as user A is trivial for user B if form input elements are automatically filled in by the browser on the site's login page.
+</p>
+
+<p>
+  Beginning with HTML 5 the ability to turn this functionality off exists on a field-by-field basis using the <code>autocomplete</code> attribute.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<p>For HTML5:</p>
+<pre>
+&lt;input type="password" /&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<p>For HTML5:</p>
+<pre>
+&lt;input type="password" autocomplete="off" /&gt;
+</pre>
+⁄
+$Web:FlashUsesBothObjectAndEmbedCheck±
+Web FlashUsesBothObjectAndEmbedCheckLFlash animations should be embedded using both the <object> and <embed> tags"MAJOR*web:≠<p>
+  The <code>&lt;object&gt;</code> tag is used by Internet Explorer 3.0 or later on Windows platforms or any browser that supports the use of the Flash ActiveX control.
+  The <code>&lt;embed&gt;</code> tag is used by Netscape Navigator 2.0 or later, or browsers that support the use of the Netscape-compatible plug-in version of Flash Player.
+</p>
+
+<p>
+  When an ActiveX-enabled browser loads the HTML page, it reads the values set on the <code>&lt;object&gt;</code> and ignores the <code>&lt;embed&gt;</code> tag.
+  When browsers using the Flash plug-in load the HTML page, they read the values set on the <code>&lt;embed&gt;</code> tag and ignore the <code>&lt;object&gt;</code> tag.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="100" height="100"&gt;      &lt;!-- Non-Compliant --&gt;
+  &lt;param name="movie" value="movie_name.swf" /&gt;
+&lt;/object&gt;
+
+&lt;embed src="movie_name.swf"                                                                 &lt;!-- Non-Compliant --&gt;
+       width="550"
+       height="400"
+       type="application/x-shockwave-flash"
+       pluginspage="http://www.macromedia.com/go/getflashplayer" /&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="100" height="100"&gt;      &lt;!-- Compliant --&gt;
+  &lt;param name="movie" value="movie_name.swf" /&gt;
+  &lt;embed src="movie_name.swf"                                                               &lt;!-- Compliant --&gt;
+  width="550"
+  height="400"
+  type="application/x-shockwave-flash"
+  pluginspage="http://www.macromedia.com/go/getflashplayer" /&gt;
+&lt;/object&gt;
+</pre>
+Ü
+Web:InputWithoutLabelCheckÁ
+WebInputWithoutLabelCheckK"input", "select" and "textarea" tags should have an associated "label" one"MAJOR*web:Ó<p>The <code>&lt;label&gt;</code> tag defines a label for the <code>&lt;input&gt;</code>, <code>&lt;select&gt;</code> and <code>&lt;textarea&gt;</code> elements.</p>
+
+<p>
+The <code>&lt;label&gt;</code> tag does not render as anything special.
+However, it provides a usability improvement for mouse users: When the text within the &lt;label&gt; element is clicked, the associated input field is toogled.
+It also improves the usability for visually impaired users: Screen readers will announce the label text whenever the focus is set on the input field.
+</p>
+
+<p>The <code>for</code> attribute of the <code>&lt;label&gt;</code> tag should be equal to the <code>id</code> attribute of the related element to bind them together.</p>
+
+<p>The purpose of this rule is to make sure that any &lt;input&gt; (except "submit", "button", "image" and "hidden" ones), &lt;select&gt; and &lt;textarea&gt; field has an associated label element.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;input type="text" name="firstname" /&gt;               &lt;!-- Non-Compliant - no id --&gt;
+&lt;input type="text" name="lastname" id="lastname" /&gt;  &lt;!-- Non-Compliant - no matching label for "lastname" --&gt;
+
+&lt;label for="address"&gt;Address&lt;/label&gt;
+&lt;input type="text" name="address" id="address" /&gt;    &lt;!-- Compliant --&gt;
+
+&lt;input type="hidden" name="time" value="..."&gt;        &lt;!-- Compliant - "hidden" type is excluded --&gt;
+&lt;input type="submit" value="Send" /&gt;                 &lt;!-- Compliant - "submit" type is excluded --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;label for="firstname"&gt;First name&lt;/label&gt;
+&lt;input type="text" name="firstname" id="firstname" /&gt;
+
+&lt;label for="lastname"&gt;Last name&lt;/label&gt;
+&lt;input type="text" name="lastname" id="lastname" /&gt;
+
+&lt;label for="address"&gt;Address&lt;/label&gt;
+&lt;input type="text" name="address" id="address" /&gt;
+
+&lt;input type="hidden" name="time" value="..."&gt;
+&lt;input type="submit" value="Send" /&gt;
+</pre>
+ì
+ Web:ImgWithoutWidthOrHeightCheckÓ
+WebImgWithoutWidthOrHeightCheckFImages tags and buttons should have a "width" and a "height" attribute"MAJOR*web:Ù<p>
+If the <code>width</code> and <code>height</code> attributes are set, the space required for the image is reserved immediately by the browser, even before it actually starts to load the image.
+Without those attributes, the page layout constantly changes as images are loaded until they are all loaded, which can disorient users.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;img src="logo.png" alt="My Company" /&gt;                           &lt;!-- Non-Compliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;img src="logo.png" alt="My Company" width="100" height="50" /&gt;   &lt;!-- Compliant --&gt;
+</pre>
+ﬁ
+Web:JspScriptletCheckƒ
+WebJspScriptletCheck"JSP expressions should not be used"MAJOR*web:˘<p>JSP expressions (using <code><%= ... %></code> have been deprecated because they:</p>
+<ul>
+  <li>Are not unit testable.</li>
+  <li>Are not reusable.</li>
+  <li>Cannot make use of object oriented concepts such as inheritence.</li>
+  <li>Have poor error handling capabilities: if an exception is thrown, an empty page is rended.</li>
+  <li>Mix the business and presentation logic.</li>
+</ul>
+
+<p>
+JSP Standard Tag Library (JSTL) and Expression Language should be used instead,
+enabiling the adoption of the model-view-controller (MVC) design pattern
+which reduces the coupling between the presentation tier and the business logic.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;input type="text" name="foo" value="&lt;%= request.getParameter("foo") %&gt;" /&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+&lt;input type="text" name="foo" value="${fn:escapeXml(param.foo)}" /&gt;
+</pre>
+õ
+Web:IllegalTabCheckÉ
+WebIllegalTabCheck(Tabulation characters should not be used"MINOR*web:¥<p>
+  Developers should not need to configure the tab width of their text editors in order to be able to read source code.
+  So the use of tabulation character must be banned.
+</p>
+…
+Web:WmodeIsWindowCheckÆ
+WebWmodeIsWindowCheck9Flash animations should be embedded using the window mode"MAJOR*web:À<p>
+Browsers best support the <code>window</code> mode for the <code>wmode</code> parameter, also in terms of accessibility.
+As it is the default mode, it is acceptable to either not specify a <code>wmode</code> parameter altogether, or to set it explicitly to <code>window</code>.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="550" height="400"&gt;
+  &lt;param name="movie" value="movie_name.swf" /&gt;
+  &lt;param name="wmode" value="direct" /&gt;                              &lt;!-- Non-Compliant --&gt;
+&lt;/object&gt;
+
+&lt;embed src="movie_name.swf"
+       width="550"
+       height="400"
+       wmode="direct"                                                                 &lt;!-- Non-Compliant --&gt;
+       type="application/x-shockwave-flash"
+       pluginspage="http://www.macromedia.com/go/getflashplayer" /&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="550" height="400"&gt;
+  &lt;param name="movie" value="movie_name.swf" /&gt;
+&lt;/object&gt;
+
+&lt;embed src="movie_name.swf"
+       width="550"
+       height="400"
+       type="application/x-shockwave-flash"
+       pluginspage="http://www.macromedia.com/go/getflashplayer" /&gt;
+</pre>
+
+<p>or:</p>
+
+<pre>
+&lt;object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="550" height="400"&gt;
+  &lt;param name="movie" value="movie_name.swf" /&gt;
+  &lt;param name="wmode" value="window" /&gt;
+&lt;/object&gt;
+
+&lt;embed src="movie_name.swf"
+       width="550"
+       height="400"
+       wmode="window"
+       type="application/x-shockwave-flash"
+       pluginspage="http://www.macromedia.com/go/getflashplayer" /&gt;
+</pre>
+Á
+Web:IllegalAttributeCheck…
+WebIllegalAttributeCheck(Disallowed attributes should not be used"MAJOR*web:Ú<p>
+  This rule checks that the specified attributes are not present in HTML tags.
+</p>
+<p>
+  For a disallowed attribute list of: <code>a.name</code>
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;a href="blah.com" name="Blah link"&gt; &lt;!-- Noncompliant; name attribute is used --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;a href="blah.com"&gt;
+</pre>@
+à
+Web:LinkToImageCheckÔ
+WebLinkToImageCheck'Links should not directly target images"MAJOR*web:†<p>
+Whenever a user clicks one a link that targets an image, the website's navigation menu will be lost.
+From a user point of view, it is as if she left the website.
+The only way to return to it is using the browser's 'Back' button.
+Instead, it is better to create a page which will display the image using the <code>&lt;img&gt;</code> tag and preserve the navigation menu.
+</p>
+
+<p>
+Further, in terms of accessibility, when the image is embedded into a page, content providers are able to provide an alternate text equivalent through the <code>alt</code> attribute.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;a href="image.png"&gt;...&lt;/a&gt;  &lt;!-- Non-Compliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;a href="page.html"&gt;...&lt;/a&gt;  &lt;!-- Compliant --&gt;
+</pre>
+…
+Web:LibraryDependencyCheck™
+WebLibraryDependencyCheck=Some Java packages or classes should not be used in JSP files"MAJOR*web:Ω<p>
+  This rule verifies if some given Java packages or classes are used in a JSP file.
+  The following code illustrates this rule, with <code>java.sql,ArrayList</code> as libraries:</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;%@ page import="java.sql.*" %&gt;     &lt;!-- Non-Compliant --&gt;
+&lt;% java.util.ArrayList clients; %&gt;  &lt;!-- Non-Compliant --&gt;
+&lt;% java.lang.String name; %&gt;        &lt;!-- Compliant --&gt;
+</pre>@
+¶
+
+%Web:ItemTagNotWithinContainerTagCheck¸	
+Web!ItemTagNotWithinContainerTagCheckP"<li>" and "<dt>" item tags should be in "<ul>", "<ol>" or "<dl>" container tags"CRITICAL*web:<p>
+  Using a <code>&lt;li&gt;</code> or <code>&lt;dt&gt;</code> item tag outside of a <code>&lt;ul&gt;</code>,
+  <code>&lt;ol&gt;</code> or <code>&lt;dl&gt;</code> one does not make sense and indicates a bug.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;li&gt;Apple&lt;/li&gt;          &lt;!-- Non-Compliant --&gt;
+&lt;li&gt;Strawberry&lt;/li&gt;     &lt;!-- Non-Compliant --&gt;
+
+&lt;li&gt;Apple&lt;/li&gt;          &lt;!-- Non-Compliant --&gt;
+&lt;li&gt;Strawberry&lt;/li&gt;     &lt;!-- Non-Compliant --&gt;
+
+&lt;dt&gt;Apple&lt;/dt&gt;          &lt;!-- Non-Compliant --&gt;
+&lt;dt&gt;Strawberry&lt;/dt&gt;     &lt;!-- Non-Compliant --&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;ul&gt;
+  &lt;li&gt;Apple&lt;/li&gt;        &lt;!-- Compliant --&gt;
+  &lt;li&gt;Strawberry&lt;/li&gt;   &lt;!-- Compliant --&gt;
+&lt;/ul&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Apple&lt;/li&gt;        &lt;!-- Compliant --&gt;
+  &lt;li&gt;Strawberry&lt;/li&gt;   &lt;!-- Compliant --&gt;
+&lt;/ol&gt;
+
+&lt;dl&gt;
+  &lt;dt&gt;Apple&lt;/dt&gt;        &lt;!-- Compliant --&gt;
+  &lt;dt&gt;Strawberry&lt;/dt&gt;   &lt;!-- Compliant --&gt;
+&lt;/dl&gt;
+</pre>
+„
+Web:PageWithoutFaviconCheck√
+WebPageWithoutFaviconCheck$Favicons should be used in all pages"MAJOR*web:<p>
+Favicons are shown for example in the browser's address bar, bookmark list, or tabs.
+They enable users to quickly identify and recognize websites.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;head&gt;                                                                  &lt;!-- Non-Compliant --&gt;
+  &lt;title&gt;...&lt;title&gt;
+&lt;/head&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;head&gt;                                                                  &lt;!-- Compliant --&gt;
+  &lt;title&gt;...&lt;title&gt;
+  &lt;link rel="shortcut icon" href="http://example.com/myicon.ico" /&gt;
+&lt;/head&gt;
+</pre>
+÷
+
+Web:FieldsetWithoutLegendCheck≥
+
+WebFieldsetWithoutLegendCheck)"fieldset" tags should contain a "legend""MAJOR*web:ÿ	<p>
+For users of assistive technology such as screen readers, it may be challenging to know what is expected in each form's input.
+The input's label alone might not be sufficient: 'street' could be part of a billing or a shipping address for instance.
+</p>
+
+<p>
+Fieldset legends are read out loud by screen readers before the label each time the focus is set on an input.
+For example, a legend 'Billing address' with a label 'Street' will read 'Billing address street'.
+Legends should be short, and 'Your' should not be repeated in both the legend and the label, as it would result in 'Your address Your City' being read.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+&lt;fieldset&gt;                                 &lt;!-- Non-Compliant --&gt;
+  Street: &lt;input type="text"&gt;&lt;br /&gt;
+  Town: &lt;input type="text"&gt;&lt;br /&gt;
+  Country: &lt;input type="text"&gt;&lt;br /&gt;
+&lt;/fieldset&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+&lt;fieldset&gt;                                 &lt;!-- Compliant --&gt;
+  &lt;legend&gt;Billing address&lt;/legend&gt;
+  Street: &lt;input type="text"&gt;&lt;br /&gt;
+  Town: &lt;input type="text"&gt;&lt;br /&gt;
+  Country: &lt;input type="text"&gt;&lt;br /&gt;
+&lt;/fieldset&gt;
+</pre>
+◊
+
+Web:InternationalizationCheckµ
+
+WebInternationalizationCheck/Labels should be defined in the resource bundle"MAJOR*web:’	<p>
+  Web applications can be made available in multiple languages through the use of internationalization.
+  This allows the server to plug in the correct version of a piece of text based on the language chosen,
+  but it requires that internationalization messages be used instead of hard-coded text.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+  &lt;form method="post"&gt;
+    &lt;label for="username"&gt;Username:&lt;/label&gt;
+    &lt;input type="text" id="username" name="username"&gt;
+    &lt;br&gt;
+    &lt;label for="password"&gt;Password:&lt;/label&gt;
+    &lt;input type="password" id="password" name="password"&gt;
+    &lt;br&gt;
+    &lt;input type="submit" name="submit" value="${buttonValue}"&gt;
+  &lt;/form&gt;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+  &lt;form method="post"&gt;
+    &lt;label for="username"&gt;&lt;fmt:message key="login.label.username" /&gt;:&lt;/label&gt;
+    &lt;input type="text" id="username" name="username"&gt;
+    &lt;br&gt;
+    &lt;label for="password"&gt;&lt;fmt:message key="login.label.password" /&gt;:&lt;/label&gt;
+    &lt;input type="password" id="password" name="password"&gt;
+    &lt;br&gt;
+    &lt;input type="submit" name="submit" value="${buttonValue}"&gt;
+  &lt;/form&gt;
+</pre>
+™
+Web:UnifiedExpressionCheckã
+WebUnifiedExpressionCheck-JSF expressions should be syntactically valid"BLOCKER*web:Æ<p>This rule allows to make sure that all JSF Expressions are syntactically correct.</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml"
+   xmlns:h="http://java.sun.com/jsf/html"&gt;
+   &lt;h:body&gt;
+     First name
+     &lt;h:outputText value="#{user.firstName && @@}"/&gt;   &lt;!-- Noncompliant --&gt;
+   &lt;/h:body&gt;
+&lt;/html&gt;
+</pre>
 ß
 common-cs:FailedUnitTestsâ
 	common-csFailedUnitTests!Failed unit tests should be fixed"MAJOR*cs:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.
@@ -31093,15 +32647,23 @@ $common-js:InsufficientCommentDensity‚
 	common-jsInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*js:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.
 €
 $common-js:InsufficientBranchCoverage≤
-	common-jsInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*js:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold..
+	common-jsInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*js:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.,
+web-sonar-way-52189
+web-sonar-way-52189.
 java-sonar-way-00237
 java-sonar-way-00237<
 js-sonar-security-way-36063
-js-sonar-security-way-36063*
+js-sonar-security-way-360630
+java-mediumtest-65464
+java-mediumtest-65464,
+xml-sonar-way-75287
+xml-sonar-way-75287*
 js-sonar-way-62960
 js-sonar-way-62960*
 cs-sonar-way-12514
 cs-sonar-way-12514
 cscs-sonar-way-12514
 javajava-sonar-way-00237
-jsjs-sonar-way-62960
+jsjs-sonar-way-62960
+webweb-sonar-way-52189
+xmlxml-sonar-way-75287

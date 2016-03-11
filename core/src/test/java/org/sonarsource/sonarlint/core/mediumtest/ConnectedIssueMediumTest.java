@@ -114,7 +114,7 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaScript() throws Exception {
+  public void simpleJavaScriptUnbinded() throws Exception {
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable");
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
@@ -141,7 +141,7 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void simpleJava() throws Exception {
+  public void simpleJavaUnbinded() throws Exception {
     ClientInputFile inputFile = prepareInputFile("Foo.java",
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -166,6 +166,32 @@ public class ConnectedIssueMediumTest {
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+  }
+
+  @Test
+  public void simpleJavaBinded() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("Foo.java",
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "    System.out.println(\"Foo\"); //NOSONAR\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new AnalysisConfiguration("sample", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S106", 4, inputFile.getPath(), "BLOCKER"));
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
