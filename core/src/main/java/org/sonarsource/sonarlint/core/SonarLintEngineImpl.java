@@ -222,9 +222,9 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
-    changeState(State.SYNCING);
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
+      changeState(State.SYNCING);
       connectedContainer.startComponents();
       connectedContainer.syncModule(moduleKey);
     } catch (RuntimeException e) {
@@ -255,6 +255,9 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   public void stop() {
     rwl.writeLock().lock();
     try {
+      if (globalContainer == null) {
+        return;
+      }
       globalContainer.stopComponents(false);
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.build(e);
