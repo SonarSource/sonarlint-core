@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
@@ -37,24 +37,24 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.SyncStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-public class ModuleConfigSync {
+public class ModuleConfigUpdateExecutor {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
   private final TempFolder tempFolder;
 
-  public ModuleConfigSync(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
+  public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.tempFolder = tempFolder;
   }
 
-  public void sync(String moduleKey) {
+  public void update(String moduleKey) {
 
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
     Set<String> qProfileKeys = storageManager.readRulesFromStorage().getQprofilesByKey().keySet();
@@ -67,12 +67,12 @@ public class ModuleConfigSync {
     Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
 
-    SyncStatus syncStatus = SyncStatus.newBuilder()
+    UpdateStatus updateStatus = UpdateStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
-      .setSyncTimestamp(new Date().getTime())
+      .setUpdateTimestamp(new Date().getTime())
       .build();
-    ProtobufUtil.writeToFile(syncStatus, temp.resolve(StorageManager.SYNC_STATUS_PB));
+    ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
 
     Path dest = storageManager.getModuleStorageRoot(moduleKey);
     FileUtils.deleteDirectory(dest);
@@ -87,7 +87,7 @@ public class ModuleConfigSync {
         String qpKey = qp.getKey();
         if (!qProfileKeys.contains(qpKey)) {
           throw new IllegalStateException(
-            "Module " + moduleKey + " is associated to quality profile " + qpKey + " that is not in storage. Server storage is probably outdated. Please sync server.");
+            "Module " + moduleKey + " is associated to quality profile " + qpKey + " that is not in storage. Server storage is probably outdated. Please update server.");
         }
         builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
       }

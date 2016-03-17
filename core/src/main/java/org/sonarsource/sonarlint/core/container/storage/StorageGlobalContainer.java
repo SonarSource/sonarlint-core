@@ -34,8 +34,8 @@ import org.sonarsource.sonarlint.core.client.api.StorageException;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
@@ -83,26 +83,26 @@ public class StorageGlobalContainer extends GlobalContainer {
 
   @Override
   protected void doAfterStart() {
-    GlobalSyncStatus syncStatus = getSyncStatus();
-    if (syncStatus != null) {
-      LOG.info("Using storage for server '{}' (last sync {})", getComponentByType(GlobalConfiguration.class).getServerId(),
-        new SimpleDateFormat().format(syncStatus.getLastSyncDate()));
+    GlobalUpdateStatus updateStatus = getUpdateStatus();
+    if (updateStatus != null) {
+      LOG.info("Using storage for server '{}' (last update {})", getComponentByType(GlobalConfiguration.class).getServerId(),
+        new SimpleDateFormat().format(updateStatus.getLastUpdateDate()));
       installPlugins();
     } else {
-      LOG.warn("No storage for server '{}'. Please sync.", getComponentByType(GlobalConfiguration.class).getServerId());
+      LOG.warn("No storage for server '{}'. Please update.", getComponentByType(GlobalConfiguration.class).getServerId());
     }
   }
 
   @Override
   public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
-    GlobalSyncStatus syncStatus = getSyncStatus();
-    if (syncStatus == null) {
-      throw new StorageException("Missing global data. Please sync server.", null);
+    GlobalUpdateStatus updateStatus = getUpdateStatus();
+    if (updateStatus == null) {
+      throw new StorageException("Missing global data. Please update server.", null);
     }
     if (configuration.moduleKey() != null) {
-      ModuleSyncStatus moduleSyncStatus = getModuleSyncStatus(configuration.moduleKey());
-      if (moduleSyncStatus == null) {
-        throw new StorageException("Missing module data. Please sync module '" + configuration.moduleKey() + "'.", null);
+      ModuleUpdateStatus moduleUpdateStatus = getModuleUpdateStatus(configuration.moduleKey());
+      if (moduleUpdateStatus == null) {
+        throw new StorageException("Missing module data. Please update module '" + configuration.moduleKey() + "'.", null);
       }
     }
     AnalysisContainer analysisContainer = new AnalysisContainer(this);
@@ -128,12 +128,12 @@ public class StorageGlobalContainer extends GlobalContainer {
     return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), rule.getLang(), Collections.<String>emptySet());
   }
 
-  public GlobalSyncStatus getSyncStatus() {
-    return getComponentByType(StorageManager.class).getGlobalSyncStatus();
+  public GlobalUpdateStatus getUpdateStatus() {
+    return getComponentByType(StorageManager.class).getGlobalUpdateStatus();
   }
 
-  public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
-    return getComponentByType(StorageManager.class).getModuleSyncStatus(moduleKey);
+  public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
+    return getComponentByType(StorageManager.class).getModuleUpdateStatus(moduleKey);
   }
 
   public Map<String, RemoteModule> allModulesByKey() {

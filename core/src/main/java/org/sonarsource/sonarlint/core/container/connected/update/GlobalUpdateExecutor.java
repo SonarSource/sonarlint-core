@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
@@ -32,33 +32,34 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.SyncStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-public class GlobalSync {
+public class GlobalUpdateExecutor {
 
   private static final String MIN_SQ_VERSION = "5.2";
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
-  private final PluginReferencesSync pluginReferenceSync;
-  private final GlobalPropertiesSync globalPropertiesSync;
-  private final RulesSync rulesSync;
+  private final PluginReferencesDownloader pluginReferenceDownloader;
+  private final GlobalPropertiesDownloader globalPropertiesDownloader;
+  private final RulesDownloader rulesDownloader;
   private final TempFolder tempFolder;
-  private final ModuleListSync moduleListSync;
+  private final ModuleListDownloader moduleListDownloader;
 
-  public GlobalSync(StorageManager storageManager, SonarLintWsClient wsClient, PluginReferencesSync pluginReferenceSync, GlobalPropertiesSync globalPropertiesSync,
-    RulesSync rulesSync, ModuleListSync moduleListSync, TempFolder tempFolder) {
+  public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginReferencesDownloader pluginReferenceDownloader,
+    GlobalPropertiesDownloader globalPropertiesDownloader,
+    RulesDownloader rulesDownloader, ModuleListDownloader moduleListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
-    this.pluginReferenceSync = pluginReferenceSync;
-    this.globalPropertiesSync = globalPropertiesSync;
-    this.rulesSync = rulesSync;
-    this.moduleListSync = moduleListSync;
+    this.pluginReferenceDownloader = pluginReferenceDownloader;
+    this.globalPropertiesDownloader = globalPropertiesDownloader;
+    this.rulesDownloader = rulesDownloader;
+    this.moduleListDownloader = moduleListDownloader;
     this.tempFolder = tempFolder;
   }
 
-  public void sync() {
+  public void update() {
     ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
       throw new IllegalStateException("Server not ready (" + serverStatus.getStatus() + ")");
@@ -70,19 +71,19 @@ public class GlobalSync {
     Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
-    Set<String> allowedPlugins = globalPropertiesSync.fetchGlobalPropertiesTo(temp);
+    Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
 
-    pluginReferenceSync.fetchPluginsTo(temp, allowedPlugins);
+    pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
 
-    rulesSync.fetchRulesTo(temp);
-    moduleListSync.fetchModulesList(temp);
+    rulesDownloader.fetchRulesTo(temp);
+    moduleListDownloader.fetchModulesList(temp);
 
-    SyncStatus syncStatus = SyncStatus.newBuilder()
+    UpdateStatus updateStatus = UpdateStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
-      .setSyncTimestamp(new Date().getTime())
+      .setUpdateTimestamp(new Date().getTime())
       .build();
-    ProtobufUtil.writeToFile(syncStatus, temp.resolve(StorageManager.SYNC_STATUS_PB));
+    ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
 
     Path dest = storageManager.getGlobalStorageRoot();
     FileUtils.deleteDirectory(dest);

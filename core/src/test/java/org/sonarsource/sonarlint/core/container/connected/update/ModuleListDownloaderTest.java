@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
 import org.junit.Rule;
@@ -30,19 +30,19 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ModuleListSyncTest {
+public class ModuleListDownloaderTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void sync_modules() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/projects/index?format=json&subprojects=true", "/sync/all_projects.json");
+  public void update_modules() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/projects/index?format=json&subprojects=true", "/update/all_projects.json");
 
     File tempDir = temp.newFolder();
 
-    ModuleListSync moduleListSync = new ModuleListSync(wsClient);
-    moduleListSync.fetchModulesList(tempDir.toPath());
+    ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
+    moduleListUpdate.fetchModulesList(tempDir.toPath());
 
     ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKey()).hasSize(1559);

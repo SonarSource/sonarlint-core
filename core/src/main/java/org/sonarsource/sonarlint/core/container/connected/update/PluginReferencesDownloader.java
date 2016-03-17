@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,14 +38,14 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginRef
 
 import static java.lang.String.format;
 
-public class PluginReferencesSync {
+public class PluginReferencesDownloader {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PluginReferencesSync.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PluginReferencesDownloader.class);
 
   private final SonarLintWsClient wsClient;
   private final PluginCache pluginCache;
 
-  public PluginReferencesSync(SonarLintWsClient wsClient, PluginCache pluginCache) {
+  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache) {
     this.wsClient = wsClient;
     this.pluginCache = pluginCache;
   }

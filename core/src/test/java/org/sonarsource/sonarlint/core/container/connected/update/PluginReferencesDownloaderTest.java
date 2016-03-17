@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
@@ -38,13 +38,13 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class PluginReferencesSyncTest {
+public class PluginReferencesDownloaderTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void sync_allowed_plugins() throws Exception {
+  public void update_allowed_plugins() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt",
       "scmsvn,sonar-scm-svn-plugin-1.3-SNAPSHOT.jar|d0a68d150314d96d3469e0f2246f3537\n" +
         "javascript,sonar-javascript-plugin-2.10.jar|79dba9cab72d8d31767f47c03d169598\n" +
@@ -54,11 +54,11 @@ public class PluginReferencesSyncTest {
 
     PluginCache pluginCache = mock(PluginCache.class);
 
-    PluginReferencesSync pluginSync = new PluginReferencesSync(wsClient, pluginCache);
+    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
 
     Path dest = temp.newFolder().toPath();
 
-    pluginSync.fetchPluginsTo(dest, ImmutableSet.of("java"));
+    pluginUpdate.fetchPluginsTo(dest, ImmutableSet.of("java"));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StorageManager.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")

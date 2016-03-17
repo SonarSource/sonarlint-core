@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
 import java.util.Map;
@@ -39,16 +39,16 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ModuleConfigSyncTest {
+public class ModuleConfigUpdateExecutorTest {
 
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void project_sync() throws Exception {
+  public void module_update() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?projectKey=module%3Akey%2Fwith_branch",
-      "/sync/qualityprofiles.pb");
+      "/update/qualityprofiles.pb");
     WsClientTestUtils.addResponse(wsClient, "api/properties?format=json&key=module%3Akey%2Fwith_branch",
       "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
         + "{\"key\":\"sonar.core.version\",\"value\":\"5.5-SNAPSHOT\"},"
@@ -78,9 +78,9 @@ public class ModuleConfigSyncTest {
 
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    ModuleConfigSync projectSync = new ModuleConfigSync(storageManager, wsClient, tempFolder);
+    ModuleConfigUpdateExecutor moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
 
-    projectSync.sync(MODULE_KEY_WITH_BRANCH);
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
     ModuleConfiguration moduleConfiguration = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.MODULE_CONFIGURATION_PB), ModuleConfiguration.parser());
     assertThat(moduleConfiguration.getQprofilePerLanguage()).containsOnly(

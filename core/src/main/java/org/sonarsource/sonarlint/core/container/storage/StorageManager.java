@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import java.util.Date;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 
@@ -36,14 +36,14 @@ public class StorageManager {
   public static final String PROPERTIES_PB = "properties.pb";
   public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
   public static final String RULES_PB = "rules.pb";
-  public static final String SYNC_STATUS_PB = "sync_status.pb";
+  public static final String UPDATE_STATUS_PB = "update_status.pb";
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
   public static final String MODULE_LIST_PB = "module_list.pb";
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path moduleStorageRoot;
-  private final GlobalSyncStatus syncStatus;
+  private final GlobalUpdateStatus updateStatus;
 
   public StorageManager(GlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(configuration.getServerId());
@@ -52,7 +52,7 @@ public class StorageManager {
     FileUtils.forceMkDirs(globalStorageRoot);
     moduleStorageRoot = serverStorageRoot.resolve("modules");
     FileUtils.forceMkDirs(moduleStorageRoot);
-    syncStatus = initSyncStatus();
+    updateStatus = initUpdateStatus();
   }
 
   public Path getGlobalStorageRoot() {
@@ -87,8 +87,8 @@ public class StorageManager {
     return getModuleStorageRoot(moduleKey).resolve(MODULE_CONFIGURATION_PB);
   }
 
-  public Path getModuleSyncStatusPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(SYNC_STATUS_PB);
+  public Path getModuleUpdateStatusPath(String moduleKey) {
+    return getModuleStorageRoot(moduleKey).resolve(UPDATE_STATUS_PB);
   }
 
   public Path getPluginReferencesPath() {
@@ -111,8 +111,8 @@ public class StorageManager {
     return globalStorageRoot.resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
   }
 
-  public Path getSyncStatusPath() {
-    return globalStorageRoot.resolve(SYNC_STATUS_PB);
+  public Path getUpdateStatusPath() {
+    return globalStorageRoot.resolve(UPDATE_STATUS_PB);
   }
 
   public Path getServerInfoPath() {
@@ -120,17 +120,17 @@ public class StorageManager {
   }
 
   @CheckForNull
-  public GlobalSyncStatus getGlobalSyncStatus() {
-    return syncStatus;
+  public GlobalUpdateStatus getGlobalUpdateStatus() {
+    return updateStatus;
   }
 
   @CheckForNull
-  private GlobalSyncStatus initSyncStatus() {
-    Path syncStatusPath = getSyncStatusPath();
-    if (Files.exists(syncStatusPath)) {
-      final Sonarlint.SyncStatus syncStatusFromStorage = ProtobufUtil.readFile(syncStatusPath, Sonarlint.SyncStatus.parser());
+  private GlobalUpdateStatus initUpdateStatus() {
+    Path updateStatusPath = getUpdateStatusPath();
+    if (Files.exists(updateStatusPath)) {
+      final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
       final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfoPath(), Sonarlint.ServerInfos.parser());
-      return new GlobalSyncStatus() {
+      return new GlobalUpdateStatus() {
 
         @Override
         public String getServerVersion() {
@@ -138,8 +138,8 @@ public class StorageManager {
         }
 
         @Override
-        public Date getLastSyncDate() {
-          return new Date(syncStatusFromStorage.getSyncTimestamp());
+        public Date getLastUpdateDate() {
+          return new Date(updateStatusFromStorage.getUpdateTimestamp());
         }
       };
     }
@@ -158,15 +158,15 @@ public class StorageManager {
     return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
   }
 
-  public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
-    Path syncStatusPath = getModuleSyncStatusPath(moduleKey);
-    if (Files.exists(syncStatusPath)) {
-      final Sonarlint.SyncStatus syncStatusFromStorage = ProtobufUtil.readFile(syncStatusPath, Sonarlint.SyncStatus.parser());
-      return new ModuleSyncStatus() {
+  public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
+    Path updateStatusPath = getModuleUpdateStatusPath(moduleKey);
+    if (Files.exists(updateStatusPath)) {
+      final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
+      return new ModuleUpdateStatus() {
 
         @Override
-        public Date getLastSyncDate() {
-          return new Date(syncStatusFromStorage.getSyncTimestamp());
+        public Date getLastUpdateDate() {
+          return new Date(updateStatusFromStorage.getUpdateTimestamp());
         }
       };
     }

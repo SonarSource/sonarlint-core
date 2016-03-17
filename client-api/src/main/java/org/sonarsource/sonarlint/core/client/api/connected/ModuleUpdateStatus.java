@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Date;
 
-public interface ModuleSyncStatus {
+public interface ModuleUpdateStatus {
 
-  Date getLastSyncDate();
+  Date getLastUpdateDate();
 
 }

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,14 +42,14 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.QProfile;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 
-public class RulesSync {
+public class RulesDownloader {
   private static final String RULES_SEARCH_URL =
     "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY";
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf?defaults=true";
 
   private final SonarLintWsClient wsClient;
 
-  public RulesSync(SonarLintWsClient wsClient) {
+  public RulesDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.gson.Gson;
 import java.nio.file.Path;
@@ -28,11 +28,11 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
 
-public class ModuleListSync {
+public class ModuleListDownloader {
 
   private final SonarLintWsClient wsClient;
 
-  public ModuleListSync(SonarLintWsClient wsClient) {
+  public ModuleListDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 

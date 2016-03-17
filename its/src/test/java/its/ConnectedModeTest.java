@@ -120,9 +120,9 @@ public class ConnectedModeTest {
   }
 
   @Test
-  public void syncNoAuth() throws Exception {
+  public void updateNoAuth() throws Exception {
     try {
-      engine.sync(ServerConfiguration.builder()
+      engine.update(ServerConfiguration.builder()
         .url(ORCHESTRATOR.getServer().getUrl())
         .userAgent("SonarLint ITs")
         .build());
@@ -133,47 +133,47 @@ public class ConnectedModeTest {
   }
 
   @Test
-  public void globalSync() throws Exception {
-    engine.sync(ServerConfiguration.builder()
+  public void globalUpdate() throws Exception {
+    engine.update(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    assertThat(engine.getSyncStatus()).isNotNull();
-    assertThat(engine.getSyncStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
+    assertThat(engine.getUpdateStatus()).isNotNull();
+    assertThat(engine.getUpdateStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
     assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are two important requirements");
 
-    assertThat(engine.getModuleSyncStatus(PROJECT_KEY)).isNull();
+    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY)).isNull();
   }
 
   @Test
-  public void syncProject() throws Exception {
-    engine.sync(ServerConfiguration.builder()
+  public void updateProject() throws Exception {
+    engine.update(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    engine.syncModule(ServerConfiguration.builder()
+    engine.updateModule(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build(), PROJECT_KEY);
 
-    assertThat(engine.getModuleSyncStatus(PROJECT_KEY)).isNotNull();
+    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY)).isNotNull();
   }
 
   @Test
   public void analysisUseQualityProfile() throws Exception {
-    engine.sync(ServerConfiguration.builder()
+    engine.update(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build());
 
-    engine.syncModule(ServerConfiguration.builder()
+    engine.updateModule(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)

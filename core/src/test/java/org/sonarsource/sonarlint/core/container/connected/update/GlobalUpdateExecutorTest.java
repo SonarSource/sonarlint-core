@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
 import org.junit.Rule;
@@ -29,14 +29,14 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.SyncStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GlobalSyncTest {
+public class GlobalUpdateExecutorTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -45,11 +45,11 @@ public class GlobalSyncTest {
   public void serverNotReady() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    GlobalSync globalSync = new GlobalSync(mock(StorageManager.class), wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), mock(TempFolder.class));
+    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(mock(StorageManager.class), wsClient, mock(PluginReferencesDownloader.class),
+      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), mock(TempFolder.class));
 
     try {
-      globalSync.sync();
+      globalUpdate.update();
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).hasMessage("Server not ready (DOWN)");
@@ -60,11 +60,11 @@ public class GlobalSyncTest {
   public void incompatibleVersion() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.1\",\"status\": \"UP\"}");
 
-    GlobalSync globalSync = new GlobalSync(mock(StorageManager.class), wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), mock(TempFolder.class));
+    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(mock(StorageManager.class), wsClient, mock(PluginReferencesDownloader.class),
+      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), mock(TempFolder.class));
 
     try {
-      globalSync.sync();
+      globalUpdate.update();
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 5.1. Version should be greater or equal to 5.2");
@@ -75,11 +75,11 @@ public class GlobalSyncTest {
   public void responseParsingError() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "bla bla");
 
-    GlobalSync globalSync = new GlobalSync(mock(StorageManager.class), wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), mock(TempFolder.class));
+    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(mock(StorageManager.class), wsClient, mock(PluginReferencesDownloader.class),
+      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), mock(TempFolder.class));
 
     try {
-      globalSync.sync();
+      globalUpdate.update();
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).hasMessage("Unable to parse server infos from: bla bla");
@@ -87,7 +87,7 @@ public class GlobalSyncTest {
   }
 
   @Test
-  public void testSync() throws Exception {
+  public void testUpdate() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"UP\"}");
 
     File tempDir = temp.newFolder();
@@ -97,15 +97,15 @@ public class GlobalSyncTest {
     when(tempFolder.newDir()).thenReturn(tempDir);
     StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    GlobalSync globalSync = new GlobalSync(storageManager, wsClient, mock(PluginReferencesSync.class),
-      mock(GlobalPropertiesSync.class), mock(RulesSync.class), mock(ModuleListSync.class), tempFolder);
+    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginReferencesDownloader.class),
+      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), tempFolder);
 
-    globalSync.sync();
+    globalUpdate.update();
 
-    SyncStatus syncStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SYNC_STATUS_PB), SyncStatus.parser());
-    assertThat(syncStatus.getClientUserAgent()).isEqualTo("UT");
-    assertThat(syncStatus.getSonarlintCoreVersion()).isEqualTo("unknown");
-    assertThat(syncStatus.getSyncTimestamp()).isNotEqualTo(0);
+    UpdateStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.UPDATE_STATUS_PB), UpdateStatus.parser());
+    assertThat(updateStatus.getClientUserAgent()).isEqualTo("UT");
+    assertThat(updateStatus.getSonarlintCoreVersion()).isEqualTo("unknown");
+    assertThat(updateStatus.getUpdateTimestamp()).isNotEqualTo(0);
 
     ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");

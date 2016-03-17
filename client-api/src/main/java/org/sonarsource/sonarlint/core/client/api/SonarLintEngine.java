@@ -25,8 +25,8 @@ import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
@@ -39,9 +39,9 @@ public interface SonarLintEngine {
 
   enum State {
     UNKNOW,
-    SYNCING,
-    NOT_SYNCED,
-    SYNCED
+    UPDATING,
+    NEVER_UPDATED,
+    UPDATED
   }
 
   State getState();
@@ -76,22 +76,22 @@ public interface SonarLintEngine {
   // ONLY FOR CONNECTED MODE
 
   /**
-   * Get information about current sync state
-   * @return null if server was never synced
+   * Get information about current update state
+   * @return null if server was never updated
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
    */
   @CheckForNull
-  GlobalSyncStatus getSyncStatus();
+  GlobalUpdateStatus getUpdateStatus();
 
   /**
-   * Get information about module sync state
-   * @return null if module was never synced
+   * Get information about module update state
+   * @return null if module was never updated
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
    */
   @CheckForNull
-  ModuleSyncStatus getModuleSyncStatus(String moduleKey);
+  ModuleUpdateStatus getModuleUpdateStatus(String moduleKey);
 
   /**
    * Return all modules by key
@@ -111,18 +111,18 @@ public interface SonarLintEngine {
   // REQUIRES SERVER TO BE REACHABLE AND SONARLINT CLIENT SHOULD BE STOPPED
 
   /**
-   * Sync current server.
+   * Update current server.
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
-   * @throws UnsupportedServerException if server version is to low
+   * @throws UnsupportedServerException if server version is too low
    */
-  GlobalSyncStatus sync(ServerConfiguration serverConfig);
+  GlobalUpdateStatus update(ServerConfiguration serverConfig);
 
   /**
-   * Sync given module.
+   * Update given module.
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
    */
-  void syncModule(ServerConfiguration serverConfig, String moduleKey);
+  void updateModule(ServerConfiguration serverConfig, String moduleKey);
 
 }

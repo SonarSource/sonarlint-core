@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
 import java.util.Set;
@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -32,7 +33,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class GlobalPropertiesSyncTest {
+public class GlobalPropertiesDownloaderTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -44,7 +45,7 @@ public class GlobalPropertiesSyncTest {
       + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]");
 
     Path destDir = temp.newFolder().toPath();
-    Set<String> pluginKeys = new GlobalPropertiesSync(wsClient).fetchGlobalPropertiesTo(destDir);
+    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
     assertThat(pluginKeys).containsOnly("java", "javascript", "php");
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
@@ -59,7 +60,7 @@ public class GlobalPropertiesSyncTest {
       + "{\"key\": \"sonarlint.plugins.whitelist\",\"value\": \"java\"}]");
 
     Path destDir = temp.newFolder().toPath();
-    Set<String> pluginKeys = new GlobalPropertiesSync(wsClient).fetchGlobalPropertiesTo(destDir);
+    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
     assertThat(pluginKeys).containsOnly("java");
   }
 
@@ -68,7 +69,7 @@ public class GlobalPropertiesSyncTest {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "foo bar");
 
     Path destDir = temp.newFolder().toPath();
-    new GlobalPropertiesSync(wsClient).fetchGlobalPropertiesTo(destDir);
+    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
   }
 
 }

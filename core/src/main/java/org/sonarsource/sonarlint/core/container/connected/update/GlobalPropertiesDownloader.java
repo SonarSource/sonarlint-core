@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.stream.JsonReader;
@@ -31,11 +31,11 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
-public class GlobalPropertiesSync {
+public class GlobalPropertiesDownloader {
 
   private final SonarLintWsClient wsClient;
 
-  public GlobalPropertiesSync(SonarLintWsClient wsClient) {
+  public GlobalPropertiesDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 

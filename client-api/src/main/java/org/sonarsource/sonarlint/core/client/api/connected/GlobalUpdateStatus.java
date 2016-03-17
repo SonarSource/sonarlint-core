@@ -21,10 +21,10 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Date;
 
-public interface GlobalSyncStatus {
+public interface GlobalUpdateStatus {
 
   String getServerVersion();
 
-  Date getLastSyncDate();
+  Date getLastUpdateDate();
 
 }

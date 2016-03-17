@@ -32,8 +32,8 @@ import org.sonarsource.sonarlint.core.client.api.StateListener;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
@@ -100,7 +100,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     try {
       globalContainer.startComponents();
       if (globalContainer instanceof StorageGlobalContainer) {
-        changeState(((StorageGlobalContainer) globalContainer).getSyncStatus() != null ? State.SYNCED : State.NOT_SYNCED);
+        changeState(((StorageGlobalContainer) globalContainer).getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
       }
     } catch (RuntimeException e) {
       changeState(State.UNKNOW);
@@ -135,28 +135,28 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   }
 
   @Override
-  public GlobalSyncStatus getSyncStatus() {
+  public GlobalUpdateStatus getUpdateStatus() {
     checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return ((StorageGlobalContainer) globalContainer).getSyncStatus();
+      return ((StorageGlobalContainer) globalContainer).getUpdateStatus();
     } finally {
       rwl.readLock().unlock();
     }
   }
 
   @Override
-  public GlobalSyncStatus sync(ServerConfiguration serverConfig) {
+  public GlobalUpdateStatus update(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
     stop();
-    changeState(State.SYNCING);
+    changeState(State.UPDATING);
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
       try {
         connectedContainer.startComponents();
-        connectedContainer.sync();
+        connectedContainer.update();
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.build(e);
       } finally {
@@ -167,7 +167,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
         }
         start();
       }
-      return ((StorageGlobalContainer) globalContainer).getSyncStatus();
+      return ((StorageGlobalContainer) globalContainer).getUpdateStatus();
     } finally {
       rwl.writeLock().unlock();
     }
@@ -218,15 +218,15 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   }
 
   @Override
-  public void syncModule(ServerConfiguration serverConfig, String moduleKey) {
+  public void updateModule(ServerConfiguration serverConfig, String moduleKey) {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
-      changeState(State.SYNCING);
+      changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.syncModule(moduleKey);
+      connectedContainer.updateModule(moduleKey);
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.build(e);
     } finally {
@@ -235,17 +235,17 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       } catch (Exception e) {
         // Ignore
       }
-      changeState(((StorageGlobalContainer) globalContainer).getSyncStatus() != null ? State.SYNCED : State.NOT_SYNCED);
+      changeState(((StorageGlobalContainer) globalContainer).getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
       rwl.writeLock().unlock();
     }
   }
 
   @Override
-  public ModuleSyncStatus getModuleSyncStatus(String moduleKey) {
+  public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
     checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return ((StorageGlobalContainer) globalContainer).getModuleSyncStatus(moduleKey);
+      return ((StorageGlobalContainer) globalContainer).getModuleUpdateStatus(moduleKey);
     } finally {
       rwl.readLock().unlock();
     }

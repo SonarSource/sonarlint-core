@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.sync;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
 import org.junit.Rule;
@@ -32,25 +32,25 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class RulesSyncTest {
+public class RulesDownloaderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void rules_sync() throws Exception {
+  public void rules_update() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
       "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
-      "/sync/rulesp1.pb");
+      "/update/rulesp1.pb");
     WsClientTestUtils.addStreamResponse(wsClient,
       "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
-      "/sync/rulesp2.pb");
+      "/update/rulesp2.pb");
     WsClientTestUtils.addStreamResponse(wsClient,
       "/api/qualityprofiles/search.protobuf?defaults=true",
-      "/sync/default_qualityprofiles.pb");
+      "/update/default_qualityprofiles.pb");
 
-    RulesSync rulesSync = new RulesSync(wsClient);
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesSync.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(tempDir.toPath());
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getQprofilesByKey()).containsOnlyKeys("cs-sonar-way-12514",

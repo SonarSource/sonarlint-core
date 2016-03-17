@@ -20,16 +20,16 @@
 package org.sonarsource.sonarlint.core.container.connected;
 
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalSyncStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.connected.sync.GlobalPropertiesSync;
-import org.sonarsource.sonarlint.core.container.connected.sync.GlobalSync;
-import org.sonarsource.sonarlint.core.container.connected.sync.ModuleConfigSync;
-import org.sonarsource.sonarlint.core.container.connected.sync.ModuleListSync;
-import org.sonarsource.sonarlint.core.container.connected.sync.PluginReferencesSync;
-import org.sonarsource.sonarlint.core.container.connected.sync.RulesSync;
+import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -54,12 +54,12 @@ public class ConnectedContainer extends ComponentContainer {
       new GlobalTempFolderProvider(),
       AuthenticationChecker.class,
       SonarLintWsClient.class,
-      GlobalSync.class,
-      ModuleConfigSync.class,
-      PluginReferencesSync.class,
-      GlobalPropertiesSync.class,
-      ModuleListSync.class,
-      RulesSync.class,
+      GlobalUpdateExecutor.class,
+      ModuleConfigUpdateExecutor.class,
+      PluginReferencesDownloader.class,
+      GlobalPropertiesDownloader.class,
+      ModuleListDownloader.class,
+      RulesDownloader.class,
       new PluginCacheProvider(),
       PluginHashes.class,
       StorageManager.class);
@@ -69,16 +69,16 @@ public class ConnectedContainer extends ComponentContainer {
     return getComponentByType(AuthenticationChecker.class).validateCredentials();
   }
 
-  public void sync() {
-    getComponentByType(GlobalSync.class).sync();
+  public void update() {
+    getComponentByType(GlobalUpdateExecutor.class).update();
   }
 
-  public void syncModule(String moduleKey) {
-    GlobalSyncStatus syncStatus = getComponentByType(StorageManager.class).getGlobalSyncStatus();
-    if (syncStatus == null) {
-      throw new IllegalStateException("Please sync server first");
+  public void updateModule(String moduleKey) {
+    GlobalUpdateStatus updateStatus = getComponentByType(StorageManager.class).getGlobalUpdateStatus();
+    if (updateStatus == null) {
+      throw new IllegalStateException("Please update server first");
     }
-    getComponentByType(ModuleConfigSync.class).sync(moduleKey);
+    getComponentByType(ModuleConfigUpdateExecutor.class).update(moduleKey);
   }
 
 }
