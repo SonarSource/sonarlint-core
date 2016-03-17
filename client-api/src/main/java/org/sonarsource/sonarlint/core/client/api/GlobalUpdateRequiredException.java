@@ -19,37 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.client.api;
 
-import org.junit.Test;
+public class GlobalUpdateRequiredException extends SonarLintException {
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class SonarLintWrappedExceptionTest {
-
-  @Test
-  public void wrap() {
-    try {
-      throw SonarLintWrappedException.wrap(new MyCustomException("Foo"));
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Foo").hasNoCause().isInstanceOf(SonarLintWrappedException.class);
-    }
-
-    try {
-      throw SonarLintWrappedException.wrap(new MyCustomException("Foo", new MyCustomException("Cause")));
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Foo").isInstanceOf(SonarLintWrappedException.class).hasCauseInstanceOf(SonarLintWrappedException.class);
-    }
-  }
-
-  private static class MyCustomException extends RuntimeException {
-
-    public MyCustomException(String message) {
-      super(message);
-    }
-
-    public MyCustomException(String message, Throwable cause) {
-      super(message, cause);
-    }
-
+  public GlobalUpdateRequiredException(String msg) {
+    super(msg, null);
   }
 
 }

@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class StorageManager {
 
+  private static final char ESCAPE_CHAR = '%';
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
   public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
@@ -64,14 +65,12 @@ public class StorageManager {
   }
 
   private static String encodeForFs(String moduleKey) {
-    char fileSep = File.separatorChar;
-    char escape = '%';
     int len = moduleKey.length();
     StringBuilder sb = new StringBuilder(len);
     for (int i = 0; i < len; i++) {
       char ch = moduleKey.charAt(i);
-      if (ch < ' ' || ch >= 0x7F || ch == fileSep || (ch == '.' && i == 0) || ch == escape) {
-        sb.append(escape);
+      if (ch < ' ' || ch >= 0x7F || ch == File.separatorChar || (ch == '.' && i == 0) || ch == ESCAPE_CHAR) {
+        sb.append(ESCAPE_CHAR);
         if (ch < 0x10) {
           sb.append('0');
         }
@@ -92,31 +91,31 @@ public class StorageManager {
   }
 
   public Path getPluginReferencesPath() {
-    return globalStorageRoot.resolve(PLUGIN_REFERENCES_PB);
+    return getGlobalStorageRoot().resolve(PLUGIN_REFERENCES_PB);
   }
 
   public Path getGlobalPropertiesPath() {
-    return globalStorageRoot.resolve(PROPERTIES_PB);
+    return getGlobalStorageRoot().resolve(PROPERTIES_PB);
   }
 
   public Path getModuleListPath() {
-    return globalStorageRoot.resolve(MODULE_LIST_PB);
+    return getGlobalStorageRoot().resolve(MODULE_LIST_PB);
   }
 
   public Path getRulesPath() {
-    return globalStorageRoot.resolve(RULES_PB);
+    return getGlobalStorageRoot().resolve(RULES_PB);
   }
 
   public Path getActiveRulesPath(String qProfileKey) {
-    return globalStorageRoot.resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
+    return getGlobalStorageRoot().resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
   }
 
   public Path getUpdateStatusPath() {
-    return globalStorageRoot.resolve(UPDATE_STATUS_PB);
+    return getGlobalStorageRoot().resolve(UPDATE_STATUS_PB);
   }
 
   public Path getServerInfoPath() {
-    return globalStorageRoot.resolve(SERVER_INFO_PB);
+    return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
   }
 
   @CheckForNull

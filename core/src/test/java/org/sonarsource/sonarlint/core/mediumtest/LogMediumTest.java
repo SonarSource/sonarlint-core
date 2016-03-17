@@ -129,7 +129,7 @@ public class LogMediumTest {
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(SonarLintWrappedException.class)
-        .hasCause(SonarLintWrappedException.build(new MyCustomException("Fake")));
+        .hasCause(SonarLintWrappedException.wrap(new MyCustomException("Fake")));
     }
 
   }

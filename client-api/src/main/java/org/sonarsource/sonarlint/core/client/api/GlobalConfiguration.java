@@ -127,8 +127,8 @@ public class GlobalConfiguration {
     /**
      * Override default user home (~/.sonarlint)
      */
-    public Builder setSonarLintUserHome(Path sonarUserHome) {
-      this.sonarlintUserHome = sonarUserHome;
+    public Builder setSonarLintUserHome(Path sonarlintUserHome) {
+      this.sonarlintUserHome = sonarlintUserHome;
       return this;
     }
 

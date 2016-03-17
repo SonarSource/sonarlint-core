@@ -31,11 +31,14 @@ public class SonarLintWrappedException extends SonarLintException {
     this.originalClassToString = originalClassToString;
   }
 
-  public static SonarLintWrappedException build(Throwable t) {
+  public static SonarLintException wrap(Throwable t) {
     if (t == null) {
       return null;
     }
-    Throwable cause = build(t.getCause());
+    if (t.getCause() == null && t instanceof SonarLintException) {
+      return (SonarLintException) t;
+    }
+    Throwable cause = wrap(t.getCause());
     SonarLintWrappedException sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
     sonarLintException.setStackTrace(t.getStackTrace());
     return sonarLintException;

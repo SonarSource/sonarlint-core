@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.SonarLintWrappedException;
@@ -104,7 +105,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       }
     } catch (RuntimeException e) {
       changeState(State.UNKNOW);
-      throw SonarLintWrappedException.build(e);
+      throw SonarLintWrappedException.wrap(e);
     } finally {
       rwl.writeLock().unlock();
     }
@@ -114,6 +115,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   public RuleDetails getRuleDetails(String ruleKey) {
     rwl.readLock().lock();
     try {
+      checkUpdateStatus();
       return globalContainer.getRuleDetails(ruleKey);
     } finally {
       rwl.readLock().unlock();
@@ -126,9 +128,10 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkNotNull(issueListener);
     rwl.readLock().lock();
     try {
+      checkUpdateStatus();
       return globalContainer.analyze(configuration, issueListener);
     } catch (RuntimeException e) {
-      throw SonarLintWrappedException.build(e);
+      throw SonarLintWrappedException.wrap(e);
     } finally {
       rwl.readLock().unlock();
     }
@@ -158,7 +161,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
         connectedContainer.startComponents();
         connectedContainer.update();
       } catch (RuntimeException e) {
-        throw SonarLintWrappedException.build(e);
+        throw SonarLintWrappedException.wrap(e);
       } finally {
         try {
           connectedContainer.stopComponents(false);
@@ -193,7 +196,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       connectedContainer.startComponents();
       return connectedContainer.validateCredentials();
     } catch (RuntimeException e) {
-      throw SonarLintWrappedException.build(e);
+      throw SonarLintWrappedException.wrap(e);
     } finally {
       try {
         connectedContainer.stopComponents(false);
@@ -209,11 +212,18 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkConnectedMode();
     rwl.readLock().lock();
     try {
+      checkUpdateStatus();
       return ((StorageGlobalContainer) globalContainer).allModulesByKey();
     } catch (RuntimeException e) {
-      throw SonarLintWrappedException.build(e);
+      throw SonarLintWrappedException.wrap(e);
     } finally {
       rwl.readLock().unlock();
+    }
+  }
+
+  private void checkUpdateStatus() {
+    if (isConnectedMode() && state != State.UPDATED) {
+      throw new GlobalUpdateRequiredException("Please update server '" + globalConfig.getServerId() + "'");
     }
   }
 
@@ -222,13 +232,14 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
+    checkUpdateStatus();
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
       connectedContainer.updateModule(moduleKey);
     } catch (RuntimeException e) {
-      throw SonarLintWrappedException.build(e);
+      throw SonarLintWrappedException.wrap(e);
     } finally {
       try {
         connectedContainer.stopComponents(false);
@@ -260,7 +271,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       }
       globalContainer.stopComponents(false);
     } catch (RuntimeException e) {
-      throw SonarLintWrappedException.build(e);
+      throw SonarLintWrappedException.wrap(e);
     } finally {
       this.globalContainer = null;
       changeState(State.UNKNOW);

@@ -33,7 +33,7 @@ public class AuthenticationChecker {
   }
 
   public ValidationResult validateCredentials() {
-    WsResponse response = wsClient.rawGet("api/authentication/validate");
+    WsResponse response = wsClient.rawGet("api/authentication/validate?format=json");
     int code = response.code();
     if (response.isSuccessful()) {
       String responseStr = response.content();

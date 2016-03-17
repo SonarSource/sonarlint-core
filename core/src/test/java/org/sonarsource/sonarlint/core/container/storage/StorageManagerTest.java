@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,39 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.container.storage;
 
+import java.nio.file.Path;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SonarLintWrappedExceptionTest {
+public class StorageManagerTest {
+
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void wrap() {
-    try {
-      throw SonarLintWrappedException.wrap(new MyCustomException("Foo"));
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Foo").hasNoCause().isInstanceOf(SonarLintWrappedException.class);
-    }
+  public void encodeModuleKeyForFs() throws Exception {
 
-    try {
-      throw SonarLintWrappedException.wrap(new MyCustomException("Foo", new MyCustomException("Cause")));
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Foo").isInstanceOf(SonarLintWrappedException.class).hasCauseInstanceOf(SonarLintWrappedException.class);
-    }
-  }
+    Path sonarUserHome = temp.newFolder().toPath();
+    StorageManager manager = new StorageManager(GlobalConfiguration.builder()
+      .setSonarLintUserHome(sonarUserHome)
+      .setServerId("server_id")
+      .build());
 
-  private static class MyCustomException extends RuntimeException {
-
-    public MyCustomException(String message) {
-      super(message);
-    }
-
-    public MyCustomException(String message, Throwable cause) {
-      super(message, cause);
-    }
-
+    Path moduleStorageRoot = manager.getModuleStorageRoot(".module.:key/with_branché%\n");
+    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("modules").resolve("%2emodule.:key%2fwith_branch%e9%25%0a"));
   }
 
 }
