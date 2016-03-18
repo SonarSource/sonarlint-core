@@ -34,13 +34,13 @@ import org.sonar.api.utils.log.Loggers;
 public class DefaultPluginRepository implements Startable {
   private static final Logger LOG = Loggers.get(DefaultPluginRepository.class);
 
-  private final PluginDownloader installer;
+  private final PluginCopier installer;
   private final PluginLoader loader;
 
   private Map<String, SonarPlugin> pluginInstancesByKeys;
   private Map<String, PluginInfo> infosByKeys;
 
-  public DefaultPluginRepository(PluginDownloader installer, PluginLoader loader) {
+  public DefaultPluginRepository(PluginCopier installer, PluginLoader loader) {
     this.installer = installer;
     this.loader = loader;
   }

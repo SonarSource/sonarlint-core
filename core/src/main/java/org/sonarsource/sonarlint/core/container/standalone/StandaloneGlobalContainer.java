@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRe
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.plugin.PluginDownloader;
+import org.sonarsource.sonarlint.core.plugin.PluginCopier;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
@@ -67,7 +67,7 @@ public class StandaloneGlobalContainer extends GlobalContainer {
   protected void doBeforeStart() {
     add(
       DefaultPluginRepository.class,
-      PluginDownloader.class,
+      PluginCopier.class,
       PluginLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,

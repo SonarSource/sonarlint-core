@@ -35,14 +35,14 @@ import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
-public class PluginDownloader {
+public class PluginCopier {
 
-  private static final Logger LOG = Loggers.get(PluginDownloader.class);
+  private static final Logger LOG = Loggers.get(PluginCopier.class);
 
   private final PluginCache fileCache;
   private final PluginIndexProvider pluginIndexProvider;
 
-  public PluginDownloader(PluginCache fileCache, PluginIndexProvider pluginIndexProvider) {
+  public PluginCopier(PluginCache fileCache, PluginIndexProvider pluginIndexProvider) {
     this.fileCache = fileCache;
     this.pluginIndexProvider = pluginIndexProvider;
   }
@@ -57,7 +57,7 @@ public class PluginDownloader {
     Profiler profiler = Profiler.create(LOG).startDebug("Load plugins");
 
     for (PluginReference pluginReference : pluginReferences) {
-      File jarFile = download(pluginReference);
+      File jarFile = getFromCacheOrCopy(pluginReference);
       PluginInfo info = PluginInfo.create(jarFile);
       infosByKey.put(info.getKey(), info);
     }
@@ -67,12 +67,12 @@ public class PluginDownloader {
   }
 
   @VisibleForTesting
-  File download(final PluginReference pluginReference) {
+  File getFromCacheOrCopy(final PluginReference pluginReference) {
     final URL url = pluginReference.getDownloadUrl();
     try {
       return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new FileDownloader(url)).toFile();
     } catch (Exception e) {
-      throw new IllegalStateException("Fail to download plugin " + pluginReference.getFilename() + " using URL: " + url, e);
+      throw new IllegalStateException("Fail to copy plugin " + pluginReference.getFilename() + " from URL: " + url, e);
     }
   }
 
@@ -86,9 +86,9 @@ public class PluginDownloader {
     @Override
     public void download(String filename, Path toFile) throws IOException {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Download plugin {} to {}", url, toFile);
+        LOG.debug("Copy plugin {} to {}", url, toFile);
       } else {
-        LOG.info("Download {}", StringUtils.substringAfterLast(url.getFile(), "/"));
+        LOG.info("Copy {}", StringUtils.substringAfterLast(url.getFile(), "/"));
       }
 
       FileUtils.copyURLToFile(url, toFile.toFile());
