@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 import com.google.common.base.Strings;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
@@ -38,79 +37,12 @@ import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
+import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class DefaultSensorStorage implements SensorStorage {
-
-  private final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.analysis.Issue {
-    private final String severity;
-    private final ActiveRule activeRule;
-    private final String primaryMessage;
-    private final TextRange textRange;
-    private final ClientInputFile clientInputFile;
-
-    private DefaultClientIssue(String severity, ActiveRule activeRule, String primaryMessage, @Nullable TextRange textRange, @Nullable ClientInputFile clientInputFile) {
-      this.severity = severity;
-      this.activeRule = activeRule;
-      this.primaryMessage = primaryMessage;
-      this.textRange = textRange;
-      this.clientInputFile = clientInputFile;
-    }
-
-    @Override
-    public Integer getStartLineOffset() {
-      return textRange != null ? textRange.start().lineOffset() : null;
-    }
-
-    @Override
-    public Integer getStartLine() {
-      return textRange != null ? textRange.start().line() : null;
-    }
-
-    @Override
-    public String getSeverity() {
-      return severity;
-    }
-
-    @Override
-    public String getRuleName() {
-      return getRuleName(activeRule.ruleKey());
-    }
-
-    @Override
-    public String getRuleKey() {
-      return activeRule.ruleKey().toString();
-    }
-
-    @Override
-    public String getMessage() {
-      return primaryMessage;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public ClientInputFile getInputFile() {
-      return clientInputFile;
-    }
-
-    @Override
-    public Integer getEndLineOffset() {
-      return textRange != null ? textRange.end().lineOffset() : null;
-    }
-
-    @Override
-    public Integer getEndLine() {
-      return textRange != null ? textRange.end().line() : null;
-    }
-
-    private String getRuleName(RuleKey ruleKey) {
-      Rule rule = rules.find(ruleKey);
-      return rule != null ? rule.name() : null;
-    }
-  }
 
   private final ActiveRules activeRules;
   private final Rules rules;
@@ -144,9 +76,9 @@ public class DefaultSensorStorage implements SensorStorage {
     org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
     final String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
 
-    if (filters.accept(inputComponent.key(), issue)) {
-      org.sonarsource.sonarlint.core.client.api.analysis.Issue newIssue = new DefaultClientIssue(severity, activeRule, primaryMessage, issue.primaryLocation().textRange(),
-        inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null);
+    DefaultClientIssue newIssue = new DefaultClientIssue(severity, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
+      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null);
+    if (filters.accept(inputComponent.key(), newIssue)) {
       issueListener.handle(newIssue);
     }
   }

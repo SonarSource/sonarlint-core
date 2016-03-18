@@ -154,6 +154,34 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void supportJavaSuppressWarning() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("Foo.java",
+      "public class Foo {\n"
+        + "  @SuppressWarnings(\"squid:S106\")\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "    System.out.println(\"Foo\"); //NOSONAR\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("squid:S1481", 4, inputFile.getPath(), "MAJOR"));
+  }
+
+  @Test
   public void simpleJavaWithBytecode() throws Exception {
     ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
 

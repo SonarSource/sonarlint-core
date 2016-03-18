@@ -19,23 +19,35 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
+import java.util.List;
+import java.util.Map;
+import org.sonar.api.issue.Issue;
+import org.sonar.api.issue.IssueComment;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.scan.issue.filter.FilterableIssue;
+import org.sonar.api.utils.Duration;
 
-public class DefaultFilterableIssue implements FilterableIssue {
-  private final DefaultClientIssue rawIssue;
+/**
+ * @deprecated since 5.3
+ */
+@Deprecated
+class DeprecatedIssueAdapterForFilter implements Issue {
   private final Project project;
+  private final DefaultClientIssue rawIssue;
   private final String componentKey;
 
-  public DefaultFilterableIssue(Project project, DefaultClientIssue rawIssue, String componentKey) {
+  DeprecatedIssueAdapterForFilter(Project project, DefaultClientIssue rawIssue, String componentKey) {
     this.project = project;
     this.rawIssue = rawIssue;
     this.componentKey = componentKey;
+  }
 
+  @Override
+  public String key() {
+    throw unsupported();
   }
 
   @Override
@@ -49,13 +61,18 @@ public class DefaultFilterableIssue implements FilterableIssue {
   }
 
   @Override
-  public String severity() {
+  public String language() {
     throw unsupported();
   }
 
   @Override
+  public String severity() {
+    return rawIssue.getSeverity();
+  }
+
+  @Override
   public String message() {
-    throw unsupported();
+    return rawIssue.getMessage();
   }
 
   @Override
@@ -64,8 +81,29 @@ public class DefaultFilterableIssue implements FilterableIssue {
   }
 
   @Override
+  @Deprecated
   public Double effortToFix() {
     throw unsupported();
+  }
+
+  @Override
+  public String status() {
+    return Issue.STATUS_OPEN;
+  }
+
+  @Override
+  public String resolution() {
+    return null;
+  }
+
+  @Override
+  public String reporter() {
+    throw unsupported();
+  }
+
+  @Override
+  public String assignee() {
+    return null;
   }
 
   @Override
@@ -74,17 +112,72 @@ public class DefaultFilterableIssue implements FilterableIssue {
   }
 
   @Override
+  public Date updateDate() {
+    return null;
+  }
+
+  @Override
+  public Date closeDate() {
+    return null;
+  }
+
+  @Override
+  public String attribute(String key) {
+    return attributes().get(key);
+  }
+
+  @Override
+  public Map<String, String> attributes() {
+    return Collections.emptyMap();
+  }
+
+  @Override
+  public String authorLogin() {
+    throw unsupported();
+  }
+
+  @Override
+  public String actionPlanKey() {
+    throw unsupported();
+  }
+
+  @Override
+  public List<IssueComment> comments() {
+    throw unsupported();
+  }
+
+  @Override
+  public boolean isNew() {
+    throw unsupported();
+  }
+
+  @Deprecated
+  @Override
+  public Duration debt() {
+    throw unsupported();
+  }
+
+  @Override
   public String projectKey() {
     return project.getEffectiveKey();
   }
 
   @Override
-  public String toString() {
-    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+  public String projectUuid() {
+    throw unsupported();
+  }
+
+  @Override
+  public String componentUuid() {
+    throw unsupported();
+  }
+
+  @Override
+  public Collection<String> tags() {
+    throw unsupported();
   }
 
   private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Not available for issues filters");
   }
-
 }
