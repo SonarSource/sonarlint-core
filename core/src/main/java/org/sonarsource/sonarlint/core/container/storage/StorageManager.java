@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
@@ -65,21 +67,11 @@ public class StorageManager {
   }
 
   private static String encodeForFs(String moduleKey) {
-    int len = moduleKey.length();
-    StringBuilder sb = new StringBuilder(len);
-    for (int i = 0; i < len; i++) {
-      char ch = moduleKey.charAt(i);
-      if (ch < ' ' || ch >= 0x7F || ch == File.separatorChar || (ch == '.' && i == 0) || ch == ESCAPE_CHAR) {
-        sb.append(ESCAPE_CHAR);
-        if (ch < 0x10) {
-          sb.append('0');
-        }
-        sb.append(Integer.toHexString(ch));
-      } else {
-        sb.append(ch);
-      }
+    try {
+      return URLEncoder.encode(moduleKey, StandardCharsets.UTF_8.name());
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("Unable to encode module key", e);
     }
-    return sb.toString();
   }
 
   public Path getModuleConfigurationPath(String moduleKey) {

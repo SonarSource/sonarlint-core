@@ -41,8 +41,8 @@ public class StorageManagerTest {
       .setServerId("server_id")
       .build());
 
-    Path moduleStorageRoot = manager.getModuleStorageRoot(".module.:key/with_branché%\n");
-    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("modules").resolve("%2emodule.:key%2fwith_branch%e9%25%0a"));
+    Path moduleStorageRoot = manager.getModuleStorageRoot("module.:key/with_branch%");
+    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("modules").resolve("module.%3Akey%2Fwith_branch%25"));
   }
 
 }
