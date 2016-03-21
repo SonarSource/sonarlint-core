@@ -88,4 +88,19 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     return textRange != null ? textRange.end().line() : null;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append("rule=").append(activeRule.ruleKey());
+    sb.append(", severity=").append(severity);
+    if (textRange != null) {
+      sb.append(", line=").append(textRange.start().line());
+    }
+    if (clientInputFile != null) {
+      sb.append(", file=").append(clientInputFile.getPath().toString());
+    }
+    sb.append("]");
+    return sb.toString();
+  }
 }

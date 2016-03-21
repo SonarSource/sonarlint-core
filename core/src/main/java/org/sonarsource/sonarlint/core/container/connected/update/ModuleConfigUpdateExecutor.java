@@ -26,7 +26,6 @@ import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Set;
-import org.apache.commons.io.IOUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
@@ -80,8 +79,7 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {
-    InputStream contentStream = wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey)).contentStream();
-    try {
+    try (InputStream contentStream = wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey)).contentStream()) {
       SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
       for (QualityProfile qp : qpResponse.getProfilesList()) {
         String qpKey = qp.getKey();
@@ -93,14 +91,12 @@ public class ModuleConfigUpdateExecutor {
       }
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load module quality profiles", e);
-    } finally {
-      IOUtils.closeQuietly(contentStream);
     }
 
   }
 
   private void fetchProjectProperties(String moduleKey, GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder) {
-    WsResponse response = wsClient.get("api/properties?format=json&key=" + StringUtils.urlEncode(moduleKey));
+    WsResponse response = wsClient.get("api/properties?format=json&resource=" + StringUtils.urlEncode(moduleKey));
     String responseStr = response.content();
     try (JsonReader reader = new JsonReader(new StringReader(responseStr))) {
       reader.beginArray();

@@ -49,7 +49,7 @@ public class ModuleConfigUpdateExecutorTest {
   public void module_update() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?projectKey=module%3Akey%2Fwith_branch",
       "/update/qualityprofiles.pb");
-    WsClientTestUtils.addResponse(wsClient, "api/properties?format=json&key=module%3Akey%2Fwith_branch",
+    WsClientTestUtils.addResponse(wsClient, "api/properties?format=json&resource=module%3Akey%2Fwith_branch",
       "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
         + "{\"key\":\"sonar.core.version\",\"value\":\"5.5-SNAPSHOT\"},"
         + "{\"key\":\"sonar.java.someProp\",\"value\":\"foo\"}]");

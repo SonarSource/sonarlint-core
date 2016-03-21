@@ -40,6 +40,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
+import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.HttpWsClient;
@@ -112,6 +113,8 @@ public class ConnectedModeTest {
 
   @After
   public void stop() {
+    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
+    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY));
     try {
       engine.stop();
     } catch (Exception e) {
@@ -134,11 +137,7 @@ public class ConnectedModeTest {
 
   @Test
   public void globalUpdate() throws Exception {
-    engine.update(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build());
+    updateGlobal();
 
     assertThat(engine.getUpdateStatus()).isNotNull();
     assertThat(engine.getUpdateStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
@@ -150,36 +149,102 @@ public class ConnectedModeTest {
 
   @Test
   public void updateProject() throws Exception {
-    engine.update(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build());
+    updateGlobal();
 
-    engine.updateModule(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), PROJECT_KEY);
+    updateModule();
 
     assertThat(engine.getModuleUpdateStatus(PROJECT_KEY)).isNotNull();
   }
 
   @Test
   public void analysisUseQualityProfile() throws Exception {
-    engine.update(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build());
+    updateGlobal();
 
+    updateModule();
+
+    final List<Issue> issues = new ArrayList<>();
+
+    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+
+    assertThat(issues).hasSize(2);
+  }
+
+  @Test
+  public void analysisUseConfiguration() throws Exception {
+    updateGlobal();
+    updateModule();
+
+    final List<Issue> issues = new ArrayList<>();
+
+    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+    assertThat(issues).hasSize(2);
+
+    issues.clear();
+
+    // Override default file suffixes in global props so that input file is not considered as a Java file
+    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".foo"));
+    updateGlobal();
+    updateModule();
+
+    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+    assertThat(issues).isEmpty();
+
+    // Override default file suffixes in project props so that input file is considered as a Java file again
+    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".java", PROJECT_KEY));
+    updateGlobal();
+    updateModule();
+
+    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
+
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+    assertThat(issues).hasSize(2);
+
+  }
+
+  private void updateModule() {
     engine.updateModule(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build(), PROJECT_KEY);
+  }
 
-    ClientInputFile inputFile = new ClientInputFile() {
+  private void updateGlobal() {
+    engine.update(ServerConfiguration.builder()
+      .url(ORCHESTRATOR.getServer().getUrl())
+      .userAgent("SonarLint ITs")
+      .credentials(SONARLINT_USER, SONARLINT_PWD)
+      .build());
+  }
+
+  private ClientInputFile inputFile() {
+    return new ClientInputFile() {
 
       @Override
       public boolean isTest() {
@@ -201,19 +266,6 @@ public class ConnectedModeTest {
         return null;
       }
     };
-
-    final List<Issue> issues = new ArrayList<>();
-
-    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
-      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-
-    assertThat(issues).hasSize(2);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

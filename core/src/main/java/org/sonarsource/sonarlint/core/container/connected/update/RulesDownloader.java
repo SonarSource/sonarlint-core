@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.sonar.api.rule.RuleKey;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
@@ -33,6 +32,7 @@ import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
+import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -64,16 +64,13 @@ public class RulesDownloader {
       ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(entry.getKey() + ".pb"));
     }
 
-    InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream();
-    try {
+    try (InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream()) {
       SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
       for (QualityProfile qp : qpResponse.getProfilesList()) {
         rulesBuilder.getMutableDefaultQProfilesByLanguage().put(qp.getLanguage(), qp.getKey());
       }
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load default quality profiles", e);
-    } finally {
-      IOUtils.closeQuietly(contentStream);
     }
 
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StorageManager.RULES_PB));
@@ -85,7 +82,7 @@ public class RulesDownloader {
     int loaded = 0;
 
     while (true) {
-      SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)).contentStream());
+      SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)));
       readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
 
@@ -104,13 +101,11 @@ public class RulesDownloader {
     return builder.toString();
   }
 
-  private static SearchResponse loadFromStream(InputStream is) {
-    try {
+  private static SearchResponse loadFromStream(WsResponse response) {
+    try (InputStream is = response.contentStream()) {
       return SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);
-    } finally {
-      IOUtils.closeQuietly(is);
     }
   }
 

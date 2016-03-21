@@ -70,16 +70,19 @@ public class PluginCopier {
   File getFromCacheOrCopy(final PluginReference pluginReference) {
     final URL url = pluginReference.getDownloadUrl();
     try {
-      return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new FileDownloader(url)).toFile();
+      return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new StandaloneModeFileDownloader(url)).toFile();
     } catch (Exception e) {
       throw new IllegalStateException("Fail to copy plugin " + pluginReference.getFilename() + " from URL: " + url, e);
     }
   }
 
-  private static class FileDownloader implements PluginCache.Downloader {
+  /**
+   * In connected mode plugins are always supposed to be in the cache.
+   */
+  private static class StandaloneModeFileDownloader implements PluginCache.Downloader {
     private URL url;
 
-    FileDownloader(URL url) {
+    StandaloneModeFileDownloader(URL url) {
       this.url = url;
     }
 
