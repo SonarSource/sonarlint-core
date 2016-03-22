@@ -34,15 +34,14 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -51,20 +50,20 @@ public class StandaloneIssueMediumTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-  private static SonarLintEngine sonarlint;
+  private static StandaloneSonarLintEngineImpl sonarlint;
   private static File baseDir;
 
   @BeforeClass
   public static void prepare() throws IOException {
 
-    GlobalConfiguration config = GlobalConfiguration.builder()
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(StandaloneIssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"))
       .addPlugin(StandaloneIssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"))
       .addPlugin(StandaloneIssueMediumTest.class.getResource("/sonar-php-plugin-2.7.jar"))
       .setSonarLintUserHome(temp.newFolder().toPath())
       .setVerbose(true)
       .build();
-    sonarlint = new SonarLintEngineImpl(config);
+    sonarlint = new StandaloneSonarLintEngineImpl(config);
 
     baseDir = temp.newFolder();
   }
@@ -90,7 +89,7 @@ public class StandaloneIssueMediumTest {
       + "}", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
         @Override
         public void handle(Issue issue) {
@@ -113,7 +112,7 @@ public class StandaloneIssueMediumTest {
       + "?>", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
         @Override
         public void handle(Issue issue) {
@@ -138,7 +137,7 @@ public class StandaloneIssueMediumTest {
       false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
 
         @Override
@@ -167,7 +166,7 @@ public class StandaloneIssueMediumTest {
       false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
 
         @Override
@@ -186,7 +185,7 @@ public class StandaloneIssueMediumTest {
     ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
       ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), new IssueListener() {
 
         @Override
@@ -230,7 +229,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     AnalysisResults results = sonarlint.analyze(
-      new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
         ImmutableMap.<String, String>of("sonar.junit.reportsPath", "reports/")),
       new IssueListener() {
 

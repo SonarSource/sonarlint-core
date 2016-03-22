@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import java.util.Set;
-import org.sonarsource.sonarlint.core.client.api.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 
 public class DefaultRuleDetails implements RuleDetails {
 

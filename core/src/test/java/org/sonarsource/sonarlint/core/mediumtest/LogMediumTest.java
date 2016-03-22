@@ -34,15 +34,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -57,14 +57,14 @@ public class LogMediumTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private SonarLintEngine sonarlint;
+  private StandaloneSonarLintEngine sonarlint;
   private File baseDir;
   private Multimap<LogOutput.Level, String> logs = LinkedListMultimap.create();
-  private GlobalConfiguration config;
+  private StandaloneGlobalConfiguration config;
 
   @Before
   public void prepare() throws IOException {
-    config = GlobalConfiguration.builder()
+    config = StandaloneGlobalConfiguration.builder()
       .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
       .setVerbose(false)
       .setLogOutput(new LogOutput() {
@@ -75,7 +75,7 @@ public class LogMediumTest {
         }
       })
       .build();
-    sonarlint = new SonarLintEngineImpl(config);
+    sonarlint = new StandaloneSonarLintEngineImpl(config);
 
     baseDir = temp.newFolder();
   }
@@ -90,7 +90,7 @@ public class LogMediumTest {
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
         @Override
         public void handle(Issue issue) {
@@ -103,7 +103,7 @@ public class LogMediumTest {
 
     sonarlint.setVerbose(true);
 
-    sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
         @Override
         public void handle(Issue issue) {
@@ -119,7 +119,7 @@ public class LogMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
     try {
-      sonarlint.analyze(new AnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
         new IssueListener() {
           @Override
           public void handle(Issue issue) {

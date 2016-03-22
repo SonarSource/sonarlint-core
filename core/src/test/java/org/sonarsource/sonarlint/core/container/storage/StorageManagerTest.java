@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +36,7 @@ public class StorageManagerTest {
   public void encodeModuleKeyForFs() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StorageManager manager = new StorageManager(GlobalConfiguration.builder()
+    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setServerId("server_id")
       .build());

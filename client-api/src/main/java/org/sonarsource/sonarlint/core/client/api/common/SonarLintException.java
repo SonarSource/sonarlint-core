@@ -17,11 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.sonarsource.sonarlint.core.client.api.SonarLintEngine.State;
+public class SonarLintException extends RuntimeException {
 
-public interface StateListener {
-
-  void stateChanged(State newState);
+  public SonarLintException(String msg, Throwable cause) {
+    super(msg, cause);
+  }
 }

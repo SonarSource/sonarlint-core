@@ -24,36 +24,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.GlobalUpdateRequiredException;
-import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.client.api.StateListener;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
-import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
 import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class SonarLintEngineImpl implements SonarLintEngine {
+public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
 
-  private final GlobalConfiguration globalConfig;
-  private GlobalContainer globalContainer;
+  private final ConnectedGlobalConfiguration globalConfig;
+  private StorageGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final List<StateListener> listeners = new ArrayList<>();
   private State state = State.UNKNOW;
 
-  public SonarLintEngineImpl(GlobalConfiguration globalConfig) {
+  public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
     LoggingConfigurator.init(globalConfig.isVerbose(), globalConfig.getLogOutput());
     start();
@@ -91,18 +90,16 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     }
   }
 
-  public GlobalContainer getGlobalContainer() {
+  public StorageGlobalContainer getGlobalContainer() {
     return globalContainer;
   }
 
   public void start() {
     rwl.writeLock().lock();
-    this.globalContainer = GlobalContainer.create(globalConfig);
+    this.globalContainer = StorageGlobalContainer.create(globalConfig);
     try {
       globalContainer.startComponents();
-      if (globalContainer instanceof StorageGlobalContainer) {
-        changeState(((StorageGlobalContainer) globalContainer).getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
-      }
+      changeState(globalContainer.getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
     } catch (RuntimeException e) {
       changeState(State.UNKNOW);
       throw SonarLintWrappedException.wrap(e);
@@ -123,7 +120,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
   }
 
   @Override
-  public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
+  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
     checkNotNull(configuration);
     checkNotNull(issueListener);
     rwl.readLock().lock();
@@ -142,7 +139,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return ((StorageGlobalContainer) globalContainer).getUpdateStatus();
+      return globalContainer.getUpdateStatus();
     } finally {
       rwl.readLock().unlock();
     }
@@ -170,7 +167,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
         }
         start();
       }
-      return ((StorageGlobalContainer) globalContainer).getUpdateStatus();
+      return globalContainer.getUpdateStatus();
     } finally {
       rwl.writeLock().unlock();
     }
@@ -213,7 +210,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     rwl.readLock().lock();
     try {
       checkUpdateStatus();
-      return ((StorageGlobalContainer) globalContainer).allModulesByKey();
+      return globalContainer.allModulesByKey();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -246,7 +243,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
       } catch (Exception e) {
         // Ignore
       }
-      changeState(((StorageGlobalContainer) globalContainer).getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
+      changeState(globalContainer.getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
       rwl.writeLock().unlock();
     }
   }
@@ -256,7 +253,7 @@ public final class SonarLintEngineImpl implements SonarLintEngine {
     checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return ((StorageGlobalContainer) globalContainer).getModuleUpdateStatus(moduleKey);
+      return globalContainer.getModuleUpdateStatus(moduleKey);
     } finally {
       rwl.readLock().unlock();
     }

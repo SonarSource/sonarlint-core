@@ -17,16 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-/**
- * Allow to redirect batch logs to a custom output. By defaults logs are written to System.out
- */
-public interface LogOutput {
+import org.sonarsource.sonarlint.core.client.api.common.SonarLintException;
 
-  void log(String formattedMessage, Level level);
+public class StorageException extends SonarLintException {
 
-  enum Level {
-    ERROR, WARN, INFO, DEBUG, TRACE;
+  public StorageException(String msg, Throwable cause) {
+    super(msg, cause);
   }
+
 }

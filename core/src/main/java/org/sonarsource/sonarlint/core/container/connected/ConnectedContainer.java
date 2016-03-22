@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
@@ -39,9 +39,9 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 public class ConnectedContainer extends ComponentContainer {
 
   private final ServerConfiguration serverConfiguration;
-  private final GlobalConfiguration globalConfig;
+  private final ConnectedGlobalConfiguration globalConfig;
 
-  public ConnectedContainer(GlobalConfiguration globalConfig, ServerConfiguration serverConfiguration) {
+  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, ServerConfiguration serverConfiguration) {
     this.globalConfig = globalConfig;
     this.serverConfiguration = serverConfiguration;
   }

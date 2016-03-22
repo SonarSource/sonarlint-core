@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class StorageManager {
 
-  private static final char ESCAPE_CHAR = '%';
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
   public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
@@ -48,7 +47,7 @@ public class StorageManager {
   private final Path moduleStorageRoot;
   private final GlobalUpdateStatus updateStatus;
 
-  public StorageManager(GlobalConfiguration configuration) {
+  public StorageManager(ConnectedGlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(configuration.getServerId());
     FileUtils.forceMkDirs(serverStorageRoot);
     globalStorageRoot = serverStorageRoot.resolve("global");

@@ -17,38 +17,37 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.analysis;
+package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 
 /**
- * InputFile as provided by client
- * @since 1.1
+ * Entry point for SonarLint in standalone mode.
  */
-public interface ClientInputFile {
+public interface StandaloneSonarLintEngine {
+
+  void stop();
 
   /**
-   * Absolute path to the physical file.
+   * Change verbosity at runtime
    */
-  Path getPath();
+  void setVerbose(boolean verbose);
 
   /**
-   * Flag an input file as test file. Analyzers may apply different rules on test files.
+   * Return rule details.
+   * @param ruleKey See {@link Issue#getRuleKey()}
+   * @return Rule details
+   * @throws IllegalArgumentException if ruleKey is unknown
+   * @since 1.2
    */
-  @CheckForNull
-  boolean isTest();
+  RuleDetails getRuleDetails(String ruleKey);
 
   /**
-   * Charset to be used to read file content. If null it means the charset is unknown and analysis will likely use JVM default encoding to read the file.
+   * Trigger an analysis
    */
-  @CheckForNull
-  Charset getCharset();
-
-  /**
-   * Allow clients to pass their own object to ease mapping of issues.
-   */
-  <G> G getClientObject();
+  AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener);
 
 }

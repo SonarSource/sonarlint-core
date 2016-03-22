@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +44,7 @@ public class GlobalTempFolderProviderTest {
   public void createTempFolderProps() throws Exception {
     File workingDir = temp.newFolder();
 
-    TempFolder tempFolder = tempFolderProvider.provide(GlobalConfiguration.builder().setWorkDir(workingDir.toPath()).build());
+    TempFolder tempFolder = tempFolderProvider.provide(StandaloneGlobalConfiguration.builder().setWorkDir(workingDir.toPath()).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();
@@ -64,7 +64,7 @@ public class GlobalTempFolderProviderTest {
       setFileCreationDate(tmp, creationTime);
     }
 
-    tempFolderProvider.provide(GlobalConfiguration.builder().setWorkDir(workingDir.toPath()).build());
+    tempFolderProvider.provide(StandaloneGlobalConfiguration.builder().setWorkDir(workingDir.toPath()).build());
     // this also checks that all other temps were deleted
     assertThat(getCreatedTempDir(workingDir)).exists();
 
@@ -75,9 +75,9 @@ public class GlobalTempFolderProviderTest {
   public void createTempFolderSonarHome() throws Exception {
     // with sonar home, it will be in {sonar.home}/.sonartmp
     File sonarHome = temp.newFolder();
-    File workingDir = new File(sonarHome, GlobalConfiguration.DEFAULT_WORK_DIR).getAbsoluteFile();
+    File workingDir = new File(sonarHome, StandaloneGlobalConfiguration.DEFAULT_WORK_DIR).getAbsoluteFile();
 
-    TempFolder tempFolder = tempFolderProvider.provide(GlobalConfiguration.builder().setSonarLintUserHome(sonarHome.toPath()).build());
+    TempFolder tempFolder = tempFolderProvider.provide(StandaloneGlobalConfiguration.builder().setSonarLintUserHome(sonarHome.toPath()).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();

@@ -17,13 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.sonarsource.sonarlint.core.client.api.common.SonarLintException;
+import org.junit.Test;
 
-public class UnsupportedServerException extends SonarLintException {
+public class SonarLintExceptionTest {
 
-  public UnsupportedServerException(String msg) {
-    super(msg, null);
+  @Test
+  public void testWrapException() {
+
   }
+
 }

@@ -25,39 +25,41 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sonar.api.SonarPlugin;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.StorageException;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageException;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 
-public class StorageGlobalContainer extends GlobalContainer {
+public class StorageGlobalContainer extends ComponentContainer {
 
   private static final Logger LOG = LoggerFactory.getLogger(StorageGlobalContainer.class);
 
-  public static StorageGlobalContainer create(GlobalConfiguration globalConfig) {
+  public static StorageGlobalContainer create(ConnectedGlobalConfiguration globalConfig) {
     StorageGlobalContainer container = new StorageGlobalContainer();
     container.add(globalConfig);
     container.add(StorageManager.class);
@@ -85,16 +87,23 @@ public class StorageGlobalContainer extends GlobalContainer {
   protected void doAfterStart() {
     GlobalUpdateStatus updateStatus = getUpdateStatus();
     if (updateStatus != null) {
-      LOG.info("Using storage for server '{}' (last update {})", getComponentByType(GlobalConfiguration.class).getServerId(),
+      LOG.info("Using storage for server '{}' (last update {})", getComponentByType(ConnectedGlobalConfiguration.class).getServerId(),
         new SimpleDateFormat().format(updateStatus.getLastUpdateDate()));
       installPlugins();
     } else {
-      LOG.warn("No storage for server '{}'. Please update.", getComponentByType(GlobalConfiguration.class).getServerId());
+      LOG.warn("No storage for server '{}'. Please update.", getComponentByType(ConnectedGlobalConfiguration.class).getServerId());
     }
   }
 
-  @Override
-  public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
+  protected void installPlugins() {
+    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+      SonarPlugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
+      addExtension(pluginInfo, instance);
+    }
+  }
+
+  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
     GlobalUpdateStatus updateStatus = getUpdateStatus();
     if (updateStatus == null) {
       throw new StorageException("Missing global data. Please update server.", null);
@@ -117,7 +126,6 @@ public class StorageGlobalContainer extends GlobalContainer {
     return defaultAnalysisResult;
   }
 
-  @Override
   public RuleDetails getRuleDetails(String ruleKeyStr) {
     Sonarlint.Rules rulesFromStorage = getComponentByType(StorageManager.class).readRulesFromStorage();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -25,26 +25,23 @@ import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration.Builder;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-public class GlobalConfigurationTest {
+public class StandaloneGlobalConfigurationTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
   public void testDefaults() {
-    GlobalConfiguration config = GlobalConfiguration.builder()
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .build();
     assertThat(config.getPluginUrls()).isEmpty();
-    assertThat(config.getServerId()).isNull();
     assertThat(config.getLogOutput()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
-    assertThat(config.getStorageRoot()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "storage"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.isVerbose()).isFalse();
   }
@@ -54,20 +51,18 @@ public class GlobalConfigurationTest {
     Path sonarUserHome = temp.newFolder().toPath();
     Path storage = temp.newFolder().toPath();
     Path work = temp.newFolder().toPath();
-    GlobalConfiguration config = GlobalConfiguration.builder()
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
-      .setStorageRoot(storage)
       .setWorkDir(work)
       .build();
     assertThat(config.getSonarLintUserHome()).isEqualTo(sonarUserHome);
-    assertThat(config.getStorageRoot()).isEqualTo(storage);
     assertThat(config.getWorkDir()).isEqualTo(work);
   }
 
   @Test
   public void configureLogs() {
     LogOutput logOutput = mock(LogOutput.class);
-    GlobalConfiguration config = GlobalConfiguration.builder()
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .setVerbose(true)
       .setLogOutput(logOutput)
       .build();
@@ -80,57 +75,10 @@ public class GlobalConfigurationTest {
     URL plugin1 = new URL("file://plugin1.jar");
     URL plugin2 = new URL("file://plugin2.jar");
     URL plugin3 = new URL("file://plugin3.jar");
-    GlobalConfiguration config = GlobalConfiguration.builder()
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
     assertThat(config.getPluginUrls()).containsExactly(plugin1, plugin2, plugin3);
-  }
-
-  @Test
-  public void configureServerId() throws Exception {
-    GlobalConfiguration config = GlobalConfiguration.builder()
-      .setServerId("myServer")
-      .build();
-    assertThat(config.getServerId()).isEqualTo("myServer");
-  }
-
-  @Test
-  public void validateServerId() throws Exception {
-    Builder builder = GlobalConfiguration.builder();
-    expectFailure(builder, "my Server");
-    expectFailure(builder, "my:server");
-    expectFailure(builder, "");
-  }
-
-  private void expectFailure(Builder builder, String serverId) {
-    try {
-      builder.setServerId(serverId);
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).hasMessage("'" + serverId + "' is not a valid server ID");
-    }
-  }
-
-  @Test
-  public void server_id_and_plugins_are_exclusive() throws Exception {
-    URL plugin1 = new URL("file://plugin1.jar");
-    try {
-      GlobalConfiguration.builder()
-        .addPlugin(plugin1)
-        .setServerId("myServer");
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Manual plugins already configured");
-    }
-
-    try {
-      GlobalConfiguration.builder()
-        .setServerId("myServer")
-        .addPlugin(plugin1);
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Server id already configured");
-    }
   }
 }

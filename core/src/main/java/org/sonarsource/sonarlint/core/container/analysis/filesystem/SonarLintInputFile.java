@@ -24,7 +24,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.utils.PathUtils;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 
 public class SonarLintInputFile extends DefaultInputFile {

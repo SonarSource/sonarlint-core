@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.log;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import org.sonarsource.sonarlint.core.client.api.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
 public class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
   protected LogOutput target;

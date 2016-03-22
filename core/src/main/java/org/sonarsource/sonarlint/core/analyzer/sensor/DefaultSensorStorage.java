@@ -39,7 +39,7 @@ import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class DefaultSensorStorage implements SensorStorage {

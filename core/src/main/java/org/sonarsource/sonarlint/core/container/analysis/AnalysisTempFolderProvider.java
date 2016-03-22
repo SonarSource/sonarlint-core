@@ -27,13 +27,13 @@ import org.picocontainer.PicoContainer;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.internal.DefaultTempFolder;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 
 public class AnalysisTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
   static final String TMP_NAME = ".sonartmp";
   private DefaultTempFolder projectTempFolder;
 
-  public TempFolder provide(AnalysisConfiguration analysisConfig) {
+  public TempFolder provide(StandaloneAnalysisConfiguration analysisConfig) {
     if (projectTempFolder == null) {
       Path workingDir = analysisConfig.workDir();
       Path tempDir = workingDir.normalize().resolve(TMP_NAME);

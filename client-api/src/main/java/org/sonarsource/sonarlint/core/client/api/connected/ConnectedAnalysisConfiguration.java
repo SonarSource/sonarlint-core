@@ -17,56 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.analysis;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 @Immutable
-public class AnalysisConfiguration {
+public class ConnectedAnalysisConfiguration extends org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration {
 
   private final String moduleKey;
-  private final Iterable<ClientInputFile> inputFiles;
-  private final Map<String, String> extraProperties;
-  private final Path workDir;
-  // TODO baseDir is only used to please Sensor API. To be removed when having a dedicated SonarLint API.
-  private final Path baseDir;
 
-  public AnalysisConfiguration(@Nullable String moduleKey, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+  public ConnectedAnalysisConfiguration(@Nullable String moduleKey, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+    super(baseDir, workDir, inputFiles, extraProperties);
     this.moduleKey = moduleKey;
-    this.baseDir = baseDir;
-    this.workDir = workDir;
-    this.inputFiles = inputFiles;
-    this.extraProperties = new LinkedHashMap<>(extraProperties);
   }
 
   @CheckForNull
   public String moduleKey() {
     return moduleKey;
-  }
-
-  public Map<String, String> extraProperties() {
-    return Collections.unmodifiableMap(extraProperties);
-  }
-
-  public Path baseDir() {
-    return baseDir;
-  }
-
-  /**
-   * Work dir specific for this analysis.
-   */
-  public Path workDir() {
-    return workDir;
-  }
-
-  public Iterable<ClientInputFile> inputFiles() {
-    return inputFiles;
   }
 
   @Override
@@ -76,11 +48,11 @@ public class AnalysisConfiguration {
     if (moduleKey != null) {
       sb.append("  moduleKey: ").append(moduleKey).append("\n");
     }
-    sb.append("  baseDir: ").append(baseDir).append("\n");
-    sb.append("  workDir: ").append(workDir).append("\n");
-    sb.append("  extraProperties: ").append(extraProperties).append("\n");
+    sb.append("  baseDir: ").append(baseDir()).append("\n");
+    sb.append("  workDir: ").append(workDir()).append("\n");
+    sb.append("  extraProperties: ").append(extraProperties()).append("\n");
     sb.append("  inputFiles: [\n");
-    for (ClientInputFile inputFile : inputFiles) {
+    for (ClientInputFile inputFile : inputFiles()) {
       sb.append("    ").append(inputFile.getPath().toString());
       if (inputFile.isTest()) {
         sb.append(" [test]");

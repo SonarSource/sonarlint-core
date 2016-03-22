@@ -23,7 +23,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;

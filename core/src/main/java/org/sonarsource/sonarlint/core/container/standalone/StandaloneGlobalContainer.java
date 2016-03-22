@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.standalone;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.sonar.api.SonarPlugin;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
@@ -31,32 +32,33 @@ import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.container.global.GlobalContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
-public class StandaloneGlobalContainer extends GlobalContainer {
+public class StandaloneGlobalContainer extends ComponentContainer {
 
   private Rules rules;
   private ActiveRules activeRules;
   private Context rulesDefinitions;
 
-  public static StandaloneGlobalContainer create(GlobalConfiguration globalConfig) {
+  public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
     container.add(globalConfig);
     container.add(new StandalonePluginIndexProvider(globalConfig.getPluginUrls()));
@@ -86,6 +88,14 @@ public class StandaloneGlobalContainer extends GlobalContainer {
     loadRulesAndActiveRulesFromPlugins();
   }
 
+  protected void installPlugins() {
+    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+      SonarPlugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
+      addExtension(pluginInfo, instance);
+    }
+  }
+
   private void loadRulesAndActiveRulesFromPlugins() {
     StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
@@ -94,8 +104,7 @@ public class StandaloneGlobalContainer extends GlobalContainer {
     rulesDefinitions = container.getRulesDefinitions();
   }
 
-  @Override
-  public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener) {
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener) {
     AnalysisContainer analysisContainer = new AnalysisContainer(this);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
@@ -107,7 +116,6 @@ public class StandaloneGlobalContainer extends GlobalContainer {
     return defaultAnalysisResult;
   }
 
-  @Override
   public RuleDetails getRuleDetails(String ruleKeyStr) {
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
     Rule rule = rules.find(ruleKey);

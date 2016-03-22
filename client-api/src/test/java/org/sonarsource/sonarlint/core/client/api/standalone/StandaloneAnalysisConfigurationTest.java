@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.analysis;
+package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -27,11 +27,12 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class AnalysisConfigurationTest {
+public class StandaloneAnalysisConfigurationTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -89,9 +90,8 @@ public class AnalysisConfigurationTest {
     };
     Path baseDir = temp.newFolder().toPath();
     Path workDir = temp.newFolder().toPath();
-    AnalysisConfiguration config = new AnalysisConfiguration("foo", baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
+    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
     assertThat(config.toString()).isEqualTo("[\n" +
-      "  moduleKey: foo\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
@@ -103,20 +103,7 @@ public class AnalysisConfigurationTest {
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.workDir()).isEqualTo(workDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, testInputFile);
-    assertThat(config.moduleKey()).isEqualTo("foo");
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
-
-    config = new AnalysisConfiguration(null, baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
-    assertThat(config.toString()).isEqualTo("[\n" +
-      "  baseDir: " + baseDir.toString() + "\n" +
-      "  workDir: " + workDir.toString() + "\n" +
-      "  extraProperties: {sonar.java.libraries=foo bar}\n" +
-      "  inputFiles: [\n" +
-      "    " + srcFile1.toString() + "\n" +
-      "    " + srcFile2.toString() + " [test]\n" +
-      "  ]\n" +
-      "]\n");
-
   }
 
 }

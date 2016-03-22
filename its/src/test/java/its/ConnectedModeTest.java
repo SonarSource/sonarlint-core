@@ -47,13 +47,13 @@ import org.sonarqube.ws.client.HttpWsClient;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.AddUserWsRequest;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
@@ -80,7 +80,7 @@ public class ConnectedModeTest {
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
 
-  private SonarLintEngine engine;
+  private ConnectedSonarLintEngine engine;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -105,7 +105,7 @@ public class ConnectedModeTest {
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
-    engine = new SonarLintEngineImpl(GlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .build());
@@ -164,7 +164,7 @@ public class ConnectedModeTest {
 
     final List<Issue> issues = new ArrayList<>();
 
-    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
       ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
 
         @Override
@@ -183,7 +183,7 @@ public class ConnectedModeTest {
 
     final List<Issue> issues = new ArrayList<>();
 
-    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
       ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
 
         @Override
@@ -200,7 +200,7 @@ public class ConnectedModeTest {
     updateGlobal();
     updateModule();
 
-    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
       ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
 
         @Override
@@ -215,7 +215,7 @@ public class ConnectedModeTest {
     updateGlobal();
     updateModule();
 
-    engine.analyze(new AnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
+    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
       ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
 
         @Override

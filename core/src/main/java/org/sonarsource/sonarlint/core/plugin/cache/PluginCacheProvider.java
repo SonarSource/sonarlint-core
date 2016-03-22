@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.plugin.cache;
 
 import java.nio.file.Path;
 import org.picocontainer.injectors.ProviderAdapter;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 public class PluginCacheProvider extends ProviderAdapter {
   private PluginCache cache;
 
-  public PluginCache provide(GlobalConfiguration globalConfiguration) {
+  public PluginCache provide(AbstractGlobalConfiguration globalConfiguration) {
     if (cache == null) {
       Path cacheDir = globalConfiguration.getSonarLintUserHome().resolve("plugins");
       cache = PluginCache.create(cacheDir);

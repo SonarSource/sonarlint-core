@@ -30,7 +30,7 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.rule.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
 
@@ -40,7 +40,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
   private ActiveRules activeRules;
 
-  public ActiveRules provide(Sonarlint.Rules storageRules, StorageManager storageManager, Rules rules, AnalysisConfiguration analysisConfiguration, Languages languages) {
+  public ActiveRules provide(Sonarlint.Rules storageRules, StorageManager storageManager, Rules rules, ConnectedAnalysisConfiguration analysisConfiguration, Languages languages) {
     if (activeRules == null) {
       ActiveRulesBuilder builder = new ActiveRulesBuilder();
 

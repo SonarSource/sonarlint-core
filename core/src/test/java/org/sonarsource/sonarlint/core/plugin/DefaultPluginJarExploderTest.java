@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
@@ -43,7 +43,7 @@ public class DefaultPluginJarExploderTest {
   @Before
   public void setUp() throws IOException {
     userHome = temp.newFolder();
-    PluginCache fileCache = new PluginCacheProvider().provide(GlobalConfiguration.builder().setSonarLintUserHome(userHome.toPath()).build());
+    PluginCache fileCache = new PluginCacheProvider().provide(StandaloneGlobalConfiguration.builder().setSonarLintUserHome(userHome.toPath()).build());
     underTest = new DefaultPluginJarExploder(fileCache);
   }
 

@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.client.api.StorageException;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageException;
 
 public class ProtobufUtil {
   private ProtobufUtil() {

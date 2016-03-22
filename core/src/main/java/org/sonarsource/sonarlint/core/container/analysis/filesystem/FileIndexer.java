@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.MessageException;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
@@ -37,12 +37,12 @@ import org.sonarsource.sonarlint.core.util.ProgressReport;
 public class FileIndexer {
 
   private final InputFileBuilder inputFileBuilder;
-  private final AnalysisConfiguration analysisConfiguration;
+  private final StandaloneAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
 
   private ProgressReport progressReport;
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration, DefaultAnalysisResult analysisResult) {
+  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration, DefaultAnalysisResult analysisResult) {
     this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
     this.analysisResult = analysisResult;

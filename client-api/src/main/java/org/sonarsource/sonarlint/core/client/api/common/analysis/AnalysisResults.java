@@ -17,36 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.analysis;
+package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
-import javax.annotation.CheckForNull;
-
-public interface Issue {
-
-  String getSeverity();
-
-  @CheckForNull
-  Integer getStartLine();
-
-  @CheckForNull
-  Integer getStartLineOffset();
-
-  @CheckForNull
-  Integer getEndLine();
-
-  @CheckForNull
-  Integer getEndLineOffset();
-
-  String getMessage();
-
-  String getRuleKey();
-
-  String getRuleName();
+public interface AnalysisResults {
 
   /**
-   * @return null for global issues
+   * Number of file analyzed. This number can be different than number of provided {@link ClientInputFile} since
+   * file with no matching language are excluded.
    */
-  @CheckForNull
-  ClientInputFile getInputFile();
+  int fileCount();
 
 }

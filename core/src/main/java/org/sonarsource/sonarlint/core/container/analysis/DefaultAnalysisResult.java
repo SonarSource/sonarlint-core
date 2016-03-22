@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 
 public class DefaultAnalysisResult implements AnalysisResults {
 

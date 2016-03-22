@@ -21,24 +21,25 @@ package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 public class AnalysisSettings extends Settings {
 
-  public AnalysisSettings(AnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public AnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     addProperties(config.extraProperties());
   }
 
-  public AnalysisSettings(StorageManager storage, AnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public AnalysisSettings(StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
     addProperties(globalProps.getProperties());
-    if (config.moduleKey() != null) {
-      ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(config.moduleKey());
+    if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
+      ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
       addProperties(projectConfig.getProperties());
     }
     addProperties(config.extraProperties());

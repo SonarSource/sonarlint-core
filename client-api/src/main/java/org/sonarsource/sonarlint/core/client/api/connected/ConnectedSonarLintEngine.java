@@ -17,25 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 
 /**
  * Entry point for SonarLint.
  */
-public interface SonarLintEngine {
+public interface ConnectedSonarLintEngine {
 
   enum State {
     UNKNOW,
@@ -51,8 +45,6 @@ public interface SonarLintEngine {
   void addStateListener(StateListener listener);
 
   void removeStateListener(StateListener listener);
-
-  // COMMON TO UNCONNECTED AND CONNECTED MODES
 
   /**
    * Change verbosity at runtime
@@ -71,9 +63,7 @@ public interface SonarLintEngine {
   /**
    * Trigger an analysis
    */
-  AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener);
-
-  // ONLY FOR CONNECTED MODE
+  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener);
 
   /**
    * Get information about current update state
@@ -107,8 +97,6 @@ public interface SonarLintEngine {
    * @since 2.0
    */
   ValidationResult validateCredentials(ServerConfiguration serverConfig);
-
-  // REQUIRES SERVER TO BE REACHABLE AND SONARLINT CLIENT SHOULD BE STOPPED
 
   /**
    * Update current server.

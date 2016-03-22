@@ -32,7 +32,7 @@ import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.internal.DefaultTempFolder;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 public class GlobalTempFolderProvider extends ProviderAdapter implements Startable {
   private static final Logger LOG = Loggers.get(GlobalTempFolderProvider.class);
@@ -41,7 +41,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Startab
 
   private DefaultTempFolder tempFolder;
 
-  public TempFolder provide(GlobalConfiguration globalConfiguration) {
+  public TempFolder provide(AbstractGlobalConfiguration globalConfiguration) {
     if (tempFolder == null) {
 
       Path workingPath = globalConfiguration.getWorkDir();

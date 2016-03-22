@@ -33,11 +33,10 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.rule.RuleKey;
-import org.sonarsource.sonarlint.core.SonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.GlobalConfiguration.Builder;
-import org.sonarsource.sonarlint.core.client.api.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.RuleDetails;
+import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJson;
@@ -54,7 +53,7 @@ public class Main {
     for (int i = 1; i < args.length; i++) {
       pluginPaths.add(Paths.get(args[i]));
     }
-    Builder builder = GlobalConfiguration.builder()
+    StandaloneGlobalConfiguration.Builder builder = StandaloneGlobalConfiguration.builder()
       .setLogOutput(new LogOutput() {
 
         @Override
@@ -66,7 +65,7 @@ public class Main {
     for (Path path : pluginPaths) {
       builder.addPlugin(path.toUri().toURL());
     }
-    SonarLintEngineImpl client = new SonarLintEngineImpl(builder.build());
+    StandaloneSonarLintEngineImpl client = new StandaloneSonarLintEngineImpl(builder.build());
     client.start();
 
     Table<String, String, RuleDetails> rulesByKeyAndLanguage = TreeBasedTable.create();

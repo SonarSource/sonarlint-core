@@ -17,13 +17,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
-import org.sonarsource.sonarlint.core.client.api.common.SonarLintException;
+import javax.annotation.CheckForNull;
 
-public class UnsupportedServerException extends SonarLintException {
+public interface Issue {
 
-  public UnsupportedServerException(String msg) {
-    super(msg, null);
-  }
+  String getSeverity();
+
+  @CheckForNull
+  Integer getStartLine();
+
+  @CheckForNull
+  Integer getStartLineOffset();
+
+  @CheckForNull
+  Integer getEndLine();
+
+  @CheckForNull
+  Integer getEndLineOffset();
+
+  String getMessage();
+
+  String getRuleKey();
+
+  String getRuleName();
+
+  /**
+   * @return null for global issues
+   */
+  @CheckForNull
+  ClientInputFile getInputFile();
+
 }

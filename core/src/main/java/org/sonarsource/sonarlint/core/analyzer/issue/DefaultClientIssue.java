@@ -23,9 +23,9 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
-import org.sonarsource.sonarlint.core.client.api.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
-public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.analysis.Issue {
+public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;
   private final ActiveRule activeRule;
   private final String primaryMessage;
