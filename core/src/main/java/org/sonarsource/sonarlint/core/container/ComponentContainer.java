@@ -34,15 +34,11 @@ import org.picocontainer.PicoContainer;
 import org.picocontainer.behaviors.OptInCaching;
 import org.picocontainer.lifecycle.ReflectionLifecycleStrategy;
 import org.picocontainer.monitors.NullComponentMonitor;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.server.ServerSide;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
-@BatchSide
-@ServerSide
 public class ComponentContainer implements ContainerPopulator.Container {
 
   private static final class ExtendedDefaultPicoContainer extends DefaultPicoContainer {
@@ -72,9 +68,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
     }
   }
 
-  // no need for multiple children
   ComponentContainer parent;
-  ComponentContainer child;
   MutablePicoContainer pico;
   PropertyDefinitions propertyDefinitions;
   ComponentKeys componentKeys;
@@ -88,7 +82,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
 
   protected ComponentContainer(MutablePicoContainer picoContainer) {
     this.parent = null;
-    this.child = null;
     this.pico = picoContainer;
     this.componentKeys = new ComponentKeys();
     propertyDefinitions = new PropertyDefinitions();
@@ -101,11 +94,14 @@ public class ComponentContainer implements ContainerPopulator.Container {
    */
   protected ComponentContainer(ComponentContainer parent) {
     this.parent = parent;
-    this.pico = parent.pico.makeChildContainer();
-    this.parent.child = this;
+    this.pico = parent.makeChildContainer();
     this.propertyDefinitions = parent.propertyDefinitions;
     this.componentKeys = new ComponentKeys();
     addSingleton(this);
+  }
+
+  private synchronized MutablePicoContainer makeChildContainer() {
+    return pico.makeChildContainer();
   }
 
   public void execute() {
@@ -165,12 +161,15 @@ public class ComponentContainer implements ContainerPopulator.Container {
         throw PicoUtils.propagate(e);
       }
     } finally {
-      removeChild();
       if (parent != null) {
-        parent.removeChild();
+        parent.removeChildContainer(pico);
       }
     }
     return this;
+  }
+
+  private synchronized void removeChildContainer(MutablePicoContainer child) {
+    this.pico.removeChildContainer(child);
   }
 
   /**
@@ -267,14 +266,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     return pico.getComponents(tClass);
   }
 
-  public ComponentContainer removeChild() {
-    if (child != null) {
-      pico.removeChildContainer(child.pico);
-      child = null;
-    }
-    return this;
-  }
-
   public ComponentContainer createChild() {
     return new ComponentContainer(this);
   }
@@ -294,10 +285,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
 
   public ComponentContainer getParent() {
     return parent;
-  }
-
-  public ComponentContainer getChild() {
-    return child;
   }
 
   public MutablePicoContainer getPicoContainer() {

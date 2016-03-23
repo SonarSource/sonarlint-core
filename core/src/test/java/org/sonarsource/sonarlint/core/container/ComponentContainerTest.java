@@ -117,25 +117,12 @@ public class ComponentContainerTest {
     child.startComponents();
 
     assertThat(child.getParent()).isSameAs(parent);
-    assertThat(parent.getChild()).isSameAs(child);
     assertThat(child.getComponentByType(ComponentContainer.class)).isSameAs(child);
     assertThat(parent.getComponentByType(ComponentContainer.class)).isSameAs(parent);
     assertThat(child.getComponentByType(StartableComponent.class)).isNotNull();
     assertThat(parent.getComponentByType(StartableComponent.class)).isNull();
 
     parent.stopComponents();
-  }
-
-  @Test
-  public void testRemoveChild() {
-    ComponentContainer parent = new ComponentContainer();
-    parent.startComponents();
-
-    ComponentContainer child = parent.createChild();
-    assertThat(parent.getChild()).isSameAs(child);
-
-    parent.removeChild();
-    assertThat(parent.getChild()).isNull();
   }
 
   @Test

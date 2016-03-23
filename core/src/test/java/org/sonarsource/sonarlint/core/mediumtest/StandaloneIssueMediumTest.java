@@ -28,6 +28,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -247,6 +251,56 @@ public class StandaloneIssueMediumTest {
       tuple("squid:S1220", null, inputFile.getPath()),
       tuple("squid:S1481", 3, inputFile.getPath()),
       tuple("squid:S2187", 1, inputFileTest.getPath()));
+  }
+
+  @Test
+  public void concurrentAnalysis() throws Throwable {
+    final ClientInputFile inputFile = prepareInputFile("Foo.java",
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "    System.out.println(\"Foo\"); //NOSONAR\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final Path workDir = temp.newFolder().toPath();
+
+    int parallelExecutions = 4;
+
+    ExecutorService executor = Executors.newFixedThreadPool(parallelExecutions);
+
+    List<Future<?>> results = new ArrayList<>();
+    for (int i = 0; i < parallelExecutions; i++) {
+
+      Runnable worker = new Runnable() {
+        @Override
+        public void run() {
+          sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), workDir, Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+            new IssueListener() {
+              @Override
+              public void handle(Issue issue) {
+                // Ignore
+              }
+            });
+        }
+      };
+      results.add(executor.submit(worker));
+    }
+    executor.shutdown();
+
+    while (!executor.isTerminated()) {
+    }
+
+    for (Future<?> future : results) {
+      try {
+        future.get();
+      } catch (ExecutionException e) {
+        throw e.getCause();
+      }
+    }
+
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
