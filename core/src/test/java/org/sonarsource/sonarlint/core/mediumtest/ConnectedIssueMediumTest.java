@@ -36,6 +36,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -102,7 +103,13 @@ public class ConnectedIssueMediumTest {
       .setServerId("localhost")
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage)
-      .setVerbose(true)
+      .setLogOutput(new LogOutput() {
+
+        @Override
+        public void log(String formattedMessage, Level level) {
+          // Don't pollute logs
+        }
+      })
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 

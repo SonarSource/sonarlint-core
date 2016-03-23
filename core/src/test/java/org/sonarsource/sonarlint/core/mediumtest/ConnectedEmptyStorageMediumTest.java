@@ -29,6 +29,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -55,7 +56,13 @@ public class ConnectedEmptyStorageMediumTest {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId("localhost")
       .setSonarLintUserHome(slHome)
-      .setVerbose(true)
+      .setLogOutput(new LogOutput() {
+
+        @Override
+        public void log(String formattedMessage, Level level) {
+          // Don't pollute logs
+        }
+      })
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
