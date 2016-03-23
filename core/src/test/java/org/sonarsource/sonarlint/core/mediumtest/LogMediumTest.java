@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -65,7 +66,7 @@ public class LogMediumTest {
   @Before
   public void prepare() throws IOException {
     config = StandaloneGlobalConfiguration.builder()
-      .addPlugin(this.getClass().getResource("/sonar-javascript-plugin-2.8.jar"))
+      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .setVerbose(false)
       .setLogOutput(new LogOutput() {
 

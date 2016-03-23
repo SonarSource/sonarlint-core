@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -57,9 +58,9 @@ public class StandaloneIssueMediumTest {
   public static void prepare() throws IOException {
 
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
-      .addPlugin(StandaloneIssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"))
-      .addPlugin(StandaloneIssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"))
-      .addPlugin(StandaloneIssueMediumTest.class.getResource("/sonar-php-plugin-2.7.jar"))
+      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaPluginUrl())
+      .addPlugin(PluginLocator.getPhpPluginUrl())
       .setSonarLintUserHome(temp.newFolder().toPath())
       .setVerbose(true)
       .build();

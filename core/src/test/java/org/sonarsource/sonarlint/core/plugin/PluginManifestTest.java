@@ -27,6 +27,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,9 +40,7 @@ public class PluginManifestTest {
 
   @Test
   public void should_create_manifest() throws URISyntaxException, IOException {
-    URL jar = getClass().getResource("/sonar-java-plugin-3.9.jar");
-
-    PluginManifest manifest = new PluginManifest(new File(jar.toURI()));
+    PluginManifest manifest = new PluginManifest(new File(PluginLocator.getJavaPluginUrl().toURI()));
 
     assertThat(manifest.getKey()).isEqualTo("java");
     assertThat(manifest.getName()).isEqualTo("Java");
@@ -50,12 +49,12 @@ public class PluginManifestTest {
     assertThat(manifest.getVersion().length()).isGreaterThan(1);
     assertThat(manifest.isUseChildFirstClassLoader()).isFalse();
     assertThat(manifest.getDependencies()).contains("META-INF/lib/org.jacoco.core-0.7.5.201505241946.jar");
-    assertThat(manifest.getImplementationBuild()).isEqualTo("ec579aff0ea63c2ab37006e926f4e83e5cd13ea4");
+    assertThat(manifest.getImplementationBuild()).isNotEmpty();
   }
 
   @Test
   public void accessors() throws URISyntaxException, IOException, ParseException {
-    URL jar = getClass().getResource("/sonar-java-plugin-3.9.jar");
+    URL jar = new File("target/plugins/sonar-java-plugin-3.11.jar").getAbsoluteFile().toURI().toURL();
 
     PluginManifest manifest = new PluginManifest(new File(jar.toURI()));
 

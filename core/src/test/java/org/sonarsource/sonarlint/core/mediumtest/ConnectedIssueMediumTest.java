@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -70,28 +71,28 @@ public class ConnectedIssueMediumTest {
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
     builder.addReference(PluginReference.newBuilder()
-      .setFilename("sonar-javascript-plugin-2.8.jar")
-      .setHash("0f87170f4cec0f7fc51b6572530153f9")
+      .setFilename(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR)
+      .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
       .setKey("javascript")
       .build());
-    cache.get("sonar-javascript-plugin-2.8.jar", "0f87170f4cec0f7fc51b6572530153f9", new Downloader() {
+    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Downloader() {
 
       @Override
       public void download(String filename, Path toFile) throws IOException {
-        FileUtils.copyURLToFile(ConnectedIssueMediumTest.class.getResource("/sonar-javascript-plugin-2.8.jar"), toFile.toFile());
+        FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile());
       }
     });
 
     builder.addReference(PluginReference.newBuilder()
-      .setFilename("sonar-java-plugin-3.9.jar")
-      .setHash("db224331b6753d63cb31f2b58c93914c")
+      .setFilename(PluginLocator.SONAR_JAVA_PLUGIN_JAR)
+      .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
       .setKey("java")
       .build());
-    cache.get("sonar-java-plugin-3.9.jar", "db224331b6753d63cb31f2b58c93914c", new Downloader() {
+    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Downloader() {
 
       @Override
       public void download(String filename, Path toFile) throws IOException {
-        FileUtils.copyURLToFile(ConnectedIssueMediumTest.class.getResource("/sonar-java-plugin-3.9.jar"), toFile.toFile());
+        FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile());
       }
     });
 
