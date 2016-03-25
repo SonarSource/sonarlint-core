@@ -40,6 +40,7 @@ import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.utils.PathUtils;
+import org.sonar.api.utils.System2;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
 
@@ -183,7 +184,12 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   @Override
   public Resource getResource(Resource resource) {
+    // Here we should expect that resource key is the absolute path thanks to SonarLintInputFile::relativePath()
     String absolutePath = resource.getKey();
+    if (!System2.INSTANCE.isOsWindows() && !absolutePath.startsWith("/")) {
+      // Can occurs on Linux because File.create(relativePath) will remove leading /
+      absolutePath = "/" + resource.getKey();
+    }
     resource
       .setEffectiveKey(absolutePath)
       .setPath(absolutePath)
