@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.FileSystem;
@@ -182,9 +184,6 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   @Override
   public Resource getResource(Resource resource) {
     String absolutePath = resource.getKey();
-    if (!absolutePath.startsWith("/")) {
-      absolutePath = "/" + absolutePath;
-    }
     resource
       .setEffectiveKey(absolutePath)
       .setPath(absolutePath)
