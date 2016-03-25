@@ -40,7 +40,7 @@ public interface ConnectedSonarLintEngine {
 
   State getState();
 
-  void stop();
+  void stop(boolean deleteStorage);
 
   void addStateListener(StateListener listener);
 

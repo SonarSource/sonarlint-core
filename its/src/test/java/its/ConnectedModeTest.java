@@ -116,7 +116,7 @@ public class ConnectedModeTest {
     ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
     ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY));
     try {
-      engine.stop();
+      engine.stop(true);
     } catch (Exception e) {
       // Ignore
     }

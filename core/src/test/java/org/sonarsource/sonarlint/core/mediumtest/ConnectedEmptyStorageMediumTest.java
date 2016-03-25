@@ -71,7 +71,7 @@ public class ConnectedEmptyStorageMediumTest {
 
   @AfterClass
   public static void stop() {
-    sonarlint.stop();
+    sonarlint.stop(true);
   }
 
   @Test

@@ -150,7 +150,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.writeLock().lock();
-    stop();
+    stop(false);
     changeState(State.UPDATING);
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
@@ -260,11 +260,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void stop() {
+  public void stop(boolean deleteStorage) {
     rwl.writeLock().lock();
     try {
       if (globalContainer == null) {
         return;
+      }
+      if (deleteStorage) {
+        globalContainer.deleteStorage();
       }
       globalContainer.stopComponents(false);
     } catch (RuntimeException e) {

@@ -78,6 +78,7 @@ public class GlobalUpdateExecutor {
 
     Path dest = storageManager.getGlobalStorageRoot();
     FileUtils.deleteDirectory(dest);
+    FileUtils.forceMkDirs(dest.getParent());
     FileUtils.moveDir(temp, dest);
   }
 

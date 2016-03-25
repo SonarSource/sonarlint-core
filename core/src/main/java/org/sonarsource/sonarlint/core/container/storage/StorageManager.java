@@ -49,12 +49,13 @@ public class StorageManager {
 
   public StorageManager(ConnectedGlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(configuration.getServerId());
-    FileUtils.forceMkDirs(serverStorageRoot);
     globalStorageRoot = serverStorageRoot.resolve("global");
-    FileUtils.forceMkDirs(globalStorageRoot);
     moduleStorageRoot = serverStorageRoot.resolve("modules");
-    FileUtils.forceMkDirs(moduleStorageRoot);
     updateStatus = initUpdateStatus();
+  }
+  
+  public Path getServerStorageRoot() {
+	return serverStorageRoot;
   }
 
   public Path getGlobalStorageRoot() {

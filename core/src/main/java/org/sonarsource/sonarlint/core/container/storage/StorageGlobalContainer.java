@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
+import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class StorageGlobalContainer extends ComponentContainer {
 
@@ -174,6 +175,10 @@ public class StorageGlobalContainer extends ComponentContainer {
       return name;
     }
 
+  }
+
+  public void deleteStorage() {
+	FileUtils.deleteDirectory(getComponentByType(StorageManager.class).getServerStorageRoot());
   }
 
 }
