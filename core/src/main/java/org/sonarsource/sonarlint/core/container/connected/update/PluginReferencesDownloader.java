@@ -58,7 +58,7 @@ public class PluginReferencesDownloader {
     while (scanner.hasNextLine()) {
       String line = scanner.nextLine();
       String[] fields = StringUtils.split(line, ",");
-      String[] nameAndHash = StringUtils.split(fields[1], "|");
+      String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
       String key = fields[0];
       if (!allowedPlugins.contains(key)) {
         LOG.debug("Plugin {} is not in the SonarLint whitelist. Skip it.", key);

@@ -21,9 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 public interface ValidationResult {
 
-  boolean status();
-
-  int statusCode();
+  boolean success();
 
   String message();
 

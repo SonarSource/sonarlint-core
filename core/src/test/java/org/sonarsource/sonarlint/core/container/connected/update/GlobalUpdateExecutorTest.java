@@ -24,15 +24,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,51 +39,6 @@ public class GlobalUpdateExecutorTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-
-  @Test
-  public void serverNotReady() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
-
-    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(mock(StorageManager.class), wsClient, mock(PluginReferencesDownloader.class),
-      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), mock(TempFolder.class));
-
-    try {
-      globalUpdate.update();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Server not ready (DOWN)");
-    }
-  }
-
-  @Test
-  public void incompatibleVersion() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.1\",\"status\": \"UP\"}");
-
-    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(mock(StorageManager.class), wsClient, mock(PluginReferencesDownloader.class),
-      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), mock(TempFolder.class));
-
-    try {
-      globalUpdate.update();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 5.1. Version should be greater or equal to 5.2");
-    }
-  }
-
-  @Test
-  public void responseParsingError() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "bla bla");
-
-    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(mock(StorageManager.class), wsClient, mock(PluginReferencesDownloader.class),
-      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), mock(TempFolder.class));
-
-    try {
-      globalUpdate.update();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Unable to parse server infos from: bla bla");
-    }
-  }
 
   @Test
   public void testUpdate() throws Exception {
@@ -97,7 +51,7 @@ public class GlobalUpdateExecutorTest {
     when(tempFolder.newDir()).thenReturn(tempDir);
     StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginReferencesDownloader.class),
+    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, new ServerVersionAndStatusChecker(wsClient), mock(PluginReferencesDownloader.class),
       mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), tempFolder);
 
     globalUpdate.update();

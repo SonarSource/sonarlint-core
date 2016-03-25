@@ -38,9 +38,9 @@ public class AuthenticationChecker {
     if (response.isSuccessful()) {
       String responseStr = response.content();
       ValidateResponse validateResponse = new Gson().fromJson(responseStr, ValidateResponse.class);
-      return new DefaultValidationResult(validateResponse.valid, code, validateResponse.valid ? "Authentication successful" : "Authentication failed");
+      return new DefaultValidationResult(validateResponse.valid, validateResponse.valid ? "Authentication successful" : "Authentication failed");
     } else {
-      return new DefaultValidationResult(false, code, "HTTP Connection failed: " + response.content());
+      return new DefaultValidationResult(false, "HTTP Connection failed (" + code + "): " + response.content());
     }
   }
 

@@ -23,24 +23,17 @@ import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
 public class DefaultValidationResult implements ValidationResult {
 
-  private final boolean status;
-  private final int statusCode;
+  private final boolean success;
   private final String message;
 
-  public DefaultValidationResult(boolean status, int statusCode, String message) {
-    this.status = status;
-    this.statusCode = statusCode;
+  public DefaultValidationResult(boolean success, String message) {
+    this.success = success;
     this.message = message;
   }
 
   @Override
-  public boolean status() {
-    return status;
-  }
-
-  @Override
-  public int statusCode() {
-    return statusCode;
+  public boolean success() {
+    return success;
   }
 
   @Override

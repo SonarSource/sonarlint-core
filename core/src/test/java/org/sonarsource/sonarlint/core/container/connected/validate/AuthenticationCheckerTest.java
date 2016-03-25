@@ -42,8 +42,7 @@ public class AuthenticationCheckerTest {
 
     AuthenticationChecker checker = new AuthenticationChecker(wsClient);
     ValidationResult validationResult = checker.validateCredentials();
-    assertThat(validationResult.status()).isTrue();
-    assertThat(validationResult.statusCode()).isEqualTo(200);
+    assertThat(validationResult.success()).isTrue();
     assertThat(validationResult.message()).isEqualTo("Authentication successful");
   }
 
@@ -59,8 +58,7 @@ public class AuthenticationCheckerTest {
 
     AuthenticationChecker checker = new AuthenticationChecker(wsClient);
     ValidationResult validationResult = checker.validateCredentials();
-    assertThat(validationResult.status()).isFalse();
-    assertThat(validationResult.statusCode()).isEqualTo(200);
+    assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("Authentication failed");
   }
 
@@ -76,8 +74,7 @@ public class AuthenticationCheckerTest {
 
     AuthenticationChecker checker = new AuthenticationChecker(wsClient);
     ValidationResult validationResult = checker.validateCredentials();
-    assertThat(validationResult.status()).isFalse();
-    assertThat(validationResult.statusCode()).isEqualTo(500);
-    assertThat(validationResult.message()).isEqualTo("HTTP Connection failed: Foo");
+    assertThat(validationResult.success()).isFalse();
+    assertThat(validationResult.message()).isEqualTo("HTTP Connection failed (500): Foo");
   }
 }

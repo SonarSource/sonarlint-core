@@ -19,18 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.util.JsonFormat;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
-import org.sonarqube.ws.client.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
@@ -38,20 +34,21 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalUpdateExecutor {
 
-  private static final String MIN_SQ_VERSION = "5.2";
   private final StorageManager storageManager;
-  private final SonarLintWsClient wsClient;
   private final PluginReferencesDownloader pluginReferenceDownloader;
   private final GlobalPropertiesDownloader globalPropertiesDownloader;
   private final RulesDownloader rulesDownloader;
   private final TempFolder tempFolder;
   private final ModuleListDownloader moduleListDownloader;
+  private final ServerVersionAndStatusChecker statusChecker;
+  private final SonarLintWsClient wsClient;
 
-  public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginReferencesDownloader pluginReferenceDownloader,
-    GlobalPropertiesDownloader globalPropertiesDownloader,
-    RulesDownloader rulesDownloader, ModuleListDownloader moduleListDownloader, TempFolder tempFolder) {
+  public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, ServerVersionAndStatusChecker statusChecker,
+    PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
+    ModuleListDownloader moduleListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
+    this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalPropertiesDownloader = globalPropertiesDownloader;
     this.rulesDownloader = rulesDownloader;
@@ -60,14 +57,8 @@ public class GlobalUpdateExecutor {
   }
 
   public void update() {
-    ServerInfos serverStatus = fetchServerInfos();
-    if (!"UP".equals(serverStatus.getStatus())) {
-      throw new IllegalStateException("Server not ready (" + serverStatus.getStatus() + ")");
-    }
-    Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareTo(Version.create(MIN_SQ_VERSION)) < 0) {
-      throw new UnsupportedServerException("SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION);
-    }
+    ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
+
     Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
@@ -88,18 +79,6 @@ public class GlobalUpdateExecutor {
     Path dest = storageManager.getGlobalStorageRoot();
     FileUtils.deleteDirectory(dest);
     FileUtils.moveDir(temp, dest);
-  }
-
-  private ServerInfos fetchServerInfos() {
-    WsResponse response = wsClient.get("api/system/status");
-    String responseStr = response.content();
-    try {
-      ServerInfos.Builder builder = ServerInfos.newBuilder();
-      JsonFormat.parser().merge(responseStr, builder);
-      return builder.build();
-    } catch (InvalidProtocolBufferException e) {
-      throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
-    }
   }
 
 }

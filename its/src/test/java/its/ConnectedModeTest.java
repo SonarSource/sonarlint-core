@@ -269,9 +269,13 @@ public class ConnectedModeTest {
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
-      .setGroupName(groupName)
-      .setPermission(permission));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2")) {
+      adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
+        .setGroupName(groupName)
+        .setPermission(permission));
+    } else {
+      // TODO
+    }
   }
 
   private static void addUserPermission(String login, String permission) {

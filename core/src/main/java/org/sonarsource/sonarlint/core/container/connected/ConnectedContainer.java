@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownl
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
+import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
@@ -52,6 +53,7 @@ public class ConnectedContainer extends ComponentContainer {
       globalConfig,
       serverConfiguration,
       new GlobalTempFolderProvider(),
+      ServerVersionAndStatusChecker.class,
       AuthenticationChecker.class,
       SonarLintWsClient.class,
       GlobalUpdateExecutor.class,
@@ -65,8 +67,13 @@ public class ConnectedContainer extends ComponentContainer {
       StorageManager.class);
   }
 
-  public ValidationResult validateCredentials() {
-    return getComponentByType(AuthenticationChecker.class).validateCredentials();
+  public ValidationResult validateConnection() {
+    ValidationResult result = getComponentByType(ServerVersionAndStatusChecker.class).validateStatusAndVersion();
+    if (result.success()) {
+      return getComponentByType(AuthenticationChecker.class).validateCredentials();
+    } else {
+      return result;
+    }
   }
 
   public void update() {

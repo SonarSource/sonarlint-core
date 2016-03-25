@@ -96,7 +96,7 @@ public interface ConnectedSonarLintEngine {
    * Check if it is possible to reach server with provided configuration
    * @since 2.0
    */
-  ValidationResult validateCredentials(ServerConfiguration serverConfig);
+  ValidationResult validateConnection(ServerConfiguration serverConfig);
 
   /**
    * Update current server.

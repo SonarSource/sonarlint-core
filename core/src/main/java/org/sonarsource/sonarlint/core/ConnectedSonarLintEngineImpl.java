@@ -184,14 +184,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public ValidationResult validateCredentials(ServerConfiguration serverConfig) {
+  public ValidationResult validateConnection(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
     checkConnectedMode();
     rwl.readLock().lock();
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
       connectedContainer.startComponents();
-      return connectedContainer.validateCredentials();
+      return connectedContainer.validateConnection();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
