@@ -30,7 +30,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class StorageManager {
 
@@ -53,9 +52,9 @@ public class StorageManager {
     moduleStorageRoot = serverStorageRoot.resolve("modules");
     updateStatus = initUpdateStatus();
   }
-  
+
   public Path getServerStorageRoot() {
-	return serverStorageRoot;
+    return serverStorageRoot;
   }
 
   public Path getGlobalStorageRoot() {

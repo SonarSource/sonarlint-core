@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.FileSystem;
