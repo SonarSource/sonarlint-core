@@ -75,6 +75,7 @@ public class ModuleConfigUpdateExecutor {
 
     Path dest = storageManager.getModuleStorageRoot(moduleKey);
     FileUtils.deleteDirectory(dest);
+    FileUtils.forceMkDirs(dest.getParent());
     FileUtils.moveDir(temp, dest);
   }
 
