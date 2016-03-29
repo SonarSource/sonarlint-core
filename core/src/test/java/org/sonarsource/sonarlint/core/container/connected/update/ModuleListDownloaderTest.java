@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -28,6 +30,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ModuleListDownloaderTest {
@@ -37,7 +40,8 @@ public class ModuleListDownloaderTest {
 
   @Test
   public void update_modules() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/projects/index?format=json&subprojects=true", "/update/all_projects.json");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/projects/index?format=json&subprojects=true",
+      new InputStreamReader(requireNonNull(WsClientTestUtils.class.getResourceAsStream("/update/all_projects.json")), StandardCharsets.UTF_8));
 
     File tempDir = temp.newFolder();
 

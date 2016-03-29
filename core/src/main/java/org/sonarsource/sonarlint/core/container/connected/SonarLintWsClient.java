@@ -60,24 +60,24 @@ public class SonarLintWsClient {
     return new HttpWsClient(connector);
   }
 
-  public WsResponse get(String path) {
+  public CloseableWsResponse get(String path) {
     WsResponse response = rawGet(path);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
-    return response;
+    return new CloseableWsResponse(response);
   }
 
   /**
    * Execute GET and don't check response
    */
-  public WsResponse rawGet(String path) {
+  public CloseableWsResponse rawGet(String path) {
     long startTime = System2.INSTANCE.now();
     GetRequest request = new GetRequest(path);
     WsResponse response = client.wsConnector().call(request);
     long duration = System2.INSTANCE.now() - startTime;
     LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
-    return response;
+    return new CloseableWsResponse(response);
   }
 
   public static RuntimeException handleError(WsResponse failedResponse) {

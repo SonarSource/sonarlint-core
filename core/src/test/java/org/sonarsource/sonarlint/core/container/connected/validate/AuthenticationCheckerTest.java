@@ -20,25 +20,17 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import org.junit.Test;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.update.WsClientTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class AuthenticationCheckerTest {
 
   @Test
   public void test_authentication_ok() {
-    SonarLintWsClient wsClient = mock(SonarLintWsClient.class);
-    when(wsClient.getUserAgent()).thenReturn("UT");
-    WsResponse wsResponse = mock(WsResponse.class);
-    when(wsClient.rawGet("api/authentication/validate?format=json")).thenReturn(wsResponse);
-    when(wsResponse.content()).thenReturn("{\"valid\": true}");
-    when(wsResponse.code()).thenReturn(200);
-    when(wsResponse.isSuccessful()).thenReturn(true);
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/authentication/validate?format=json", "{\"valid\": true}");
 
     AuthenticationChecker checker = new AuthenticationChecker(wsClient);
     ValidationResult validationResult = checker.validateCredentials();
@@ -48,13 +40,7 @@ public class AuthenticationCheckerTest {
 
   @Test
   public void test_authentication_ko() {
-    SonarLintWsClient wsClient = mock(SonarLintWsClient.class);
-    when(wsClient.getUserAgent()).thenReturn("UT");
-    WsResponse wsResponse = mock(WsResponse.class);
-    when(wsClient.rawGet("api/authentication/validate?format=json")).thenReturn(wsResponse);
-    when(wsResponse.content()).thenReturn("{\"valid\": false}");
-    when(wsResponse.code()).thenReturn(200);
-    when(wsResponse.isSuccessful()).thenReturn(true);
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/authentication/validate?format=json", "{\"valid\": false}");
 
     AuthenticationChecker checker = new AuthenticationChecker(wsClient);
     ValidationResult validationResult = checker.validateCredentials();
@@ -64,13 +50,8 @@ public class AuthenticationCheckerTest {
 
   @Test
   public void test_connection_issue() {
-    SonarLintWsClient wsClient = mock(SonarLintWsClient.class);
-    when(wsClient.getUserAgent()).thenReturn("UT");
-    WsResponse wsResponse = mock(WsResponse.class);
-    when(wsClient.rawGet("api/authentication/validate?format=json")).thenReturn(wsResponse);
-    when(wsResponse.content()).thenReturn("Foo");
-    when(wsResponse.code()).thenReturn(500);
-    when(wsResponse.isSuccessful()).thenReturn(false);
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addFailedResponse(wsClient, "api/authentication/validate?format=json", 500, "Foo");
 
     AuthenticationChecker checker = new AuthenticationChecker(wsClient);
     ValidationResult validationResult = checker.validateCredentials();

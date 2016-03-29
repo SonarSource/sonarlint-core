@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -40,9 +40,10 @@ public class GlobalPropertiesDownloaderTest {
 
   @Test
   public void testFetchGlobalPropsDefaultPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
-      + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
-      + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/properties?format=json",
+      new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
+        + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
+        + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
     Path destDir = temp.newFolder().toPath();
     Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
@@ -56,8 +57,9 @@ public class GlobalPropertiesDownloaderTest {
 
   @Test
   public void testFetchGlobalPropsPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
-      + "{\"key\": \"sonarlint.plugins.whitelist\",\"value\": \"java\"}]");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/properties?format=json",
+      new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
+        + "{\"key\": \"sonarlint.plugins.whitelist\",\"value\": \"java\"}]"));
 
     Path destDir = temp.newFolder().toPath();
     Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
@@ -66,7 +68,7 @@ public class GlobalPropertiesDownloaderTest {
 
   @Test(expected = IllegalStateException.class)
   public void invalidResponse() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/properties?format=json", "foo bar");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/properties?format=json", new StringReader("foo bar"));
 
     Path destDir = temp.newFolder().toPath();
     new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);

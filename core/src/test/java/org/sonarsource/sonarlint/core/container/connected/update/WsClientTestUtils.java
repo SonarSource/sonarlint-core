@@ -19,10 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.Reader;
 import javax.annotation.Nullable;
-import org.sonarqube.ws.client.WsResponse;
+import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
 import static java.util.Objects.requireNonNull;
@@ -43,7 +42,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, String response) {
-    WsResponse wsResponse = mock(WsResponse.class);
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
@@ -53,7 +52,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addFailedResponse(SonarLintWsClient wsClient, String url, int errorCode, @Nullable String response) {
-    WsResponse wsResponse = mock(WsResponse.class);
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.content()).thenReturn(response);
@@ -70,7 +69,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addStreamResponse(SonarLintWsClient wsClient, String url, String resourcePath) {
-    WsResponse wsResponse = mock(WsResponse.class);
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
@@ -79,16 +78,16 @@ public class WsClientTestUtils {
     return wsClient;
   }
 
-  public static SonarLintWsClient createMockWithReaderResponse(String url, String resourcePath) {
+  public static SonarLintWsClient createMockWithReaderResponse(String url, Reader reader) {
     SonarLintWsClient wsClient = createMock();
-    return addReaderResponse(wsClient, url, resourcePath);
+    return addReaderResponse(wsClient, url, reader);
   }
 
-  public static SonarLintWsClient addReaderResponse(SonarLintWsClient wsClient, String url, String resourcePath) {
-    WsResponse wsResponse = mock(WsResponse.class);
+  public static SonarLintWsClient addReaderResponse(SonarLintWsClient wsClient, String url, Reader reader) {
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
-    when(wsResponse.contentReader()).thenReturn(new InputStreamReader(requireNonNull(WsClientTestUtils.class.getResourceAsStream(resourcePath)), StandardCharsets.UTF_8));
+    when(wsResponse.contentReader()).thenReturn(reader);
     when(wsResponse.isSuccessful()).thenReturn(true);
     return wsClient;
   }

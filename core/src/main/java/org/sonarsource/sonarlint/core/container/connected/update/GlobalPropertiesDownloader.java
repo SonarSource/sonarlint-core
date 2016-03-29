@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Set;
 import org.sonarqube.ws.client.WsResponse;
@@ -41,8 +40,7 @@ public class GlobalPropertiesDownloader {
 
   public Set<String> fetchGlobalPropertiesTo(Path dest) {
     WsResponse response = wsClient.get("api/properties?format=json");
-    String responseStr = response.content();
-    try (JsonReader reader = new JsonReader(new StringReader(responseStr))) {
+    try (JsonReader reader = new JsonReader(response.contentReader())) {
       GlobalProperties.Builder builder = GlobalProperties.newBuilder();
       reader.beginArray();
       while (reader.hasNext()) {

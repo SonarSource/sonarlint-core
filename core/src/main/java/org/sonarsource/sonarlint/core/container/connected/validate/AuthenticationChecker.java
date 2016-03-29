@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.gson.Gson;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
 public class AuthenticationChecker {
@@ -33,14 +33,15 @@ public class AuthenticationChecker {
   }
 
   public ValidationResult validateCredentials() {
-    WsResponse response = wsClient.rawGet("api/authentication/validate?format=json");
-    int code = response.code();
-    if (response.isSuccessful()) {
-      String responseStr = response.content();
-      ValidateResponse validateResponse = new Gson().fromJson(responseStr, ValidateResponse.class);
-      return new DefaultValidationResult(validateResponse.valid, validateResponse.valid ? "Authentication successful" : "Authentication failed");
-    } else {
-      return new DefaultValidationResult(false, "HTTP Connection failed (" + code + "): " + response.content());
+    try (CloseableWsResponse response = wsClient.rawGet("api/authentication/validate?format=json")) {
+      int code = response.code();
+      if (response.isSuccessful()) {
+        String responseStr = response.content();
+        ValidateResponse validateResponse = new Gson().fromJson(responseStr, ValidateResponse.class);
+        return new DefaultValidationResult(validateResponse.valid, validateResponse.valid ? "Authentication successful" : "Authentication failed");
+      } else {
+        return new DefaultValidationResult(false, "HTTP Connection failed (" + code + "): " + response.content());
+      }
     }
   }
 

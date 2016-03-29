@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.gson.Gson;
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Path;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -38,17 +40,22 @@ public class ModuleListDownloader {
 
   public void fetchModulesList(Path dest) {
     WsResponse response = wsClient.get("api/projects/index?format=json&subprojects=true");
-    DefaultModule[] results = new Gson().fromJson(response.contentReader(), DefaultModule[].class);
-    ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
-    Builder moduleBuilder = ModuleList.Module.newBuilder();
-    for (DefaultModule module : results) {
-      moduleBuilder.clear();
-      moduleListBuilder.getMutableModulesByKey().put(module.k, moduleBuilder
-        .setKey(module.k)
-        .setName(module.nm)
-        .build());
+    try (Reader contentReader = response.contentReader()) {
+      DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
+
+      ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
+      Builder moduleBuilder = ModuleList.Module.newBuilder();
+      for (DefaultModule module : results) {
+        moduleBuilder.clear();
+        moduleListBuilder.getMutableModulesByKey().put(module.k, moduleBuilder
+          .setKey(module.k)
+          .setName(module.nm)
+          .build());
+      }
+      ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to load module list", e);
     }
-    ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
   }
 
   private static class DefaultModule {

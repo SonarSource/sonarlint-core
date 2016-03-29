@@ -25,6 +25,7 @@ import java.net.HttpURLConnection;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
@@ -73,37 +74,39 @@ public class ServerVersionAndStatusChecker {
   }
 
   private ServerInfos fetchServerInfos() {
-    WsResponse response = wsClient.rawGet("api/system/status");
-    if (!response.isSuccessful()) {
-      if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
-        return tryFromDeprecatedApi(response);
+    try (CloseableWsResponse response = wsClient.rawGet("api/system/status")) {
+      if (!response.isSuccessful()) {
+        if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
+          return tryFromDeprecatedApi(response);
+        } else {
+          throw SonarLintWsClient.handleError(response);
+        }
       } else {
-        throw SonarLintWsClient.handleError(response);
-      }
-    } else {
-      String responseStr = response.content();
-      try {
-        ServerInfos.Builder builder = ServerInfos.newBuilder();
-        JsonFormat.parser().merge(responseStr, builder);
-        return builder.build();
-      } catch (InvalidProtocolBufferException e) {
-        throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
+        String responseStr = response.content();
+        try {
+          ServerInfos.Builder builder = ServerInfos.newBuilder();
+          JsonFormat.parser().merge(responseStr, builder);
+          return builder.build();
+        } catch (InvalidProtocolBufferException e) {
+          throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
+        }
       }
     }
   }
 
   private ServerInfos tryFromDeprecatedApi(WsResponse originalReponse) {
     // Maybe a server version prior to 5.2. Fallback on deprecated api/server/version
-    WsResponse responseFallback = wsClient.rawGet("api/server/version");
-    if (!responseFallback.isSuccessful()) {
-      // We prefer to report original error
-      throw SonarLintWsClient.handleError(originalReponse);
+    try (CloseableWsResponse responseFallback = wsClient.rawGet("api/server/version")) {
+      if (!responseFallback.isSuccessful()) {
+        // We prefer to report original error
+        throw SonarLintWsClient.handleError(originalReponse);
+      }
+      String responseStr = responseFallback.content();
+      ServerInfos.Builder builder = ServerInfos.newBuilder();
+      builder.setStatus("UP");
+      builder.setVersion(trimToEmpty(responseStr));
+      return builder.build();
     }
-    String responseStr = responseFallback.content();
-    ServerInfos.Builder builder = ServerInfos.newBuilder();
-    builder.setStatus("UP");
-    builder.setVersion(trimToEmpty(responseStr));
-    return builder.build();
   }
 
 }
