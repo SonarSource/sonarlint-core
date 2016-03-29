@@ -91,6 +91,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   public StorageGlobalContainer getGlobalContainer() {
+    if (globalContainer == null) {
+      throw new IllegalStateException("SonarLint Engine for server '" + globalConfig.getServerId() + "' is stopped.");
+    }
     return globalContainer;
   }
 
@@ -113,7 +116,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     rwl.readLock().lock();
     try {
       checkUpdateStatus();
-      return globalContainer.getRuleDetails(ruleKey);
+      return getGlobalContainer().getRuleDetails(ruleKey);
     } finally {
       rwl.readLock().unlock();
     }
@@ -126,7 +129,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     rwl.readLock().lock();
     try {
       checkUpdateStatus();
-      return globalContainer.analyze(configuration, issueListener);
+      return getGlobalContainer().analyze(configuration, issueListener);
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -136,10 +139,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public GlobalUpdateStatus getUpdateStatus() {
-    checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return globalContainer.getUpdateStatus();
+      return getGlobalContainer().getUpdateStatus();
     } finally {
       rwl.readLock().unlock();
     }
@@ -148,7 +150,6 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   @Override
   public GlobalUpdateStatus update(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    checkConnectedMode();
     rwl.writeLock().lock();
     stop(false);
     changeState(State.UPDATING);
@@ -167,26 +168,15 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
         }
         start();
       }
-      return globalContainer.getUpdateStatus();
+      return getGlobalContainer().getUpdateStatus();
     } finally {
       rwl.writeLock().unlock();
     }
   }
 
-  private void checkConnectedMode() {
-    if (!isConnectedMode()) {
-      throw new UnsupportedOperationException("Requires to be in connected mode");
-    }
-  }
-
-  private boolean isConnectedMode() {
-    return globalConfig.getServerId() != null;
-  }
-
   @Override
   public ValidationResult validateConnection(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    checkConnectedMode();
     rwl.readLock().lock();
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
@@ -206,11 +196,10 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public Map<String, RemoteModule> allModulesByKey() {
-    checkConnectedMode();
     rwl.readLock().lock();
     try {
       checkUpdateStatus();
-      return globalContainer.allModulesByKey();
+      return getGlobalContainer().allModulesByKey();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -219,7 +208,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   private void checkUpdateStatus() {
-    if (isConnectedMode() && state != State.UPDATED) {
+    if (state != State.UPDATED) {
       throw new GlobalUpdateRequiredException("Please update server '" + globalConfig.getServerId() + "'");
     }
   }
@@ -227,7 +216,6 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   @Override
   public void updateModule(ServerConfiguration serverConfig, String moduleKey) {
     checkNotNull(serverConfig);
-    checkConnectedMode();
     rwl.writeLock().lock();
     checkUpdateStatus();
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
@@ -243,17 +231,16 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       } catch (Exception e) {
         // Ignore
       }
-      changeState(globalContainer.getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
+      changeState(getGlobalContainer().getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
       rwl.writeLock().unlock();
     }
   }
 
   @Override
   public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
-    checkConnectedMode();
     rwl.readLock().lock();
     try {
-      return globalContainer.getModuleUpdateStatus(moduleKey);
+      return getGlobalContainer().getModuleUpdateStatus(moduleKey);
     } finally {
       rwl.readLock().unlock();
     }
