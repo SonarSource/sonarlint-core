@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
-import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -54,7 +53,6 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
-    LoggingConfigurator.init(globalConfig.isVerbose(), globalConfig.getLogOutput());
     start();
   }
 
@@ -77,16 +75,6 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     this.state = state;
     for (StateListener listener : listeners) {
       listener.stateChanged(state);
-    }
-  }
-
-  @Override
-  public void setVerbose(boolean verbose) {
-    rwl.writeLock().lock();
-    try {
-      LoggingConfigurator.setVerbose(verbose);
-    } finally {
-      rwl.writeLock().unlock();
     }
   }
 

@@ -24,11 +24,9 @@ import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
 
 public class ConnectedGlobalConfigurationTest {
 
@@ -40,11 +38,9 @@ public class ConnectedGlobalConfigurationTest {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .build();
     assertThat(config.getServerId()).isNull();
-    assertThat(config.getLogOutput()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getStorageRoot()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "storage"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
-    assertThat(config.isVerbose()).isFalse();
   }
 
   @Test
@@ -60,17 +56,6 @@ public class ConnectedGlobalConfigurationTest {
     assertThat(config.getSonarLintUserHome()).isEqualTo(sonarUserHome);
     assertThat(config.getStorageRoot()).isEqualTo(storage);
     assertThat(config.getWorkDir()).isEqualTo(work);
-  }
-
-  @Test
-  public void configureLogs() {
-    LogOutput logOutput = mock(LogOutput.class);
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setVerbose(true)
-      .setLogOutput(logOutput)
-      .build();
-    assertThat(config.getLogOutput()).isEqualTo(logOutput);
-    assertThat(config.isVerbose()).isTrue();
   }
 
   @Test

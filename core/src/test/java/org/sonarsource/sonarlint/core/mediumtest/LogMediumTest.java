@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,21 +61,20 @@ public class LogMediumTest {
   public TemporaryFolder temp = new TemporaryFolder();
   private StandaloneSonarLintEngine sonarlint;
   private File baseDir;
-  private Multimap<LogOutput.Level, String> logs = LinkedListMultimap.create();
+  private Multimap<LogOutput.Level, String> logs;
   private StandaloneGlobalConfiguration config;
 
   @Before
   public void prepare() throws IOException {
+    logs = LinkedListMultimap.create();
+    SonarLintLogging.set(new LogOutput() {
+      @Override
+      public void log(String formattedMessage, Level level) {
+        logs.put(level, formattedMessage);
+      }
+    }, false);
     config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
-      .setVerbose(false)
-      .setLogOutput(new LogOutput() {
-
-        @Override
-        public void log(String formattedMessage, Level level) {
-          logs.put(level, formattedMessage);
-        }
-      })
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
@@ -102,7 +102,7 @@ public class LogMediumTest {
 
     logs.clear();
 
-    sonarlint.setVerbose(true);
+    SonarLintLogging.setVerbose(true);
 
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new IssueListener() {
@@ -132,7 +132,6 @@ public class LogMediumTest {
       assertThat(e).isExactlyInstanceOf(SonarLintWrappedException.class)
         .hasCause(SonarLintWrappedException.wrap(new MyCustomException("Fake")));
     }
-
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

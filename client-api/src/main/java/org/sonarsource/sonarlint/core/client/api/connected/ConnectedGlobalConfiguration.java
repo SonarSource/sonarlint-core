@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration.AbstractBuilder;
 
 /**
  * To use SonarLint in connected mode please provide a server id that will identify the storage.

@@ -47,11 +47,6 @@ public interface ConnectedSonarLintEngine {
   void removeStateListener(StateListener listener);
 
   /**
-   * Change verbosity at runtime
-   */
-  void setVerbose(boolean verbose);
-
-  /**
    * Return rule details.
    * @param ruleKey See {@link Issue#getRuleKey()}
    * @return Rule details

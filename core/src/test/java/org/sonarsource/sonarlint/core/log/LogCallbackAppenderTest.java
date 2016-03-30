@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.log;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
@@ -29,17 +30,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class LogCallbackAppenderTest {
   private LogOutput listener;
   private LogCallbackAppender appender;
   private ILoggingEvent event;
+  private Appender<ILoggingEvent> defaultAppender;
 
   @Before
   public void setUp() {
     listener = mock(LogOutput.class);
-    appender = new LogCallbackAppender(listener);
+    defaultAppender = mock(Appender.class);
+    appender = new LogCallbackAppender(defaultAppender);
+    appender.setTarget(listener);
+    appender.setVerbose(true);
   }
 
   @Test
@@ -73,5 +79,21 @@ public class LogCallbackAppenderTest {
     listener = mock(LogOutput.class);
     appender.setTarget(listener);
     testLevelTranslation();
+  }
+
+  @Test
+  public void testDefault() {
+    appender.setTarget(listener);
+    appender.setTarget(null);
+
+    event = mock(ILoggingEvent.class);
+    when(event.getFormattedMessage()).thenReturn("test");
+    when(event.getLevel()).thenReturn(Level.ERROR);
+
+    appender.append(event);
+
+    verify(defaultAppender).doAppend(event);
+    verifyNoMoreInteractions(defaultAppender);
+    verifyZeroInteractions(listener);
   }
 }

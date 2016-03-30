@@ -21,23 +21,42 @@ package org.sonarsource.sonarlint.core.log;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
-public class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
-  protected LogOutput target;
+import javax.annotation.Nullable;
 
-  public LogCallbackAppender(LogOutput target) {
-    setTarget(target);
+class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+  protected LogOutput target;
+  protected boolean verbose = false;
+  private final Appender<ILoggingEvent> defaultAppender;
+
+  LogCallbackAppender(Appender<ILoggingEvent> defaultAppender) {
+    this.defaultAppender = defaultAppender;
   }
 
-  public void setTarget(LogOutput target) {
+  public void setTarget(@Nullable LogOutput target) {
     this.target = target;
+  }
+
+  public void setVerbose(boolean verbose) {
+    this.verbose = verbose;
   }
 
   @Override
   protected void append(ILoggingEvent event) {
-    target.log(event.getFormattedMessage(), translate(event.getLevel()));
+    Level level = event.getLevel();
+    if (!verbose && !level.isGreaterOrEqual(Level.INFO)) {
+      return;
+    }
+
+    if (target == null) {
+      defaultAppender.doAppend(event);
+      return;
+    }
+
+    target.log(event.getFormattedMessage(), translate(level));
   }
 
   private static LogOutput.Level translate(Level level) {

@@ -25,10 +25,8 @@ import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class StandaloneGlobalConfigurationTest {
 
@@ -40,10 +38,8 @@ public class StandaloneGlobalConfigurationTest {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .build();
     assertThat(config.getPluginUrls()).isEmpty();
-    assertThat(config.getLogOutput()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
-    assertThat(config.isVerbose()).isFalse();
   }
 
   @Test
@@ -57,17 +53,6 @@ public class StandaloneGlobalConfigurationTest {
       .build();
     assertThat(config.getSonarLintUserHome()).isEqualTo(sonarUserHome);
     assertThat(config.getWorkDir()).isEqualTo(work);
-  }
-
-  @Test
-  public void configureLogs() {
-    LogOutput logOutput = mock(LogOutput.class);
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
-      .setVerbose(true)
-      .setLogOutput(logOutput)
-      .build();
-    assertThat(config.getLogOutput()).isEqualTo(logOutput);
-    assertThat(config.isVerbose()).isTrue();
   }
 
   @Test

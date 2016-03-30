@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.log.LoggingConfigurator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -41,18 +40,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
-    LoggingConfigurator.init(globalConfig.isVerbose(), globalConfig.getLogOutput());
     start();
-  }
-
-  @Override
-  public void setVerbose(boolean verbose) {
-    rwl.writeLock().lock();
-    try {
-      LoggingConfigurator.setVerbose(verbose);
-    } finally {
-      rwl.writeLock().unlock();
-    }
   }
 
   public StandaloneGlobalContainer getGlobalContainer() {

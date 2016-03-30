@@ -32,11 +32,6 @@ public interface StandaloneSonarLintEngine {
   void stop();
 
   /**
-   * Change verbosity at runtime
-   */
-  void setVerbose(boolean verbose);
-
-  /**
    * Return rule details.
    * @param ruleKey See {@link Issue#getRuleKey()}
    * @return Rule details

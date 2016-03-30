@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,19 +62,17 @@ public class StandaloneIssueMediumTest {
 
   @BeforeClass
   public static void prepare() throws IOException {
-
+    SonarLintLogging.setTarget(new LogOutput() {
+      @Override
+      public void log(String formattedMessage, Level level) {
+        // Don't pollute logs
+      }
+    });
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
       .setSonarLintUserHome(temp.newFolder().toPath())
-      .setLogOutput(new LogOutput() {
-
-        @Override
-        public void log(String formattedMessage, Level level) {
-          // Don't pollute logs
-        }
-      })
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 

@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
+import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJson;
 
@@ -53,15 +54,14 @@ public class Main {
     for (int i = 1; i < args.length; i++) {
       pluginPaths.add(Paths.get(args[i]));
     }
-    StandaloneGlobalConfiguration.Builder builder = StandaloneGlobalConfiguration.builder()
-      .setLogOutput(new LogOutput() {
+    SonarLintLogging.setTarget(new LogOutput() {
+      @Override
+      public void log(String formattedMessage, Level level) {
+        // Ignore
+      }
+    });
 
-        @Override
-        public void log(String formattedMessage, Level level) {
-          // Ignore
-        }
-
-      });
+    StandaloneGlobalConfiguration.Builder builder = StandaloneGlobalConfiguration.builder();
     for (Path path : pluginPaths) {
       builder.addPlugin(path.toUri().toURL());
     }
