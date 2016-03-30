@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -48,7 +48,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   private final ConnectedGlobalConfiguration globalConfig;
   private StorageGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-  private final List<StateListener> listeners = new ArrayList<>();
+  private final List<StateListener> listeners = new CopyOnWriteArrayList<>();
   private State state = State.UNKNOW;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
@@ -204,6 +204,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   @Override
   public void updateModule(ServerConfiguration serverConfig, String moduleKey) {
     checkNotNull(serverConfig);
+    checkNotNull(moduleKey);
     rwl.writeLock().lock();
     checkUpdateStatus();
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
@@ -226,6 +227,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
+    checkNotNull(moduleKey);
     rwl.readLock().lock();
     try {
       return getGlobalContainer().getModuleUpdateStatus(moduleKey);
@@ -253,5 +255,4 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       rwl.writeLock().unlock();
     }
   }
-
 }
