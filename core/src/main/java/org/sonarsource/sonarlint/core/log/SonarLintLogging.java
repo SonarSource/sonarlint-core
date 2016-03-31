@@ -60,6 +60,8 @@ public class SonarLintLogging {
   private static void setCustomRootAppender(Appender<ILoggingEvent> defaultAppender) {
     Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
+    // by default it has an appender logging to stdout
+    logger.detachAndStopAllAppenders();
     appender = new LogCallbackAppender(defaultAppender);
     appender.setName(CUSTOM_APPENDER_NAME);
     appender.start();

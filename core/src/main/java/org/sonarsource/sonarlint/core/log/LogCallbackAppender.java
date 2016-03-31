@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import javax.annotation.Nullable;
 
 class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
-  protected InheritableThreadLocal<LogOutput> tlTtarget;
+  private final InheritableThreadLocal<LogOutput> tlTtarget;
   private final Appender<ILoggingEvent> defaultAppender;
 
   LogCallbackAppender(Appender<ILoggingEvent> defaultAppender) {
