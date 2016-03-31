@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -100,16 +99,16 @@ public class ConnectedIssueMediumTest {
 
     ProtobufUtil.writeToFile(builder.build(), storage.resolve("localhost").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
-    SonarLintLogging.setTarget(new LogOutput() {
-      @Override
-      public void log(String formattedMessage, Level level) {
-        // Don't pollute logs
-      }
-    });
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId("localhost")
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage)
+      .setLogOutput(new LogOutput() {
+        @Override
+        public void log(String formattedMessage, Level level) {
+          // Don't pollute logs
+        }
+      })
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 

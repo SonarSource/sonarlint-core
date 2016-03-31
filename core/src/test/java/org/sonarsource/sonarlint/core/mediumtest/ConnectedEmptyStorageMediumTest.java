@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateRequiredException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,15 +52,15 @@ public class ConnectedEmptyStorageMediumTest {
   @BeforeClass
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
-    SonarLintLogging.setTarget(new LogOutput() {
-      @Override
-      public void log(String formattedMessage, Level level) {
-        // Don't pollute logs
-      }
-    });
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId("localhost")
       .setSonarLintUserHome(slHome)
+      .setLogOutput(new LogOutput() {
+        @Override
+        public void log(String formattedMessage, Level level) {
+          // Don't pollute logs
+        }
+      })
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 

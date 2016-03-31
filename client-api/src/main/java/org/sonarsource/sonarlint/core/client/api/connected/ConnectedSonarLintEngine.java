@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Map;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -59,6 +62,8 @@ public interface ConnectedSonarLintEngine {
    * Trigger an analysis
    */
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener);
+
+  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput);
 
   /**
    * Get information about current update state

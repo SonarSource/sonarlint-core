@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -29,6 +31,9 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
+import org.sonarsource.sonarlint.core.log.SonarLintLogging;
+
+import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -37,9 +42,11 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
+  private LogOutput logOutput = null;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
+    this.logOutput = globalConfig.getLogOutput();
     start();
   }
 
@@ -48,6 +55,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   }
 
   public void start() {
+    setLogging(null);
     rwl.writeLock().lock();
     this.globalContainer = StandaloneGlobalContainer.create(globalConfig);
     try {
@@ -61,6 +69,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   @Override
   public RuleDetails getRuleDetails(String ruleKey) {
+    setLogging(null);
     rwl.readLock().lock();
     try {
       return globalContainer.getRuleDetails(ruleKey);
@@ -71,8 +80,14 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   @Override
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener) {
+    return analyze(configuration, issueListener, null);
+  }
+
+  @Override
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput) {
     checkNotNull(configuration);
     checkNotNull(issueListener);
+    setLogging(logOutput);
     rwl.readLock().lock();
     try {
       return globalContainer.analyze(configuration, issueListener);
@@ -83,8 +98,17 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     }
   }
 
+  private void setLogging(@Nullable LogOutput logOutput) {
+    if (logOutput != null) {
+      SonarLintLogging.set(logOutput);
+    } else {
+      SonarLintLogging.set(this.logOutput);
+    }
+  }
+
   @Override
   public void stop() {
+    setLogging(null);
     rwl.writeLock().lock();
     try {
       if (globalContainer == null) {

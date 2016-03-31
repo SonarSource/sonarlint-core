@@ -28,35 +28,27 @@ import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import javax.annotation.Nullable;
 
 class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
-  protected LogOutput target;
-  protected boolean verbose = false;
+  protected InheritableThreadLocal<LogOutput> tlTtarget;
   private final Appender<ILoggingEvent> defaultAppender;
 
   LogCallbackAppender(Appender<ILoggingEvent> defaultAppender) {
+    this.tlTtarget = new InheritableThreadLocal<>();
     this.defaultAppender = defaultAppender;
   }
 
   public void setTarget(@Nullable LogOutput target) {
-    this.target = target;
-  }
-
-  public void setVerbose(boolean verbose) {
-    this.verbose = verbose;
+    this.tlTtarget.set(target);
   }
 
   @Override
   protected void append(ILoggingEvent event) {
-    Level level = event.getLevel();
-    if (!verbose && !level.isGreaterOrEqual(Level.INFO)) {
-      return;
-    }
-
+    LogOutput target = tlTtarget.get();
     if (target == null) {
       defaultAppender.doAppend(event);
       return;
     }
 
-    target.log(event.getFormattedMessage(), translate(level));
+    target.log(event.getFormattedMessage(), translate(event.getLevel()));
   }
 
   private static LogOutput.Level translate(Level level) {

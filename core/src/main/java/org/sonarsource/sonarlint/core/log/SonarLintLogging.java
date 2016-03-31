@@ -28,8 +28,6 @@ import ch.qos.logback.core.ConsoleAppender;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
-import javax.annotation.Nullable;
-
 public class SonarLintLogging {
   private static final String CUSTOM_APPENDER_NAME = "custom_stream";
   private static final String DEFAULT_APPENDER_NAME = "default_appender";
@@ -44,16 +42,7 @@ public class SonarLintLogging {
     // static only
   }
 
-  public static void set(LogOutput output, boolean verbose) {
-    setTarget(output);
-    setVerbose(verbose);
-  }
-
-  public static void setVerbose(boolean enable) {
-    appender.setVerbose(enable);
-  }
-
-  public static void setTarget(@Nullable LogOutput output) {
+  public static void set(LogOutput output) {
     appender.setTarget(output);
   }
 

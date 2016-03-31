@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -34,12 +36,14 @@ public abstract class AbstractGlobalConfiguration {
 
   public static final String DEFAULT_WORK_DIR = "work";
 
+  private final LogOutput logOutput;
   private final Path sonarLintUserHome;
   private final Path workDir;
 
   public AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : findHome();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
+    this.logOutput = builder.logOutput;
   }
 
   public Path getSonarLintUserHome() {
@@ -48,6 +52,11 @@ public abstract class AbstractGlobalConfiguration {
 
   public Path getWorkDir() {
     return workDir;
+  }
+
+  @CheckForNull
+  public LogOutput getLogOutput() {
+    return logOutput;
   }
 
   private static Path findHome() {
@@ -60,8 +69,14 @@ public abstract class AbstractGlobalConfiguration {
   }
 
   public static class AbstractBuilder<G extends AbstractBuilder> {
+    private LogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
+
+    public G setLogOutput(@Nullable LogOutput logOutput) {
+      this.logOutput = logOutput;
+      return (G) this;
+    }
 
     /**
      * Override default user home (~/.sonarlint)

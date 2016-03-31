@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration.AbstractBuilder;
 
 /**
  * To use in standalone mode please provide list of plugin URLs.  

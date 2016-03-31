@@ -45,7 +45,6 @@ public class LogCallbackAppenderTest {
     defaultAppender = mock(Appender.class);
     appender = new LogCallbackAppender(defaultAppender);
     appender.setTarget(listener);
-    appender.setVerbose(true);
   }
 
   @Test

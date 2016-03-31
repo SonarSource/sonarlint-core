@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,14 +66,9 @@ public class LogMediumTest {
   @Before
   public void prepare() throws IOException {
     logs = LinkedListMultimap.create();
-    SonarLintLogging.set(new LogOutput() {
-      @Override
-      public void log(String formattedMessage, Level level) {
-        logs.put(level, formattedMessage);
-      }
-    }, false);
     config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .setLogOutput(createLogOutput(logs))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
@@ -86,32 +80,31 @@ public class LogMediumTest {
     sonarlint.stop();
   }
 
+  private LogOutput createLogOutput(final Multimap<LogOutput.Level, String> logs) {
+    return new LogOutput() {
+      @Override
+      public void log(String formattedMessage, Level level) {
+        logs.put(level, formattedMessage);
+      }
+    };
+  }
+
+  private StandaloneAnalysisConfiguration createConfig(ClientInputFile inputFile) throws IOException {
+    return new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of());
+  }
+
   @Test
-  public void changeLogVerbosity() throws Exception {
-
+  public void changeLogOutputForAnalysis() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
-
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-        }
-      });
-
-    assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
-
+    sonarlint.analyze(createConfig(inputFile), new NoOpIssueListener());
+    assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
-    SonarLintLogging.setVerbose(true);
+    Multimap<LogOutput.Level, String> logs2 = LinkedListMultimap.create();
 
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-        }
-      });
-
-    assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
+    sonarlint.analyze(createConfig(inputFile), new NoOpIssueListener(), createLogOutput(logs2));
+    assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
+    assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
   }
 
   @Test
@@ -120,13 +113,12 @@ public class LogMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
     try {
-      sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-        new IssueListener() {
-          @Override
-          public void handle(Issue issue) {
-            throw new MyCustomException("Fake");
-          }
-        });
+      sonarlint.analyze(createConfig(inputFile), new IssueListener() {
+        @Override
+        public void handle(Issue issue) {
+          throw new MyCustomException("Fake");
+        }
+      });
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(SonarLintWrappedException.class)
@@ -161,5 +153,11 @@ public class LogMediumTest {
     };
     return inputFile;
   }
+
+  private static class NoOpIssueListener implements IssueListener {
+    @Override
+    public void handle(Issue issue) {
+    }
+  };
 
 }
