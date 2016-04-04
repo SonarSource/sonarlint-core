@@ -93,12 +93,6 @@ public interface ConnectedSonarLintEngine {
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
-   * Check if it is possible to reach server with provided configuration
-   * @since 2.0
-   */
-  ValidationResult validateConnection(ServerConfiguration serverConfig);
-
-  /**
    * Update current server.
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode

@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
@@ -30,7 +29,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpd
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -54,7 +52,6 @@ public class ConnectedContainer extends ComponentContainer {
       serverConfiguration,
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
-      AuthenticationChecker.class,
       SonarLintWsClient.class,
       GlobalUpdateExecutor.class,
       ModuleConfigUpdateExecutor.class,
@@ -65,15 +62,6 @@ public class ConnectedContainer extends ComponentContainer {
       new PluginCacheProvider(),
       PluginHashes.class,
       StorageManager.class);
-  }
-
-  public ValidationResult validateConnection() {
-    ValidationResult result = getComponentByType(ServerVersionAndStatusChecker.class).validateStatusAndVersion();
-    if (result.success()) {
-      return getComponentByType(AuthenticationChecker.class).validateCredentials();
-    } else {
-      return result;
-    }
   }
 
   public void update() {

@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
-import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
 import org.sonarsource.sonarlint.core.log.SonarLintLogging;
@@ -184,27 +183,6 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       return getGlobalContainer().getUpdateStatus();
     } finally {
       rwl.writeLock().unlock();
-    }
-  }
-
-  @Override
-  public ValidationResult validateConnection(ServerConfiguration serverConfig) {
-    checkNotNull(serverConfig);
-    setLogging(null);
-    rwl.readLock().lock();
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
-    try {
-      connectedContainer.startComponents();
-      return connectedContainer.validateConnection();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      try {
-        connectedContainer.stopComponents(false);
-      } catch (Exception e) {
-        // Ignore
-      }
-      rwl.readLock().unlock();
     }
   }
 
