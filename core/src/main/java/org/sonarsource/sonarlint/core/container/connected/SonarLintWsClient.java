@@ -33,6 +33,7 @@ import org.sonar.api.utils.System2;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.HttpWsClient;
+import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
@@ -66,6 +67,26 @@ public class SonarLintWsClient {
       throw handleError(response);
     }
     return response;
+  }
+
+  public CloseableWsResponse post(String path) {
+    CloseableWsResponse response = rawPost(path);
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
+    return new CloseableWsResponse(response);
+  }
+
+  /**
+   * Execute POST and don't check response
+   */
+  public CloseableWsResponse rawPost(String path) {
+    long startTime = System2.INSTANCE.now();
+    PostRequest request = new PostRequest(path);
+    WsResponse response = client.wsConnector().call(request);
+    long duration = System2.INSTANCE.now() - startTime;
+    LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+    return new CloseableWsResponse(response);
   }
 
   /**

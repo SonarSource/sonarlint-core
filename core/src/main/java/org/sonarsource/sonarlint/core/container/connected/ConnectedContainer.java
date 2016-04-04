@@ -54,7 +54,6 @@ public class ConnectedContainer extends ComponentContainer {
       serverConfiguration,
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
-      AuthenticationChecker.class,
       SonarLintWsClient.class,
       GlobalUpdateExecutor.class,
       ModuleConfigUpdateExecutor.class,
@@ -65,15 +64,6 @@ public class ConnectedContainer extends ComponentContainer {
       new PluginCacheProvider(),
       PluginHashes.class,
       StorageManager.class);
-  }
-
-  public ValidationResult validateConnection() {
-    ValidationResult result = getComponentByType(ServerVersionAndStatusChecker.class).validateStatusAndVersion();
-    if (result.success()) {
-      return getComponentByType(AuthenticationChecker.class).validateCredentials();
-    } else {
-      return result;
-    }
   }
 
   public void update() {
