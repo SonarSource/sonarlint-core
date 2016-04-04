@@ -61,11 +61,11 @@ public class SonarLintWsClient {
   }
 
   public CloseableWsResponse get(String path) {
-    WsResponse response = rawGet(path);
+    CloseableWsResponse response = rawGet(path);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
-    return new CloseableWsResponse(response);
+    return response;
   }
 
   /**
@@ -80,16 +80,18 @@ public class SonarLintWsClient {
     return new CloseableWsResponse(response);
   }
 
-  public static RuntimeException handleError(WsResponse failedResponse) {
-    if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-      return new IllegalStateException("Not authorized. Please check server credentials.");
+  public static RuntimeException handleError(CloseableWsResponse toBeClosed) {
+    try (CloseableWsResponse failedResponse = toBeClosed) {
+      if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+        return new IllegalStateException("Not authorized. Please check server credentials.");
+      }
+      if (failedResponse.code() == HttpURLConnection.HTTP_FORBIDDEN) {
+        // Details are in response content
+        return new IllegalStateException(tryParseAsJsonError(failedResponse.content()));
+      }
+      return new IllegalStateException(
+        "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (failedResponse.hasContent() ? (": " + tryParseAsJsonError(failedResponse.content())) : ""));
     }
-    if (failedResponse.code() == HttpURLConnection.HTTP_FORBIDDEN) {
-      // Details are in response content
-      return new IllegalStateException(tryParseAsJsonError(failedResponse.content()));
-    }
-    return new IllegalStateException(
-      "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (failedResponse.hasContent() ? (": " + tryParseAsJsonError(failedResponse.content())) : ""));
   }
 
   private static String tryParseAsJsonError(String responseContent) {

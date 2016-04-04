@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.net.HttpURLConnection;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
@@ -94,7 +93,7 @@ public class ServerVersionAndStatusChecker {
     }
   }
 
-  private ServerInfos tryFromDeprecatedApi(WsResponse originalReponse) {
+  private ServerInfos tryFromDeprecatedApi(CloseableWsResponse originalReponse) {
     // Maybe a server version prior to 5.2. Fallback on deprecated api/server/version
     try (CloseableWsResponse responseFallback = wsClient.rawGet("api/server/version")) {
       if (!responseFallback.isSuccessful()) {
