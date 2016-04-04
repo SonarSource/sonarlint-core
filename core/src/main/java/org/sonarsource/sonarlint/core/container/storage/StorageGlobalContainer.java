@@ -159,10 +159,12 @@ public class StorageGlobalContainer extends ComponentContainer {
 
     private final String key;
     private final String name;
+    private final boolean root;
 
     public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
       this.key = module.getKey();
       this.name = module.getName();
+      this.root = "TRK".equals(module.getQu());
     }
 
     @Override
@@ -173,6 +175,11 @@ public class StorageGlobalContainer extends ComponentContainer {
     @Override
     public String getName() {
       return name;
+    }
+    
+    @Override
+    public boolean isRoot() {
+      return root;
     }
 
   }

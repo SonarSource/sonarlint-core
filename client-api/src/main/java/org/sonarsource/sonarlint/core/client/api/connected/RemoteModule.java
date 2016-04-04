@@ -25,4 +25,6 @@ public interface RemoteModule {
 
   String getName();
 
+  boolean isRoot();
+
 }

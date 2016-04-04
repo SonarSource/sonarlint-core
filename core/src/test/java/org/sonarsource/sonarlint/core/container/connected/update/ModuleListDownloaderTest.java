@@ -50,5 +50,6 @@ public class ModuleListDownloaderTest {
 
     ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKey()).hasSize(1559);
+    assertThat(moduleList.getModulesByKey().values()).extracting("qu").contains("TRK", "BRC");
   }
 }

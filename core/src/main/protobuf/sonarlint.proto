@@ -91,6 +91,7 @@ message ModuleList {
   message Module {
     string key = 1;
     string name = 2;
+    string qu = 3;
   }
 }
 

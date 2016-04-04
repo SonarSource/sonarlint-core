@@ -50,6 +50,7 @@ public class ModuleListDownloader {
         moduleListBuilder.getMutableModulesByKey().put(module.k, moduleBuilder
           .setKey(module.k)
           .setName(module.nm)
+          .setQu(module.qu)
           .build());
       }
       ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
@@ -61,6 +62,7 @@ public class ModuleListDownloader {
   private static class DefaultModule {
     String k;
     String nm;
+    String qu;
   }
 
 }
