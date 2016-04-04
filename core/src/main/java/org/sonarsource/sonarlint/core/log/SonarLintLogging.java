@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.log;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.filter.LevelFilter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -48,6 +49,7 @@ public class SonarLintLogging {
 
   private static void init() {
     ConsoleAppender<ILoggingEvent> defaultAppender = new ConsoleAppender<>();
+    defaultAppender.setContext( (LoggerContext) LoggerFactory.getILoggerFactory());
     defaultAppender.setName(DEFAULT_APPENDER_NAME);
     LevelFilter levelFilter = new LevelFilter();
     levelFilter.setLevel(Level.ERROR);
