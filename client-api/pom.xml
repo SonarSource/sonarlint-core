@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>2.0-SNAPSHOT</version>
+    <version>2.0</version>
   </parent>
   <artifactId>sonarlint-client-api</artifactId>
   <packaging>bundle</packaging>
