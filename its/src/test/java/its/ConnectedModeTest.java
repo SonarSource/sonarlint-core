@@ -37,7 +37,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
@@ -55,6 +57,9 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
+import org.sonarsource.sonarlint.core.container.connected.WsHelperImpl;
 
 import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
 import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
@@ -76,6 +81,9 @@ public class ConnectedModeTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
+  
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
@@ -174,6 +182,26 @@ public class ConnectedModeTest {
       });
 
     assertThat(issues).hasSize(2);
+  }
+  
+  @Test
+  public void generateToken() {
+    WsHelper ws = new WsHelperImpl();
+    ServerConfiguration serverConfig = ServerConfiguration.builder()
+    .url(ORCHESTRATOR.getServer().getUrl())
+    .userAgent("SonarLint ITs")
+    .credentials(SONARLINT_USER, SONARLINT_PWD)
+    .build();
+    
+    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.4")) {
+      exception.expect(UnsupportedServerException.class);
+    }
+    
+    String token = ws.generateAuthenticationToken(serverConfig, "name", false);
+    assertThat(token).isNotNull();
+    
+    token = ws.generateAuthenticationToken(serverConfig, "name", true);
+    assertThat(token).isNotNull();
   }
 
   @Test

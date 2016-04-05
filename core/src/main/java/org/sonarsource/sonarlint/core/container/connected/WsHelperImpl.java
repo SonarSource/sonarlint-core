@@ -56,8 +56,12 @@ public class WsHelperImpl implements WsHelper {
     try {
       SonarLintWsClient client = new SonarLintWsClient(serverConfig);
 
+      ServerVersionAndStatusChecker versionChecker = new ServerVersionAndStatusChecker(client);
+      // in 5.3 login is mandatory and user needs admin privileges
+      versionChecker.checkVersionAndStatus("5.4");
+
       if (force) {
-        // revoke, ignore result
+        // revoke
         client.post("api/user_tokens/revoke?name=" + name);
       }
 

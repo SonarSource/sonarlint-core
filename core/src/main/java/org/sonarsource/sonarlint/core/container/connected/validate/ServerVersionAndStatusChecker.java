@@ -40,20 +40,36 @@ public class ServerVersionAndStatusChecker {
     this.wsClient = wsClient;
   }
 
+  /**
+   * Checks SonarQube version against the minimum version supported by the library
+   * @return ServerInfos
+   * @throws UnsupportedServerException if version < minimum supported version
+   * @throws IllegalStateException If server is not ready
+   */
   public ServerInfos checkVersionAndStatus() {
+    return checkVersionAndStatus(MIN_SQ_VERSION);
+  }
+  
+  /**
+   * Checks SonarQube version against a provided minimum version
+   * @return ServerInfos
+   * @throws UnsupportedServerException if version < minimum supported version
+   * @throws IllegalStateException If server is not ready
+   */
+  public ServerInfos checkVersionAndStatus(String minVersion) {
     ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
       throw new IllegalStateException(serverNotReady(serverStatus));
     }
     Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareTo(Version.create(MIN_SQ_VERSION)) < 0) {
-      throw new UnsupportedServerException(unsupportedVersion(serverStatus));
+    if (serverVersion.compareTo(Version.create(minVersion)) < 0) {
+      throw new UnsupportedServerException(unsupportedVersion(serverStatus, minVersion));
     }
     return serverStatus;
   }
 
-  private static String unsupportedVersion(ServerInfos serverStatus) {
-    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
+  private static String unsupportedVersion(ServerInfos serverStatus, String minVersion) {
+    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + minVersion;
   }
 
   private static String serverNotReady(ServerInfos serverStatus) {
@@ -61,13 +77,17 @@ public class ServerVersionAndStatusChecker {
   }
 
   public ValidationResult validateStatusAndVersion() {
+    return validateStatusAndVersion(MIN_SQ_VERSION);
+  }
+  
+  public ValidationResult validateStatusAndVersion(String minVersion) {
     ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
       return new DefaultValidationResult(false, serverNotReady(serverStatus));
     }
     Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareTo(Version.create(MIN_SQ_VERSION)) < 0) {
-      return new DefaultValidationResult(false, unsupportedVersion(serverStatus));
+    if (serverVersion.compareTo(Version.create(minVersion)) < 0) {
+      return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
     }
     return new DefaultValidationResult(true, "Compatible and ready");
   }
