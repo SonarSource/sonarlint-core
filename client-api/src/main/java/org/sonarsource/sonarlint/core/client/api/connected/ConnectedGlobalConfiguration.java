@@ -73,7 +73,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     }
 
     private static void validate(String serverId) {
-      if (!serverId.matches("\\A[a-zA-Z0-9_]+\\z")) {
+      if (serverId == null || serverId.isEmpty()) {
         throw new IllegalArgumentException("'" + serverId + "' is not a valid server ID");
       }
     }

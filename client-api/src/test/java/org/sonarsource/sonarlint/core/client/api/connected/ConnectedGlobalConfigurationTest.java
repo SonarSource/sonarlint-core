@@ -69,9 +69,8 @@ public class ConnectedGlobalConfigurationTest {
   @Test
   public void validateServerId() throws Exception {
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder();
-    expectFailure(builder, "my Server");
-    expectFailure(builder, "my:server");
     expectFailure(builder, "");
+    expectFailure(builder, null);
   }
 
   private void expectFailure(ConnectedGlobalConfiguration.Builder builder, String serverId) {
