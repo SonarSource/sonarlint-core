@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalUpdateExecutor {
@@ -56,19 +57,29 @@ public class GlobalUpdateExecutor {
     this.tempFolder = tempFolder;
   }
 
-  public void update() {
+  public void update(ProgressWrapper progress) {
+    progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
+    
     ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
 
     Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
+    progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
     Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
 
+    progress.setProgressAndCheckCancel("Fetching plugins", 0.4f);
     pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
 
+    progress.setProgressAndCheckCancel("Fetching rules", 0.6f);
     rulesDownloader.fetchRulesTo(temp);
+    
+    progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
     moduleListDownloader.fetchModulesList(temp);
 
+    progress.startNonCancelableSection();
+    progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
+    
     UpdateStatus updateStatus = UpdateStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())

@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -54,7 +55,7 @@ public class GlobalUpdateExecutorTest {
     GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, new ServerVersionAndStatusChecker(wsClient), mock(PluginReferencesDownloader.class),
       mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), tempFolder);
 
-    globalUpdate.update();
+    globalUpdate.update(new ProgressWrapper(null));
 
     UpdateStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.UPDATE_STATUS_PB), UpdateStatus.parser());
     assertThat(updateStatus.getClientUserAgent()).isEqualTo("UT");

@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -42,6 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
 import org.sonarsource.sonarlint.core.log.SonarLintLogging;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import javax.annotation.Nullable;
 
@@ -157,9 +159,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       rwl.readLock().unlock();
     }
   }
-
+  
   @Override
   public GlobalUpdateStatus update(ServerConfiguration serverConfig) {
+    return update(serverConfig, null);
+  }
+
+  @Override
+  public GlobalUpdateStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
     setLogging(null);
     rwl.writeLock().lock();
@@ -169,7 +176,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     try {
       try {
         connectedContainer.startComponents();
-        connectedContainer.update();
+        connectedContainer.update(new ProgressWrapper(monitor));
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.wrap(e);
       } finally {

@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
 
@@ -64,8 +65,8 @@ public class ConnectedContainer extends ComponentContainer {
       StorageManager.class);
   }
 
-  public void update() {
-    getComponentByType(GlobalUpdateExecutor.class).update();
+  public void update(ProgressWrapper progress) {
+    getComponentByType(GlobalUpdateExecutor.class).update(progress);
   }
 
   public void updateModule(String moduleKey) {
