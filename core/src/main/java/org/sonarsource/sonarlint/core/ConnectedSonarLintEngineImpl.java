@@ -55,7 +55,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   private StorageGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final List<StateListener> listeners = new CopyOnWriteArrayList<>();
-  private State state = State.UNKNOW;
+  private volatile State state = State.UNKNOW;
   private LogOutput logOutput = null;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
