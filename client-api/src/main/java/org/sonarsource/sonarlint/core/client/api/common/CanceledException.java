@@ -19,11 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-public class SonarLintException extends RuntimeException {
-  public SonarLintException() {
-    super();
-  }
-  public SonarLintException(String msg, Throwable cause) {
-    super(msg, cause);
-  }
+public class CanceledException extends SonarLintException {
+
 }

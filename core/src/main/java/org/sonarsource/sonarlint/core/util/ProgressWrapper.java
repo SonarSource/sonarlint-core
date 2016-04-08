@@ -19,11 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
+import org.sonarsource.sonarlint.core.client.api.common.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 
 import javax.annotation.Nullable;
-
-import java.util.concurrent.CancellationException;
 
 public class ProgressWrapper {
   private ProgressMonitor handler;
@@ -39,7 +38,7 @@ public class ProgressWrapper {
   public void checkCancel() {
     if (handler.isCanceled()) {
       handler.setMessage("Cancelling");
-      throw new CancellationException();
+      throw new CanceledException();
     }
   }
 

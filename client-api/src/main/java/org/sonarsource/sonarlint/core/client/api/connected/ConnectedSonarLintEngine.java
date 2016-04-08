@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -100,7 +100,7 @@ public interface ConnectedSonarLintEngine {
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
    * @throws UnsupportedServerException if server version is too low
-   * @throws CancellationException if the update task was cancelled
+   * @throws CanceledException if the update task was cancelled
    */
   GlobalUpdateStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
   
