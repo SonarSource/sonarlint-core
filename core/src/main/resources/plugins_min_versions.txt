@@ -1,0 +1,4 @@
+#minimum supported analyzer versions
+java=3.8
+php=2.7
+js=2.9

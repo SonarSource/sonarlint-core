@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpd
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -53,6 +54,7 @@ public class ConnectedContainer extends ComponentContainer {
       serverConfiguration,
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
+      PluginVersionChecker.class,
       SonarLintWsClient.class,
       GlobalUpdateExecutor.class,
       ModuleConfigUpdateExecutor.class,

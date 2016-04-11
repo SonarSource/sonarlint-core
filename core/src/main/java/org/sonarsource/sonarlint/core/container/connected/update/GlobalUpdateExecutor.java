@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -43,12 +44,14 @@ public class GlobalUpdateExecutor {
   private final ModuleListDownloader moduleListDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
   private final SonarLintWsClient wsClient;
+  private final PluginVersionChecker pluginsChecker;
 
-  public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, ServerVersionAndStatusChecker statusChecker,
+  public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
     ModuleListDownloader moduleListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
+    this.pluginsChecker = pluginsChecker;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalPropertiesDownloader = globalPropertiesDownloader;
@@ -58,39 +61,49 @@ public class GlobalUpdateExecutor {
   }
 
   public void update(ProgressWrapper progress) {
-    progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
-    
-    ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
-
     Path temp = tempFolder.newDir().toPath();
-    ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
-    progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
-    Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
+    try {
+      progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
+      ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
+      progress.setProgressAndCheckCancel("Checking plugins versions", 0.15f);
+      pluginsChecker.checkPlugins(serverStatus.getVersion());
 
-    progress.setProgressAndCheckCancel("Fetching plugins", 0.4f);
-    pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
+      ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
-    progress.setProgressAndCheckCancel("Fetching rules", 0.6f);
-    rulesDownloader.fetchRulesTo(temp);
-    
-    progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-    moduleListDownloader.fetchModulesList(temp);
+      progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
+      Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
 
-    progress.startNonCancelableSection();
-    progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
-    
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
-      .setClientUserAgent(wsClient.getUserAgent())
-      .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
-      .setUpdateTimestamp(new Date().getTime())
-      .build();
-    ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
+      progress.setProgressAndCheckCancel("Fetching plugins", 0.4f);
+      pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
 
-    Path dest = storageManager.getGlobalStorageRoot();
-    FileUtils.deleteDirectory(dest);
-    FileUtils.forceMkDirs(dest.getParent());
-    FileUtils.moveDir(temp, dest);
+      progress.setProgressAndCheckCancel("Fetching rules", 0.6f);
+      rulesDownloader.fetchRulesTo(temp);
+
+      progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
+      moduleListDownloader.fetchModulesList(temp);
+
+      progress.startNonCancelableSection();
+      progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
+
+      UpdateStatus updateStatus = UpdateStatus.newBuilder()
+        .setClientUserAgent(wsClient.getUserAgent())
+        .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
+        .setUpdateTimestamp(new Date().getTime())
+        .build();
+      ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
+
+      Path dest = storageManager.getGlobalStorageRoot();
+      FileUtils.deleteDirectory(dest);
+      FileUtils.forceMkDirs(dest.getParent());
+      FileUtils.moveDir(temp, dest);
+    } catch (RuntimeException e) {
+      try {
+        FileUtils.deleteDirectory(temp);
+      } catch (RuntimeException ignore) {
+        // ignore because we want to throw original exception
+      }
+      throw e;
+    }
   }
-
 }

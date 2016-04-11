@@ -53,7 +53,7 @@ CI)
   ;;
 
 IT)
-  mvn clean verify -Prun-its -Dsonar.runtimeVersion=$SQ_VERSION
+  mvn clean verify -Prun-its -Dsonar.runtimeVersion=$SQ_VERSION -DjavaVersion=$JAVA_VERSION -DphpVersion=$PHP_VERSION -DjavascriptVersion=$JAVASCRIPT_VERSION
   ;;
 
 

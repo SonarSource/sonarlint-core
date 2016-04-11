@@ -19,18 +19,12 @@
  */
 package its;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.locator.FileLocation;
-import java.io.File;
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
@@ -61,6 +55,16 @@ import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerExce
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.container.connected.WsHelperImpl;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
 import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,20 +72,26 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class ConnectedModeTest {
 
-  private static final String PROJECT_KEY = "sample-java";
+  private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_PHP = "sample-php";
+  private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
+
   private static final String SONARLINT_USER = "sonarlint";
   private static final String SONARLINT_PWD = "sonarlintpwd";
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .setOrchestratorProperty("javaVersion", "LATEST_RELEASE")
     .addPlugin("java")
+    .addPlugin("javascript")
+    .addPlugin("php")
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
     .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-  
+
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
@@ -103,8 +113,13 @@ public class ConnectedModeTest {
 
     // addUserPermission("sonarlint", "dryRunScan");
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Java");
-    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "java", "SonarLint IT");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+    
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
@@ -122,7 +137,7 @@ public class ConnectedModeTest {
   @After
   public void stop() {
     ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY));
+    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -152,115 +167,114 @@ public class ConnectedModeTest {
 
     assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are two important requirements");
 
-    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY)).isNull();
+    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY_JAVA)).isNull();
   }
 
   @Test
   public void updateProject() throws Exception {
     updateGlobal();
 
-    updateModule();
+    updateModule(PROJECT_KEY_JAVA);
 
-    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY)).isNotNull();
+    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY_JAVA)).isNotNull();
+  }
+
+  @Test
+  public void analysisJavascript() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVASCRIPT);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisPHP() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_PHP);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, "src/Math.php"), issueListener);
+    assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
   public void analysisUseQualityProfile() throws Exception {
     updateGlobal();
+    updateModule(PROJECT_KEY_JAVA);
 
-    updateModule();
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
 
-    final List<Issue> issues = new ArrayList<>();
-
-    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
-      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-
-    assertThat(issues).hasSize(2);
-  }
-  
-  @Test
-  public void generateToken() {
-    WsHelper ws = new WsHelperImpl();
-    ServerConfiguration serverConfig = ServerConfiguration.builder()
-    .url(ORCHESTRATOR.getServer().getUrl())
-    .userAgent("SonarLint ITs")
-    .credentials(SONARLINT_USER, SONARLINT_PWD)
-    .build();
-    
-    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.4")) {
-      exception.expect(UnsupportedServerException.class);
-    }
-    
-    String token = ws.generateAuthenticationToken(serverConfig, "name", false);
-    assertThat(token).isNotNull();
-    
-    token = ws.generateAuthenticationToken(serverConfig, "name", true);
-    assertThat(token).isNotNull();
+    assertThat(issueListener.getIssues()).hasSize(2);
   }
 
   @Test
   public void analysisUseConfiguration() throws Exception {
     updateGlobal();
-    updateModule();
+    updateModule(PROJECT_KEY_JAVA);
 
-    final List<Issue> issues = new ArrayList<>();
-
-    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
-      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-    assertThat(issues).hasSize(2);
-
-    issues.clear();
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
+    assertThat(issueListener.getIssues()).hasSize(2);
 
     // Override default file suffixes in global props so that input file is not considered as a Java file
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".foo"));
     updateGlobal();
-    updateModule();
+    updateModule(PROJECT_KEY_JAVA);
 
-    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
-      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-    assertThat(issues).isEmpty();
+    issueListener.clear();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".java", PROJECT_KEY));
+    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".java", PROJECT_KEY_JAVA));
     updateGlobal();
-    updateModule();
+    updateModule(PROJECT_KEY_JAVA);
 
-    engine.analyze(new ConnectedAnalysisConfiguration(PROJECT_KEY, new File("projects/sample-java").toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile()),
-      ImmutableMap.of("sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-    assertThat(issues).hasSize(2);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
+    assertThat(issueListener.getIssues()).hasSize(2);
 
   }
 
-  private void updateModule() {
+  @Test
+  public void generateToken() {
+    WsHelper ws = new WsHelperImpl();
+    ServerConfiguration serverConfig = ServerConfiguration.builder()
+      .url(ORCHESTRATOR.getServer().getUrl())
+      .userAgent("SonarLint ITs")
+      .credentials(SONARLINT_USER, SONARLINT_PWD)
+      .build();
+
+    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.4")) {
+      exception.expect(UnsupportedServerException.class);
+    }
+
+    String token = ws.generateAuthenticationToken(serverConfig, "name", false);
+    assertThat(token).isNotNull();
+
+    token = ws.generateAuthenticationToken(serverConfig, "name", true);
+    assertThat(token).isNotNull();
+  }
+
+  private void updateModule(String projectKey) {
     engine.updateModule(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), PROJECT_KEY);
+      .build(), projectKey);
   }
 
   private void updateGlobal() {
@@ -271,7 +285,15 @@ public class ConnectedModeTest {
       .build());
   }
 
-  private ClientInputFile inputFile() {
+  private ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String filePath, String... properties) throws IOException {
+    return new ConnectedAnalysisConfiguration(projectKey,
+      new File("projects/" + projectKey).toPath(),
+      temp.newFolder().toPath(),
+      Arrays.asList(inputFile(projectKey, filePath)),
+      toMap(properties));
+  }
+
+  private ClientInputFile inputFile(final String projectKey, final String relativePath) {
     return new ClientInputFile() {
 
       @Override
@@ -281,7 +303,7 @@ public class ConnectedModeTest {
 
       @Override
       public Path getPath() {
-        return Paths.get("projects/sample-java/src/main/java/foo/Foo.java");
+        return Paths.get("projects/" + projectKey + "/" + relativePath);
       }
 
       @Override
@@ -318,6 +340,35 @@ public class ConnectedModeTest {
       .url(server.getUrl())
       .credentials(ADMIN_LOGIN, ADMIN_PASSWORD)
       .build());
+  }
+
+  private static class SaveIssueListener implements IssueListener {
+    List<Issue> issues = new LinkedList<>();
+
+    @Override
+    public void handle(Issue issue) {
+      issues.add(issue);
+    }
+
+    public List<Issue> getIssues() {
+      return issues;
+    }
+
+    public void clear() {
+      issues.clear();
+    }
+  }
+
+  static Map<String, String> toMap(String[] keyValues) {
+    Preconditions.checkArgument(keyValues.length % 2 == 0, "Must be an even number of key/values");
+    Map<String, String> map = Maps.newHashMap();
+    int index = 0;
+    while (index < keyValues.length) {
+      String key = keyValues[index++];
+      String value = keyValues[index++];
+      map.put(key, value);
+    }
+    return map;
   }
 
 }

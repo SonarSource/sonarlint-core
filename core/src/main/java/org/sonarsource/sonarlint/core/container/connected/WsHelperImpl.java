@@ -22,10 +22,14 @@ package org.sonarsource.sonarlint.core.container.connected;
 import com.google.gson.Gson;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
+import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
 import java.util.Map;
 
@@ -39,12 +43,12 @@ public class WsHelperImpl implements WsHelper {
     try {
       SonarLintWsClient client = new SonarLintWsClient(serverConfig);
       ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-      ValidationResult result = serverChecker.validateStatusAndVersion();
-      if (result.success()) {
-        return new AuthenticationChecker(client).validateCredentials();
-      } else {
-        return result;
-      }
+      PluginVersionChecker pluginsChecker = new PluginVersionChecker(client);
+      ServerInfos serverInfo = serverChecker.checkVersionAndStatus();
+      pluginsChecker.checkPlugins(serverInfo.getVersion());
+      return new AuthenticationChecker(client).validateCredentials();
+    } catch (UnsupportedServerException e) {
+      return new DefaultValidationResult(false, e.getMessage());
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }

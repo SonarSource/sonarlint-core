@@ -17,36 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.util;
+package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import javax.annotation.CheckForNull;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-public class VersionUtils {
-  private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
-  private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
+public class InstalledPlugin {
+  private String key;
+  private String name;
+  private String version;
   
-  private VersionUtils() {
+  public String getKey() {
+    return key;
   }
-
-  public static String getLibraryVersion() {
-    String version = "unknown";
-    Package packageInfo = VersionUtils.class.getPackage();
-    if (packageInfo != null && packageInfo.getImplementationVersion() != null) {
-      version = packageInfo.getImplementationVersion();
-    }
+  public void setKey(String key) {
+    this.key = key;
+  }
+  public String getName() {
+    return name;
+  }
+  public void setName(String name) {
+    this.name = name;
+  }
+  public String getVersion() {
     return version;
   }
-  
-  @CheckForNull
-  public static String getJarVersion(String jarName) {
-    Matcher matcher = JAR_VERSION_PATTERN.matcher(jarName);
-    if(matcher.find()) {
-      return matcher.group(1);
-    }
-    
-    return null;
+  public void setVersion(String version) {
+    this.version = version;
   }
 }

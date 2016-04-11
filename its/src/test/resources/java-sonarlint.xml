@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <profile>
-  <name>SonarLint IT</name>
+  <name>SonarLint IT Java</name>
   <language>java</language>
   <rules>
     <rule>

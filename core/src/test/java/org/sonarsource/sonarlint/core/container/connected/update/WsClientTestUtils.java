@@ -19,10 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.Reader;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+
+import javax.annotation.Nullable;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 import static java.util.Objects.requireNonNull;
 import static org.mockito.Mockito.mock;
@@ -74,6 +79,17 @@ public class WsClientTestUtils {
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.contentStream()).thenReturn(requireNonNull(WsClientTestUtils.class.getResourceAsStream(resourcePath)));
+    when(wsResponse.isSuccessful()).thenReturn(true);
+    return wsClient;
+  }
+  
+  public static SonarLintWsClient addReaderResponse(SonarLintWsClient wsClient, String url, String resourcePath) {
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    when(wsClient.get(url)).thenReturn(wsResponse);
+    when(wsClient.rawGet(url)).thenReturn(wsResponse);
+    when(wsResponse.requestUrl()).thenReturn(url);
+    InputStream is = requireNonNull(WsClientTestUtils.class.getResourceAsStream(resourcePath));
+    when(wsResponse.contentReader()).thenReturn(new BufferedReader(new InputStreamReader(is)));
     when(wsResponse.isSuccessful()).thenReturn(true);
     return wsClient;
   }

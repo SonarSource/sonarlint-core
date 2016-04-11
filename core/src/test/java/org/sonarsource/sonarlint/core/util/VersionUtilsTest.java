@@ -19,34 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import javax.annotation.CheckForNull;
+import org.junit.Test;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class VersionUtils {
-  private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
-  private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
-  
-  private VersionUtils() {
-  }
-
-  public static String getLibraryVersion() {
-    String version = "unknown";
-    Package packageInfo = VersionUtils.class.getPackage();
-    if (packageInfo != null && packageInfo.getImplementationVersion() != null) {
-      version = packageInfo.getImplementationVersion();
-    }
-    return version;
-  }
-  
-  @CheckForNull
-  public static String getJarVersion(String jarName) {
-    Matcher matcher = JAR_VERSION_PATTERN.matcher(jarName);
-    if(matcher.find()) {
-      return matcher.group(1);
-    }
-    
-    return null;
+public class VersionUtilsTest {
+  @Test
+  public void testJarVersions() {
+    assertThat(VersionUtils.getJarVersion("sonar-governance-plugin-1.0-build251.jar")).isEqualTo("1.0");
+    assertThat(VersionUtils.getJarVersion("qualinsight-sonarqube-badges-1.2.1.jar")).isEqualTo("1.2.1");
+    assertThat(VersionUtils.getJarVersion("sonar-java-plugin-3.13-build4943.jar")).isEqualTo("3.13");
+    assertThat(VersionUtils.getJarVersion("sonar-github-plugin-1.2-M3_2016-04-06.jar")).isEqualTo("1.2");
   }
 }
