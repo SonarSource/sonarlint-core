@@ -19,38 +19,50 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.File;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.Mockito.mock;
 
-public class RulesDownloaderTest {
+public class QualityProfilesDownloaderTest {
+  private QualityProfilesDownloader qProfilesDownloader;
+  private SonarLintWsClient wsClient;
+
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
-  @Test
-  public void rules_update() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
-      "/update/rulesp1.pb");
-    WsClientTestUtils.addStreamResponse(wsClient,
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
-      "/update/rulesp2.pb");
-
-    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
-    File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
-
-    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
-    assertThat(rules.getRulesByKey()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
-    assertThat(jsActiveRules.getActiveRulesByKey()).hasSize(85);
+  @Before
+  public void setUp() {
+    wsClient = mock(SonarLintWsClient.class);
+    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
+    qProfilesDownloader = new QualityProfilesDownloader(wsClient);
   }
+
+  @Test
+  public void test() {
+    qProfilesDownloader.fetchQualityProfiles(temp.getRoot().toPath());
+
+    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
+    assertThat(qProfiles.getQprofilesByKey()).containsOnlyKeys(
+      "cs-sonar-way-58886",
+      "java-sonar-way-74592",
+      "java-empty-74333",
+      "js-sonar-security-way-70539",
+      "js-sonar-way-60746");
+
+    assertThat(qProfiles.getDefaultQProfilesByLanguage()).containsOnly(
+      entry("cs", "cs-sonar-way-58886"),
+      entry("java", "java-sonar-way-74592"),
+      entry("js", "js-sonar-way-60746"));
+
+  }
+
 }

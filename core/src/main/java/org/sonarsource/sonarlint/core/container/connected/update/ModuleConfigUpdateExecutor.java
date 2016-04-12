@@ -54,9 +54,8 @@ public class ModuleConfigUpdateExecutor {
   }
 
   public void update(String moduleKey) {
-
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
-    Set<String> qProfileKeys = storageManager.readRulesFromStorage().getQprofilesByKey().keySet();
+    Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKey().keySet();
 
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
 
@@ -86,7 +85,7 @@ public class ModuleConfigUpdateExecutor {
         String qpKey = qp.getKey();
         if (!qProfileKeys.contains(qpKey)) {
           throw new IllegalStateException(
-            "Module " + moduleKey + " is associated to quality profile " + qpKey + " that is not in storage. Server storage is probably outdated. Please update server.");
+            "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Server storage is probably outdated. Please update server.");
         }
         builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
       }

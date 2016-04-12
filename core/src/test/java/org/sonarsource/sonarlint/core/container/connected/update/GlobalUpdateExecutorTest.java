@@ -53,8 +53,9 @@ public class GlobalUpdateExecutorTest {
     when(tempFolder.newDir()).thenReturn(tempDir);
     StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient), mock(PluginReferencesDownloader.class),
-      mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class), tempFolder);
+    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
+      mock(PluginReferencesDownloader.class), mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class),
+      mock(QualityProfilesDownloader.class), tempFolder);
 
     globalUpdate.update(new ProgressWrapper(null));
 

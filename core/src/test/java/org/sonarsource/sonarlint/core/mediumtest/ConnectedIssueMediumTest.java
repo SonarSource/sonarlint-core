@@ -67,6 +67,9 @@ public class ConnectedIssueMediumTest {
     Path slHome = temp.newFolder().toPath();
     Path pluginCache = slHome.resolve("plugins");
 
+    /*
+     * This storage contains one server id "local" and two modules: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     */
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     PluginCache cache = PluginCache.create(pluginCache);
 
@@ -97,10 +100,10 @@ public class ConnectedIssueMediumTest {
       }
     });
 
-    ProtobufUtil.writeToFile(builder.build(), storage.resolve("localhost").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), storage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("localhost")
+      .setServerId("local")
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage)
       .setLogOutput(new LogOutput() {
@@ -117,7 +120,10 @@ public class ConnectedIssueMediumTest {
 
   @AfterClass
   public static void stop() {
-    sonarlint.stop(true);
+    if (sonarlint != null) {
+      sonarlint.stop(true);
+      sonarlint = null;
+    }
   }
 
   @Test
@@ -136,12 +142,7 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      new StoreIssueListener(issues));
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
 
@@ -149,25 +150,11 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void simpleJavaUnbinded() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}",
-      false);
+    ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      new StoreIssueListener(issues));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
@@ -177,7 +164,33 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void simpleJavaBinded() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareJavaInputFile();
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new ConnectedAnalysisConfiguration("test-project-2", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new StoreIssueListener(issues));
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+  }
+
+  @Test
+  public void emptyQPJava() throws IOException {
+    ClientInputFile inputFile = prepareJavaInputFile();
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new ConnectedAnalysisConfiguration("test-project", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new StoreIssueListener(issues));
+
+    assertThat(issues).isEmpty();
+  }
+
+  private ClientInputFile prepareJavaInputFile() throws IOException {
+    return prepareInputFile("Foo.java",
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -186,19 +199,6 @@ public class ConnectedIssueMediumTest {
         + "  }\n"
         + "}",
       false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration("sample", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
-
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath(), "BLOCKER"));
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
@@ -232,6 +232,19 @@ public class ConnectedIssueMediumTest {
       }
     };
     return inputFile;
+  }
+
+  static class StoreIssueListener implements IssueListener {
+    private List<Issue> issues;
+
+    StoreIssueListener(List<Issue> issues) {
+      this.issues = issues;
+    }
+
+    @Override
+    public void handle(Issue issue) {
+      issues.add(issue);
+    }
   }
 
 }

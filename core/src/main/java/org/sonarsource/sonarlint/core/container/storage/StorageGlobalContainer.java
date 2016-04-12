@@ -119,6 +119,7 @@ public class StorageGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(new StorageRulesProvider());
+    analysisContainer.add(new StorageQProfilesProvider());
     analysisContainer.add(new SonarQubeRulesProvider());
     analysisContainer.add(new SonarQubeActiveRulesProvider());
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();

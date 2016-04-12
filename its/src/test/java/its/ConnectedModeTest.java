@@ -72,6 +72,7 @@ import static org.assertj.core.api.Assertions.fail;
 public class ConnectedModeTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
 
@@ -84,6 +85,7 @@ public class ConnectedModeTest {
     .addPlugin("javascript")
     .addPlugin("php")
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
     .build();
@@ -113,10 +115,12 @@ public class ConnectedModeTest {
     // addUserPermission("sonarlint", "dryRunScan");
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
 
@@ -184,7 +188,7 @@ public class ConnectedModeTest {
     updateModule(PROJECT_KEY_JAVASCRIPT);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
@@ -194,7 +198,7 @@ public class ConnectedModeTest {
     updateModule(PROJECT_KEY_PHP);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, "src/Math.php"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
@@ -204,7 +208,7 @@ public class ConnectedModeTest {
     updateModule(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener);
@@ -213,12 +217,26 @@ public class ConnectedModeTest {
   }
 
   @Test
+  public void analysisUseEmptyQualityProfile() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA_EMPTY);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_EMPTY, PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
+
+    assertThat(issueListener.getIssues()).isEmpty();
+  }
+
+  @Test
   public void analysisUseConfiguration() throws Exception {
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener);
@@ -230,7 +248,7 @@ public class ConnectedModeTest {
     updateModule(PROJECT_KEY_JAVA);
 
     issueListener.clear();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener);
@@ -240,7 +258,7 @@ public class ConnectedModeTest {
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener);
@@ -284,15 +302,15 @@ public class ConnectedModeTest {
       .build());
   }
 
-  private ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String filePath, String... properties) throws IOException {
+  private ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
     return new ConnectedAnalysisConfiguration(projectKey,
-      new File("projects/" + projectKey).toPath(),
+      new File("projects/" + projectDir).toPath(),
       temp.newFolder().toPath(),
-      Arrays.asList(inputFile(projectKey, filePath)),
+      Arrays.asList(inputFile(projectDir, filePath)),
       toMap(properties));
   }
 
-  private ClientInputFile inputFile(final String projectKey, final String relativePath) {
+  private ClientInputFile inputFile(final String projectDir, final String relativePath) {
     return new ClientInputFile() {
 
       @Override
@@ -302,7 +320,7 @@ public class ConnectedModeTest {
 
       @Override
       public Path getPath() {
-        return Paths.get("projects/" + projectKey + "/" + relativePath);
+        return Paths.get("projects/" + projectDir + "/" + relativePath);
       }
 
       @Override

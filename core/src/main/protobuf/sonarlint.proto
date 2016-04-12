@@ -54,8 +54,6 @@ message GlobalProperties {
 
 message Rules {
   map<string,Rule> rules_by_key = 1;
-  map<string, QProfile> qprofilesByKey = 2;
-  map<string, string> defaultQProfilesByLanguage = 3;
     
   message Rule {
     string repo = 1;
@@ -68,9 +66,15 @@ message Rules {
     bool is_template = 8;
     string template_key = 9;
   }
-  
+}
+
+message QProfiles {
+  map<string,QProfile> qprofilesByKey = 1;
+  map<string, string> defaultQProfilesByLanguage = 2;
+
   message QProfile {
     string key = 1;
+    int64 activeRuleCount = 2;
   }
 }
 

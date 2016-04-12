@@ -37,6 +37,7 @@ public class StorageManager {
   public static final String PROPERTIES_PB = "properties.pb";
   public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
   public static final String RULES_PB = "rules.pb";
+  public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
   public static final String UPDATE_STATUS_PB = "update_status.pb";
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
@@ -97,6 +98,10 @@ public class StorageManager {
     return getGlobalStorageRoot().resolve(RULES_PB);
   }
 
+  public Path getQProfilesPath() {
+    return getGlobalStorageRoot().resolve(QUALITY_PROFILES_PB);
+  }
+
   public Path getActiveRulesPath(String qProfileKey) {
     return getGlobalStorageRoot().resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
   }
@@ -138,6 +143,10 @@ public class StorageManager {
 
   public Sonarlint.Rules readRulesFromStorage() {
     return ProtobufUtil.readFile(getRulesPath(), Sonarlint.Rules.parser());
+  }
+
+  public Sonarlint.QProfiles readQProfilesFromStorage() {
+    return ProtobufUtil.readFile(getQProfilesPath(), Sonarlint.QProfiles.parser());
   }
 
   public Sonarlint.GlobalProperties readGlobalPropertiesFromStorage() {

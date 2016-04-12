@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExe
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -62,6 +63,7 @@ public class ConnectedContainer extends ComponentContainer {
       GlobalPropertiesDownloader.class,
       ModuleListDownloader.class,
       RulesDownloader.class,
+      QualityProfilesDownloader.class,
       new PluginCacheProvider(),
       PluginHashes.class,
       StorageManager.class);

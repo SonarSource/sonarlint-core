@@ -33,6 +33,7 @@ import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 
 public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
@@ -40,7 +41,8 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
   private ActiveRules activeRules;
 
-  public ActiveRules provide(Sonarlint.Rules storageRules, StorageManager storageManager, Rules rules, ConnectedAnalysisConfiguration analysisConfiguration, Languages languages) {
+  public ActiveRules provide(Sonarlint.Rules storageRules, Sonarlint.QProfiles qProfiles, StorageManager storageManager, Rules rules,
+    ConnectedAnalysisConfiguration analysisConfiguration, Languages languages) {
     if (activeRules == null) {
       ActiveRulesBuilder builder = new ActiveRulesBuilder();
 
@@ -48,7 +50,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
       if (analysisConfiguration.moduleKey() == null) {
         LOG.debug("Use default quality profiles:");
-        qProfilesByLanguage = storageRules.getDefaultQProfilesByLanguage();
+        qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguage();
       } else {
         LOG.debug("Quality profiles:");
         qProfilesByLanguage = storageManager.readModuleConfigFromStorage(analysisConfiguration.moduleKey()).getQprofilePerLanguage();
@@ -59,7 +61,12 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
         if (languages.get(language) == null) {
           continue;
         }
+
         String qProfileKey = entry.getValue();
+        QProfile qProfile = qProfiles.getQprofilesByKey().get(qProfileKey);
+        if (qProfile.getActiveRuleCount() == 0) {
+          continue;
+        }
         int arCount = 0;
 
         org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),

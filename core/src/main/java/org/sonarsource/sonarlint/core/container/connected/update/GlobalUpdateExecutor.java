@@ -45,10 +45,11 @@ public class GlobalUpdateExecutor {
   private final ServerVersionAndStatusChecker statusChecker;
   private final SonarLintWsClient wsClient;
   private final PluginVersionChecker pluginsChecker;
+  private final QualityProfilesDownloader qualityProfilesDownloader;
 
   public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
-    ModuleListDownloader moduleListDownloader, TempFolder tempFolder) {
+    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.pluginsChecker = pluginsChecker;
@@ -57,6 +58,7 @@ public class GlobalUpdateExecutor {
     this.globalPropertiesDownloader = globalPropertiesDownloader;
     this.rulesDownloader = rulesDownloader;
     this.moduleListDownloader = moduleListDownloader;
+    this.qualityProfilesDownloader = qualityProfilesDownloader;
     this.tempFolder = tempFolder;
   }
 
@@ -74,11 +76,14 @@ public class GlobalUpdateExecutor {
       progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
       Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
 
-      progress.setProgressAndCheckCancel("Fetching plugins", 0.4f);
+      progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
       pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
 
-      progress.setProgressAndCheckCancel("Fetching rules", 0.6f);
+      progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp);
+      
+      progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
+      qualityProfilesDownloader.fetchQualityProfiles(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
       moduleListDownloader.fetchModulesList(temp);

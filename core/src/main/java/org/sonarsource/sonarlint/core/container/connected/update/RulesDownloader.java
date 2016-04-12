@@ -24,10 +24,9 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+
 import org.sonar.api.rule.RuleKey;
-import org.sonarqube.ws.QualityProfiles;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
@@ -38,14 +37,13 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.QProfile;
+
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class RulesDownloader {
-  private static final String RULES_SEARCH_URL =
-    "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY";
-  private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf?defaults=true";
+  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,"
+    + "htmlDesc,mdDesc,actives&statuses=BETA,DEPRECATED,READY";
 
   private final SonarLintWsClient wsClient;
 
@@ -60,17 +58,7 @@ public class RulesDownloader {
     Path activeRulesDir = destDir.resolve(StorageManager.ACTIVE_RULES_FOLDER);
     FileUtils.forceMkDirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-      rulesBuilder.getMutableQprofilesByKey().put(entry.getKey(), QProfile.newBuilder().setKey(entry.getKey()).build());
       ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(entry.getKey() + ".pb"));
-    }
-
-    try (InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream()) {
-      SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
-      for (QualityProfile qp : qpResponse.getProfilesList()) {
-        rulesBuilder.getMutableDefaultQProfilesByLanguage().put(qp.getLanguage(), qp.getKey());
-      }
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load default quality profiles", e);
     }
 
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StorageManager.RULES_PB));
@@ -143,7 +131,12 @@ public class RulesDownloader {
         }
         activeRulesBuildersByQProfile.get(qProfileKey).getMutableActiveRulesByKey().put(entry.getKey(), arBuilder.build());
       }
+    }
 
+    for (Entry<String, org.sonarqube.ws.Rules.QProfile> entry : response.getQProfiles().getQProfiles().entrySet()) {
+      if (!activeRulesBuildersByQProfile.containsKey(entry.getValue().getName())) {
+        activeRulesBuildersByQProfile.put(entry.getValue().getName(), ActiveRules.newBuilder());
+      }
     }
   }
 }
