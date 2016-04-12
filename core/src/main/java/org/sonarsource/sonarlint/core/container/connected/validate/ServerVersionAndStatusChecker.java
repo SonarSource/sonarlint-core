@@ -43,7 +43,7 @@ public class ServerVersionAndStatusChecker {
   /**
    * Checks SonarQube version against the minimum version supported by the library
    * @return ServerInfos
-   * @throws UnsupportedServerException if version < minimum supported version
+   * @throws UnsupportedServerException if version &lt; minimum supported version
    * @throws IllegalStateException If server is not ready
    */
   public ServerInfos checkVersionAndStatus() {
@@ -53,7 +53,7 @@ public class ServerVersionAndStatusChecker {
   /**
    * Checks SonarQube version against a provided minimum version
    * @return ServerInfos
-   * @throws UnsupportedServerException if version < minimum supported version
+   * @throws UnsupportedServerException if version &lt; minimum supported version
    * @throws IllegalStateException If server is not ready
    */
   public ServerInfos checkVersionAndStatus(String minVersion) {
