@@ -214,7 +214,7 @@
               !*
             </Import-Package>
             <Export-Package>org.sonarsource.sonarlint.core</Export-Package>
-            <Require-Bundle>org.sonarsource.sonarlint.core.sonarlint-client-api;bundle-version="[2.0.0,2.1.0)"</Require-Bundle>
+            <Require-Bundle>org.sonarsource.sonarlint.core.sonarlint-client-api;bundle-version="[2.1.0,2.2.0)"</Require-Bundle>
             <_failok>true</_failok>
             <_nouses>true</_nouses>
           </instructions>

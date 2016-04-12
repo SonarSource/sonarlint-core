@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected;
+package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
@@ -25,6 +25,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
+import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
+import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
