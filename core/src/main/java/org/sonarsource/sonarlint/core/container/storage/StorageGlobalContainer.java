@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;

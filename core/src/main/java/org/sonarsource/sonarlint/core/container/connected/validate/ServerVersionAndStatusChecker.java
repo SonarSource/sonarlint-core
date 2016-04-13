@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.net.HttpURLConnection;
-import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
+
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;

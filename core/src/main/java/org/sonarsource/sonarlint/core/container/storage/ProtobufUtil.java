@@ -21,12 +21,13 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageException;
 
 public class ProtobufUtil {
   private ProtobufUtil() {

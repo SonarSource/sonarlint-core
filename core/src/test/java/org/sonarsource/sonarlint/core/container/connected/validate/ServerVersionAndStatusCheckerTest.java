@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import java.net.HttpURLConnection;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.WsClientTestUtils;
 

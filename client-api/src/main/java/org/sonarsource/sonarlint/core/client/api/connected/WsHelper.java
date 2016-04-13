@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
+
 public interface WsHelper {
   /**
    * Check if it is possible to reach server with provided configuration

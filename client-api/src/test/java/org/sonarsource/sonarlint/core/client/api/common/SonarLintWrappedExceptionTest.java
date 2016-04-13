@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

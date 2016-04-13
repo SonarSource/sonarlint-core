@@ -61,8 +61,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
+import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
 import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;

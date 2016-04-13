@@ -25,12 +25,13 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 /**
  * Entry point for SonarLint.

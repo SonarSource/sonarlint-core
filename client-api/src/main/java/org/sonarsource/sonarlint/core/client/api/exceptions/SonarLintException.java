@@ -17,14 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.client.api.exceptions;
 
-import org.sonarsource.sonarlint.core.client.api.common.SonarLintException;
-
-public class StorageException extends SonarLintException {
-
-  public StorageException(String msg, Throwable cause) {
+public class SonarLintException extends RuntimeException {
+  public SonarLintException() {
+    super();
+  }
+  public SonarLintException(String msg, Throwable cause) {
     super(msg, cause);
   }
-
 }

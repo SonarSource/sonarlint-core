@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import org.sonarsource.sonarlint.core.client.api.common.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
+import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 
 import javax.annotation.Nullable;
 
