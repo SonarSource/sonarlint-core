@@ -22,11 +22,14 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
+
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -37,17 +40,20 @@ public class QualityProfilesDownloaderTest {
   private SonarLintWsClient wsClient;
 
   @Rule
+  public ExpectedException exception = ExpectedException.none();
+
+  @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Before
   public void setUp() {
     wsClient = mock(SonarLintWsClient.class);
-    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
-    qProfilesDownloader = new QualityProfilesDownloader(wsClient);
   }
 
   @Test
   public void test() {
+    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
+    qProfilesDownloader = new QualityProfilesDownloader(wsClient);
     qProfilesDownloader.fetchQualityProfiles(temp.getRoot().toPath());
 
     QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
@@ -62,6 +68,17 @@ public class QualityProfilesDownloaderTest {
       entry("cs", "cs-sonar-way-58886"),
       entry("java", "java-sonar-way-74592"),
       entry("js", "js-sonar-way-60746"));
+  }
+
+  @Test
+  public void testParsingError() throws IOException {
+    // wrong file
+    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/all_projects.json");
+    qProfilesDownloader = new QualityProfilesDownloader(wsClient);
+
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Failed to load default quality profiles");
+    qProfilesDownloader.fetchQualityProfiles(temp.getRoot().toPath());
 
   }
 
