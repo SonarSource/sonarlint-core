@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,14 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core;
 
-import java.util.Date;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 
-public interface ModuleUpdateStatus {
+public class TestUtils {
 
-  Date getLastUpdateDate();
+  public static class NoOpIssueListener implements IssueListener {
+    @Override
+    public void handle(Issue issue) {
+    }
+  };
   
-  boolean isStale();
+  public static NoOpIssueListener createNoOpIssueListener() {
+    return new NoOpIssueListener();
+  }
+
+  public static class NoOpLogOutput implements LogOutput {
+    @Override
+    public void log(String formattedMessage, Level level) {
+      // Don't pollute logs
+    }
+  }
+  
+  public static NoOpLogOutput createNoOpLogOutput() {
+    return new NoOpLogOutput();
+  }
 
 }

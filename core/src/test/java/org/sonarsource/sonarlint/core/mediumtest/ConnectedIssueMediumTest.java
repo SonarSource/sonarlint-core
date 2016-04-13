@@ -24,10 +24,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -36,7 +39,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -44,16 +46,22 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
+import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 
 public class ConnectedIssueMediumTest {
 
@@ -71,6 +79,8 @@ public class ConnectedIssueMediumTest {
      * This storage contains one server id "local" and two modules: "test-project" (with an empty QP) and "test-project-2" (with default QP)
      */
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
+    Path tmpStorage = slHome.resolve("storage");
+    FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
     PluginCache cache = PluginCache.create(pluginCache);
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -100,22 +110,35 @@ public class ConnectedIssueMediumTest {
       }
     });
 
-    ProtobufUtil.writeToFile(builder.build(), storage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
+
+    // update versions in test storage and create an empty stale module storage
+    writeModuleStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
+    writeModuleStatus(tmpStorage, "test-project-2", VersionUtils.getLibraryVersion());
+    writeModuleStatus(tmpStorage, "stale_module", "1.0");
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId("local")
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(storage)
-      .setLogOutput(new LogOutput() {
-        @Override
-        public void log(String formattedMessage, Level level) {
-          // Don't pollute logs
-        }
-      })
+      .setStorageRoot(tmpStorage)
+      .setLogOutput(createNoOpLogOutput())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
     baseDir = temp.newFolder();
+  }
+
+  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
+    Path module = storage.resolve("local").resolve("modules").resolve(name);
+
+    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+      .setClientUserAgent("agent")
+      .setSonarlintCoreVersion(version)
+      .setUpdateTimestamp(new Date().getTime())
+      .build();
+    Files.createDirectories(module);
+    ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
+
   }
 
   @AfterClass
@@ -123,6 +146,23 @@ public class ConnectedIssueMediumTest {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
+    }
+  }
+
+  @Test
+  public void testStaleModule() throws IOException {
+    assertThat(sonarlint.getModuleUpdateStatus("stale_module").isStale()).isTrue();
+    ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",
+      baseDir.toPath(),
+      temp.newFolder().toPath(),
+      Collections.<ClientInputFile>emptyList(),
+      ImmutableMap.<String, String>of());
+
+    try {
+      sonarlint.analyze(config, createNoOpIssueListener());
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(StorageException.class).hasMessage("Module data is stale. Please update module 'stale_module'.");
     }
   }
 

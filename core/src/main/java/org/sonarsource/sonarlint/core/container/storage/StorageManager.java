@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class StorageManager {
 
@@ -124,17 +125,31 @@ public class StorageManager {
     Path updateStatusPath = getUpdateStatusPath();
     if (Files.exists(updateStatusPath)) {
       final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
-      final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfoPath(), Sonarlint.ServerInfos.parser());
-      return new GlobalUpdateStatus() {
+      final boolean stale = (updateStatusFromStorage.getSonarlintCoreVersion() == null) ||
+        !updateStatusFromStorage.getSonarlintCoreVersion().equals(VersionUtils.getLibraryVersion());
 
+      String version = null;
+      if (!stale) {
+        final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfoPath(), Sonarlint.ServerInfos.parser());
+        version = serverInfoFromStorage.getVersion();
+      }
+
+      final String fVersion = version;
+
+      return new GlobalUpdateStatus() {
         @Override
         public String getServerVersion() {
-          return serverInfoFromStorage.getVersion();
+          return fVersion;
         }
 
         @Override
         public Date getLastUpdateDate() {
           return new Date(updateStatusFromStorage.getUpdateTimestamp());
+        }
+
+        @Override
+        public boolean isStale() {
+          return stale;
         }
       };
     }
@@ -157,15 +172,23 @@ public class StorageManager {
     return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
   }
 
+  @CheckForNull
   public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
     Path updateStatusPath = getModuleUpdateStatusPath(moduleKey);
     if (Files.exists(updateStatusPath)) {
       final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
+      final boolean stale = (updateStatusFromStorage.getSonarlintCoreVersion() == null) ||
+        !updateStatusFromStorage.getSonarlintCoreVersion().equals(VersionUtils.getLibraryVersion());
       return new ModuleUpdateStatus() {
 
         @Override
         public Date getLastUpdateDate() {
           return new Date(updateStatusFromStorage.getUpdateTimestamp());
+        }
+
+        @Override
+        public boolean isStale() {
+          return stale;
         }
       };
     }

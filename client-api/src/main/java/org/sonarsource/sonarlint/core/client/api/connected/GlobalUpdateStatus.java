@@ -19,12 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import javax.annotation.CheckForNull;
+
 import java.util.Date;
 
 public interface GlobalUpdateStatus {
-
+  @CheckForNull
   String getServerVersion();
 
   Date getLastUpdateDate();
+  
+  boolean isStale();
 
 }

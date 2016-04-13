@@ -81,7 +81,7 @@ public class GlobalUpdateExecutor {
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp);
-      
+
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
       qualityProfilesDownloader.fetchQualityProfiles(temp);
 

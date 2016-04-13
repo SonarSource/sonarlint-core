@@ -113,6 +113,8 @@ public class StorageGlobalContainer extends ComponentContainer {
       ModuleUpdateStatus moduleUpdateStatus = getModuleUpdateStatus(configuration.moduleKey());
       if (moduleUpdateStatus == null) {
         throw new StorageException("Missing module data. Please update module '" + configuration.moduleKey() + "'.", null);
+      } else if(moduleUpdateStatus.isStale()) {
+        throw new StorageException("Module data is stale. Please update module '" + configuration.moduleKey() + "'.", null);
       }
     }
     AnalysisContainer analysisContainer = new AnalysisContainer(this);

@@ -99,7 +99,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     this.globalContainer = StorageGlobalContainer.create(globalConfig);
     try {
       globalContainer.startComponents();
-      changeState(globalContainer.getUpdateStatus() != null ? State.UPDATED : State.NEVER_UPDATED);
+      if (globalContainer.getUpdateStatus() == null) {
+        changeState(State.NEVER_UPDATED);
+      } else if (globalContainer.getUpdateStatus().isStale()) {
+        changeState(State.NEED_UPDATE);
+      } else {
+        changeState(State.UPDATED);
+      }
+
     } catch (RuntimeException e) {
       changeState(State.UNKNOW);
       throw SonarLintWrappedException.wrap(e);
@@ -159,7 +166,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       rwl.readLock().unlock();
     }
   }
-  
+
   @Override
   public GlobalUpdateStatus update(ServerConfiguration serverConfig) {
     return update(serverConfig, null);

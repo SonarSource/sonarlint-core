@@ -35,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -47,6 +48,7 @@ import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 
 public class LogMediumTest {
 
@@ -96,13 +98,13 @@ public class LogMediumTest {
   @Test
   public void changeLogOutputForAnalysis() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
-    sonarlint.analyze(createConfig(inputFile), new NoOpIssueListener());
+    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener());
     assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
     Multimap<LogOutput.Level, String> logs2 = LinkedListMultimap.create();
 
-    sonarlint.analyze(createConfig(inputFile), new NoOpIssueListener(), createLogOutput(logs2));
+    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2));
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
     assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
   }
@@ -153,11 +155,4 @@ public class LogMediumTest {
     };
     return inputFile;
   }
-
-  private static class NoOpIssueListener implements IssueListener {
-    @Override
-    public void handle(Issue issue) {
-    }
-  };
-
 }

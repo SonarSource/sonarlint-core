@@ -41,6 +41,7 @@ public interface ConnectedSonarLintEngine {
     UNKNOW,
     UPDATING,
     NEVER_UPDATED,
+    NEED_UPDATE,
     UPDATED
   }
 
