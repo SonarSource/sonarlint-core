@@ -46,6 +46,14 @@ public class ProgressReportTest {
     progressReport.stop("stop");
     assertThat(isThreadAlive(THREAD_NAME)).isFalse();
   }
+  
+  @Test
+  public void accept_no_stop_msg() {
+    progressReport.start("start");
+    assertThat(isThreadAlive(THREAD_NAME)).isTrue();
+    progressReport.stop(null);
+    assertThat(isThreadAlive(THREAD_NAME)).isFalse();
+  }
 
   @Test
   public void do_not_block_app() {

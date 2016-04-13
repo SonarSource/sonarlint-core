@@ -22,13 +22,15 @@ package org.sonarsource.sonarlint.core.util;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
+import javax.annotation.Nullable;
+
 public class ProgressReport implements Runnable {
 
   private static final Logger LOG = Loggers.get(ProgressReport.class);
   private final long period;
   private String message = "";
   private final Thread thread;
-  private String stopMessage = "";
+  private String stopMessage = null;
 
   public ProgressReport(String threadName, long period) {
     this.period = period;
@@ -47,7 +49,9 @@ public class ProgressReport implements Runnable {
         break;
       }
     }
-    log(stopMessage);
+    if (stopMessage != null) {
+      log(stopMessage);
+    }
   }
 
   public void start(String startMessage) {
@@ -59,7 +63,7 @@ public class ProgressReport implements Runnable {
     this.message = message;
   }
 
-  public void stop(String stopMessage) {
+  public void stop(@Nullable String stopMessage) {
     this.stopMessage = stopMessage;
     thread.interrupt();
     try {

@@ -51,11 +51,14 @@ public class FileIndexer {
   void index(SonarLintFileSystem fileSystem) {
     progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
     progressReport.start("Index files");
-
     Progress progress = new Progress();
 
-    indexFiles(fileSystem, progress, analysisConfiguration.inputFiles());
-
+    try {
+      indexFiles(fileSystem, progress, analysisConfiguration.inputFiles());
+    } catch (Exception e) {
+      progressReport.stop(null);
+      throw e;
+    }
     progressReport.stop(progress.count() + " files indexed");
     analysisResult.setFileCount(progress.count());
 
