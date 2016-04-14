@@ -19,34 +19,57 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.sonar.api.internal.google.common.io.Resources;
+
 import javax.annotation.CheckForNull;
 
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class VersionUtils {
   private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
   private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
-  
+
   private VersionUtils() {
   }
 
   public static String getLibraryVersion() {
-    String version = "unknown";
+    String version;
     Package packageInfo = VersionUtils.class.getPackage();
     if (packageInfo != null && packageInfo.getImplementationVersion() != null) {
       version = packageInfo.getImplementationVersion();
+    } else {
+      version = getLibraryVersionFallback();
     }
     return version;
   }
-  
+
+  @VisibleForTesting
+  static String getLibraryVersionFallback() {
+    String version = "unknown";
+    URL resource = VersionUtils.class.getResource("/sl_core_version.txt");
+    if (resource != null) {
+      try {
+        version = Resources.toString(resource, StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        return version;
+      }
+    }
+
+    return version;
+  }
+
   @CheckForNull
   public static String getJarVersion(String jarName) {
     Matcher matcher = JAR_VERSION_PATTERN.matcher(jarName);
-    if(matcher.find()) {
+    if (matcher.find()) {
       return matcher.group(1);
     }
-    
+
     return null;
   }
 }

@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.util;
 
 import org.junit.Test;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class VersionUtilsTest {
@@ -30,5 +33,38 @@ public class VersionUtilsTest {
     assertThat(VersionUtils.getJarVersion("qualinsight-sonarqube-badges-1.2.1.jar")).isEqualTo("1.2.1");
     assertThat(VersionUtils.getJarVersion("sonar-java-plugin-3.13-build4943.jar")).isEqualTo("3.13");
     assertThat(VersionUtils.getJarVersion("sonar-github-plugin-1.2-M3_2016-04-06.jar")).isEqualTo("1.2");
+  }
+
+  @Test
+  public void testVersionFallback() {
+    String version = VersionUtils.getLibraryVersionFallback();
+    assertThat(isVersion(version)).isTrue();
+  }
+
+  @Test
+  public void testVersion() {
+    String version = VersionUtils.getLibraryVersion();
+    assertThat(isVersion(version)).isTrue();
+  }
+
+  @Test
+  public void testVersionAssert() {
+    assertThat(isVersion("2.1")).isTrue();
+    assertThat(isVersion("2.0-SNAPSHOT")).isTrue();
+    assertThat(isVersion("2.0.0-SNAPSHOT")).isTrue();
+    assertThat(isVersion("2-SNAPSHOT")).isFalse();
+    assertThat(isVersion("unknown")).isFalse();
+    assertThat(isVersion(null)).isFalse();
+  }
+
+  private boolean isVersion(String version) {
+    if (version == null) {
+      return false;
+    }
+    String regex = "(\\d+\\.\\d+(?:\\.\\d+)*).*";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(version);
+
+    return matcher.find();
   }
 }
