@@ -116,6 +116,7 @@ public class ConnectedIssueMediumTest {
     writeModuleStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
     writeModuleStatus(tmpStorage, "test-project-2", VersionUtils.getLibraryVersion());
     writeModuleStatus(tmpStorage, "stale_module", "1.0");
+    writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId("local")
@@ -138,7 +139,18 @@ public class ConnectedIssueMediumTest {
       .build();
     Files.createDirectories(module);
     ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
+  }
+  
+  private static void writeStatus(Path storage, String version) throws IOException {
+    Path module = storage.resolve("local").resolve("global");
 
+    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+      .setClientUserAgent("agent")
+      .setSonarlintCoreVersion(version)
+      .setUpdateTimestamp(new Date().getTime())
+      .build();
+    Files.createDirectories(module);
+    ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
   }
 
   @AfterClass
