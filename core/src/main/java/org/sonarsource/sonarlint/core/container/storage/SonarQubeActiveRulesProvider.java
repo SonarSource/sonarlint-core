@@ -64,10 +64,11 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
         String qProfileKey = entry.getValue();
         QProfile qProfile = qProfiles.getQprofilesByKey().get(qProfileKey);
+        LOG.debug("  * " + language + ": " + qProfileKey + " (" + qProfile.getActiveRuleCount() + " rules)");
+
         if (qProfile.getActiveRuleCount() == 0) {
           continue;
         }
-        int arCount = 0;
 
         org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
           Sonarlint.ActiveRules.parser());
@@ -86,9 +87,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
             newActiveRule.setParam(param.getKey(), param.getValue());
           }
           newActiveRule.activate();
-          arCount++;
         }
-        LOG.debug("  * " + language + ": " + qProfileKey + " (" + arCount + " rules)");
       }
 
       activeRules = builder.build();
