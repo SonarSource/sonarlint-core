@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.WsClientTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

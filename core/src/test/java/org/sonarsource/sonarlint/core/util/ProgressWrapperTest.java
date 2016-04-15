@@ -22,41 +22,57 @@ package org.sonarsource.sonarlint.core.util;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
+import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class ProgressWrapperTest {
   private ProgressWrapper progress;
   private ProgressMonitor monitor;
-  
+
   @Before
   public void setUp() {
     monitor = mock(ProgressMonitor.class);
     progress = new ProgressWrapper(monitor);
   }
-  
+
   @Test
   public void testMsg() {
     progress.setProgressAndCheckCancel("msg", 0.5f);
-    
+
     verify(monitor).setMessage("msg");
     verify(monitor).setFraction(0.5f);
     verify(monitor).isCanceled();
-    
+
     verifyNoMoreInteractions(monitor);
   }
-  
+
   @Test
   public void testCancelSection() {
     progress.finishNonCancelableSection();
     progress.startNonCancelableSection();
-    
+
     verify(monitor).finishNonCancelableSection();
     verify(monitor).startNonCancelableSection();
   }
+
+  @Test(expected = CanceledException.class)
+  public void testCancel() {
+    when(monitor.isCanceled()).thenReturn(true);
+    progress.checkCancel();
+  }
   
+  @Test
+  public void testProgress() {
+    when(monitor.isCanceled()).thenReturn(true);
+    progress.setProgress("msg", 0.5f);
+    verify(monitor).setMessage("msg");
+    verify(monitor).setFraction(0.5f);
+  }
+
   @Test
   public void testNoMonitor() {
     progress = new ProgressWrapper(null);

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core;
 
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -50,6 +50,16 @@ public class WsClientTestUtils {
     CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
+    when(wsResponse.requestUrl()).thenReturn(url);
+    when(wsResponse.content()).thenReturn(response);
+    when(wsResponse.isSuccessful()).thenReturn(true);
+    return wsClient;
+  }
+  
+  public static SonarLintWsClient addPostResponse(SonarLintWsClient wsClient, String url, String response) {
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    when(wsClient.post(url)).thenReturn(wsResponse);
+    when(wsClient.rawPost(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.content()).thenReturn(response);
     when(wsResponse.isSuccessful()).thenReturn(true);

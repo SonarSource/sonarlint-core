@@ -20,10 +20,16 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
+import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -35,29 +41,46 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GlobalUpdateExecutorTest {
+  private TempFolder tempFolder;
+  private StorageManager storageManager;
+  private SonarLintWsClient wsClient;
+  private GlobalUpdateExecutor globalUpdate;
+  private RulesDownloader rulesDownloader;
+
+  private File destDir;
+  private File tempDir;
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  @Before
+  public void setUp() throws IOException {
+    storageManager = mock(StorageManager.class);
+    tempFolder = mock(TempFolder.class);
+    rulesDownloader = mock(RulesDownloader.class);
+
+    wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"UP\"}");
+
+    tempDir = temp.newFolder();
+    destDir = temp.newFolder();
+
+    when(tempFolder.newDir()).thenReturn(tempDir);
+    storageManager = mock(StorageManager.class);
+    when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
+    globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
+      mock(PluginReferencesDownloader.class), mock(GlobalPropertiesDownloader.class), rulesDownloader, mock(ModuleListDownloader.class),
+      mock(QualityProfilesDownloader.class), tempFolder);
+  }
+
   @Test
   public void testUpdate() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"UP\"}");
-
-    File tempDir = temp.newFolder();
-    File destDir = temp.newFolder();
-
-    TempFolder tempFolder = mock(TempFolder.class);
-    when(tempFolder.newDir()).thenReturn(tempDir);
-    StorageManager storageManager = mock(StorageManager.class);
-    when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    GlobalUpdateExecutor globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
-      mock(PluginReferencesDownloader.class), mock(GlobalPropertiesDownloader.class), mock(RulesDownloader.class), mock(ModuleListDownloader.class),
-      mock(QualityProfilesDownloader.class), tempFolder);
-
     globalUpdate.update(new ProgressWrapper(null));
 
     UpdateStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.UPDATE_STATUS_PB), UpdateStatus.parser());
@@ -68,5 +91,22 @@ public class GlobalUpdateExecutorTest {
     ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");
     assertThat(serverInfos.getVersion()).isEqualTo("5.5-SNAPSHOT");
+  }
+
+  @Test
+  public void dontCopyOnError() throws IOException {
+    Files.createDirectories(destDir.toPath());
+    Files.createFile(destDir.toPath().resolve("test"));
+    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class));
+    try {
+      globalUpdate.update(new ProgressWrapper(null));
+      fail("Expected exception");
+    } catch (IllegalStateException e) {
+      // dest left untouched
+      assertThat(Files.exists(destDir.toPath().resolve("test")));
+      // tmp cleaned
+      assertThat(Files.exists(tempDir.toPath())).isFalse();
+    }
+
   }
 }

@@ -41,14 +41,15 @@ public class WsHelperImpl implements WsHelper {
 
   @Override
   public ValidationResult validateConnection(ServerConfiguration serverConfig) {
-    checkNotNull(serverConfig);
+    SonarLintWsClient client = createClient(serverConfig);
+    return validateConnection(new ServerVersionAndStatusChecker(client), new PluginVersionChecker(client), new AuthenticationChecker(client));
+  }
+
+  static ValidationResult validateConnection(ServerVersionAndStatusChecker serverChecker, PluginVersionChecker pluginsChecker, AuthenticationChecker authChecker) {
     try {
-      SonarLintWsClient client = new SonarLintWsClient(serverConfig);
-      ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-      PluginVersionChecker pluginsChecker = new PluginVersionChecker(client);
       ServerInfos serverInfo = serverChecker.checkVersionAndStatus();
       pluginsChecker.checkPlugins(serverInfo.getVersion());
-      return new AuthenticationChecker(client).validateCredentials();
+      return authChecker.validateCredentials();
     } catch (UnsupportedServerException e) {
       return new DefaultValidationResult(false, e.getMessage());
     } catch (RuntimeException e) {
@@ -56,15 +57,15 @@ public class WsHelperImpl implements WsHelper {
     }
   }
 
-  @Override
-  public String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force) {
+  private static SonarLintWsClient createClient(ServerConfiguration serverConfig) {
     checkNotNull(serverConfig);
-    try {
-      SonarLintWsClient client = new SonarLintWsClient(serverConfig);
+    return new SonarLintWsClient(serverConfig);
+  }
 
-      ServerVersionAndStatusChecker versionChecker = new ServerVersionAndStatusChecker(client);
+  static String generateAuthenticationToken(ServerVersionAndStatusChecker serverChecker, SonarLintWsClient client, String name, boolean force) {
+    try {
       // in 5.3 login is mandatory and user needs admin privileges
-      versionChecker.checkVersionAndStatus("5.4");
+      serverChecker.checkVersionAndStatus("5.4");
 
       if (force) {
         // revoke
@@ -78,5 +79,11 @@ public class WsHelperImpl implements WsHelper {
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
+  }
+
+  @Override
+  public String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force) {
+    SonarLintWsClient client = createClient(serverConfig);
+    return generateAuthenticationToken(new ServerVersionAndStatusChecker(client), client, name, force);
   }
 }
