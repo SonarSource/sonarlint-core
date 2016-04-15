@@ -103,7 +103,7 @@ public class GlobalUpdateExecutorTest {
       fail("Expected exception");
     } catch (IllegalStateException e) {
       // dest left untouched
-      assertThat(Files.exists(destDir.toPath().resolve("test")));
+      assertThat(Files.exists(destDir.toPath().resolve("test"))).isTrue();
       // tmp cleaned
       assertThat(Files.exists(tempDir.toPath())).isFalse();
     }
