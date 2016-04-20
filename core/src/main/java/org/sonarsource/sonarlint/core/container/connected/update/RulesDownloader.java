@@ -58,7 +58,7 @@ public class RulesDownloader {
     Path activeRulesDir = destDir.resolve(StorageManager.ACTIVE_RULES_FOLDER);
     FileUtils.forceMkDirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(entry.getKey() + ".pb"));
+      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(StorageManager.encodeForFs(entry.getKey()) + ".pb"));
     }
 
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StorageManager.RULES_PB));

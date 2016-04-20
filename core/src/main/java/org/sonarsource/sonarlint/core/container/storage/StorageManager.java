@@ -67,11 +67,11 @@ public class StorageManager {
     return moduleStorageRoot.resolve(encodeForFs(moduleKey));
   }
 
-  private static String encodeForFs(String moduleKey) {
+  public static String encodeForFs(String name) {
     try {
-      return URLEncoder.encode(moduleKey, StandardCharsets.UTF_8.name());
+      return URLEncoder.encode(name, StandardCharsets.UTF_8.name());
     } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("Unable to encode module key", e);
+      throw new IllegalStateException("Unable to encode name: " + name, e);
     }
   }
 
@@ -104,7 +104,7 @@ public class StorageManager {
   }
 
   public Path getActiveRulesPath(String qProfileKey) {
-    return getGlobalStorageRoot().resolve(ACTIVE_RULES_FOLDER).resolve(qProfileKey + ".pb");
+    return getGlobalStorageRoot().resolve(ACTIVE_RULES_FOLDER).resolve(encodeForFs(qProfileKey) + ".pb");
   }
 
   public Path getUpdateStatusPath() {
