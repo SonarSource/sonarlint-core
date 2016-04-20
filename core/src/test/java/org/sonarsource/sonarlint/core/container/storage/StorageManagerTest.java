@@ -45,4 +45,17 @@ public class StorageManagerTest {
     assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("modules").resolve("module.%3Akey%2Fwith_branch%25"));
   }
 
+  @Test
+  public void encodeServerIdForFs() throws Exception {
+
+    Path sonarUserHome = temp.newFolder().toPath();
+    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+      .setSonarLintUserHome(sonarUserHome)
+      .setServerId("complicated.:name/with_invalid%chars")
+      .build());
+
+    Path storageRoot = manager.getServerStorageRoot();
+    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("complicated.%3Aname%2Fwith_invalid%25chars"));
+  }
+
 }

@@ -49,7 +49,7 @@ public class StorageManager {
   private final GlobalUpdateStatus updateStatus;
 
   public StorageManager(ConnectedGlobalConfiguration configuration) {
-    serverStorageRoot = configuration.getStorageRoot().resolve(configuration.getServerId());
+    serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getServerId()));
     globalStorageRoot = serverStorageRoot.resolve("global");
     moduleStorageRoot = serverStorageRoot.resolve("modules");
     updateStatus = initUpdateStatus();
