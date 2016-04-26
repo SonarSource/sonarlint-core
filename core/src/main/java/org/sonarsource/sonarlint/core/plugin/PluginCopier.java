@@ -32,6 +32,7 @@ import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
@@ -68,26 +69,29 @@ public class PluginCopier {
 
   @VisibleForTesting
   File getFromCacheOrCopy(final PluginReference pluginReference) {
-    final URL url = pluginReference.getDownloadUrl();
     try {
-      return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new StandaloneModeFileDownloader(url)).toFile();
+      return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new FileDownloader(pluginReference)).toFile();
+    } catch (StorageException e) {
+      throw e;
     } catch (Exception e) {
-      throw new IllegalStateException("Fail to copy plugin " + pluginReference.getFilename() + " from URL: " + url, e);
+      throw new IllegalStateException("Fail to copy plugin " + pluginReference.getFilename() + " from URL: " + pluginReference.getDownloadUrl(), e);
     }
   }
 
-  /**
-   * In connected mode plugins are always supposed to be in the cache.
-   */
-  private static class StandaloneModeFileDownloader implements PluginCache.Downloader {
-    private URL url;
+  private static class FileDownloader implements PluginCache.Downloader {
+    private PluginReference pluginReference;
 
-    StandaloneModeFileDownloader(URL url) {
-      this.url = url;
+    FileDownloader(PluginReference pluginReference) {
+      this.pluginReference = pluginReference;
     }
 
     @Override
     public void download(String filename, Path toFile) throws IOException {
+      URL url = pluginReference.getDownloadUrl();
+      if (url == null) {
+        // In connected mode plugins are always supposed to be in the cache.
+        throw new StorageException("Plugin " + pluginReference.getFilename() + " not found in local storage. Please update server configuration.", null);
+      }
       if (LOG.isDebugEnabled()) {
         LOG.debug("Copy plugin {} to {}", url, toFile);
       } else {

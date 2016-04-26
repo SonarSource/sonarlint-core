@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -40,16 +42,17 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageGlobalContainer;
 import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import javax.annotation.Nullable;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ConnectedSonarLintEngineImpl.class);
 
   private final ConnectedGlobalConfiguration globalConfig;
   private StorageGlobalContainer globalContainer;
@@ -106,7 +109,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       } else {
         changeState(State.UPDATED);
       }
-
+    } catch (StorageException e) {
+      LOG.debug(e.getMessage(), e);
+      changeState(State.NEED_UPDATE);
     } catch (RuntimeException e) {
       changeState(State.UNKNOW);
       throw SonarLintWrappedException.wrap(e);
