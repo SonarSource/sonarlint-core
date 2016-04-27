@@ -31,14 +31,12 @@ import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
-import java.io.IOException;
-
 public class Daemon {
   private static final Logger LOGGER = LoggerFactory.getLogger(Daemon.class);
   private static final int DEFAULT_PORT = 8050;
   private Server server;
 
-  public static void main(String[] args) throws IOException, InterruptedException {
+  public static void main(String[] args) {
     new Daemon().start();
   }
 
@@ -46,23 +44,28 @@ public class Daemon {
     server.shutdown();
   }
 
-  public void start() throws IOException, InterruptedException {
-    ServerInterceptor interceptor = new ExceptionInterceptor();
-    
-    server = ServerBuilder.forPort(DEFAULT_PORT)
-      .addService(ServerInterceptors.intercept(ConnectedSonarLintGrpc.bindService(new ConnectedSonarLintImpl()), interceptor))
-      .addService(ServerInterceptors.intercept(StandaloneSonarLintGrpc.bindService(new StandaloneSonarLintImpl()), interceptor))
-      .build()
-      .start();
-    LOGGER.info("Server started, listening on " + DEFAULT_PORT);
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        System.err.println("*** shutting down gRPC server since JVM is shutting down");
-        Daemon.this.stop();
-        System.err.println("*** server shut down");
-      }
-    });
-    server.awaitTermination();
+  public void start() {
+    try {
+      ServerInterceptor interceptor = new ExceptionInterceptor();
+
+      server = ServerBuilder.forPort(DEFAULT_PORT)
+        .addService(ServerInterceptors.intercept(ConnectedSonarLintGrpc.bindService(new ConnectedSonarLintImpl()), interceptor))
+        .addService(ServerInterceptors.intercept(StandaloneSonarLintGrpc.bindService(new StandaloneSonarLintImpl()), interceptor))
+        .build()
+        .start();
+      LOGGER.info("Server started, listening on " + DEFAULT_PORT);
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        @Override
+        public void run() {
+          System.err.println("*** shutting down gRPC server since JVM is shutting down");
+          Daemon.this.stop();
+          System.err.println("*** server shut down");
+        }
+      });
+      server.awaitTermination();
+    } catch (Exception e) {
+      // grpc threads are daemon, so should not hang process
+      LOGGER.error("Error running daemon", e);
+    }
   }
 }

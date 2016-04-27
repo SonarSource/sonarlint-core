@@ -86,7 +86,7 @@ public class StandaloneSonarLintImpl extends AbstractSonarLint implements Standa
       List<InputFile> requestFiles = requestConfig.getFileList();
 
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset())));
+        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject()));
       }
 
       StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(

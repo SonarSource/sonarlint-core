@@ -85,7 +85,7 @@ public class ConnectedSonarLintImpl implements ConnectedSonarLint {
       List<InputFile> requestFiles = requestConfig.getFileList();
 
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset())));
+        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject()));
       }
 
       ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration(

@@ -32,15 +32,21 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 public abstract class AbstractSonarLint {
+  protected AbstractSonarLint() {
+    // nothing to do
+  }
+
   protected static class DefaultClientInputFile implements ClientInputFile {
     private final Path path;
     private final boolean isTest;
     private final Charset charset;
+    private final String userObject;
 
-    protected DefaultClientInputFile(Path path, boolean isTest, Charset charset) {
+    protected DefaultClientInputFile(Path path, boolean isTest, Charset charset, String userObject) {
       this.path = path;
       this.isTest = isTest;
       this.charset = charset;
+      this.userObject = userObject;
     }
 
     @Override
@@ -60,7 +66,7 @@ public abstract class AbstractSonarLint {
 
     @Override
     public <G> G getClientObject() {
-      return null;
+      return (G) userObject;
     }
   }
 
@@ -74,6 +80,7 @@ public abstract class AbstractSonarLint {
     @Override
     public void handle(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue issue) {
       Severity severity;
+      ClientInputFile inputFile = issue.getInputFile();
 
       switch (issue.getSeverity()) {
         case "MINOR":
@@ -94,16 +101,22 @@ public abstract class AbstractSonarLint {
           break;
       }
 
-      observer.onNext(Issue.newBuilder()
-        .setRuleKey(issue.getRuleKey())
+      Issue.Builder builder = Issue.newBuilder();
+      builder.setRuleKey(issue.getRuleKey())
         .setRuleName(issue.getRuleName())
         .setMessage(issue.getMessage())
         .setSeverity(severity)
         .setStartLine(issue.getStartLine())
         .setStartLineOffset(issue.getStartLineOffset())
         .setEndLine(issue.getEndLine())
-        .setEndLineOffset(issue.getEndLineOffset())
-        .build());
+        .setEndLineOffset(issue.getEndLineOffset());
+
+      if (inputFile != null) {
+        builder.setFilePath(inputFile.getPath().toString())
+          .setUserObject((String) inputFile.getClientObject());
+      }
+
+      observer.onNext(builder.build());
     }
   }
 
@@ -111,6 +124,9 @@ public abstract class AbstractSonarLint {
     private StreamObserver<LogEvent> response;
 
     protected void setObserver(StreamObserver<LogEvent> response) {
+      if (this.response != null) {
+        this.response.onCompleted();
+      }
       this.response = response;
     }
 
@@ -131,6 +147,7 @@ public abstract class AbstractSonarLint {
         try {
           response.onNext(log);
         } catch (StatusRuntimeException e) {
+          System.out.println("Log stream closed: " + e.getMessage());
           response = null;
         }
       }
