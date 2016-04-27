@@ -4,8 +4,8 @@
 @REM   JAVA_HOME - location of a JDK home dir
 @REM
 @REM Optional ENV vars:
-@REM   SONARLINT_HOME - location of SonarLint's installed home dir
-@REM   SONARLINT_OPTS - parameters passed to the Java VM when running SonarLint
+@REM   SONARLINT_DAEMON_HOME - location of SonarLint's installed home dir
+@REM   SONARLINT_DAEMON_OPTS - parameters passed to the Java VM when running SonarLint
 
 @echo off
 
@@ -49,20 +49,20 @@ set JAVA_EXEC="%JAVA_HOME%\bin\java.exe"
 
 @REM *** SONARLINT HOME VALIDATION ***
 :OkJava
-if NOT "%SONARLINT_HOME%"=="" goto cleanSonarLintHome
-set SONARLINT_HOME=%~dp0..
+if NOT "%SONARLINT_DAEMON_HOME%"=="" goto cleanSonarLintHome
+set SONARLINT_DAEMON_HOME=%~dp0..
 goto run
 
 :cleanSonarLintHome
 @REM If the property has a trailing backslash, remove it
-if "%SONARLINT_HOME:~-1%"=="\" set SONARLINT_HOME=%SONARLINT_HOME:~0,-1%
+if "%SONARLINT_DAEMON_HOME:~-1%"=="\" set SONARLINT_DAEMON_HOME=%SONARLINT_DAEMON_HOME:~0,-1%
 
-@REM Check if the provided SONARLINT_HOME is a valid install dir
-IF EXIST "%SONARLINT_HOME%\lib\sonarlint-daemon-${project.version}.jar" goto run
+@REM Check if the provided SONARLINT_DAEMON_HOME is a valid install dir
+IF EXIST "%SONARLINT_DAEMON_HOME%\lib\sonarlint-daemon-${project.version}.jar" goto run
 
 echo.
-echo ERROR: SONARLINT_HOME exists but does not point to a valid install
-echo        directory: %SONARLINT_HOME%
+echo ERROR: SONARLINT_DAEMON_HOME exists but does not point to a valid install
+echo        directory: %SONARLINT_DAEMON_HOME%
 echo.
 goto error
 
@@ -70,11 +70,11 @@ goto error
 
 @REM ==== START RUN ====
 :run
-echo %SONARLINT_HOME%
+echo %SONARLINT_DAEMON_HOME%
 
 set PROJECT_HOME=%CD%
 
-%JAVA_EXEC% -Djava.awt.headless=true %SONARLINT_OPTS% -cp "%SONARLINT_HOME%\lib\sonarlint-daemon-${project.version}.jar" "-Dsonarlint.home=%SONARLINT_HOME%" org.sonarlint.daemon.Daemon %*
+%JAVA_EXEC% -Djava.awt.headless=true %SONARLINT_DAEMON_OPTS% -cp "%SONARLINT_DAEMON_HOME%\lib\sonarlint-daemon-${project.version}.jar" "-Dsonarlint.home=%SONARLINT_DAEMON_HOME%" org.sonarlint.daemon.Daemon %*
 if ERRORLEVEL 1 goto error
 goto end
 

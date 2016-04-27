@@ -3,8 +3,8 @@
 # SonarLint Startup Script for Unix
 #
 # Optional ENV vars:
-#   SONARLINT_HOME - location of SonarLint's installed home dir
-#   SONARLINT_OPTS - parameters passed to the Java VM when running SonarLint
+#   SONARLINT_DAEMON_HOME - location of SonarLint's installed home dir
+#   SONARLINT_DAEMON_OPTS - parameters passed to the Java VM when running SonarLint
 
 # The following notice only apply to real_path function copied from
 # https://sites.google.com/site/jdisnard/realpath
@@ -65,7 +65,7 @@ real_path () {
   echo "$FOO"
 }
 
-if [ -z "$SONARLINT_HOME" ] ; then
+if [ -z "$SONARLINT_DAEMON_HOME" ] ; then
   PRG="$0"
 
   if [ -h "$PRG" ] ; then
@@ -73,15 +73,15 @@ if [ -z "$SONARLINT_HOME" ] ; then
     PRG=`real_path "$PRG"`
   fi
 
-  SONARLINT_HOME=`dirname "$PRG"`/..
+  SONARLINT_DAEMON_HOME=`dirname "$PRG"`/..
 
   # make it fully qualified
-  SONARLINT_HOME=`cd "$SONARLINT_HOME" && pwd`
+  SONARLINT_DAEMON_HOME=`cd "$SONARLINT_DAEMON_HOME" && pwd`
 fi
 
-# check that the SONARLINT_HOME has been correctly set
-if [ ! -f "$SONARLINT_HOME/lib/sonarlint-daemon-${project.version}.jar" ] ; then
-  echo '$SONARLINT_HOME' does not point to a valid installation directory: $SONARLINT_HOME
+# check that the SONARLINT_DAEMON_HOME has been correctly set
+if [ ! -f "$SONARLINT_DAEMON_HOME/lib/sonarlint-daemon-${project.version}.jar" ] ; then
+  echo '$SONARLINT_DAEMON_HOME' does not point to a valid installation directory: $SONARLINT_DAEMON_HOME
   exit 1
 fi
 
@@ -92,16 +92,16 @@ else
   JAVA_CMD="`which java`"
 fi
 
-JAR_FILE="${SONARLINT_HOME}"/lib/sonarlint-daemon-${project.version}.jar
+JAR_FILE="${SONARLINT_DAEMON_HOME}"/lib/sonarlint-daemon-${project.version}.jar
 
-#echo "Info: Using sonarlint-daemon in $SONARLINT_HOME"
+#echo "Info: Using sonarlint-daemon in $SONARLINT_DAEMON_HOME"
 #echo "Info: Using java at $JAVA_CMD"
 #echo "Info: Using classpath $JAR_FILE"
 
 exec "$JAVA_CMD" \
   -Djava.awt.headless=true \
-  $SONARLINT_OPTS \
+  $SONARLINT_DAEMON_OPTS \
   -classpath  $JAR_FILE \
-  "-Dsonarlint.home=\${SONARLINT_HOME}" \
+  "-Dsonarlint.home=\${SONARLINT_DAEMON_HOME}" \
   org.sonarlint.daemon.Daemon "$@"
 

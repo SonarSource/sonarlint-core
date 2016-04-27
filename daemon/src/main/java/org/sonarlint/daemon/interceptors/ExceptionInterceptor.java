@@ -31,7 +31,7 @@ import io.grpc.Status;
 public class ExceptionInterceptor implements ServerInterceptor {
   @Override
   public <ReqT, RespT> Listener<ReqT> interceptCall(MethodDescriptor<ReqT, RespT> method, ServerCall<RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-    ServerCall<RespT> serverCall = new TransformStatusServerCall<RespT>(call);
+    ServerCall<RespT> serverCall = new TransformStatusServerCall<>(call);
     return next.startCall(method, serverCall, headers);
   }
 
@@ -48,5 +48,5 @@ public class ExceptionInterceptor implements ServerInterceptor {
       }
       super.close(transformed, trailers);
     }
-  };
+  }
 }
