@@ -37,23 +37,43 @@ public class Daemon {
   private Server server;
 
   public static void main(String[] args) {
-    new Daemon().start();
+    int port;
+
+    try {
+      Options options = Options.parse(args);
+
+      if (options.isHelp()) {
+        Options.printUsage();
+        return;
+      }
+
+      if (options.getPort() != null) {
+        port = Integer.parseInt(options.getPort());
+      } else {
+        port = DEFAULT_PORT;
+      }
+    } catch (Exception e) {
+      LOGGER.error("Error parsing arguments", e);
+      return;
+    }
+
+    new Daemon().start(port);
   }
 
   public void stop() {
     server.shutdown();
   }
 
-  public void start() {
+  public void start(int port) {
     try {
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
-      server = ServerBuilder.forPort(DEFAULT_PORT)
+      server = ServerBuilder.forPort(port)
         .addService(ServerInterceptors.intercept(ConnectedSonarLintGrpc.bindService(new ConnectedSonarLintImpl()), interceptor))
         .addService(ServerInterceptors.intercept(StandaloneSonarLintGrpc.bindService(new StandaloneSonarLintImpl()), interceptor))
         .build()
         .start();
-      LOGGER.info("Server started, listening on " + DEFAULT_PORT);
+      LOGGER.info("Server started, listening on " + port);
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {

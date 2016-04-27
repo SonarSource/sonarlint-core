@@ -129,8 +129,6 @@ public class ConnectedDaemonTest {
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     daemon.install();
-    daemon.run();
-    daemon.waitReady();
   }
 
   @After
@@ -141,6 +139,8 @@ public class ConnectedDaemonTest {
 
   @Test
   public void testNormal() throws InterruptedException, IOException {
+    daemon.run();
+    daemon.waitReady();
     ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8050)
       .usePlaintext(true)
       .build();
@@ -188,7 +188,22 @@ public class ConnectedDaemonTest {
   }
 
   @Test
+  public void testPort() throws IOException {
+    daemon.run("--port", "8051");
+    daemon.waitReady();
+
+    ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8051)
+      .usePlaintext(true)
+      .build();
+
+    ConnectedSonarLintBlockingStub sonarlint = ConnectedSonarLintGrpc.newBlockingStub(channel);
+    sonarlint.start(createConnectedConfig());
+  }
+
+  @Test
   public void testError() throws IOException {
+    daemon.run();
+    daemon.waitReady();
     ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8050)
       .usePlaintext(true)
       .build();
