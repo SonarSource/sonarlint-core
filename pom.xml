@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.parent</groupId>
@@ -26,6 +27,7 @@
     <module>core</module>
     <module>daemon</module>
     <module>daemon-protocol</module>
+    <module>daemon-java-client</module>
     <module>rule-extractor</module>
     <module>its</module>
   </modules>
@@ -49,6 +51,11 @@
           <configuration>
             <releaseProfiles>sign</releaseProfiles>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.5.3</version>
         </plugin>
       </plugins>
     </pluginManagement>
