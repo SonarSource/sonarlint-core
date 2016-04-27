@@ -15,10 +15,6 @@
     <url>http://www.sonarsource.com/</url>
   </organization>
   
- <properties>
-    <grpc.version>0.13.2</grpc.version>
-  </properties>
-  
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -32,14 +28,16 @@
       <version>${protobuf.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java-util</artifactId>
-      <version>${protobuf.version}</version>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
-        <artifactId>grpc-all</artifactId>
-        <version>${grpc.version}</version>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
   

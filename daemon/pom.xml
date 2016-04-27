@@ -20,17 +20,11 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-daemon-protocol</artifactId>
       <version>${project.version}</version>
-      <exclusions>
-        <!-- Conflicting with the same deps but with more recent versions included in sonarlint-core -->
-        <exclusion>
-          <groupId>commons-codec</groupId>
-          <artifactId>commons-codec</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.okhttp</groupId>
-          <artifactId>okhttp</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty</artifactId>
+      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarlint.core</groupId>
