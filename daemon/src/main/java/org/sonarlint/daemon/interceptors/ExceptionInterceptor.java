@@ -31,17 +31,22 @@ import io.grpc.Status;
 public class ExceptionInterceptor implements ServerInterceptor {
   @Override
   public <ReqT, RespT> Listener<ReqT> interceptCall(MethodDescriptor<ReqT, RespT> method, ServerCall<RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-    ServerCall<RespT> serverCall = new SimpleForwardingServerCall<RespT>(call) {
-      @Override
-      public void close(Status status, Metadata trailers) {
-        Status transformed = status;
-        if (transformed.getDescription() == null && transformed.getCause() != null) {
-          transformed = status.withDescription(status.getCause().getMessage());
-        }
-        super.close(transformed, trailers);
-      }
-    };
-  
+    ServerCall<RespT> serverCall = new TransformStatusServerCall<RespT>(call);
     return next.startCall(method, serverCall, headers);
   }
+
+  static class TransformStatusServerCall<RespT> extends SimpleForwardingServerCall<RespT> {
+    protected TransformStatusServerCall(ServerCall<RespT> delegate) {
+      super(delegate);
+    }
+
+    @Override
+    public void close(Status status, Metadata trailers) {
+      Status transformed = status;
+      if (transformed.getDescription() == null && transformed.getCause() != null) {
+        transformed = status.withDescription(status.getCause().getMessage());
+      }
+      super.close(transformed, trailers);
+    }
+  };
 }

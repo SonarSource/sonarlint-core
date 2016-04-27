@@ -19,7 +19,6 @@
  */
 package its.tools;
 
-import com.sonar.orchestrator.util.NetworkUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -45,7 +44,6 @@ public class SonarlintDaemon extends ExternalResource {
   private CommandExecutor exec;
 
   public void install() {
-    int port = NetworkUtils.getNextAvailablePort();
     install(artifactVersion());
   }
   
