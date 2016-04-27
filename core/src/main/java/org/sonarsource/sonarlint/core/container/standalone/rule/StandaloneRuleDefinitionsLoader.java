@@ -24,15 +24,15 @@ import org.sonar.api.server.rule.RulesDefinition;
 /**
  * Load rules directly from plugins {@link RulesDefinition}
  */
-public class StandalonePluginRulesLoader {
+public class StandaloneRuleDefinitionsLoader {
   private final RulesDefinition.Context context;
 
-  public StandalonePluginRulesLoader() {
+  public StandaloneRuleDefinitionsLoader() {
     // No plugin installed
     context = new RulesDefinition.Context();
   }
 
-  public StandalonePluginRulesLoader(RulesDefinition[] pluginDefs) {
+  public StandaloneRuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
 
     context = new RulesDefinition.Context();
     for (RulesDefinition pluginDefinition : pluginDefs) {

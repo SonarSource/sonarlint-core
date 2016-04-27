@@ -49,7 +49,7 @@ public class RuleFinderCompatibility implements RuleFinder {
 
   private final RulesDefinition.Context context;
 
-  public RuleFinderCompatibility(StandalonePluginRulesLoader rules) {
+  public RuleFinderCompatibility(StandaloneRuleDefinitionsLoader rules) {
     this.context = rules.getContext();
   }
 

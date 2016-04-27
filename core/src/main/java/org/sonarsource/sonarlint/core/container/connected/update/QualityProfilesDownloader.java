@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
@@ -27,10 +30,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
 
 public class QualityProfilesDownloader {
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";

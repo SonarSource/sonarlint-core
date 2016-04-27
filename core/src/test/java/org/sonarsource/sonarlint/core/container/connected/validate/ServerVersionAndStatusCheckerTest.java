@@ -50,18 +50,18 @@ public class ServerVersionAndStatusCheckerTest {
 
   @Test
   public void incompatibleVersion() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.1\",\"status\": \"UP\"}");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"4.5\",\"status\": \"UP\"}");
 
     ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
 
     ValidationResult validateStatusAndVersion = checker.validateStatusAndVersion();
     assertThat(validateStatusAndVersion.success()).isFalse();
-    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 5.1. Version should be greater or equal to 5.2");
+    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 4.5.1");
     try {
       checker.checkVersionAndStatus();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 5.1. Version should be greater or equal to 5.2");
+      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 4.5. Version should be greater or equal to 4.5.1");
     }
   }
 
@@ -76,7 +76,7 @@ public class ServerVersionAndStatusCheckerTest {
       checker.checkVersionAndStatus();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 4.5. Version should be greater or equal to 5.2");
+      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 4.5. Version should be greater or equal to 4.5.1");
     }
   }
 

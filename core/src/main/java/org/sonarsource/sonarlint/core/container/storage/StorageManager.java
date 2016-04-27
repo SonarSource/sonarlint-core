@@ -111,7 +111,7 @@ public class StorageManager {
     return getGlobalStorageRoot().resolve(UPDATE_STATUS_PB);
   }
 
-  public Path getServerInfoPath() {
+  public Path getServerInfosPath() {
     return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
   }
 
@@ -130,7 +130,7 @@ public class StorageManager {
 
       String version = null;
       if (!stale) {
-        final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfoPath(), Sonarlint.ServerInfos.parser());
+        final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
         version = serverInfoFromStorage.getVersion();
       }
 
@@ -154,6 +154,10 @@ public class StorageManager {
       };
     }
     return null;
+  }
+
+  public Sonarlint.ServerInfos readServerInfosFromStorage() {
+    return ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
   }
 
   public Sonarlint.Rules readRulesFromStorage() {

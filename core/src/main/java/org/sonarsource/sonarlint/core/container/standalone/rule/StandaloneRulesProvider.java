@@ -31,7 +31,7 @@ import org.sonar.markdown.Markdown;
 public class StandaloneRulesProvider extends ProviderAdapter {
   private Rules singleton = null;
 
-  public Rules provide(StandalonePluginRulesLoader pluginRulesLoader) {
+  public Rules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
     if (singleton == null) {
       RulesBuilder builder = new RulesBuilder();
 

@@ -28,6 +28,8 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
@@ -77,13 +79,15 @@ public class GlobalUpdateExecutor {
       Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
-      pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
+      PluginReferences pluginReferences = pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp);
+      rulesDownloader.fetchRulesTo(temp, serverStatus.getVersion(), pluginReferences);
 
-      progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
-      qualityProfilesDownloader.fetchQualityProfiles(temp);
+      if (supportQualityProfilesWS(serverStatus.getVersion())) {
+        progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
+        qualityProfilesDownloader.fetchQualityProfiles(temp);
+      }
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
       moduleListDownloader.fetchModulesList(temp);
@@ -110,5 +114,9 @@ public class GlobalUpdateExecutor {
       }
       throw e;
     }
+  }
+
+  public static boolean supportQualityProfilesWS(String version) {
+    return Version.create(version).compareTo(Version.create("5.2")) >= 0;
   }
 }

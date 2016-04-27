@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import org.picocontainer.injectors.ProviderAdapter;
+import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
 public class StorageQProfilesProvider extends ProviderAdapter {
 
@@ -28,7 +30,13 @@ public class StorageQProfilesProvider extends ProviderAdapter {
 
   public Sonarlint.QProfiles provide(StorageManager storageManager) {
     if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = ProtobufUtil.readFile(storageManager.getQProfilesPath(), Sonarlint.QProfiles.parser());
+      ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
+      boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
+      if (supportQualityProfilesWS) {
+        qProfilesFromStorage = ProtobufUtil.readFile(storageManager.getQProfilesPath(), Sonarlint.QProfiles.parser());
+      } else {
+        qProfilesFromStorage = Sonarlint.QProfiles.getDefaultInstance();
+      }
     }
     return qProfilesFromStorage;
   }

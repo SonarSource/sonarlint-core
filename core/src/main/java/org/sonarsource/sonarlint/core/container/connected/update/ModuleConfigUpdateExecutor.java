@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -55,11 +56,17 @@ public class ModuleConfigUpdateExecutor {
 
   public void update(String moduleKey) {
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
-    Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKey().keySet();
+    ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
 
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
+    boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
+    if (supportQualityProfilesWS) {
+      final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKey().keySet();
+      fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
+    } else {
+      fetchProjectQualityProfilesBefore5dot2(moduleKey, builder);
+    }
 
-    fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
     fetchProjectProperties(moduleKey, globalProps, builder);
 
     Path temp = tempFolder.newDir().toPath();
@@ -79,24 +86,59 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {
+    SearchWsResponse qpResponse;
     try (InputStream contentStream = wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey)).contentStream()) {
-      SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
-      for (QualityProfile qp : qpResponse.getProfilesList()) {
-        String qpKey = qp.getKey();
-        if (!qProfileKeys.contains(qpKey)) {
-          throw new IllegalStateException(
-            "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Server storage is probably outdated. Please update server.");
-        }
-        builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
-      }
+      qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load module quality profiles", e);
+    }
+    for (QualityProfile qp : qpResponse.getProfilesList()) {
+      String qpKey = qp.getKey();
+      if (!qProfileKeys.contains(qpKey)) {
+        throw new IllegalStateException(
+          "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Server storage is probably outdated. Please update server.");
+      }
+      builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
     }
 
   }
 
+  private void fetchProjectQualityProfilesBefore5dot2(String moduleKey, ModuleConfiguration.Builder builder) {
+    WsResponse response = wsClient.get("/batch/project?key=" + StringUtils.urlEncode(moduleKey));
+    try (JsonReader reader = new JsonReader(response.contentReader())) {
+      reader.beginObject();
+      while (reader.hasNext()) {
+        String propName = reader.nextName();
+        if ("qprofilesByLanguage".equals(propName)) {
+          reader.beginObject();
+          while (reader.hasNext()) {
+            String language = reader.nextName();
+            reader.beginObject();
+            while (reader.hasNext()) {
+              String qpPropName = reader.nextName();
+              switch (qpPropName) {
+                case "key":
+                  builder.getMutableQprofilePerLanguage().put(language, reader.nextString());
+                  break;
+                default:
+                  reader.skipValue();
+              }
+            }
+            reader.endObject();
+          }
+          reader.endObject();
+        } else {
+          reader.skipValue();
+        }
+      }
+      reader.endObject();
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to load module quality profiles", e);
+    }
+  }
+
   private void fetchProjectProperties(String moduleKey, GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder) {
-    WsResponse response = wsClient.get("api/properties?format=json&resource=" + StringUtils.urlEncode(moduleKey));
+    WsResponse response = wsClient.get("/api/properties?format=json&resource=" + StringUtils.urlEncode(moduleKey));
     String responseStr = response.content();
     try (JsonReader reader = new JsonReader(new StringReader(responseStr))) {
       reader.beginArray();

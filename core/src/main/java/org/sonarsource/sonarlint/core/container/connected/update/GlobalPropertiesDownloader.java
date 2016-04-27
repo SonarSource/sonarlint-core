@@ -62,12 +62,15 @@ public class GlobalPropertiesDownloader {
     String value = null;
     while (reader.hasNext()) {
       String propName = reader.nextName();
-      if ("key".equals(propName)) {
-        key = reader.nextString();
-      } else if ("value".equals(propName)) {
-        value = reader.nextString();
-      } else {
-        reader.skipValue();
+      switch (propName) {
+        case "key":
+          key = reader.nextString();
+          break;
+        case "value":
+          value = reader.nextString();
+          break;
+        default:
+          reader.skipValue();
       }
     }
     builder.getMutableProperties().put(key, value);

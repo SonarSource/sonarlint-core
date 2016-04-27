@@ -75,6 +75,7 @@ import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
 import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assume.assumeTrue;
 
 public class ConnectedModeTest {
 
@@ -247,6 +248,8 @@ public class ConnectedModeTest {
 
   @Test
   public void analysisTemplateRule() throws Exception {
+    // WS quality profile is not available before 5.2 so let's skip this test
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2"));
     SearchWsRequest searchReq = new SearchWsRequest();
     searchReq.setProfileName("SonarLint IT Java");
     searchReq.setProjectKey(PROJECT_KEY_JAVA);
@@ -286,15 +289,19 @@ public class ConnectedModeTest {
       issueListener);
 
     assertThat(issueListener.getIssues()).hasSize(3);
-    
+
+    assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("Description not available for custom rules");
+
     request = new PostRequest("/api/rules/delete")
       .setParam("key", "squid:myrule");
-      response = adminWsClient.wsConnector().call(request);
+    response = adminWsClient.wsConnector().call(request);
     assertThat(response.code()).isEqualTo(200);
   }
 
   @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2"));
+
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA_EMPTY);
 

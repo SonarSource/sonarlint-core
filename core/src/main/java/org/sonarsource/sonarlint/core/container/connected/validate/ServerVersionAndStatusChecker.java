@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.net.HttpURLConnection;
-
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
@@ -34,7 +33,7 @@ import static org.sonar.api.internal.apachecommons.lang.StringUtils.trimToEmpty;
 
 public class ServerVersionAndStatusChecker {
 
-  private static final String MIN_SQ_VERSION = "5.2";
+  private static final String MIN_SQ_VERSION = "4.5.1";
   private final SonarLintWsClient wsClient;
 
   public ServerVersionAndStatusChecker(SonarLintWsClient wsClient) {
@@ -50,7 +49,7 @@ public class ServerVersionAndStatusChecker {
   public ServerInfos checkVersionAndStatus() {
     return checkVersionAndStatus(MIN_SQ_VERSION);
   }
-  
+
   /**
    * Checks SonarQube version against a provided minimum version
    * @return ServerInfos
@@ -80,7 +79,7 @@ public class ServerVersionAndStatusChecker {
   public ValidationResult validateStatusAndVersion() {
     return validateStatusAndVersion(MIN_SQ_VERSION);
   }
-  
+
   public ValidationResult validateStatusAndVersion(String minVersion) {
     ServerInfos serverStatus = fetchServerInfos();
     if (!"UP".equals(serverStatus.getStatus())) {
