@@ -113,9 +113,9 @@ public class StandaloneDaemonTest {
 
   private StandaloneConfiguration createStandaloneConfig() throws IOException {
     return StandaloneConfiguration.newBuilder()
-      .addPluginPath(PluginLocator.getJavaPluginUrl().toString())
-      .addPluginPath(PluginLocator.getPhpPluginUrl().toString())
-      .addPluginPath(PluginLocator.getJavaScriptPluginUrl().toString())
+      .addPluginUrl(PluginLocator.getJavaPluginUrl().toString())
+      .addPluginUrl(PluginLocator.getPhpPluginUrl().toString())
+      .addPluginUrl(PluginLocator.getJavaScriptPluginUrl().toString())
       .setHomePath(temp.newFolder().getAbsolutePath())
       .build();
   }

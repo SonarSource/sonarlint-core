@@ -125,7 +125,7 @@ message ServerConfig {
 
 message StandaloneConfiguration {
   string home_path = 1;
-  repeated string plugin_path = 2;
+  repeated string plugin_url = 2;
 }
 
 message ConnectedConfiguration {

@@ -57,7 +57,7 @@ public class StandaloneSonarLintImpl extends AbstractSonarLint implements Standa
     try {
       Builder builder = StandaloneGlobalConfiguration.builder();
 
-      for (String pluginPath : requestConfig.getPluginPathList()) {
+      for (String pluginPath : requestConfig.getPluginUrlList()) {
         builder.addPlugin(new URL(pluginPath));
       }
 
