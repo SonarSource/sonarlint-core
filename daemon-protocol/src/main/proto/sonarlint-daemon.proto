@@ -33,12 +33,14 @@ service ConnectedSonarLint {
   rpc UpdateModule(ModuleUpdateReq) returns (Void); // updates a module using a provided server configuration
   rpc GetState(Void) returns (StorageState); // get state of the storage
   rpc StreamLogs(Void) returns (stream LogEvent); // stream all logs from the server
+  rpc GetRuleDetails(RuleKey) returns (RuleDetails);
 }
 
 service StandaloneSonarLint {
   rpc Start(StandaloneConfiguration) returns (Void); // must be called before any other rpc 
   rpc Analyze(AnalysisReq) returns (stream Issue);
   rpc StreamLogs(Void) returns (stream LogEvent); // stream all logs from the server
+  rpc GetRuleDetails(RuleKey) returns (RuleDetails);
 }
 
 message ModuleUpdateReq {
@@ -46,8 +48,13 @@ message ModuleUpdateReq {
   string module_key = 2;
 }
 
+message RuleKey {
+  string key = 1;
+}
+
 message StorageState {
   State state = 1;
+  
   enum State {
     UNKNOW = 0;
     UPDATING = 1;
@@ -64,6 +71,14 @@ message LogEvent {
   string level = 1;
   string log = 2;
   bool is_debug = 3;
+  
+  enum Level {
+  	ERROR = 0;
+  	WARN = 1;
+  	INFO = 2;
+  	DEBUG = 3;
+  	TRACE = 4;
+  }
 }
 
 message ServerConfig {
@@ -100,6 +115,15 @@ message ServerConfig {
      INFO = 4;
    }
  }
+ 
+ message RuleDetails {
+  string key = 1;
+  string name = 2;
+  string html_description = 3;
+  string language = 4;
+  string severity = 5;
+  repeated string tags = 6;
+}
  
  message AnalysisReq {
   map<string, string> properties = 1;

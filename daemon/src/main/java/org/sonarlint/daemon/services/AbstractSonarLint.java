@@ -27,9 +27,12 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleDetails;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public abstract class AbstractSonarLint {
   protected AbstractSonarLint() {

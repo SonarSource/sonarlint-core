@@ -37,6 +37,8 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisR
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ModuleUpdateReq;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleDetails;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ServerConfig;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
@@ -46,6 +48,7 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -182,6 +185,26 @@ public class ConnectedSonarLintImpl implements ConnectedSonarLint {
       response.onCompleted();
     } catch (Exception e) {
       LOGGER.error("updateModule", e);
+      response.onError(e);
+    }
+  }
+  
+  
+  @Override
+  public void getRuleDetails(RuleKey key, StreamObserver<RuleDetails> response) {
+    try {
+      org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(key.getKey());
+      response.onNext(RuleDetails.newBuilder()
+        .setKey(ruleDetails.getKey())
+        .setName(ruleDetails.getName())
+        .setLanguage(ruleDetails.getLanguage())
+        .setSeverity(ruleDetails.getSeverity())
+        .setHtmlDescription(ruleDetails.getHtmlDescription())
+        .addAllTags(Arrays.asList(ruleDetails.getTags()))
+        .build());
+      response.onCompleted();
+    } catch (Exception e) {
+      LOGGER.error("getRuleDetails", e);
       response.onError(e);
     }
   }
