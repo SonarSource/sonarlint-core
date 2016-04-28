@@ -126,7 +126,7 @@ public class SonarLintWsClient {
       }
       return Joiner.on(", ").join(errorMessages);
     } catch (Exception e) {
-      return responseContent;
+      return "";
     }
   }
 
