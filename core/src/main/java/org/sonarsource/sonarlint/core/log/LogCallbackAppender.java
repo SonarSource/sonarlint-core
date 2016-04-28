@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.log;
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.pattern.ExtendedThrowableProxyConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
 class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
   private final InheritableThreadLocal<LogOutput> tlTtarget;
@@ -48,7 +48,16 @@ class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
       return;
     }
 
-    target.log(event.getFormattedMessage(), translate(event.getLevel()));
+    String msg;
+    if (event.getThrowableProxy() == null) {
+      msg = event.getFormattedMessage();
+    } else {
+      ExtendedThrowableProxyConverter throwableConverter = new ExtendedThrowableProxyConverter();
+      throwableConverter.start();
+      msg = event.getFormattedMessage() + "\n" + throwableConverter.convert(event);
+      throwableConverter.stop();
+    }
+    target.log(msg, translate(event.getLevel()));
   }
 
   private static LogOutput.Level translate(Level level) {

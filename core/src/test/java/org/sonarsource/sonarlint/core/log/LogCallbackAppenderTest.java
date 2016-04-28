@@ -69,6 +69,7 @@ public class LogCallbackAppenderTest {
 
     verify(event).getFormattedMessage();
     verify(event).getLevel();
+    verify(event).getThrowableProxy();
     verify(listener).log(msg, translatedLevel);
     verifyNoMoreInteractions(event, listener);
   }
