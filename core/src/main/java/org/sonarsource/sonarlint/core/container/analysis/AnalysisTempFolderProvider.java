@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 public class AnalysisTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
   static final String TMP_NAME = ".sonartmp";
   private DefaultTempFolder projectTempFolder;
+  private boolean started = false;
 
   public TempFolder provide(StandaloneAnalysisConfiguration analysisConfig) {
     if (projectTempFolder == null) {
@@ -53,8 +54,6 @@ public class AnalysisTempFolderProvider extends ProviderAdapter implements Compo
   public void start(PicoContainer container) {
     started = true;
   }
-
-  private boolean started = false;
 
   @Override
   public void stop(PicoContainer container) {

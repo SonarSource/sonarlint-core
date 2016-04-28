@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.util.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -58,14 +59,16 @@ public class StandaloneIssueMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
   private static File baseDir;
+  private static Path workDir;
 
   @BeforeClass
   public static void prepare() throws IOException {
+    Path sonarlintUserHome = temp.newFolder().toPath();
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
-      .setSonarLintUserHome(temp.newFolder().toPath())
+      .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput(new LogOutput() {
         @Override
         public void log(String formattedMessage, Level level) {
@@ -75,12 +78,19 @@ public class StandaloneIssueMediumTest {
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
+    workDir = sonarlintUserHome.resolve("work");
+    List<String> tmpFiles = Files.fileNamesIn(workDir.toString(), true);
+    assertThat(tmpFiles).hasSize(1);
+    assertThat(tmpFiles.get(0)).contains("sonar-plugin-api-deps");
+
     baseDir = temp.newFolder();
   }
 
   @AfterClass
   public static void stop() {
     sonarlint.stop();
+    List<String> tmpFiles = Files.fileNamesIn(workDir.toString(), true);
+    assertThat(tmpFiles).isEmpty();
   }
 
   @Test

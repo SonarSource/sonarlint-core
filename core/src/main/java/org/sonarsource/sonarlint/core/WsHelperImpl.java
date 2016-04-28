@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
+import java.util.Map;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -32,8 +33,6 @@ import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValida
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

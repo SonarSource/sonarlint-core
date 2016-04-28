@@ -26,7 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.picocontainer.Startable;
+import org.picocontainer.ComponentLifecycle;
+import org.picocontainer.PicoContainer;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.internal.DefaultTempFolder;
@@ -34,10 +35,11 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
-public class GlobalTempFolderProvider extends ProviderAdapter implements Startable {
+public class GlobalTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
   private static final Logger LOG = Loggers.get(GlobalTempFolderProvider.class);
   private static final long CLEAN_MAX_AGE = TimeUnit.DAYS.toMillis(21);
   static final String TMP_NAME_PREFIX = ".sonartmp_";
+  private boolean started = false;
 
   private DefaultTempFolder tempFolder;
 
@@ -109,14 +111,29 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Startab
   }
 
   @Override
-  public void start() {
-    // Nothing to do
+  public void start(PicoContainer container) {
+    started = true;
   }
 
   @Override
-  public void stop() {
+  public void stop(PicoContainer container) {
     if (tempFolder != null) {
       tempFolder.stop();
     }
+  }
+
+  @Override
+  public void dispose(PicoContainer container) {
+    // nothing to do
+  }
+
+  @Override
+  public boolean componentHasLifecycle() {
+    return true;
+  }
+
+  @Override
+  public boolean isStarted() {
+    return started;
   }
 }
