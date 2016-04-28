@@ -54,6 +54,7 @@ import org.sonarqube.ws.client.permission.AddUserWsRequest;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -75,6 +76,7 @@ public class ConnectedModeTest {
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
+  private static final String PROJECT_KEY_PYTHON = "sample-python";
 
   private static final String SONARLINT_USER = "sonarlint";
   private static final String SONARLINT_PWD = "sonarlintpwd";
@@ -84,10 +86,12 @@ public class ConnectedModeTest {
     .addPlugin("java")
     .addPlugin("javascript")
     .addPlugin("php")
+    .addPlugin("python")
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
     .build();
 
   @ClassRule
@@ -118,11 +122,13 @@ public class ConnectedModeTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
@@ -134,6 +140,13 @@ public class ConnectedModeTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
+      .setLogOutput(new LogOutput() {
+
+        @Override
+        public void log(String formattedMessage, Level level) {
+          System.out.println(formattedMessage);
+        }
+      })
       .build());
   }
 
@@ -199,6 +212,16 @@ public class ConnectedModeTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisPython() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_PYTHON);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
@@ -304,7 +327,7 @@ public class ConnectedModeTest {
 
   private ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
     return new ConnectedAnalysisConfiguration(projectKey,
-      new File("projects/" + projectDir).toPath(),
+      new File("projects/" + projectDir).toPath().toAbsolutePath(),
       temp.newFolder().toPath(),
       Arrays.asList(inputFile(projectDir, filePath)),
       toMap(properties));
@@ -320,7 +343,7 @@ public class ConnectedModeTest {
 
       @Override
       public Path getPath() {
-        return Paths.get("projects/" + projectDir + "/" + relativePath);
+        return Paths.get("projects/" + projectDir + "/" + relativePath).toAbsolutePath();
       }
 
       @Override

@@ -260,6 +260,12 @@
                   <version>2.8</version>
                   <type>jar</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.codehaus.sonar-plugins.python</groupId>
+                  <artifactId>sonar-python-plugin</artifactId>
+                  <version>1.5</version>
+                  <type>jar</type>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>

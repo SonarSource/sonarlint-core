@@ -68,11 +68,12 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
+      .addPlugin(PluginLocator.getPythonPluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput(new LogOutput() {
         @Override
         public void log(String formattedMessage, Level level) {
-          // Don't pollute logs
+          System.out.println(formattedMessage);
         }
       })
       .build();
@@ -141,7 +142,25 @@ public class StandaloneIssueMediumTest {
       });
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("php:S1172", 2, inputFile.getPath()));
+  }
 
+  @Test
+  public void simplePython() throws Exception {
+
+    ClientInputFile inputFile = prepareInputFile("foo.py", "def my_function(name):\n"
+      + "    print \"Hello world!\" # NOSONAR is not supported by Python\n"
+      + "\n", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new IssueListener() {
+        @Override
+        public void handle(Issue issue) {
+          issues.add(issue);
+        }
+      });
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
   }
 
   @Test

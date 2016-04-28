@@ -42,6 +42,10 @@ public class PluginLocator {
     return getPluginUrl("sonar-php-plugin-2.8.jar");
   }
 
+  public static URL getPythonPluginUrl() {
+    return getPluginUrl("sonar-python-plugin-1.5.jar");
+  }
+
   private static URL getPluginUrl(String file) {
     try {
       return new File("target/plugins/" + file).getAbsoluteFile().toURI().toURL();

@@ -25,6 +25,7 @@ import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.XMLProfileParser;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Context;
+import org.sonar.api.server.rule.RulesDefinitionXmlLoader;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
@@ -50,6 +51,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
     add(StandalonePluginRulesLoader.class,
       new StandaloneRulesProvider(),
       RuleFinderCompatibility.class,
+      RulesDefinitionXmlLoader.class,
       XMLProfileParser.class,
       new StandaloneActiveRulesProvider());
   }
