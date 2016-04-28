@@ -92,7 +92,7 @@ public class ServerVersionAndStatusCheckerTest {
       checker.checkVersionAndStatus();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Error 404 on api/system/status: Not found");
+      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Error 404 on api/system/status");
     }
   }
 

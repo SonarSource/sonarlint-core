@@ -110,8 +110,14 @@ public class SonarLintWsClient {
         // Details are in response content
         return new IllegalStateException(tryParseAsJsonError(failedResponse.content()));
       }
+
+      String errorMsg = null;
+      if (failedResponse.hasContent()) {
+        errorMsg = tryParseAsJsonError(failedResponse.content());
+      }
+
       return new IllegalStateException(
-        "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (failedResponse.hasContent() ? (": " + tryParseAsJsonError(failedResponse.content())) : ""));
+        "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (errorMsg != null ? (": " + errorMsg) : ""));
     }
   }
 
@@ -126,7 +132,7 @@ public class SonarLintWsClient {
       }
       return Joiner.on(", ").join(errorMessages);
     } catch (Exception e) {
-      return "";
+      return null;
     }
   }
 
