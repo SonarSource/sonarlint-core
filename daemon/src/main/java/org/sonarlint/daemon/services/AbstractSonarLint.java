@@ -21,18 +21,14 @@ package org.sonarlint.daemon.services;
 
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleDetails;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
-
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.util.Arrays;
 
 public abstract class AbstractSonarLint {
   protected AbstractSonarLint() {
@@ -109,10 +105,10 @@ public abstract class AbstractSonarLint {
         .setRuleName(issue.getRuleName())
         .setMessage(issue.getMessage())
         .setSeverity(severity)
-        .setStartLine(issue.getStartLine())
-        .setStartLineOffset(issue.getStartLineOffset())
-        .setEndLine(issue.getEndLine())
-        .setEndLineOffset(issue.getEndLineOffset());
+        .setStartLine(issue.getStartLine() != null ? issue.getStartLine() : 0)
+        .setStartLineOffset(issue.getStartLineOffset() != null ? issue.getStartLineOffset() : 0)
+        .setEndLine(issue.getEndLine() != null ? issue.getEndLine() : 0)
+        .setEndLineOffset(issue.getEndLineOffset() != null ? issue.getEndLineOffset() : 0);
 
       if (inputFile != null) {
         builder.setFilePath(inputFile.getPath().toString())
