@@ -20,12 +20,17 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.common.collect.ImmutableSet;
+
+import java.io.IOException;
 import java.nio.file.Path;
+
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -40,24 +45,31 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class PluginReferencesDownloaderTest {
-
+  private static final String PLUGIN_INDEX = "scmsvn,sonar-scm-svn-plugin-1.3-SNAPSHOT.jar|d0a68d150314d96d3469e0f2246f3537\n" +
+    "javascript,sonar-javascript-plugin-2.10.jar|79dba9cab72d8d31767f47c03d169598\n" +
+    "csharp,sonar-csharp-plugin-4.4.jar|e78bc8ac2e376c4a7a2a2cae914bdc52\n" +
+    "groovy,sonar-groovy-plugin-1.2.jar|14908dd5f3a9b9d795dbc103f0af546f\n" +
+    "java,sonar-java-plugin-3.12-SNAPSHOT.jar|de5308f43260d357acc97712ce4c5475";
+  
+  private PluginCache pluginCache;
+  private PluginVersionChecker pluginVersionChecker;
+  private Path dest;
+  
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
+  
+  @Before
+  public void setUp() throws IOException {
+    pluginCache = mock(PluginCache.class);
+    pluginVersionChecker = mock(PluginVersionChecker.class);
+    dest = temp.newFolder().toPath();
+  }
 
   @Test
   public void update_allowed_plugins() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt",
-      "scmsvn,sonar-scm-svn-plugin-1.3-SNAPSHOT.jar|d0a68d150314d96d3469e0f2246f3537\n" +
-        "javascript,sonar-javascript-plugin-2.10.jar|79dba9cab72d8d31767f47c03d169598\n" +
-        "csharp,sonar-csharp-plugin-4.4.jar|e78bc8ac2e376c4a7a2a2cae914bdc52\n" +
-        "groovy,sonar-groovy-plugin-1.2.jar|14908dd5f3a9b9d795dbc103f0af546f\n" +
-        "java,sonar-java-plugin-3.12-SNAPSHOT.jar|de5308f43260d357acc97712ce4c5475");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt", PLUGIN_INDEX);
 
-    PluginCache pluginCache = mock(PluginCache.class);
-
-    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
-
-    Path dest = temp.newFolder().toPath();
+    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache, pluginVersionChecker);
 
     pluginUpdate.fetchPluginsTo(dest, ImmutableSet.of("java"));
 
@@ -66,6 +78,7 @@ public class PluginReferencesDownloaderTest {
       .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"));
 
     verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Downloader.class));
+    verify(pluginVersionChecker).checkPlugins(PLUGIN_INDEX);
   }
 
   @Test
@@ -77,11 +90,7 @@ public class PluginReferencesDownloaderTest {
         "groovy,false,sonar-groovy-plugin-1.2.jar|14908dd5f3a9b9d795dbc103f0af546f\n" +
         "java,false,sonar-java-plugin-3.12-SNAPSHOT.jar|de5308f43260d357acc97712ce4c5475");
 
-    PluginCache pluginCache = mock(PluginCache.class);
-
-    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
-
-    Path dest = temp.newFolder().toPath();
+    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache, pluginVersionChecker);
 
     pluginUpdate.fetchPluginsTo(dest, ImmutableSet.of("java"));
 

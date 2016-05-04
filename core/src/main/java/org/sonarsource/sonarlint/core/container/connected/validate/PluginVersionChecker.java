@@ -19,15 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import com.google.gson.Gson;
 import org.apache.commons.lang.StringUtils;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+
+import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -45,9 +45,17 @@ public class PluginVersionChecker {
   public PluginVersionChecker(SonarLintWsClient client) {
     this.wsClient = client;
   }
+  
+  public ValidationResult validatePlugins() {
+    return validatePlugins(null);
+  }
 
-  public ValidationResult validatePlugins(String serverVersion) {
-    Version server = Version.create(serverVersion);
+  public ValidationResult validatePlugins(@Nullable String pluginsIndex) {
+    String pluginsList = pluginsIndex;
+    if(pluginsList == null) {
+      WsResponse response = wsClient.get(WS_PATH_LTS);
+      pluginsList = response.content();
+    }
     Properties minimalPluginVersions = new Properties();
     try {
       minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));
@@ -56,11 +64,7 @@ public class PluginVersionChecker {
     }
 
     List<InstalledPlugin> invalidPlugins;
-    if (server.compareTo(Version.create("5.2")) >= 0) {
-      invalidPlugins = after52(minimalPluginVersions);
-    } else {
-      invalidPlugins = before52(minimalPluginVersions);
-    }
+      invalidPlugins = doValidate(pluginsList, minimalPluginVersions);
 
     if (!invalidPlugins.isEmpty()) {
       return new DefaultValidationResult(false, buildFailMessage(minimalPluginVersions, invalidPlugins));
@@ -69,12 +73,10 @@ public class PluginVersionChecker {
     }
   }
 
-  private List<InstalledPlugin> before52(Properties minimalPluginVersions) {
+  private List<InstalledPlugin> doValidate(String pluginsIndex, Properties minimalPluginVersions) {
     List<InstalledPlugin> invalidPlugins = new LinkedList<>();
 
-    WsResponse response = wsClient.get(WS_PATH_LTS);
-    String responseStr = response.content();
-    try (Scanner scanner = new Scanner(responseStr)) {
+    try (Scanner scanner = new Scanner(pluginsIndex)) {
       while (scanner.hasNextLine()) {
         String line = scanner.nextLine();
         String[] fields = StringUtils.split(line, ",");
@@ -95,28 +97,16 @@ public class PluginVersionChecker {
 
     return invalidPlugins;
   }
-
-  private List<InstalledPlugin> after52(Properties minimalPluginVersions) {
-    List<InstalledPlugin> invalidPlugins = new LinkedList<>();
-    try (CloseableWsResponse response = wsClient.get(WS_PATH)) {
-      InstalledPlugins installedPlugins = new Gson().fromJson(response.contentReader(), InstalledPlugins.class);
-
-      for (InstalledPlugin p : installedPlugins.plugins) {
-        String key = p.getKey();
-        if (minimalPluginVersions.containsKey(key) && !validate(minimalPluginVersions.getProperty(key), p.getVersion())) {
-          invalidPlugins.add(p);
-        }
-      }
-    }
-
-    return invalidPlugins;
-  }
-
-  public void checkPlugins(String serverVersion) {
-    ValidationResult result = validatePlugins(serverVersion);
+  
+  public void checkPlugins(@Nullable String pluginsIndex) {
+    ValidationResult result = validatePlugins(pluginsIndex);
     if (!result.success()) {
       throw new UnsupportedServerException(result.message());
     }
+  }
+
+  public void checkPlugins() {
+    checkPlugins(null);
   }
 
   private static String buildFailMessage(Properties props, List<InstalledPlugin> failingPlugins) {
@@ -146,9 +136,5 @@ public class PluginVersionChecker {
     Version v = Version.create(version);
 
     return v.compareTo(min) >= 0;
-  }
-
-  private static class InstalledPlugins {
-    InstalledPlugin[] plugins;
   }
 }

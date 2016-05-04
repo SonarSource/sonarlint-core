@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -44,16 +45,21 @@ public class PluginReferencesDownloader {
 
   private final SonarLintWsClient wsClient;
   private final PluginCache pluginCache;
+  private final PluginVersionChecker pluginVersionChecker;
 
-  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache) {
+  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache, PluginVersionChecker pluginVersionChecker) {
     this.wsClient = wsClient;
     this.pluginCache = pluginCache;
+    this.pluginVersionChecker = pluginVersionChecker;
   }
 
   public void fetchPluginsTo(Path dest, Set<String> allowedPlugins) {
     WsResponse response = wsClient.get("deploy/plugins/index.txt");
     PluginReferences.Builder builder = PluginReferences.newBuilder();
     String responseStr = response.content();
+    
+    pluginVersionChecker.checkPlugins(responseStr);
+    
     Scanner scanner = new Scanner(responseStr);
     while (scanner.hasNextLine()) {
       String line = scanner.nextLine();

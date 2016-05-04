@@ -107,7 +107,7 @@ public class WsHelperImplTest {
     when(serverChecker.checkVersionAndStatus()).thenReturn(serverInfo);
     WsHelperImpl.validateConnection(serverChecker, pluginChecker, authChecker);
     verify(serverChecker).checkVersionAndStatus();
-    verify(pluginChecker).checkPlugins("5.5");
+    verify(pluginChecker).checkPlugins();
     verify(authChecker).validateCredentials();
   }
 

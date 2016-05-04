@@ -37,8 +37,6 @@ import static org.mockito.Mockito.mock;
 
 public class PluginVersionCheckerTest {
   private static final String RESPONSE_FILE_LTS = "/validate/plugins_index.txt";
-  private static final String RESPONSE_FILE = "/validate/installed_plugins.json";
-  private static final String RESPONSE_FILE_FAIL = "/validate/installed_plugins_fail.json";
   private static final String RESPONSE_FILE_LTS_FAIL = "/validate/plugins_index_fail.txt";
   private PluginVersionChecker checker;
   private SonarLintWsClient client;
@@ -53,47 +51,31 @@ public class PluginVersionCheckerTest {
   }
 
   @Test
-  public void testSuccess() {
-    WsClientTestUtils.addReaderResponse(client, PluginVersionChecker.WS_PATH, RESPONSE_FILE);
-
-    checker.checkPlugins("5.2");
-  }
-
-  @Test
-  public void testSuccessLTS() throws IOException {
+  public void testSuccess() throws IOException {
     String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
     WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
 
-    checker.checkPlugins("5.1");
+    checker.checkPlugins();
   }
 
   @Test
-  public void testFailJava() {
-    WsClientTestUtils.addReaderResponse(client, PluginVersionChecker.WS_PATH, RESPONSE_FILE_FAIL);
-
-    ValidationResult result = checker.validatePlugins("5.2");
-    assertThat(result.success()).isFalse();
-    assertThat(result.message()).contains("The following plugins do not meet the required minimum version");
-    assertThat(result.message()).contains("Java");
-  }
-
-  @Test
-  public void testFailJavaLTS() throws IOException {
+  public void testFailJava() throws IOException {
     String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS_FAIL), StandardCharsets.UTF_8);
     WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
 
-    ValidationResult result = checker.validatePlugins("5.1");
+    ValidationResult result = checker.validatePlugins();
     assertThat(result.success()).isFalse();
     assertThat(result.message()).contains("The following plugins do not meet the required minimum version");
     assertThat(result.message()).contains("java");
   }
 
   @Test
-  public void testFailJavaException() {
-    WsClientTestUtils.addReaderResponse(client, PluginVersionChecker.WS_PATH, RESPONSE_FILE_FAIL);
+  public void testFailJavaException() throws IOException {
+    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS_FAIL), StandardCharsets.UTF_8);
+    WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
 
     exception.expect(UnsupportedServerException.class);
     exception.expectMessage("The following plugins do not meet the required minimum version");
-    checker.checkPlugins("5.2");
+    checker.checkPlugins();
   }
 }
