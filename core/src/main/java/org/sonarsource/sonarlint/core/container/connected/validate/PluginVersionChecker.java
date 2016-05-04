@@ -45,14 +45,14 @@ public class PluginVersionChecker {
   public PluginVersionChecker(SonarLintWsClient client) {
     this.wsClient = client;
   }
-  
+
   public ValidationResult validatePlugins() {
     return validatePlugins(null);
   }
 
   public ValidationResult validatePlugins(@Nullable String pluginsIndex) {
     String pluginsList = pluginsIndex;
-    if(pluginsList == null) {
+    if (pluginsList == null) {
       WsResponse response = wsClient.get(WS_PATH_LTS);
       pluginsList = response.content();
     }
@@ -63,8 +63,7 @@ public class PluginVersionChecker {
       throw new IllegalStateException("Failed to load minimum plugin versions", e);
     }
 
-    List<InstalledPlugin> invalidPlugins;
-      invalidPlugins = doValidate(pluginsList, minimalPluginVersions);
+    List<InstalledPlugin> invalidPlugins = doValidate(pluginsList, minimalPluginVersions);
 
     if (!invalidPlugins.isEmpty()) {
       return new DefaultValidationResult(false, buildFailMessage(minimalPluginVersions, invalidPlugins));
@@ -73,7 +72,7 @@ public class PluginVersionChecker {
     }
   }
 
-  private List<InstalledPlugin> doValidate(String pluginsIndex, Properties minimalPluginVersions) {
+  private static List<InstalledPlugin> doValidate(String pluginsIndex, Properties minimalPluginVersions) {
     List<InstalledPlugin> invalidPlugins = new LinkedList<>();
 
     try (Scanner scanner = new Scanner(pluginsIndex)) {
@@ -97,7 +96,7 @@ public class PluginVersionChecker {
 
     return invalidPlugins;
   }
-  
+
   public void checkPlugins(@Nullable String pluginsIndex) {
     ValidationResult result = validatePlugins(pluginsIndex);
     if (!result.success()) {
