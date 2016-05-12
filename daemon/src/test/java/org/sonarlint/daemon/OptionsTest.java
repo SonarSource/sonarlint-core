@@ -19,14 +19,40 @@
  */
 package org.sonarlint.daemon;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.core.Appender;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class OptionsTest {
-
+  private Appender<ILoggingEvent> mockAppender;
+  
+  @Before
+  public void addLogger() {
+    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+    mockAppender = mock(Appender.class);
+    when(mockAppender.getName()).thenReturn("MOCK");
+    root.addAppender(mockAppender);
+  }
+  
+  @After
+  public void removeLogger() {
+    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+    root.detachAppender(mockAppender);
+  }
+  
   @Test
   public void testPort() throws ParseException {
     String[] args = {"--port", "1234"};
@@ -43,5 +69,17 @@ public class OptionsTest {
   public void testInvalid() throws ParseException {
     String[] args = {"--unknown", "1234"};
     Options.parse(args);
+  }
+  
+  @Test
+  public void testUsage() {
+    Options.printUsage();
+    
+    verify(mockAppender).doAppend(argThat(new ArgumentMatcher<ILoggingEvent>() {
+      @Override
+      public boolean matches(final Object argument) {
+        return ((LoggingEvent)argument).getFormattedMessage().contains("usage: sonarlint-daemon");
+      }
+    }));
   }
 }
