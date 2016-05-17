@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,8 +83,13 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
             .setLanguage(language)
             .setName(rule.name())
             .setInternalKey(rule.internalKey())
-            .setTemplateRuleKey(storageRule.getTemplateKey())
             .setSeverity(activeRule.getSeverity());
+
+          if (!StringUtils.isEmpty(storageRule.getTemplateKey())) {
+            RuleKey templateRuleKey = RuleKey.parse(storageRule.getTemplateKey());
+            newActiveRule.setTemplateRuleKey(templateRuleKey.rule());
+          }
+
           for (Map.Entry<String, String> param : activeRule.getParams().entrySet()) {
             newActiveRule.setParam(param.getKey(), param.getValue());
           }

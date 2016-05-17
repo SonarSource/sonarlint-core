@@ -47,11 +47,17 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
+import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
+import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.HttpWsClient;
+import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsRequest;
+import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.permission.AddUserWsRequest;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
+import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
@@ -237,6 +243,49 @@ public class ConnectedModeTest {
       issueListener);
 
     assertThat(issueListener.getIssues()).hasSize(2);
+  }
+
+  @Test
+  public void analysisTemplateRule() throws Exception {
+    SearchWsRequest searchReq = new SearchWsRequest();
+    searchReq.setProfileName("SonarLint IT Java");
+    searchReq.setProjectKey(PROJECT_KEY_JAVA);
+    searchReq.setDefaults(false);
+    SearchWsResponse search = adminWsClient.qualityProfiles().search(searchReq);
+    QualityProfile qp = null;
+    for (QualityProfile q : search.getProfilesList()) {
+      if (q.getName().equals("SonarLint IT Java")) {
+        qp = q;
+      }
+    }
+    assertThat(qp).isNotNull();
+
+    WsRequest request = new PostRequest("/api/rules/create")
+      .setParam("custom_key", "myrule")
+      .setParam("name", "myrule")
+      .setParam("markdown_description", "my_rule_description")
+      .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
+      .setParam("template_key", "squid:S2253")
+      .setParam("severity", "MAJOR");
+    WsResponse response = adminWsClient.wsConnector().call(request);
+    assertThat(response.code()).isEqualTo(200);
+
+    request = new PostRequest("/api/qualityprofiles/activate_rule")
+      .setParam("profile_key", qp.getKey())
+      .setParam("rule_key", "squid:myrule");
+    response = adminWsClient.wsConnector().call(request);
+    assertThat(response.code()).isEqualTo(200);
+
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
+
+    assertThat(issueListener.getIssues()).hasSize(3);
   }
 
   @Test
