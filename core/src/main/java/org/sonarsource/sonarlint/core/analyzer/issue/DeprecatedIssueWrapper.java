@@ -176,4 +176,14 @@ public class DeprecatedIssueWrapper implements Issue {
     return Collections.emptyList();
   }
 
+  @Override
+  public Double gap() {
+    return null;
+  }
+
+  @Override
+  public Duration effort() {
+    return null;
+  }
+
 }

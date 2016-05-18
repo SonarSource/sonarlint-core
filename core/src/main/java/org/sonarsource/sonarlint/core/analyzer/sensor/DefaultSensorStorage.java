@@ -30,10 +30,12 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
+import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
 import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.measure.Measure;
+import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
@@ -106,6 +108,16 @@ public class DefaultSensorStorage implements SensorStorage {
 
   @Override
   public void store(DefaultCoverage defaultCoverage) {
+    // NO-OP
+  }
+
+  @Override
+  public void store(DefaultCpdTokens defaultCpdTokens) {
+    // NO-OP
+  }
+
+  @Override
+  public void store(DefaultSymbolTable symbolTable) {
     // NO-OP
   }
 

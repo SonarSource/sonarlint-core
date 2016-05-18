@@ -180,4 +180,15 @@ class DeprecatedIssueAdapterForFilter implements Issue {
   private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Not available for issues filters");
   }
+
+  @Override
+  public Double gap() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Duration effort() {
+    throw unsupported();
+  }
 }

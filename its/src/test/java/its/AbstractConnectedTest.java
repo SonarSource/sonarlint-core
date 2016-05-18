@@ -23,16 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Server;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
-import org.sonarqube.ws.client.HttpConnector;
-import org.sonarqube.ws.client.HttpWsClient;
-import org.sonarqube.ws.client.WsClient;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -42,6 +32,15 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.junit.ClassRule;
+import org.junit.rules.TemporaryFolder;
+import org.sonarqube.ws.client.HttpConnector;
+import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsClientFactories;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 
 import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
 import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
@@ -55,7 +54,7 @@ public class AbstractConnectedTest {
 
   public static WsClient newAdminWsClient(Orchestrator orchestrator) {
     Server server = orchestrator.getServer();
-    return new HttpWsClient(new HttpConnector.Builder()
+    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(server.getUrl())
       .credentials(ADMIN_LOGIN, ADMIN_PASSWORD)
       .build());

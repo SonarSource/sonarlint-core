@@ -20,55 +20,48 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
-import org.sonar.api.batch.AnalysisMode;
+import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.fs.FileSystem;
-import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
+import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
-import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
 import org.sonar.api.batch.sensor.measure.internal.DefaultMeasure;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.config.Settings;
+import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
 
 public class DefaultSensorContext implements SensorContext {
 
   private static final NoOpNewHighlighting NO_OP_NEW_HIGHLIGHTING = new NoOpNewHighlighting();
-
-  private static final class NoOpNewHighlighting implements NewHighlighting {
-    @Override
-    public void save() {
-      // Do nothing
-    }
-
-    @Override
-    public NewHighlighting onFile(InputFile inputFile) {
-      // Do nothing
-      return this;
-    }
-
-    @Override
-    public NewHighlighting highlight(int startOffset, int endOffset, TypeOfText typeOfText) {
-      // Do nothing
-      return this;
-    }
-  }
+  private static final NoOpNewSymbolTable NO_OP_NEW_SYMBOL_TABLE = new NoOpNewSymbolTable();
+  private static final NoOpNewCpdTokens NO_OP_NEW_CPD_TOKENS = new NoOpNewCpdTokens();
 
   private final Settings settings;
   private final FileSystem fs;
   private final ActiveRules activeRules;
   private final SensorStorage sensorStorage;
+  private final InputModule module;
+  private final SonarQubeVersion sqVersion;
 
-  public DefaultSensorContext(Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage) {
+  public DefaultSensorContext(InputModule module, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
+    SonarQubeVersion sqVersion) {
+    this.module = module;
     this.settings = settings;
     this.fs = fs;
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
+    this.sqVersion = sqVersion;
   }
 
   @Override
@@ -84,11 +77,6 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public ActiveRules activeRules() {
     return activeRules;
-  }
-
-  @Override
-  public AnalysisMode analysisMode() {
-    return null;
   }
 
   @Override
@@ -109,6 +97,26 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public NewCoverage newCoverage() {
     return new DefaultCoverage(sensorStorage);
+  }
+
+  @Override
+  public InputModule module() {
+    return module;
+  }
+
+  @Override
+  public Version getSonarQubeVersion() {
+    return sqVersion.get();
+  }
+
+  @Override
+  public NewSymbolTable newSymbolTable() {
+    return NO_OP_NEW_SYMBOL_TABLE;
+  }
+
+  @Override
+  public NewCpdTokens newCpdTokens() {
+    return NO_OP_NEW_CPD_TOKENS;
   }
 
 }

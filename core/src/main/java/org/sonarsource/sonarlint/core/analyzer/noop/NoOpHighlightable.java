@@ -38,6 +38,12 @@ public class NoOpHighlightable implements Highlightable {
     }
 
     @Override
+    public HighlightingBuilder highlight(int startLine, int startLineOffset, int endLine, int endLineOffset, String typeOfText) {
+      // Do nothing
+      return this;
+    }
+
+    @Override
     public void done() {
       // Do nothing
     }

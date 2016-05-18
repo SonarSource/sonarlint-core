@@ -87,4 +87,9 @@ public class DefaultFilterableIssue implements FilterableIssue {
     return new UnsupportedOperationException("Not available for issues filters");
   }
 
+  @Override
+  public Double gap() {
+    throw unsupported();
+  }
+
 }

@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
 import java.util.Collection;
+import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
@@ -102,8 +104,9 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   private final Project project;
 
-  public LtsApiSensorContext(Project project, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage) {
-    super(settings, fs, activeRules, sensorStorage);
+  public LtsApiSensorContext(Project project, InputModule inputModule, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
+    SonarQubeVersion sqVersion) {
+    super(inputModule, settings, fs, activeRules, sensorStorage, sqVersion);
     this.project = project;
 
   }

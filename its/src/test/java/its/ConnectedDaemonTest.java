@@ -31,8 +31,17 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import its.tools.SonarlintProject;
 import its.tools.SonarlintDaemon;
+import its.tools.SonarlintProject;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -46,33 +55,23 @@ import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.HttpConnector;
-import org.sonarqube.ws.client.HttpWsClient;
 import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc.ConnectedSonarLintBlockingStub;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq.Builder;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ModuleUpdateReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ServerConfig;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ServerConfig.Credentials;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq.Builder;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ServerConfig.Credentials;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedConfiguration;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
 import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
 import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
@@ -293,7 +292,7 @@ public class ConnectedDaemonTest {
 
   public static WsClient newAdminWsClient(Orchestrator orchestrator) {
     Server server = orchestrator.getServer();
-    return new HttpWsClient(new HttpConnector.Builder()
+    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(server.getUrl())
       .credentials(ADMIN_LOGIN, ADMIN_PASSWORD)
       .build());

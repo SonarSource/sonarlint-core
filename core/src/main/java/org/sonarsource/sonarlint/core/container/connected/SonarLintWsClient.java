@@ -32,8 +32,9 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
-import org.sonarqube.ws.client.HttpWsClient;
 import org.sonarqube.ws.client.PostRequest;
+import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
@@ -41,7 +42,7 @@ public class SonarLintWsClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
 
-  private final HttpWsClient client;
+  private final WsClient client;
   private final String userAgent;
 
   public SonarLintWsClient(ServerConfiguration serverConfig) {
@@ -49,8 +50,8 @@ public class SonarLintWsClient {
     client = buildClient(serverConfig);
   }
 
-  private static HttpWsClient buildClient(ServerConfiguration serverConfig) {
-    HttpConnector connector = new HttpConnector.Builder().url(serverConfig.getUrl())
+  private static WsClient buildClient(ServerConfiguration serverConfig) {
+    HttpConnector connector = HttpConnector.newBuilder().url(serverConfig.getUrl())
       .userAgent(serverConfig.getUserAgent())
       .credentials(serverConfig.getLogin(), serverConfig.getPassword())
       .proxy(serverConfig.getProxy())
@@ -58,7 +59,7 @@ public class SonarLintWsClient {
       .readTimeoutMilliseconds(serverConfig.getReadTimeoutMs())
       .connectTimeoutMilliseconds(serverConfig.getConnectTimeoutMs())
       .build();
-    return new HttpWsClient(connector);
+    return WsClientFactories.getDefault().newClient(connector);
   }
 
   public CloseableWsResponse get(String path) {
