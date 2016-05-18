@@ -286,6 +286,11 @@ public class ConnectedModeTest {
       issueListener);
 
     assertThat(issueListener.getIssues()).hasSize(3);
+    
+    request = new PostRequest("/api/rules/delete")
+      .setParam("key", "squid:myrule");
+      response = adminWsClient.wsConnector().call(request);
+    assertThat(response.code()).isEqualTo(200);
   }
 
   @Test
