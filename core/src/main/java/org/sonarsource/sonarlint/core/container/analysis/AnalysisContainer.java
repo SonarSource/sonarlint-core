@@ -89,7 +89,6 @@ public class AnalysisContainer extends ComponentContainer {
       DefaultLanguagesRepository.class,
 
       AnalysisSettings.class,
-
       PhaseExecutor.class,
       SensorsExecutor.class,
 
@@ -139,7 +138,8 @@ public class AnalysisContainer extends ComponentContainer {
     public boolean accept(Object extension) {
       return ExtensionUtils.isBatchSide(extension)
         && (ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_BATCH)
-          || ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_PROJECT));
+          || ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_PROJECT)
+          || ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_TASK));
     }
   }
 

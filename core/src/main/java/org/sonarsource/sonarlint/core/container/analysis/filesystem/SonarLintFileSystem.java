@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
-import org.sonar.api.resources.Project;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 
 public class SonarLintFileSystem extends DefaultFileSystem {
@@ -29,7 +28,7 @@ public class SonarLintFileSystem extends DefaultFileSystem {
   private FileIndexer indexer;
   private final DefaultFilePredicates filePredicates;
 
-  public SonarLintFileSystem(StandaloneAnalysisConfiguration analysisConfiguration, InputPathCache moduleInputFileCache, Project project, FileIndexer indexer) {
+  public SonarLintFileSystem(StandaloneAnalysisConfiguration analysisConfiguration, InputPathCache moduleInputFileCache, FileIndexer indexer) {
     super(analysisConfiguration.baseDir().toFile(), moduleInputFileCache);
     this.indexer = indexer;
     this.filePredicates = new DefaultFilePredicates();

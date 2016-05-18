@@ -41,6 +41,8 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
+import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
@@ -77,7 +79,6 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
-
       new GlobalTempFolderProvider(),
       UriReader.class,
       new PluginCacheProvider(),
@@ -113,7 +114,7 @@ public class StorageGlobalContainer extends ComponentContainer {
       ModuleUpdateStatus moduleUpdateStatus = getModuleUpdateStatus(configuration.moduleKey());
       if (moduleUpdateStatus == null) {
         throw new StorageException("Missing module data. Please update module '" + configuration.moduleKey() + "'.", null);
-      } else if(moduleUpdateStatus.isStale()) {
+      } else if (moduleUpdateStatus.isStale()) {
         throw new StorageException("Module data is stale. Please update module '" + configuration.moduleKey() + "'.", null);
       }
     }
@@ -124,6 +125,8 @@ public class StorageGlobalContainer extends ComponentContainer {
     analysisContainer.add(new StorageQProfilesProvider());
     analysisContainer.add(new SonarQubeRulesProvider());
     analysisContainer.add(new SonarQubeActiveRulesProvider());
+    analysisContainer.add(AdapterModuleFileSystem.class);
+    analysisContainer.add(DefaultServer.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
@@ -179,7 +182,7 @@ public class StorageGlobalContainer extends ComponentContainer {
     public String getName() {
       return name;
     }
-    
+
     @Override
     public boolean isRoot() {
       return root;

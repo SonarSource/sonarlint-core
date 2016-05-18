@@ -19,12 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.events.SensorsPhaseHandler;
+import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
 import org.sonar.api.resources.Project;
 
 @BatchSide
@@ -34,23 +39,63 @@ public class SensorsExecutor {
 
   private Project module;
   private BatchExtensionDictionnary selector;
+  private SensorsPhaseHandler[] handlers;
 
   public SensorsExecutor(BatchExtensionDictionnary selector, Project project) {
     this.selector = selector;
     this.module = project;
+    this.handlers = new SensorsPhaseHandler[0];
+  }
+  
+  public SensorsExecutor(BatchExtensionDictionnary selector, Project project, SensorsPhaseHandler[] handlers) {
+    this.selector = selector;
+    this.module = project;
+    this.handlers = handlers;
   }
 
   public void execute(SensorContext context) {
     Collection<Sensor> sensors = selector.select(Sensor.class, module, true, null);
 
+    for (SensorsPhaseHandler h : handlers) {
+      h.onSensorsPhase(new DefaultSensorsPhaseEvent(sensors, true));
+    }
+
     for (Sensor sensor : sensors) {
       executeSensor(context, sensor);
     }
 
+    for (SensorsPhaseHandler h : handlers) {
+      h.onSensorsPhase(new DefaultSensorsPhaseEvent(sensors, false));
+    }
   }
 
   private void executeSensor(SensorContext context, Sensor sensor) {
     LOG.debug("Execute Sensor: " + sensor.toString());
     sensor.analyse(module, context);
+  }
+
+  private static class DefaultSensorsPhaseEvent implements SensorsPhaseEvent {
+    private List<Sensor> sensors;
+    private boolean start;
+
+    DefaultSensorsPhaseEvent(Collection<Sensor> sensors, boolean start) {
+      this.sensors = new ArrayList<>(sensors);
+      this.start = start;
+    }
+
+    @Override
+    public List<Sensor> getSensors() {
+      return sensors;
+    }
+
+    @Override
+    public boolean isStart() {
+      return start;
+    }
+
+    @Override
+    public boolean isEnd() {
+      return !start;
+    }
   }
 }

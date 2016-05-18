@@ -29,10 +29,11 @@ public class ProjectProvider extends ProviderAdapter {
 
   private Project singleton;
 
-  public Project provide() {
+  public Project provide(AnalysisSettings settings) {
     if (singleton == null) {
       singleton = new Project("sonarlint", null, "Project");
       singleton.setDescription("");
+      singleton.setSettings(settings);
     }
     return singleton;
   }
