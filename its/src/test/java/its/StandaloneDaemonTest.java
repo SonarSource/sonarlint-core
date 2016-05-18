@@ -90,7 +90,7 @@ public class StandaloneDaemonTest {
       System.out.println("ITERATION: " + i);
       Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
 
-      assertThat(issues).hasSize(2);
+      assertThat(issues).hasSize(4);
       assertThat(logs.getLogsAndClear()).contains("1 files indexed");
       call.cancel();
     }
