@@ -2,3 +2,8 @@
 java=3.8
 php=2.7
 js=2.9
+python=1.5
+cobol=2.8
+abap=3.2
+plsql=2.7
+cpp=3.7

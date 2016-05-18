@@ -48,7 +48,7 @@ public class GlobalPropertiesDownloaderTest {
 
     Path destDir = temp.newFolder().toPath();
     Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
-    assertThat(pluginKeys).containsOnly("java", "javascript", "php", "python");
+    assertThat(pluginKeys).containsOnly("java", "javascript", "php", "python", "cobol", "abap", "plsql", "cpp");
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getProperties()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),

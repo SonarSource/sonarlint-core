@@ -81,7 +81,7 @@ public class GlobalPropertiesDownloader {
       String[] list = globalProperties.getProperties().get("sonarlint.plugins.whitelist").split(",");
       return ImmutableSet.copyOf(list);
     }
-    return ImmutableSet.of("java", "javascript", "php", "python");
+    return ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "cpp");
   }
 
 }
