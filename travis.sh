@@ -23,7 +23,7 @@ CI)
     git fetch --unshallow || true
     export MAVEN_OPTS="-Xmx1G -Xms128m"
     mvn org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar \
-      -Prun-its -Dsonar.runtimeVersion=LATEST_RELEASE -DjavaVersion=LATEST_RELEASE -DphpVersion=LATEST_RELEASE -DjavascriptVersion=LATEST_RELEASE -DpythonVersion=LATEST_RELEASE \
+      -Prun-its -Dsonar.runtimeVersion=LATEST_RELEASE -DjavaVersion=LATEST_RELEASE -DphpVersion=LATEST_RELEASE -DjavascriptVersion=LATEST_RELEASE -DpythonVersion=LATEST_RELEASE -DcobolVersion=LATEST_RELEASE \
       -Dsonar.jacoco.itReportPath=../its/target/jacoco.exec \
       -Dmaven.test.redirectTestOutputToFile=false \
       -Dsonar.host.url=$SONAR_HOST_URL \
