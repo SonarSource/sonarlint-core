@@ -19,21 +19,11 @@
  */
 package its;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
-import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
@@ -50,8 +40,6 @@ import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
-import org.sonarqube.ws.client.HttpConnector;
-import org.sonarqube.ws.client.HttpWsClient;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
@@ -61,32 +49,23 @@ import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
-import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
-import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assume.assumeTrue;
 
-public class ConnectedModeTest {
+public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_PYTHON = "sample-python";
-
-  private static final String SONARLINT_USER = "sonarlint";
-  private static final String SONARLINT_PWD = "sonarlintpwd";
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
@@ -386,39 +365,6 @@ public class ConnectedModeTest {
       .build());
   }
 
-  private ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
-    return new ConnectedAnalysisConfiguration(projectKey,
-      new File("projects/" + projectDir).toPath().toAbsolutePath(),
-      temp.newFolder().toPath(),
-      Arrays.asList(inputFile(projectDir, filePath)),
-      toMap(properties));
-  }
-
-  private ClientInputFile inputFile(final String projectDir, final String relativePath) {
-    return new ClientInputFile() {
-
-      @Override
-      public boolean isTest() {
-        return false;
-      }
-
-      @Override
-      public Path getPath() {
-        return Paths.get("projects/" + projectDir + "/" + relativePath).toAbsolutePath();
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return null;
-      }
-    };
-  }
-
   private static void removeGroupPermission(String groupName, String permission) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2")) {
       adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
@@ -428,42 +374,4 @@ public class ConnectedModeTest {
       ORCHESTRATOR.getServer().adminWsClient().permissionClient().removePermission(PermissionParameters.create().group(groupName).permission(permission));
     }
   }
-
-  public static WsClient newAdminWsClient(Orchestrator orchestrator) {
-    Server server = orchestrator.getServer();
-    return new HttpWsClient(new HttpConnector.Builder()
-      .url(server.getUrl())
-      .credentials(ADMIN_LOGIN, ADMIN_PASSWORD)
-      .build());
-  }
-
-  private static class SaveIssueListener implements IssueListener {
-    List<Issue> issues = new LinkedList<>();
-
-    @Override
-    public void handle(Issue issue) {
-      issues.add(issue);
-    }
-
-    public List<Issue> getIssues() {
-      return issues;
-    }
-
-    public void clear() {
-      issues.clear();
-    }
-  }
-
-  static Map<String, String> toMap(String[] keyValues) {
-    Preconditions.checkArgument(keyValues.length % 2 == 0, "Must be an even number of key/values");
-    Map<String, String> map = Maps.newHashMap();
-    int index = 0;
-    while (index < keyValues.length) {
-      String key = keyValues[index++];
-      String value = keyValues[index++];
-      map.put(key, value);
-    }
-    return map;
-  }
-
 }
