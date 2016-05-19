@@ -94,7 +94,7 @@ public class PluginCache {
     return targetFile;
   }
 
-  private void download(Downloader downloader, String filename, Path tempFile) {
+  private static void download(Downloader downloader, String filename, Path tempFile) {
     try {
       downloader.download(filename, tempFile);
     } catch (IOException e) {

@@ -108,6 +108,26 @@ public class ModuleConfigUpdateExecutorTest {
   }
 
   @Test
+  public void exception_ws_load_qps() throws IOException {
+    assumeTrue(!serverVersion.equals(LTS));
+
+    when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=module%3Akey%2Fwith_branch")).thenThrow(IOException.class);
+    File destDir = temp.newFolder();
+    QProfiles.Builder builder = QProfiles.newBuilder();
+
+    Map<String, QProfiles.QProfile> mutableQprofilesByKey = builder.getMutableQprofilesByKey();
+    mutableQprofilesByKey.put("java-empty-74333", QProfiles.QProfile.newBuilder().build());
+
+    when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
+    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Failed to load module quality profiles");
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+  }
+
+  @Test
   public void module_update() throws Exception {
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();

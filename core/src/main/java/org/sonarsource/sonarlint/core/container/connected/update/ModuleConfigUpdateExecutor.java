@@ -100,7 +100,6 @@ public class ModuleConfigUpdateExecutor {
       }
       builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
     }
-
   }
 
   private void fetchProjectQualityProfilesBefore5dot2(String moduleKey, ModuleConfiguration.Builder builder) {
@@ -109,27 +108,26 @@ public class ModuleConfigUpdateExecutor {
       reader.beginObject();
       while (reader.hasNext()) {
         String propName = reader.nextName();
-        if ("qprofilesByLanguage".equals(propName)) {
+        if (!"qprofilesByLanguage".equals(propName)) {
+          reader.skipValue();
+          continue;
+        }
+
+        reader.beginObject();
+        while (reader.hasNext()) {
+          String language = reader.nextName();
           reader.beginObject();
           while (reader.hasNext()) {
-            String language = reader.nextName();
-            reader.beginObject();
-            while (reader.hasNext()) {
-              String qpPropName = reader.nextName();
-              switch (qpPropName) {
-                case "key":
-                  builder.getMutableQprofilePerLanguage().put(language, reader.nextString());
-                  break;
-                default:
-                  reader.skipValue();
-              }
+            String qpPropName = reader.nextName();
+            if ("key".equals(qpPropName)) {
+              builder.getMutableQprofilePerLanguage().put(language, reader.nextString());
+            } else {
+              reader.skipValue();
             }
-            reader.endObject();
           }
           reader.endObject();
-        } else {
-          reader.skipValue();
         }
+        reader.endObject();
       }
       reader.endObject();
     } catch (IOException e) {
