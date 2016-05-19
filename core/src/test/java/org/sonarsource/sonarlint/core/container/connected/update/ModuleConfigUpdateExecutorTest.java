@@ -79,7 +79,7 @@ public class ModuleConfigUpdateExecutorTest {
       "/update/qualityprofiles_project.pb");
 
     // Before 5.2
-    WsClientTestUtils.addResponse(wsClient, "/batch/project?key=module%3Akey%2Fwith_branch",
+    WsClientTestUtils.addResponse(wsClient, "/batch/project?preview=true&key=module%3Akey%2Fwith_branch",
       "{\"timestamp\":123456,\"activeRules\":[],"
         + "\"qprofilesByLanguage\":{"
         + "\"java\":{\"key\": \"java-empty-74333\", \"name\": \"Java Empty\", \"language\": \"java\"},"

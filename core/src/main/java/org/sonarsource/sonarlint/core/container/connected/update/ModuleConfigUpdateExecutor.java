@@ -104,7 +104,7 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void fetchProjectQualityProfilesBefore5dot2(String moduleKey, ModuleConfiguration.Builder builder) {
-    WsResponse response = wsClient.get("/batch/project?key=" + StringUtils.urlEncode(moduleKey));
+    WsResponse response = wsClient.get("/batch/project?preview=true&key=" + StringUtils.urlEncode(moduleKey));
     try (JsonReader reader = new JsonReader(response.contentReader())) {
       reader.beginObject();
       while (reader.hasNext()) {
