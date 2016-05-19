@@ -44,6 +44,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.wsclient.permissions.PermissionParameters;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
@@ -55,7 +56,6 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.permission.AddUserWsRequest;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
@@ -425,14 +425,8 @@ public class ConnectedModeTest {
         .setGroupName(groupName)
         .setPermission(permission));
     } else {
-      // TODO
+      ORCHESTRATOR.getServer().adminWsClient().permissionClient().removePermission(PermissionParameters.create().group(groupName).permission(permission));
     }
-  }
-
-  private static void addUserPermission(String login, String permission) {
-    adminWsClient.permissions().addUser(new AddUserWsRequest()
-      .setLogin(login)
-      .setPermission(permission));
   }
 
   public static WsClient newAdminWsClient(Orchestrator orchestrator) {
