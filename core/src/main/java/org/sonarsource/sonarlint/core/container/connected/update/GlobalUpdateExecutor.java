@@ -76,7 +76,7 @@ public class GlobalUpdateExecutor {
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
       progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
-      Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp);
+      Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp, serverStatus.getVersion());
 
       progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
       PluginReferences pluginReferences = pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);

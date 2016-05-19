@@ -19,9 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Set;
+
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -39,15 +42,21 @@ public class GlobalPropertiesDownloaderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  private Path destDir;
+
+  @Before
+  public void setUp() throws IOException {
+    destDir = temp.newFolder().toPath();
+  }
+
   @Test
   public void testFetchGlobalPropsDefaultPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/properties?format=json",
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json",
       new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
         + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
         + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
-    Path destDir = temp.newFolder().toPath();
-    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
+    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
     assertThat(pluginKeys).containsOnly("java", "javascript", "php", "python", "cobol", "abap", "plsql", "cpp");
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
@@ -58,21 +67,34 @@ public class GlobalPropertiesDownloaderTest {
 
   @Test
   public void testFetchGlobalPropsPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/properties?format=json",
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json",
       new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
         + "{\"key\": \"sonarlint.plugins.whitelist\",\"value\": \"java\"}]"));
 
-    Path destDir = temp.newFolder().toPath();
-    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
+    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
     assertThat(pluginKeys).containsOnly("java");
+  }
+
+  @Test
+  public void testBatchGlobal() {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json",
+      new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"}]"));
+    WsClientTestUtils.addResponse(wsClient, "/batch/global",
+      "{ timestamp: 0, globalSettings: {"
+        + "\"sonar.core.treemap.colormetric\":\"override\","
+        + "\"sonar.core.treemap.sizemetric\":\"ncloc\""
+        + "} }");
+    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.5");
+    GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
+    assertThat(properties.getProperties()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
+      entry("sonar.core.treemap.sizemetric", "ncloc"));
   }
 
   @Test(expected = IllegalStateException.class)
   public void invalidResponse() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/properties?format=json", new StringReader("foo bar"));
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json", new StringReader("foo bar"));
 
-    Path destDir = temp.newFolder().toPath();
-    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
+    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
   }
 
 }
