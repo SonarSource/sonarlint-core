@@ -82,6 +82,9 @@ public class StorageGlobalContainer extends ComponentContainer {
       new GlobalTempFolderProvider(),
       UriReader.class,
       new PluginCacheProvider(),
+      new StorageRulesProvider(),
+      new StorageQProfilesProvider(),
+      new SonarQubeRulesProvider(),
       System2.INSTANCE);
   }
 
@@ -121,9 +124,6 @@ public class StorageGlobalContainer extends ComponentContainer {
     AnalysisContainer analysisContainer = new AnalysisContainer(this);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
-    analysisContainer.add(new StorageRulesProvider());
-    analysisContainer.add(new StorageQProfilesProvider());
-    analysisContainer.add(new SonarQubeRulesProvider());
     analysisContainer.add(new SonarQubeActiveRulesProvider());
     analysisContainer.add(AdapterModuleFileSystem.class);
     analysisContainer.add(DefaultServer.class);
