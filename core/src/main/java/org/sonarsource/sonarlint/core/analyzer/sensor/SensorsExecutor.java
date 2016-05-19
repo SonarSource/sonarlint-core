@@ -42,11 +42,9 @@ public class SensorsExecutor {
   private SensorsPhaseHandler[] handlers;
 
   public SensorsExecutor(BatchExtensionDictionnary selector, Project project) {
-    this.selector = selector;
-    this.module = project;
-    this.handlers = new SensorsPhaseHandler[0];
+    this(selector, project, new SensorsPhaseHandler[0]);
   }
-  
+
   public SensorsExecutor(BatchExtensionDictionnary selector, Project project, SensorsPhaseHandler[] handlers) {
     this.selector = selector;
     this.module = project;

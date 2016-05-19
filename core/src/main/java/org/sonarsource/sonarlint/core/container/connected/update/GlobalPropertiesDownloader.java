@@ -109,7 +109,7 @@ public class GlobalPropertiesDownloader {
     return ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "cpp");
   }
 
-  private boolean needsBatchGlobal(String version) {
+  private static boolean needsBatchGlobal(String version) {
     return Version.create(version).compareTo(Version.create("5.6")) < 0;
   }
 

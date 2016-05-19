@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputFile.Status;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.scan.filesystem.FileQuery;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -41,8 +42,8 @@ public class AdapterModuleFileSystemTest {
   @Test
   public void should_search_input_files() throws Exception {
     File baseDir = temp.newFile();
-    InputFile mainInput = new DefaultInputFile("foo", "Main.cbl").setModuleBaseDir(baseDir.toPath()).setType(InputFile.Type.MAIN).setLanguage("cobol");
-    InputFile testInput = new DefaultInputFile("foo", "Test.java").setModuleBaseDir(baseDir.toPath()).setType(InputFile.Type.TEST);
+    InputFile mainInput = new DefaultInputFile("foo", "Main.cbl").setModuleBaseDir(baseDir.toPath()).setStatus(Status.ADDED).setType(InputFile.Type.MAIN).setLanguage("cobol");
+    InputFile testInput = new DefaultInputFile("foo", "Test.java").setModuleBaseDir(baseDir.toPath()).setStatus(Status.ADDED).setType(InputFile.Type.TEST);
     InputPathCache pathCache = new InputPathCache();
     pathCache.doAdd(mainInput);
     pathCache.doAdd(testInput);
@@ -55,8 +56,24 @@ public class AdapterModuleFileSystemTest {
     Iterable<File> files = fs.files(FileQuery.onMain());
     assertThat(files).containsOnly(new File(baseDir, "Main.cbl"));
 
+    files = fs.files(FileQuery.onMain().onLanguage("javascript"));
+    assertThat(files).isEmpty();
+
     files = fs.files(FileQuery.onMain().onLanguage("cobol"));
     assertThat(files).containsOnly(new File(baseDir, "Main.cbl"));
+
+    files = fs.files(FileQuery.onMain().on("STATUS", "ADDED"));
+    assertThat(files).containsOnly(new File(baseDir, "Main.cbl"));
+
+    files = fs.files(FileQuery.onMain().on("STATUS", "SAME"));
+    assertThat(files).isEmpty();
+
+    try {
+      fs.files(FileQuery.onMain().on("INVALID", "VALUE"));
+      fail("Expected exception");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
   }
 
   @Test
