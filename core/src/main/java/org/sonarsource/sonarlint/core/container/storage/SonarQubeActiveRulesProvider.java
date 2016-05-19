@@ -73,6 +73,11 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
         org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
           Sonarlint.ActiveRules.parser());
+
+        if (!supportQualityProfilesWS) {
+          LOG.debug("  * " + language + ": " + qProfileKey + " (" + activeRulesFromStorage.getActiveRulesByKey().size() + " rules)");
+        }
+
         for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKey().entrySet()) {
           ActiveRule activeRule = arEntry.getValue();
           RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
