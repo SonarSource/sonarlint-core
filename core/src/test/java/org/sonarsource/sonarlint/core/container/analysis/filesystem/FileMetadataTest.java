@@ -23,6 +23,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -52,6 +53,12 @@ public class FileMetadataTest {
     assertThat(metadata.lines).isEqualTo(1);
     assertThat(metadata.originalLineOffsets).containsOnly(0);
     assertThat(metadata.lastValidOffset).isEqualTo(0);
+  }
+
+  @AfterClass
+  public static void after() {
+    // to avoid conflicts with SonarLintLogging
+    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
