@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpd
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.RulesDefinitionsLoader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -67,8 +66,7 @@ public class ConnectedContainer extends ComponentContainer {
       QualityProfilesDownloader.class,
       new PluginCacheProvider(),
       PluginHashes.class,
-      StorageManager.class,
-      RulesDefinitionsLoader.class);
+      StorageManager.class);
   }
 
   public void update(ProgressWrapper progress) {

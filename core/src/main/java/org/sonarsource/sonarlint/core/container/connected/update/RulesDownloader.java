@@ -26,10 +26,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonarqube.ws.Rules.Active;
 import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
@@ -47,28 +44,31 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 
 public class RulesDownloader {
+  static final String MSG_NO_DESC = "Rule descriptions are only available in SonarLint with SonarQube 5.1+";
   private static final org.sonarqube.ws.Rules.Active.Param.Builder PARAM_BUILDER = Param.newBuilder();
   private static final org.sonarqube.ws.Rules.Active.Builder AR_BUILDER = Active.newBuilder();
   private static final org.sonarqube.ws.Rules.ActiveList.Builder ARL_BUILDER = ActiveList.newBuilder();
   private static final org.sonarqube.ws.Rules.Rule.Builder RULE_BUILDER = Rule.newBuilder();
-  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,"
+  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
-  private static final String RULES_SEARCH_URL_JSON = "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,"
+  private static final String RULES_SEARCH_URL_MD_DESC = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,internalKey,isTemplate,templateKey,"
+    + "actives&statuses=BETA,DEPRECATED,READY";
+  private static final String RULES_SEARCH_URL_JSON = "/api/rules/search?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,"
+    + "actives&statuses=BETA,DEPRECATED,READY";
+  private static final String RULES_SEARCH_URL_JSON_NO_DESC = "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
 
   private final SonarLintWsClient wsClient;
-  private final RulesDefinitionsLoader rulesDefinitionsLoader;
 
-  public RulesDownloader(SonarLintWsClient wsClient, RulesDefinitionsLoader rulesDefinitionsLoader) {
+  public RulesDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
-    this.rulesDefinitionsLoader = rulesDefinitionsLoader;
   }
 
   public void fetchRulesTo(Path destDir, String serverVersionStr, PluginReferences pluginReferences) {
     Version serverVersion = Version.create(serverVersionStr);
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
-    fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile, serverVersion, rulesDefinitionsLoader.loadRuleDefinitions(pluginReferences));
+    fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile, serverVersion);
     Path activeRulesDir = destDir.resolve(StorageManager.ACTIVE_RULES_FOLDER);
     FileUtils.forceMkDirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
@@ -78,15 +78,14 @@ public class RulesDownloader {
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StorageManager.RULES_PB));
   }
 
-  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, Version serverVersion,
-    Context rulesDefinitions) {
+  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, Version serverVersion) {
     int page = 1;
     int pageSize = 500;
     int loaded = 0;
 
     while (true) {
       SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize, serverVersion)), serverVersion);
-      readPage(rulesBuilder, activeRulesBuildersByQProfile, response, rulesDefinitions);
+      readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
 
       if (response.getTotal() <= loaded) {
@@ -98,10 +97,23 @@ public class RulesDownloader {
 
   private static String getUrl(int page, int pageSize, Version serverVersion) {
     StringBuilder builder = new StringBuilder(1024);
-    builder.append(supportProtobuf(serverVersion) ? RULES_SEARCH_URL : RULES_SEARCH_URL_JSON);
+    builder.append(getUrl(serverVersion));
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();
+  }
+
+  private static String getUrl(Version serverVersion) {
+    if (supportProtobuf(serverVersion)) {
+      return requireMdDesc(serverVersion) ? RULES_SEARCH_URL_MD_DESC : RULES_SEARCH_URL;
+    } else {
+      return supportHtmlDesc(serverVersion) ? RULES_SEARCH_URL_JSON : RULES_SEARCH_URL_JSON_NO_DESC;
+    }
+  }
+
+  private static boolean requireMdDesc(Version serverVersion) {
+    // Because of SONAR-7393
+    return serverVersion.compareTo(Version.create("5.5")) < 0;
   }
 
   private static SearchResponse loadFromStream(WsResponse response, Version serverVersion) {
@@ -244,6 +256,9 @@ public class RulesDownloader {
         case "lang":
           RULE_BUILDER.setLang(reader.nextString());
           break;
+        case "htmlDesc":
+          RULE_BUILDER.setHtmlDesc(reader.nextString());
+          break;
         case "templateKey":
           RULE_BUILDER.setTemplateKey(reader.nextString());
           break;
@@ -255,16 +270,20 @@ public class RulesDownloader {
     return RULE_BUILDER.build();
   }
 
+  private static boolean supportHtmlDesc(Version serverVersion) {
+    // Because of SONAR-5885
+    return serverVersion.compareTo(Version.create("5.1")) >= 0;
+  }
+
   private static boolean supportProtobuf(Version serverVersion) {
     return serverVersion.compareTo(Version.create("5.2")) >= 0;
   }
 
-  private static void readPage(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, SearchResponse response, Context rulesDefinitions) {
+  private static void readPage(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, SearchResponse response) {
     Builder ruleBuilder = Rules.Rule.newBuilder();
     for (Rule r : response.getRulesList()) {
       ruleBuilder.clear();
       RuleKey ruleKey = RuleKey.parse(r.getKey());
-      String htmlDescription = getDescription(rulesDefinitions, ruleKey, r.getTemplateKey());
       rulesBuilder.getMutableRulesByKey().put(r.getKey(), ruleBuilder
         .setRepo(ruleKey.repository())
         .setKey(ruleKey.rule())
@@ -272,7 +291,7 @@ public class RulesDownloader {
         .setSeverity(r.getSeverity())
         .setLang(r.getLang())
         .setInternalKey(r.getInternalKey())
-        .setHtmlDesc(htmlDescription)
+        .setHtmlDesc(r.hasHtmlDesc() ? r.getHtmlDesc() : MSG_NO_DESC)
         .setIsTemplate(r.getIsTemplate())
         .setTemplateKey(r.getTemplateKey())
         .build());
@@ -303,18 +322,4 @@ public class RulesDownloader {
     }
   }
 
-  private static String getDescription(Context rulesDefinitions, RuleKey ruleKey, String templateKey) {
-    if (StringUtils.isNotEmpty(templateKey)) {
-      // Description will be missing for custom rules based on rule templates
-      return "Description not available for custom rules";
-    }
-    Repository repository = rulesDefinitions.repository(ruleKey.repository());
-    if (repository == null) {
-      // The rule is part of a plugin we don't have (probably blacklisted)
-      return "Description not available";
-    }
-    org.sonar.api.server.rule.RulesDefinition.Rule rule = repository.rule(ruleKey.rule());
-    // Should never happen
-    return rule != null ? rule.htmlDescription() : "Description not available";
-  }
 }

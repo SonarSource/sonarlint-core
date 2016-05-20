@@ -167,7 +167,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getUpdateStatus()).isNotNull();
     assertThat(engine.getUpdateStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
-    assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are two important requirements");
+    if (supportHtmlDesc()) {
+      assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are two important requirements");
+    } else {
+      assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("Rule descriptions are only available in SonarLint with SonarQube 5.1+");
+    }
 
     assertThat(engine.getModuleUpdateStatus(PROJECT_KEY_JAVA)).isNull();
   }
@@ -258,23 +262,28 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     response = adminWsClient.wsConnector().call(request);
     assertThat(response.code()).isEqualTo(200);
 
-    updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    try {
 
-    SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      updateGlobal();
+      updateModule(PROJECT_KEY_JAVA);
 
-    assertThat(issueListener.getIssues()).hasSize(3);
+      SaveIssueListener issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        issueListener);
 
-    assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("Description not available for custom rules");
+      assertThat(issueListener.getIssues()).hasSize(3);
 
-    request = new PostRequest("/api/rules/delete")
-      .setParam("key", "squid:myrule");
-    response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+      assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("my_rule_description");
+
+    } finally {
+
+      request = new PostRequest("/api/rules/delete")
+        .setParam("key", "squid:myrule");
+      response = adminWsClient.wsConnector().call(request);
+      assertThat(response.code()).isEqualTo(200);
+    }
   }
 
   @Test
@@ -347,6 +356,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     token = ws.generateAuthenticationToken(serverConfig, "name", true);
     assertThat(token).isNotNull();
+  }
+
+  private boolean supportHtmlDesc() {
+    return ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.1");
   }
 
   private void updateModule(String projectKey) {

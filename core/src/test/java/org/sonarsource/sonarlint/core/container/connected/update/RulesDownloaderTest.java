@@ -36,40 +36,54 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RulesDownloaderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
-  private RulesDefinitionsLoader rulesDefinitionsLoader;
-
   @Before
   public void prepare() {
-    rulesDefinitionsLoader = mock(RulesDefinitionsLoader.class);
     Context context = new Context();
     context.createRepository("javascript", "js").done();
     context.createRepository("squid", "java").done();
-    when(rulesDefinitionsLoader.loadRuleDefinitions(any(PluginReferences.class))).thenReturn(context);
   }
 
   @Test
   public void rules_update_protobuf() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
       "/update/rulesp1.pb");
     WsClientTestUtils.addStreamResponse(wsClient,
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
       "/update/rulesp2.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(wsClient, rulesDefinitionsLoader);
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    File tempDir = temp.newFolder();
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.5", PluginReferences.getDefaultInstance());
+
+    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    assertThat(rules.getRulesByKey()).hasSize(939);
+    assertThat(rules.getRulesByKey().values().iterator().next().getHtmlDesc()).isNotEqualTo(RulesDownloader.MSG_NO_DESC);
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    assertThat(jsActiveRules.getActiveRulesByKey()).hasSize(85);
+  }
+
+  @Test
+  public void rules_update_protobuf_before_5dot5() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      "/update/rulesp1.pb");
+    WsClientTestUtils.addStreamResponse(wsClient,
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
+      "/update/rulesp2.pb");
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.2", PluginReferences.getDefaultInstance());
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKey()).hasSize(939);
+    assertThat(rules.getRulesByKey().values().iterator().next().getHtmlDesc()).isNotEqualTo(RulesDownloader.MSG_NO_DESC);
     ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKey()).hasSize(85);
   }
@@ -77,15 +91,33 @@ public class RulesDownloaderTest {
   @Test
   public void rules_update_json() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse(
-      "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      "/api/rules/search?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
       new InputStreamReader(this.getClass().getResourceAsStream("/update/rulesp1.json"), StandardCharsets.UTF_8));
 
-    RulesDownloader rulesUpdate = new RulesDownloader(wsClient, rulesDefinitionsLoader);
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.1", PluginReferences.getDefaultInstance());
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKey()).hasSize(459);
+    assertThat(rules.getRulesByKey().values().iterator().next().getHtmlDesc()).isNotEqualTo(RulesDownloader.MSG_NO_DESC);
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("java-sonar-way-62501.pb"), ActiveRules.parser());
+    assertThat(jsActiveRules.getActiveRulesByKey()).hasSize(231);
+  }
+
+  @Test
+  public void rules_update_json_no_desc() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse(
+      "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      new InputStreamReader(this.getClass().getResourceAsStream("/update/rulesp1nodesc.json"), StandardCharsets.UTF_8));
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    File tempDir = temp.newFolder();
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), "4.5.6", PluginReferences.getDefaultInstance());
+
+    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    assertThat(rules.getRulesByKey()).hasSize(459);
+    assertThat(rules.getRulesByKey().values().iterator().next().getHtmlDesc()).isEqualTo(RulesDownloader.MSG_NO_DESC);
     ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("java-sonar-way-62501.pb"), ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKey()).hasSize(231);
   }
