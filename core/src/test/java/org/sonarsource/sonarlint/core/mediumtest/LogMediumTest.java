@@ -22,12 +22,17 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.jayway.awaitility.Awaitility;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +40,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -99,14 +103,25 @@ public class LogMediumTest {
   public void changeLogOutputForAnalysis() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener());
-    assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
+    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return !logs.get(LogOutput.Level.DEBUG).isEmpty();
+      }
+    });
     logs.clear();
 
-    Multimap<LogOutput.Level, String> logs2 = LinkedListMultimap.create();
+    final Multimap<LogOutput.Level, String> logs2 = LinkedListMultimap.create();
 
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2));
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
-    assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
+
+    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return !logs2.get(LogOutput.Level.DEBUG).isEmpty();
+      }
+    });
   }
 
   @Test
