@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core.util;
 
 import java.util.Set;
+
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,6 +42,13 @@ public class ProgressReportTest {
     progressReport = new ProgressReport(THREAD_NAME, 100);
   }
 
+  @AfterClass
+  public static void after() {
+    // to avoid conflicts with SonarLintLogging
+    new LogTester().setLevel(LoggerLevel.TRACE);
+
+  }
+
   @Test
   public void die_on_stop() {
     progressReport.start("start");
@@ -46,7 +56,7 @@ public class ProgressReportTest {
     progressReport.stop("stop");
     assertThat(isThreadAlive(THREAD_NAME)).isFalse();
   }
-  
+
   @Test
   public void accept_no_stop_msg() {
     progressReport.start("start");
