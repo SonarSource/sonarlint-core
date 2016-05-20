@@ -43,4 +43,17 @@ public class DefaultServerTest {
     assertThat(metadata.getURL()).isNull();
     assertThat(metadata.getPermanentServerId()).isEqualTo("abcde");
   }
+
+  @Test
+  public void coverageUnusedMethods() {
+    DefaultServer metadata = new DefaultServer(new Settings());
+    assertThat(metadata.getStartedAt()).isNull();
+    assertThat(metadata.getRootDir()).isNull();
+    assertThat(metadata.getDeployDir()).isNull();
+    assertThat(metadata.getContextPath()).isNull();
+    assertThat(metadata.isSecured()).isFalse();
+    assertThat(metadata.isDev()).isFalse();
+    assertThat(metadata.getPublicRootUrl()).isNull();
+
+  }
 }

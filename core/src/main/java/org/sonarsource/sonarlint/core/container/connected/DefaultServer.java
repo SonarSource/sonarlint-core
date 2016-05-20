@@ -83,6 +83,21 @@ public class DefaultServer extends Server {
   }
 
   @Override
+  public boolean isSecured() {
+    return false;
+  }
+
+  @Override
+  public boolean isDev() {
+    return false;
+  }
+
+  @Override
+  public String getPublicRootUrl() {
+    return null;
+  }
+
+  @Override
   public String getPermanentServerId() {
     return settings.getString(CoreProperties.PERMANENT_SERVER_ID);
   }
