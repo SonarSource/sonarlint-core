@@ -19,31 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor.noop;
 
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
+import org.junit.Test;
 
-public class NoOpNewCpdTokens implements NewCpdTokens {
-  @Override
-  public void save() {
-    // Do nothing
+public class NoOpNewHighlightingTest {
+
+  @Test
+  public void improve_coverage() {
+    new NoOpNewHighlighting().onFile(null)
+      .highlight(null, null)
+      .highlight(0, 0, null)
+      .highlight(0, 0, 0, 0, null)
+      .save();
   }
 
-  @Override
-  public NoOpNewCpdTokens onFile(InputFile inputFile) {
-    // Do nothing
-    return this;
-  }
-
-  @Override
-  public NoOpNewCpdTokens addToken(TextRange range, String image) {
-    // Do nothing
-    return this;
-  }
-
-  @Override
-  public NoOpNewCpdTokens addToken(int startLine, int startLineOffset, int endLine, int endLineOffset, String image) {
-    // Do nothing
-    return this;
-  }
 }

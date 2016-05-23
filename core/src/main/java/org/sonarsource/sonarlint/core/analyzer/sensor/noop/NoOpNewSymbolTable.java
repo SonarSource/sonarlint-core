@@ -37,37 +37,37 @@ public class NoOpNewSymbolTable implements NewSymbolTable, NewSymbol {
   }
 
   @Override
-  public NewSymbol newSymbol(int startOffset, int endOffset) {
+  public NoOpNewSymbolTable newSymbol(int startOffset, int endOffset) {
     // Do nothing
     return this;
   }
 
   @Override
-  public NewSymbol newSymbol(int startLine, int startLineOffset, int endLine, int endLineOffset) {
+  public NoOpNewSymbolTable newSymbol(int startLine, int startLineOffset, int endLine, int endLineOffset) {
     // Do nothing
     return this;
   }
 
   @Override
-  public NewSymbol newSymbol(TextRange range) {
+  public NoOpNewSymbolTable newSymbol(TextRange range) {
     // Do nothing
     return this;
   }
 
   @Override
-  public NewSymbol newReference(int startLine, int startLineOffset, int endLine, int endLineOffset) {
+  public NoOpNewSymbolTable newReference(int startLine, int startLineOffset, int endLine, int endLineOffset) {
     // Do nothing
     return this;
   }
 
   @Override
-  public NewSymbol newReference(int startOffset, int endOffset) {
+  public NoOpNewSymbolTable newReference(int startOffset, int endOffset) {
     // Do nothing
     return this;
   }
 
   @Override
-  public NewSymbol newReference(TextRange range) {
+  public NoOpNewSymbolTable newReference(TextRange range) {
     // Do nothing
     return this;
   }
