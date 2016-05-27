@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -106,7 +105,7 @@ public class GlobalPropertiesDownloader {
       String[] list = globalProperties.getProperties().get("sonarlint.plugins.whitelist").split(",");
       return ImmutableSet.copyOf(list);
     }
-    return ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "cpp");
+    return ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift");
   }
 
   private static boolean needsBatchGlobal(String version) {

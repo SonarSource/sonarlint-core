@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,7 +56,7 @@ public class GlobalPropertiesDownloaderTest {
         + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
     Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
-    assertThat(pluginKeys).containsOnly("java", "javascript", "php", "python", "cobol", "abap", "plsql", "cpp");
+    assertThat(pluginKeys).containsOnly("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift");
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getProperties()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
