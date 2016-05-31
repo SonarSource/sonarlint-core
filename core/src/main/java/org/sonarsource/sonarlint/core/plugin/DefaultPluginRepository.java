@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.Map;
 import org.picocontainer.Startable;
-import org.sonar.api.SonarPlugin;
+import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
@@ -37,7 +37,7 @@ public class DefaultPluginRepository implements Startable {
   private final PluginCopier installer;
   private final PluginLoader loader;
 
-  private Map<String, SonarPlugin> pluginInstancesByKeys;
+  private Map<String, Plugin> pluginInstancesByKeys;
   private Map<String, PluginInfo> infosByKeys;
 
   public DefaultPluginRepository(PluginCopier installer, PluginLoader loader) {
@@ -83,8 +83,8 @@ public class DefaultPluginRepository implements Startable {
     return info;
   }
 
-  public SonarPlugin getPluginInstance(String key) {
-    SonarPlugin instance = pluginInstancesByKeys.get(key);
+  public Plugin getPluginInstance(String key) {
+    Plugin instance = pluginInstancesByKeys.get(key);
     Preconditions.checkState(instance != null, String.format("Plugin [%s] does not exist", key));
     return instance;
   }

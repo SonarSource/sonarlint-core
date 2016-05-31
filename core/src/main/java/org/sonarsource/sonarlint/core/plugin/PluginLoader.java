@@ -21,14 +21,12 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.apache.commons.lang.SystemUtils;
-import org.sonar.api.SonarPlugin;
+import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Loggers;
 
 import static java.util.Arrays.asList;
@@ -41,18 +39,15 @@ import static java.util.Arrays.asList;
  *   <li>server verifies compatibility of JARs before deploying them at startup (see ServerPluginRepository)</li>
  *   <li>batch loads only the plugins deployed on server (see BatchPluginRepository)</li>
  * </ul>
+ * <p/>
  * Plugins have their own isolated classloader, inheriting only from API classes.
  * Some plugins can extend a "base" plugin, sharing the same classloader.
- * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.SonarPlugin}.
+ * <p/>
+ * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.Plugin}.
  */
 public class PluginLoader {
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
-  /**
-   * Defines the base keys (defined by {@link #basePluginKey(PluginInfo, Map)}) of the plugins which are allowed to
-   * run a full server extensions.
-   */
-  private static final Set<String> PRIVILEGED_PLUGINS_BASE_KEYS = ImmutableSet.of("views", "devcockpit");
 
   public static final Version COMPATIBILITY_MODE_MAX_VERSION = Version.create("5.2");
 
@@ -64,7 +59,7 @@ public class PluginLoader {
     this.classloaderFactory = classloaderFactory;
   }
 
-  public Map<String, SonarPlugin> load(Map<String, PluginInfo> infoByKeys) {
+  public Map<String, Plugin> load(Map<String, PluginInfo> infoByKeys) {
     Collection<PluginClassLoaderDef> defs = defineClassloaders(infoByKeys);
     Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(defs);
     return instantiatePluginClasses(classloaders);
@@ -101,7 +96,6 @@ public class PluginLoader {
         Version minSqVersion = info.getMinimalSqVersion();
         boolean compatibilityMode = minSqVersion != null && minSqVersion.compareToIgnoreQualifier(COMPATIBILITY_MODE_MAX_VERSION) < 0;
         def.setCompatibilityMode(compatibilityMode);
-        def.setPrivileged(isPrivileged(baseKey));
         if (compatibilityMode) {
           Loggers.get(getClass()).debug("API compatibility mode is enabled on plugin {} [{}] " +
             "(built with API lower than {})",
@@ -112,20 +106,16 @@ public class PluginLoader {
     return classloadersByBasePlugin.values();
   }
 
-  private static boolean isPrivileged(String basePluginKey) {
-    return PRIVILEGED_PLUGINS_BASE_KEYS.contains(basePluginKey);
-  }
-
   /**
-   * Instantiates collection of {@link org.sonar.api.SonarPlugin} according to given metadata and classloaders
+   * Instantiates collection of {@link org.sonar.api.Plugin} according to given metadata and classloaders
    *
    * @return the instances grouped by plugin key
    * @throws IllegalStateException if at least one plugin can't be correctly loaded
    */
   @VisibleForTesting
-  Map<String, SonarPlugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
+  Map<String, Plugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
     // instantiate plugins
-    Map<String, SonarPlugin> instancesByPluginKey = new HashMap<>();
+    Map<String, Plugin> instancesByPluginKey = new HashMap<>();
     for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
       PluginClassLoaderDef def = entry.getKey();
       ClassLoader classLoader = entry.getValue();
@@ -135,7 +125,7 @@ public class PluginLoader {
         String pluginKey = mainClassEntry.getKey();
         String mainClass = mainClassEntry.getValue();
         try {
-          instancesByPluginKey.put(pluginKey, (SonarPlugin) classLoader.loadClass(mainClass).newInstance());
+          instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).newInstance());
         } catch (UnsupportedClassVersionError e) {
           throw new IllegalStateException(String.format("The plugin [%s] does not support Java %s",
             pluginKey, SystemUtils.JAVA_VERSION_TRIMMED), e);
@@ -148,8 +138,8 @@ public class PluginLoader {
     return instancesByPluginKey;
   }
 
-  public void unload(Collection<SonarPlugin> plugins) {
-    for (SonarPlugin plugin : plugins) {
+  public void unload(Collection<Plugin> plugins) {
+    for (Plugin plugin : plugins) {
       ClassLoader classLoader = plugin.getClass().getClassLoader();
       if (classLoader instanceof Closeable && classLoader != classloaderFactory.baseClassLoader()) {
         try {

@@ -30,6 +30,7 @@ import org.assertj.core.data.MapEntry;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.api.Plugin;
 import org.sonar.api.SonarPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +51,7 @@ public class PluginLoaderTest {
     PluginClassLoaderDef def = new PluginClassLoaderDef("fake");
     def.addMainClass("fake", FakePlugin.class.getName());
 
-    Map<String, SonarPlugin> instances = loader.instantiatePluginClasses(ImmutableMap.of(def, getClass().getClassLoader()));
+    Map<String, Plugin> instances = loader.instantiatePluginClasses(ImmutableMap.of(def, getClass().getClassLoader()));
     assertThat(instances).containsOnlyKeys("fake");
     assertThat(instances.get("fake")).isInstanceOf(FakePlugin.class);
   }
@@ -143,24 +144,6 @@ public class PluginLoaderTest {
       entry("fooExtension1", "org.foo.Extension1Plugin"),
       entry("fooExtension2", "org.foo.Extension2Plugin"));
     // TODO test mask - require change in sonar-classloader
-  }
-
-  @Test
-  public void plugin_is_recognised_as_priviledge_if_key_is_views_and_extends_no_other_plugin_and_runs_in_compatibility_mode() throws IOException {
-    PluginInfo views = create52PluginInfo("views");
-
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("views", views));
-
-    assertThat(defs.iterator().next().isPrivileged()).isTrue();
-  }
-
-  @Test
-  public void plugin_is_recognised_as_priviledge_if_key_is_devcockpit_and_extends_no_other_plugin_and_runs_in_compatibility_mode() throws IOException {
-    PluginInfo views = create52PluginInfo("devcockpit");
-
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("views", views));
-
-    assertThat(defs.iterator().next().isPrivileged()).isTrue();
   }
 
   @Test

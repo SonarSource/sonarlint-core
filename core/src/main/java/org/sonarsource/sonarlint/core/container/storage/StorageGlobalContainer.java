@@ -25,7 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.SonarPlugin;
+import org.sonar.api.Plugin;
+import org.sonar.api.internal.SonarQubeVersionFactory;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
@@ -79,6 +80,7 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
+      SonarQubeVersionFactory.create(System2.INSTANCE),
       new GlobalTempFolderProvider(),
       UriReader.class,
       new PluginCacheProvider(),
@@ -103,7 +105,7 @@ public class StorageGlobalContainer extends ComponentContainer {
   protected void installPlugins() {
     DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
-      SonarPlugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
+      Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
   }

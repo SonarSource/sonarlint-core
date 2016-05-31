@@ -162,7 +162,6 @@
         <directory>src/main/resources</directory>
         <includes>
           <include>sl_core_version.txt</include>
-          <include>sq_version.txt</include>
         </includes>
         <filtering>true</filtering>
       </resource>
@@ -170,7 +169,6 @@
         <directory>src/main/resources</directory>
         <excludes>
           <exclude>sl_core_version.txt</exclude>
-          <exclude>sq_version.txt</exclude>
         </excludes>
         <filtering>false</filtering>
       </resource>
