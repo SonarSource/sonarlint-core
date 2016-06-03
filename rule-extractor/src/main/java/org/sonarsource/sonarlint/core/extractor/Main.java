@@ -43,7 +43,7 @@ import static org.apache.commons.lang3.StringEscapeUtils.escapeJson;
 
 public class Main {
 
-  private static final Map<String, String> languages = ImmutableMap.of("java", "Java", "js", "JavaScript", "php", "PHP");
+  private static final Map<String, String> languages = ImmutableMap.of("java", "Java", "js", "JavaScript", "php", "PHP", "py", "Python");
 
   public static void main(String[] args) throws MalformedURLException {
 
