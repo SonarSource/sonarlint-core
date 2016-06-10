@@ -21,15 +21,11 @@ package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.XMLProfileParser;
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.server.rule.RulesDefinitionXmlLoader;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
-import org.sonarsource.sonarlint.core.container.global.ExtensionUtils;
 
 public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
@@ -53,25 +49,17 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
       RuleFinderCompatibility.class,
       RulesDefinitionXmlLoader.class,
       XMLProfileParser.class,
-      new StandaloneActiveRulesProvider());
+      StandaloneActiveRulesProvider.class);
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, new RuleAndProfileExtensionFilter());
-  }
-
-  static class RuleAndProfileExtensionFilter implements ExtensionMatcher {
-    @Override
-    public boolean accept(Object extension) {
-      return ExtensionUtils.isType(extension, RulesDefinition.class)
-        || ExtensionUtils.isType(extension, ProfileDefinition.class);
-    }
+    getComponentByType(ExtensionInstaller.class).install(this);
   }
 
   @Override
   public void doAfterStart() {
     rules = getComponentByType(Rules.class);
-    activeRules = getComponentByType(ActiveRules.class);
+    activeRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
     StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
   }

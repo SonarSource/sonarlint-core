@@ -24,6 +24,7 @@ import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
 
 public class NoOpFileLinesContextFactory implements FileLinesContextFactory {
+
   @Override
   public FileLinesContext createFor(InputFile inputFile) {
     return new NoOpFileLinesContext();

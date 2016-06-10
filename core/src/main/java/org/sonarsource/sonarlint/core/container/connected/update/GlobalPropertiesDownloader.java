@@ -19,14 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -44,7 +42,7 @@ public class GlobalPropertiesDownloader {
     this.wsClient = wsClient;
   }
 
-  public Set<String> fetchGlobalPropertiesTo(Path dest, String serverVersionStr) {
+  public void fetchGlobalPropertiesTo(Path dest, String serverVersionStr) {
     WsResponse response = wsClient.get(API_PROPERTIES_PATH);
     GlobalProperties.Builder builder = GlobalProperties.newBuilder();
 
@@ -61,7 +59,6 @@ public class GlobalPropertiesDownloader {
       }
       GlobalProperties globalProperties = builder.build();
       ProtobufUtil.writeToFile(globalProperties, dest.resolve(StorageManager.PROPERTIES_PB));
-      return getPluginWhitelist(globalProperties);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
     }
@@ -98,14 +95,6 @@ public class GlobalPropertiesDownloader {
       }
     }
     builder.getMutableProperties().put(key, value);
-  }
-
-  private static Set<String> getPluginWhitelist(GlobalProperties globalProperties) {
-    if (globalProperties.getProperties().containsKey("sonarlint.plugins.whitelist")) {
-      String[] list = globalProperties.getProperties().get("sonarlint.plugins.whitelist").split(",");
-      return ImmutableSet.copyOf(list);
-    }
-    return ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift");
   }
 
   private static boolean needsBatchGlobal(String version) {

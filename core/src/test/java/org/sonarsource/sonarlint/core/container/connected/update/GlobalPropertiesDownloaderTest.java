@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,23 +54,12 @@ public class GlobalPropertiesDownloaderTest {
         + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
         + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
-    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
-    assertThat(pluginKeys).containsOnly("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift");
+    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getProperties()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
       entry("sonar.core.treemap.sizemetric", "ncloc"),
       entry("views.servers", "135817900907501"));
-  }
-
-  @Test
-  public void testFetchGlobalPropsPluginWhitelist() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json",
-      new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
-        + "{\"key\": \"sonarlint.plugins.whitelist\",\"value\": \"java\"}]"));
-
-    Set<String> pluginKeys = new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
-    assertThat(pluginKeys).containsOnly("java");
   }
 
   @Test

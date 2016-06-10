@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.sonar.api.SonarProduct;
-import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.internal.SonarRuntimeFactory;
@@ -55,8 +54,6 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCac
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
-import org.sonarsource.sonarlint.core.container.global.ExtensionUtils;
 
 public class AnalysisContainer extends ComponentContainer {
 
@@ -128,7 +125,7 @@ public class AnalysisContainer extends ComponentContainer {
   }
 
   private void addBatchExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, new BatchExtensionFilter());
+    getComponentByType(ExtensionInstaller.class).install(this);
   }
 
   @Override
@@ -136,16 +133,6 @@ public class AnalysisContainer extends ComponentContainer {
     LOG.debug("Start analysis");
     Project p = getComponentByType(Project.class);
     getComponentByType(PhaseExecutor.class).execute(p);
-  }
-
-  static class BatchExtensionFilter implements ExtensionMatcher {
-    @Override
-    public boolean accept(Object extension) {
-      return ExtensionUtils.isBatchSide(extension)
-        && (ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_BATCH)
-          || ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_PROJECT)
-          || ExtensionUtils.isInstantiationStrategy(extension, InstantiationStrategy.PER_TASK));
-    }
   }
 
 }

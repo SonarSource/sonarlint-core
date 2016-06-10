@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
 import java.util.Collection;
-
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.FileSystem;
@@ -35,10 +34,12 @@ import org.sonar.api.design.Dependency;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.measures.MeasuresFilter;
 import org.sonar.api.measures.Metric;
+import org.sonar.api.resources.Directory;
 import org.sonar.api.resources.File;
 import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
+import org.sonar.api.utils.PathUtils;
 import org.sonar.api.utils.System2;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
@@ -210,9 +211,23 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   @Override
   public Resource getResource(final InputPath inputPath) {
     if (inputPath.isFile()) {
-      File f = File.create(inputPath.absolutePath());
-      f.setEffectiveKey(inputPath.key());
-      f.setPath(inputPath.absolutePath());
+      File f = new File() {
+
+        @Override
+        public String getEffectiveKey() {
+          return inputPath.key();
+        }
+
+        @Override
+        public String getPath() {
+          return inputPath.absolutePath();
+        }
+
+        @Override
+        public org.sonar.api.resources.Directory getParent() {
+          return Directory.create(PathUtils.sanitize(inputPath.path().getParent().toString()));
+        }
+      };
       f.setKey(inputPath.key());
       return f;
     } else {

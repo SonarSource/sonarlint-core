@@ -20,15 +20,13 @@
 package org.sonarsource.sonarlint.core.util;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.sonar.api.internal.google.common.io.Resources;
-
-import javax.annotation.CheckForNull;
-
+import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.CheckForNull;
 
 public class VersionUtils {
   private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";

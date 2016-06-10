@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
-
 import org.sonar.api.SonarProduct;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
@@ -114,16 +113,6 @@ public class DefaultSensorContext implements SensorContext {
   }
 
   @Override
-  public NewSymbolTable newSymbolTable() {
-    return NO_OP_NEW_SYMBOL_TABLE;
-  }
-
-  @Override
-  public NewCpdTokens newCpdTokens() {
-    return NO_OP_NEW_CPD_TOKENS;
-  }
-
-  @Override
   public Version getRuntimeApiVersion() {
     return sqRuntime.getApiVersion();
   }
@@ -131,6 +120,16 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public SonarProduct getRuntimeProduct() {
     return sqRuntime.getProduct();
+  }
+
+  @Override
+  public NewSymbolTable newSymbolTable() {
+    return NO_OP_NEW_SYMBOL_TABLE;
+  }
+
+  @Override
+  public NewCpdTokens newCpdTokens() {
+    return NO_OP_NEW_CPD_TOKENS;
   }
 
   @Override

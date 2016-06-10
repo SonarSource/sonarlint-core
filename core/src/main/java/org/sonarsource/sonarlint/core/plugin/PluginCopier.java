@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.sonar.api.internal.apachecommons.lang.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
@@ -37,6 +38,8 @@ import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider.PluginReference
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginCopier {
+
+  private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift");
 
   private static final Logger LOG = Loggers.get(PluginCopier.class);
 
@@ -60,11 +63,18 @@ public class PluginCopier {
     for (PluginReference pluginReference : pluginReferences) {
       File jarFile = getFromCacheOrCopy(pluginReference);
       PluginInfo info = PluginInfo.create(jarFile);
-      infosByKey.put(info.getKey(), info);
+      if ((info.isSonarLintSupported() != null && info.isSonarLintSupported().booleanValue()) || isWhitelisted(info.getKey())) {
+        infosByKey.put(info.getKey(), info);
+      }
     }
 
     profiler.stopDebug();
     return infosByKey;
+
+  }
+
+  public static boolean isWhitelisted(String pluginKey) {
+    return PLUGIN_WHITELIST.contains(pluginKey);
   }
 
   @VisibleForTesting

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import javax.annotation.CheckForNull;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 
@@ -55,6 +56,11 @@ public final class PluginManifest {
    */
   public static final String IMPLEMENTATION_BUILD = "Implementation-Build";
 
+  /**
+   * @since 1.16
+   */
+  public static final String SONARLINT_SUPPORTED = "SonarLint-Supported";
+
   private String key;
   private String name;
   private String mainClass;
@@ -65,6 +71,7 @@ public final class PluginManifest {
   private String basePlugin;
   private String implementationBuild;
   private String[] requirePlugins;
+  private Boolean sonarLintSupported;
 
   /**
    * Load the manifest from a JAR file.
@@ -102,6 +109,8 @@ public final class PluginManifest {
     this.version = attributes.getValue(VERSION_ATTRIBUTE);
     this.sonarVersion = attributes.getValue(SONAR_VERSION_ATTRIBUTE);
     this.useChildFirstClassLoader = StringUtils.equalsIgnoreCase(attributes.getValue(USE_CHILD_FIRST_CLASSLOADER), "true");
+    String slSupported = attributes.getValue(SONARLINT_SUPPORTED);
+    this.sonarLintSupported = slSupported != null ? StringUtils.equalsIgnoreCase(slSupported, "true") : null;
     this.basePlugin = attributes.getValue(BASE_PLUGIN);
     this.implementationBuild = attributes.getValue(IMPLEMENTATION_BUILD);
 
@@ -208,6 +217,22 @@ public final class PluginManifest {
    */
   public PluginManifest setBasePlugin(String key) {
     this.basePlugin = key;
+    return this;
+  }
+
+  /**
+   * @since 1.16
+   */
+  @CheckForNull
+  public Boolean isSonarLintSupported() {
+    return sonarLintSupported;
+  }
+
+  /**
+   * @since 1.16
+   */
+  public PluginManifest setSonarLintSupported(Boolean sonarLintSupported) {
+    this.sonarLintSupported = sonarLintSupported;
     return this;
   }
 

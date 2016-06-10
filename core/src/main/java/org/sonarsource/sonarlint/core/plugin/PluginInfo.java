@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -32,7 +31,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
@@ -116,6 +114,8 @@ public class PluginInfo implements Comparable<PluginInfo> {
   @CheckForNull
   private String implementationBuild;
 
+  private Boolean sonarLintSupported;
+
   private final Set<RequiredPlugin> requiredPlugins = new HashSet<>();
 
   public PluginInfo(String key) {
@@ -176,6 +176,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return implementationBuild;
   }
 
+  @CheckForNull
+  public Boolean isSonarLintSupported() {
+    return sonarLintSupported;
+  }
+
   public Set<RequiredPlugin> getRequiredPlugins() {
     return requiredPlugins;
   }
@@ -221,6 +226,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   public PluginInfo setImplementationBuild(@Nullable String implementationBuild) {
     this.implementationBuild = implementationBuild;
+    return this;
+  }
+
+  public PluginInfo setSonarLintSupported(Boolean sonarLintSupported) {
+    this.sonarLintSupported = sonarLintSupported;
     return this;
   }
 
@@ -311,6 +321,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     info.setUseChildFirstClassLoader(manifest.isUseChildFirstClassLoader());
     info.setBasePlugin(manifest.getBasePlugin());
     info.setImplementationBuild(manifest.getImplementationBuild());
+    info.setSonarLintSupported(manifest.isSonarLintSupported());
     String[] requiredPlugins = manifest.getRequirePlugins();
     if (requiredPlugins != null) {
       for (String s : requiredPlugins) {
@@ -320,16 +331,4 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return info;
   }
 
-  private enum JarToPluginInfo implements Function<File, PluginInfo> {
-    INSTANCE;
-
-    @Override
-    public PluginInfo apply(@Nonnull File jarFile) {
-      return create(jarFile);
-    }
-  }
-
-  public static Function<File, PluginInfo> jarToPluginInfo() {
-    return JarToPluginInfo.INSTANCE;
-  }
 }

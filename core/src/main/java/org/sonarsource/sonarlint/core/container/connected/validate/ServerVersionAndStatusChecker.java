@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
-import static org.sonar.api.internal.apachecommons.lang.StringUtils.trimToEmpty;
+import static org.apache.commons.lang.StringUtils.trimToEmpty;
 
 public class ServerVersionAndStatusChecker {
 

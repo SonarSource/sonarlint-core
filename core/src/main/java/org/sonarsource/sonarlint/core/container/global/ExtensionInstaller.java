@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import java.util.List;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
+import org.sonar.api.profiles.ProfileDefinition;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -42,7 +42,7 @@ public class ExtensionInstaller {
     this.pluginRepository = pluginRepository;
   }
 
-  public ExtensionInstaller install(ComponentContainer container, ExtensionMatcher matcher) {
+  public ExtensionInstaller install(ComponentContainer container) {
 
     // plugin extensions
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
@@ -50,8 +50,13 @@ public class ExtensionInstaller {
       Plugin.Context context = new Plugin.Context(sqRuntime);
       plugin.define(context);
       for (Object extension : context.getExtensions()) {
-        if (!blacklisted(extension)) {
-          doInstall(container, matcher, pluginInfo, extension);
+        Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
+        if (isSlPluginOrNull != null && isSlPluginOrNull.booleanValue()) {
+          if (ExtensionUtils.isSonarLintSide(extension)) {
+            container.addExtension(pluginInfo, extension);
+          }
+        } else if (!blacklisted(extension) && (ExtensionUtils.isScannerSide(extension) || ExtensionUtils.isType(extension, ProfileDefinition.class))) {
+          container.addExtension(pluginInfo, extension);
         } else {
           LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
         }
@@ -62,10 +67,10 @@ public class ExtensionInstaller {
       Object object = provider.provide();
       if (object instanceof Iterable) {
         for (Object extension : (Iterable) object) {
-          doInstall(container, matcher, null, extension);
+          container.addExtension(null, extension);
         }
       } else {
-        doInstall(container, matcher, null, object);
+        container.addExtension(null, object);
       }
     }
     return this;
@@ -84,14 +89,6 @@ public class ExtensionInstaller {
 
   private static String className(Object extension) {
     return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
-  }
-
-  private static void doInstall(ComponentContainer container, ExtensionMatcher matcher, @Nullable PluginInfo pluginInfo, Object extension) {
-    if (matcher.accept(extension)) {
-      container.addExtension(pluginInfo, extension);
-    } else {
-      container.declareExtension(pluginInfo, extension);
-    }
   }
 
 }

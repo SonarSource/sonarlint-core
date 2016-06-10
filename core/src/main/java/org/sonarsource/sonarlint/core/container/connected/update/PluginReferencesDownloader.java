@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Scanner;
-import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -33,6 +32,8 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
@@ -53,7 +54,8 @@ public class PluginReferencesDownloader {
     this.pluginVersionChecker = pluginVersionChecker;
   }
 
-  public PluginReferences fetchPluginsTo(Path dest, Set<String> allowedPlugins) {
+  public PluginReferences fetchPluginsTo(Path dest, String serverVersion) {
+    boolean compatibleFlagPresent = Version.create(serverVersion).compareTo(Version.create("6.0")) >= 0;
     WsResponse response = wsClient.get("deploy/plugins/index.txt");
     PluginReferences.Builder builder = PluginReferences.newBuilder();
     String responseStr = response.content();
@@ -66,8 +68,9 @@ public class PluginReferencesDownloader {
       String[] fields = StringUtils.split(line, ",");
       String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
       String key = fields[0];
-      if (!allowedPlugins.contains(key)) {
-        LOG.debug("Plugin {} is not in the SonarLint whitelist. Skip it.", key);
+      boolean compatible = PluginCopier.isWhitelisted(key) || (compatibleFlagPresent && "true".equals(fields[1]));
+      if (!compatible) {
+        LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", key);
         continue;
       }
       String filename = nameAndHash[0];

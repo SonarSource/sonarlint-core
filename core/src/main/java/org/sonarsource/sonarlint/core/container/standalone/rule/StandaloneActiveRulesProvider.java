@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
-import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
@@ -37,16 +36,30 @@ import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rules.ActiveRule;
 import org.sonar.api.rules.ActiveRuleParam;
+import org.sonar.api.server.rule.RulesDefinition.Param;
+import org.sonar.api.server.rule.RulesDefinition.Repository;
+import org.sonar.api.server.rule.RulesDefinition.Rule;
 import org.sonar.api.utils.ValidationMessages;
 
 /**
  * Loads the rules that are activated on the Quality profiles
  * used by the current project and builds {@link org.sonar.api.batch.rule.ActiveRules}.
  */
-public class StandaloneActiveRulesProvider extends ProviderAdapter {
+public class StandaloneActiveRulesProvider {
   private ActiveRules singleton = null;
+  private final StandaloneRuleDefinitionsLoader ruleDefsLoader;
+  private final ProfileDefinition[] profileDefinitions;
 
-  public ActiveRules provide(ProfileDefinition[] profileDefinitions) {
+  public StandaloneActiveRulesProvider(StandaloneRuleDefinitionsLoader ruleDefsLoader, ProfileDefinition[] profileDefinitions) {
+    this.ruleDefsLoader = ruleDefsLoader;
+    this.profileDefinitions = profileDefinitions;
+  }
+
+  public StandaloneActiveRulesProvider(StandaloneRuleDefinitionsLoader ruleDefsLoader) {
+    this(ruleDefsLoader, new ProfileDefinition[0]);
+  }
+
+  public ActiveRules provide() {
     if (singleton == null) {
       ActiveRulesBuilder builder = new ActiveRulesBuilder();
 
@@ -54,6 +67,22 @@ public class StandaloneActiveRulesProvider extends ProviderAdapter {
       for (String language : profilesByLanguage.keySet()) {
         List<RulesProfile> defs = profilesByLanguage.get(language);
         registerProfilesForLanguage(builder, language, defs);
+      }
+
+      for (Repository repo : ruleDefsLoader.getContext().repositories()) {
+        for (Rule rule : repo.rules()) {
+          if (rule.activatedByDefault()) {
+            NewActiveRule newAr = builder.create(RuleKey.of(repo.key(), rule.key()))
+              .setLanguage(repo.language())
+              .setName(rule.name())
+              .setSeverity(rule.severity())
+              .setInternalKey(rule.internalKey());
+            for (Param param : rule.params()) {
+              newAr.setParam(param.key(), param.defaultValue());
+            }
+            newAr.activate();
+          }
+        }
       }
 
       singleton = builder.build();
@@ -78,8 +107,7 @@ public class StandaloneActiveRulesProvider extends ProviderAdapter {
           .setLanguage(language)
           .setName(ar.getRule().getName())
           .setSeverity(ar.getSeverity().name())
-          .setInternalKey(ar.getConfigKey())
-          .setTemplateRuleKey(ar.getRule().getKey());
+          .setInternalKey(ar.getConfigKey());
         for (ActiveRuleParam param : ar.getActiveRuleParams()) {
           newAr.setParam(param.getKey(), param.getValue());
         }

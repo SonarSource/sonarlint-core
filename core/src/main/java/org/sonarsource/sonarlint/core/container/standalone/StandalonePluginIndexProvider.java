@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.sonar.api.internal.apachecommons.lang.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider;
 
 /**

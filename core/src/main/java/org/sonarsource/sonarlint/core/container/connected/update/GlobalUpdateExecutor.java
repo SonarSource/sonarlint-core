@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
 import java.util.Date;
-import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -76,10 +75,10 @@ public class GlobalUpdateExecutor {
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
       progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
-      Set<String> allowedPlugins = globalPropertiesDownloader.fetchGlobalPropertiesTo(temp, serverStatus.getVersion());
+      globalPropertiesDownloader.fetchGlobalPropertiesTo(temp, serverStatus.getVersion());
 
       progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
-      PluginReferences pluginReferences = pluginReferenceDownloader.fetchPluginsTo(temp, allowedPlugins);
+      PluginReferences pluginReferences = pluginReferenceDownloader.fetchPluginsTo(temp, serverStatus.getVersion());
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp, serverStatus.getVersion(), pluginReferences);
