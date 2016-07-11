@@ -69,6 +69,7 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
       .addPlugin(PluginLocator.getPythonPluginUrl())
+      .addPlugin(PluginLocator.getXooPluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput(new LogOutput() {
         @Override
@@ -123,6 +124,21 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void analysisErrors() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
+      + "  var x;\n"
+      + "  var y; //NOSONAR\n"
+      + "}", false);
+    prepareInputFile("foo.xoo.error", "1,2,error analysing\n2,3,error analysing", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    AnalysisResults results = sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      issue -> issues.add(issue));
+    assertThat(results.erroredFiles()).containsExactly(inputFile);
+  }
+
+  @Test
   public void simplePhp() throws Exception {
 
     ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
@@ -134,12 +150,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      issue -> issues.add(issue));
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("php:S1172", 2, inputFile.getPath()));
   }
@@ -153,12 +164,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      issue -> issues.add(issue));
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
   }
@@ -177,16 +183,12 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      issue -> issues.add(issue));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("squid:UndocumentedApi", 1, inputFile.getPath(), "MINOR"),
+      tuple("squid:UndocumentedApi", 2, inputFile.getPath(), "MINOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
   }
@@ -206,15 +208,11 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      issue -> issues.add(issue));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:UndocumentedApi", 1, inputFile.getPath(), "MINOR"),
+      tuple("squid:UndocumentedApi", 3, inputFile.getPath(), "MINOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
       tuple("squid:S1481", 4, inputFile.getPath(), "MAJOR"));
   }
@@ -225,17 +223,13 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
-      ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      ImmutableMap.<String, String>of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), issue -> issues.add(issue));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 5, inputFile.getPath()),
       tuple("squid:S1220", null, inputFile.getPath()),
+      tuple("squid:UndocumentedApi", 1, inputFile.getPath()),
+      tuple("squid:UndocumentedApi", 3, inputFile.getPath()),
       tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
       tuple("squid:S1186", 8, inputFile.getPath()));
   }
@@ -270,19 +264,15 @@ public class StandaloneIssueMediumTest {
     AnalysisResults results = sonarlint.analyze(
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
         ImmutableMap.<String, String>of("sonar.junit.reportsPath", "reports/")),
-      new IssueListener() {
-
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      issue -> issues.add(issue));
 
     assertThat(results.fileCount()).isEqualTo(2);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath()),
       tuple("squid:S1220", null, inputFile.getPath()),
+      tuple("squid:UndocumentedApi", 1, inputFile.getPath()),
+      tuple("squid:UndocumentedApi", 2, inputFile.getPath()),
       tuple("squid:S1481", 3, inputFile.getPath()),
       tuple("squid:S2187", 1, inputFileTest.getPath()));
   }

@@ -249,7 +249,13 @@
                 <artifactItem>
                   <groupId>org.sonarsource.java</groupId>
                   <artifactId>sonar-java-plugin</artifactId>
-                  <version>3.11</version>
+                  <version>4.0</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.sonarqube</groupId>
+                  <artifactId>sonar-xoo-plugin</artifactId>
+                  <version>${sonarqube.version}</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>

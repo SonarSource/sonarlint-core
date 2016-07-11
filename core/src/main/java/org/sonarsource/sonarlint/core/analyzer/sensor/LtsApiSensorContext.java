@@ -21,7 +21,8 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
 import java.util.Collection;
-import org.sonar.api.SonarQubeVersion;
+
+import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
@@ -34,12 +35,10 @@ import org.sonar.api.design.Dependency;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.measures.MeasuresFilter;
 import org.sonar.api.measures.Metric;
-import org.sonar.api.resources.Directory;
 import org.sonar.api.resources.File;
 import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.utils.PathUtils;
 import org.sonar.api.utils.System2;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
@@ -105,8 +104,8 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   private final Project project;
 
   public LtsApiSensorContext(Project project, InputModule inputModule, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarQubeVersion sqVersion) {
-    super(inputModule, settings, fs, activeRules, sensorStorage, sqVersion);
+    SonarRuntime sqRuntime) {
+    super(inputModule, settings, fs, activeRules, sensorStorage, sqRuntime);
     this.project = project;
 
   }
@@ -115,28 +114,8 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
     return project;
   }
 
-  @Override
-  public boolean index(Resource resource) {
-    throw unsupported();
-  }
-
   private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Unsupported in SonarLint");
-  }
-
-  @Override
-  public boolean index(Resource resource, Resource parentReference) {
-    throw unsupported();
-  }
-
-  @Override
-  public boolean isExcluded(Resource reference) {
-    throw unsupported();
-  }
-
-  @Override
-  public boolean isIndexed(Resource reference, boolean acceptExcluded) {
-    throw unsupported();
   }
 
   @Override
@@ -219,11 +198,6 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   }
 
   @Override
-  public void saveSource(Resource reference, String source) {
-    throw unsupported();
-  }
-
-  @Override
   public Measure saveMeasure(InputFile inputFile, Metric metric, Double value) {
     return null;
   }
@@ -236,23 +210,9 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   @Override
   public Resource getResource(final InputPath inputPath) {
     if (inputPath.isFile()) {
-      File f = new File(inputPath.absolutePath()) {
-
-        @Override
-        public String getEffectiveKey() {
-          return inputPath.key();
-        }
-
-        @Override
-        public String getPath() {
-          return inputPath.absolutePath();
-        }
-
-        @Override
-        public org.sonar.api.resources.Directory getParent() {
-          return Directory.create(PathUtils.sanitize(inputPath.path().getParent().toString()));
-        }
-      };
+      File f = File.create(inputPath.absolutePath());
+      f.setEffectiveKey(inputPath.key());
+      f.setPath(inputPath.absolutePath());
       f.setKey(inputPath.key());
       return f;
     } else {

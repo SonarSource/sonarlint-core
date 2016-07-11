@@ -19,10 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
+import org.sonar.api.SonarProduct;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.rule.CheckFactory;
-import org.sonar.api.internal.SonarQubeVersionFactory;
+import org.sonar.api.internal.SonarRuntimeFactory;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.resources.Project;
 import org.sonar.api.scan.filesystem.FileExclusions;
@@ -75,7 +76,7 @@ public class AnalysisContainer extends ComponentContainer {
     add(
       new ProjectProvider(),
       new DefaultInputModule("sonarlint"),
-      SonarQubeVersionFactory.create(System2.INSTANCE),
+      SonarRuntimeFactory.create(System2.INSTANCE, SonarProduct.SONARLINT, null),
       NoOpFileLinesContextFactory.class,
 
       // temp

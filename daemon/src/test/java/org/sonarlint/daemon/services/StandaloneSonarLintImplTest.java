@@ -55,7 +55,7 @@ public class StandaloneSonarLintImplTest {
     assertThat(file.getCharset()).isEqualTo(charset);
     assertThat(file.isTest()).isEqualTo(isTest);
     assertThat(file.getPath()).isEqualTo(path);
-    assertThat(file.getClientObject()).isEqualTo(userObject);
+    assertThat((Object) file.getClientObject()).isEqualTo(userObject);
   }
 
   @Test
