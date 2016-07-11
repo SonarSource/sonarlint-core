@@ -31,6 +31,7 @@ import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
+import org.sonar.api.batch.sensor.error.AnalysisError;
 import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.Issue;
@@ -41,7 +42,9 @@ import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class DefaultSensorStorage implements SensorStorage {
@@ -50,12 +53,14 @@ public class DefaultSensorStorage implements SensorStorage {
   private final Rules rules;
   private final IssueFilters filters;
   private final IssueListener issueListener;
+  private final DefaultAnalysisResult analysisResult;
 
-  public DefaultSensorStorage(ActiveRules activeRules, Rules rules, IssueFilters filters, IssueListener issueListener) {
+  public DefaultSensorStorage(ActiveRules activeRules, Rules rules, IssueFilters filters, IssueListener issueListener, DefaultAnalysisResult analysisResult) {
     this.activeRules = activeRules;
     this.rules = rules;
     this.filters = filters;
     this.issueListener = issueListener;
+    this.analysisResult = analysisResult;
   }
 
   @Override
@@ -119,6 +124,12 @@ public class DefaultSensorStorage implements SensorStorage {
   @Override
   public void store(DefaultSymbolTable symbolTable) {
     // NO-OP
+  }
+
+  @Override
+  public void store(AnalysisError analysisError) {
+    ClientInputFile clientInputFile = ((SonarLintInputFile) analysisError.inputFile()).getClientInputFile();
+    analysisResult.addErroredFile(clientInputFile);
   }
 
 }

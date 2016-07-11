@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+import java.util.Collection;
+
 public interface AnalysisResults {
 
   /**
@@ -26,5 +28,11 @@ public interface AnalysisResults {
    * file with no matching language are excluded.
    */
   int fileCount();
+  
+  /**
+   * Input files for which there were analysis errors. The analyzers failed to correctly handle these files, and therefore there might be issues
+   * missing or no issues at all for these files.
+   */
+  Collection<ClientInputFile> erroredFiles();
 
 }
