@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
@@ -54,7 +52,7 @@ public class PluginManifestTest {
 
   @Test
   public void accessors() throws URISyntaxException, IOException, ParseException {
-    URL jar = new File("target/plugins/sonar-java-plugin-3.11.jar").getAbsoluteFile().toURI().toURL();
+    URL jar = PluginLocator.getJavaPluginUrl();
 
     PluginManifest manifest = new PluginManifest(new File(jar.toURI()));
 
@@ -65,7 +63,6 @@ public class PluginManifestTest {
     manifest.setRequirePlugins(requirePlugins);
     manifest.setSonarVersion("newSonarVersion");
     manifest.setMainClass("newMainClass");
-    DateFormat formatter = new SimpleDateFormat("yyyy-mm-dd");
     manifest.setUseChildFirstClassLoader(false);
     manifest.setBasePlugin("newBasePlugin");
     manifest.setImplementationBuild("newImplementationBuild");

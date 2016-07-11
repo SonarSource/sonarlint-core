@@ -22,13 +22,17 @@ package org.sonarsource.sonarlint.core.util;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class PluginLocator {
 
-  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-3.11.jar";
-  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "cf57e66593fd6ff127f44e7652043712";
+  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-4.0.jar";
+  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "de15554d72648a16048d2a4d87df64c3";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-2.11.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "0919c31699187c485d792363ea363aba";
+  public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";
 
   public static URL getJavaPluginUrl() {
     return getPluginUrl(SONAR_JAVA_PLUGIN_JAR);
@@ -46,10 +50,31 @@ public class PluginLocator {
     return getPluginUrl("sonar-python-plugin-1.5.jar");
   }
 
+  public static URL getXooPluginUrl() {
+    return getPluginUrlUnknownVersion(SONAR_XOO_PLUGIN_NAME);
+  }
+
   private static URL getPluginUrl(String file) {
     try {
       return new File("target/plugins/" + file).getAbsoluteFile().toURI().toURL();
     } catch (MalformedURLException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  /**
+   * Tries to find a plugin with a name starting with the provided string.
+   * If no plugin is found, NoSuchElementException is thrown.
+   */
+  public static URL getPluginUrlUnknownVersion(String name) {
+    try {
+      Path dir = Paths.get("target/plugins/");
+      Path plugin = Files.list(dir)
+        .filter(x -> x.getFileName().toString().startsWith(name))
+        .findAny()
+        .get();
+      return plugin.toUri().toURL();
+    } catch (Exception e) {
       throw new IllegalStateException(e);
     }
   }

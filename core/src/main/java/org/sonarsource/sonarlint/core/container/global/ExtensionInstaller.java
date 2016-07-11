@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarQubeVersion;
+import org.sonar.api.SonarRuntime;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -34,11 +34,11 @@ public class ExtensionInstaller {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExtensionInstaller.class);
 
-  private final SonarQubeVersion sonarQubeVersion;
+  private final SonarRuntime sqRuntime;
   private final DefaultPluginRepository pluginRepository;
 
-  public ExtensionInstaller(SonarQubeVersion sonarQubeVersion, DefaultPluginRepository pluginRepository) {
-    this.sonarQubeVersion = sonarQubeVersion;
+  public ExtensionInstaller(SonarRuntime sqRuntime, DefaultPluginRepository pluginRepository) {
+    this.sqRuntime = sqRuntime;
     this.pluginRepository = pluginRepository;
   }
 
@@ -47,7 +47,7 @@ public class ExtensionInstaller {
     // plugin extensions
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      Plugin.Context context = new Plugin.Context(sonarQubeVersion.get());
+      Plugin.Context context = new Plugin.Context(sqRuntime);
       plugin.define(context);
       for (Object extension : context.getExtensions()) {
         if (!blacklisted(extension)) {

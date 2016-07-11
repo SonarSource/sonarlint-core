@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.Serializable;
-import org.sonar.api.SonarQubeVersion;
+
+import org.sonar.api.SonarProduct;
+import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -28,6 +30,8 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
+import org.sonar.api.batch.sensor.error.NewAnalysisError;
+import org.sonar.api.batch.sensor.error.internal.DefaultAnalysisError;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewIssue;
@@ -52,16 +56,16 @@ public class DefaultSensorContext implements SensorContext {
   private final ActiveRules activeRules;
   private final SensorStorage sensorStorage;
   private final InputModule module;
-  private final SonarQubeVersion sqVersion;
+  private final SonarRuntime sqRuntime;
 
   public DefaultSensorContext(InputModule module, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarQubeVersion sqVersion) {
+    SonarRuntime sqRuntime) {
     this.module = module;
     this.settings = settings;
     this.fs = fs;
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
-    this.sqVersion = sqVersion;
+    this.sqRuntime = sqRuntime;
   }
 
   @Override
@@ -106,7 +110,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public Version getSonarQubeVersion() {
-    return sqVersion.get();
+    return sqRuntime.getApiVersion();
   }
 
   @Override
@@ -117,6 +121,21 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public NewCpdTokens newCpdTokens() {
     return NO_OP_NEW_CPD_TOKENS;
+  }
+
+  @Override
+  public Version getRuntimeApiVersion() {
+    return sqRuntime.getApiVersion();
+  }
+
+  @Override
+  public SonarProduct getRuntimeProduct() {
+    return sqRuntime.getProduct();
+  }
+
+  @Override
+  public NewAnalysisError newAnalysisError() {
+    return new DefaultAnalysisError(sensorStorage);
   }
 
 }

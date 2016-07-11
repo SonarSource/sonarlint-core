@@ -22,15 +22,8 @@ package org.sonarsource.sonarlint.core.analyzer.noop;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
-import org.sonar.api.resources.Resource;
 
 public class NoOpFileLinesContextFactory implements FileLinesContextFactory {
-
-  @Override
-  public FileLinesContext createFor(Resource model) {
-    return new NoOpFileLinesContext();
-  }
-
   @Override
   public FileLinesContext createFor(InputFile inputFile) {
     return new NoOpFileLinesContext();
