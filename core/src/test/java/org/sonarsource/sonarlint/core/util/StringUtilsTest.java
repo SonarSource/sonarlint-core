@@ -19,36 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class StringUtils {
+import org.junit.Test;
 
-  private StringUtils() {
-  }
+public class StringUtilsTest {
 
-  public static String urlEncode(String toEncode) {
-    try {
-      return URLEncoder.encode(toEncode, StandardCharsets.UTF_8.name());
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("Should never happen", e);
+  private class MyClass {
+    @Override
+    public String toString() {
+      return null;
     }
   }
-  
-  public static String describe(Object o) {
-    try {
-      if (o.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
-        String str = o.toString();
-        if (str != null) {
-          return str;
-        }
+
+  @Test
+  public void testDescribe() {
+    Object withToString = new Object() {
+      @Override
+      public String toString() {
+        return "desc";
       }
-    } catch (Exception e) {
-      // fallback
-    }
+    };
 
-    return o.getClass().getName();
+    Object withoutToString = new Object();
+
+    assertThat(StringUtils.describe(withToString)).isEqualTo(("desc"));
+    assertThat(StringUtils.describe(withoutToString)).isEqualTo("java.lang.Object");
+    assertThat(StringUtils.describe(new MyClass())).endsWith("MyClass");
   }
-
 }

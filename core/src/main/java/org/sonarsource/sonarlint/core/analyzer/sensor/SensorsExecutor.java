@@ -31,6 +31,7 @@ import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
 import org.sonar.api.resources.Project;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 @BatchSide
 public class SensorsExecutor {
@@ -68,7 +69,7 @@ public class SensorsExecutor {
   }
 
   private void executeSensor(SensorContext context, Sensor sensor) {
-    LOG.debug("Execute Sensor: " + sensor.toString());
+    LOG.debug("Execute Sensor: {}", StringUtils.describe(sensor));
     sensor.analyse(module, context);
   }
 

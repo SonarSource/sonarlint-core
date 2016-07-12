@@ -19,17 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.resources.Project;
 
 public class SensorWrapper implements org.sonar.api.batch.Sensor {
-
-  private static final Logger LOG = LoggerFactory.getLogger(SensorWrapper.class);
-
   private Sensor wrappedSensor;
   private SensorContext adaptor;
   private DefaultSensorDescriptor descriptor;
@@ -59,6 +54,10 @@ public class SensorWrapper implements org.sonar.api.batch.Sensor {
 
   @Override
   public String toString() {
-    return descriptor.name() + (LOG.isDebugEnabled() ? " (wrapped)" : "");
+    if (descriptor.name() != null) {
+      return descriptor.name();
+    } else {
+      return wrappedSensor.getClass().getName();
+    }
   }
 }
