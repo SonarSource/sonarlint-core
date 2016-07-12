@@ -19,16 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public class DefaultAnalysisResult implements AnalysisResults {
-  private Map<Path, ClientInputFile> failedAnalysisFiles = new HashMap<>();
+  private Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
   private int fileCount;
 
   public DefaultAnalysisResult setFileCount(int fileCount) {
@@ -37,7 +36,7 @@ public class DefaultAnalysisResult implements AnalysisResults {
   }
 
   public void addFailedAnalysisFile(ClientInputFile inputFile) {
-    failedAnalysisFiles.put(inputFile.getPath(), inputFile);
+    failedAnalysisFiles.add(inputFile);
   }
 
   @Override
@@ -47,7 +46,7 @@ public class DefaultAnalysisResult implements AnalysisResults {
 
   @Override
   public Collection<ClientInputFile> failedAnalysisFiles() {
-    return failedAnalysisFiles.values();
+    return failedAnalysisFiles;
   }
 
 }
