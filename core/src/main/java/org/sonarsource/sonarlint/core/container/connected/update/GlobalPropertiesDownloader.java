@@ -98,7 +98,7 @@ public class GlobalPropertiesDownloader {
   }
 
   private static boolean needsBatchGlobal(String version) {
-    return Version.create(version).compareTo(Version.create("5.6")) < 0;
+    return Version.create(version).compareToIgnoreQualifier(Version.create("5.6")) < 0;
   }
 
   private static class GlobalRepositories {

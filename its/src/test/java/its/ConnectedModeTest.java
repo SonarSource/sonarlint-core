@@ -48,7 +48,6 @@ import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -126,13 +125,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput(new LogOutput() {
-
-        @Override
-        public void log(String formattedMessage, Level level) {
-          System.out.println(formattedMessage);
-        }
-      })
+      .setLogOutput((msg, level) -> System.out.println(msg))
       .build());
   }
 

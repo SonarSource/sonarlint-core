@@ -113,7 +113,7 @@ public class RulesDownloader {
 
   private static boolean requireMdDesc(Version serverVersion) {
     // Because of SONAR-7393
-    return serverVersion.compareTo(Version.create("5.5")) < 0;
+    return serverVersion.compareToIgnoreQualifier(Version.create("5.5")) < 0;
   }
 
   private static SearchResponse loadFromStream(WsResponse response, Version serverVersion) {
@@ -272,11 +272,11 @@ public class RulesDownloader {
 
   private static boolean supportHtmlDesc(Version serverVersion) {
     // Because of SONAR-5885
-    return serverVersion.compareTo(Version.create("5.1")) >= 0;
+    return serverVersion.compareToIgnoreQualifier(Version.create("5.1")) >= 0;
   }
 
   private static boolean supportProtobuf(Version serverVersion) {
-    return serverVersion.compareTo(Version.create("5.2")) >= 0;
+    return serverVersion.compareToIgnoreQualifier(Version.create("5.2")) >= 0;
   }
 
   private static void readPage(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, SearchResponse response) {

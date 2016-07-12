@@ -116,6 +116,6 @@ public class GlobalUpdateExecutor {
   }
 
   public static boolean supportQualityProfilesWS(String version) {
-    return Version.create(version).compareTo(Version.create("5.2")) >= 0;
+    return Version.create(version).compareToIgnoreQualifier(Version.create("5.2")) >= 0;
   }
 }

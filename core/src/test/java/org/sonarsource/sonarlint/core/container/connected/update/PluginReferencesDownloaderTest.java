@@ -110,7 +110,7 @@ public class PluginReferencesDownloaderTest {
 
     PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache, pluginVersionChecker);
 
-    pluginUpdate.fetchPluginsTo(dest, "6.0");
+    pluginUpdate.fetchPluginsTo(dest, "6.0-SNAPSHOT");
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StorageManager.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")

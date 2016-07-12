@@ -62,7 +62,7 @@ public class ServerVersionAndStatusChecker {
       throw new IllegalStateException(serverNotReady(serverStatus));
     }
     Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareTo(Version.create(minVersion)) < 0) {
+    if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
       throw new UnsupportedServerException(unsupportedVersion(serverStatus, minVersion));
     }
     return serverStatus;
@@ -86,7 +86,7 @@ public class ServerVersionAndStatusChecker {
       return new DefaultValidationResult(false, serverNotReady(serverStatus));
     }
     Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareTo(Version.create(minVersion)) < 0) {
+    if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
       return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
     }
     return new DefaultValidationResult(true, "Compatible and ready");

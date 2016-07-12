@@ -55,7 +55,7 @@ public class PluginReferencesDownloader {
   }
 
   public PluginReferences fetchPluginsTo(Path dest, String serverVersion) {
-    boolean compatibleFlagPresent = Version.create(serverVersion).compareTo(Version.create("6.0")) >= 0;
+    boolean compatibleFlagPresent = Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.0")) >= 0;
     WsResponse response = wsClient.get("deploy/plugins/index.txt");
     PluginReferences.Builder builder = PluginReferences.newBuilder();
     String responseStr = response.content();
