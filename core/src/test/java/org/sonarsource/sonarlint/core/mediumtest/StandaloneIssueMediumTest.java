@@ -112,9 +112,26 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void simpleXoo() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
+      + "  var xoo1, xoo2;\n"
+      + "  var xoo; //NOSONAR\n"
+      + "}", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      issue -> issues.add(issue));
+    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
+      tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
+      tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
+      tuple("xoo:HasTag", 2, 12, inputFile.getPath()));
+  }
+
+  @Test
   public void analysisErrors() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
-      + "  var x;\n"
+      + "  var xoo;\n"
       + "  var y; //NOSONAR\n"
       + "}", false);
     prepareInputFile("foo.xoo.error", "1,2,error analysing\n2,3,error analysing", false);
@@ -124,6 +141,8 @@ public class StandaloneIssueMediumTest {
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       issue -> issues.add(issue));
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
+    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
+      tuple("xoo:HasTag", 2, 6, inputFile.getPath()));
   }
 
   @Test
@@ -290,7 +309,8 @@ public class StandaloneIssueMediumTest {
         @Override
         public void run() {
           sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), workDir, Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-            issue -> {});
+            issue -> {
+            });
         }
       };
       results.add(executor.submit(worker));
