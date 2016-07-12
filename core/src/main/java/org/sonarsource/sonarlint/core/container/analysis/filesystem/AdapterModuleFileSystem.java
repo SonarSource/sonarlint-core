@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -27,8 +26,6 @@ import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.scan.filesystem.FileQuery;
 import org.sonar.api.scan.filesystem.ModuleFileSystem;
-
-import javax.annotation.Nullable;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -79,36 +76,16 @@ public class AdapterModuleFileSystem implements ModuleFileSystem {
 
   private FilePredicate fromDeprecatedAttribute(String key, Collection<String> value) {
     if ("TYPE".equals(key)) {
-      return predicates().or(Collections2.transform(value, new Function<String, FilePredicate>() {
-        @Override
-        public FilePredicate apply(@Nullable String s) {
-          return s == null ? predicates().all() : predicates().hasType(org.sonar.api.batch.fs.InputFile.Type.valueOf(s));
-        }
-      }));
+      return predicates().or(Collections2.transform(value, s -> s == null ? predicates().all() : predicates().hasType(org.sonar.api.batch.fs.InputFile.Type.valueOf(s))));
     }
     if ("STATUS".equals(key)) {
-      return predicates().or(Collections2.transform(value, new Function<String, FilePredicate>() {
-        @Override
-        public FilePredicate apply(@Nullable String s) {
-          return s == null ? predicates().all() : predicates().hasStatus(org.sonar.api.batch.fs.InputFile.Status.valueOf(s));
-        }
-      }));
+      return predicates().or(Collections2.transform(value, s -> s == null ? predicates().all() : predicates().hasStatus(org.sonar.api.batch.fs.InputFile.Status.valueOf(s))));
     }
     if ("LANG".equals(key)) {
-      return predicates().or(Collections2.transform(value, new Function<String, FilePredicate>() {
-        @Override
-        public FilePredicate apply(@Nullable String s) {
-          return s == null ? predicates().all() : predicates().hasLanguage(s);
-        }
-      }));
+      return predicates().or(Collections2.transform(value, s -> s == null ? predicates().all() : predicates().hasLanguage(s)));
     }
     if ("CMP_KEY".equals(key)) {
-      return predicates().or(Collections2.transform(value, new Function<String, FilePredicate>() {
-        @Override
-        public FilePredicate apply(@Nullable String s) {
-          return s == null ? predicates().all() : new AdditionalFilePredicates.KeyPredicate(s);
-        }
-      }));
+      return predicates().or(Collections2.transform(value, s -> s == null ? predicates().all() : new AdditionalFilePredicates.KeyPredicate(s)));
     }
     throw new IllegalArgumentException("Unsupported file attribute: " + key);
   }

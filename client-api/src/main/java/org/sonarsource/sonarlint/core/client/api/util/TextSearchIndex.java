@@ -125,17 +125,14 @@ public class TextSearchIndex<T> {
       scoredProjects.add(new ScorableObject(e.getKey(), e.getValue()));
     }
 
-    Collections.sort(scoredProjects, new Comparator<ScorableObject>() {
-      @Override
-      public int compare(ScorableObject o1, ScorableObject o2) {
-        double score = o2.score - o1.score;
-        if (score > 0) {
-          return 1;
-        } else if (score < 0) {
-          return -1;
-        }
-        return 0;
+    Collections.sort(scoredProjects, (o1, o2) -> {
+      double score = o2.score - o1.score;
+      if (score > 0) {
+        return 1;
+      } else if (score < 0) {
+        return -1;
       }
+      return 0;
     });
 
     List<T> projects = new LinkedList<>();
