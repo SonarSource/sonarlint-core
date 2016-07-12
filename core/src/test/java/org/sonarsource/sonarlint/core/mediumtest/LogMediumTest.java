@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
@@ -42,8 +41,6 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
@@ -103,12 +100,7 @@ public class LogMediumTest {
   public void changeLogOutputForAnalysis() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener());
-    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        return !logs.get(LogOutput.Level.DEBUG).isEmpty();
-      }
-    });
+    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> !logs.get(LogOutput.Level.DEBUG).isEmpty());
     logs.clear();
 
     final Multimap<LogOutput.Level, String> logs2 = LinkedListMultimap.create();
@@ -116,12 +108,7 @@ public class LogMediumTest {
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2));
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
 
-    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        return !logs2.get(LogOutput.Level.DEBUG).isEmpty();
-      }
-    });
+    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> !logs2.get(LogOutput.Level.DEBUG).isEmpty());
   }
 
   @Test
@@ -130,11 +117,8 @@ public class LogMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
     try {
-      sonarlint.analyze(createConfig(inputFile), new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          throw new MyCustomException("Fake");
-        }
+      sonarlint.analyze(createConfig(inputFile), issue -> {
+        throw new MyCustomException("Fake");
       });
       fail("Expected exception");
     } catch (Exception e) {

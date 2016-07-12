@@ -129,7 +129,7 @@ public class DefaultSensorStorage implements SensorStorage {
   @Override
   public void store(AnalysisError analysisError) {
     ClientInputFile clientInputFile = ((SonarLintInputFile) analysisError.inputFile()).getClientInputFile();
-    analysisResult.addErroredFile(clientInputFile);
+    analysisResult.addFailedAnalysisFile(clientInputFile);
   }
 
 }

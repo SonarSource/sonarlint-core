@@ -40,12 +40,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
@@ -71,12 +69,7 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getPythonPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
-      .setLogOutput(new LogOutput() {
-        @Override
-        public void log(String formattedMessage, Level level) {
-          System.out.println(formattedMessage);
-        }
-      })
+      .setLogOutput((msg, level) -> System.out.println(msg))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
@@ -112,12 +105,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-          issues.add(issue);
-        }
-      });
+      i -> issues.add(i));
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
 
@@ -135,7 +123,7 @@ public class StandaloneIssueMediumTest {
     AnalysisResults results = sonarlint.analyze(
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       issue -> issues.add(issue));
-    assertThat(results.erroredFiles()).containsExactly(inputFile);
+    assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
   }
 
   @Test
@@ -302,12 +290,7 @@ public class StandaloneIssueMediumTest {
         @Override
         public void run() {
           sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), workDir, Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-            new IssueListener() {
-              @Override
-              public void handle(Issue issue) {
-                // Ignore
-              }
-            });
+            issue -> {});
         }
       };
       results.add(executor.submit(worker));

@@ -33,6 +33,6 @@ public interface AnalysisResults {
    * Input files for which there were analysis errors. The analyzers failed to correctly handle these files, and therefore there might be issues
    * missing or no issues at all for these files.
    */
-  Collection<ClientInputFile> erroredFiles();
+  Collection<ClientInputFile> failedAnalysisFiles();
 
 }

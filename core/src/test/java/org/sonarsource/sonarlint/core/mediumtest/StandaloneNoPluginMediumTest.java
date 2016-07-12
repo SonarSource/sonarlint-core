@@ -39,8 +39,6 @@ import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
@@ -57,19 +55,15 @@ public class StandaloneNoPluginMediumTest {
 
   @Before
   public void prepare() throws IOException {
+    LogOutput logOutput = (msg, level) -> logs.put(level, msg);
     sonarlint = new StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration.builder()
-      .setLogOutput(new LogOutput() {
-        @Override
-        public void log(String formattedMessage, Level level) {
-          logs.put(level, formattedMessage);
-        }
-      }).build());
+      .setLogOutput(logOutput).build());
+    
     baseDir = temp.newFolder();
   }
 
   @After
   public void stop() {
-
     sonarlint.stop();
   }
 
@@ -80,11 +74,7 @@ public class StandaloneNoPluginMediumTest {
 
     AnalysisResults results = sonarlint.analyze(
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new IssueListener() {
-        @Override
-        public void handle(Issue issue) {
-        }
-      });
+      i -> {});
 
     assertThat(results.fileCount()).isEqualTo(1);
     assertThat(logs.get(Level.WARN)).contains("No analyzers installed");
