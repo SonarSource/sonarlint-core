@@ -148,6 +148,7 @@ public class PluginClassloaderFactory {
   private static Mask apiMask() {
     return new Mask()
       .addInclusion("org/sonar/api/")
+      .addInclusion("org/sonarsource/api/sonarlint/")
       .addInclusion("org/sonar/channel/")
       .addInclusion("org/sonar/check/")
       .addInclusion("org/sonar/colorizer/")
