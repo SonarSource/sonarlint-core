@@ -199,18 +199,19 @@ public class BatchExtensionDictionnary {
   private void evaluateMethod(Object extension, Method method, List<Object> results) {
     try {
       Object result = method.invoke(extension);
-      if (result != null) {
-        if (result instanceof Class<?>) {
-          results.addAll(componentContainer.getComponentsByType((Class<?>) result));
-        } else if (result instanceof Collection<?>) {
-          results.addAll((Collection<?>) result);
-        } else if (result.getClass().isArray()) {
-          for (int i = 0; i < Array.getLength(result); i++) {
-            results.add(Array.get(result, i));
-          }
-        } else {
-          results.add(result);
+      if (result == null) {
+        return;
+      }
+      if (result instanceof Class<?>) {
+        results.addAll(componentContainer.getComponentsByType((Class<?>) result));
+      } else if (result instanceof Collection<?>) {
+        results.addAll((Collection<?>) result);
+      } else if (result.getClass().isArray()) {
+        for (int i = 0; i < Array.getLength(result); i++) {
+          results.add(Array.get(result, i));
         }
+      } else {
+        results.add(result);
       }
     } catch (Exception e) {
       throw new IllegalStateException("Can not invoke method " + method, e);

@@ -33,15 +33,15 @@ import java.util.List;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.sonar.api.CoreProperties;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * Computes hash of files. Ends of Lines are ignored, so files with
  * same content but different EOL encoding have the same hash.
  */
-@BatchSide
+@SonarLintSide
 public class FileMetadata {
 
   private static final Logger LOG = Loggers.get(FileMetadata.class);

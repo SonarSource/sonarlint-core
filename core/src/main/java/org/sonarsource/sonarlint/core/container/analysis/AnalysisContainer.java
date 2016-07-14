@@ -24,7 +24,6 @@ import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.internal.SonarRuntimeFactory;
 import org.sonar.api.resources.Languages;
-import org.sonar.api.resources.Project;
 import org.sonar.api.scan.filesystem.FileExclusions;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.System2;

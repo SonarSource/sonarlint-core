@@ -64,7 +64,7 @@ public class RulesDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchRulesTo(Path destDir, String serverVersionStr, PluginReferences pluginReferences) {
+  public void fetchRulesTo(Path destDir, String serverVersionStr) {
     Version serverVersion = Version.create(serverVersionStr);
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();

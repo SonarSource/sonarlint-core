@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -97,7 +96,7 @@ public class GlobalUpdateExecutorTest {
   public void dontCopyOnError() throws IOException {
     Files.createDirectories(destDir.toPath());
     Files.createFile(destDir.toPath().resolve("test"));
-    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class), any(String.class), any(PluginReferences.class));
+    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class), any(String.class));
     try {
       globalUpdate.update(new ProgressWrapper(null));
       fail("Expected exception");

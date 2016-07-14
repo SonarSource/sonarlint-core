@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersion
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
@@ -78,10 +77,10 @@ public class GlobalUpdateExecutor {
       globalPropertiesDownloader.fetchGlobalPropertiesTo(temp, serverStatus.getVersion());
 
       progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
-      PluginReferences pluginReferences = pluginReferenceDownloader.fetchPluginsTo(temp, serverStatus.getVersion());
+      pluginReferenceDownloader.fetchPluginsTo(temp, serverStatus.getVersion());
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp, serverStatus.getVersion(), pluginReferences);
+      rulesDownloader.fetchRulesTo(temp, serverStatus.getVersion());
 
       if (supportQualityProfilesWS(serverStatus.getVersion())) {
         progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);

@@ -25,6 +25,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
  * @since 3.6
  */
 @SonarLintSide
+@FunctionalInterface
 public interface ExtensionMatcher {
   boolean accept(Object extension);
 }

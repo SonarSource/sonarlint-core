@@ -38,7 +38,7 @@ public class StandaloneRulesProvider extends ProviderAdapter {
     return singleton;
   }
 
-  private Rules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
+  private static Rules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
     RulesBuilder builder = new RulesBuilder();
 
     for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {

@@ -21,14 +21,14 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.config.Settings;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-@BatchSide
+@SonarLintSide
 public class SensorOptimizer {
 
   private static final Logger LOG = LoggerFactory.getLogger(SensorOptimizer.class);

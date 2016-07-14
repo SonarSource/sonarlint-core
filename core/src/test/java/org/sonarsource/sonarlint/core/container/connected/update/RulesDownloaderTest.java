@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +58,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.5", PluginReferences.getDefaultInstance());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.5");
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKey()).hasSize(939);
@@ -79,7 +78,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.2", PluginReferences.getDefaultInstance());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.2");
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKey()).hasSize(939);
@@ -96,7 +95,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.1", PluginReferences.getDefaultInstance());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), "5.1");
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKey()).hasSize(459);
@@ -113,7 +112,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath(), "4.5.6", PluginReferences.getDefaultInstance());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), "4.5.6");
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKey()).hasSize(459);

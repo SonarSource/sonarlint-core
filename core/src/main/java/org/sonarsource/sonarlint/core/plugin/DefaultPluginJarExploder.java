@@ -22,13 +22,14 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.ZipUtils;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
-@BatchSide
+@SonarLintSide
 public class DefaultPluginJarExploder extends PluginJarExploder {
 
   private final PluginCache fileCache;
@@ -50,11 +51,11 @@ public class DefaultPluginJarExploder extends PluginJarExploder {
   private File unzipFile(File cachedFile) throws IOException {
     String filename = cachedFile.getName();
     File destDir = new File(cachedFile.getParentFile(), filename + "_unzip");
-    File lockFile = new File(cachedFile.getParentFile(), filename + "_unzip.lock");
     if (!destDir.exists()) {
+      File lockFile = new File(cachedFile.getParentFile(), filename + "_unzip.lock");
       FileOutputStream out = new FileOutputStream(lockFile);
       try {
-        java.nio.channels.FileLock lock = out.getChannel().lock();
+        FileLock lock = out.getChannel().lock();
         try {
           // Recheck in case of concurrent processes
           if (!destDir.exists()) {
