@@ -24,12 +24,12 @@ import com.google.common.collect.Sets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-@BatchSide
+@SonarLintSide
 public class InputPathCache extends DefaultFileSystem.Cache {
 
   private final Map<Path, InputFile> inputFileCache = Maps.newLinkedHashMap();
