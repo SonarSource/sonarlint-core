@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import org.sonar.api.batch.BatchSide;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * @since 3.6
  */
-@BatchSide
+@SonarLintSide
 public interface ExtensionMatcher {
   boolean accept(Object extension);
 }

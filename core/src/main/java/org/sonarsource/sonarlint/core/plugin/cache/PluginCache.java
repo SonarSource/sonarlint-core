@@ -72,6 +72,7 @@ public class PluginCache {
     return null;
   }
 
+  @FunctionalInterface
   public interface Downloader {
     void download(String filename, Path toFile) throws IOException;
   }

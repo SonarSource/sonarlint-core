@@ -23,8 +23,8 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.utils.MessageException;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.util.ProgressReport;
 /**
  * Index input files into {@link InputPathCache}.
  */
-@BatchSide
+@SonarLintSide
 public class FileIndexer {
 
   private final InputFileBuilder inputFileBuilder;

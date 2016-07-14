@@ -131,8 +131,7 @@ public class AnalysisContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     LOG.debug("Start analysis");
-    Project p = getComponentByType(Project.class);
-    getComponentByType(PhaseExecutor.class).execute(p);
+    getComponentByType(PhaseExecutor.class).execute();
   }
 
 }

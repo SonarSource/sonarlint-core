@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,11 +45,6 @@ public class StoragePluginIndexProvider implements PluginIndexProvider {
     }
     org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences protoReferences = ProtobufUtil.readFile(pluginReferencesPath,
       org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.parser());
-    return Lists.transform(protoReferences.getReferenceList(), new Function<org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference, PluginReference>() {
-      @Override
-      public PluginReference apply(org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference input) {
-        return new PluginReference().setHash(input.getHash()).setFilename(input.getFilename());
-      }
-    });
+    return Lists.transform(protoReferences.getReferenceList(), input -> new PluginReference().setHash(input.getHash()).setFilename(input.getFilename()));
   }
 }

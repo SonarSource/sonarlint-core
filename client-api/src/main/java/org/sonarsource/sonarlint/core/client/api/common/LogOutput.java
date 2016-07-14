@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.client.api.common;
 /**
  * Allow to redirect batch logs to a custom output. By defaults logs are written to System.out
  */
+@FunctionalInterface
 public interface LogOutput {
 
   void log(String formattedMessage, Level level);

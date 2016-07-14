@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container;
 
+@FunctionalInterface
 public interface ContainerPopulator<T extends ContainerPopulator.Container> {
   void populateContainer(T container);
 

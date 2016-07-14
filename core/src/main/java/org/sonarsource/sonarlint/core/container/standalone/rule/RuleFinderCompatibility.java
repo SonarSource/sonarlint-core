@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
@@ -40,13 +39,7 @@ import org.sonar.api.server.rule.RulesDefinition.Repository;
 
 public class RuleFinderCompatibility implements RuleFinder {
 
-  private static Function<RulesDefinition.Rule, Rule> ruleTransformer = new Function<RulesDefinition.Rule, Rule>() {
-    @Override
-    public Rule apply(@Nonnull RulesDefinition.Rule input) {
-      return toRule(input);
-    }
-  };
-
+  private static Function<RulesDefinition.Rule, Rule> ruleTransformer = RuleFinderCompatibility::toRule;
   private final RulesDefinition.Context context;
 
   public RuleFinderCompatibility(StandaloneRuleDefinitionsLoader rules) {

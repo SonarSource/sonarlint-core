@@ -19,14 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.resources.Project;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-@BatchSide
+@SonarLintSide
 public class IssueFilters {
   private final IssueFilter[] filters;
   private final org.sonar.api.issue.batch.IssueFilter[] deprecatedFilters;

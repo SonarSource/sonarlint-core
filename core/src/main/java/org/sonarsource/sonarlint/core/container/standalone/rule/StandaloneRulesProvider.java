@@ -33,25 +33,28 @@ public class StandaloneRulesProvider extends ProviderAdapter {
 
   public Rules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
     if (singleton == null) {
-      RulesBuilder builder = new RulesBuilder();
-
-      for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
-        for (org.sonar.api.server.rule.RulesDefinition.Rule ruleDef : repoDef.rules()) {
-          NewRule newRule = builder.add(RuleKey.of(ruleDef.repository().key(), ruleDef.key()))
-            .setInternalKey(ruleDef.internalKey())
-            .setDescription(ruleDef.htmlDescription() != null ? ruleDef.htmlDescription() : Markdown.convertToHtml(ruleDef.markdownDescription()))
-            .setSeverity(ruleDef.severity())
-            .setName(ruleDef.name());
-          for (Param p : ruleDef.params()) {
-            newRule.addParam(p.key())
-              .setDescription(p.description());
-          }
-        }
-      }
-
-      singleton = builder.build();
+      singleton = createRules(pluginRulesLoader);
     }
     return singleton;
   }
 
+  private Rules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
+    RulesBuilder builder = new RulesBuilder();
+
+    for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
+      for (org.sonar.api.server.rule.RulesDefinition.Rule ruleDef : repoDef.rules()) {
+        NewRule newRule = builder.add(RuleKey.of(ruleDef.repository().key(), ruleDef.key()))
+          .setInternalKey(ruleDef.internalKey())
+          .setDescription(ruleDef.htmlDescription() != null ? ruleDef.htmlDescription() : Markdown.convertToHtml(ruleDef.markdownDescription()))
+          .setSeverity(ruleDef.severity())
+          .setName(ruleDef.name());
+        for (Param p : ruleDef.params()) {
+          newRule.addParam(p.key())
+            .setDescription(p.description());
+        }
+      }
+    }
+
+    return builder.build();
+  }
 }

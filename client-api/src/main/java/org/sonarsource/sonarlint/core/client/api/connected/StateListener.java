@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+@FunctionalInterface
 public interface StateListener {
 
   void stateChanged(ConnectedSonarLintEngine.State newState);

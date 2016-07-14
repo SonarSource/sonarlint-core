@@ -26,11 +26,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.sonar.api.batch.BatchSide;
-import org.sonar.api.server.ServerSide;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.classloader.ClassloaderBuilder;
 import org.sonar.classloader.Mask;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.PARENT_FIRST;
 import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.SELF_FIRST;
@@ -45,8 +44,7 @@ import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.SELF_FIRST;
  *   <li>loading of the libraries embedded in plugin JAR files (directory META-INF/libs)</li>
  * </ul>
  */
-@BatchSide
-@ServerSide
+@SonarLintSide
 public class PluginClassloaderFactory {
 
   // underscores are used to not conflict with plugin keys (if someday a plugin key is "api")

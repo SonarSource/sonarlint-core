@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.util.Collection;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.BatchSide;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * Languages repository
  * @since 4.4
  */
-@BatchSide
+@SonarLintSide
 public interface LanguagesRepository {
 
   /**

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+@FunctionalInterface
 public interface IssueListener {
   void handle(Issue issue);
 }

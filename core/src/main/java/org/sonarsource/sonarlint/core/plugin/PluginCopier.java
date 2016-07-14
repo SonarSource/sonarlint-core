@@ -63,7 +63,8 @@ public class PluginCopier {
     for (PluginReference pluginReference : pluginReferences) {
       File jarFile = getFromCacheOrCopy(pluginReference);
       PluginInfo info = PluginInfo.create(jarFile);
-      if ((info.isSonarLintSupported() != null && info.isSonarLintSupported().booleanValue()) || isWhitelisted(info.getKey())) {
+      Boolean sonarLintSupported = info.isSonarLintSupported();
+      if ((sonarLintSupported != null && sonarLintSupported.booleanValue()) || isWhitelisted(info.getKey())) {
         infosByKey.put(info.getKey(), info);
       }
     }

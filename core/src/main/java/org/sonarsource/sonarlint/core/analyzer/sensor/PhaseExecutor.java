@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.sonar.api.batch.SensorContext;
-import org.sonar.api.resources.Project;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 
 public final class PhaseExecutor {
@@ -38,7 +37,7 @@ public final class PhaseExecutor {
   /**
    * Executed on each module
    */
-  public void execute(Project module) {
+  public void execute() {
 
     fs.index();
 
