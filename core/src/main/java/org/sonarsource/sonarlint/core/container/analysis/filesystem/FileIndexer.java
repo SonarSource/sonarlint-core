@@ -23,11 +23,15 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.utils.MessageException;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
 /**
@@ -36,14 +40,19 @@ import org.sonarsource.sonarlint.core.util.ProgressReport;
 @SonarLintSide
 public class FileIndexer {
 
+  private static final Logger LOG = Loggers.get(FileIndexer.class);
+
   private final InputFileBuilder inputFileBuilder;
   private final StandaloneAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
+  private final ExclusionFilters exclusionFilters;
 
   private ProgressReport progressReport;
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration, DefaultAnalysisResult analysisResult) {
+  public FileIndexer(InputFileBuilder inputFileBuilder, ExclusionFilters exclusionFilters, StandaloneAnalysisConfiguration analysisConfiguration,
+    DefaultAnalysisResult analysisResult) {
     this.inputFileBuilder = inputFileBuilder;
+    this.exclusionFilters = exclusionFilters;
     this.analysisConfiguration = analysisConfiguration;
     this.analysisResult = analysisResult;
   }
@@ -51,6 +60,8 @@ public class FileIndexer {
   void index(SonarLintFileSystem fileSystem) {
     progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
     progressReport.start("Index files");
+    exclusionFilters.prepare();
+
     Progress progress = new Progress();
 
     try {
@@ -72,7 +83,11 @@ public class FileIndexer {
 
   private void indexFile(SonarLintFileSystem fileSystem, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
-    indexFile(fileSystem, progress, inputFile);
+    if (exclusionFilters.accept(inputFile, file.isTest() ? Type.TEST : Type.MAIN)) {
+      indexFile(fileSystem, progress, inputFile);
+    } else {
+      LOG.debug("{} excluded ignored because of inclusion/exclusion patterns");
+    }
   }
 
   private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {

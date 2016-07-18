@@ -24,7 +24,6 @@ import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.internal.SonarRuntimeFactory;
 import org.sonar.api.resources.Languages;
-import org.sonar.api.scan.filesystem.FileExclusions;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
@@ -52,6 +51,10 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBui
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.EnforceIssuesFilter;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 
 public class AnalysisContainer extends ComponentContainer {
@@ -95,12 +98,19 @@ public class AnalysisContainer extends ComponentContainer {
 
       // file system
       InputPathCache.class,
-      FileExclusions.class,
       InputFileBuilder.class,
       FileMetadata.class,
       LanguageDetection.class,
       FileIndexer.class,
       SonarLintFileSystem.class,
+
+      // Exclusions in connected mode
+      ServerSettingsProvider.class,
+      ExclusionFilters.class,
+      EnforceIssuesFilter.class,
+      IgnoreIssuesFilter.class,
+      IssueExclusionPatternInitializer.class,
+      IssueInclusionPatternInitializer.class,
 
       SensorOptimizer.class,
 

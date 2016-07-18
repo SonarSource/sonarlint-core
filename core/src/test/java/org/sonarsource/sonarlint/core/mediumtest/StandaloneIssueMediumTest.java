@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.util.Files;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,11 +57,11 @@ public class StandaloneIssueMediumTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
-  private static File baseDir;
+  private File baseDir;
   private static Path workDir;
 
   @BeforeClass
-  public static void prepare() throws IOException {
+  public static void prepare() throws Exception {
     Path sonarlintUserHome = temp.newFolder().toPath();
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
@@ -78,7 +79,6 @@ public class StandaloneIssueMediumTest {
     assertThat(tmpFiles).hasSize(1);
     assertThat(tmpFiles.get(0)).contains("sonar-plugin-api-deps");
 
-    baseDir = temp.newFolder();
   }
 
   @AfterClass
@@ -86,6 +86,11 @@ public class StandaloneIssueMediumTest {
     sonarlint.stop();
     List<String> tmpFiles = Files.fileNamesIn(workDir.toString(), true);
     assertThat(tmpFiles).isEmpty();
+  }
+
+  @Before
+  public void prepareBasedir() throws Exception {
+    baseDir = temp.newFolder();
   }
 
   @Test

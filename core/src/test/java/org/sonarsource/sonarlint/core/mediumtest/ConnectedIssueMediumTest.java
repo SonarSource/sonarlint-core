@@ -45,29 +45,29 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
+import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class ConnectedIssueMediumTest {
 
+  private static final String JAVA_MODULE_KEY = "test-project-2";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-  private static ConnectedSonarLintEngine sonarlint;
+  private static ConnectedSonarLintEngineImpl sonarlint;
   private static File baseDir;
 
   @BeforeClass
@@ -114,7 +114,7 @@ public class ConnectedIssueMediumTest {
 
     // update versions in test storage and create an empty stale module storage
     writeModuleStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
-    writeModuleStatus(tmpStorage, "test-project-2", VersionUtils.getLibraryVersion());
+    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, VersionUtils.getLibraryVersion());
     writeModuleStatus(tmpStorage, "stale_module", "1.0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
@@ -140,7 +140,7 @@ public class ConnectedIssueMediumTest {
     Files.createDirectories(module);
     ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
   }
-  
+
   private static void writeStatus(Path storage, String version) throws IOException {
     Path module = storage.resolve("local").resolve("global");
 
@@ -220,7 +220,7 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new ConnectedAnalysisConfiguration("test-project-2", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new ConnectedAnalysisConfiguration(JAVA_MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new StoreIssueListener(issues));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(

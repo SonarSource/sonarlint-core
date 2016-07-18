@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -73,6 +74,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
   }
 
   @SuppressWarnings("unchecked")
+  @CheckForNull
   @Override
   public ClientInputFile getInputFile() {
     return clientInputFile;

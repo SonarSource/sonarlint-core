@@ -85,7 +85,7 @@ public class DefaultSensorStorage implements SensorStorage {
 
     DefaultClientIssue newIssue = new DefaultClientIssue(severity, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null);
-    if (filters.accept(inputComponent.key(), newIssue)) {
+    if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }
   }

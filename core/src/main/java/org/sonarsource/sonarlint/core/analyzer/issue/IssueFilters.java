@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.resources.Project;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
@@ -50,11 +51,11 @@ public class IssueFilters {
     this(project, new IssueFilter[0], new org.sonar.api.issue.batch.IssueFilter[0]);
   }
 
-  public boolean accept(String componentKey, DefaultClientIssue rawIssue) {
+  public boolean accept(InputComponent inputComponent, DefaultClientIssue rawIssue) {
     IssueFilterChain filterChain = new DefaultIssueFilterChain(filters);
-    FilterableIssue fIssue = new DefaultFilterableIssue(project, rawIssue, componentKey);
+    FilterableIssue fIssue = new DefaultFilterableIssue(project, rawIssue, inputComponent);
     if (filterChain.accept(fIssue)) {
-      return acceptDeprecated(componentKey, rawIssue);
+      return acceptDeprecated(inputComponent.key(), rawIssue);
     }
 
     return false;

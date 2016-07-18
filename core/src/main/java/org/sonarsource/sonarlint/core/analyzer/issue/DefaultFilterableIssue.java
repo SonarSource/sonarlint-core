@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 import java.util.Date;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
@@ -29,18 +30,18 @@ import org.sonar.api.scan.issue.filter.FilterableIssue;
 public class DefaultFilterableIssue implements FilterableIssue {
   private final DefaultClientIssue rawIssue;
   private final Project project;
-  private final String componentKey;
+  private final InputComponent inputComponent;
 
-  public DefaultFilterableIssue(Project project, DefaultClientIssue rawIssue, String componentKey) {
+  public DefaultFilterableIssue(Project project, DefaultClientIssue rawIssue, InputComponent inputComponent) {
     this.project = project;
     this.rawIssue = rawIssue;
-    this.componentKey = componentKey;
+    this.inputComponent = inputComponent;
 
   }
 
   @Override
   public String componentKey() {
-    return componentKey;
+    return inputComponent.key();
   }
 
   @Override
@@ -90,6 +91,10 @@ public class DefaultFilterableIssue implements FilterableIssue {
   @Override
   public Double gap() {
     throw unsupported();
+  }
+
+  public InputComponent getInputComponent() {
+    return inputComponent;
   }
 
 }
