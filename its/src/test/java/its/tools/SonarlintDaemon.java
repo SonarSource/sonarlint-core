@@ -19,20 +19,19 @@
  */
 package its.tools;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.jayway.awaitility.Awaitility.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
+import static com.jayway.awaitility.Awaitility.await;
 
 public class SonarlintDaemon extends ExternalResource {
   private static final Logger LOG = LoggerFactory.getLogger(SonarlintDaemon.class);
@@ -46,14 +45,17 @@ public class SonarlintDaemon extends ExternalResource {
   public void install() {
     install(artifactVersion());
   }
-  
+
   private static String artifactVersion() {
     if (artifactVersion == null) {
-      try (FileInputStream fis = new FileInputStream(new File("../daemon/target/maven-archiver/pom.properties"))) {
-        Properties props = new Properties();
-        props.load(fis);
-        artifactVersion = props.getProperty("version");
-        return artifactVersion;
+      try {
+        for (String l : Files.readAllLines(Paths.get("pom.xml"), StandardCharsets.UTF_8)) {
+          String lineTrimmed = l.trim();
+          if (lineTrimmed.startsWith("<version>")) {
+            artifactVersion = lineTrimmed.substring("<version>".length(), lineTrimmed.length() - "</version>".length());
+            break;
+          }
+        }
       } catch (IOException e) {
         throw new IllegalStateException(e);
       }
