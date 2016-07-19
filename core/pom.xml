@@ -86,10 +86,6 @@
           <groupId>jfree</groupId>
           <artifactId>jfreechart</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.codehaus.woodstox</groupId>
-          <artifactId>woodstox-core-lgpl</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -271,9 +267,9 @@
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.codehaus.sonar-plugins.python</groupId>
+                  <groupId>org.sonarsource.python</groupId>
                   <artifactId>sonar-python-plugin</artifactId>
-                  <version>1.5</version>
+                  <version>1.6</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>

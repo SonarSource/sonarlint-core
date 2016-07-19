@@ -152,13 +152,13 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonar/colorizer/")
       .addInclusion("org/sonar/duplications/")
       .addInclusion("org/sonar/graph/")
-      .addInclusion("org/sonar/plugins/emailnotifications/api/")
       .addInclusion("net/sourceforge/pmd/")
-      .addInclusion("org/apache/maven/")
+
+      // Stax parser used by Python plugin 1.6
       .addInclusion("org/codehaus/stax2/")
       .addInclusion("org/codehaus/staxmate/")
       .addInclusion("com/ctc/wstx/")
-      .addInclusion("org/jfree/")
+
       .addInclusion("org/slf4j/")
       .addInclusion("javax/servlet/")
 
@@ -166,12 +166,6 @@ public class PluginClassloaderFactory {
       .addInclusion("org/apache/commons/logging/")
       .addInclusion("org/apache/log4j/")
       .addInclusion("ch/qos/logback/")
-
-      // required for internal libs at SonarSource
-      .addInclusion("org/sonar/server/platform/")
-      .addInclusion("org/sonar/core/persistence/")
-      .addInclusion("org/sonar/core/properties/")
-      .addInclusion("org/sonar/server/views/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");

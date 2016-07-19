@@ -162,7 +162,8 @@ public class StandaloneIssueMediumTest {
   public void simplePython() throws Exception {
 
     ClientInputFile inputFile = prepareInputFile("foo.py", "def my_function(name):\n"
-      + "    print \"Hello world!\" # NOSONAR is not supported by Python\n"
+      + "    print \"Hello\"\n"
+      + "    print \"world!\" # NOSONAR\n"
       + "\n", false);
 
     final List<Issue> issues = new ArrayList<>();
