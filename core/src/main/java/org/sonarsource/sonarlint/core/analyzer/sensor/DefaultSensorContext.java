@@ -137,4 +137,9 @@ public class DefaultSensorContext implements SensorContext {
     return new DefaultAnalysisError(sensorStorage);
   }
 
+  @Override
+  public boolean isCancelled() {
+    return Thread.interrupted();
+  }
+
 }
