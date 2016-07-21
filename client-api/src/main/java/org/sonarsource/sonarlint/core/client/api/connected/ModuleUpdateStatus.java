@@ -22,9 +22,17 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Date;
 
 public interface ModuleUpdateStatus {
-
+  /**
+   * Last time the module data was written.
+   * @return A Date when it was updated, never null.
+   */
   Date getLastUpdateDate();
   
+  /**
+   * Returns true if the module's storage was created with a different version of SonarLint Core. 
+   * An update is needed to ensure data format compatibility.
+   * @return whether data is invalid and needs to be updated.
+   */
   boolean isStale();
 
 }

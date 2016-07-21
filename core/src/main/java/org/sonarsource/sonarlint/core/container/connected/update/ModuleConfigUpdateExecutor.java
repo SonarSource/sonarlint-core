@@ -61,8 +61,8 @@ public class ModuleConfigUpdateExecutor {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
     if (supportQualityProfilesWS) {
-      final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKey().keySet();
-      fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
+      final Set<String> storageQProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKey().keySet();
+      fetchProjectQualityProfiles(moduleKey, storageQProfileKeys, builder);
     } else {
       fetchProjectQualityProfilesBefore5dot2(moduleKey, builder);
     }
@@ -85,7 +85,7 @@ public class ModuleConfigUpdateExecutor {
     FileUtils.moveDir(temp, dest);
   }
 
-  private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {
+  private void fetchProjectQualityProfiles(String moduleKey, Set<String> storageQProfileKeys, ModuleConfiguration.Builder builder) {
     SearchWsResponse qpResponse;
     try (InputStream contentStream = wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey)).contentStream()) {
       qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
@@ -94,9 +94,9 @@ public class ModuleConfigUpdateExecutor {
     }
     for (QualityProfile qp : qpResponse.getProfilesList()) {
       String qpKey = qp.getKey();
-      if (!qProfileKeys.contains(qpKey)) {
+      if (!storageQProfileKeys.contains(qpKey)) {
         throw new IllegalStateException(
-          "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Server storage is probably outdated. Please update server.");
+          "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in the storage. Server storage is probably outdated. Please update the server.");
       }
       builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
     }

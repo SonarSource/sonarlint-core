@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -46,10 +49,11 @@ public class GlobalUpdateExecutor {
   private final SonarLintWsClient wsClient;
   private final PluginVersionChecker pluginsChecker;
   private final QualityProfilesDownloader qualityProfilesDownloader;
+  private final ModuleConfigUpdateExecutor moduleConfigUpdateExecutor;
 
   public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
-    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, TempFolder tempFolder) {
+    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, ModuleConfigUpdateExecutor moduleConfigUpdateExecutor, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.pluginsChecker = pluginsChecker;
@@ -59,6 +63,7 @@ public class GlobalUpdateExecutor {
     this.rulesDownloader = rulesDownloader;
     this.moduleListDownloader = moduleListDownloader;
     this.qualityProfilesDownloader = qualityProfilesDownloader;
+    this.moduleConfigUpdateExecutor = moduleConfigUpdateExecutor;
     this.tempFolder = tempFolder;
   }
 
@@ -87,11 +92,11 @@ public class GlobalUpdateExecutor {
         qualityProfilesDownloader.fetchQualityProfiles(temp);
       }
 
-      progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
+      progress.setProgressAndCheckCancel("Fetching list of modules", 0.7f);
       moduleListDownloader.fetchModulesList(temp);
 
       progress.startNonCancelableSection();
-      progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
+      progress.setProgressAndCheckCancel("Copying data...", 0.75f);
 
       UpdateStatus updateStatus = UpdateStatus.newBuilder()
         .setClientUserAgent(wsClient.getUserAgent())
@@ -104,6 +109,10 @@ public class GlobalUpdateExecutor {
       FileUtils.deleteDirectory(dest);
       FileUtils.forceMkDirs(dest.getParent());
       FileUtils.moveDir(temp, dest);
+
+      progress.setProgressAndCheckCancel("Updating modules...", 0.8f);
+      cleanAndUpdateModules();
+      progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
     } catch (RuntimeException e) {
       try {
         FileUtils.deleteDirectory(temp);
@@ -111,6 +120,23 @@ public class GlobalUpdateExecutor {
         // ignore because we want to throw original exception
       }
       throw e;
+    }
+  }
+
+  private void cleanAndUpdateModules() {
+    Set<String> moduleKeysInServer = storageManager.readModuleListFromStorage().getModulesByKey().keySet();
+    Set<String> moduleKeysInStorage = storageManager.getModuleKeysInStorage();
+
+    Set<String> invalidModuleKeys = new HashSet<>(moduleKeysInStorage);
+    invalidModuleKeys.removeAll(moduleKeysInServer);
+    moduleKeysInStorage.retainAll(moduleKeysInServer);
+
+    for (String moduleKey : invalidModuleKeys) {
+      FileUtils.deleteDirectory(storageManager.getModuleStorageRoot(moduleKey));
+    }
+
+    for (String moduleKey : moduleKeysInStorage) {
+      moduleConfigUpdateExecutor.update(moduleKey);
     }
   }
 

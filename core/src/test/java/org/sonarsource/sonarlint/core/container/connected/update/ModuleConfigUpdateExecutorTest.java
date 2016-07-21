@@ -169,7 +169,7 @@ public class ModuleConfigUpdateExecutorTest {
     moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
 
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
+    exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
   }

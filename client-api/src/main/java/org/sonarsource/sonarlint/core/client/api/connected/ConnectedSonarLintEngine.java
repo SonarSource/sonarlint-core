@@ -98,18 +98,20 @@ public interface ConnectedSonarLintEngine {
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
-   * Update current server.
+   * Update current server. It will also update all the locally stored modules. 
+   * Stored modules that do not correspond to a module in the server will be deleted.
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
    * @throws UnsupportedServerException if server version is too low
    * @throws CanceledException if the update task was cancelled
    */
   GlobalUpdateStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
-  
+
   GlobalUpdateStatus update(ServerConfiguration serverConfig);
 
   /**
    * Update given module.
+   * Note that {@link #update} already updates all modules that were already stored.
    * @since 2.0
    * @throws UnsupportedOperationException for standalone mode
    */
