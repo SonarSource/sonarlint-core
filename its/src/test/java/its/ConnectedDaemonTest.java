@@ -178,7 +178,7 @@ public class ConnectedDaemonTest {
     ClientCall<Void, LogEvent> call = getLogs(logs, channel);
     Iterator<Issue> issues = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVA));
 
-    assertThat(issues).hasSize(2);
+    assertThat(issues).hasSize(3);
     // assertThat(logs.getLogsAndClear()).contains("2 files indexed");
     call.cancel();
 
