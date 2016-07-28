@@ -201,6 +201,25 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void simpleJavaPomXml() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>",
+      false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S3421", 6, inputFile.getPath(), "MAJOR"));
+  }
+
+  @Test
   public void supportJavaSuppressWarning() throws Exception {
     ClientInputFile inputFile = prepareInputFile("Foo.java",
       "public class Foo {\n"

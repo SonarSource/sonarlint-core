@@ -14,7 +14,12 @@
       <repositoryKey>squid</repositoryKey>
       <key>S2325</key>
       <priority>MAJOR</priority>
-      <parameters />
+    </rule>
+    <!-- Deprecated pom properties -->
+    <rule>
+      <repositoryKey>squid</repositoryKey>
+      <key>S3421</key>
+      <priority>MAJOR</priority>
     </rule>
   </rules>
 </profile>

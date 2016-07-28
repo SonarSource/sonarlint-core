@@ -6,6 +6,10 @@
   <version>1.0-SNAPSHOT</version>
   <name>Sample Java</name>
   <description>Sample project for ITs</description>
+  
+  <properties>
+    <old.version>${pom.version}</old.version>
+  </properties>
 
   <build>
     <plugins>

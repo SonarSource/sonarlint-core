@@ -223,6 +223,17 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void analysisJavaPomXml() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "pom.xml"), issueListener);
+
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
   public void analysisTemplateRule() throws Exception {
     // WS quality profile is not available before 5.2 so let's skip this test
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2"));
