@@ -19,12 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
@@ -65,6 +71,18 @@ public class StorageManager {
 
   public Path getModuleStorageRoot(String moduleKey) {
     return moduleStorageRoot.resolve(encodeForFs(moduleKey));
+  }
+
+  public Set<String> getModuleKeysInStorage() {
+    if (!Files.exists(moduleStorageRoot)) {
+      return Collections.emptySet();
+    }
+    try (Stream<Path> stream = Files.list(moduleStorageRoot)) {
+      return stream.map(path -> path.getFileName().toString())
+        .collect(Collectors.toSet());
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to fetch module keys in the storage", e);
+    }
   }
 
   public static String encodeForFs(String name) {
@@ -193,6 +211,11 @@ public class StorageManager {
         @Override
         public boolean isStale() {
           return stale;
+        }
+
+        @Override
+        public Set<String> unusedRepoKeys() {
+          return null;
         }
       };
     }

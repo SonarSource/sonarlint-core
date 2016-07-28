@@ -23,10 +23,14 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarProduct;
+import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.internal.SonarRuntimeFactory;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
@@ -134,6 +138,25 @@ public class StorageGlobalContainer extends ComponentContainer {
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
     return defaultAnalysisResult;
+  }
+
+  public Set<String> getRepoKeysFromPlugins() {
+    StorageRuleRepositoryContainer ruleRepositoryContainer = new StorageRuleRepositoryContainer(this);
+    ruleRepositoryContainer.execute();
+    return ruleRepositoryContainer.getRules().findAll().stream()
+      .map(r -> r.key().repository())
+      .collect(Collectors.toSet());
+  }
+
+  public Set<String> getRepoKeysInQP(String moduleKey) {
+    AnalysisContainer analysisContainer = new AnalysisContainer(this);
+    ConnectedAnalysisConfiguration fakeConfig = new ConnectedAnalysisConfiguration(moduleKey, null, null, null, null);
+    analysisContainer.add(fakeConfig);
+    analysisContainer.add(new SonarQubeActiveRulesProvider());
+    ActiveRules activeRules = analysisContainer.getComponentByType(ActiveRules.class);
+    return activeRules.findAll().stream()
+      .map(r -> r.ruleKey().repository())
+      .collect(Collectors.toSet());
   }
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {

@@ -24,11 +24,24 @@ import javax.annotation.CheckForNull;
 import java.util.Date;
 
 public interface GlobalUpdateStatus {
+  /**
+   * A String representing the server version last time the storage was updated
+   * @return Server version or null if storage is stale.
+   */
   @CheckForNull
   String getServerVersion();
 
+  /**
+   * Last time the module data was written.
+   * @return A Date when it was updated, never null.
+   */
   Date getLastUpdateDate();
   
+  /**
+   * Returns true if the storage was created with a different version of SonarLint Core. 
+   * An update is needed to ensure data format compatibility.
+   * @return whether data is invalid and needs to be updated.
+   */
   boolean isStale();
 
 }
