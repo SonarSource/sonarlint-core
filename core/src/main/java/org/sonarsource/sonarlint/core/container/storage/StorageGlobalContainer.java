@@ -26,8 +26,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarProduct;
-import org.sonar.api.internal.SonarRuntimeFactory;
+import org.sonar.api.internal.ApiVersion;
+import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
@@ -81,7 +81,7 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
-      SonarRuntimeFactory.create(System2.INSTANCE, SonarProduct.SONARLINT, null),
+      SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
       new GlobalTempFolderProvider(),
       UriReader.class,
       new PluginCacheProvider(),
