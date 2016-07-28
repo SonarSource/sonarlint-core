@@ -154,10 +154,8 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonar/graph/")
       .addInclusion("net/sourceforge/pmd/")
 
-      // Stax parser used by Python plugin 1.6
-      .addInclusion("org/codehaus/stax2/")
-      .addInclusion("org/codehaus/staxmate/")
-      .addInclusion("com/ctc/wstx/")
+      // Imported by Python plugin 1.6
+      .addInclusion("com/ctc/wstx/exc/")
 
       .addInclusion("org/slf4j/")
       .addInclusion("javax/servlet/")

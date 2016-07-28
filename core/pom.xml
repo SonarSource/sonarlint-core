@@ -86,6 +86,10 @@
           <groupId>jfree</groupId>
           <artifactId>jfreechart</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.woodstox</groupId>
+          <artifactId>woodstox-core-lgpl</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -195,6 +199,17 @@
                   <exclude>${project.groupId}:sonarlint-client-api</exclude>
                 </excludes>
               </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/LICENSE*</exclude>
+                    <exclude>META-INF/NOTICE*</exclude>
+                    <exclude>LICENSE*</exclude>
+                    <exclude>NOTICE*</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
