@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -237,6 +238,13 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       changeState(State.UPDATING);
       connectedContainer.startComponents();
       connectedContainer.updateModule(moduleKey);
+      Set<String> repoKeysFromPlugins = globalContainer.getRepoKeysFromPlugins();
+      Set<String> activeRepoKeys = globalContainer.getRepoKeysInQP(moduleKey);
+      activeRepoKeys.removeAll(repoKeysFromPlugins);
+      System.out.println("KEYS NOT IN PLUGINS:");
+      for (String s : activeRepoKeys) {
+        System.out.println("    " + s);
+      }
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {

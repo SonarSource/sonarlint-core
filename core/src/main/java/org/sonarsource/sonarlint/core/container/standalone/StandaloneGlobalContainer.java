@@ -87,7 +87,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     installPlugins();
-
     loadRulesAndActiveRulesFromPlugins();
   }
 

@@ -212,6 +212,11 @@ public class StorageManager {
         public boolean isStale() {
           return stale;
         }
+
+        @Override
+        public Set<String> unusedRepoKeys() {
+          return null;
+        }
       };
     }
     return null;

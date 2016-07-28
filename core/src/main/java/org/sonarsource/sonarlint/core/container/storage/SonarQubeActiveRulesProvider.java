@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Map;
+
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.StringUtils;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.slf4j.Logger;
@@ -51,7 +54,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
       ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
       boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
 
-      Map<String, String> qProfilesByLanguage = loadQualityProfilesFromStorage(qProfiles, storageManager, analysisConfiguration, supportQualityProfilesWS);
+      Map<String, String> qProfilesByLanguage = loadQualityProfilesFromStorage(qProfiles, storageManager, analysisConfiguration.moduleKey(), supportQualityProfilesWS);
 
       ActiveRulesBuilder builder = new ActiveRulesBuilder();
       for (Map.Entry<String, String> entry : qProfilesByLanguage.entrySet()) {
@@ -105,10 +108,9 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
   }
 
   private static Map<String, String> loadQualityProfilesFromStorage(Sonarlint.QProfiles qProfiles, StorageManager storageManager,
-    ConnectedAnalysisConfiguration analysisConfiguration,
-    boolean supportQualityProfilesWS) {
+    @Nullable String moduleKey, boolean supportQualityProfilesWS) {
     Map<String, String> qProfilesByLanguage;
-    if (analysisConfiguration.moduleKey() == null) {
+    if (moduleKey == null) {
       if (!supportQualityProfilesWS) {
         throw new UnsupportedOperationException("Unable to analyse a project with no key prior to SonarQube 5.2");
       }
@@ -116,7 +118,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
       qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguage();
     } else {
       LOG.debug("Quality profiles:");
-      qProfilesByLanguage = storageManager.readModuleConfigFromStorage(analysisConfiguration.moduleKey()).getQprofilePerLanguage();
+      qProfilesByLanguage = storageManager.readModuleConfigFromStorage(moduleKey).getQprofilePerLanguage();
     }
     return qProfilesByLanguage;
   }
