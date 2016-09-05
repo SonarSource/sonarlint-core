@@ -30,14 +30,16 @@ public class DefaultRuleDetails implements RuleDetails {
   private final String name;
   private final String htmlDescription;
   private final String severity;
+  private final String extendedDescription;
 
-  public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, String language, Set<String> tags) {
+  public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, String language, Set<String> tags, String extendedDescription) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
     this.severity = severity;
     this.language = language;
     this.tags = tags;
+    this.extendedDescription = extendedDescription;
   }
 
   @Override
@@ -70,4 +72,8 @@ public class DefaultRuleDetails implements RuleDetails {
     return tags.toArray(new String[0]);
   }
 
+  @Override
+  public String getExtendedDescription() {
+    return extendedDescription;
+  }
 }

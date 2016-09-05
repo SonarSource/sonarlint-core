@@ -65,6 +65,7 @@ message Rules {
     string html_desc = 7;
     bool is_template = 8;
     string template_key = 9;
+    string html_note = 10;
   }
 }
 

@@ -35,6 +35,10 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL;
+import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL_JSON;
+import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL_JSON_NO_DESC;
+import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL_MD_DESC;
 
 public class RulesDownloaderTest {
   @Rule
@@ -50,10 +54,10 @@ public class RulesDownloaderTest {
   @Test
   public void rules_update_protobuf() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      RULES_SEARCH_URL + "&p=1&ps=500",
       "/update/rulesp1.pb");
     WsClientTestUtils.addStreamResponse(wsClient,
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
+      RULES_SEARCH_URL + "&p=2&ps=500",
       "/update/rulesp2.pb");
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
@@ -70,10 +74,10 @@ public class RulesDownloaderTest {
   @Test
   public void rules_update_protobuf_before_5dot5() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      RULES_SEARCH_URL_MD_DESC + "&p=1&ps=500",
       "/update/rulesp1.pb");
     WsClientTestUtils.addStreamResponse(wsClient,
-      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=2&ps=500",
+      RULES_SEARCH_URL_MD_DESC + "&p=2&ps=500",
       "/update/rulesp2.pb");
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
@@ -90,7 +94,7 @@ public class RulesDownloaderTest {
   @Test
   public void rules_update_json() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse(
-      "/api/rules/search?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      RULES_SEARCH_URL_JSON + "&p=1&ps=500",
       new InputStreamReader(this.getClass().getResourceAsStream("/update/rulesp1.json"), StandardCharsets.UTF_8));
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
@@ -107,7 +111,7 @@ public class RulesDownloaderTest {
   @Test
   public void rules_update_json_no_desc() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse(
-      "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&p=1&ps=500",
+      RULES_SEARCH_URL_JSON_NO_DESC + "&p=1&ps=500",
       new InputStreamReader(this.getClass().getResourceAsStream("/update/rulesp1nodesc.json"), StandardCharsets.UTF_8));
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);

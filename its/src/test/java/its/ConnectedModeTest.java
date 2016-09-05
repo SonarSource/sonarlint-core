@@ -179,6 +179,27 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void verifyExtendedDescription() throws Exception {
+    updateGlobal();
+
+    String ruleKey = "squid:S106";
+
+    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
+
+    String extendedDescription = "my dummy extended description";
+
+    WsRequest request = new PostRequest("/api/rules/update")
+      .setParam("key", ruleKey)
+      .setParam("markdown_note", extendedDescription);
+    WsResponse response = adminWsClient.wsConnector().call(request);
+    assertThat(response.code()).isEqualTo(200);
+
+    updateGlobal();
+
+    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEqualTo(extendedDescription);
+  }
+
+  @Test
   public void analysisJavascript() throws Exception {
     updateGlobal();
     updateModule(PROJECT_KEY_JAVASCRIPT);

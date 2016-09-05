@@ -49,13 +49,13 @@ public class RulesDownloader {
   private static final org.sonarqube.ws.Rules.Active.Builder AR_BUILDER = Active.newBuilder();
   private static final org.sonarqube.ws.Rules.ActiveList.Builder ARL_BUILDER = ActiveList.newBuilder();
   private static final org.sonarqube.ws.Rules.Rule.Builder RULE_BUILDER = Rule.newBuilder();
-  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,"
+  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
-  private static final String RULES_SEARCH_URL_MD_DESC = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,internalKey,isTemplate,templateKey,"
+  static final String RULES_SEARCH_URL_MD_DESC = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,mdDesc,htmlNote,mdNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
-  private static final String RULES_SEARCH_URL_JSON = "/api/rules/search?f=repo,name,severity,lang,htmlDesc,internalKey,isTemplate,templateKey,"
+  static final String RULES_SEARCH_URL_JSON = "/api/rules/search?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
-  private static final String RULES_SEARCH_URL_JSON_NO_DESC = "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,"
+  static final String RULES_SEARCH_URL_JSON_NO_DESC = "/api/rules/search?f=repo,name,severity,lang,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
 
   private final SonarLintWsClient wsClient;
@@ -292,6 +292,7 @@ public class RulesDownloader {
         .setLang(r.getLang())
         .setInternalKey(r.getInternalKey())
         .setHtmlDesc(r.hasHtmlDesc() ? r.getHtmlDesc() : MSG_NO_DESC)
+        .setHtmlNote(r.getHtmlNote())
         .setIsTemplate(r.getIsTemplate())
         .setTemplateKey(r.getTemplateKey())
         .build());

@@ -143,7 +143,7 @@ public class StorageGlobalContainer extends ComponentContainer {
     if (rule == null) {
       throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
     }
-    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), rule.getLang(), Collections.<String>emptySet());
+    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), rule.getLang(), Collections.<String>emptySet(), rule.getHtmlNote());
   }
 
   public GlobalUpdateStatus getUpdateStatus() {
