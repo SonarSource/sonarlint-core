@@ -36,4 +36,6 @@ public interface RuleDetails {
 
   String[] getTags();
 
+  String getExtendedDescription();
+
 }

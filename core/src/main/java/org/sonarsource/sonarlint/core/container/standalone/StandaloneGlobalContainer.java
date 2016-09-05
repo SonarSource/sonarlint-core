@@ -127,7 +127,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     }
     Repository repo = rulesDefinitions.repository(rule.key().repository());
 
-    return new DefaultRuleDetails(ruleKeyStr, rule.name(), rule.description(), rule.severity(), repo.language(), repo.rule(rule.key().rule()).tags());
+    return new DefaultRuleDetails(ruleKeyStr, rule.name(), rule.description(), rule.severity(), repo.language(), repo.rule(rule.key().rule()).tags(), "");
   }
 
   public Collection<String> getActiveRuleKeys() {
