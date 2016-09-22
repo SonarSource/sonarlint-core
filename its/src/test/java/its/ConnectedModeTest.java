@@ -180,6 +180,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() throws Exception {
+    assumeTrue(supportHtmlDesc());
     updateGlobal();
 
     String ruleKey = "squid:S106";
