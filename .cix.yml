@@ -1,7 +1,8 @@
 # Definition of QA pipeline at SonarSource
 
 
-SQ_VERSION: 
+SQ_VERSION:
+  - 4.5.7 
   - DEV
   - LTS
   - LATEST_RELEASE
