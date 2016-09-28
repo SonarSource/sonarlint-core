@@ -181,11 +181,14 @@ public class ConnectedIssueMediumTest {
   @Test
   public void simpleJavaScriptUnbinded() throws Exception {
 
-    RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable");
+    String ruleKey = "javascript:UnusedVariable";
+    RuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
+    assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
+    assertThat(ruleDetails.getExtendedDescription()).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
       + "  var x;\n"
@@ -196,7 +199,7 @@ public class ConnectedIssueMediumTest {
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
       new StoreIssueListener(issues));
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
+      tuple(ruleKey, 2, inputFile.getPath()));
 
   }
 
