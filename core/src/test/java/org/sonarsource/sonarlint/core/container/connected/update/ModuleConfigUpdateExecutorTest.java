@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -57,6 +58,8 @@ public class ModuleConfigUpdateExecutorTest {
   }
 
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
+  private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH);
+
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   @Rule
@@ -75,11 +78,11 @@ public class ModuleConfigUpdateExecutorTest {
   @Before
   public void setUp() throws IOException {
     // After 5.2
-    wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?projectKey=module%3Akey%2Fwith_branch",
+    wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
       "/update/qualityprofiles_project.pb");
 
     // Before 5.2
-    WsClientTestUtils.addResponse(wsClient, "/batch/project?preview=true&key=module%3Akey%2Fwith_branch",
+    WsClientTestUtils.addResponse(wsClient, "/batch/project?preview=true&key=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
       "{\"timestamp\":123456,\"activeRules\":[],"
         + "\"qprofilesByLanguage\":{"
         + "\"java\":{\"key\": \"java-empty-74333\", \"name\": \"Java Empty\", \"language\": \"java\"},"
@@ -87,7 +90,7 @@ public class ModuleConfigUpdateExecutorTest {
         + "\"cs\":{\"key\": \"cs-sonar-way-58886\", \"name\": \"Sonar Way\", \"language\": \"cs\"}"
         + "}}");
 
-    WsClientTestUtils.addResponse(wsClient, "/api/properties?format=json&resource=module%3Akey%2Fwith_branch",
+    WsClientTestUtils.addResponse(wsClient, "/api/properties?format=json&resource=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
       "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
         + "{\"key\":\"sonar.core.version\",\"value\":\"5.5-SNAPSHOT\"},"
         + "{\"key\":\"sonar.java.someProp\",\"value\":\"foo\"}]");
@@ -111,7 +114,7 @@ public class ModuleConfigUpdateExecutorTest {
   public void exception_ws_load_qps() throws IOException {
     assumeTrue(!serverVersion.equals(LTS));
 
-    when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=module%3Akey%2Fwith_branch")).thenThrow(IOException.class);
+    when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED)).thenThrow(IOException.class);
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
 
