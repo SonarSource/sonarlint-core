@@ -24,11 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -46,6 +42,8 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+
+import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.groupByFileKey;
 
 public class ModuleConfigUpdateExecutor {
 
@@ -104,18 +102,6 @@ public class ModuleConfigUpdateExecutor {
     Path basedir = temp.resolve(StorageManager.REMOTE_ISSUES_DIR);
 
     issueStoreFactory.create(basedir).save(groupByFileKey(issues));
-  }
-
-  private Map<String, Iterable<ScannerInput.ServerIssue>> groupByFileKey(Iterable<ScannerInput.ServerIssue> issues) {
-    Map<String, Iterable<ScannerInput.ServerIssue>> groupedIssues = new HashMap<>();
-    for (ScannerInput.ServerIssue issue : issues) {
-      ((List<ScannerInput.ServerIssue>)groupedIssues.getOrDefault(createFileKey(issue), new ArrayList<>())).add(issue);
-    }
-    return groupedIssues;
-  }
-
-  private String createFileKey(ScannerInput.ServerIssue issue) {
-    return issue.getModuleKey() + ":" + issue.getPath();
   }
 
   private void updateStatus(Path temp) {
