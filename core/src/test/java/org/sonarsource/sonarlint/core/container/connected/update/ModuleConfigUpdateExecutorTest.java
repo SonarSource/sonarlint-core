@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -94,6 +95,8 @@ public class ModuleConfigUpdateExecutorTest {
       "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
         + "{\"key\":\"sonar.core.version\",\"value\":\"5.5-SNAPSHOT\"},"
         + "{\"key\":\"sonar.java.someProp\",\"value\":\"foo\"}]");
+
+    WsClientTestUtils.addResponse(wsClient, "/batch/issues?key=" + MODULE_KEY_WITH_BRANCH_URLENCODED, new ByteArrayInputStream(new byte[0]));
 
     File tempDir = temp.newFolder();
 

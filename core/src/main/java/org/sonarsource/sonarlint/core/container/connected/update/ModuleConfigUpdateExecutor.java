@@ -24,9 +24,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
+import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
@@ -46,11 +51,17 @@ public class ModuleConfigUpdateExecutor {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
+  private final IssueDownloader issueDownloader;
+  private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
 
-  public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
+  public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
+    //IssueDownloader issueDownloader, IssueStore issueStore,
+    TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
+    this.issueDownloader = new IssueDownloaderImpl(wsClient);
+    this.issueStoreFactory = (path) -> new InMemoryIssueStore();
     this.tempFolder = tempFolder;
   }
 
@@ -61,6 +72,8 @@ public class ModuleConfigUpdateExecutor {
     Path temp = tempFolder.newDir().toPath();
 
     updateModuleConfiguration(moduleKey, globalProps, serverInfos, temp);
+
+    updateRemoteIssues(moduleKey, temp);
 
     updateStatus(temp);
 
@@ -83,6 +96,26 @@ public class ModuleConfigUpdateExecutor {
     fetchProjectProperties(moduleKey, globalProps, builder);
 
     ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
+  }
+
+  private void updateRemoteIssues(String moduleKey, Path temp) {
+    Iterable<ScannerInput.ServerIssue> issues = issueDownloader.fetchIssues(moduleKey);
+
+    Path basedir = temp.resolve(StorageManager.REMOTE_ISSUES_DIR);
+
+    issueStoreFactory.create(basedir).save(groupByFileKey(issues));
+  }
+
+  private Map<String, Iterable<ScannerInput.ServerIssue>> groupByFileKey(Iterable<ScannerInput.ServerIssue> issues) {
+    Map<String, Iterable<ScannerInput.ServerIssue>> groupedIssues = new HashMap<>();
+    for (ScannerInput.ServerIssue issue : issues) {
+      ((List<ScannerInput.ServerIssue>)groupedIssues.getOrDefault(createFileKey(issue), new ArrayList<>())).add(issue);
+    }
+    return groupedIssues;
+  }
+
+  private String createFileKey(ScannerInput.ServerIssue issue) {
+    return issue.getModuleKey() + ":" + issue.getPath();
   }
 
   private void updateStatus(Path temp) {
