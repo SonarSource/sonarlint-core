@@ -58,6 +58,19 @@ public class ModuleConfigUpdateExecutor {
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
     ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
 
+    Path temp = tempFolder.newDir().toPath();
+
+    updateModuleConfiguration(moduleKey, globalProps, serverInfos, temp);
+
+    updateStatus(temp);
+
+    Path dest = storageManager.getModuleStorageRoot(moduleKey);
+    FileUtils.deleteDirectory(dest);
+    FileUtils.forceMkDirs(dest.getParent());
+    FileUtils.moveDir(temp, dest);
+  }
+
+  private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, ServerInfos serverInfos, Path temp) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
     if (supportQualityProfilesWS) {
@@ -69,20 +82,16 @@ public class ModuleConfigUpdateExecutor {
 
     fetchProjectProperties(moduleKey, globalProps, builder);
 
-    Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
+  }
 
+  private void updateStatus(Path temp) {
     UpdateStatus updateStatus = UpdateStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
       .build();
     ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
-
-    Path dest = storageManager.getModuleStorageRoot(moduleKey);
-    FileUtils.deleteDirectory(dest);
-    FileUtils.forceMkDirs(dest.getParent());
-    FileUtils.moveDir(temp, dest);
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {
