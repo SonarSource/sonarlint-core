@@ -43,6 +43,9 @@ public class StorageManager {
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
   public static final String MODULE_LIST_PB = "module_list.pb";
+
+  public static final String REMOTE_ISSUES_DIR = "remote-issues";
+
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path moduleStorageRoot;
@@ -113,6 +116,10 @@ public class StorageManager {
 
   public Path getServerInfosPath() {
     return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
+  }
+
+  public Path getRemoteIssuesPath(String moduleKey) {
+    return getModuleStorageRoot(moduleKey).resolve(REMOTE_ISSUES_DIR);
   }
 
   @CheckForNull
