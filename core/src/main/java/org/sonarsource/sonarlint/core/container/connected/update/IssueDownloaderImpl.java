@@ -24,6 +24,7 @@ import java.io.InputStream;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloaderImpl implements IssueDownloader {
 
@@ -48,6 +49,6 @@ public class IssueDownloaderImpl implements IssueDownloader {
   }
 
   private static String getIssuesUrl(String key) {
-    return "/batch/issues?key=" + key;
+    return "/batch/issues?key=" + StringUtils.urlEncode(key);
   }
 }
