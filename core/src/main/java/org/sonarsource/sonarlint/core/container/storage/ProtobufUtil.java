@@ -19,8 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
+import java.util.ArrayList;
+import java.util.List;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
 import java.io.IOException;
@@ -48,5 +51,22 @@ public class ProtobufUtil {
     } catch (IOException e) {
       throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
     }
+  }
+
+  public static <T extends Message> Iterable<T> readMessages(InputStream input, Parser<T> parser) {
+    List<T> list = new ArrayList<>();
+    while (true) {
+      T message;
+      try {
+        message = parser.parseDelimitedFrom(input);
+      } catch (InvalidProtocolBufferException e) {
+        throw new IllegalStateException("failed to parse protobuf message", e);
+      }
+      if (message == null) {
+        break;
+      }
+      list.add(message);
+    }
+    return list;
   }
 }
