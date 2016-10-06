@@ -33,7 +33,13 @@ public class IssueUtils {
   public static Map<String, Iterable<ScannerInput.ServerIssue>> groupByFileKey(Iterable<ScannerInput.ServerIssue> issues) {
     Map<String, Iterable<ScannerInput.ServerIssue>> groupedIssues = new HashMap<>();
     for (ScannerInput.ServerIssue issue : issues) {
-      ((List<ScannerInput.ServerIssue>)groupedIssues.getOrDefault(createFileKey(issue), new ArrayList<>())).add(issue);
+      String fileKey = createFileKey(issue);
+      Iterable<ScannerInput.ServerIssue> serverIssues = groupedIssues.get(fileKey);
+      if (serverIssues == null) {
+        serverIssues = new ArrayList<>();
+        groupedIssues.put(fileKey, serverIssues);
+      }
+      ((List<ScannerInput.ServerIssue>) serverIssues).add(issue);
     }
     return groupedIssues;
   }
