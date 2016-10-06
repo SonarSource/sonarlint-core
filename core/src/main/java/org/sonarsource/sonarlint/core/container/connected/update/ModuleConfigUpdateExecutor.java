@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
@@ -52,6 +53,10 @@ public class ModuleConfigUpdateExecutor {
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
+
+  public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
+    this(storageManager, wsClient, moduleKey -> Collections.emptyList(), basedir -> new InMemoryIssueStore(), tempFolder);
+  }
 
   public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
     IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory,

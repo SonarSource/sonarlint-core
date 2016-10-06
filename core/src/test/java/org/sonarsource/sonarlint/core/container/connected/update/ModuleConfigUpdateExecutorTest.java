@@ -22,10 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,8 +75,6 @@ public class ModuleConfigUpdateExecutorTest {
   private StorageManager storageManager;
   private TempFolder tempFolder;
   private String serverVersion;
-  private final IssueDownloader dummyIssueDownloader = moduleKey -> Collections.emptyList();
-  private final IssueStoreFactory dummyIssueStoreFactory = basedir -> new InMemoryIssueStore();
 
   public ModuleConfigUpdateExecutorTest(String serverVersion) {
     this.serverVersion = serverVersion;
@@ -146,7 +141,7 @@ public class ModuleConfigUpdateExecutorTest {
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, dummyIssueDownloader, dummyIssueStoreFactory, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -167,7 +162,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, dummyIssueDownloader, dummyIssueStoreFactory, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -192,7 +187,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, dummyIssueDownloader, dummyIssueStoreFactory, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
