@@ -54,12 +54,12 @@ public class ModuleConfigUpdateExecutor {
   private final TempFolder tempFolder;
 
   public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
-    //IssueDownloader issueDownloader, IssueStore issueStore,
+    IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory,
     TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
-    this.issueDownloader = new IssueDownloaderImpl(wsClient);
-    this.issueStoreFactory = (path) -> new InMemoryIssueStore();
+    this.issueDownloader = issueDownloader;
+    this.issueStoreFactory = issueStoreFactory;
     this.tempFolder = tempFolder;
   }
 

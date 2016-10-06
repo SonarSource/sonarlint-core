@@ -22,6 +22,10 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,6 +53,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
 
 @RunWith(Parameterized.class)
 public class ModuleConfigUpdateExecutorTest {
@@ -73,6 +78,8 @@ public class ModuleConfigUpdateExecutorTest {
   private StorageManager storageManager;
   private TempFolder tempFolder;
   private String serverVersion;
+  private final IssueDownloader dummyIssueDownloader = moduleKey -> Collections.emptyList();
+  private final IssueStoreFactory dummyIssueStoreFactory = basedir -> new InMemoryIssueStore();
 
   public ModuleConfigUpdateExecutorTest(String serverVersion) {
     this.serverVersion = serverVersion;
@@ -81,7 +88,7 @@ public class ModuleConfigUpdateExecutorTest {
   @Before
   public void setUp() throws IOException {
     // After 5.2
-    wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
+    wsClient = WsClientTestUtils.createMockWithStreamResponse(getQualityProfileUrl(),
       "/update/qualityprofiles_project.pb");
 
     // Before 5.2
@@ -98,7 +105,7 @@ public class ModuleConfigUpdateExecutorTest {
         + "{\"key\":\"sonar.core.version\",\"value\":\"5.5-SNAPSHOT\"},"
         + "{\"key\":\"sonar.java.someProp\",\"value\":\"foo\"}]");
 
-    WsClientTestUtils.addResponse(wsClient, "/batch/issues?key=" + MODULE_KEY_WITH_BRANCH_URLENCODED, new ByteArrayInputStream(new byte[0]));
+    WsClientTestUtils.addResponse(wsClient, "/batch/issues?key=" + MODULE_KEY_WITH_BRANCH_URLENCODED, newEmptyStream());
 
     File tempDir = temp.newFolder();
 
@@ -112,7 +119,6 @@ public class ModuleConfigUpdateExecutorTest {
 
     ServerInfos serverInfos = ServerInfos.newBuilder().setVersion(serverVersion).build();
     when(storageManager.readServerInfosFromStorage()).thenReturn(serverInfos);
-
   }
 
   //@Test
@@ -131,7 +137,7 @@ public class ModuleConfigUpdateExecutorTest {
   public void exception_ws_load_qps() throws IOException {
     assumeTrue(!serverVersion.equals(LTS));
 
-    when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED)).thenThrow(IOException.class);
+    when(wsClient.get(getQualityProfileUrl())).thenThrow(IOException.class);
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
 
@@ -140,7 +146,7 @@ public class ModuleConfigUpdateExecutorTest {
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, dummyIssueDownloader, dummyIssueStoreFactory, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -161,7 +167,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, dummyIssueDownloader, dummyIssueStoreFactory, tempFolder);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -186,12 +192,58 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, dummyIssueDownloader, dummyIssueStoreFactory, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+  }
 
+  @Test
+  public void test_server_issues_are_downloaded_and_stored() throws IOException {
+    WsClientTestUtils.addResponse(wsClient, getQualityProfileUrl(), newEmptyStream());
+    when(storageManager.readQProfilesFromStorage()).thenReturn(QProfiles.getDefaultInstance());
+
+    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
+
+    ScannerInput.ServerIssue fileIssue1 = ScannerInput.ServerIssue.newBuilder()
+      .setModuleKey("someModuleKey")
+      .setPath("some/path")
+      .setRuleKey("squid:x")
+      .build();
+    ScannerInput.ServerIssue fileIssue2 = ScannerInput.ServerIssue.newBuilder()
+      .setModuleKey("someModuleKey")
+      .setPath("some/path")
+      .setRuleKey("squid:y")
+      .build();
+    ScannerInput.ServerIssue anotherFileIssue = ScannerInput.ServerIssue.newBuilder()
+      .setModuleKey("someModuleKey")
+      .setPath("another/path")
+      .build();
+    ScannerInput.ServerIssue notDownloadedIssue = ScannerInput.ServerIssue.newBuilder()
+      .setModuleKey("someModuleKey")
+      .setPath("yet/another/path")
+      .build();
+
+    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
+
+    IssueStore issueStore = new InMemoryIssueStore();
+    IssueStoreFactory issueStoreFactory = basedir -> issueStore;
+
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder);
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+
+    assertThat(issueStore.load(createFileKey(fileIssue1))).containsOnly(fileIssue1, fileIssue2);
+    assertThat(issueStore.load(createFileKey(anotherFileIssue))).containsOnly(anotherFileIssue);
+    assertThat(issueStore.load(createFileKey(notDownloadedIssue))).isEmpty();
+  }
+
+  private String getQualityProfileUrl() {
+    return "/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
+  }
+
+  private ByteArrayInputStream newEmptyStream() {
+    return new ByteArrayInputStream(new byte[0]);
   }
 
 }
