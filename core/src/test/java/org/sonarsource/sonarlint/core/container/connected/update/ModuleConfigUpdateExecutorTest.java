@@ -35,7 +35,6 @@ import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -114,18 +113,6 @@ public class ModuleConfigUpdateExecutorTest {
 
     ServerInfos serverInfos = ServerInfos.newBuilder().setVersion(serverVersion).build();
     when(storageManager.readServerInfosFromStorage()).thenReturn(serverInfos);
-  }
-
-  //@Test
-  public void delete_me() {
-    ServerConfiguration config = ServerConfiguration.builder()
-      .url("http://localhost:9000")
-      .userAgent("hello")
-      .build();
-    SonarLintWsClient wsClient = new SonarLintWsClient(config);
-    Iterable<ScannerInput.ServerIssue> result = new IssueDownloaderImpl(wsClient)
-      .fetchIssues("org.sonarsource.sonarlint.core:sonarlint-daemon:src/main/java/org/sonarlint/daemon/services/AbstractSonarLint.java");
-    System.out.println(result.iterator().next());
   }
 
   @Test
