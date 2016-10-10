@@ -53,7 +53,7 @@ public class ProtobufUtil {
     }
   }
 
-  public static <T extends Message> Iterable<T> readMessages(InputStream input, Parser<T> parser) {
+  public static <T extends Message> List<T> readMessages(InputStream input, Parser<T> parser) {
     List<T> list = new ArrayList<>();
     while (true) {
       T message;

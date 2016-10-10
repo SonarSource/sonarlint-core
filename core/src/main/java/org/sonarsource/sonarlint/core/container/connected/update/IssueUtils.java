@@ -19,10 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
 public class IssueUtils {
@@ -30,18 +29,8 @@ public class IssueUtils {
     // utility class, forbidden constructor
   }
 
-  public static Map<String, Iterable<ScannerInput.ServerIssue>> groupByFileKey(Iterable<ScannerInput.ServerIssue> issues) {
-    Map<String, Iterable<ScannerInput.ServerIssue>> groupedIssues = new HashMap<>();
-    for (ScannerInput.ServerIssue issue : issues) {
-      String fileKey = createFileKey(issue);
-      Iterable<ScannerInput.ServerIssue> serverIssues = groupedIssues.get(fileKey);
-      if (serverIssues == null) {
-        serverIssues = new ArrayList<>();
-        groupedIssues.put(fileKey, serverIssues);
-      }
-      ((List<ScannerInput.ServerIssue>) serverIssues).add(issue);
-    }
-    return groupedIssues;
+  public static Map<String, List<ScannerInput.ServerIssue>> groupByFileKey(List<ScannerInput.ServerIssue> issues) {
+    return issues.stream().collect(Collectors.groupingBy(IssueUtils::createFileKey));
   }
 
   public static String createFileKey(ScannerInput.ServerIssue issue) {

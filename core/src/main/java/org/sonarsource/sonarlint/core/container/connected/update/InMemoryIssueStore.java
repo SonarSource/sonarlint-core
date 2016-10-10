@@ -20,20 +20,21 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
 public class InMemoryIssueStore implements IssueStore {
 
-  private Map<String, Iterable<ScannerInput.ServerIssue>> issues;
+  private Map<String, List<ScannerInput.ServerIssue>> issues;
 
   @Override
-  public void save(Map<String, Iterable<ScannerInput.ServerIssue>> issues) {
+  public void save(Map<String, List<ScannerInput.ServerIssue>> issues) {
     this.issues = issues;
   }
 
   @Override
-  public Iterable<ScannerInput.ServerIssue> load(String fileKey) {
+  public List<ScannerInput.ServerIssue> load(String fileKey) {
     return issues.getOrDefault(fileKey, Collections.emptyList());
   }
 }

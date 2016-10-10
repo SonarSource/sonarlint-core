@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.util.List;
 import java.util.Map;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
@@ -34,7 +35,7 @@ public interface IssueStore {
    *
    * @param issues mapping of file keys to issues
    */
-  void save(Map<String, Iterable<ScannerInput.ServerIssue>> issues);
+  void save(Map<String, List<ScannerInput.ServerIssue>> issues);
 
   /**
    * Load issues stored for specified file.
@@ -42,5 +43,5 @@ public interface IssueStore {
    * @param fileKey the file key
    * @return issues, possibly empty
    */
-  Iterable<ScannerInput.ServerIssue> load(String fileKey);
+  List<ScannerInput.ServerIssue> load(String fileKey);
 }

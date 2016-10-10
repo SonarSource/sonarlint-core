@@ -26,6 +26,7 @@ import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -102,7 +103,7 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void updateRemoteIssues(String moduleKey, Path temp) {
-    Iterable<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
+    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
 
     Path basedir = temp.resolve(StorageManager.REMOTE_ISSUES_DIR);
 
