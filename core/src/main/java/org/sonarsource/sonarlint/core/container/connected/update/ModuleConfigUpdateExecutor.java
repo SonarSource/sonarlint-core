@@ -56,6 +56,7 @@ public class ModuleConfigUpdateExecutor {
   private final TempFolder tempFolder;
 
   public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
+    // TODO replace InMemoryIssueStore with persistent (filesystem-based) implementation (in progress)
     this(storageManager, wsClient, moduleKey -> Collections.emptyList(), basedir -> new InMemoryIssueStore(), tempFolder);
   }
 

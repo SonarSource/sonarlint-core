@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
+// TODO for testing only. Move to /test/ at the soonest
 public class InMemoryIssueStore implements IssueStore {
 
   private Map<String, List<ScannerInput.ServerIssue>> issues;
