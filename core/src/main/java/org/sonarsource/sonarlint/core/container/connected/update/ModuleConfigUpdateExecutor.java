@@ -24,9 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
+import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
@@ -42,15 +45,28 @@ import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
+import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.groupByFileKey;
+
 public class ModuleConfigUpdateExecutor {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
+  private final IssueDownloader issueDownloader;
+  private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
 
   public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
+    // TODO replace InMemoryIssueStore with persistent (filesystem-based) implementation (in progress)
+    this(storageManager, wsClient, moduleKey -> Collections.emptyList(), basedir -> new InMemoryIssueStore(), tempFolder);
+  }
+
+  public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
+    IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory,
+    TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
+    this.issueDownloader = issueDownloader;
+    this.issueStoreFactory = issueStoreFactory;
     this.tempFolder = tempFolder;
   }
 
@@ -58,6 +74,21 @@ public class ModuleConfigUpdateExecutor {
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
     ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
 
+    Path temp = tempFolder.newDir().toPath();
+
+    updateModuleConfiguration(moduleKey, globalProps, serverInfos, temp);
+
+    updateRemoteIssues(moduleKey, temp);
+
+    updateStatus(temp);
+
+    Path dest = storageManager.getModuleStorageRoot(moduleKey);
+    FileUtils.deleteDirectory(dest);
+    FileUtils.forceMkDirs(dest.getParent());
+    FileUtils.moveDir(temp, dest);
+  }
+
+  private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, ServerInfos serverInfos, Path temp) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
     if (supportQualityProfilesWS) {
@@ -69,20 +100,24 @@ public class ModuleConfigUpdateExecutor {
 
     fetchProjectProperties(moduleKey, globalProps, builder);
 
-    Path temp = tempFolder.newDir().toPath();
     ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
+  }
 
+  private void updateRemoteIssues(String moduleKey, Path temp) {
+    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
+
+    Path basedir = temp.resolve(StorageManager.REMOTE_ISSUES_DIR);
+
+    issueStoreFactory.apply(basedir).save(groupByFileKey(issues));
+  }
+
+  private void updateStatus(Path temp) {
     UpdateStatus updateStatus = UpdateStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
       .build();
     ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
-
-    Path dest = storageManager.getModuleStorageRoot(moduleKey);
-    FileUtils.deleteDirectory(dest);
-    FileUtils.forceMkDirs(dest.getParent());
-    FileUtils.moveDir(temp, dest);
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {

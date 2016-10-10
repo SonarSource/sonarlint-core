@@ -56,6 +56,16 @@ public class WsClientTestUtils {
     return wsClient;
   }
 
+  public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, InputStream inputStream) {
+    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    when(wsClient.get(url)).thenReturn(wsResponse);
+    when(wsClient.rawGet(url)).thenReturn(wsResponse);
+    when(wsResponse.requestUrl()).thenReturn(url);
+    when(wsResponse.contentStream()).thenReturn(inputStream);
+    when(wsResponse.isSuccessful()).thenReturn(true);
+    return wsClient;
+  }
+
   public static SonarLintWsClient addPostResponse(SonarLintWsClient wsClient, String url, String response) {
     CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.post(url)).thenReturn(wsResponse);
