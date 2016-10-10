@@ -42,7 +42,7 @@ public class IssueDownloaderImpl implements IssueDownloader {
    * @return iterable of issues
    */
   @Override
-  public Iterable<ScannerInput.ServerIssue> fetchIssues(String key) {
+  public Iterable<ScannerInput.ServerIssue> apply(String key) {
     InputStream input = wsClient.get(getIssuesUrl(key)).contentStream();
     Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
     return ProtobufUtil.readMessages(input, parser);

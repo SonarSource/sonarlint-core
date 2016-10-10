@@ -19,11 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.util.function.Function;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
-@FunctionalInterface
-public interface IssueDownloader {
-
-  Iterable<ScannerInput.ServerIssue> fetchIssues(String moduleKey);
-
+public interface IssueDownloader extends Function<String, Iterable<ScannerInput.ServerIssue>> {
 }

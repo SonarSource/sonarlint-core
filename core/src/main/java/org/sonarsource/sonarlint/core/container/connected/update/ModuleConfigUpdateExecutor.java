@@ -102,11 +102,11 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void updateRemoteIssues(String moduleKey, Path temp) {
-    Iterable<ScannerInput.ServerIssue> issues = issueDownloader.fetchIssues(moduleKey);
+    Iterable<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
 
     Path basedir = temp.resolve(StorageManager.REMOTE_ISSUES_DIR);
 
-    issueStoreFactory.create(basedir).save(groupByFileKey(issues));
+    issueStoreFactory.apply(basedir).save(groupByFileKey(issues));
   }
 
   private void updateStatus(Path temp) {
