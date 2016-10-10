@@ -17,11 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.io.InputStream;
-import java.util.function.Function;
-
-@FunctionalInterface
-public interface Reader<V> extends Function<InputStream, V> {
-}
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,11 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.Iterator;
-import java.util.function.Function;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import java.time.Instant;
 
-public interface IssueDownloader extends Function<String, Iterator<ScannerInput.ServerIssue>> {
+public interface ServerIssue {
+  String key();
+
+  String resolution();
+
+  String ruleKey();
+
+  int line();
+
+  String message();
+
+  String checksum();
+
+  String assigneeLogin();
+
+  String moduleKey();
+
+  String filePath();
+  
+  String severity();
+
+  boolean manualSeverity();
+
+  Instant creationDate();
 }

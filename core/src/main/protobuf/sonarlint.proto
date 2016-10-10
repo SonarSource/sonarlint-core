@@ -90,6 +90,27 @@ message ActiveRules {
   }
 }
 
+message ServerIssues {
+  repeated ServerIssue issue = 1;
+  
+  message ServerIssue {
+    string key = 1;
+    string module_key = 2;
+    string path = 3;
+    string rule_repository = 4;
+    string rule_key = 5;
+    int32 line = 6;
+    string msg = 7;
+    string severity = 8;
+    bool manual_severity = 9;
+    string resolution = 10;
+    string status = 11;
+    string checksum = 12;
+    string assignee_login = 13;
+    int64 creation_date = 14;
+  }
+}
+
 message ModuleList {
   map<string,Module> modules_by_key = 1;
   
@@ -103,4 +124,5 @@ message ModuleList {
 message ModuleConfiguration {
   map<string, string> qprofile_per_language = 1;
   map<string, string> properties = 2;
+  map<string, string> module_path_by_key = 3;
 }

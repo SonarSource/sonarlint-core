@@ -17,10 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,9 +49,7 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
     if (!path.toFile().exists()) {
       return Optional.empty();
     }
-    try (InputStream in = Files.newInputStream(path)) {
-      return Optional.of(reader.apply(in));
-    }
+    return Optional.of(reader.apply(Files.newInputStream(path)));
   }
 
   @Override

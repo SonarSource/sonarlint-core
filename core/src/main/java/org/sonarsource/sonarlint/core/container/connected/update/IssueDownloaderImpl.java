@@ -21,7 +21,8 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.protobuf.Parser;
 import java.io.InputStream;
-import java.util.List;
+import java.util.Iterator;
+
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -43,10 +44,10 @@ public class IssueDownloaderImpl implements IssueDownloader {
    * @return iterable of issues
    */
   @Override
-  public List<ScannerInput.ServerIssue> apply(String key) {
+  public Iterator<ScannerInput.ServerIssue> apply(String key) {
     InputStream input = wsClient.get(getIssuesUrl(key)).contentStream();
     Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
-    return ProtobufUtil.readMessages(input, parser);
+    return ProtobufUtil.streamMessages(input, parser);
   }
 
   private static String getIssuesUrl(String key) {

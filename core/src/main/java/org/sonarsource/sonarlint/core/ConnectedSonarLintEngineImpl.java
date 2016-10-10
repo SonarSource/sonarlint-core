@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
@@ -222,6 +224,36 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   private void checkUpdateStatus() {
     if (state != State.UPDATED) {
       throw new GlobalUpdateRequiredException("Please update server '" + globalConfig.getServerId() + "'");
+    }
+  }
+
+  @Override
+  public Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+    setLogging(null);
+
+    rwl.readLock().lock();
+    try {
+      checkUpdateStatus();
+      return getGlobalContainer().getServerIssues(moduleKey, filePath);
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
+  
+  @Override
+  public Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
+    setLogging(null);
+
+    rwl.readLock().lock();
+    try {
+      checkUpdateStatus();
+      return getGlobalContainer().downloadServerIssues(moduleKey, filePath);
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    } finally {
+      rwl.readLock().unlock();
     }
   }
 

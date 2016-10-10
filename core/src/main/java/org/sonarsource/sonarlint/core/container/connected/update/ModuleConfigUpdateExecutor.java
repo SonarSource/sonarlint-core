@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -34,6 +34,7 @@ import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.WsResponse;
+import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -45,8 +46,6 @@ import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.groupByFileKey;
-
 public class ModuleConfigUpdateExecutor {
 
   private final StorageManager storageManager;
@@ -54,20 +53,17 @@ public class ModuleConfigUpdateExecutor {
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
-
-  public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, TempFolder tempFolder) {
-    // TODO replace InMemoryIssueStore with persistent (filesystem-based) implementation (in progress)
-    this(storageManager, wsClient, moduleKey -> Collections.emptyList(), basedir -> new InMemoryIssueStore(), tempFolder);
-  }
+  private final ModuleHierarchyDownloader moduleHierarchyDownloader;
 
   public ModuleConfigUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
-    IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory,
+    IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, ModuleHierarchyDownloader moduleHierarchyDownloader,
     TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
     this.tempFolder = tempFolder;
+    this.moduleHierarchyDownloader = moduleHierarchyDownloader;
   }
 
   public void update(String moduleKey) {
@@ -99,16 +95,17 @@ public class ModuleConfigUpdateExecutor {
     }
 
     fetchProjectProperties(moduleKey, globalProps, builder);
+    fetchModuleHierarchy(moduleKey, builder);
 
     ProtobufUtil.writeToFile(builder.build(), temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
   }
 
   private void updateRemoteIssues(String moduleKey, Path temp) {
-    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
+    Iterator<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
 
-    Path basedir = temp.resolve(StorageManager.REMOTE_ISSUES_DIR);
+    Path basedir = temp.resolve(StorageManager.SERVER_ISSUES_DIR);
 
-    issueStoreFactory.apply(basedir).save(groupByFileKey(issues));
+    issueStoreFactory.apply(basedir).save(issues);
   }
 
   private void updateStatus(Path temp) {
@@ -118,6 +115,12 @@ public class ModuleConfigUpdateExecutor {
       .setUpdateTimestamp(new Date().getTime())
       .build();
     ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
+  }
+
+  private void fetchModuleHierarchy(String moduleKey, ModuleConfiguration.Builder builder) {
+    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(moduleKey);
+    Map<String, String> modulePathByKey = builder.getMutableModulePathByKey();
+    modulePathByKey.putAll(moduleHierarchy);
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {

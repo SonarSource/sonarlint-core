@@ -17,18 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.container.connected.ServerIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -41,22 +41,20 @@ public class ServerIssueStoreTest {
   public void should_read_object_written() {
     ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
 
-    Map<String, List<ScannerInput.ServerIssue>> map = new HashMap<>();
+    ServerIssue.Builder builder = ServerIssue.newBuilder();
+    List<ServerIssue> issueList = new ArrayList<>();
 
-    ScannerInput.ServerIssue.Builder builder = ScannerInput.ServerIssue.newBuilder();
+    String moduleKey = "module1";
+    String key1 = "path1";
+    String key2 = "path2";
 
-    String key1 = "someKey1";
-    List<ScannerInput.ServerIssue> issueList1 = Collections.singletonList(builder.setKey(key1).build());
-    map.put(key1, issueList1);
+    issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
+    issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
 
-    String key2 = "someKey2";
-    List<ScannerInput.ServerIssue> issueList2 = Collections.singletonList(builder.setKey(key2).build());
-    map.put(key2, issueList2);
+    store.save(issueList.iterator());
 
-    store.save(map);
-
-    assertThat(store.load(key1)).isEqualTo(issueList1);
-    assertThat(store.load(key2)).isEqualTo(issueList2);
+    assertThat(store.load("module1:path1")).containsExactly(issueList.get(0));
+    assertThat(store.load("module1:path2")).containsExactly(issueList.get(1));
     assertThat(store.load("nonexistent")).isEmpty();
   }
 
@@ -64,15 +62,17 @@ public class ServerIssueStoreTest {
   public void should_read_object_replaced() throws IOException {
     ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
 
-    String key = "someKey";
-    ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder().setLine(11).build();
-    ScannerInput.ServerIssue issue2 = ScannerInput.ServerIssue.newBuilder().setLine(22).build();
+    String path = "myfile";
+    String moduleKey = "module";
 
-    store.save(Collections.singletonMap(key, Collections.singletonList(issue1)));
-    assertThat(store.load(key)).containsOnly(issue1);
+    ServerIssue issue1 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(11).build();
+    ServerIssue issue2 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(22).build();
 
-    store.save(Collections.singletonMap(key, Collections.singletonList(issue2)));
-    assertThat(store.load(key)).containsOnly(issue2);
+    store.save(Collections.singletonList(issue1).iterator());
+    assertThat(store.load("module:myfile")).containsOnly(issue1);
+
+    store.save(Collections.singletonList(issue2).iterator());
+    assertThat(store.load("module:myfile")).containsOnly(issue2);
   }
 
   @Test
@@ -82,11 +82,9 @@ public class ServerIssueStoreTest {
       fail("could not make dir readonly");
     }
 
-    String key = "someKey";
-
     ServerIssueStore store = new ServerIssueStore(forbiddenDir.toPath());
-    store.save(Collections.singletonMap(key, Collections.singletonList(ScannerInput.ServerIssue.getDefaultInstance())));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()).iterator());
 
-    assertThat(store.load(key)).isEmpty();
+    assertThat(store.load("module:myfile")).isEmpty();
   }
 }

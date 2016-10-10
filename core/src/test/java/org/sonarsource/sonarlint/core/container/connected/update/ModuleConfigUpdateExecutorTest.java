@@ -19,10 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +45,9 @@ import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
+import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
+import org.sonarsource.sonarlint.core.container.connected.IssueStore;
+import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -43,11 +57,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.junit.Assume.assumeTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
 import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.newEmptyStream;
 
@@ -74,6 +83,9 @@ public class ModuleConfigUpdateExecutorTest {
   private StorageManager storageManager;
   private TempFolder tempFolder;
   private String serverVersion;
+  private ModuleHierarchyDownloader moduleHierarchy;
+  private IssueStore issueStore;
+  private IssueStoreFactory issueStoreFactory;
 
   public ModuleConfigUpdateExecutorTest(String serverVersion) {
     this.serverVersion = serverVersion;
@@ -113,6 +125,15 @@ public class ModuleConfigUpdateExecutorTest {
 
     ServerInfos serverInfos = ServerInfos.newBuilder().setVersion(serverVersion).build();
     when(storageManager.readServerInfosFromStorage()).thenReturn(serverInfos);
+    moduleHierarchy = mock(ModuleHierarchyDownloader.class);
+    Map<String, String> modulesPath = new HashMap<>();
+    modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
+    modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
+    when(moduleHierarchy.fetchModuleHierarchy(MODULE_KEY_WITH_BRANCH)).thenReturn(modulesPath);
+
+    issueStoreFactory = mock(IssueStoreFactory.class);
+    issueStore = new InMemoryIssueStore();
+    when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
   }
 
   @Test
@@ -128,7 +149,8 @@ public class ModuleConfigUpdateExecutorTest {
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -149,7 +171,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -158,6 +180,10 @@ public class ModuleConfigUpdateExecutorTest {
       entry("cs", "cs-sonar-way-58886"),
       entry("java", "java-empty-74333"),
       entry("js", "js-sonar-way-60746"));
+
+    assertThat(moduleConfiguration.getModulePathByKey()).containsOnly(
+      entry(MODULE_KEY_WITH_BRANCH, ""),
+      entry( MODULE_KEY_WITH_BRANCH + "child1", "child 1"));
   }
 
   @Test
@@ -174,7 +200,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
@@ -207,12 +233,9 @@ public class ModuleConfigUpdateExecutorTest {
       .setPath("yet/another/path")
       .build();
 
-    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
+    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue).iterator();
 
-    IssueStore issueStore = new InMemoryIssueStore();
-    IssueStoreFactory issueStoreFactory = basedir -> issueStore;
-
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, moduleHierarchy, tempFolder);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
     assertThat(issueStore.load(createFileKey(fileIssue1))).containsOnly(fileIssue1, fileIssue2);

@@ -17,20 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.io.IOException;
-import java.util.Optional;
+import java.nio.file.Path;
+import java.util.function.Function;
 
 /**
- * Store and retrieve objects from the filesystem.
+ * Map objects to unique filesystem paths.
  *
- * @param <K> type of the key to store by and used when reading back
- * @param <V> type of the value to store
+ * @param <T>
  */
-public interface ObjectStore<K, V> {
-
-  void write(K key, V value) throws IOException;
-
-  Optional<V> read(K key) throws IOException;
+@FunctionalInterface
+public interface PathMapper<T> extends Function<T, Path> {
 }

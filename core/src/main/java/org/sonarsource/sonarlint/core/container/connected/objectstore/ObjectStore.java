@@ -17,11 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.util.Iterator;
-import java.util.function.Function;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import java.io.IOException;
+import java.util.Optional;
 
-public interface IssueDownloader extends Function<String, Iterator<ScannerInput.ServerIssue>> {
+/**
+ * Store and retrieve objects from the filesystem.
+ *
+ * @param <K> type of the key to store by and used when reading back
+ * @param <V> type of the value to store
+ */
+public interface ObjectStore<K, V> {
+
+  void write(K key, V values) throws IOException;
+
+  Optional<V> read(K key) throws IOException;
 }

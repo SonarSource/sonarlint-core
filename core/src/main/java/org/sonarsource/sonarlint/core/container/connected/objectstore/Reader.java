@@ -17,13 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.function.Function;
 
-/**
- * Create a filesystem-backed issue store at specified base directory.
- */
-public interface IssueStoreFactory extends Function<Path, IssueStore> {
+@FunctionalInterface
+public interface Reader<V> extends Function<InputStream, V> {
 }

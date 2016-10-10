@@ -17,31 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.util.List;
-import java.util.Map;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import java.io.OutputStream;
+import java.util.function.BiConsumer;
 
-public interface IssueStore {
-
-  /**
-   * Store issues per file keys.
-   *
-   * For filesystem-based implementations, watch out for:
-   * - Too long paths
-   * - Directories with too many files
-   * - (Too deep paths?)
-   *
-   * @param issues mapping of file keys to issues
-   */
-  void save(Map<String, List<ScannerInput.ServerIssue>> issues);
-
-  /**
-   * Load issues stored for specified file.
-   *
-   * @param fileKey the file key
-   * @return issues, possibly empty
-   */
-  List<ScannerInput.ServerIssue> load(String fileKey);
+@FunctionalInterface
+public interface Writer<V> extends BiConsumer<OutputStream, V> {
 }

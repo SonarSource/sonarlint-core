@@ -26,9 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import javax.annotation.CheckForNull;
+
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.container.model.DefaultGlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -43,8 +45,7 @@ public class StorageManager {
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
   public static final String MODULE_LIST_PB = "module_list.pb";
-
-  public static final String REMOTE_ISSUES_DIR = "remote-issues";
+  public static final String SERVER_ISSUES_DIR = "server_issues";
 
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
@@ -118,8 +119,8 @@ public class StorageManager {
     return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
   }
 
-  public Path getRemoteIssuesPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(REMOTE_ISSUES_DIR);
+  public Path getServerIssuesPath(String moduleKey) {
+    return getModuleStorageRoot(moduleKey).resolve(SERVER_ISSUES_DIR);
   }
 
   @CheckForNull
@@ -141,30 +142,17 @@ public class StorageManager {
         version = serverInfoFromStorage.getVersion();
       }
 
-      final String fVersion = version;
-
-      return new GlobalUpdateStatus() {
-        @Override
-        public String getServerVersion() {
-          return fVersion;
-        }
-
-        @Override
-        public Date getLastUpdateDate() {
-          return new Date(updateStatusFromStorage.getUpdateTimestamp());
-        }
-
-        @Override
-        public boolean isStale() {
-          return stale;
-        }
-      };
+      return new DefaultGlobalUpdateStatus(version, new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;
   }
 
   public Sonarlint.ServerInfos readServerInfosFromStorage() {
     return ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
+  }
+
+  public Sonarlint.ServerIssues readServerIssesFromStorage(String moduleKey) {
+    return ProtobufUtil.readFile(getServerIssuesPath(moduleKey), Sonarlint.ServerIssues.parser());
   }
 
   public Sonarlint.Rules readRulesFromStorage() {

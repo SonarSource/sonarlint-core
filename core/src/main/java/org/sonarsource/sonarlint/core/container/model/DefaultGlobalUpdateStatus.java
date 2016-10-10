@@ -17,16 +17,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.nio.file.Path;
-import java.util.function.Function;
+import java.util.Date;
 
-/**
- * Map objects to unique filesystem paths.
- *
- * @param <T>
- */
-@FunctionalInterface
-public interface PathMapper<T> extends Function<T, Path> {
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+
+public class DefaultGlobalUpdateStatus implements GlobalUpdateStatus {
+  private final String serverVersion;
+  private final Date lastUpdate;
+  private final boolean stale;
+
+  public DefaultGlobalUpdateStatus(String serverVersion, Date lastUpdate, boolean stale) {
+    this.serverVersion = serverVersion;
+    this.lastUpdate = lastUpdate;
+    this.stale = stale;
+
+  }
+
+  @Override
+  public String getServerVersion() {
+    return serverVersion;
+  }
+
+  @Override
+  public Date getLastUpdateDate() {
+    return lastUpdate;
+  }
+
+  @Override
+  public boolean isStale() {
+    return stale;
+  }
 }

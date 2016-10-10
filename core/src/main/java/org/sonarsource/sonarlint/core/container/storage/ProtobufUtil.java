@@ -23,8 +23,11 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.util.ParserIterator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,13 +73,21 @@ public class ProtobufUtil {
     return list;
   }
 
-  public static <T extends Message> void writeMessages(OutputStream output, List<T> messages) {
-    for (T message : messages) {
-      try {
-        message.writeDelimitedTo(output);
-      } catch (IOException e) {
-        throw new IllegalStateException("failed to write message: " + message, e);
-      }
+  public static <T extends Message> Iterator<T> streamMessages(final InputStream input, final Parser<T> parser) {
+    return new ParserIterator<>(input, parser);
+  }
+
+  public static <T extends Message> void writeMessages(OutputStream output, Iterator<T> messages) {
+    while (messages.hasNext()) {
+      writeMessage(output, messages.next());
+    }
+  }
+
+  public static <T extends Message> void writeMessage(OutputStream output, T message) {
+    try {
+      message.writeDelimitedTo(output);
+    } catch (IOException e) {
+      throw new IllegalStateException("failed to write message: " + message, e);
     }
   }
 }

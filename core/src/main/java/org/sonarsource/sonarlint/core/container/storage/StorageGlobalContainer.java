@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -45,9 +47,10 @@ import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
-import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
+import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -79,6 +82,8 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginCopier.class,
       PluginLoader.class,
       PluginClassloaderFactory.class,
+      IssueStoreFactory.class,
+      IssueStoreGetter.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
       SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
@@ -137,7 +142,7 @@ public class StorageGlobalContainer extends ComponentContainer {
   }
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {
-    Sonarlint.Rules rulesFromStorage = getComponentByType(StorageManager.class).readRulesFromStorage();
+    Sonarlint.Rules rulesFromStorage = storageManager().readRulesFromStorage();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
     Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKey().get(ruleKeyStr);
     if (rule == null) {
@@ -156,12 +161,25 @@ public class StorageGlobalContainer extends ComponentContainer {
 
   public Map<String, RemoteModule> allModulesByKey() {
     Map<String, RemoteModule> results = new HashMap<>();
-    ModuleList readModuleListFromStorage = getComponentByType(StorageManager.class).readModuleListFromStorage();
+    ModuleList readModuleListFromStorage = storageManager().readModuleListFromStorage();
     Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKey();
     for (Map.Entry<String, Sonarlint.ModuleList.Module> entry : modulesByKey.entrySet()) {
       results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));
     }
     return results;
+  }
+
+  public Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+    return getComponentByType(IssueStoreGetter.class).getServerIssues(moduleKey, filePath);
+  }
+
+  public Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
+    // TODO
+    return getServerIssues(moduleKey, filePath);
+  }
+
+  private StorageManager storageManager() {
+    return getComponentByType(StorageManager.class);
   }
 
   private static class DefaultRemoteModule implements RemoteModule {
