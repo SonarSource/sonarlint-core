@@ -31,6 +31,13 @@
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-scanner-protocol</artifactId>
       <version>${sonar-scanner-protocol.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- because it's a newer version that breaks some ITs -->
+          <groupId>org.sonarsource.update-center</groupId>
+          <artifactId>sonar-update-center-common</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp</groupId>
