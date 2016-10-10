@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -45,6 +48,7 @@ import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
 import org.sonarsource.sonarlint.core.container.global.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
@@ -56,6 +60,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 import org.sonarsource.sonarlint.core.util.FileUtils;
@@ -84,6 +89,7 @@ public class StorageGlobalContainer extends ComponentContainer {
       SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
       new GlobalTempFolderProvider(),
       UriReader.class,
+      IssueStore.class,
       new PluginCacheProvider(),
       new StorageRulesProvider(),
       new StorageQProfilesProvider(),
@@ -137,7 +143,7 @@ public class StorageGlobalContainer extends ComponentContainer {
   }
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {
-    Sonarlint.Rules rulesFromStorage = getComponentByType(StorageManager.class).readRulesFromStorage();
+    Sonarlint.Rules rulesFromStorage = storageManager().readRulesFromStorage();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
     Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKey().get(ruleKeyStr);
     if (rule == null) {
@@ -156,12 +162,48 @@ public class StorageGlobalContainer extends ComponentContainer {
 
   public Map<String, RemoteModule> allModulesByKey() {
     Map<String, RemoteModule> results = new HashMap<>();
-    ModuleList readModuleListFromStorage = getComponentByType(StorageManager.class).readModuleListFromStorage();
+    ModuleList readModuleListFromStorage = storageManager().readModuleListFromStorage();
     Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKey();
     for (Map.Entry<String, Sonarlint.ModuleList.Module> entry : modulesByKey.entrySet()) {
       results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));
     }
     return results;
+  }
+
+  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+
+    // fetch issues with fileKey
+    List<ServerIssue> results = new ArrayList<>();
+    String fileKey = getFileKey(moduleKey, filePath);
+    return results;
+  }
+
+  public List<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
+    List<ServerIssue> results = new ArrayList<>();
+    String fileKey = getFileKey(moduleKey, filePath);
+    return null;
+  }
+
+  private String getFileKey(String moduleKey, String filePath) {
+    ModuleConfiguration moduleConfig = storageManager().readModuleConfigFromStorage(moduleKey);
+    Map<String, String> moduleKeysByPath = moduleConfig.getModulesKeysByPath();
+
+    // find longest prefix match
+    String subModuleKey = moduleKey;
+    String relativeFilePath = filePath;
+
+    for (Map.Entry<String, String> e : moduleKeysByPath.entrySet()) {
+      if (filePath.startsWith(e.getKey()) && (relativeFilePath == null || relativeFilePath.length() < e.getKey().length())) {
+        subModuleKey = e.getValue();
+        relativeFilePath = e.getKey();
+      }
+    }
+
+    return subModuleKey + ":" + relativeFilePath;
+  }
+
+  private StorageManager storageManager() {
+    return getComponentByType(StorageManager.class);
   }
 
   private static class DefaultRemoteModule implements RemoteModule {

@@ -25,7 +25,10 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.InMemoryIssueStore;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -62,9 +65,12 @@ public class ConnectedContainer extends ComponentContainer {
       PluginReferencesDownloader.class,
       GlobalPropertiesDownloader.class,
       ModuleListDownloader.class,
+      ModuleHierarchyDownloader.class,
       RulesDownloader.class,
       QualityProfilesDownloader.class,
+      IssueDownloaderImpl.class,
       new PluginCacheProvider(),
+      InMemoryIssueStore.class,
       PluginHashes.class,
       StorageManager.class);
   }

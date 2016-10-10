@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.CheckForNull;
@@ -70,6 +71,8 @@ public interface ConnectedSonarLintEngine {
 
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput);
 
+  List<ServerIssue> getServerIssues(String moduleKey, String filePath);
+  
   /**
    * Get information about current update state
    * @return null if server was never updated
