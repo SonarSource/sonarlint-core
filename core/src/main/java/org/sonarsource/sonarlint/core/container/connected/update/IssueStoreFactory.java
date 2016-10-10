@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
 
+@FunctionalInterface
 public interface IssueStoreFactory {
   /**
    * Create a filesystem-backed issue store at specified base directory.
