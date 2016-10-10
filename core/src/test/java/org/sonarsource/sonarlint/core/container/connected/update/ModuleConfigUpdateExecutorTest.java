@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
+import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.newEmptyStream;
 
 @RunWith(Parameterized.class)
 public class ModuleConfigUpdateExecutorTest {
@@ -222,10 +222,6 @@ public class ModuleConfigUpdateExecutorTest {
 
   private String getQualityProfileUrl() {
     return "/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
-  }
-
-  private ByteArrayInputStream newEmptyStream() {
-    return new ByteArrayInputStream(new byte[0]);
   }
 
 }
