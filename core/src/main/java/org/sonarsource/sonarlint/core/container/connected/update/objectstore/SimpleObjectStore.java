@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -70,9 +69,9 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
       path = pathGenerator.next();
       index.put(key, path);
 
-      File parentFile = path.toFile().getParentFile();
-      if (!parentFile.isDirectory() && !parentFile.mkdirs()) {
-        throw new IOException("could not create directory: " + parentFile);
+      Path parent = path.getParent();
+      if (!Files.exists(parent)) {
+        Files.createDirectories(parent);
       }
     }
     try (OutputStream out = Files.newOutputStream(path)) {
