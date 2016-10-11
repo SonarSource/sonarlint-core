@@ -23,10 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,6 +81,8 @@ public class ModuleConfigUpdateExecutorTest {
   private TempFolder tempFolder;
   private String serverVersion;
   private ModuleHierarchyDownloader moduleHierarchy;
+  private IssueStore issueStore;
+  private IssueStoreFactory issueStoreFactory;
 
   public ModuleConfigUpdateExecutorTest(String serverVersion) {
     this.serverVersion = serverVersion;
@@ -123,6 +127,10 @@ public class ModuleConfigUpdateExecutorTest {
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
     when(moduleHierarchy.fetchModuleHierarchy(MODULE_KEY_WITH_BRANCH)).thenReturn(modulesPath);
+
+    issueStoreFactory = mock(IssueStoreFactory.class);
+    issueStore = new InMemoryIssueStore();
+    when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
   }
 
   @Test
@@ -138,7 +146,8 @@ public class ModuleConfigUpdateExecutorTest {
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), (path) -> new InMemoryIssueStore(), moduleHierarchy, tempFolder);
+
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -159,7 +168,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), (path) -> new InMemoryIssueStore(), moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -188,7 +197,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), (path) -> new InMemoryIssueStore(), moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
@@ -222,9 +231,6 @@ public class ModuleConfigUpdateExecutorTest {
       .build();
 
     IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
-
-    IssueStore issueStore = new InMemoryIssueStore();
-    IssueStoreFactory issueStoreFactory = basedir -> issueStore;
 
     moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, moduleHierarchy, tempFolder);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);

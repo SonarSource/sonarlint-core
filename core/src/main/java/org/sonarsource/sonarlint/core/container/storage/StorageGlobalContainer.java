@@ -48,7 +48,7 @@ import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
@@ -84,12 +84,12 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginCopier.class,
       PluginLoader.class,
       PluginClassloaderFactory.class,
+      IssueStoreFactory.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
       SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
       new GlobalTempFolderProvider(),
       UriReader.class,
-      IssueStore.class,
       new PluginCacheProvider(),
       new StorageRulesProvider(),
       new StorageQProfilesProvider(),

@@ -25,5 +25,10 @@ import java.util.function.Function;
 /**
  * Create a filesystem-backed issue store at specified base directory.
  */
-public interface IssueStoreFactory extends Function<Path, IssueStore> {
+public class IssueStoreFactory implements Function<Path, IssueStore> {
+
+  @Override
+  public IssueStore apply(Path path) {
+    return new ServerIssueStore(path);
+  }
 }
