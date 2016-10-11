@@ -70,7 +70,7 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
       index.put(key, path);
 
       Path parent = path.getParent();
-      if (!Files.exists(parent)) {
+      if (parent.toFile().exists()) {
         Files.createDirectories(parent);
       }
     }
