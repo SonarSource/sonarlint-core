@@ -24,7 +24,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
 import java.util.ArrayList;
 import java.util.List;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
 import java.io.IOException;
