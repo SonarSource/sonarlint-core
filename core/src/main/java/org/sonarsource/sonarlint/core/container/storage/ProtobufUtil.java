@@ -24,6 +24,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
 import java.util.ArrayList;
 import java.util.List;
+import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
 import java.io.IOException;
@@ -68,5 +69,15 @@ public class ProtobufUtil {
       list.add(message);
     }
     return list;
+  }
+
+  public static <T extends Message> void writeMessages(OutputStream output, List<T> messages) {
+    for (T message : messages) {
+      try {
+        message.writeDelimitedTo(output);
+      } catch (IOException e) {
+        throw new IllegalStateException("failed to write message: " + message, e);
+      }
+    }
   }
 }
