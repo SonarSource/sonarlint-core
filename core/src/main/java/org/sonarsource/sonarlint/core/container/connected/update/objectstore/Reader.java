@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.util.function.Function;
 
-public interface Reader<V> {
-  V parseFrom(InputStream input) throws IOException;
+@FunctionalInterface
+public interface Reader<V> extends Function<InputStream, V> {
 }

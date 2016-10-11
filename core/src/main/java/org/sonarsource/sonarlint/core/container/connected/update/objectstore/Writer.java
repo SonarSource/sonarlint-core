@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
 
-import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.BiConsumer;
 
-public interface Writer<V> {
-  void writeTo(OutputStream output, V value) throws IOException;
+@FunctionalInterface
+public interface Writer<V> extends BiConsumer<OutputStream, V> {
 }

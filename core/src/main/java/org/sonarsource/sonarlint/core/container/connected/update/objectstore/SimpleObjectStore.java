@@ -59,7 +59,7 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
       return Optional.empty();
     }
     try (InputStream in = Files.newInputStream(path)) {
-      return Optional.of(reader.parseFrom(in));
+      return Optional.of(reader.apply(in));
     }
   }
 
@@ -76,7 +76,7 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
       }
     }
     try (OutputStream out = Files.newOutputStream(path)) {
-      writer.writeTo(out, value);
+      writer.accept(out, value);
     }
   }
 }
