@@ -1,13 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-#deploy the version built by travis
-CURRENT_VERSION=`mvn help:evaluate -Dexpression="project.version" | grep -v '^\[\|Download\w\+\:'`
-RELEASE_VERSION=`echo $CURRENT_VERSION | sed "s/-.*//g"`
-NEW_VERSION="$RELEASE_VERSION.$CI_BUILD_NUMBER"
-echo $NEW_VERSION
+./set_maven_build_version.sh "$CI_BUILD_NUMBER"
 
-mvn versions:set -DnewVersion=$NEW_VERSION
 cd its
 
 if [[ $SQ_VERSION = "4.5"* ]]
