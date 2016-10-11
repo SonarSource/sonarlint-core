@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,32 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.time.LocalDateTime;
-
-public interface ServerIssue {
-  String key();
-
-  String author();
-
-  String resolution();
-
-  String ruleKey();
-
-  int line();
-
-  String message();
-
-  String checksum();
-
-  String assigneeLogin();
-
-  String moduleKey();
-
-  String filePath();
-
-  boolean manualSeverity();
-
-  LocalDateTime creationDate();
-}
+import javax.annotation.ParametersAreNonnullByDefault;

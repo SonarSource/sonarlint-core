@@ -30,6 +30,7 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.container.model.DefaultGlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -141,24 +142,7 @@ public class StorageManager {
         version = serverInfoFromStorage.getVersion();
       }
 
-      final String fVersion = version;
-
-      return new GlobalUpdateStatus() {
-        @Override
-        public String getServerVersion() {
-          return fVersion;
-        }
-
-        @Override
-        public Date getLastUpdateDate() {
-          return new Date(updateStatusFromStorage.getUpdateTimestamp());
-        }
-
-        @Override
-        public boolean isStale() {
-          return stale;
-        }
-      };
+      return new DefaultGlobalUpdateStatus(version, new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;
   }
@@ -166,7 +150,7 @@ public class StorageManager {
   public Sonarlint.ServerInfos readServerInfosFromStorage() {
     return ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
   }
-  
+
   public Sonarlint.ServerIssues readServerIssesFromStorage(String moduleKey) {
     return ProtobufUtil.readFile(getServerIssuesPath(moduleKey), Sonarlint.ServerIssues.parser());
   }
