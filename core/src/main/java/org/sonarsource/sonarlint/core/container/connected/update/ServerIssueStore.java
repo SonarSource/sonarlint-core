@@ -28,8 +28,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.container.connected.update.objectstore.HashingPathMapper;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.ObjectStore;
-import org.sonarsource.sonarlint.core.container.connected.update.objectstore.PathGenerator;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.Reader;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.SimpleObjectStore;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.Writer;
@@ -42,7 +42,7 @@ public class ServerIssueStore implements IssueStore {
   private final ObjectStore<String, List<ScannerInput.ServerIssue>> store;
 
   public ServerIssueStore(Path base) {
-    PathGenerator pathGenerator = new PathGenerator(4, 10, base);
+    HashingPathMapper pathGenerator = new HashingPathMapper(base, 2);
 
     Reader<List<ScannerInput.ServerIssue>> reader = input -> ProtobufUtil.readMessages(input, ScannerInput.ServerIssue.parser());
 

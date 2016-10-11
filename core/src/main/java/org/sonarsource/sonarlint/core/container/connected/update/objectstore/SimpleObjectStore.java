@@ -24,37 +24,30 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
- * An ObjectStore that keeps the mapping of keys to filesystem paths in memory.
+ * An ObjectStore without internal cache that derives the filesystem path to storage using a provided PathMapper.
  *
- * Warning: the class does not persist the mapping of keys to paths.
- * When the process exits, the mapping between keys and paths is non-recoverable.
- *
- * @param <K> type of the key to store by and used when reading back
+ * @param <K> type of the key to store by and used when reading back; must be hashable
  * @param <V> type of the value to store
  */
 public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
 
-  private final Map<K, Path> index = new HashMap<>();
-
-  private final PathGenerator pathGenerator;
+  private final PathMapper<K> pathMapper;
   private final Reader<V> reader;
   private final Writer<V> writer;
 
-  public SimpleObjectStore(PathGenerator pathGenerator, Reader<V> reader, Writer<V> writer) {
-    this.pathGenerator = pathGenerator;
+  public SimpleObjectStore(PathMapper<K> pathMapper, Reader<V> reader, Writer<V> writer) {
+    this.pathMapper = pathMapper;
     this.reader = reader;
     this.writer = writer;
   }
 
   @Override
   public Optional<V> read(K key) throws IOException {
-    Path path = index.get(key);
-    if (path == null) {
+    Path path = pathMapper.apply(key);
+    if (!path.toFile().exists()) {
       return Optional.empty();
     }
     try (InputStream in = Files.newInputStream(path)) {
@@ -64,15 +57,11 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
 
   @Override
   public void write(K key, V value) throws IOException {
-    Path path = index.get(key);
-    if (path == null) {
-      path = pathGenerator.next();
-      index.put(key, path);
+    Path path = pathMapper.apply(key);
 
-      Path parent = path.getParent();
-      if (parent.toFile().exists()) {
-        Files.createDirectories(parent);
-      }
+    Path parent = path.getParent();
+    if (!parent.toFile().exists()) {
+      Files.createDirectories(parent);
     }
     try (OutputStream out = Files.newOutputStream(path)) {
       writer.accept(out, value);
