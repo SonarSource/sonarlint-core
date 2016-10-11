@@ -17,20 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.nio.file.Path;
-import java.util.function.Function;
-
-import org.sonarsource.sonarlint.core.container.connected.ServerIssueStore;
-
-/**
- * Create a filesystem-backed issue store at specified base directory.
- */
-public class IssueStoreFactory implements Function<Path, IssueStore> {
-
-  @Override
-  public IssueStore apply(Path path) {
-    return new ServerIssueStore(path);
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

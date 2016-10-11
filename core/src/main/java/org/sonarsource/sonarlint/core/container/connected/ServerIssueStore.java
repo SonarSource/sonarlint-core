@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,6 +28,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.HashingPathMapper;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.container.connected.update.objectstore.Reader;

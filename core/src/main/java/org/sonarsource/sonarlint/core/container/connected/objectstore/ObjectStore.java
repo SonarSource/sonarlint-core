@@ -17,20 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
-import java.nio.file.Path;
-import java.util.function.Function;
-
-import org.sonarsource.sonarlint.core.container.connected.ServerIssueStore;
+import java.io.IOException;
+import java.util.Optional;
 
 /**
- * Create a filesystem-backed issue store at specified base directory.
+ * Store and retrieve objects from the filesystem.
+ *
+ * @param <K> type of the key to store by and used when reading back
+ * @param <V> type of the value to store
  */
-public class IssueStoreFactory implements Function<Path, IssueStore> {
+public interface ObjectStore<K, V> {
 
-  @Override
-  public IssueStore apply(Path path) {
-    return new ServerIssueStore(path);
-  }
+  void write(K key, V value) throws IOException;
+
+  Optional<V> read(K key) throws IOException;
 }
