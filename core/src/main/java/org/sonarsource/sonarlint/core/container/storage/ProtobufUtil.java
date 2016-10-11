@@ -69,4 +69,14 @@ public class ProtobufUtil {
     }
     return list;
   }
+
+  public static <T extends Message> void writeMessages(OutputStream output, List<T> messages) {
+    for (T message : messages) {
+      try {
+        message.writeDelimitedTo(output);
+      } catch (IOException e) {
+        throw new IllegalStateException("failed to write message: " + message, e);
+      }
+    }
+  }
 }
