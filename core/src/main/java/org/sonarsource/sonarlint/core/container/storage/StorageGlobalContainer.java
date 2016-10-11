@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,10 +50,12 @@ import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
+import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -171,16 +175,35 @@ public class StorageGlobalContainer extends ComponentContainer {
   }
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-
-    // fetch issues with fileKey
     List<ServerIssue> results = new ArrayList<>();
     String fileKey = getFileKey(moduleKey, filePath);
+
+    Path serverIssuesPath = storageManager().getServerIssuesPath(moduleKey);
+    IssueStore issueStore = getComponentByType(IssueStoreFactory.class).apply(serverIssuesPath);
+
+    for (org.sonar.scanner.protocol.input.ScannerInput.ServerIssue pbIssue : issueStore.load(fileKey)) {
+      DefaultServerIssue issue = new DefaultServerIssue();
+      issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
+      issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
+      issue.setChecksum(pbIssue.getChecksum());
+      issue.setLine(pbIssue.getLine());
+      issue.setFilePath(filePath);
+      issue.setModuleKey(moduleKey);
+      issue.setManualSeverity(pbIssue.getManualSeverity());
+      issue.setMessage(pbIssue.getMsg());
+      issue.setSeverity(pbIssue.getSeverity().name());
+      issue.setCreationDate(Instant.ofEpochMilli(pbIssue.getCreationDate()));
+      issue.setResolution(pbIssue.getResolution());
+      issue.setKey(pbIssue.getKey());
+      issue.setRuleKey(pbIssue.getRuleRepository() + ":" + pbIssue.getRuleKey());
+      results.add(issue);
+    }
+
     return results;
   }
 
   public List<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
-    List<ServerIssue> results = new ArrayList<>();
-    String fileKey = getFileKey(moduleKey, filePath);
+    // TODO
     return null;
   }
 

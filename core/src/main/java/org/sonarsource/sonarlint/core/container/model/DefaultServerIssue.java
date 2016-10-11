@@ -19,13 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 public class DefaultServerIssue implements ServerIssue {
   private String key;
-  private String author;
   private String resolution;
   private String ruleKey;
   private int line;
@@ -35,16 +34,12 @@ public class DefaultServerIssue implements ServerIssue {
   private String moduleKey;
   private String filePath;
   private boolean manualSeverity;
-  private LocalDateTime creationDate;
+  private Instant creationDate;
+  private String severity;
 
   @Override
   public String key() {
     return key;
-  }
-
-  @Override
-  public String author() {
-    return author;
   }
 
   @Override
@@ -93,16 +88,17 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public LocalDateTime creationDate() {
+  public Instant creationDate() {
     return creationDate;
+  }
+
+  @Override
+  public String severity() {
+    return severity;
   }
 
   public void setKey(String key) {
     this.key = key;
-  }
-
-  public void setAuthor(String author) {
-    this.author = author;
   }
 
   public void setResolution(String resolution) {
@@ -141,8 +137,11 @@ public class DefaultServerIssue implements ServerIssue {
     this.manualSeverity = manualSeverity;
   }
 
-  public void setCreationDate(LocalDateTime creationDate) {
+  public void setCreationDate(Instant creationDate) {
     this.creationDate = creationDate;
   }
 
+  public void setSeverity(String severity) {
+    this.severity = severity;
+  }
 }

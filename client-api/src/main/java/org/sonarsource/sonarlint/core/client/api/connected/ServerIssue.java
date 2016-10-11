@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface ServerIssue {
   String key();
-
-  String author();
 
   String resolution();
 
@@ -41,8 +39,10 @@ public interface ServerIssue {
   String moduleKey();
 
   String filePath();
+  
+  String severity();
 
   boolean manualSeverity();
 
-  LocalDateTime creationDate();
+  Instant creationDate();
 }
