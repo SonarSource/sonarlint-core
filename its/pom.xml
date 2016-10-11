@@ -10,7 +10,7 @@
   <description>Integration tests</description>
   <properties>
     <sonar.skip>true</sonar.skip>
-    <skipTests>false</skipTests>
+    <skipTests>true</skipTests>
   </properties>
   <dependencies>
     <dependency>
