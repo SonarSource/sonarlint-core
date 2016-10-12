@@ -119,7 +119,7 @@ public class ModuleConfigUpdateExecutor {
 
   private void fetchModuleHierarchy(String moduleKey, ModuleConfiguration.Builder builder) {
     Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(moduleKey);
-    moduleHierarchy.forEach((key, path) -> builder.getMutableModulesKeysByPath().put(path, key));
+    moduleHierarchy.forEach((key, path) -> builder.getMutableModulePathByKey().put(key, path));
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {

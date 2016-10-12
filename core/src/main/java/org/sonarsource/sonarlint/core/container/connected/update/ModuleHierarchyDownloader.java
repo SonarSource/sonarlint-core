@@ -45,8 +45,15 @@ public class ModuleHierarchyDownloader {
     this.wsClient = wsClient;
   }
 
-  public Map<String, String> fetchModuleHierarchy(String rootProjectKey) {
-    WsResponse response = wsClient.get("api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentsKey=" + StringUtils.urlEncode(rootProjectKey));
+  /**
+   * Downloads the module hierarchy information starting from a give module key.
+   * It returns the relative paths to the given root module for all its sob modules.
+   * 
+   * @param moduleKey moduleKey for which the hierarchy will be returned.
+   * @return Mapping of moduleKey -> relativePath from given module
+   */
+  public Map<String, String> fetchModuleHierarchy(String moduleKey) {
+    WsResponse response = wsClient.get("api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentsKey=" + StringUtils.urlEncode(moduleKey));
     try (InputStream stream = response.contentStream()) {
       TreeWsResponse treeResponse = WsComponents.TreeWsResponse.parseFrom(stream);
 
@@ -61,7 +68,7 @@ public class ModuleHierarchyDownloader {
 
       // module key -> path from root project base directory
       Map<String, String> modulesWithPath = new HashMap<>();
-      modulesWithPath.put(rootProjectKey, "");
+      modulesWithPath.put(moduleKey, "");
       treeResponse.getComponentsList().forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
 
       return modulesWithPath;

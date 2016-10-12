@@ -23,7 +23,6 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,7 +174,8 @@ public class StorageGlobalContainer extends ComponentContainer {
   }
 
   public Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
-    return null;
+    // TODO
+    return getServerIssues(moduleKey, filePath);
   }
 
   private StorageManager storageManager() {

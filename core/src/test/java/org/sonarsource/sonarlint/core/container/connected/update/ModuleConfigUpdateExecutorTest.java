@@ -181,9 +181,9 @@ public class ModuleConfigUpdateExecutorTest {
       entry("java", "java-empty-74333"),
       entry("js", "js-sonar-way-60746"));
 
-    assertThat(moduleConfiguration.getModulesKeysByPath()).containsOnly(
-      entry("", MODULE_KEY_WITH_BRANCH),
-      entry("child 1", MODULE_KEY_WITH_BRANCH + "child1"));
+    assertThat(moduleConfiguration.getModulePathByKey()).containsOnly(
+      entry(MODULE_KEY_WITH_BRANCH, ""),
+      entry( MODULE_KEY_WITH_BRANCH + "child1", "child 1"));
   }
 
   @Test

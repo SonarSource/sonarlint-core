@@ -124,5 +124,5 @@ message ModuleList {
 message ModuleConfiguration {
   map<string, string> qprofile_per_language = 1;
   map<string, string> properties = 2;
-  map<string, string> modules_keys_by_path = 3;
+  map<string, string> module_path_by_key = 3;
 }

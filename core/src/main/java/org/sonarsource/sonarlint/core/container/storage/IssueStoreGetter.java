@@ -27,6 +27,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
+import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -58,23 +59,30 @@ public class IssueStoreGetter {
 
   private String getFileKey(String moduleKey, String filePath) {
     ModuleConfiguration moduleConfig = storageManager.readModuleConfigFromStorage(moduleKey);
-    Map<String, String> moduleKeysByPath = moduleConfig.getModulesKeysByPath();
+
+    if (moduleConfig == null) {
+      // unknown module
+      throw new IllegalStateException("module not in storage: " + moduleKey);
+    }
+
+    Map<String, String> modulePaths = moduleConfig.getModulePathByKey();
 
     // find longest prefix match
     String subModuleKey = moduleKey;
-    String relativeFilePath = filePath;
+    int prefixLen = 0;
 
-    for (Map.Entry<String, String> e : moduleKeysByPath.entrySet()) {
-      if (filePath.startsWith(e.getKey()) && (relativeFilePath == null || relativeFilePath.length() < e.getKey().length())) {
-        subModuleKey = e.getValue();
-        relativeFilePath = e.getKey();
+    for (Map.Entry<String, String> e : modulePaths.entrySet()) {
+      if (filePath.startsWith(e.getValue()) && prefixLen < e.getValue().length()) {
+        subModuleKey = e.getKey();
+        prefixLen = e.getValue().length();
       }
     }
 
+    String relativeFilePath = filePath.substring(prefixLen + 1);
     return subModuleKey + ":" + relativeFilePath;
   }
 
-  private static ServerIssue transformIssue(org.sonar.scanner.protocol.input.ScannerInput.ServerIssue pbIssue, String moduleKey, String filePath) {
+  private static ServerIssue transformIssue(ScannerInput.ServerIssue pbIssue, String moduleKey, String filePath) {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
