@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Rule;
@@ -63,15 +62,17 @@ public class ServerIssueStoreTest {
   public void should_read_object_replaced() throws IOException {
     ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
 
-    String key = "someKey";
-    ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder().setLine(11).build();
-    ScannerInput.ServerIssue issue2 = ScannerInput.ServerIssue.newBuilder().setLine(22).build();
+    String path = "myfile";
+    String moduleKey = "module";
 
-    store.save(Collections.singletonMap(key, Collections.singletonList(issue1)));
-    assertThat(store.load(key)).containsOnly(issue1);
+    ServerIssue issue1 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(11).build();
+    ServerIssue issue2 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(22).build();
 
-    store.save(Collections.singletonMap(key, Collections.singletonList(issue2)));
-    assertThat(store.load(key)).containsOnly(issue2);
+    store.save(Collections.singletonList(issue1).iterator());
+    assertThat(store.load("module:myfile")).containsOnly(issue1);
+
+    store.save(Collections.singletonList(issue2).iterator());
+    assertThat(store.load("module:myfile")).containsOnly(issue2);
   }
 
   @Test
@@ -81,11 +82,9 @@ public class ServerIssueStoreTest {
       fail("could not make dir readonly");
     }
 
-    String key = "someKey";
-
     ServerIssueStore store = new ServerIssueStore(forbiddenDir.toPath());
-    store.save(Collections.singletonMap(key, Collections.singletonList(ScannerInput.ServerIssue.getDefaultInstance())));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()).iterator());
 
-    assertThat(store.load(key)).isEmpty();
+    assertThat(store.load("module:myfile")).isEmpty();
   }
 }
