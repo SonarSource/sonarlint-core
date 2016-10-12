@@ -73,6 +73,8 @@ public interface ConnectedSonarLintEngine {
 
   List<ServerIssue> getServerIssues(String moduleKey, String filePath);
   
+  List<ServerIssue> downloadServerIssues(String moduleKey, String filePath);
+  
   /**
    * Get information about current update state
    * @return null if server was never updated

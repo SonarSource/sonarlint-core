@@ -240,6 +240,21 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       rwl.readLock().unlock();
     }
   }
+  
+  @Override
+  public List<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
+    setLogging(null);
+
+    rwl.readLock().lock();
+    try {
+      checkUpdateStatus();
+      return getGlobalContainer().downloadServerIssues(moduleKey, filePath);
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
 
   @Override
   public void updateModule(ServerConfiguration serverConfig, String moduleKey) {

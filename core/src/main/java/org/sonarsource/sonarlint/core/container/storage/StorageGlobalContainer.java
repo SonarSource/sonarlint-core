@@ -19,10 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -50,12 +47,10 @@ import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
-import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -64,7 +59,6 @@ import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 import org.sonarsource.sonarlint.core.util.FileUtils;
@@ -89,6 +83,7 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginLoader.class,
       PluginClassloaderFactory.class,
       IssueStoreFactory.class,
+      StorageServerIssues.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
       SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
@@ -175,54 +170,11 @@ public class StorageGlobalContainer extends ComponentContainer {
   }
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    List<ServerIssue> results = new ArrayList<>();
-    String fileKey = getFileKey(moduleKey, filePath);
-
-    Path serverIssuesPath = storageManager().getServerIssuesPath(moduleKey);
-    IssueStore issueStore = getComponentByType(IssueStoreFactory.class).apply(serverIssuesPath);
-
-    for (org.sonar.scanner.protocol.input.ScannerInput.ServerIssue pbIssue : issueStore.load(fileKey)) {
-      DefaultServerIssue issue = new DefaultServerIssue();
-      issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
-      issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
-      issue.setChecksum(pbIssue.getChecksum());
-      issue.setLine(pbIssue.getLine());
-      issue.setFilePath(filePath);
-      issue.setModuleKey(moduleKey);
-      issue.setManualSeverity(pbIssue.getManualSeverity());
-      issue.setMessage(pbIssue.getMsg());
-      issue.setSeverity(pbIssue.getSeverity().name());
-      issue.setCreationDate(Instant.ofEpochMilli(pbIssue.getCreationDate()));
-      issue.setResolution(pbIssue.getResolution());
-      issue.setKey(pbIssue.getKey());
-      issue.setRuleKey(pbIssue.getRuleRepository() + ":" + pbIssue.getRuleKey());
-      results.add(issue);
-    }
-
-    return results;
+    return getComponentByType(StorageServerIssues.class).getServerIssues(moduleKey, filePath);
   }
 
   public List<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
-    // TODO
     return null;
-  }
-
-  private String getFileKey(String moduleKey, String filePath) {
-    ModuleConfiguration moduleConfig = storageManager().readModuleConfigFromStorage(moduleKey);
-    Map<String, String> moduleKeysByPath = moduleConfig.getModulesKeysByPath();
-
-    // find longest prefix match
-    String subModuleKey = moduleKey;
-    String relativeFilePath = filePath;
-
-    for (Map.Entry<String, String> e : moduleKeysByPath.entrySet()) {
-      if (filePath.startsWith(e.getKey()) && (relativeFilePath == null || relativeFilePath.length() < e.getKey().length())) {
-        subModuleKey = e.getValue();
-        relativeFilePath = e.getKey();
-      }
-    }
-
-    return subModuleKey + ":" + relativeFilePath;
   }
 
   private StorageManager storageManager() {
