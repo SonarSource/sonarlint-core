@@ -20,8 +20,9 @@
 package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
 
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface Reader<V> extends Function<InputStream, V> {
+public interface Reader<V> extends Function<InputStream, Iterator<V>> {
 }

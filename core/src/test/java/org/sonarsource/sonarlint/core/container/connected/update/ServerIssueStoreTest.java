@@ -23,12 +23,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.ServerIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,22 +42,20 @@ public class ServerIssueStoreTest {
   public void should_read_object_written() {
     ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
 
-    Map<String, List<ScannerInput.ServerIssue>> map = new HashMap<>();
+    ServerIssue.Builder builder = ServerIssue.newBuilder();
+    List<ServerIssue> issueList = new ArrayList<>();
 
-    ScannerInput.ServerIssue.Builder builder = ScannerInput.ServerIssue.newBuilder();
+    String moduleKey = "module1";
+    String key1 = "path1";
+    String key2 = "path2";
 
-    String key1 = "someKey1";
-    List<ScannerInput.ServerIssue> issueList1 = Collections.singletonList(builder.setKey(key1).build());
-    map.put(key1, issueList1);
+    issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
+    issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
 
-    String key2 = "someKey2";
-    List<ScannerInput.ServerIssue> issueList2 = Collections.singletonList(builder.setKey(key2).build());
-    map.put(key2, issueList2);
+    store.save(issueList.iterator());
 
-    store.save(map);
-
-    assertThat(store.load(key1)).isEqualTo(issueList1);
-    assertThat(store.load(key2)).isEqualTo(issueList2);
+    assertThat(store.load("module1:path1")).containsExactly(issueList.get(0));
+    assertThat(store.load("module1:path2")).containsExactly(issueList.get(1));
     assertThat(store.load("nonexistent")).isEmpty();
   }
 

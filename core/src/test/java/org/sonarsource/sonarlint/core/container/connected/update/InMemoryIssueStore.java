@@ -20,22 +20,29 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 
-// TODO for testing only. Move to /test/ at the soonest
 public class InMemoryIssueStore implements IssueStore {
-
-  private Map<String, List<ScannerInput.ServerIssue>> issues;
+  private Map<String, List<ScannerInput.ServerIssue>> issuesMap;
 
   @Override
-  public void save(Map<String, List<ScannerInput.ServerIssue>> issues) {
-    this.issues = issues;
+  public void save(Iterator<ServerIssue> issues) {
+    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
+    issuesMap = StreamSupport.stream(spliterator, false).collect(Collectors.groupingBy(IssueUtils::createFileKey));
   }
 
   @Override
-  public List<ScannerInput.ServerIssue> load(String fileKey) {
-    return issues.getOrDefault(fileKey, Collections.emptyList());
+  public Iterator<ServerIssue> load(String fileKey) {
+    List<ServerIssue> list = issuesMap.get(fileKey);
+    return list == null ? Collections.emptyIterator() : list.iterator();
   }
 }

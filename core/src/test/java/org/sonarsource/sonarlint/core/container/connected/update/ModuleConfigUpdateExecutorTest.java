@@ -147,7 +147,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -168,7 +168,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -197,7 +197,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
@@ -230,7 +230,7 @@ public class ModuleConfigUpdateExecutorTest {
       .setPath("yet/another/path")
       .build();
 
-    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
+    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue).iterator();
 
     moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, moduleHierarchy, tempFolder);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);

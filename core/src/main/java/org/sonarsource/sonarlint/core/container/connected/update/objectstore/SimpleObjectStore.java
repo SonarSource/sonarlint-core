@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Optional;
 
 /**
@@ -45,18 +46,16 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
   }
 
   @Override
-  public Optional<V> read(K key) throws IOException {
+  public Optional<Iterator<V>> read(K key) throws IOException {
     Path path = pathMapper.apply(key);
     if (!path.toFile().exists()) {
       return Optional.empty();
     }
-    try (InputStream in = Files.newInputStream(path)) {
-      return Optional.of(reader.apply(in));
-    }
+    return Optional.of(reader.apply(Files.newInputStream(path)));
   }
 
   @Override
-  public void write(K key, V value) throws IOException {
+  public void write(K key, Iterator<V> values) throws IOException {
     Path path = pathMapper.apply(key);
 
     Path parent = path.getParent();
@@ -64,7 +63,9 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
       Files.createDirectories(parent);
     }
     try (OutputStream out = Files.newOutputStream(path)) {
-      writer.accept(out, value);
+      while (values.hasNext()) {
+        writer.accept(out, values.next());
+      }
     }
   }
 }

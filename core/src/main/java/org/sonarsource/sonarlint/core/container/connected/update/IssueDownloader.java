@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.function.Function;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
-public interface IssueDownloader extends Function<String, List<ScannerInput.ServerIssue>> {
+public interface IssueDownloader extends Function<String, Iterator<ScannerInput.ServerIssue>> {
 }

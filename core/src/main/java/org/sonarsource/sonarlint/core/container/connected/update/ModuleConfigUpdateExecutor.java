@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Date;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.sonar.api.utils.TempFolder;
@@ -44,8 +44,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
-
-import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.groupByFileKey;
 
 public class ModuleConfigUpdateExecutor {
 
@@ -102,11 +100,11 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void updateRemoteIssues(String moduleKey, Path temp) {
-    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
+    Iterator<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
 
     Path basedir = temp.resolve(StorageManager.SERVER_ISSUES_DIR);
 
-    issueStoreFactory.apply(basedir).save(groupByFileKey(issues));
+    issueStoreFactory.apply(basedir).save(issues);
   }
 
   private void updateStatus(Path temp) {
