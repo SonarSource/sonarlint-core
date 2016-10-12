@@ -47,14 +47,14 @@ public class ServerIssueStore implements IssueStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(ServerIssueStore.class);
 
-  private final ObjectStore<String, ScannerInput.ServerIssue> store;
+  private final ObjectStore<String, Iterator<ScannerInput.ServerIssue>> store;
 
   public ServerIssueStore(Path base) {
     HashingPathMapper pathGenerator = new HashingPathMapper(base, 2);
 
-    Reader<ScannerInput.ServerIssue> reader = input -> ProtobufUtil.streamMessages(input, ScannerInput.ServerIssue.parser());
+    Reader<Iterator<ScannerInput.ServerIssue>> reader = input -> ProtobufUtil.streamMessages(input, ScannerInput.ServerIssue.parser());
 
-    Writer<ScannerInput.ServerIssue> writer = ProtobufUtil::writeMessage;
+    Writer<Iterator<ScannerInput.ServerIssue>> writer = ProtobufUtil::writeMessages;
 
     store = new SimpleObjectStore<>(pathGenerator, reader, writer);
   }

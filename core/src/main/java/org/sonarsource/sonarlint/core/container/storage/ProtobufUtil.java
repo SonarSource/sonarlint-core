@@ -77,6 +77,12 @@ public class ProtobufUtil {
     return new ParserIterator<>(input, parser);
   }
 
+  public static <T extends Message> void writeMessages(OutputStream output, Iterator<T> messages) {
+    while (messages.hasNext()) {
+      writeMessage(output, messages.next());
+    }
+  }
+
   public static <T extends Message> void writeMessage(OutputStream output, T message) {
     try {
       message.writeDelimitedTo(output);
