@@ -34,7 +34,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
@@ -50,9 +49,6 @@ public class IssueStoreGetterTest {
   private IssueStoreGetter issueStoreGetter;
   private IssueStore issueStore;
   private StorageManager storage;
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
 
   @Rule
   public ExpectedException exception = ExpectedException.none();

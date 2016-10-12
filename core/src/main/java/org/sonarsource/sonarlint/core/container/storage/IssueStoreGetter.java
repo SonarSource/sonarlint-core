@@ -49,8 +49,8 @@ public class IssueStoreGetter {
     Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
-    Iterator<org.sonar.scanner.protocol.input.ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
-    Spliterator<org.sonar.scanner.protocol.input.ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(loadedIssues, 0);
+    Iterator<ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
+    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(loadedIssues, 0);
 
     return StreamSupport.stream(spliterator, false)
       .map(pbIssue -> transformIssue(pbIssue, moduleKey, filePath))
@@ -71,10 +71,12 @@ public class IssueStoreGetter {
     String subModuleKey = moduleKey;
     int prefixLen = 0;
 
-    for (Map.Entry<String, String> e : modulePaths.entrySet()) {
-      if (filePath.startsWith(e.getValue()) && prefixLen < e.getValue().length()) {
-        subModuleKey = e.getKey();
-        prefixLen = e.getValue().length();
+    for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
+      String entryModuleKey = entry.getKey();
+      String entryPath = entry.getValue();
+      if (filePath.startsWith(entryPath) && prefixLen < entryPath.length()) {
+        subModuleKey = entryModuleKey;
+        prefixLen = entryPath.length();
       }
     }
 

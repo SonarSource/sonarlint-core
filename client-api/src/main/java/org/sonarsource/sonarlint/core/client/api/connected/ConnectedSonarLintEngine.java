@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.CheckForNull;
@@ -72,10 +71,16 @@ public interface ConnectedSonarLintEngine {
 
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput);
 
+  /**
+   * Gets locally stored server issues for a given file. 
+   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param filePath relative to the module to which the moduleKey refers.
+   * @return All server issues in the local storage for the given file. If file has no issues, an empty iterator is returned.
+   */
   Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath);
-  
+
   Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath);
-  
+
   /**
    * Get information about current update state
    * @return null if server was never updated
@@ -111,7 +116,7 @@ public interface ConnectedSonarLintEngine {
    * @throws CanceledException if the update task was cancelled
    */
   GlobalUpdateStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
-  
+
   GlobalUpdateStatus update(ServerConfiguration serverConfig);
 
   /**

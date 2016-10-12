@@ -78,7 +78,7 @@ public class ModuleHierarchyDownloader {
     }
   }
 
-  private String findPathFromRoot(Component component, Map<Component, Component> ancestors) {
+  private static String findPathFromRoot(Component component, Map<Component, Component> ancestors) {
     Component c = component;
     Path path = Paths.get("");
 

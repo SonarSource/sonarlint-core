@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
@@ -73,7 +74,7 @@ public class ParserIterator<T> implements Iterator<T> {
   @Override
   public T next() {
     if (!hasNext()) {
-      throw new IllegalStateException("No next element");
+      throw new NoSuchElementException("No next element");
     }
 
     T n = next;

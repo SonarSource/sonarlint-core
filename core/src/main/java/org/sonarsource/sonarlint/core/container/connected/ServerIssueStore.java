@@ -64,11 +64,11 @@ public class ServerIssueStore implements IssueStore {
     Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
     Map<String, List<ServerIssue>> issuesPerFile = StreamSupport.stream(spliterator, false).collect(Collectors.groupingBy(IssueUtils::createFileKey));
 
-    for (Map.Entry<String, List<ServerIssue>> e : issuesPerFile.entrySet()) {
+    for (Map.Entry<String, List<ServerIssue>> entry : issuesPerFile.entrySet()) {
       try {
-        store.write(e.getKey(), e.getValue().iterator());
-      } catch (IOException ex) {
-        LOG.warn("failed to save issues for fileKey = " + e.getKey(), ex);
+        store.write(entry.getKey(), entry.getValue().iterator());
+      } catch (IOException e) {
+        LOG.warn("failed to save issues for fileKey = " + entry.getKey(), e);
       }
     }
   }
