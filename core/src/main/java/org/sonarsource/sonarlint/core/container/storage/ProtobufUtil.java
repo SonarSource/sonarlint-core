@@ -25,10 +25,9 @@ import com.google.protobuf.Parser;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.util.SupplierIterator;
+import org.sonarsource.sonarlint.core.util.ParserIterator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,7 +74,7 @@ public class ProtobufUtil {
   }
 
   public static <T extends Message> Iterator<T> streamMessages(final InputStream input, final Parser<T> parser) {
-    return new SupplierIterator<>(input, parser);
+    return new ParserIterator<>(input, parser);
   }
 
   public static <T extends Message> void writeMessage(OutputStream output, T message) {

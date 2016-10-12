@@ -30,19 +30,18 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreFactory;
+import org.sonarsource.sonarlint.core.container.connected.IssueStore;
+import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
-public class StorageServerIssues {
+public class IssueStoreGetter {
   private final IssueStoreFactory issueStoreFactory;
   private final StorageManager storageManager;
 
-  public StorageServerIssues(IssueStoreFactory issueStoreFactory, StorageManager storageManager) {
+  public IssueStoreGetter(IssueStoreFactory issueStoreFactory, StorageManager storageManager) {
     this.issueStoreFactory = issueStoreFactory;
     this.storageManager = storageManager;
-
   }
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {

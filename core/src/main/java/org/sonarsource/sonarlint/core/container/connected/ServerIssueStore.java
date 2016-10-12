@@ -35,13 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStore;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.HashingPathMapper;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.ObjectStore;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.Reader;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.SimpleObjectStore;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.Writer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
-import org.sonarsource.sonarlint.core.container.connected.update.objectstore.HashingPathMapper;
-import org.sonarsource.sonarlint.core.container.connected.update.objectstore.ObjectStore;
-import org.sonarsource.sonarlint.core.container.connected.update.objectstore.Reader;
-import org.sonarsource.sonarlint.core.container.connected.update.objectstore.SimpleObjectStore;
-import org.sonarsource.sonarlint.core.container.connected.update.objectstore.Writer;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 
 public class ServerIssueStore implements IssueStore {

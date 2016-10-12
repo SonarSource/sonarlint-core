@@ -17,10 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
+package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
 import java.nio.file.Paths;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.HashingPathMapper;
+import org.sonarsource.sonarlint.core.container.connected.objectstore.PathMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

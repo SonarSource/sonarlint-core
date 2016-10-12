@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -30,6 +30,8 @@ import java.util.stream.StreamSupport;
 
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.container.connected.IssueStore;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
 
 public class InMemoryIssueStore implements IssueStore {
   private Map<String, List<ScannerInput.ServerIssue>> issuesMap;

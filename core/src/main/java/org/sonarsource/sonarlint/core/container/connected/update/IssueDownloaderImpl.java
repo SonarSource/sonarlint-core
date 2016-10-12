@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import com.google.protobuf.Parser;
 import java.io.InputStream;
 import java.util.Iterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
 
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;

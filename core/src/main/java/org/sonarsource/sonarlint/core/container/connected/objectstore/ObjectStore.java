@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Optional;
 
 /**
@@ -30,7 +31,7 @@ import java.util.Optional;
  */
 public interface ObjectStore<K, V> {
 
-  void write(K key, V value) throws IOException;
+  void write(K key, Iterator<V> values) throws IOException;
 
-  Optional<V> read(K key) throws IOException;
+  Optional<Iterator<V>> read(K key) throws IOException;
 }

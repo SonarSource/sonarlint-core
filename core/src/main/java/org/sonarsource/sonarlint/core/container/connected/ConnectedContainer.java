@@ -26,7 +26,6 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;

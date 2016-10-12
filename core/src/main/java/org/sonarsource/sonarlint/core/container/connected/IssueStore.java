@@ -17,16 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update.objectstore;
+package org.sonarsource.sonarlint.core.container.connected;
 
-import java.nio.file.Path;
-import java.util.function.Function;
+import java.util.Iterator;
 
-/**
- * Map objects to unique filesystem paths.
- *
- * @param <T>
- */
-@FunctionalInterface
-public interface PathMapper<T> extends Function<T, Path> {
+import org.sonar.scanner.protocol.input.ScannerInput;
+
+public interface IssueStore {
+
+  /**
+   * Store issues per file keys.
+   *
+   * For filesystem-based implementations, watch out for:
+   * - Too long paths
+   * - Directories with too many files
+   * - (Too deep paths?)
+   *
+   * @param issues mapping of file keys to issues
+   */
+  void save(Iterator<ScannerInput.ServerIssue> issues);
+
+  /**
+   * Load issues stored for specified file.
+   *
+   * @param fileKey the file key
+   * @return issues, possibly empty
+   */
+  Iterator<ScannerInput.ServerIssue> load(String fileKey);
 }

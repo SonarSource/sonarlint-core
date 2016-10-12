@@ -26,13 +26,13 @@ import java.util.Iterator;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 
-public class SupplierIterator<T> implements Iterator<T> {
+public class ParserIterator<T> implements Iterator<T> {
   private T next = null;
   private boolean finished = false;
   private InputStream input;
   private Parser<T> parser;
 
-  public SupplierIterator(InputStream input, Parser<T> parser) {
+  public ParserIterator(InputStream input, Parser<T> parser) {
     this.input = input;
     this.parser = parser;
   }

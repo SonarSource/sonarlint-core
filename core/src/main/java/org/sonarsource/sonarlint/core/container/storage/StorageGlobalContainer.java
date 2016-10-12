@@ -47,7 +47,7 @@ import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreFactory;
+import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
@@ -83,7 +83,7 @@ public class StorageGlobalContainer extends ComponentContainer {
       PluginLoader.class,
       PluginClassloaderFactory.class,
       IssueStoreFactory.class,
-      StorageServerIssues.class,
+      IssueStoreGetter.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
       SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
@@ -170,7 +170,7 @@ public class StorageGlobalContainer extends ComponentContainer {
   }
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    return getComponentByType(StorageServerIssues.class).getServerIssues(moduleKey, filePath);
+    return getComponentByType(IssueStoreGetter.class).getServerIssues(moduleKey, filePath);
   }
 
   public List<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
