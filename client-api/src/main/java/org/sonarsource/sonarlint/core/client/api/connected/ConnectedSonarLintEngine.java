@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -71,9 +72,9 @@ public interface ConnectedSonarLintEngine {
 
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput);
 
-  List<ServerIssue> getServerIssues(String moduleKey, String filePath);
+  Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath);
   
-  List<ServerIssue> downloadServerIssues(String moduleKey, String filePath);
+  Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath);
   
   /**
    * Get information about current update state

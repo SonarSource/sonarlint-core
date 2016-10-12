@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -227,7 +228,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+  public Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     setLogging(null);
 
     rwl.readLock().lock();
@@ -242,7 +243,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
   
   @Override
-  public List<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
+  public Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
     setLogging(null);
 
     rwl.readLock().lock();

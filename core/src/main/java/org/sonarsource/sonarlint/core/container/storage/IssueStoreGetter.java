@@ -22,11 +22,9 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
@@ -44,7 +42,7 @@ public class IssueStoreGetter {
     this.storageManager = storageManager;
   }
 
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+  public Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     String fileKey = getFileKey(moduleKey, filePath);
 
     Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
@@ -52,10 +50,10 @@ public class IssueStoreGetter {
 
     Iterator<org.sonar.scanner.protocol.input.ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
     Spliterator<org.sonar.scanner.protocol.input.ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(loadedIssues, 0);
-    
+
     return StreamSupport.stream(spliterator, false)
       .map(pbIssue -> transformIssue(pbIssue, moduleKey, filePath))
-      .collect(Collectors.toList());
+      .iterator();
   }
 
   private String getFileKey(String moduleKey, String filePath) {
