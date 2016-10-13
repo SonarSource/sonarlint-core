@@ -17,35 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.container.connected;
 
-import java.util.Date;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class DefaultGlobalUpdateStatus implements GlobalUpdateStatus {
-  private final String serverVersion;
-  private final Date lastUpdate;
-  private final boolean stale;
+public class IssueStoreFactoryTest {
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
 
-  public DefaultGlobalUpdateStatus(String serverVersion, Date lastUpdate, boolean stale) {
-    this.serverVersion = serverVersion;
-    this.lastUpdate = lastUpdate;
-    this.stale = stale;
-  }
+  @Test
+  public void testFactory() {
+    IssueStoreFactory factory = new IssueStoreFactory();
+    IssueStore store = factory.apply(temp.getRoot().toPath());
 
-  @Override
-  public String getServerVersion() {
-    return serverVersion;
-  }
-
-  @Override
-  public Date getLastUpdateDate() {
-    return lastUpdate;
-  }
-
-  @Override
-  public boolean isStale() {
-    return stale;
+    assertThat(store).isNotNull();
+    assertThat(store).isInstanceOf(IssueStore.class);
   }
 }

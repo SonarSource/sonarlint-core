@@ -26,7 +26,9 @@ import static org.mockito.Mockito.mock;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
@@ -34,11 +36,14 @@ public class ModuleHierarchyDownloaderTest {
   private SonarLintWsClient wsClient;
   private ModuleHierarchyDownloader downloader;
 
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
   @Before
   public void setUp() {
     wsClient = mock(SonarLintWsClient.class);
     WsClientTestUtils
-      .addStreamResponse(wsClient, "api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentsKey=testRoot",
+      .addStreamResponse(wsClient, "api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentKey=testRoot",
         "/update/tree.pb");
     WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=AVeumyM5SDj1uJJMtck2",
       "/update/show_module1.pb");
@@ -61,6 +66,26 @@ public class ModuleHierarchyDownloaderTest {
       entry("testRoot:module2", "module2"),
       entry("testRoot:module1:module12", "module1/module12"),
       entry("testRoot:module1:module11", "module1/module11"));
+  }
 
+  @Test
+  public void testIOException() {
+    wsClient = mock(SonarLintWsClient.class);
+    WsClientTestUtils.addFailedResponse(wsClient, "api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentKey=testRoot", 503, "error");
+    downloader = new ModuleHierarchyDownloader(wsClient);
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Error 503");
+    downloader.fetchModuleHierarchy("testRoot");
+  }
+
+  @Test
+  public void testInvalidResponseContent() {
+    wsClient = mock(SonarLintWsClient.class);
+    WsClientTestUtils
+      .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentKey=testRoot", "invalid response stream");
+    downloader = new ModuleHierarchyDownloader(wsClient);
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Failed to load module hierarchy");
+    downloader.fetchModuleHierarchy("testRoot");
   }
 }

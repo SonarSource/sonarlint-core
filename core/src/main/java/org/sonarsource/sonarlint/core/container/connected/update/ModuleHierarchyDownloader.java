@@ -53,7 +53,7 @@ public class ModuleHierarchyDownloader {
    * @return Mapping of moduleKey -> relativePath from given module
    */
   public Map<String, String> fetchModuleHierarchy(String moduleKey) {
-    WsResponse response = wsClient.get("api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentsKey=" + StringUtils.urlEncode(moduleKey));
+    WsResponse response = wsClient.get("api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey));
     try (InputStream stream = response.contentStream()) {
       TreeWsResponse treeResponse = WsComponents.TreeWsResponse.parseFrom(stream);
 
@@ -95,7 +95,7 @@ public class ModuleHierarchyDownloader {
     WsResponse response = wsClient.get("api/components/show.protobuf?id=" + StringUtils.urlEncode(moduleId));
     try (InputStream stream = response.contentStream()) {
       ShowWsResponse showResponse = WsComponents.ShowWsResponse.parseFrom(stream);
-      return showResponse.getAncestorsList().stream().map(c -> c.getId()).findFirst().orElse(null);
+      return showResponse.getAncestorsList().stream().map(Component::getId).findFirst().orElse(null);
     }
   }
 }

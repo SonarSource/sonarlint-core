@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -51,6 +54,7 @@ public class WsClientTestUtils {
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.content()).thenReturn(response);
+    when(wsResponse.contentStream()).thenReturn(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)));
     when(wsResponse.contentReader()).thenReturn(new StringReader(response));
     when(wsResponse.isSuccessful()).thenReturn(true);
     return wsClient;
@@ -76,12 +80,15 @@ public class WsClientTestUtils {
     return wsClient;
   }
 
-  public static SonarLintWsClient addFailedResponse(SonarLintWsClient wsClient, String url, int errorCode, @Nullable String response) {
+  public static SonarLintWsClient addFailedResponse(SonarLintWsClient wsClient, String url, int errorCode, @Nullable String errorMsg) {
     CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
-    when(wsClient.get(url)).thenReturn(wsResponse);
+    IllegalStateException ex = new IllegalStateException(
+      "Error " + errorCode + " on " + url + (errorMsg != null ? (": " + errorMsg) : ""));
+
+    when(wsClient.get(url)).thenThrow(ex);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
-    when(wsResponse.content()).thenReturn(response);
-    when(wsResponse.hasContent()).thenReturn(response != null);
+    when(wsResponse.content()).thenReturn(errorMsg);
+    when(wsResponse.hasContent()).thenReturn(errorMsg != null);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.isSuccessful()).thenReturn(false);
     when(wsResponse.code()).thenReturn(errorCode);

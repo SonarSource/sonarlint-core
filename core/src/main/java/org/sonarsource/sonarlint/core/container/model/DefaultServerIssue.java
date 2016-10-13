@@ -97,51 +97,63 @@ public class DefaultServerIssue implements ServerIssue {
     return severity;
   }
 
-  public void setKey(String key) {
+  public DefaultServerIssue setKey(String key) {
     this.key = key;
+    return this;
   }
 
-  public void setResolution(String resolution) {
+  public DefaultServerIssue setResolution(String resolution) {
     this.resolution = resolution;
+    return this;
   }
 
-  public void setRuleKey(String ruleKey) {
+  public DefaultServerIssue setRuleKey(String ruleKey) {
     this.ruleKey = ruleKey;
+    return this;
   }
 
-  public void setLine(int line) {
+  public DefaultServerIssue setLine(int line) {
     this.line = line;
+    return this;
   }
 
-  public void setMessage(String message) {
+  public DefaultServerIssue setMessage(String message) {
     this.message = message;
+    return this;
   }
 
-  public void setChecksum(String checksum) {
+  public DefaultServerIssue setChecksum(String checksum) {
     this.checksum = checksum;
+    return this;
   }
 
-  public void setAssigneeLogin(String assigneeLogin) {
+  public DefaultServerIssue setAssigneeLogin(String assigneeLogin) {
     this.assigneeLogin = assigneeLogin;
+    return this;
   }
 
-  public void setModuleKey(String moduleKey) {
+  public DefaultServerIssue setModuleKey(String moduleKey) {
     this.moduleKey = moduleKey;
+    return this;
   }
 
-  public void setFilePath(String filePath) {
+  public DefaultServerIssue setFilePath(String filePath) {
     this.filePath = filePath;
+    return this;
   }
 
-  public void setManualSeverity(boolean manualSeverity) {
+  public DefaultServerIssue setManualSeverity(boolean manualSeverity) {
     this.manualSeverity = manualSeverity;
+    return this;
   }
 
-  public void setCreationDate(Instant creationDate) {
+  public DefaultServerIssue setCreationDate(Instant creationDate) {
     this.creationDate = creationDate;
+    return this;
   }
 
-  public void setSeverity(String severity) {
+  public DefaultServerIssue setSeverity(String severity) {
     this.severity = severity;
+    return this;
   }
 }
