@@ -64,6 +64,7 @@ public class WsClientTestUtils {
     CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
+    when(wsResponse.code()).thenReturn(200);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.contentStream()).thenReturn(inputStream);
     when(wsResponse.isSuccessful()).thenReturn(true);

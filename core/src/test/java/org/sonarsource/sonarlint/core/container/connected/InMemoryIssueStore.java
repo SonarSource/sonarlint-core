@@ -47,4 +47,9 @@ public class InMemoryIssueStore implements IssueStore {
     List<ServerIssue> list = issuesMap.get(fileKey);
     return list == null ? Collections.emptyIterator() : list.iterator();
   }
+
+  @Override
+  public void delete(String fileKey) {
+    issuesMap.remove(fileKey);
+  }
 }
