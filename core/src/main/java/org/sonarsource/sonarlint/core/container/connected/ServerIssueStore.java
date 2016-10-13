@@ -56,7 +56,8 @@ public class ServerIssueStore implements IssueStore {
   }
 
   @Override
-  public void save(Iterator<ScannerInput.ServerIssue> issues) {
+  public synchronized void save(Iterator<ScannerInput.ServerIssue> issues) {
+    // organize everything in memory to avoid making an IO access per issue
     Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
     Map<String, List<ServerIssue>> issuesPerFile = StreamSupport.stream(spliterator, false).collect(Collectors.groupingBy(IssueUtils::createFileKey));
 
@@ -70,7 +71,16 @@ public class ServerIssueStore implements IssueStore {
   }
 
   @Override
-  public Iterator<ScannerInput.ServerIssue> load(String fileKey) {
+  public synchronized void delete(String fileKey) {
+    try {
+      store.delete(fileKey);
+    } catch (IOException e) {
+      throw new StorageException("failed to delete issues for fileKey = " + fileKey, e);
+    }
+  }
+
+  @Override
+  public synchronized Iterator<ScannerInput.ServerIssue> load(String fileKey) {
     try {
       Optional<Iterator<ScannerInput.ServerIssue>> issues = store.read(fileKey);
       if (issues.isPresent()) {

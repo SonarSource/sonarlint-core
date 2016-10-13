@@ -31,6 +31,8 @@ import java.util.Optional;
 public interface ObjectStore<K, V> {
 
   void write(K key, V values) throws IOException;
+  
+  void delete(K key) throws IOException;
 
   Optional<V> read(K key) throws IOException;
 }

@@ -34,7 +34,6 @@ public class IssueStoreFactoryTest {
     IssueStoreFactory factory = new IssueStoreFactory();
     IssueStore store = factory.apply(temp.getRoot().toPath());
 
-    assertThat(store).isNotNull();
     assertThat(store).isInstanceOf(IssueStore.class);
   }
 }
