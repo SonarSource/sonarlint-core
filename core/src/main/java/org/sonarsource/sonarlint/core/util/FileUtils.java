@@ -44,7 +44,7 @@ public class FileUtils {
   }
 
   public static void deleteDirectory(Path dir) {
-    if (!Files.exists(dir)) {
+    if (!dir.toFile().exists()) {
       return;
     }
     try {

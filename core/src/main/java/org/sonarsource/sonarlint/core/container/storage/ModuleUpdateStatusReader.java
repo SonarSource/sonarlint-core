@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.function.Function;
@@ -43,7 +42,7 @@ public class ModuleUpdateStatusReader implements Function<String, ModuleUpdateSt
   public ModuleUpdateStatus apply(String moduleKey) {
     Path updateStatusPath = storageManager.getModuleUpdateStatusPath(moduleKey);
 
-    if (Files.exists(updateStatusPath)) {
+    if (updateStatusPath.toFile().exists()) {
       final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
       final boolean stale = (updateStatusFromStorage.getSonarlintCoreVersion() == null) ||
         !updateStatusFromStorage.getSonarlintCoreVersion().equals(VersionUtils.getLibraryVersion());

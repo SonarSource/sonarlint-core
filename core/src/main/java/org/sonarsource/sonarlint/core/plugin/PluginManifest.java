@@ -78,7 +78,7 @@ public final class PluginManifest {
    */
   public PluginManifest(File file) throws IOException {
     this();
-    try (JarFile jar = new JarFile(file);) {
+    try (JarFile jar = new JarFile(file)) {
       if (jar.getManifest() != null) {
         loadManifest(jar.getManifest());
       }
