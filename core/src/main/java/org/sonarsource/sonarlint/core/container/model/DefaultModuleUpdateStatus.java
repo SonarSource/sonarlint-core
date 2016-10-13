@@ -17,36 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.Date;
 
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 
-public class DefaultAnalysisResult implements AnalysisResults {
-  private Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
-  private int fileCount;
+public class DefaultModuleUpdateStatus implements ModuleUpdateStatus {
+  private final Date lastUpdateDate;
+  private final boolean stale;
 
-  public DefaultAnalysisResult setFileCount(int fileCount) {
-    this.fileCount = fileCount;
-    return this;
-  }
-
-  public void addFailedAnalysisFile(ClientInputFile inputFile) {
-    failedAnalysisFiles.add(inputFile);
+  public DefaultModuleUpdateStatus(Date lastUpdateDate, boolean stale) {
+    this.lastUpdateDate = lastUpdateDate;
+    this.stale = stale;
   }
 
   @Override
-  public int fileCount() {
-    return fileCount;
+  public Date getLastUpdateDate() {
+    return lastUpdateDate;
   }
 
   @Override
-  public Collection<ClientInputFile> failedAnalysisFiles() {
-    return failedAnalysisFiles;
+  public boolean isStale() {
+    return stale;
   }
-
 }

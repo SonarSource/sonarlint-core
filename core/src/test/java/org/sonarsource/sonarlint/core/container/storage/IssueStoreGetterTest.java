@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builde
 import com.google.common.base.Objects;
 
 public class IssueStoreGetterTest {
-  private IssueStoreGetter issueStoreGetter;
+  private IssueStoreReader issueStoreGetter;
   private IssueStore issueStore;
   private StorageManager storage;
 
@@ -59,7 +59,7 @@ public class IssueStoreGetterTest {
     issueStore = new InMemoryIssueStore();
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
     storage = mock(StorageManager.class);
-    issueStoreGetter = new IssueStoreGetter(issueStoreFactory, storage);
+    issueStoreGetter = new IssueStoreReader(issueStoreFactory, storage);
   }
 
   @Test

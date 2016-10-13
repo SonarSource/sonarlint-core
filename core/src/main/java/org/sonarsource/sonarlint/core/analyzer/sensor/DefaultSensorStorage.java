@@ -44,8 +44,8 @@ import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
+import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
 public class DefaultSensorStorage implements SensorStorage {
 

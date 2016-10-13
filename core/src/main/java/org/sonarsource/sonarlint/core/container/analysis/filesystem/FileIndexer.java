@@ -30,8 +30,8 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.container.analysis.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
+import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
 /**
