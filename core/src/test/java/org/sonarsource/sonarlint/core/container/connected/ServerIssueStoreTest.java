@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -91,5 +92,48 @@ public class ServerIssueStoreTest {
 
     exception.expect(StorageException.class);
     store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()).iterator());
+  }
+
+  @Test
+  public void should_fail_to_delete_object() throws IOException {
+    Path root = temporaryFolder.newFolder().toPath();
+    ServerIssueStore store = new ServerIssueStore(root);
+
+    String moduleKey = "module1";
+    String key1 = "path1";
+
+    ServerIssue issue = ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(key1).build();
+
+    store.save(Collections.singletonList(issue).iterator());
+
+    File f = root.resolve("1").resolve("8").resolve("18054aada7bd3b7ddd6de55caf50ae7bee376430").toFile();
+    if (!f.setReadOnly() || !f.getParentFile().setReadOnly()) {
+      fail("could not make file readonly");
+    }
+    exception.expect(StorageException.class);
+    store.delete("module1:path1");
+  }
+
+  @Test
+  public void should_delete_entries() throws IOException {
+    ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
+
+    ServerIssue.Builder builder = ServerIssue.newBuilder();
+    List<ServerIssue> issueList = new ArrayList<>();
+
+    String moduleKey = "module1";
+    String key1 = "path1";
+    String key2 = "path2";
+
+    issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
+    issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
+
+    store.save(issueList.iterator());
+    store.delete("module1:path1");
+    store.delete("module1:path2");
+    store.delete("module1:non_existing");
+
+    assertThat(store.load("module1:path1")).isEmpty();
+    assertThat(store.load("module1:path2")).isEmpty();
   }
 }

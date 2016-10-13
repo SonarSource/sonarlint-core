@@ -34,11 +34,11 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
-public class IssueStoreGetter {
+public class IssueStoreReader {
   private final IssueStoreFactory issueStoreFactory;
   private final StorageManager storageManager;
 
-  public IssueStoreGetter(IssueStoreFactory issueStoreFactory, StorageManager storageManager) {
+  public IssueStoreReader(IssueStoreFactory issueStoreFactory, StorageManager storageManager) {
     this.issueStoreFactory = issueStoreFactory;
     this.storageManager = storageManager;
   }
