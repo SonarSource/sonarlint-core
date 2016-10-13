@@ -76,11 +76,11 @@ public class IssueStoreReader {
       String entryPath = entry.getValue();
       if (filePath.startsWith(entryPath) && prefixLen < entryPath.length()) {
         subModuleKey = entryModuleKey;
-        prefixLen = entryPath.length();
+        prefixLen = entryPath.length() + 1;
       }
     }
 
-    String relativeFilePath = filePath.substring(prefixLen + 1);
+    String relativeFilePath = filePath.substring(prefixLen);
     return subModuleKey + ":" + relativeFilePath;
   }
 
