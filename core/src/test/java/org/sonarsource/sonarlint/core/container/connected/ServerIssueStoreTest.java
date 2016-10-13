@@ -19,23 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
-import org.sonarsource.sonarlint.core.container.connected.ServerIssueStore;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
+import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
 public class ServerIssueStoreTest {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void should_read_object_written() {
@@ -83,8 +88,8 @@ public class ServerIssueStoreTest {
     }
 
     ServerIssueStore store = new ServerIssueStore(forbiddenDir.toPath());
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()).iterator());
 
-    assertThat(store.load("module:myfile")).isEmpty();
+    exception.expect(StorageException.class);
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()).iterator());
   }
 }

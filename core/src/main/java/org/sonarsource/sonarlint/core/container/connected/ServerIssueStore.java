@@ -31,10 +31,9 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.objectstore.HashingPathMapper;
 import org.sonarsource.sonarlint.core.container.connected.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.container.connected.objectstore.Reader;
@@ -44,9 +43,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 
 public class ServerIssueStore implements IssueStore {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ServerIssueStore.class);
-
   private final ObjectStore<String, Iterator<ScannerInput.ServerIssue>> store;
 
   public ServerIssueStore(Path base) {
@@ -68,7 +64,7 @@ public class ServerIssueStore implements IssueStore {
       try {
         store.write(entry.getKey(), entry.getValue().iterator());
       } catch (IOException e) {
-        LOG.warn("failed to save issues for fileKey = " + entry.getKey(), e);
+        throw new StorageException("failed to save issues for fileKey = " + entry.getKey(), e);
       }
     }
   }
@@ -81,7 +77,7 @@ public class ServerIssueStore implements IssueStore {
         return issues.get();
       }
     } catch (IOException e) {
-      LOG.warn("failed to load issues for fileKey = " + fileKey, e);
+      throw new StorageException("failed to load issues for fileKey = " + fileKey, e);
     }
     return Collections.emptyIterator();
   }
