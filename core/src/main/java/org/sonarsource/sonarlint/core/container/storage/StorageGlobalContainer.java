@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.model.DefaultRemoteModule;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
@@ -130,13 +131,16 @@ public class StorageGlobalContainer extends ComponentContainer {
       }
     }
     AnalysisContainer analysisContainer = new AnalysisContainer(this);
-    analysisContainer.add(configuration);
-    analysisContainer.add(issueListener);
-    analysisContainer.add(new SonarQubeActiveRulesProvider());
-    analysisContainer.add(AdapterModuleFileSystem.class);
-    analysisContainer.add(DefaultServer.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
-    analysisContainer.add(defaultAnalysisResult);
+
+    analysisContainer.add(
+      configuration,
+      issueListener,
+      new SonarQubeActiveRulesProvider(),
+      AdapterModuleFileSystem.class,
+      DefaultServer.class,
+      defaultAnalysisResult);
+
     analysisContainer.execute();
     return defaultAnalysisResult;
   }
@@ -180,35 +184,6 @@ public class StorageGlobalContainer extends ComponentContainer {
 
   private StorageManager storageManager() {
     return getComponentByType(StorageManager.class);
-  }
-
-  private static class DefaultRemoteModule implements RemoteModule {
-
-    private final String key;
-    private final String name;
-    private final boolean root;
-
-    public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
-      this.key = module.getKey();
-      this.name = module.getName();
-      this.root = "TRK".equals(module.getQu());
-    }
-
-    @Override
-    public String getKey() {
-      return key;
-    }
-
-    @Override
-    public String getName() {
-      return name;
-    }
-
-    @Override
-    public boolean isRoot() {
-      return root;
-    }
-
   }
 
   public void deleteStorage() {
