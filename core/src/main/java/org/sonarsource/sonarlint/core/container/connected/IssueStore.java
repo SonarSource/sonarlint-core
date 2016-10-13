@@ -44,4 +44,11 @@ public interface IssueStore {
    * @return issues, possibly empty
    */
   Iterator<ScannerInput.ServerIssue> load(String fileKey);
+
+  /**
+   * Deletes issues stored for specified file, if they exist.
+   *
+   * @param fileKey the file key
+   */
+  void delete(String fileKey);
 }

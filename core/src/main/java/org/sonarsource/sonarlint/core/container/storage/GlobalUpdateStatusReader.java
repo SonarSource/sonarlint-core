@@ -17,22 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.objectstore;
+package org.sonarsource.sonarlint.core.container.storage;
 
-import java.io.IOException;
-import java.util.Optional;
+import java.util.function.Supplier;
 
-/**
- * Store and retrieve objects from the filesystem.
- *
- * @param <K> type of the key to store by and used when reading back
- * @param <V> type of the value to store
- */
-public interface ObjectStore<K, V> {
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 
-  void write(K key, V values) throws IOException;
-  
-  void delete(K key) throws IOException;
+public class GlobalUpdateStatusReader implements Supplier<GlobalUpdateStatus> {
+  private final StorageManager storageManager;
 
-  Optional<V> read(K key) throws IOException;
+  public GlobalUpdateStatusReader(StorageManager storageManager) {
+    this.storageManager = storageManager;
+  }
+
+  @Override
+  public GlobalUpdateStatus get() {
+    return storageManager.getGlobalUpdateStatus();
+  }
 }

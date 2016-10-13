@@ -53,6 +53,12 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
   }
 
   @Override
+  public void delete(K key) throws IOException {
+    Path path = pathMapper.apply(key);
+    Files.deleteIfExists(path);
+  }
+
+  @Override
   public void write(K key, V value) throws IOException {
     Path path = pathMapper.apply(key);
 

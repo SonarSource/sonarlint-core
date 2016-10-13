@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.protobuf.Parser;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -38,14 +40,21 @@ public class IssueDownloaderImpl implements IssueDownloader {
 
   /**
    * Fetch all issues of the component with specified key.
+   * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
    * See also sonarqube:/web_api/batch
    *
    * @param key project key, module key, or file key.
-   * @return iterable of issues
+   * @return Iterator of issues. It can be empty but never null.
    */
   @Override
   public Iterator<ScannerInput.ServerIssue> apply(String key) {
-    InputStream input = wsClient.get(getIssuesUrl(key)).contentStream();
+    CloseableWsResponse response = wsClient.rawGet(getIssuesUrl(key));
+    if (response.code() == 403 || response.code() == 404) {
+      return Collections.emptyIterator();
+    } else if (response.code() != 200) {
+      throw SonarLintWsClient.handleError(response);
+    }
+    InputStream input = response.contentStream();
     Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
     return ProtobufUtil.streamMessages(input, parser);
   }

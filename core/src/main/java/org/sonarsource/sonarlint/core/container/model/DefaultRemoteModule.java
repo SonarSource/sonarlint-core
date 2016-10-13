@@ -17,22 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.objectstore;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.io.IOException;
-import java.util.Optional;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-/**
- * Store and retrieve objects from the filesystem.
- *
- * @param <K> type of the key to store by and used when reading back
- * @param <V> type of the value to store
- */
-public interface ObjectStore<K, V> {
+public class DefaultRemoteModule implements RemoteModule {
+  private final String key;
+  private final String name;
+  private final boolean root;
 
-  void write(K key, V values) throws IOException;
-  
-  void delete(K key) throws IOException;
+  public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
+    this.key = module.getKey();
+    this.name = module.getName();
+    this.root = "TRK".equals(module.getQu());
+  }
 
-  Optional<V> read(K key) throws IOException;
+  @Override
+  public String getKey() {
+    return key;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public boolean isRoot() {
+    return root;
+  }
 }

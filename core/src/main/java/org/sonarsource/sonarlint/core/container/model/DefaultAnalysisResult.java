@@ -17,23 +17,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected;
+package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
-public class IssueStoreFactoryTest {
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+public class DefaultAnalysisResult implements AnalysisResults {
+  private Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
+  private int fileCount;
 
-  @Test
-  public void testFactory() {
-    IssueStoreFactory factory = new IssueStoreFactory();
-    IssueStore store = factory.apply(temp.getRoot().toPath());
-
-    assertThat(store).isInstanceOf(IssueStore.class);
+  public DefaultAnalysisResult setFileCount(int fileCount) {
+    this.fileCount = fileCount;
+    return this;
   }
+
+  public void addFailedAnalysisFile(ClientInputFile inputFile) {
+    failedAnalysisFiles.add(inputFile);
+  }
+
+  @Override
+  public int fileCount() {
+    return fileCount;
+  }
+
+  @Override
+  public Collection<ClientInputFile> failedAnalysisFiles() {
+    return failedAnalysisFiles;
+  }
+
 }
