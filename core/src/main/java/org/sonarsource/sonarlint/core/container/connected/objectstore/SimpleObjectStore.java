@@ -25,6 +25,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
+
 /**
  * An ObjectStore without internal cache that derives the filesystem path to storage using a provided PathMapper.
  *

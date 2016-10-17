@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,22 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.objectstore;
+package org.sonarsource.sonarlint.core.client.api.connected.objectstore;
 
-import java.io.IOException;
-import java.util.Optional;
+import java.io.InputStream;
+import java.util.function.Function;
 
-/**
- * Store and retrieve objects from the filesystem.
- *
- * @param <K> type of the key to store by and used when reading back
- * @param <V> type of the value to store
- */
-public interface ObjectStore<K, V> {
-
-  void write(K key, V values) throws IOException;
-  
-  void delete(K key) throws IOException;
-
-  Optional<V> read(K key) throws IOException;
+@FunctionalInterface
+public interface Reader<V> extends Function<InputStream, V> {
 }

@@ -33,12 +33,12 @@ import java.util.stream.StreamSupport;
 
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.HashingPathMapper;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.container.connected.objectstore.HashingPathMapper;
-import org.sonarsource.sonarlint.core.container.connected.objectstore.ObjectStore;
-import org.sonarsource.sonarlint.core.container.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.container.connected.objectstore.SimpleObjectStore;
-import org.sonarsource.sonarlint.core.container.connected.objectstore.Writer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 

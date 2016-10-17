@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
 import java.nio.file.Paths;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.container.connected.objectstore.HashingPathMapper;
-import org.sonarsource.sonarlint.core.container.connected.objectstore.PathMapper;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.HashingPathMapper;
+import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
