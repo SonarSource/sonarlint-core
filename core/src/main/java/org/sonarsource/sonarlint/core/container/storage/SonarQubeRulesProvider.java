@@ -34,7 +34,7 @@ public class SonarQubeRulesProvider extends ProviderAdapter {
     if (rules == null) {
       RulesBuilder builder = new RulesBuilder();
 
-      for (Map.Entry<String, Sonarlint.Rules.Rule> entry : storageRules.getRulesByKey().entrySet()) {
+      for (Map.Entry<String, Sonarlint.Rules.Rule> entry : storageRules.getRulesByKeyMap().entrySet()) {
         Sonarlint.Rules.Rule r = entry.getValue();
         builder.add(RuleKey.of(r.getRepo(), r.getKey()))
           .setName(r.getName())

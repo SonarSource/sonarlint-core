@@ -63,7 +63,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
         String qProfileKey = entry.getValue();
 
         if (supportQualityProfilesWS) {
-          QProfile qProfile = qProfiles.getQprofilesByKey().get(qProfileKey);
+          QProfile qProfile = qProfiles.getQprofilesByKeyOrThrow(qProfileKey);
 
           if (qProfile.getActiveRuleCount() == 0) {
             LOG.debug("  * " + language + ": " + qProfileKey + " (0 rules)");
@@ -74,13 +74,13 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
         org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
           Sonarlint.ActiveRules.parser());
 
-        LOG.debug("  * " + language + ": " + qProfileKey + " (" + activeRulesFromStorage.getActiveRulesByKey().size() + " rules)");
+        LOG.debug("  * " + language + ": " + qProfileKey + " (" + activeRulesFromStorage.getActiveRulesByKeyMap().size() + " rules)");
 
-        for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKey().entrySet()) {
+        for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKeyMap().entrySet()) {
           ActiveRule activeRule = arEntry.getValue();
           RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
           Rule rule = rules.find(ruleKey);
-          Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKey().get(ruleKey.toString());
+          Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());
           NewActiveRule newActiveRule = builder.create(ruleKey)
             .setLanguage(language)
             .setName(rule.name())
@@ -92,7 +92,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
             newActiveRule.setTemplateRuleKey(templateRuleKey.rule());
           }
 
-          for (Map.Entry<String, String> param : activeRule.getParams().entrySet()) {
+          for (Map.Entry<String, String> param : activeRule.getParamsMap().entrySet()) {
             newActiveRule.setParam(param.getKey(), param.getValue());
           }
           newActiveRule.activate();
@@ -113,10 +113,10 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
         throw new UnsupportedOperationException("Unable to analyse a project with no key prior to SonarQube 5.2");
       }
       LOG.debug("Use default quality profiles:");
-      qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguage();
+      qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
     } else {
       LOG.debug("Quality profiles:");
-      qProfilesByLanguage = storageManager.readModuleConfigFromStorage(analysisConfiguration.moduleKey()).getQprofilePerLanguage();
+      qProfilesByLanguage = storageManager.readModuleConfigFromStorage(analysisConfiguration.moduleKey()).getQprofilePerLanguageMap();
     }
     return qProfilesByLanguage;
   }

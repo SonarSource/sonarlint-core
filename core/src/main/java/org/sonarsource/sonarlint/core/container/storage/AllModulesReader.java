@@ -39,7 +39,7 @@ public class AllModulesReader implements Supplier<Map<String, RemoteModule>> {
   public Map<String, RemoteModule> get() {
     Map<String, RemoteModule> results = new HashMap<>();
     ModuleList readModuleListFromStorage = storageManager.readModuleListFromStorage();
-    Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKey();
+    Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKeyMap();
     for (Map.Entry<String, Module> entry : modulesByKey.entrySet()) {
       results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));
     }

@@ -49,9 +49,9 @@ public class QualityProfilesDownloader {
         qpBuilder.setKey(qp.getKey());
         qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
 
-        qProfileBuilder.getMutableQprofilesByKey().put(qp.getKey(), qpBuilder.build());
+        qProfileBuilder.putQprofilesByKey(qp.getKey(), qpBuilder.build());
         if (qp.getIsDefault()) {
-          qProfileBuilder.getMutableDefaultQProfilesByLanguage().put(qp.getLanguage(), qp.getKey());
+          qProfileBuilder.putDefaultQProfilesByLanguage(qp.getLanguage(), qp.getKey());
         }
       }
     } catch (IOException e) {

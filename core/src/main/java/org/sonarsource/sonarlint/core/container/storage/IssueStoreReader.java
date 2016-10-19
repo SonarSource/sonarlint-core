@@ -65,7 +65,7 @@ public class IssueStoreReader {
       throw new IllegalStateException("module not in storage: " + moduleKey);
     }
 
-    Map<String, String> modulePaths = moduleConfig.getModulePathByKey();
+    Map<String, String> modulePaths = moduleConfig.getModulePathByKeyMap();
 
     // find longest prefix match
     String subModuleKey = moduleKey;

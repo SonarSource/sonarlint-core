@@ -38,7 +38,7 @@ public class StorageRuleDetailsReader implements Function<String, RuleDetails> {
   public RuleDetails apply(String ruleKeyStr) {
     Sonarlint.Rules rulesFromStorage = storageManager.readRulesFromStorage();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
-    Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKey().get(ruleKeyStr);
+    Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
     if (rule == null) {
       throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
     }

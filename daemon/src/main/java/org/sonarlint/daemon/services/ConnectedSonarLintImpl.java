@@ -96,7 +96,7 @@ public class ConnectedSonarLintImpl implements ConnectedSonarLint {
         Paths.get(requestConfig.getBaseDir()),
         Paths.get(requestConfig.getWorkDir()),
         files,
-        requestConfig.getProperties());
+        requestConfig.getPropertiesMap());
 
       engine.analyze(config, new ProxyIssueListener(response), logOutput);
       response.onCompleted();

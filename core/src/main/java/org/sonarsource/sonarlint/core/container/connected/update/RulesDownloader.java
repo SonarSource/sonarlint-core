@@ -283,7 +283,7 @@ public class RulesDownloader {
     for (Rule r : response.getRulesList()) {
       ruleBuilder.clear();
       RuleKey ruleKey = RuleKey.parse(r.getKey());
-      rulesBuilder.getMutableRulesByKey().put(r.getKey(), ruleBuilder
+      rulesBuilder.putRulesByKey(r.getKey(), ruleBuilder
         .setRepo(ruleKey.repository())
         .setKey(ruleKey.rule())
         .setName(r.getName())
@@ -309,9 +309,9 @@ public class RulesDownloader {
         arBuilder.setKey(ruleKey.rule());
         arBuilder.setSeverity(ar.getSeverity());
         for (Param p : ar.getParamsList()) {
-          arBuilder.getMutableParams().put(p.getKey(), p.getValue());
+          arBuilder.putParams(p.getKey(), p.getValue());
         }
-        activeRulesBuildersByQProfile.get(qProfileKey).getMutableActiveRulesByKey().put(entry.getKey(), arBuilder.build());
+        activeRulesBuildersByQProfile.get(qProfileKey).putActiveRulesByKey(entry.getKey(), arBuilder.build());
       }
     }
 

@@ -72,8 +72,8 @@ public class GlobalPropertiesDownloader {
     GlobalRepositories global = GlobalRepositories.fromJson(response.content());
 
     for (Map.Entry<String, String> e : global.globalSettings.entrySet()) {
-      if (!builder.getMutableProperties().containsKey(e.getKey())) {
-        builder.getMutableProperties().put(e.getKey(), e.getValue());
+      if (!builder.containsProperties(e.getKey())) {
+        builder.putProperties(e.getKey(), e.getValue());
       }
     }
   }
@@ -94,7 +94,7 @@ public class GlobalPropertiesDownloader {
           reader.skipValue();
       }
     }
-    builder.getMutableProperties().put(key, value);
+    builder.putProperties(key, value);
   }
 
   private static boolean needsBatchGlobal(String version) {

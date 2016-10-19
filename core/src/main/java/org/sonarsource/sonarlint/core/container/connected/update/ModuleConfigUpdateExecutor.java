@@ -88,7 +88,7 @@ public class ModuleConfigUpdateExecutor {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
     if (supportQualityProfilesWS) {
-      final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKey().keySet();
+      final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKeyMap().keySet();
       fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
     } else {
       fetchProjectQualityProfilesBefore5dot2(moduleKey, builder);
@@ -119,8 +119,7 @@ public class ModuleConfigUpdateExecutor {
 
   private void fetchModuleHierarchy(String moduleKey, ModuleConfiguration.Builder builder) {
     Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(moduleKey);
-    Map<String, String> modulePathByKey = builder.getMutableModulePathByKey();
-    modulePathByKey.putAll(moduleHierarchy);
+    builder.putAllModulePathByKey(moduleHierarchy);
   }
 
   private void fetchProjectQualityProfiles(String moduleKey, Set<String> qProfileKeys, ModuleConfiguration.Builder builder) {
@@ -136,7 +135,7 @@ public class ModuleConfigUpdateExecutor {
         throw new IllegalStateException(
           "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Server storage is probably outdated. Please update server.");
       }
-      builder.getMutableQprofilePerLanguage().put(qp.getLanguage(), qp.getKey());
+      builder.putQprofilePerLanguage(qp.getLanguage(), qp.getKey());
     }
   }
 
@@ -158,7 +157,7 @@ public class ModuleConfigUpdateExecutor {
           while (reader.hasNext()) {
             String qpPropName = reader.nextName();
             if ("key".equals(qpPropName)) {
-              builder.getMutableQprofilePerLanguage().put(language, reader.nextString());
+              builder.putQprofilePerLanguage(language, reader.nextString());
             } else {
               reader.skipValue();
             }
@@ -203,8 +202,8 @@ public class ModuleConfigUpdateExecutor {
       }
     }
     // Storage optimisation: don't store properties having same value than global properties
-    if (!globalProps.getProperties().containsKey(key) || !globalProps.getProperties().get(key).equals(value)) {
-      projectConfigurationBuilder.getMutableProperties().put(key, value);
+    if (!globalProps.containsProperties(key) || !globalProps.getPropertiesMap().get(key).equals(value)) {
+      projectConfigurationBuilder.putProperties(key, value);
     }
   }
 

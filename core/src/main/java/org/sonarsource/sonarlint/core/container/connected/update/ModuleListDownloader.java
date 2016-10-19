@@ -47,7 +47,7 @@ public class ModuleListDownloader {
       Builder moduleBuilder = ModuleList.Module.newBuilder();
       for (DefaultModule module : results) {
         moduleBuilder.clear();
-        moduleListBuilder.getMutableModulesByKey().put(module.k, moduleBuilder
+        moduleListBuilder.putModulesByKey(module.k, moduleBuilder
           .setKey(module.k)
           .setName(module.nm)
           .setQu(module.qu)
