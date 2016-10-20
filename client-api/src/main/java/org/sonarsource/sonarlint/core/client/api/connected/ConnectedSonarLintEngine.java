@@ -79,7 +79,7 @@ public interface ConnectedSonarLintEngine {
    */
   Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath);
 
-  Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath);
+  Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
 
   /**
    * Get information about current update state

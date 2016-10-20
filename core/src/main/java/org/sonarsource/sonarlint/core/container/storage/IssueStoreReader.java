@@ -57,7 +57,7 @@ public class IssueStoreReader {
       .iterator();
   }
 
-  private String getFileKey(String moduleKey, String filePath) {
+  public String getFileKey(String moduleKey, String filePath) {
     ModuleConfiguration moduleConfig = storageManager.readModuleConfigFromStorage(moduleKey);
 
     if (moduleConfig == null) {

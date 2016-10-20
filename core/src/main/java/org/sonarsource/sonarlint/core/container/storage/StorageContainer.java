@@ -38,11 +38,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.storage.incremental.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -144,9 +146,12 @@ public class StorageContainer extends ComponentContainer {
     return getComponentByType(IssueStoreReader.class).getServerIssues(moduleKey, filePath);
   }
 
-  public Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
-    // TODO
-    return getServerIssues(moduleKey, filePath);
+  public Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
+    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
+    StorageManager storageManager = getComponentByType(StorageManager.class);
+    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
+    updater.updateFileIssues(moduleKey, filePath);
+    return issueStoreReader.getServerIssues(moduleKey, filePath);
   }
 
   public void deleteStorage() {

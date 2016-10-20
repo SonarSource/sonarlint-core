@@ -163,7 +163,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public GlobalUpdateStatus getUpdateStatus() {
-    return withRwLock(() -> getGlobalContainer().getUpdateStatus());
+    return withRwLock(getGlobalContainer()::getUpdateStatus);
   }
 
   @Override
@@ -228,10 +228,10 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public Iterator<ServerIssue> downloadServerIssues(String moduleKey, String filePath) {
+  public Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getGlobalContainer().downloadServerIssues(moduleKey, filePath);
+      return getGlobalContainer().downloadServerIssues(serverConfig, moduleKey, filePath);
     });
   }
 
