@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 
 /**
  * Entry point for SonarLint.
@@ -79,6 +80,14 @@ public interface ConnectedSonarLintEngine {
    */
   Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath);
 
+  /**
+   * Downloads, stores and returns server issues for a given file. 
+   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param filePath relative to the module to which the moduleKey refers.
+   * @return All server issues in the local storage for the given file. If file has no issues, an empty iterator is returned.
+   * @since 2.5
+   * @throws DownloadException if it fails to download
+   */
   Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
 
   /**
@@ -105,6 +114,13 @@ public interface ConnectedSonarLintEngine {
    * @throws UnsupportedOperationException for standalone mode
    */
   Map<String, RemoteModule> allModulesByKey();
+
+  /**
+   * Attempts to download and store the list of modules and to return all modules by key
+   * @since 2.5
+   * @throws DownloadException if it fails to download
+   */
+  Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig);
 
   // REQUIRES SERVER TO BE REACHABLE
 

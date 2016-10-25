@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.storage.incremental.PartialUpdater;
+import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -151,7 +151,15 @@ public class StorageContainer extends ComponentContainer {
     StorageManager storageManager = getComponentByType(StorageManager.class);
     PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
     updater.updateFileIssues(moduleKey, filePath);
-    return issueStoreReader.getServerIssues(moduleKey, filePath);
+    return getServerIssues(moduleKey, filePath);
+  }
+
+  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig) {
+    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
+    StorageManager storageManager = getComponentByType(StorageManager.class);
+    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
+    updater.updateModuleList();
+    return allModulesByKey();
   }
 
   public void deleteStorage() {

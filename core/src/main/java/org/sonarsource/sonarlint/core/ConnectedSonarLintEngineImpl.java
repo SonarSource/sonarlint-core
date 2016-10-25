@@ -212,6 +212,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       rwl.readLock().unlock();
     }
   }
+  
+  @Override
+  public Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig) {
+    return withRwLock(() -> {
+      checkUpdateStatus();
+      return getGlobalContainer().downloadModuleList(serverConfig);
+    });
+  }
 
   private void checkUpdateStatus() {
     if (state != State.UPDATED) {
