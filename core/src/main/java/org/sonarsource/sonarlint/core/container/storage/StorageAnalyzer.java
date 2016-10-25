@@ -26,7 +26,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.AdapterModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
@@ -65,7 +64,6 @@ public class StorageAnalyzer {
       configuration,
       issueListener,
       new SonarQubeActiveRulesProvider(),
-      AdapterModuleFileSystem.class,
       DefaultServer.class,
       defaultAnalysisResult);
 

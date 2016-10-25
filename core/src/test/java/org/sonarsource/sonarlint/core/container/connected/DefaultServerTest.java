@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected;
 
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
+import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +30,7 @@ public class DefaultServerTest {
 
   @Test
   public void shouldLoadServerProperties() {
-    Settings settings = new Settings();
+    Settings settings = new MapSettings();
     settings.setProperty(CoreProperties.SERVER_ID, "123");
     settings.setProperty(CoreProperties.SERVER_VERSION, "2.2");
     settings.setProperty(CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000");
@@ -46,7 +47,7 @@ public class DefaultServerTest {
 
   @Test
   public void coverageUnusedMethods() {
-    DefaultServer metadata = new DefaultServer(new Settings());
+    DefaultServer metadata = new DefaultServer(new MapSettings());
     assertThat(metadata.getStartedAt()).isNull();
     assertThat(metadata.getRootDir()).isNull();
     assertThat(metadata.getDeployDir()).isNull();

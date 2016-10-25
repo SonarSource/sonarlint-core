@@ -132,4 +132,9 @@ public class DefaultSensorStorage implements SensorStorage {
     analysisResult.addFailedAnalysisFile(clientInputFile);
   }
 
+  @Override
+  public void storeProperty(String key, String value) {
+    // NO-OP
+  }
+
 }
