@@ -65,7 +65,7 @@ public class GlobalUpdateExecutorTest {
     tempFolder = mock(TempFolder.class);
     rulesDownloader = mock(RulesDownloader.class);
 
-    wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"UP\"}");
+    wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6-SNAPSHOT\",\"status\": \"UP\"}");
 
     tempDir = temp.newFolder();
     destDir = temp.newFolder();
@@ -89,14 +89,14 @@ public class GlobalUpdateExecutorTest {
 
     ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");
-    assertThat(serverInfos.getVersion()).isEqualTo("5.5-SNAPSHOT");
+    assertThat(serverInfos.getVersion()).isEqualTo("5.6-SNAPSHOT");
   }
 
   @Test
   public void dontCopyOnError() throws IOException {
     Files.createDirectories(destDir.toPath());
     Files.createFile(destDir.toPath().resolve("test"));
-    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class), any(String.class));
+    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class));
     try {
       globalUpdate.update(new ProgressWrapper(null));
       fail("Expected exception");

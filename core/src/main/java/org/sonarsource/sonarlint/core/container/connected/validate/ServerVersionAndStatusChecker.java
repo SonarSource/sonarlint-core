@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import java.net.HttpURLConnection;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
@@ -29,11 +28,9 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
-import static org.apache.commons.lang.StringUtils.trimToEmpty;
-
 public class ServerVersionAndStatusChecker {
 
-  private static final String MIN_SQ_VERSION = "4.5.1";
+  private static final String MIN_SQ_VERSION = "5.6";
   private final SonarLintWsClient wsClient;
 
   public ServerVersionAndStatusChecker(SonarLintWsClient wsClient) {
@@ -93,39 +90,15 @@ public class ServerVersionAndStatusChecker {
   }
 
   private ServerInfos fetchServerInfos() {
-    try (CloseableWsResponse response = wsClient.rawGet("api/system/status")) {
-      if (!response.isSuccessful()) {
-        if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
-          return tryFromDeprecatedApi(response);
-        } else {
-          throw SonarLintWsClient.handleError(response);
-        }
-      } else {
-        String responseStr = response.content();
-        try {
-          ServerInfos.Builder builder = ServerInfos.newBuilder();
-          JsonFormat.parser().merge(responseStr, builder);
-          return builder.build();
-        } catch (InvalidProtocolBufferException e) {
-          throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
-        }
+    try (CloseableWsResponse response = wsClient.get("api/system/status")) {
+      String responseStr = response.content();
+      try {
+        ServerInfos.Builder builder = ServerInfos.newBuilder();
+        JsonFormat.parser().merge(responseStr, builder);
+        return builder.build();
+      } catch (InvalidProtocolBufferException e) {
+        throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
       }
     }
   }
-
-  private ServerInfos tryFromDeprecatedApi(CloseableWsResponse originalReponse) {
-    // Maybe a server version prior to 5.2. Fallback on deprecated api/server/version
-    try (CloseableWsResponse responseFallback = wsClient.rawGet("api/server/version")) {
-      if (!responseFallback.isSuccessful()) {
-        // We prefer to report original error
-        throw SonarLintWsClient.handleError(originalReponse);
-      }
-      String responseStr = responseFallback.content();
-      ServerInfos.Builder builder = ServerInfos.newBuilder();
-      builder.setStatus("UP");
-      builder.setVersion(trimToEmpty(responseStr));
-      return builder.build();
-    }
-  }
-
 }

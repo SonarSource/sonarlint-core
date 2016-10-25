@@ -32,11 +32,9 @@ import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
 public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
@@ -48,10 +46,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
     ConnectedAnalysisConfiguration analysisConfiguration, Languages languages) {
     if (activeRules == null) {
 
-      ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
-      boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
-
-      Map<String, String> qProfilesByLanguage = loadQualityProfilesFromStorage(qProfiles, storageManager, analysisConfiguration, supportQualityProfilesWS);
+      Map<String, String> qProfilesByLanguage = loadQualityProfilesFromStorage(qProfiles, storageManager, analysisConfiguration);
 
       ActiveRulesBuilder builder = new ActiveRulesBuilder();
       for (Map.Entry<String, String> entry : qProfilesByLanguage.entrySet()) {
@@ -62,13 +57,11 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
         String qProfileKey = entry.getValue();
 
-        if (supportQualityProfilesWS) {
-          QProfile qProfile = qProfiles.getQprofilesByKeyOrThrow(qProfileKey);
+        QProfile qProfile = qProfiles.getQprofilesByKeyOrThrow(qProfileKey);
 
-          if (qProfile.getActiveRuleCount() == 0) {
-            LOG.debug("  * " + language + ": " + qProfileKey + " (0 rules)");
-            continue;
-          }
+        if (qProfile.getActiveRuleCount() == 0) {
+          LOG.debug("  * " + language + ": " + qProfileKey + " (0 rules)");
+          continue;
         }
 
         org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
@@ -105,13 +98,9 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
   }
 
   private static Map<String, String> loadQualityProfilesFromStorage(Sonarlint.QProfiles qProfiles, StorageManager storageManager,
-    ConnectedAnalysisConfiguration analysisConfiguration,
-    boolean supportQualityProfilesWS) {
+    ConnectedAnalysisConfiguration analysisConfiguration) {
     Map<String, String> qProfilesByLanguage;
     if (analysisConfiguration.moduleKey() == null) {
-      if (!supportQualityProfilesWS) {
-        throw new UnsupportedOperationException("Unable to analyse a project with no key prior to SonarQube 5.2");
-      }
       LOG.debug("Use default quality profiles:");
       qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
     } else {

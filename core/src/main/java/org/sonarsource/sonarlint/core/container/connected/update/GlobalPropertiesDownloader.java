@@ -19,30 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties.Builder;
 
 public class GlobalPropertiesDownloader {
   private static final String API_PROPERTIES_PATH = "/api/properties?format=json";
-  private static final String BATCH_GLOBAL_PATH = "/batch/global";
   private final SonarLintWsClient wsClient;
 
   public GlobalPropertiesDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
-  public void fetchGlobalPropertiesTo(Path dest, String serverVersionStr) {
+  public void fetchGlobalPropertiesTo(Path dest) {
     WsResponse response = wsClient.get(API_PROPERTIES_PATH);
     GlobalProperties.Builder builder = GlobalProperties.newBuilder();
 
@@ -54,27 +48,10 @@ public class GlobalPropertiesDownloader {
         reader.endObject();
       }
       reader.endArray();
-      if (needsBatchGlobal(serverVersionStr)) {
-        readBatchGlobalTo(builder);
-      }
       GlobalProperties globalProperties = builder.build();
       ProtobufUtil.writeToFile(globalProperties, dest.resolve(StorageManager.PROPERTIES_PB));
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
-    }
-  }
-
-  /**
-   * Reads properties from batch global WS without overwriting properties already defined in the builder.
-   */
-  private void readBatchGlobalTo(Builder builder) {
-    WsResponse response = wsClient.get(BATCH_GLOBAL_PATH);
-    GlobalRepositories global = GlobalRepositories.fromJson(response.content());
-
-    for (Map.Entry<String, String> e : global.globalSettings.entrySet()) {
-      if (!builder.containsProperties(e.getKey())) {
-        builder.putProperties(e.getKey(), e.getValue());
-      }
     }
   }
 
@@ -95,17 +72,5 @@ public class GlobalPropertiesDownloader {
       }
     }
     builder.putProperties(key, value);
-  }
-
-  private static boolean needsBatchGlobal(String version) {
-    return Version.create(version).compareToIgnoreQualifier(Version.create("5.6")) < 0;
-  }
-
-  private static class GlobalRepositories {
-    private Map<String, String> globalSettings = new HashMap<>();
-
-    public static GlobalRepositories fromJson(String json) {
-      return new GsonBuilder().create().fromJson(json, GlobalRepositories.class);
-    }
   }
 }

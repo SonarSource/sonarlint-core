@@ -54,34 +54,19 @@ public class GlobalPropertiesDownloaderTest {
         + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
         + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
-    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
+    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
-    assertThat(properties.getProperties()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
+    assertThat(properties.getPropertiesMap()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
       entry("sonar.core.treemap.sizemetric", "ncloc"),
       entry("views.servers", "135817900907501"));
-  }
-
-  @Test
-  public void testBatchGlobal() {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json",
-      new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"}]"));
-    WsClientTestUtils.addResponse(wsClient, "/batch/global",
-      "{ timestamp: 0, globalSettings: {"
-        + "\"sonar.core.treemap.colormetric\":\"override\","
-        + "\"sonar.core.treemap.sizemetric\":\"ncloc\""
-        + "} }");
-    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.5");
-    GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
-    assertThat(properties.getProperties()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
-      entry("sonar.core.treemap.sizemetric", "ncloc"));
   }
 
   @Test(expected = IllegalStateException.class)
   public void invalidResponse() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json", new StringReader("foo bar"));
 
-    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir, "5.6");
+    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
   }
 
 }

@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
 import org.sonarsource.sonarlint.core.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -68,11 +67,10 @@ public class ModuleConfigUpdateExecutor {
 
   public void update(String moduleKey) {
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
-    ServerInfos serverInfos = storageManager.readServerInfosFromStorage();
 
     Path temp = tempFolder.newDir().toPath();
 
-    updateModuleConfiguration(moduleKey, globalProps, serverInfos, temp);
+    updateModuleConfiguration(moduleKey, globalProps, temp);
 
     updateRemoteIssues(moduleKey, temp);
 
@@ -84,16 +82,10 @@ public class ModuleConfigUpdateExecutor {
     FileUtils.moveDir(temp, dest);
   }
 
-  private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, ServerInfos serverInfos, Path temp) {
+  private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
-    boolean supportQualityProfilesWS = GlobalUpdateExecutor.supportQualityProfilesWS(serverInfos.getVersion());
-    if (supportQualityProfilesWS) {
-      final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKeyMap().keySet();
-      fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
-    } else {
-      fetchProjectQualityProfilesBefore5dot2(moduleKey, builder);
-    }
-
+    final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKeyMap().keySet();
+    fetchProjectQualityProfiles(moduleKey, qProfileKeys, builder);
     fetchProjectProperties(moduleKey, globalProps, builder);
     fetchModuleHierarchy(moduleKey, builder);
 
@@ -136,39 +128,6 @@ public class ModuleConfigUpdateExecutor {
           "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Server storage is probably outdated. Please update server.");
       }
       builder.putQprofilePerLanguage(qp.getLanguage(), qp.getKey());
-    }
-  }
-
-  private void fetchProjectQualityProfilesBefore5dot2(String moduleKey, ModuleConfiguration.Builder builder) {
-    WsResponse response = wsClient.get("/batch/project?preview=true&key=" + StringUtils.urlEncode(moduleKey));
-    try (JsonReader reader = new JsonReader(response.contentReader())) {
-      reader.beginObject();
-      while (reader.hasNext()) {
-        String propName = reader.nextName();
-        if (!"qprofilesByLanguage".equals(propName)) {
-          reader.skipValue();
-          continue;
-        }
-
-        reader.beginObject();
-        while (reader.hasNext()) {
-          String language = reader.nextName();
-          reader.beginObject();
-          while (reader.hasNext()) {
-            String qpPropName = reader.nextName();
-            if ("key".equals(qpPropName)) {
-              builder.putQprofilePerLanguage(language, reader.nextString());
-            } else {
-              reader.skipValue();
-            }
-          }
-          reader.endObject();
-        }
-        reader.endObject();
-      }
-      reader.endObject();
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load module quality profiles", e);
     }
   }
 
