@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginCopier {
 
-  private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift");
+  private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift", "rpg");
 
   private static final Logger LOG = Loggers.get(PluginCopier.class);
 
