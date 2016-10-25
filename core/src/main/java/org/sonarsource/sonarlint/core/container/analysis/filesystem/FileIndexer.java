@@ -92,6 +92,10 @@ public class FileIndexer {
 
   private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {
     fs.add(inputFile);
+    if (status.count() == 0) {
+      LOG.debug("Setting filesystem encoding: " + inputFile.charset());
+      fs.setEncoding(inputFile.charset());
+    }
     status.markAsIndexed(inputFile);
     SonarLintInputDir inputDir = new SonarLintInputDir(inputFile.path().getParent());
     fs.add(inputDir);

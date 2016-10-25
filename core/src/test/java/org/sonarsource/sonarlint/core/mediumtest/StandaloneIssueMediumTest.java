@@ -116,6 +116,22 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void fileEncoding() throws IOException {
+    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
+      + "  var xoo1, xoo2;\n"
+      + "  var xoo; //NOSONAR\n"
+      + "}", false, StandardCharsets.UTF_16);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
+      tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
+      tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
+      tuple("xoo:HasTag", 2, 12, inputFile.getPath()));
+  }
+
+  @Test
   public void simpleXoo() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
       + "  var xoo1, xoo2;\n"
@@ -244,7 +260,8 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleJavaWithBytecode() throws Exception {
-    ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
+    ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false,
+      StandardCharsets.UTF_8);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
@@ -347,14 +364,18 @@ public class StandaloneIssueMediumTest {
 
   }
 
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
-    ClientInputFile inputFile = createInputFile(file.toPath(), isTest);
+    FileUtils.write(file, content, encoding);
+    ClientInputFile inputFile = createInputFile(file.toPath(), isTest, encoding);
     return inputFile;
   }
 
-  private ClientInputFile createInputFile(final Path path, final boolean isTest) {
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
+    return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8);
+  }
+
+  private ClientInputFile createInputFile(final Path path, final boolean isTest, final Charset encoding) {
     ClientInputFile inputFile = new ClientInputFile() {
 
       @Override
@@ -369,7 +390,7 @@ public class StandaloneIssueMediumTest {
 
       @Override
       public Charset getCharset() {
-        return StandardCharsets.UTF_8;
+        return encoding;
       }
 
       @Override
