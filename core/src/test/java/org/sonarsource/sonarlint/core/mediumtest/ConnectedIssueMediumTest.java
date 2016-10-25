@@ -174,7 +174,8 @@ public class ConnectedIssueMediumTest {
       sonarlint.analyze(config, createNoOpIssueListener());
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(StorageException.class).hasMessage("Module data is stale. Please update module 'stale_module'.");
+      assertThat(e).isInstanceOf(StorageException.class)
+        .hasMessage("Stored data for module 'stale_module' is stale because it was created with a different version of SonarLint. Please update the binding.");
     }
   }
 

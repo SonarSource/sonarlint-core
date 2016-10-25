@@ -42,14 +42,15 @@ public class StorageAnalyzer {
   private void checkStatus(String moduleKey) {
     GlobalUpdateStatus updateStatus = globalUpdateStatusReader.get();
     if (updateStatus == null) {
-      throw new StorageException("Missing global data. Please update server.", null);
+      throw new StorageException("Missing global data. Please update server.", false);
     }
     if (moduleKey != null) {
       ModuleUpdateStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
       if (moduleUpdateStatus == null) {
-        throw new StorageException("Missing module data. Please update module '" + moduleKey + "'.", null);
+        throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", moduleKey), false);
       } else if (moduleUpdateStatus.isStale()) {
-        throw new StorageException("Module data is stale. Please update module '" + moduleKey + "'.", null);
+        throw new StorageException(String.format("Stored data for module '%s' is stale because "
+          + "it was created with a different version of SonarLint. Please update the binding.", moduleKey), false);
       }
     }
   }

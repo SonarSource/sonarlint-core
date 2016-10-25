@@ -20,10 +20,16 @@
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
 public class SonarLintException extends RuntimeException {
+
   public SonarLintException() {
     super();
   }
+
   public SonarLintException(String msg, Throwable cause) {
     super(msg, cause);
+  }
+
+  public SonarLintException(String msg, Throwable cause, boolean withStackTrace) {
+    super(msg, cause, !withStackTrace, withStackTrace);
   }
 }
