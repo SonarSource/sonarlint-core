@@ -136,4 +136,9 @@ public class DefaultSensorContext implements SensorContext {
     return Thread.interrupted();
   }
 
+  @Override
+  public void addContextProperty(String key, String value) {
+    // NO OP
+  }
+
 }

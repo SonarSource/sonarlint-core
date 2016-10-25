@@ -32,7 +32,6 @@ public class StandaloneAnalysisConfiguration {
   private final Iterable<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path workDir;
-  // TODO baseDir is only used to please Sensor API. To be removed when having a dedicated SonarLint API.
   private final Path baseDir;
 
   public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {

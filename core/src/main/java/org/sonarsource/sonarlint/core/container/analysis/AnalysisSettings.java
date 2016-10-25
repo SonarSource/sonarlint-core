@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -29,13 +33,15 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 public class AnalysisSettings extends Settings {
 
+  private final Map<String, String> properties = new HashMap<>();
+
   public AnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions);
+    super(propertyDefinitions, new Encryption(null));
     addProperties(config.extraProperties());
   }
 
   public AnalysisSettings(StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions);
+    super(propertyDefinitions, new Encryption(null));
     GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
     addProperties(globalProps.getProperties());
     if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
@@ -43,5 +49,25 @@ public class AnalysisSettings extends Settings {
       addProperties(projectConfig.getProperties());
     }
     addProperties(config.extraProperties());
+  }
+
+  @Override
+  protected Optional<String> get(String key) {
+    return Optional.ofNullable(properties.get(key));
+  }
+
+  @Override
+  protected void set(String key, String value) {
+    properties.put(key, value);
+  }
+
+  @Override
+  protected void remove(String key) {
+    properties.remove(key);
+  }
+
+  @Override
+  public Map<String, String> getProperties() {
+    return properties;
   }
 }

@@ -25,9 +25,10 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 
 @Immutable
-public class ConnectedAnalysisConfiguration extends org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration {
+public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfiguration {
 
   private final String moduleKey;
 

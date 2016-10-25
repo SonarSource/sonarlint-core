@@ -19,7 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
+import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -45,8 +49,11 @@ public class ServerSettingsProvider {
   }
 
   public static class ServerSettings extends Settings {
+
+    private final Map<String, String> properties = new HashMap<>();
+
     private ServerSettings(@Nullable StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-      super(propertyDefinitions);
+      super(propertyDefinitions, new Encryption(null));
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
         addProperties(globalProps.getProperties());
@@ -55,6 +62,26 @@ public class ServerSettingsProvider {
           addProperties(projectConfig.getProperties());
         }
       }
+    }
+
+    @Override
+    protected Optional<String> get(String key) {
+      return Optional.ofNullable(properties.get(key));
+    }
+
+    @Override
+    protected void set(String key, String value) {
+      properties.put(key, value);
+    }
+
+    @Override
+    protected void remove(String key) {
+      properties.remove(key);
+    }
+
+    @Override
+    public Map<String, String> getProperties() {
+      return properties;
     }
   }
 

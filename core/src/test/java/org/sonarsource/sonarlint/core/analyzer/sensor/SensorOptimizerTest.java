@@ -30,6 +30,7 @@ import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
+import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
 import org.sonar.api.rule.RuleKey;
 
@@ -50,7 +51,7 @@ public class SensorOptimizerTest {
   @Before
   public void prepare() throws Exception {
     fs = new DefaultFileSystem(temp.newFolder().toPath());
-    settings = new Settings();
+    settings = new MapSettings();
     optimizer = new SensorOptimizer(fs, new ActiveRulesBuilder().build(), settings);
   }
 
