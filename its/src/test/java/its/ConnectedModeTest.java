@@ -24,6 +24,7 @@ import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
@@ -62,6 +63,7 @@ import static org.junit.Assume.assumeTrue;
 public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
@@ -76,6 +78,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .addPlugin("python")
     .addPlugin(FileLocation.of("plugins/javascript-custom-rules/target/javascript-custom-rules-plugin-1.0-SNAPSHOT.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
@@ -108,6 +111,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // addUserPermission("sonarlint", "dryRunScan");
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
@@ -115,6 +119,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
@@ -261,6 +266,22 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener);
 
     assertThat(issueListener.getIssues()).hasSize(2);
+  }
+
+  @Test
+  public void analysisIssueOnDirectory() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA_PACKAGE);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
+
+    assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
+      tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath()),
+      tuple("squid:S1228", null));
   }
 
   @Test
