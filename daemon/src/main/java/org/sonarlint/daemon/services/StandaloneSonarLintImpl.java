@@ -19,11 +19,21 @@
  */
 package org.sonarlint.daemon.services;
 
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
@@ -31,24 +41,136 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleDetails;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StandaloneConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
-import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc.StandaloneSonarLint;
+import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
-public class StandaloneSonarLintImpl extends AbstractSonarLint implements StandaloneSonarLint {
+public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneSonarLintImplBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneSonarLintImpl.class);
   private StandaloneSonarLintEngine engine;
   private ProxyLogOutput logOutput = new ProxyLogOutput();
+
+  static class DefaultClientInputFile implements ClientInputFile {
+    private final Path path;
+    private final boolean isTest;
+    private final Charset charset;
+    private final String userObject;
+
+    protected DefaultClientInputFile(Path path, boolean isTest, Charset charset, String userObject) {
+      this.path = path;
+      this.isTest = isTest;
+      this.charset = charset;
+      this.userObject = userObject;
+    }
+
+    @Override
+    public Path getPath() {
+      return path;
+    }
+
+    @Override
+    public boolean isTest() {
+      return isTest;
+    }
+
+    @Override
+    public Charset getCharset() {
+      return charset;
+    }
+
+    @Override
+    public <G> G getClientObject() {
+      return (G) userObject;
+    }
+  }
+
+  static class ProxyIssueListener implements IssueListener {
+    private final StreamObserver<Issue> observer;
+
+    protected ProxyIssueListener(StreamObserver<Issue> observer) {
+      this.observer = observer;
+    }
+
+    @Override
+    public void handle(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue issue) {
+      Severity severity;
+      ClientInputFile inputFile = issue.getInputFile();
+
+      switch (issue.getSeverity()) {
+        case "MINOR":
+          severity = Severity.MINOR;
+          break;
+        case "BLOCKER":
+          severity = Severity.BLOCKER;
+          break;
+        case "INFO":
+          severity = Severity.INFO;
+          break;
+        case "CRITICAL":
+          severity = Severity.CRITICAL;
+          break;
+        case "MAJOR":
+        default:
+          severity = Severity.MAJOR;
+          break;
+      }
+
+      Issue.Builder builder = Issue.newBuilder();
+      builder.setRuleKey(issue.getRuleKey())
+        .setRuleName(issue.getRuleName())
+        .setMessage(issue.getMessage())
+        .setSeverity(severity)
+        .setStartLine(issue.getStartLine() != null ? issue.getStartLine() : 0)
+        .setStartLineOffset(issue.getStartLineOffset() != null ? issue.getStartLineOffset() : 0)
+        .setEndLine(issue.getEndLine() != null ? issue.getEndLine() : 0)
+        .setEndLineOffset(issue.getEndLineOffset() != null ? issue.getEndLineOffset() : 0);
+
+      if (inputFile != null) {
+        builder.setFilePath(inputFile.getPath().toString())
+          .setUserObject((String) inputFile.getClientObject());
+      }
+
+      observer.onNext(builder.build());
+    }
+  }
+
+  static class ProxyLogOutput implements LogOutput {
+    private StreamObserver<LogEvent> response;
+
+    protected void setObserver(StreamObserver<LogEvent> response) {
+      if (this.response != null) {
+        this.response.onCompleted();
+      }
+      this.response = response;
+    }
+
+    @Override
+    public synchronized void log(String formattedMessage, Level level) {
+      if (level == Level.ERROR) {
+        System.err.println(formattedMessage);
+      } else {
+        System.out.println(formattedMessage);
+      }
+
+      if (response != null) {
+        LogEvent log = LogEvent.newBuilder()
+          .setLevel(level.name())
+          .setLog(formattedMessage)
+          .setIsDebug(level == Level.DEBUG || level == Level.TRACE)
+          .build();
+        try {
+          response.onNext(log);
+        } catch (StatusRuntimeException e) {
+          System.out.println("Log stream closed: " + e.getMessage());
+          response = null;
+        }
+      }
+    }
+  }
 
   @Override
   public void start(StandaloneConfiguration requestConfig, StreamObserver<Void> response) {

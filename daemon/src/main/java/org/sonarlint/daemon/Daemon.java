@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.interceptors.ExceptionInterceptor;
 import org.sonarlint.daemon.services.ConnectedSonarLintImpl;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
-import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
-import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
 public class Daemon {
   private static final Logger LOGGER = LoggerFactory.getLogger(Daemon.class);
@@ -69,8 +67,8 @@ public class Daemon {
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
       server = ServerBuilder.forPort(port)
-        .addService(ServerInterceptors.intercept(ConnectedSonarLintGrpc.bindService(new ConnectedSonarLintImpl()), interceptor))
-        .addService(ServerInterceptors.intercept(StandaloneSonarLintGrpc.bindService(new StandaloneSonarLintImpl()), interceptor))
+        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(), interceptor))
+        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(), interceptor))
         .build()
         .start();
       LOGGER.info("Server started, listening on " + port);
