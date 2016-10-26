@@ -63,6 +63,7 @@ import static org.junit.Assume.assumeTrue;
 public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
   private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
@@ -77,6 +78,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .addPlugin("php")
     .addPlugin("python")
     .addPlugin(FileLocation.of("plugins/javascript-custom-rules/target/javascript-custom-rules-plugin-1.0-SNAPSHOT.jar"))
+    .addPlugin(FileLocation.of("plugins/custom-sensor-plugin/target/custom-sensor-plugin-0.1-SNAPSHOT.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
@@ -84,6 +86,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
     .build();
 
   @ClassRule
@@ -117,6 +120,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT_CUSTOM, "Sample Javascript Custom");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -125,6 +129,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT_CUSTOM, "js", "SonarLint IT Javascript Custom");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
@@ -282,6 +287,20 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
       tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath()),
       tuple("squid:S1228", null));
+  }
+
+  @Test
+  public void customSensorsNotExecuted() throws Exception {
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM_SENSOR, PROJECT_KEY_JAVA,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener);
+
+    assertThat(issueListener.getIssues()).isEmpty();
   }
 
   @Test
