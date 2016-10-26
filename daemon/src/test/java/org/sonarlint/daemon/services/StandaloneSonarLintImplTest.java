@@ -21,19 +21,18 @@ package org.sonarlint.daemon.services;
 
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.sonarlint.daemon.services.AbstractSonarLint.DefaultClientInputFile;
-import org.sonarlint.daemon.services.AbstractSonarLint.ProxyIssueListener;
-import org.sonarlint.daemon.services.AbstractSonarLint.ProxyLogOutput;
+import org.sonarlint.daemon.services.StandaloneSonarLintImpl.DefaultClientInputFile;
+import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyIssueListener;
+import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StandaloneConfiguration;
-
-import java.nio.charset.Charset;
-import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -107,7 +106,7 @@ public class StandaloneSonarLintImplTest {
     assertThat(event.getLevel()).isEqualTo("DEBUG");
     assertThat(event.getLog()).isEqualTo("msg");
   }
-  
+
   @Test
   public void testProxyLogError() {
     ProxyLogOutput log = new ProxyLogOutput();
@@ -116,15 +115,15 @@ public class StandaloneSonarLintImplTest {
     log.setObserver(observer);
     log.log("msg", Level.DEBUG);
   }
-  
+
   @Test
   public void testStart() {
     StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl();
     StandaloneConfiguration config = StandaloneConfiguration.newBuilder().build();
     StreamObserver observer = mock(StreamObserver.class);
     sonarlint.start(config, observer);
-    
+
     verify(observer).onCompleted();
-    
+
   }
 }

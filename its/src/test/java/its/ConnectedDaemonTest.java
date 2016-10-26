@@ -180,7 +180,7 @@ public class ConnectedDaemonTest {
 
     assertThat(issues).hasSize(3);
     // assertThat(logs.getLogsAndClear()).contains("2 files indexed");
-    call.cancel();
+    call.cancel(null, null);
 
     channel.shutdownNow();
     channel.awaitTermination(2, TimeUnit.SECONDS);

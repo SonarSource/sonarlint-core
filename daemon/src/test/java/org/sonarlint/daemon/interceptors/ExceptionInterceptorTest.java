@@ -50,11 +50,11 @@ public class ExceptionInterceptorTest {
 
   private Status transformStatus(Exception cause) {
     ArgumentCaptor<Status> argument = ArgumentCaptor.forClass(Status.class);
-    ServerCall<Void> delegate = mock(ServerCall.class);
+    ServerCall<Void, Void> delegate = mock(ServerCall.class);
     Status status = Status.UNKNOWN.withCause(cause);
     assertThat(status.getDescription()).isNull();
     Metadata trailers = new Metadata();
-    TransformStatusServerCall<Void> serverCall = new TransformStatusServerCall<>(delegate);
+    TransformStatusServerCall<Void, Void> serverCall = new TransformStatusServerCall<>(delegate);
     serverCall.close(status, trailers);
     verify(delegate).close(argument.capture(), any(Metadata.class));
     return argument.getValue();
@@ -64,12 +64,12 @@ public class ExceptionInterceptorTest {
   public void testInterceptor() {
     ExceptionInterceptor interceptor = new ExceptionInterceptor();
     MethodDescriptor<Void, Void> method = mock(MethodDescriptor.class);
-    ServerCall<Void> call = mock(ServerCall.class);
+    ServerCall<Void, Void> call = mock(ServerCall.class);
     Metadata headers = new Metadata();
     ServerCallHandler<Void, Void> next = mock(ServerCallHandler.class);
 
-    interceptor.interceptCall(method, call, headers, next);
+    interceptor.interceptCall(call, headers, next);
 
-    verify(next).startCall(eq(method), isA(TransformStatusServerCall.class), eq(headers));
+    verify(next).startCall(isA(TransformStatusServerCall.class), eq(headers));
   }
 }

@@ -20,11 +20,16 @@
 package org.sonarlint.daemon.services;
 
 import io.grpc.stub.StreamObserver;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonarlint.daemon.services.AbstractSonarLint.DefaultClientInputFile;
-import org.sonarlint.daemon.services.AbstractSonarLint.ProxyIssueListener;
-import org.sonarlint.daemon.services.AbstractSonarLint.ProxyLogOutput;
+import org.sonarlint.daemon.services.StandaloneSonarLintImpl.DefaultClientInputFile;
+import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyIssueListener;
+import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -32,27 +37,20 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc.ConnectedSonarLint;
+import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedConfiguration;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ModuleUpdateReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleDetails;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ServerConfig;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState.State;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
-
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
-public class ConnectedSonarLintImpl implements ConnectedSonarLint {
+public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedSonarLintImpl.class);
   private ConnectedSonarLintEngine engine;
   private ProxyLogOutput logOutput = new ProxyLogOutput();
@@ -188,8 +186,7 @@ public class ConnectedSonarLintImpl implements ConnectedSonarLint {
       response.onError(e);
     }
   }
-  
-  
+
   @Override
   public void getRuleDetails(RuleKey key, StreamObserver<RuleDetails> response) {
     try {

@@ -19,24 +19,24 @@
  */
 package org.sonarlint.daemon.interceptors;
 
+import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
-import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.Status;
 
 public class ExceptionInterceptor implements ServerInterceptor {
+
   @Override
-  public <ReqT, RespT> Listener<ReqT> interceptCall(MethodDescriptor<ReqT, RespT> method, ServerCall<RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-    ServerCall<RespT> serverCall = new TransformStatusServerCall<>(call);
-    return next.startCall(method, serverCall, headers);
+  public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+    ServerCall<ReqT, RespT> serverCall = new TransformStatusServerCall<>(call);
+    return next.startCall(serverCall, headers);
   }
 
-  static class TransformStatusServerCall<RespT> extends SimpleForwardingServerCall<RespT> {
-    protected TransformStatusServerCall(ServerCall<RespT> delegate) {
+  static class TransformStatusServerCall<ReqT, RespT> extends SimpleForwardingServerCall<ReqT, RespT> {
+    protected TransformStatusServerCall(ServerCall<ReqT, RespT> delegate) {
       super(delegate);
     }
 
