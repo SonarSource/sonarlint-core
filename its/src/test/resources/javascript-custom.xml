@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Javascript Custom</name>
+  <language>js</language>
+  <rules>
+    <rule>
+      <!-- Forbidden function should not be used (foo, bar) -->
+      <repositoryKey>custom</repositoryKey>
+      <key>S1</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
