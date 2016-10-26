@@ -21,8 +21,12 @@ package org.sonarlint.daemon.services;
 
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -68,8 +72,8 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
     }
 
     @Override
-    public Path getPath() {
-      return path;
+    public String getPath() {
+      return path.toString();
     }
 
     @Override
@@ -85,6 +89,16 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
     @Override
     public <G> G getClientObject() {
       return (G) userObject;
+    }
+
+    @Override
+    public InputStream inputStream() throws IOException {
+      return Files.newInputStream(path);
+    }
+
+    @Override
+    public String contents() throws IOException {
+      return new String(Files.readAllBytes(path), charset);
     }
   }
 

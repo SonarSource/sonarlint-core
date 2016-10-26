@@ -23,6 +23,8 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl.DefaultClientInputFile;
@@ -45,7 +47,7 @@ public class StandaloneSonarLintImplTest {
 
   @Test
   public void testInputFile() {
-    Path path = mock(Path.class);
+    Path path = Paths.get("");
     boolean isTest = true;
     Charset charset = mock(Charset.class);
     String userObject = new String();
@@ -53,8 +55,8 @@ public class StandaloneSonarLintImplTest {
 
     assertThat(file.getCharset()).isEqualTo(charset);
     assertThat(file.isTest()).isEqualTo(isTest);
-    assertThat(file.getPath()).isEqualTo(path);
-    assertThat((Object) file.getClientObject()).isEqualTo(userObject);
+    assertThat(file.getPath()).isEqualTo(path.toString());
+    assertThat((String) file.getClientObject()).isEqualTo(userObject);
   }
 
   @Test

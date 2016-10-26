@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +36,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -163,7 +162,7 @@ public class ConnectedFileExclusionsMediumTest {
 
   private void updateModuleConfig(StorageManager storageManager, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
     Builder newBuilder = ModuleConfiguration.newBuilder(originalModuleConfig);
-    newBuilder.getMutableProperties().putAll(props);
+    newBuilder.putAllProperties(props);
     ProtobufUtil.writeToFile(newBuilder.build(), storageManager.getModuleConfigurationPath(MODULE_KEY));
   }
 
@@ -179,33 +178,7 @@ public class ConnectedFileExclusionsMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content);
-    ClientInputFile inputFile = createInputFile(file.toPath(), isTest);
-    return inputFile;
-  }
-
-  private ClientInputFile createInputFile(final Path path, final boolean isTest) {
-    ClientInputFile inputFile = new ClientInputFile() {
-
-      @Override
-      public Path getPath() {
-        return path;
-      }
-
-      @Override
-      public boolean isTest() {
-        return isTest;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return StandardCharsets.UTF_8;
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-    };
+    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), isTest);
     return inputFile;
   }
 

@@ -26,9 +26,6 @@ import com.jayway.awaitility.Awaitility;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
@@ -130,28 +128,6 @@ public class LogMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content);
-    ClientInputFile inputFile = new ClientInputFile() {
-
-      @Override
-      public Path getPath() {
-        return file.toPath();
-      }
-
-      @Override
-      public boolean isTest() {
-        return isTest;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return StandardCharsets.UTF_8;
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-    };
-    return inputFile;
+    return TestUtils.createInputFile(file.toPath(), false);
   }
 }

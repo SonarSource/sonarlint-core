@@ -19,8 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 
 /**
@@ -30,9 +31,10 @@ import javax.annotation.CheckForNull;
 public interface ClientInputFile {
 
   /**
-   * Absolute path to the physical file.
+   * The absolute file path. It needs to correspond to a file in the filesystem because some plugins don't use {@link #contents} 
+   * or {@link inputStream} yet, and will attempt to access the file directly.
    */
-  Path getPath();
+  String getPath();
 
   /**
    * Flag an input file as test file. Analyzers may apply different rules on test files.
@@ -50,5 +52,14 @@ public interface ClientInputFile {
    * Allow clients to pass their own object to ease mapping of issues.
    */
   <G> G getClientObject();
-
+  
+  /**
+   *  Gets a stream of the contents of the file.
+   */
+  InputStream inputStream() throws IOException;
+  
+  /**
+   *  Gets the contents of the file. 
+   */
+  String contents() throws IOException;
 }

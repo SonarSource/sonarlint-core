@@ -20,8 +20,12 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -57,7 +61,17 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public Path path() {
-    return clientInputFile.getPath();
+    return Paths.get(clientInputFile.getPath());
+  }
+  
+  @Override
+  public InputStream inputStream() throws IOException {
+    return clientInputFile.inputStream();
+  }
+
+  @Override
+  public String contents() throws IOException {
+    return clientInputFile.contents();
   }
 
   @Override

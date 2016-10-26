@@ -201,7 +201,7 @@ public class FileMetadataTest {
     File file = new File(tempFolder, "doesNotExist.txt");
 
     thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("Fail to read file '" + file.getAbsolutePath() + "' with encoding 'UTF-8'");
+    thrown.expectMessage("File not found: " + file.getAbsolutePath());
 
     new FileMetadata().readMetadata(file, StandardCharsets.UTF_8);
   }
@@ -215,7 +215,7 @@ public class FileMetadataTest {
 
     assertThat(logTester.logs(LoggerLevel.WARN).get(0)).contains("Invalid character encountered in file");
     assertThat(logTester.logs(LoggerLevel.WARN).get(0)).contains(
-      "glyphicons-halflings-regular.woff at line 1 for encoding UTF-8. Please fix file content or configure the encoding to be used using property 'sonar.sourceEncoding'.");
+      "glyphicons-halflings-regular.woff' at line 1 for encoding UTF-8. Please fix file content or configure the encoding to be used using property 'sonar.sourceEncoding'.");
   }
 
 }

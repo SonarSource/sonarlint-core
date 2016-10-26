@@ -25,10 +25,10 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Server;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,6 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -78,36 +77,12 @@ public class AbstractConnectedTest {
   }
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
+    final Path path = Paths.get("projects/" + projectDir + "/" + filePath).toAbsolutePath();
     return new ConnectedAnalysisConfiguration(projectKey,
       new File("projects/" + projectDir).toPath().toAbsolutePath(),
       t.newFolder().toPath(),
-      Arrays.asList(inputFile(projectDir, filePath)),
+      Collections.singletonList(new TestClientInputFile(path, false, StandardCharsets.UTF_8)),
       toMap(properties));
-  }
-
-  protected ClientInputFile inputFile(final String projectDir, final String relativePath) {
-    return new ClientInputFile() {
-
-      @Override
-      public boolean isTest() {
-        return false;
-      }
-
-      @Override
-      public Path getPath() {
-        return Paths.get("projects/" + projectDir + "/" + relativePath).toAbsolutePath();
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return null;
-      }
-    };
   }
 
   static Map<String, String> toMap(String[] keyValues) {

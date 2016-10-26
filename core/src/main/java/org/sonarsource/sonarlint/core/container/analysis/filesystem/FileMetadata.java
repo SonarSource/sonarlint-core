@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import com.google.common.primitives.Ints;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -67,18 +70,19 @@ public class FileMetadata {
   private static class LineCounter extends CharHandler {
     private int lines = 1;
     boolean alreadyLoggedInvalidCharacter = false;
-    private final File file;
+    private final String filePath;
     private final Charset encoding;
 
-    LineCounter(File file, Charset encoding) {
-      this.file = file;
+    LineCounter(String filePath, Charset encoding) {
+      this.filePath = filePath;
       this.encoding = encoding;
     }
 
     @Override
     protected void handleAll(char c) {
       if (!alreadyLoggedInvalidCharacter && c == '\ufffd') {
-        LOG.warn("Invalid character encountered in file {} at line {} for encoding {}. Please fix file content or configure the encoding to be used using property '{}'.", file,
+        LOG.warn("Invalid character encountered in file '{}' at line {} for encoding {}. Please fix file content or configure the encoding to be used using property '{}'.",
+          filePath,
           lines, encoding, CoreProperties.ENCODING_PROPERTY);
         alreadyLoggedInvalidCharacter = true;
       }
@@ -134,9 +138,22 @@ public class FileMetadata {
    * Maximum performance is needed.
    */
   public Metadata readMetadata(File file, Charset encoding) {
-    LineCounter lineCounter = new LineCounter(file, encoding);
+    InputStream stream = streamFile(file);
+    return readMetadata(stream, encoding, file.getAbsolutePath());
+  }
+
+  /**
+   * Compute hash of an inputStream ignoring line ends differences.
+   * Maximum performance is needed.
+   */
+  public Metadata readMetadata(InputStream stream, Charset encoding, String filePath) {
+    LineCounter lineCounter = new LineCounter(filePath, encoding);
     LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
-    readFile(file, encoding, lineCounter, lineOffsetCounter);
+    try (Reader reader = new BufferedReader(new InputStreamReader(stream, encoding))) {
+      read(reader, lineCounter, lineOffsetCounter);
+    } catch (IOException e) {
+      throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", filePath, encoding), e);
+    }
     return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
   }
 
@@ -144,23 +161,22 @@ public class FileMetadata {
    * For testing purpose
    */
   public Metadata readMetadata(Reader reader) {
-    LineCounter lineCounter = new LineCounter(new File("fromString"), StandardCharsets.UTF_16);
+    LineCounter lineCounter = new LineCounter("fromString", StandardCharsets.UTF_16);
     LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
     try {
       read(reader, lineCounter, lineOffsetCounter);
     } catch (IOException e) {
-      throw new IllegalStateException("Should never occurs", e);
+      throw new IllegalStateException("Should never occur", e);
     }
     return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
   }
 
-  public static void readFile(File file, Charset encoding, CharHandler... handlers) {
-    try (BOMInputStream bomIn = new BOMInputStream(new FileInputStream(file),
-      ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
-      Reader reader = new BufferedReader(new InputStreamReader(bomIn, encoding))) {
-      read(reader, handlers);
-    } catch (IOException e) {
-      throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", file.getAbsolutePath(), encoding), e);
+  private static InputStream streamFile(File file) {
+    try {
+      return new BOMInputStream(new FileInputStream(file),
+        ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
+    } catch (FileNotFoundException e) {
+      throw new IllegalStateException("File not found: " + file.getAbsolutePath(), e);
     }
   }
 

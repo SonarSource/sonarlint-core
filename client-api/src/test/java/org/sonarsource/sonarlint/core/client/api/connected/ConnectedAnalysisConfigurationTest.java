@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +27,7 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,50 +45,10 @@ public class ConnectedAnalysisConfigurationTest {
 
     final Path srcFile1 = temp.newFile().toPath();
     final Path srcFile2 = temp.newFile().toPath();
-    ClientInputFile inputFile = new ClientInputFile() {
 
-      @Override
-      public boolean isTest() {
-        return false;
-      }
+    ClientInputFile inputFile = new TestClientInputFile(srcFile1, false, StandardCharsets.UTF_8);
+    ClientInputFile testInputFile = new TestClientInputFile(srcFile2, true, StandardCharsets.UTF_8);
 
-      @Override
-      public Path getPath() {
-        return srcFile1;
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return null;
-      }
-    };
-    ClientInputFile testInputFile = new ClientInputFile() {
-
-      @Override
-      public boolean isTest() {
-        return true;
-      }
-
-      @Override
-      public Path getPath() {
-        return srcFile2;
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return null;
-      }
-    };
     Path baseDir = temp.newFolder().toPath();
     Path workDir = temp.newFolder().toPath();
     ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("foo", baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
@@ -119,5 +80,4 @@ public class ConnectedAnalysisConfigurationTest {
       "]\n");
 
   }
-
 }

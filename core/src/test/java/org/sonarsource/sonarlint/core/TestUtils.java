@@ -19,7 +19,12 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 
@@ -30,7 +35,7 @@ public class TestUtils {
     public void handle(Issue issue) {
     }
   };
-  
+
   public static NoOpIssueListener createNoOpIssueListener() {
     return new NoOpIssueListener();
   }
@@ -41,9 +46,17 @@ public class TestUtils {
       // Don't pollute logs
     }
   }
-  
+
   public static NoOpLogOutput createNoOpLogOutput() {
     return new NoOpLogOutput();
+  }
+
+  public static ClientInputFile createInputFile(final Path path, final boolean isTest) {
+    return createInputFile(path, isTest, StandardCharsets.UTF_8);
+  }
+
+  public static ClientInputFile createInputFile(final Path path, final boolean isTest, final Charset encoding) {
+    return new TestClientInputFile(path, isTest, encoding);
   }
 
 }

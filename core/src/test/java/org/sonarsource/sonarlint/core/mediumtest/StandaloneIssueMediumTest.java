@@ -41,6 +41,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -260,8 +261,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleJavaWithBytecode() throws Exception {
-    ClientInputFile inputFile = createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false,
-      StandardCharsets.UTF_8);
+    ClientInputFile inputFile = TestUtils.createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
@@ -367,38 +367,12 @@ public class StandaloneIssueMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
-    ClientInputFile inputFile = createInputFile(file.toPath(), isTest, encoding);
+    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), isTest, encoding);
     return inputFile;
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8);
-  }
-
-  private ClientInputFile createInputFile(final Path path, final boolean isTest, final Charset encoding) {
-    ClientInputFile inputFile = new ClientInputFile() {
-
-      @Override
-      public Path getPath() {
-        return path;
-      }
-
-      @Override
-      public boolean isTest() {
-        return isTest;
-      }
-
-      @Override
-      public Charset getCharset() {
-        return encoding;
-      }
-
-      @Override
-      public <G> G getClientObject() {
-        return null;
-      }
-    };
-    return inputFile;
   }
 
 }

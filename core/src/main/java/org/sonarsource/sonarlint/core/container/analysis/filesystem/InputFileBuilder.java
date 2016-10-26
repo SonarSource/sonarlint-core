@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.fs.InputFile.Type;
@@ -46,7 +48,13 @@ public class InputFileBuilder {
     defaultInputFile.setLanguage(lang);
 
     Charset charset = inputFile.getCharset();
-    defaultInputFile.init(fileMetadata.readMetadata(inputFile.getPath().toFile(), charset != null ? charset : Charset.defaultCharset()));
+    InputStream stream;
+    try {
+      stream = inputFile.inputStream();
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to open a stream on file: " + inputFile.getPath());
+    }
+    defaultInputFile.init(fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), inputFile.getPath()));
     return defaultInputFile;
   }
 

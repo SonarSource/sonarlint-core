@@ -32,7 +32,7 @@
   </modules>
 
   <properties>
-    <sonarqube.version>6.1</sonarqube.version>
+    <sonarqube.version>6.2-build14732</sonarqube.version>
     <!-- SLCORE-60 -->
     <sonar-ws.version>6.1</sonar-ws.version>
     <sonar-scanner-protocol.version>6.1</sonar-scanner-protocol.version>
