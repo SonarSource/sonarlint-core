@@ -66,6 +66,8 @@ public class PluginCopier {
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if ((sonarLintSupported != null && sonarLintSupported.booleanValue()) || isWhitelisted(info.getKey())) {
         infosByKey.put(info.getKey(), info);
+      } else {
+        LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", info.getKey());
       }
     }
 

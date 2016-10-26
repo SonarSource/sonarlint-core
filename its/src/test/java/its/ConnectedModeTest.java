@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerExc
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assume.assumeTrue;
 
 public class ConnectedModeTest extends AbstractConnectedTest {
@@ -64,6 +65,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
+  private static final String PROJECT_KEY_JAVASCRIPT_CUSTOM = "sample-javascript-custom";
   private static final String PROJECT_KEY_PYTHON = "sample-python";
 
   @ClassRule
@@ -72,9 +74,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .addPlugin("javascript")
     .addPlugin("php")
     .addPlugin("python")
+    .addPlugin(FileLocation.of("plugins/javascript-custom-rules/target/javascript-custom-rules-plugin-1.0-SNAPSHOT.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
     .build();
@@ -107,12 +111,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT_CUSTOM, "Sample Javascript Custom");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT_CUSTOM, "js", "SonarLint IT Javascript Custom");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
 
     // Build project to have bytecode
@@ -208,6 +214,19 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener);
     assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisJavascriptWithCustomRules() throws Exception {
+
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVASCRIPT_CUSTOM);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT_CUSTOM, PROJECT_KEY_JAVASCRIPT_CUSTOM, "src/Person.js"), issueListener);
+    assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
+      tuple("custom:S1", 3),
+      tuple("custom:S1", 7));
   }
 
   @Test

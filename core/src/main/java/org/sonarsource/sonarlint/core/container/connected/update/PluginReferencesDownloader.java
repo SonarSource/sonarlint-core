@@ -68,7 +68,7 @@ public class PluginReferencesDownloader {
       String[] fields = StringUtils.split(line, ",");
       String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
       String key = fields[0];
-      boolean compatible = PluginCopier.isWhitelisted(key) || (compatibleFlagPresent && "true".equals(fields[1]));
+      boolean compatible = PluginCopier.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
       if (!compatible) {
         LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", key);
         continue;
