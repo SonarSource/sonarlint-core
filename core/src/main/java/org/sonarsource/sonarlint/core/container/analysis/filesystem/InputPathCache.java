@@ -20,10 +20,8 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Set;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
@@ -33,7 +31,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 public class InputPathCache extends DefaultFileSystem.Cache {
 
   private final Map<Path, InputFile> inputFileCache = Maps.newLinkedHashMap();
-  private final Set<InputDir> inputDirCache = Sets.newHashSet();
+  private final Map<Path, InputDir> inputDirCache = Maps.newLinkedHashMap();
 
   @Override
   public Iterable<InputFile> inputFiles() {
@@ -41,7 +39,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   }
 
   public Iterable<InputDir> allDirs() {
-    return inputDirCache;
+    return inputDirCache.values();
   }
 
   @Override
@@ -51,7 +49,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   @Override
   public void doAdd(InputDir inputDir) {
-    inputDirCache.add(inputDir);
+    inputDirCache.put(inputDir.path(), inputDir);
   }
 
   @Override
@@ -66,6 +64,10 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   public InputFile inputFile(Path path) {
     return inputFileCache.get(path);
+  }
+
+  public InputDir inputDir(Path path) {
+    return inputDirCache.get(path);
   }
 
 }

@@ -35,7 +35,7 @@ public class SonarLintInputDir extends DefaultInputDir {
 
   @Override
   public String relativePath() {
-    throw unsupported();
+    return absolutePath();
   }
 
   @Override
@@ -55,11 +55,7 @@ public class SonarLintInputDir extends DefaultInputDir {
 
   @Override
   public String key() {
-    throw unsupported();
-  }
-
-  private static UnsupportedOperationException unsupported() {
-    return new UnsupportedOperationException("Unsupported in SonarLint");
+    return absolutePath();
   }
 
   @Override

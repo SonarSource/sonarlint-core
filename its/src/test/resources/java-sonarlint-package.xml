@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Java Package</name>
+  <language>java</language>
+  <rules>
+    <rule>
+      <!-- System.out -->
+      <repositoryKey>squid</repositoryKey>
+      <key>S106</key>
+      <priority>MAJOR</priority>
+    </rule>
+    <!-- Missing package-info.java -->
+    <rule>
+      <repositoryKey>squid</repositoryKey>
+      <key>S1228</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
