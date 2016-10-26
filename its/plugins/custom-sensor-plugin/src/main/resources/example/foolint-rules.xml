@@ -1,0 +1,16 @@
+<foolint-rules>
+	<rule>
+		<key>ExampleRule1</key>
+		<name>Example Rule 1</name>
+		<internalKey>ExampleRule1</internalKey>
+		<description>This is an example of rule defined thru the XML.
+		</description>
+		<severity>BLOCKER</severity>
+		<cardinality>SINGLE</cardinality>
+		<status>READY</status>
+		<tag>example</tag>
+		<tag>bug</tag>
+		<remediationFunction>CONSTANT_ISSUE</remediationFunction>
+        <remediationFunctionBaseEffort>2min</remediationFunctionBaseEffort>
+	</rule>
+</foolint-rules>

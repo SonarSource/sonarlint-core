@@ -68,7 +68,7 @@ public class AnalysisContainer extends ComponentContainer {
   @Override
   protected void doBeforeStart() {
     addBatchComponents();
-    addBatchExtensions();
+    addPluginExtensions();
   }
 
   private void addBatchComponents() {
@@ -133,7 +133,7 @@ public class AnalysisContainer extends ComponentContainer {
       NoOpSymbolizableBuilder.class);
   }
 
-  private void addBatchExtensions() {
+  private void addPluginExtensions() {
     getComponentByType(ExtensionInstaller.class).install(this);
   }
 

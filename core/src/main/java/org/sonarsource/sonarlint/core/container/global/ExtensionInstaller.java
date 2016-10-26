@@ -25,9 +25,11 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
+import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginCopier;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
 public class ExtensionInstaller {
@@ -49,18 +51,7 @@ public class ExtensionInstaller {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
       Plugin.Context context = new Plugin.Context(sqRuntime);
       plugin.define(context);
-      for (Object extension : context.getExtensions()) {
-        Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
-        if (isSlPluginOrNull != null && isSlPluginOrNull.booleanValue()) {
-          if (ExtensionUtils.isSonarLintSide(extension)) {
-            container.addExtension(pluginInfo, extension);
-          }
-        } else if (!blacklisted(extension) && (ExtensionUtils.isScannerSide(extension) || ExtensionUtils.isType(extension, ProfileDefinition.class))) {
-          container.addExtension(pluginInfo, extension);
-        } else {
-          LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
-        }
-      }
+      loadExtensions(container, pluginInfo, context);
     }
     List<ExtensionProvider> providers = container.getComponentsByType(ExtensionProvider.class);
     for (ExtensionProvider provider : providers) {
@@ -74,6 +65,29 @@ public class ExtensionInstaller {
       }
     }
     return this;
+  }
+
+  private static void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context) {
+    for (Object extension : context.getExtensions()) {
+      Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
+      boolean isExplicitlySonarLintCompatible = isSlPluginOrNull != null && isSlPluginOrNull.booleanValue();
+      if (isExplicitlySonarLintCompatible) {
+        // When plugin itself claim to be compatible with SonarLint, only load @SonarLintSide extensions
+        // filter out non officially supported Sensors
+        if (ExtensionUtils.isSonarLintSide(extension) && (PluginCopier.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension))) {
+          container.addExtension(pluginInfo, extension);
+        }
+      } else if (!blacklisted(extension) && (ExtensionUtils.isScannerSide(extension) || ExtensionUtils.isType(extension, ProfileDefinition.class))) {
+        // Here we have whitelisted extensions of whitelisted plugins
+        container.addExtension(pluginInfo, extension);
+      } else {
+        LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
+      }
+    }
+  }
+
+  private static boolean isNotSensor(Object extension) {
+    return !ExtensionUtils.isType(extension, Sensor.class) && !ExtensionUtils.isType(extension, org.sonar.api.batch.Sensor.class);
   }
 
   private static boolean blacklisted(Object extension) {
