@@ -43,10 +43,10 @@ public class AnalysisSettings extends Settings {
   public AnalysisSettings(StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions, new Encryption(null));
     GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
-    addProperties(globalProps.getProperties());
+    addProperties(globalProps.getPropertiesMap());
     if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
       ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
-      addProperties(projectConfig.getProperties());
+      addProperties(projectConfig.getPropertiesMap());
     }
     addProperties(config.extraProperties());
   }
