@@ -19,13 +19,25 @@
  */
 package org.sonarlint.daemon.services;
 
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Collectors;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl.DefaultClientInputFile;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyIssueListener;
@@ -36,26 +48,31 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StandaloneConfiguration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 
 public class StandaloneSonarLintImplTest {
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void testInputFile() {
-    Path path = Paths.get("");
+  public void testInputFile() throws IOException {
+    Charset charset = StandardCharsets.UTF_16;
+    Path path = temp.newFile().toPath();
+    Files.write(path, "test".getBytes(charset));
+
     boolean isTest = true;
-    Charset charset = mock(Charset.class);
     String userObject = new String();
     DefaultClientInputFile file = new DefaultClientInputFile(path, isTest, charset, userObject);
 
     assertThat(file.getCharset()).isEqualTo(charset);
     assertThat(file.isTest()).isEqualTo(isTest);
     assertThat(file.getPath()).isEqualTo(path.toString());
+    assertThat(file.contents()).isEqualTo("test");
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.inputStream(), charset))) {
+      assertThat(reader.lines().collect(Collectors.joining())).isEqualTo("test");
+    }
+
     assertThat((String) file.getClientObject()).isEqualTo(userObject);
   }
 

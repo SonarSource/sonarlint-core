@@ -28,8 +28,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.TestClientInputFile;
@@ -38,12 +41,14 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 public class InputFileBuilderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   private LanguageDetection langDetection = mock(LanguageDetection.class);
   private FileMetadata metadata = new FileMetadata();
 
   @Test
-  public void test() throws IOException {
+  public void testCreate() throws IOException {
     when(langDetection.language(any(InputFile.class))).thenReturn("java");
 
     Path path = temp.getRoot().toPath().resolve("file");
@@ -59,5 +64,19 @@ public class InputFileBuilderTest {
     assertThat(inputFile.language()).isEqualTo("java");
     assertThat(inputFile.key()).isEqualTo(path.toAbsolutePath().toString());
     assertThat(inputFile.lines()).isEqualTo(1);
+
+    assertThat(builder.langDetection()).isEqualTo(langDetection);
+  }
+
+  @Test
+  public void testCreateError() throws IOException {
+    when(langDetection.language(any(InputFile.class))).thenReturn("java");
+    ClientInputFile file = new TestClientInputFile(Paths.get("INVALID"), true, StandardCharsets.ISO_8859_1);
+
+    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
+
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Failed to open a stream on file");
+    builder.create(file);
   }
 }
