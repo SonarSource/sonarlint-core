@@ -56,10 +56,10 @@ public class ServerSettingsProvider {
       super(propertyDefinitions, new Encryption(null));
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
-        addProperties(globalProps.getProperties());
+        addProperties(globalProps.getPropertiesMap());
         if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
           ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
-          addProperties(projectConfig.getProperties());
+          addProperties(projectConfig.getPropertiesMap());
         }
       }
     }

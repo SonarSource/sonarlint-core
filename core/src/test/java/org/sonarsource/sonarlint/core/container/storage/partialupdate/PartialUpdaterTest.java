@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +36,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -79,6 +82,13 @@ public class PartialUpdaterTest {
     updater.updateFileIssues("module", "file");
 
     verify(issueStore).save(issues);
+  }
+
+  @Test
+  public void create() {
+    ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
+    when(serverConfiguration.getUrl()).thenReturn("http://fake.com");
+    assertThat(PartialUpdater.create(storageManager, serverConfiguration, issueStoreReader)).isNotNull();
   }
 
   @Test

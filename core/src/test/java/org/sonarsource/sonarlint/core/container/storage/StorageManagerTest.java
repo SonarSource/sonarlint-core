@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.io.IOException;
 import java.nio.file.Path;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -56,6 +58,33 @@ public class StorageManagerTest {
 
     Path storageRoot = manager.getServerStorageRoot();
     assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("complicated.%3Aname%2Fwith_invalid%25chars"));
+  }
+
+  @Test
+  public void paths() throws IOException {
+    Path sonarUserHome = temp.newFolder().toPath();
+    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+      .setSonarLintUserHome(sonarUserHome)
+      .setServerId("server")
+      .build());
+
+    assertThat(manager.getServerIssuesPath("module")).isEqualTo(sonarUserHome
+      .resolve("storage")
+      .resolve("server")
+      .resolve("modules")
+      .resolve("module")
+      .resolve("server_issues"));
+
+    assertThat(manager.getModuleListPath()).isEqualTo(sonarUserHome
+      .resolve("storage")
+      .resolve("server")
+      .resolve("global")
+      .resolve("module_list.pb"));
+  }
+
+  @Test
+  public void readModuleList() {
+
   }
 
 }
