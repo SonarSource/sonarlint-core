@@ -30,7 +30,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.ByteOrderMark;
@@ -153,20 +152,6 @@ public class FileMetadata {
       read(reader, lineCounter, lineOffsetCounter);
     } catch (IOException e) {
       throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", filePath, encoding), e);
-    }
-    return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
-  }
-
-  /**
-   * For testing purpose
-   */
-  public Metadata readMetadata(Reader reader) {
-    LineCounter lineCounter = new LineCounter("fromString", StandardCharsets.UTF_16);
-    LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
-    try {
-      read(reader, lineCounter, lineOffsetCounter);
-    } catch (IOException e) {
-      throw new IllegalStateException("Should never occur", e);
     }
     return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
   }

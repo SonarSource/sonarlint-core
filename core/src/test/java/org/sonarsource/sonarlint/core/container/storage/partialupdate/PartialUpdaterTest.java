@@ -20,10 +20,12 @@
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,12 +33,14 @@ import java.util.Iterator;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -47,6 +51,8 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 public class PartialUpdaterTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   @Mock
   private IssueStoreFactory issueStoreFactory;
@@ -82,6 +88,25 @@ public class PartialUpdaterTest {
     updater.updateFileIssues("module", "file");
 
     verify(issueStore).save(issues);
+  }
+
+  @Test
+  public void error_downloading_issues() {
+    when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
+    when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
+    when(downloader.apply("module:file")).thenThrow(IOException.class);
+
+    exception.expect(DownloadException.class);
+    updater.updateFileIssues("module", "file");
+  }
+
+  @Test
+  public void error_downloading_modules() {
+    when(storageManager.getModuleListPath()).thenReturn(temp.getRoot().toPath());
+    doThrow(IOException.class).when(moduleListDownloader).fetchModulesList(temp.getRoot().toPath());
+    exception.expect(DownloadException.class);
+
+    updater.updateModuleList();
   }
 
   @Test
