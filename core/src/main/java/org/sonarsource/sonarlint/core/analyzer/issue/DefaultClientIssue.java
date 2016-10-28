@@ -100,7 +100,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
       sb.append(", line=").append(textRange.start().line());
     }
     if (clientInputFile != null) {
-      sb.append(", file=").append(clientInputFile.getPath().toString());
+      sb.append(", file=").append(clientInputFile.getPath());
     }
     sb.append("]");
     return sb.toString();
