@@ -285,7 +285,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
-      tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath()),
+      tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
       tuple("squid:S1228", null));
   }
 

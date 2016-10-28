@@ -144,7 +144,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         .setEndLineOffset(issue.getEndLineOffset() != null ? issue.getEndLineOffset() : 0);
 
       if (inputFile != null) {
-        builder.setFilePath(inputFile.getPath().toString())
+        builder.setFilePath(inputFile.getPath())
           .setUserObject((String) inputFile.getClientObject());
       }
 

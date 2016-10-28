@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -80,6 +81,33 @@ public class PluginReferencesDownloaderTest {
 
     verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Downloader.class));
     verify(pluginVersionChecker).checkPlugins(PLUGIN_INDEX);
+  }
+
+  @Test
+  public void download_plugin() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt", PLUGIN_INDEX);
+
+    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache, pluginVersionChecker);
+
+    pluginUpdate.fetchPluginsTo(dest, "5.6");
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StorageManager.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
+      .containsOnly(
+        tuple("scmsvn", "d0a68d150314d96d3469e0f2246f3537", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar"),
+        tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"),
+        tuple("csharp", "e78bc8ac2e376c4a7a2a2cae914bdc52", "sonar-csharp-plugin-4.4.jar"),
+        tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
+        tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"));
+
+    ArgumentCaptor<Downloader> downloaderCaptor = ArgumentCaptor.forClass(Downloader.class);
+
+    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), downloaderCaptor.capture());
+
+    Downloader downloader = downloaderCaptor.getValue();
+    WsClientTestUtils.addResponse(wsClient, "/deploy/plugins/java/test.jar", "content");
+    Path testFile = temp.newFile().toPath();
+    downloader.download("test.jar", testFile);
+    assertThat(testFile).hasContent("content");
   }
 
   @Test

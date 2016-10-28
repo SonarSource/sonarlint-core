@@ -52,7 +52,7 @@ public class InputFileBuilder {
     try {
       stream = inputFile.inputStream();
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to open a stream on file: " + inputFile.getPath());
+      throw new IllegalStateException("Failed to open a stream on file: " + inputFile.getPath(), e);
     }
     defaultInputFile.init(fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), inputFile.getPath()));
     return defaultInputFile;

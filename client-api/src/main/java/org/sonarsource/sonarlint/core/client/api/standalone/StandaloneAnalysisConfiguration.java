@@ -69,7 +69,7 @@ public class StandaloneAnalysisConfiguration {
     sb.append("  extraProperties: ").append(extraProperties).append("\n");
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles) {
-      sb.append("    ").append(inputFile.getPath().toString());
+      sb.append("    ").append(inputFile.getPath());
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
