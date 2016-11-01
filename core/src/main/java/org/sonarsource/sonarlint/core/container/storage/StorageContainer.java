@@ -52,7 +52,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginCopier;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
-import org.sonarsource.sonarlint.core.util.FileUtils;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = LoggerFactory.getLogger(StorageContainer.class);
