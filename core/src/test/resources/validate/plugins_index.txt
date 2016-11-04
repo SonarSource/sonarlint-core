@@ -15,7 +15,7 @@ xml,sonar-xml-plugin-1.4.1.jar|3c591fa8fcbf0ef13a036e7857a1b2e6
 vbnet,sonar-vbnet-plugin-2.4.jar|af98942756fb4745be7dcbaa002ad8a6
 swift,sonar-swift-plugin-1.5.1.jar|6ffc7589f97929126f2c08aea4f951cf
 github,sonar-github-plugin-1.1.jar|779d77f0c5e0ac6d0b165f71b2519ac9
-cpp,sonar-cpp-plugin-3.11-M6_2016-04-07.jar|11fb929d61c03c422330304738979e4e
+cpp,sonar-cpp-plugin-4.11-M6_2016-04-07.jar|11fb929d61c03c422330304738979e4e
 python,sonar-python-plugin-1.5.jar|268d44b47786147ef51376215c6c230a
 authgithub,sonar-auth-github-plugin-1.1.1.jar|2662138cc2605d94acc9d061e420e76a
 scmmercurial,sonar-scm-mercurial-plugin-1.1.1.jar|a9abe06427f65d76bb3b5ddc078344ce
