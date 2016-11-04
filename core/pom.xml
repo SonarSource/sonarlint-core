@@ -243,7 +243,7 @@
             <Import-Package>
               !*
             </Import-Package>
-            <Export-Package>org.sonarsource.sonarlint.core</Export-Package>
+            <Export-Package>org.sonarsource.sonarlint.core,com.google.protobuf</Export-Package>
             <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version-->
             <Require-Bundle>org.sonarsource.sonarlint.core.sonarlint-client-api;bundle-version="${parsedVersion.osgiVersion}"</Require-Bundle>
             <_failok>true</_failok>
