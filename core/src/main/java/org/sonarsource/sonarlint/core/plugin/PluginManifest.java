@@ -151,7 +151,7 @@ public final class PluginManifest {
   /**
    * @since 3.5
    */
-  public PluginManifest setRequirePlugins(String[] requirePlugins) {
+  public PluginManifest setRequirePlugins(@Nullable String[] requirePlugins) {
     this.requirePlugins = requirePlugins != null ? requirePlugins.clone() : null;
     return this;
   }
