@@ -113,7 +113,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     removeGroupPermission("anyone", "scan");
 
     ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
+      .create(UserParameters.create()
+        .login(SONARLINT_USER)
+        .password(SONARLINT_PWD)
+        .passwordConfirmation(SONARLINT_PWD)
+        .name("SonarLint"));
 
     // addUserPermission("sonarlint", "dryRunScan");
 
@@ -176,7 +180,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void parsingErrorJava() throws IOException {
     String fileContent = "pac kage its; public class MyTest { }";
-    Path testFile = temp.newFile().toPath();
+    Path testFile = temp.newFile("MyTest.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
@@ -191,7 +195,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void parsingErrorJavascript() throws IOException {
     String fileContent = "asd asd";
-    Path testFile = temp.newFile().toPath();
+    Path testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
@@ -206,7 +210,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void semanticErrorJava() throws IOException {
     String fileContent = "package its;public class MyTest {int a;int a;}";
-    Path testFile = temp.newFile().toPath();
+    Path testFile = temp.newFile("MyTest.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
