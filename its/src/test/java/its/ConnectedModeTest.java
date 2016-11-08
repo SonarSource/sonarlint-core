@@ -180,7 +180,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void parsingErrorJava() throws IOException {
     String fileContent = "pac kage its; public class MyTest { }";
-    Path testFile = temp.newFile("MyTest.java").toPath();
+    Path testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
@@ -210,7 +210,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void semanticErrorJava() throws IOException {
     String fileContent = "package its;public class MyTest {int a;int a;}";
-    Path testFile = temp.newFile("MyTest.java").toPath();
+    Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
