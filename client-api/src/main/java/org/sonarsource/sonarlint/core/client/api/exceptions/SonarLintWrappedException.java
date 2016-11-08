@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
+import javax.annotation.Nullable;
+
 /**
  * Client should not depend on this technical class
  */
@@ -31,7 +33,10 @@ public class SonarLintWrappedException extends SonarLintException {
     this.originalClassToString = originalClassToString;
   }
 
-  public static SonarLintException wrap(Throwable t) {
+  public static SonarLintException wrap(@Nullable Throwable t) {
+    if (t == null) {
+      return null;
+    }
     if (t.getCause() == null && t instanceof SonarLintException) {
       return (SonarLintException) t;
     }
