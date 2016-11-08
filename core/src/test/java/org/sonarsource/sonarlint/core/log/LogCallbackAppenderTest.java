@@ -21,27 +21,35 @@ package org.sonarsource.sonarlint.core.log;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.Appender;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import java.io.IOException;
 
 public class LogCallbackAppenderTest {
   private LogOutput listener;
   private LogCallbackAppender appender;
   private ILoggingEvent event;
   private Appender<ILoggingEvent> defaultAppender;
+  private LoggedErrorHandler errorHandler;
 
   @Before
   public void setUp() {
     listener = mock(LogOutput.class);
+    errorHandler = mock(LoggedErrorHandler.class);
     defaultAppender = mock(Appender.class);
     appender = new LogCallbackAppender(defaultAppender);
     appender.setTarget(listener);
@@ -59,6 +67,33 @@ public class LogCallbackAppenderTest {
     testMessage("test", Level.OFF, LogOutput.Level.DEBUG);
   }
 
+  @Test
+  public void testErrorMessageHandling() {
+    appender.setErrorHandler(errorHandler);
+    reset(listener);
+    event = mock(ILoggingEvent.class);
+    when(event.getFormattedMessage()).thenReturn("error msg");
+    when(event.getLevel()).thenReturn(Level.ERROR);
+
+    appender.append(event);
+
+    verify(errorHandler).handleError("error msg");
+  }
+
+  @Test
+  public void testExceptionHandling() {
+    appender.setErrorHandler(errorHandler);
+    reset(listener);
+    event = mock(ILoggingEvent.class);
+    IThrowableProxy throwable = new ThrowableProxy(new IOException());
+    when(event.getThrowableProxy()).thenReturn(throwable);
+    when(event.getLevel()).thenReturn(Level.ERROR);
+
+    appender.append(event);
+
+    verify(errorHandler).handleException("java.io.IOException");
+  }
+
   private void testMessage(String msg, Level level, LogOutput.Level translatedLevel) {
     reset(listener);
     event = mock(ILoggingEvent.class);
@@ -68,7 +103,7 @@ public class LogCallbackAppenderTest {
     appender.append(event);
 
     verify(event).getFormattedMessage();
-    verify(event).getLevel();
+    verify(event, times(2)).getLevel();
     verify(event).getThrowableProxy();
     verify(listener).log(msg, translatedLevel);
     verifyNoMoreInteractions(event, listener);

@@ -26,18 +26,25 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 
 class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
   private final InheritableThreadLocal<LogOutput> tlTtarget;
+  private final InheritableThreadLocal<LoggedErrorHandler> errorHandler;
   private final Appender<ILoggingEvent> defaultAppender;
 
   LogCallbackAppender(Appender<ILoggingEvent> defaultAppender) {
     this.tlTtarget = new InheritableThreadLocal<>();
+    this.errorHandler = new InheritableThreadLocal<>();
     this.defaultAppender = defaultAppender;
   }
 
   public void setTarget(@Nullable LogOutput target) {
     this.tlTtarget.set(target);
+  }
+
+  public void setErrorHandler(@Nullable LoggedErrorHandler errorHandler) {
+    this.errorHandler.set(errorHandler);
   }
 
   @Override
@@ -57,7 +64,21 @@ class LogCallbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
       msg = event.getFormattedMessage() + "\n" + throwableConverter.convert(event);
       throwableConverter.stop();
     }
+
+    handleErrors(event);
     target.log(msg, translate(event.getLevel()));
+  }
+
+  private void handleErrors(ILoggingEvent event) {
+    if (event.getLevel().equals(Level.ERROR)) {
+      LoggedErrorHandler handler = errorHandler.get();
+      if (handler != null) {
+        handler.handleError(event.getFormattedMessage());
+        if (event.getThrowableProxy() != null) {
+          handler.handleException(event.getThrowableProxy().getClassName());
+        }
+      }
+    }
   }
 
   private static LogOutput.Level translate(Level level) {

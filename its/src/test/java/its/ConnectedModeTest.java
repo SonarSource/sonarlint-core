@@ -23,6 +23,9 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.commons.io.FileUtils;
@@ -49,6 +52,7 @@ import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -167,6 +171,51 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
     }
+  }
+
+  @Test
+  public void parsingErrorJava() throws IOException {
+    String fileContent = "pac kage its; public class MyTest { }";
+    Path testFile = temp.newFile().toPath();
+    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
+
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener);
+
+    assertThat(results.failedAnalysisFiles()).hasSize(1);
+  }
+  
+  @Test
+  public void parsingErrorJavascript() throws IOException {
+    String fileContent = "asd asd";
+    Path testFile = temp.newFile().toPath();
+    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
+
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVASCRIPT);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener);
+
+    assertThat(results.failedAnalysisFiles()).hasSize(1);
+  }
+
+  @Test
+  public void semanticErrorJava() throws IOException {
+    String fileContent = "package its;public class MyTest {int a;int a;}";
+    Path testFile = temp.newFile().toPath();
+    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
+
+    updateGlobal();
+    updateModule(PROJECT_KEY_JAVA);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener);
+
+    assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
 
   @Test

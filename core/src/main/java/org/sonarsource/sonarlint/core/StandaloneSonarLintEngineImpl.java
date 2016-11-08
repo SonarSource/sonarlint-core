@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.log.SonarLintLogging;
+import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 
 import javax.annotation.Nullable;
 
@@ -88,9 +89,13 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     checkNotNull(configuration);
     checkNotNull(issueListener);
     setLogging(logOutput);
+    LoggedErrorHandler errorHandler = new LoggedErrorHandler(configuration.inputFiles());
+    SonarLintLogging.setErrorHandler(errorHandler);
     rwl.readLock().lock();
     try {
-      return globalContainer.analyze(configuration, issueListener);
+      AnalysisResults results = globalContainer.analyze(configuration, issueListener);
+      errorHandler.getErrorFiles().forEach(results.failedAnalysisFiles()::add);
+      return results;
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {

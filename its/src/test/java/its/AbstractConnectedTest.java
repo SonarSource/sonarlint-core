@@ -85,6 +85,15 @@ public class AbstractConnectedTest {
       toMap(properties));
   }
 
+  protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
+    final Path path = Paths.get(absoluteFilePath).toAbsolutePath();
+    return new ConnectedAnalysisConfiguration(projectKey,
+      path.getParent(),
+      t.newFolder().toPath(),
+      Collections.singletonList(new TestClientInputFile(path, false, StandardCharsets.UTF_8)),
+      Collections.emptyMap());
+  }
+
   static Map<String, String> toMap(String[] keyValues) {
     Preconditions.checkArgument(keyValues.length % 2 == 0, "Must be an even number of key/values");
     Map<String, String> map = Maps.newHashMap();

@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.log.SonarLintLogging;
+import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -150,10 +151,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     checkNotNull(configuration);
     checkNotNull(issueListener);
     setLogging(logOutput);
+    LoggedErrorHandler errorHandler = new LoggedErrorHandler(configuration.inputFiles());
+    SonarLintLogging.setErrorHandler(errorHandler);
     rwl.readLock().lock();
     try {
       checkUpdateStatus();
-      return getGlobalContainer().analyze(configuration, issueListener);
+      AnalysisResults results = getGlobalContainer().analyze(configuration, issueListener);
+      errorHandler.getErrorFiles().forEach(results.failedAnalysisFiles()::add);
+      return results;
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -212,7 +217,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       rwl.readLock().unlock();
     }
   }
-  
+
   @Override
   public Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig) {
     return withRwLock(() -> {
