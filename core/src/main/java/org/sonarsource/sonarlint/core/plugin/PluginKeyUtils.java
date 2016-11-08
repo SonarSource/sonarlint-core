@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -34,7 +36,7 @@ public final class PluginKeyUtils {
     // only static methods
   }
 
-  public static String sanitize(String mavenArtifactId) {
+  public static String sanitize(@Nullable String mavenArtifactId) {
     if (mavenArtifactId == null) {
       return null;
     }

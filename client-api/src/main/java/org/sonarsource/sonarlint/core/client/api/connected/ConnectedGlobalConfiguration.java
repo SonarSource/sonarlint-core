@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
@@ -72,7 +73,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
       return this;
     }
 
-    private static void validate(String serverId) {
+    private static void validate(@Nullable String serverId) {
       if (serverId == null || serverId.isEmpty()) {
         throw new IllegalArgumentException("'" + serverId + "' is not a valid server ID");
       }

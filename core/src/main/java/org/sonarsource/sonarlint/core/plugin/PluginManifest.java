@@ -25,6 +25,8 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 
@@ -185,7 +187,7 @@ public final class PluginManifest {
     return dependencies != null ? dependencies.clone() : null;
   }
 
-  public PluginManifest setDependencies(String[] dependencies) {
+  public PluginManifest setDependencies(@Nullable String[] dependencies) {
     this.dependencies = dependencies != null ? dependencies.clone() : null;
     return this;
   }

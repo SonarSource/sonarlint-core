@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import javax.annotation.Nullable;
+
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -38,7 +40,7 @@ public class StorageAnalyzer {
     this.moduleUpdateStatusReader = moduleUpdateStatusReader;
   }
 
-  private void checkStatus(String moduleKey) {
+  private void checkStatus(@Nullable String moduleKey) {
     GlobalUpdateStatus updateStatus = globalUpdateStatusReader.get();
     if (updateStatus == null) {
       throw new StorageException("Missing global data. Please update server.", false);

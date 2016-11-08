@@ -32,9 +32,6 @@ public class SonarLintWrappedException extends SonarLintException {
   }
 
   public static SonarLintException wrap(Throwable t) {
-    if (t == null) {
-      return null;
-    }
     if (t.getCause() == null && t instanceof SonarLintException) {
       return (SonarLintException) t;
     }

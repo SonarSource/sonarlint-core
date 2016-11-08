@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.StringUtils;
 
 public final class FormatUtils {
@@ -45,7 +48,7 @@ public final class FormatUtils {
     }
   }
 
-  public static String toString(Date d, boolean includeTime) {
+  public static String toString(@Nullable Date d, boolean includeTime) {
     if (d != null) {
       return new SimpleDateFormat(includeTime ? DATETIME_PATTERN : DATE_PATTERN).format(d);
     }

@@ -106,7 +106,7 @@ public class BatchExtensionDictionnary {
     return extensions;
   }
 
-  private static void completeBatchExtensions(ComponentContainer container, List<Object> extensions, Class type) {
+  private static void completeBatchExtensions(@Nullable ComponentContainer container, List<Object> extensions, Class type) {
     if (container != null) {
       extensions.addAll(container.getComponentsByType(type));
       completeBatchExtensions(container.getParent(), extensions, type);
