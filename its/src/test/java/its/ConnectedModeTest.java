@@ -515,7 +515,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(result.needUpdate()).isFalse();
 
     // Change a setting
-    newAdminWsClient().settingsService().set(SetRequest.builder().setKey("sonar.foo").setValue("bar").build());
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.1")) {
+      newAdminWsClient().settingsService().set(SetRequest.builder().setKey("sonar.foo").setValue("bar").build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.foo", "bar"));
+    }
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
