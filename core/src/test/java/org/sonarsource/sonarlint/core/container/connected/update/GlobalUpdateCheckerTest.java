@@ -26,10 +26,13 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +42,7 @@ public class GlobalUpdateCheckerTest {
   private ServerVersionAndStatusChecker statusChecker;
   private StorageManager storageManager;
   private GlobalPropertiesDownloader globalPropertiesDownloader;
+  private PluginReferencesDownloader pluginReferenceDownloader;
 
   @Before
   public void prepare() {
@@ -47,16 +51,19 @@ public class GlobalUpdateCheckerTest {
 
     storageManager = mock(StorageManager.class);
     globalPropertiesDownloader = mock(GlobalPropertiesDownloader.class);
+    pluginReferenceDownloader = mock(PluginReferencesDownloader.class);
+
+    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().build());
+    when(storageManager.readPluginReferencesFromStorage()).thenReturn(PluginReferences.newBuilder().build());
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
+    when(pluginReferenceDownloader.fetchPlugins(anyString())).thenReturn(PluginReferences.newBuilder().build());
 
     checker = new GlobalUpdateChecker(storageManager, mock(PluginVersionChecker.class), statusChecker,
-      mock(PluginReferencesDownloader.class), globalPropertiesDownloader, mock(RulesDownloader.class), mock(QualityProfilesDownloader.class));
+      pluginReferenceDownloader, globalPropertiesDownloader, mock(RulesDownloader.class), mock(QualityProfilesDownloader.class));
   }
 
   @Test
   public void testNoChanges() {
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().build());
-    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
-
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isFalse();
@@ -65,7 +72,6 @@ public class GlobalUpdateCheckerTest {
 
   @Test
   public void addedProp() {
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().build());
     when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.new", "value").build());
 
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
@@ -77,7 +83,6 @@ public class GlobalUpdateCheckerTest {
   @Test
   public void removedProp() {
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.old", "value").build());
-    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
 
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
@@ -94,6 +99,41 @@ public class GlobalUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).isEqualTo("Value of property 'sonar.prop' changed from 'old' to 'new'\n");
+  }
+
+  @Test
+  public void addedPlugin() {
+    when(pluginReferenceDownloader.fetchPlugins(anyString()))
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
+
+    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).isEqualTo("Plugin 'java' added\n");
+  }
+
+  @Test
+  public void removedPlugin() {
+    when(storageManager.readPluginReferencesFromStorage())
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
+
+    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).isEqualTo("Plugin 'java' removed\n");
+  }
+
+  @Test
+  public void updatedPlugin() {
+    when(pluginReferenceDownloader.fetchPlugins(anyString()))
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
+    when(storageManager.readPluginReferencesFromStorage())
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
+
+    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).isEqualTo("Plugin 'java' updated\n");
   }
 
 }

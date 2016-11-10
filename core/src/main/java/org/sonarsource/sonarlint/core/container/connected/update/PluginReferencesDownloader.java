@@ -54,7 +54,7 @@ public class PluginReferencesDownloader {
     this.pluginVersionChecker = pluginVersionChecker;
   }
 
-  public PluginReferences fetchPluginsTo(Path dest, String serverVersion) {
+  public PluginReferences fetchPlugins(String serverVersion) {
     boolean compatibleFlagPresent = Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.0")) >= 0;
     WsResponse response = wsClient.get("deploy/plugins/index.txt");
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -80,12 +80,19 @@ public class PluginReferencesDownloader {
         .setHash(hash)
         .setFilename(filename)
         .build());
-      pluginCache.get(filename, hash, new SonarQubeServerPluginDownloader(key));
     }
     scanner.close();
     PluginReferences pluginReferences = builder.build();
-    ProtobufUtil.writeToFile(pluginReferences, dest.resolve(StorageManager.PLUGIN_REFERENCES_PB));
     return pluginReferences;
+  }
+
+  public PluginReferences fetchPluginsTo(Path dest, String serverVersion) {
+    PluginReferences refs = fetchPlugins(serverVersion);
+    for (PluginReference ref : refs.getReferenceList()) {
+      pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
+    }
+    ProtobufUtil.writeToFile(refs, dest.resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    return refs;
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Downloader {

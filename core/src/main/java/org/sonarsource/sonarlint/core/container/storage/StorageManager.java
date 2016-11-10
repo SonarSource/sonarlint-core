@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import javax.annotation.CheckForNull;
-
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
@@ -164,6 +163,10 @@ public class StorageManager {
 
   public Sonarlint.GlobalProperties readGlobalPropertiesFromStorage() {
     return ProtobufUtil.readFile(getGlobalPropertiesPath(), Sonarlint.GlobalProperties.parser());
+  }
+
+  public Sonarlint.PluginReferences readPluginReferencesFromStorage() {
+    return ProtobufUtil.readFile(getPluginReferencesPath(), Sonarlint.PluginReferences.parser());
   }
 
   public Sonarlint.ModuleConfiguration readModuleConfigFromStorage(String moduleKey) {

@@ -23,11 +23,14 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -63,6 +66,42 @@ public class GlobalUpdateChecker {
 
     // Currently with don't check server version change since it is unlikely to have impact on SL
 
+    checkGlobalProperties(progress, result);
+
+    progress.setProgressAndCheckCancel("Checking plugins", 0.3f);
+    PluginReferences serverPluginReferences = pluginReferenceDownloader.fetchPlugins(serverStatus.getVersion());
+    PluginReferences storagePluginReferences = storageManager.readPluginReferencesFromStorage();
+    Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
+    Map<String, String> storagePluginHashes = storagePluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
+    MapDifference<String, String> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);
+    if (!pluginDiff.areEqual()) {
+      for (Map.Entry<String, String> entry : pluginDiff.entriesOnlyOnLeft().entrySet()) {
+        result.appendToChangelog(String.format("Plugin '%s' removed", entry.getKey()));
+      }
+      for (Map.Entry<String, String> entry : pluginDiff.entriesOnlyOnRight().entrySet()) {
+        result.appendToChangelog("Plugin '" + entry.getKey() + "' added");
+      }
+      for (Map.Entry<String, ValueDifference<String>> entry : pluginDiff.entriesDiffering().entrySet()) {
+        result.appendToChangelog("Plugin '" + entry.getKey() + "' updated");
+      }
+    }
+
+    //
+    // progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
+    // rulesDownloader.fetchRulesTo(temp);
+    //
+    // progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
+    // qualityProfilesDownloader.fetchQualityProfiles(temp);
+    //
+    // progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
+    // moduleListDownloader.fetchModulesList(temp);
+    //
+    // progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
+
+    return result;
+  }
+
+  private void checkGlobalProperties(ProgressWrapper progress, DefaultGlobalStorageUpdateCheckResult result) {
     progress.setProgressAndCheckCancel("Checking global properties", 0.2f);
     GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalProperties();
     GlobalProperties storageGlobalProperties = storageManager.readGlobalPropertiesFromStorage();
@@ -78,21 +117,5 @@ public class GlobalUpdateChecker {
         result.appendToChangelog("Value of property '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
       }
     }
-
-    // progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
-    // pluginReferenceDownloader.fetchPluginsTo(temp, serverStatus.getVersion());
-    //
-    // progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-    // rulesDownloader.fetchRulesTo(temp);
-    //
-    // progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
-    // qualityProfilesDownloader.fetchQualityProfiles(temp);
-    //
-    // progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-    // moduleListDownloader.fetchModulesList(temp);
-    //
-    // progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
-
-    return result;
   }
 }
