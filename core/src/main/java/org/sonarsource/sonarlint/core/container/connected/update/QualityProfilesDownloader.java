@@ -45,7 +45,7 @@ public class QualityProfilesDownloader {
     try (InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream()) {
       SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
       for (QualityProfile qp : qpResponse.getProfilesList()) {
-        org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile.Builder qpBuilder = QProfile.newBuilder();
+        QProfile.Builder qpBuilder = QProfile.newBuilder();
         qpBuilder.setKey(qp.getKey());
         qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
 
