@@ -28,6 +28,8 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -43,6 +45,7 @@ public class GlobalUpdateCheckerTest {
   private StorageManager storageManager;
   private GlobalPropertiesDownloader globalPropertiesDownloader;
   private PluginReferencesDownloader pluginReferenceDownloader;
+  private QualityProfilesDownloader qualityProfilesDownloader;
 
   @Before
   public void prepare() {
@@ -52,14 +55,17 @@ public class GlobalUpdateCheckerTest {
     storageManager = mock(StorageManager.class);
     globalPropertiesDownloader = mock(GlobalPropertiesDownloader.class);
     pluginReferenceDownloader = mock(PluginReferencesDownloader.class);
+    qualityProfilesDownloader = mock(QualityProfilesDownloader.class);
 
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().build());
     when(storageManager.readPluginReferencesFromStorage()).thenReturn(PluginReferences.newBuilder().build());
+    when(storageManager.readQProfilesFromStorage()).thenReturn(QProfiles.newBuilder().build());
     when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
     when(pluginReferenceDownloader.fetchPlugins(anyString())).thenReturn(PluginReferences.newBuilder().build());
+    when(qualityProfilesDownloader.fetchQualityProfiles()).thenReturn(QProfiles.newBuilder().build());
 
     checker = new GlobalUpdateChecker(storageManager, mock(PluginVersionChecker.class), statusChecker,
-      pluginReferenceDownloader, globalPropertiesDownloader, mock(RulesDownloader.class), mock(QualityProfilesDownloader.class));
+      pluginReferenceDownloader, globalPropertiesDownloader, qualityProfilesDownloader);
   }
 
   @Test
@@ -134,6 +140,41 @@ public class GlobalUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).isEqualTo("Plugin 'java' updated\n");
+  }
+
+  @Test
+  public void addedQProfile() {
+    when(qualityProfilesDownloader.fetchQualityProfiles())
+      .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").build()).build());
+
+    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).isEqualTo("Quality profile 'java-123' added\n");
+  }
+
+  @Test
+  public void removedQProfile() {
+    when(storageManager.readQProfilesFromStorage())
+      .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").build()).build());
+
+    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).isEqualTo("Quality profile 'java-123' removed\n");
+  }
+
+  @Test
+  public void updatedQProfile() {
+    when(qualityProfilesDownloader.fetchQualityProfiles())
+      .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setRulesUpdatedAt("foo").build()).build());
+    when(storageManager.readQProfilesFromStorage())
+      .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setRulesUpdatedAt("foo2").build()).build());
+
+    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).isEqualTo("Quality profile 'java-123' updated\n");
   }
 
 }

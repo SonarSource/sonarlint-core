@@ -39,7 +39,11 @@ public class QualityProfilesDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchQualityProfiles(Path destDir) {
+  public void fetchQualityProfilesTo(Path destDir) {
+    ProtobufUtil.writeToFile(fetchQualityProfiles(), destDir.resolve(StorageManager.QUALITY_PROFILES_PB));
+  }
+
+  public QProfiles fetchQualityProfiles() {
     QProfiles.Builder qProfileBuilder = QProfiles.newBuilder();
 
     try (InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream()) {
@@ -58,6 +62,7 @@ public class QualityProfilesDownloader {
       throw new IllegalStateException("Failed to load default quality profiles", e);
     }
 
-    ProtobufUtil.writeToFile(qProfileBuilder.build(), destDir.resolve(StorageManager.QUALITY_PROFILES_PB));
+    QProfiles build = qProfileBuilder.build();
+    return build;
   }
 }

@@ -31,6 +31,8 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -39,20 +41,18 @@ public class GlobalUpdateChecker {
   private final StorageManager storageManager;
   private final PluginReferencesDownloader pluginReferenceDownloader;
   private final GlobalPropertiesDownloader globalPropertiesDownloader;
-  private final RulesDownloader rulesDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
   private final PluginVersionChecker pluginsChecker;
   private final QualityProfilesDownloader qualityProfilesDownloader;
 
   public GlobalUpdateChecker(StorageManager storageManager, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
-    PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
+    PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader,
     QualityProfilesDownloader qualityProfilesDownloader) {
     this.storageManager = storageManager;
     this.pluginsChecker = pluginsChecker;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalPropertiesDownloader = globalPropertiesDownloader;
-    this.rulesDownloader = rulesDownloader;
     this.qualityProfilesDownloader = qualityProfilesDownloader;
   }
 
@@ -65,10 +65,42 @@ public class GlobalUpdateChecker {
     pluginsChecker.checkPlugins(serverStatus.getVersion());
 
     // Currently with don't check server version change since it is unlikely to have impact on SL
+    progress.setProgressAndCheckCancel("Checking global properties", 0.4f);
+    checkGlobalProperties(result);
 
-    checkGlobalProperties(progress, result);
+    progress.setProgressAndCheckCancel("Checking plugins", 0.6f);
+    checkPlugins(result, serverStatus);
 
-    progress.setProgressAndCheckCancel("Checking plugins", 0.3f);
+    progress.setProgressAndCheckCancel("Checking quality profiles", 0.8f);
+    checkQualityProfiles(result);
+
+    progress.setProgressAndCheckCancel("Done", 1.0f);
+
+    return result;
+  }
+
+  private void checkQualityProfiles(DefaultGlobalStorageUpdateCheckResult result) {
+    QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles();
+    QProfiles storageQProfiles = storageManager.readQProfilesFromStorage();
+    Map<String, String> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap().values().stream()
+      .collect(Collectors.toMap(QProfile::getKey, QProfile::getRulesUpdatedAt));
+    Map<String, String> storagePluginHashes = storageQProfiles.getQprofilesByKeyMap().values().stream()
+      .collect(Collectors.toMap(QProfile::getKey, QProfile::getRulesUpdatedAt));
+    MapDifference<String, String> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);
+    if (!pluginDiff.areEqual()) {
+      for (Map.Entry<String, String> entry : pluginDiff.entriesOnlyOnLeft().entrySet()) {
+        result.appendToChangelog(String.format("Quality profile '%s' removed", entry.getKey()));
+      }
+      for (Map.Entry<String, String> entry : pluginDiff.entriesOnlyOnRight().entrySet()) {
+        result.appendToChangelog("Quality profile '" + entry.getKey() + "' added");
+      }
+      for (Map.Entry<String, ValueDifference<String>> entry : pluginDiff.entriesDiffering().entrySet()) {
+        result.appendToChangelog("Quality profile '" + entry.getKey() + "' updated");
+      }
+    }
+  }
+
+  private void checkPlugins(DefaultGlobalStorageUpdateCheckResult result, ServerInfos serverStatus) {
     PluginReferences serverPluginReferences = pluginReferenceDownloader.fetchPlugins(serverStatus.getVersion());
     PluginReferences storagePluginReferences = storageManager.readPluginReferencesFromStorage();
     Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
@@ -85,24 +117,9 @@ public class GlobalUpdateChecker {
         result.appendToChangelog("Plugin '" + entry.getKey() + "' updated");
       }
     }
-
-    //
-    // progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-    // rulesDownloader.fetchRulesTo(temp);
-    //
-    // progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
-    // qualityProfilesDownloader.fetchQualityProfiles(temp);
-    //
-    // progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-    // moduleListDownloader.fetchModulesList(temp);
-    //
-    // progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
-
-    return result;
   }
 
-  private void checkGlobalProperties(ProgressWrapper progress, DefaultGlobalStorageUpdateCheckResult result) {
-    progress.setProgressAndCheckCancel("Checking global properties", 0.2f);
+  private void checkGlobalProperties(DefaultGlobalStorageUpdateCheckResult result) {
     GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalProperties();
     GlobalProperties storageGlobalProperties = storageManager.readGlobalPropertiesFromStorage();
     MapDifference<String, String> propDiff = Maps.difference(storageGlobalProperties.getPropertiesMap(), serverGlobalProperties.getPropertiesMap());

@@ -76,6 +76,7 @@ message QProfiles {
   message QProfile {
     string key = 1;
     int64 activeRuleCount = 2;
+    string rulesUpdatedAt = 3;
   }
 }
 

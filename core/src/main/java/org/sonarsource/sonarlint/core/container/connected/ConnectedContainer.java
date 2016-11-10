@@ -62,6 +62,7 @@ public class ConnectedContainer extends ComponentContainer {
       PluginVersionChecker.class,
       SonarLintWsClient.class,
       GlobalUpdateExecutor.class,
+      GlobalUpdateChecker.class,
       ModuleConfigUpdateExecutor.class,
       PluginReferencesDownloader.class,
       GlobalPropertiesDownloader.class,

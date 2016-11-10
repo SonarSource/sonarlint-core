@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.nio.file.Path;
 import java.util.Date;
 import org.sonar.api.utils.TempFolder;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -29,7 +30,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -82,7 +82,7 @@ public class GlobalUpdateExecutor {
       rulesDownloader.fetchRulesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
-      qualityProfilesDownloader.fetchQualityProfiles(temp);
+      qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
       moduleListDownloader.fetchModulesList(temp);
