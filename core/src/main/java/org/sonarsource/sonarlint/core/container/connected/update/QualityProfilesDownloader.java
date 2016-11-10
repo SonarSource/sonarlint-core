@@ -62,7 +62,6 @@ public class QualityProfilesDownloader {
       throw new IllegalStateException("Failed to load default quality profiles", e);
     }
 
-    QProfiles build = qProfileBuilder.build();
-    return build;
+    return qProfileBuilder.build();
   }
 }

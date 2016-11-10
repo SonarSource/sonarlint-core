@@ -82,8 +82,7 @@ public class PluginReferencesDownloader {
         .build());
     }
     scanner.close();
-    PluginReferences pluginReferences = builder.build();
-    return pluginReferences;
+    return builder.build();
   }
 
   public PluginReferences fetchPluginsTo(Path dest, String serverVersion) {
