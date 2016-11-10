@@ -37,6 +37,10 @@ public class GlobalPropertiesDownloader {
   }
 
   public void fetchGlobalPropertiesTo(Path dest) {
+    ProtobufUtil.writeToFile(fetchGlobalProperties(), dest.resolve(StorageManager.PROPERTIES_PB));
+  }
+
+  public GlobalProperties fetchGlobalProperties() {
     WsResponse response = wsClient.get(API_PROPERTIES_PATH);
     GlobalProperties.Builder builder = GlobalProperties.newBuilder();
 
@@ -48,8 +52,7 @@ public class GlobalPropertiesDownloader {
         reader.endObject();
       }
       reader.endArray();
-      GlobalProperties globalProperties = builder.build();
-      ProtobufUtil.writeToFile(globalProperties, dest.resolve(StorageManager.PROPERTIES_PB));
+      return builder.build();
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse global properties from: " + response.content(), e);
     }

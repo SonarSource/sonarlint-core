@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 /**
@@ -107,7 +108,6 @@ public interface ConnectedSonarLintEngine {
   /**
    * Return all modules by key
    * @since 2.0
-   * @throws UnsupportedOperationException for standalone mode
    */
   Map<String, RemoteModule> allModulesByKey();
 
@@ -123,7 +123,6 @@ public interface ConnectedSonarLintEngine {
   /**
    * Update current server.
    * @since 2.0
-   * @throws UnsupportedOperationException for standalone mode
    * @throws UnsupportedServerException if server version is too low
    * @throws CanceledException if the update task was cancelled
    */
@@ -134,8 +133,14 @@ public interface ConnectedSonarLintEngine {
   /**
    * Update given module.
    * @since 2.0
-   * @throws UnsupportedOperationException for standalone mode
    */
   void updateModule(ServerConfiguration serverConfig, String moduleKey);
+
+  /**
+   * Check server to see if global storage need updates.
+   * @since 2.6
+   * @throws GlobalUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
+   */
+  GlobalStorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
 }

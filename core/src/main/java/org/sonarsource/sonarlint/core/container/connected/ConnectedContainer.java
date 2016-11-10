@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.container.connected;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpdateExecutor;
@@ -84,6 +86,10 @@ public class ConnectedContainer extends ComponentContainer {
       throw new IllegalStateException("Please update server first");
     }
     getComponentByType(ModuleConfigUpdateExecutor.class).update(moduleKey);
+  }
+
+  public GlobalStorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
+    return getComponentByType(GlobalUpdateChecker.class).checkForUpdate(progress);
   }
 
 }
