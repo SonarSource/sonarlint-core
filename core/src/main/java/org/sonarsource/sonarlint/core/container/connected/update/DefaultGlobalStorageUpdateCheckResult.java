@@ -19,24 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 
 public class DefaultGlobalStorageUpdateCheckResult implements GlobalStorageUpdateCheckResult {
 
-  private StringBuilder changelogBuilder = new StringBuilder();
+  private List<String> changelog = new ArrayList<>();
 
   @Override
   public boolean needUpdate() {
-    return changelogBuilder.length() > 0;
+    return !changelog.isEmpty();
   }
 
   @Override
-  public String changelog() {
-    return changelogBuilder.toString();
+  public List<String> changelog() {
+    return changelog;
   }
 
   void appendToChangelog(String line) {
-    changelogBuilder.append(line).append("\n");
+    changelog.add(line);
   }
 
 }

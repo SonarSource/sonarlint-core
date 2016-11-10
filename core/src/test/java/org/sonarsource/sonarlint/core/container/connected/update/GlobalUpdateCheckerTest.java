@@ -83,7 +83,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Property 'sonar.new' added with value 'value'\n");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.new' added with value 'value'");
   }
 
   @Test
@@ -93,7 +93,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Property 'sonar.old' removed\n");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.old' removed");
   }
 
   @Test
@@ -104,7 +104,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Value of property 'sonar.prop' changed from 'old' to 'new'\n");
+    assertThat(result.changelog()).containsOnly("Value of property 'sonar.prop' changed from 'old' to 'new'");
   }
 
   @Test
@@ -115,7 +115,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Plugin 'java' added\n");
+    assertThat(result.changelog()).containsOnly("Plugin 'java' added");
   }
 
   @Test
@@ -126,7 +126,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Plugin 'java' removed\n");
+    assertThat(result.changelog()).containsOnly("Plugin 'java' removed");
   }
 
   @Test
@@ -139,7 +139,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Plugin 'java' updated\n");
+    assertThat(result.changelog()).containsOnly("Plugin 'java' updated");
   }
 
   @Test
@@ -150,7 +150,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Quality profile 'java-123' added\n");
+    assertThat(result.changelog()).containsOnly("Quality profile 'java-123' added");
   }
 
   @Test
@@ -161,7 +161,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Quality profile 'java-123' removed\n");
+    assertThat(result.changelog()).containsOnly("Quality profile 'java-123' removed");
   }
 
   @Test
@@ -174,7 +174,7 @@ public class GlobalUpdateCheckerTest {
     GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).isEqualTo("Quality profile 'java-123' updated\n");
+    assertThat(result.changelog()).containsOnly("Quality profile 'java-123' updated");
   }
 
 }

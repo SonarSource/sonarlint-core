@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.List;
+
 public interface GlobalStorageUpdateCheckResult {
 
   boolean needUpdate();
 
-  String changelog();
+  List<String> changelog();
 
 }
