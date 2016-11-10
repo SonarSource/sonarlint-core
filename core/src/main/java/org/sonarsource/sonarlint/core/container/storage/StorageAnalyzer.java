@@ -24,29 +24,29 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
 public class StorageAnalyzer {
-  private final ModuleUpdateStatusReader moduleUpdateStatusReader;
+  private final ModuleStorageStatusReader moduleUpdateStatusReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
 
-  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ModuleUpdateStatusReader moduleUpdateStatusReader) {
+  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ModuleStorageStatusReader moduleUpdateStatusReader) {
     this.globalUpdateStatusReader = globalUpdateStatusReader;
     this.moduleUpdateStatusReader = moduleUpdateStatusReader;
   }
 
   private void checkStatus(@Nullable String moduleKey) {
-    GlobalUpdateStatus updateStatus = globalUpdateStatusReader.get();
+    GlobalStorageStatus updateStatus = globalUpdateStatusReader.get();
     if (updateStatus == null) {
       throw new StorageException("Missing global data. Please update server.", false);
     }
     if (moduleKey != null) {
-      ModuleUpdateStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
+      ModuleStorageStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
       if (moduleUpdateStatus == null) {
         throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", moduleKey), false);
       } else if (moduleUpdateStatus.isStale()) {

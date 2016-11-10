@@ -25,10 +25,10 @@ import java.util.Date;
 
 import org.junit.Test;
 
-public class DefaultGlobalUpdateStatusTest {
+public class DefaultGlobalStorageStatusTest {
   @Test
   public void testGetters() {
-    DefaultGlobalUpdateStatus status = new DefaultGlobalUpdateStatus("version", new Date(1000), true);
+    DefaultGlobalStorageStatus status = new DefaultGlobalStorageStatus("version", new Date(1000), true);
     assertThat(status.isStale()).isTrue();
     assertThat(status.getLastUpdateDate()).isEqualTo(new Date(1000));
     assertThat(status.getServerVersion()).isEqualTo("version");

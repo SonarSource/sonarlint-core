@@ -35,8 +35,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
@@ -83,7 +83,7 @@ public class StorageContainer extends ComponentContainer {
       AllModulesReader.class,
       IssueStoreReader.class,
       GlobalUpdateStatusReader.class,
-      ModuleUpdateStatusReader.class,
+      ModuleStorageStatusReader.class,
       StorageRuleDetailsReader.class,
       IssueStoreFactory.class,
 
@@ -104,7 +104,7 @@ public class StorageContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
-    GlobalUpdateStatus updateStatus = getUpdateStatus();
+    GlobalStorageStatus updateStatus = getGlobalStorageStatus();
     if (updateStatus != null) {
       LOG.info("Using storage for server '{}' (last update {})", config.getServerId(),
         new SimpleDateFormat().format(updateStatus.getLastUpdateDate()));
@@ -130,12 +130,12 @@ public class StorageContainer extends ComponentContainer {
     return getComponentByType(StorageRuleDetailsReader.class).apply(ruleKeyStr);
   }
 
-  public GlobalUpdateStatus getUpdateStatus() {
+  public GlobalStorageStatus getGlobalStorageStatus() {
     return getComponentByType(GlobalUpdateStatusReader.class).get();
   }
 
-  public ModuleUpdateStatus getModuleUpdateStatus(String moduleKey) {
-    return getComponentByType(ModuleUpdateStatusReader.class).apply(moduleKey);
+  public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {
+    return getComponentByType(ModuleStorageStatusReader.class).apply(moduleKey);
   }
 
   public Map<String, RemoteModule> allModulesByKey() {

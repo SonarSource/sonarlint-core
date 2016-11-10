@@ -86,8 +86,8 @@ public class ConnectedStaleStorageMediumTest {
     ConnectedSonarLintEngine sonarlint = new ConnectedSonarLintEngineImpl(config);
 
     assertThat(sonarlint.getState()).isEqualTo(State.NEED_UPDATE);
-    assertThat(sonarlint.getUpdateStatus()).isNotNull();
-    assertThat(sonarlint.getModuleUpdateStatus("foo")).isNull();
+    assertThat(sonarlint.getGlobalStorageStatus()).isNotNull();
+    assertThat(sonarlint.getModuleStorageStatus("foo")).isNull();
 
     try {
       sonarlint.allModulesByKey();

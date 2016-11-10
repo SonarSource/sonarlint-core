@@ -21,10 +21,8 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -32,8 +30,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 /**
  * Entry point for SonarLint.
@@ -91,22 +89,20 @@ public interface ConnectedSonarLintEngine {
   Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
 
   /**
-   * Get information about current update state
-   * @return null if server was never updated
-   * @since 2.0
-   * @throws UnsupportedOperationException for standalone mode
+   * Get information about current global storage state
+   * @return null if storage was never updated
+   * @since 2.6
    */
   @CheckForNull
-  GlobalUpdateStatus getUpdateStatus();
+  GlobalStorageStatus getGlobalStorageStatus();
 
   /**
-   * Get information about module update state
+   * Get information about module storage state
    * @return null if module was never updated
-   * @since 2.0
-   * @throws UnsupportedOperationException for standalone mode
+   * @since 2.6
    */
   @CheckForNull
-  ModuleUpdateStatus getModuleUpdateStatus(String moduleKey);
+  ModuleStorageStatus getModuleStorageStatus(String moduleKey);
 
   /**
    * Return all modules by key
@@ -131,9 +127,9 @@ public interface ConnectedSonarLintEngine {
    * @throws UnsupportedServerException if server version is too low
    * @throws CanceledException if the update task was cancelled
    */
-  GlobalUpdateStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  GlobalStorageStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
-  GlobalUpdateStatus update(ServerConfiguration serverConfig);
+  GlobalStorageStatus update(ServerConfiguration serverConfig);
 
   /**
    * Update given module.

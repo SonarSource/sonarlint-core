@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.function.Supplier;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 
-public class GlobalUpdateStatusReader implements Supplier<GlobalUpdateStatus> {
+public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
   private final StorageManager storageManager;
 
   public GlobalUpdateStatusReader(StorageManager storageManager) {
@@ -31,7 +31,7 @@ public class GlobalUpdateStatusReader implements Supplier<GlobalUpdateStatus> {
   }
 
   @Override
-  public GlobalUpdateStatus get() {
-    return storageManager.getGlobalUpdateStatus();
+  public GlobalStorageStatus get() {
+    return storageManager.getGlobalStorageStatus();
   }
 }

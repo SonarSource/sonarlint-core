@@ -25,13 +25,13 @@ import java.util.Date;
 
 import org.junit.Test;
 
-public class DefaultModuleUpdateStatusTest {
-  private DefaultModuleUpdateStatus status;
+public class DefaultModuleStorageStatusTest {
+  private DefaultModuleStorageStatus status;
 
   @Test
   public void testGetters() {
     Date date = new Date(1000_000);
-    status = new DefaultModuleUpdateStatus(date, true);
+    status = new DefaultModuleStorageStatus(date, true);
     assertThat(status.getLastUpdateDate()).isEqualTo(date);
     assertThat(status.isStale()).isTrue();
   }

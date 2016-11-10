@@ -226,8 +226,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void globalUpdate() throws Exception {
     updateGlobal();
 
-    assertThat(engine.getUpdateStatus()).isNotNull();
-    assertThat(engine.getUpdateStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
+    assertThat(engine.getGlobalStorageStatus()).isNotNull();
+    assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
     if (supportHtmlDesc()) {
       assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
@@ -235,7 +235,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("Rule descriptions are only available in SonarLint with SonarQube 5.1+");
     }
 
-    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY_JAVA)).isNull();
+    assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
 
   @Test
@@ -244,7 +244,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     updateModule(PROJECT_KEY_JAVA);
 
-    assertThat(engine.getModuleUpdateStatus(PROJECT_KEY_JAVA)).isNotNull();
+    assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNotNull();
   }
 
   @Test

@@ -28,8 +28,8 @@ import java.util.Date;
 import javax.annotation.CheckForNull;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
-import org.sonarsource.sonarlint.core.container.model.DefaultGlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -49,13 +49,13 @@ public class StorageManager {
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path moduleStorageRoot;
-  private final GlobalUpdateStatus updateStatus;
+  private final GlobalStorageStatus storageStatus;
 
   public StorageManager(ConnectedGlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getServerId()));
     globalStorageRoot = serverStorageRoot.resolve("global");
     moduleStorageRoot = serverStorageRoot.resolve("modules");
-    updateStatus = initUpdateStatus();
+    storageStatus = initStorageStatus();
   }
 
   public Path getServerStorageRoot() {
@@ -123,12 +123,12 @@ public class StorageManager {
   }
 
   @CheckForNull
-  public GlobalUpdateStatus getGlobalUpdateStatus() {
-    return updateStatus;
+  public GlobalStorageStatus getGlobalStorageStatus() {
+    return storageStatus;
   }
 
   @CheckForNull
-  private GlobalUpdateStatus initUpdateStatus() {
+  private GlobalStorageStatus initStorageStatus() {
     Path updateStatusPath = getUpdateStatusPath();
     if (Files.exists(updateStatusPath)) {
       final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
@@ -141,7 +141,7 @@ public class StorageManager {
         version = serverInfoFromStorage.getVersion();
       }
 
-      return new DefaultGlobalUpdateStatus(version, new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
+      return new DefaultGlobalStorageStatus(version, new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;
   }

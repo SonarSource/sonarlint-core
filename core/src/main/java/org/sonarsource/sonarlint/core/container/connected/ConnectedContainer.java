@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
@@ -79,7 +79,7 @@ public class ConnectedContainer extends ComponentContainer {
   }
 
   public void updateModule(String moduleKey) {
-    GlobalUpdateStatus updateStatus = getComponentByType(StorageManager.class).getGlobalUpdateStatus();
+    GlobalStorageStatus updateStatus = getComponentByType(StorageManager.class).getGlobalStorageStatus();
     if (updateStatus == null) {
       throw new IllegalStateException("Please update server first");
     }
