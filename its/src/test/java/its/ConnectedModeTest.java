@@ -21,6 +21,7 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
+import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
 import java.io.IOException;
@@ -44,17 +45,21 @@ import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
+import org.sonarqube.ws.client.setting.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
@@ -191,7 +196,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
-  
+
   @Test
   public void parsingErrorJavascript() throws IOException {
     String fileContent = "asd asd";
@@ -496,6 +501,26 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(token).isNotNull();
   }
 
+  @Test
+  public void checkForUpdate() {
+    updateGlobal();
+
+    ServerConfiguration serverConfig = ServerConfiguration.builder()
+      .url(ORCHESTRATOR.getServer().getUrl())
+      .userAgent("SonarLint ITs")
+      .credentials(SONARLINT_USER, SONARLINT_PWD)
+      .build();
+
+    GlobalStorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    assertThat(result.needUpdate()).isFalse();
+
+    // Change a setting
+    newAdminWsClient().settingsService().set(SetRequest.builder().setKey("sonar.foo").setValue("bar").build());
+
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    assertThat(result.needUpdate()).isTrue();
+  }
+
   private boolean supportHtmlDesc() {
     return ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.1");
   }
@@ -524,5 +549,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     } else {
       ORCHESTRATOR.getServer().adminWsClient().permissionClient().removePermission(PermissionParameters.create().group(groupName).permission(permission));
     }
+  }
+
+  public static WsClient newAdminWsClient() {
+    Server server = ORCHESTRATOR.getServer();
+    ORCHESTRATOR.getServer();
+    ORCHESTRATOR.getServer();
+    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
+      .url(server.getUrl())
+      .credentials(Server.ADMIN_LOGIN, Server.ADMIN_PASSWORD)
+      .build());
   }
 }
