@@ -17,21 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+@javax.annotation.ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
-import java.util.function.Supplier;
-
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-
-public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
-  private final StorageManager storageManager;
-
-  public GlobalUpdateStatusReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
-  }
-
-  @Override
-  public GlobalStorageStatus get() {
-    return storageManager.getGlobalStorageStatus();
-  }
-}

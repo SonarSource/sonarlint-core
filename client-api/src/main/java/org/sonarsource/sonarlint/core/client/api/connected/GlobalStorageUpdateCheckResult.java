@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,21 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.function.Supplier;
+import java.util.List;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+public interface GlobalStorageUpdateCheckResult {
 
-public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
-  private final StorageManager storageManager;
+  boolean needUpdate();
 
-  public GlobalUpdateStatusReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
-  }
+  List<String> changelog();
 
-  @Override
-  public GlobalStorageStatus get() {
-    return storageManager.getGlobalStorageStatus();
-  }
 }

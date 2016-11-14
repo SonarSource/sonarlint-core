@@ -70,8 +70,8 @@ public class ConnectedEmptyStorageMediumTest {
   public void test_no_storage() throws Exception {
 
     assertThat(sonarlint.getState()).isEqualTo(State.NEVER_UPDATED);
-    assertThat(sonarlint.getUpdateStatus()).isNull();
-    assertThat(sonarlint.getModuleUpdateStatus("foo")).isNull();
+    assertThat(sonarlint.getGlobalStorageStatus()).isNull();
+    assertThat(sonarlint.getModuleStorageStatus("foo")).isNull();
 
     try {
       sonarlint.allModulesByKey();

@@ -17,35 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+@javax.annotation.ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import java.util.Date;
-
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalUpdateStatus;
-
-public class DefaultGlobalUpdateStatus implements GlobalUpdateStatus {
-  private final String serverVersion;
-  private final Date lastUpdate;
-  private final boolean stale;
-
-  public DefaultGlobalUpdateStatus(String serverVersion, Date lastUpdate, boolean stale) {
-    this.serverVersion = serverVersion;
-    this.lastUpdate = lastUpdate;
-    this.stale = stale;
-  }
-
-  @Override
-  public String getServerVersion() {
-    return serverVersion;
-  }
-
-  @Override
-  public Date getLastUpdateDate() {
-    return lastUpdate;
-  }
-
-  @Override
-  public boolean isStale() {
-    return stale;
-  }
-}

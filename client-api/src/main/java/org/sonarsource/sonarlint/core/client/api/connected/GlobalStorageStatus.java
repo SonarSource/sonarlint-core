@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,20 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import javax.annotation.CheckForNull;
 
 import java.util.Date;
 
-import org.junit.Test;
+public interface GlobalStorageStatus {
+  @CheckForNull
+  String getServerVersion();
 
-public class DefaultGlobalUpdateStatusTest {
-  @Test
-  public void testGetters() {
-    DefaultGlobalUpdateStatus status = new DefaultGlobalUpdateStatus("version", new Date(1000), true);
-    assertThat(status.isStale()).isTrue();
-    assertThat(status.getLastUpdateDate()).isEqualTo(new Date(1000));
-    assertThat(status.getServerVersion()).isEqualTo("version");
-  }
+  Date getLastUpdateDate();
+  
+  boolean isStale();
+
 }

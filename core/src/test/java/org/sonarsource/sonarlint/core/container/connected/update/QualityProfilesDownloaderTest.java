@@ -55,7 +55,7 @@ public class QualityProfilesDownloaderTest {
   public void test() {
     WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
-    qProfilesDownloader.fetchQualityProfiles(temp.getRoot().toPath());
+    qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
     QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
     assertThat(qProfiles.getQprofilesByKey()).containsOnlyKeys(
@@ -79,7 +79,7 @@ public class QualityProfilesDownloaderTest {
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load default quality profiles");
-    qProfilesDownloader.fetchQualityProfiles(temp.getRoot().toPath());
+    qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
   }
 

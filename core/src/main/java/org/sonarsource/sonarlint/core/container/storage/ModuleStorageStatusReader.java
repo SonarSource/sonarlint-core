@@ -25,28 +25,28 @@ import java.util.function.Function;
 
 import javax.annotation.CheckForNull;
 
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleUpdateStatus;
-import org.sonarsource.sonarlint.core.container.model.DefaultModuleUpdateStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.container.model.DefaultModuleStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-public class ModuleUpdateStatusReader implements Function<String, ModuleUpdateStatus> {
+public class ModuleStorageStatusReader implements Function<String, ModuleStorageStatus> {
   private final StorageManager storageManager;
 
-  public ModuleUpdateStatusReader(StorageManager storageManager) {
+  public ModuleStorageStatusReader(StorageManager storageManager) {
     this.storageManager = storageManager;
   }
 
   @Override
   @CheckForNull
-  public ModuleUpdateStatus apply(String moduleKey) {
+  public ModuleStorageStatus apply(String moduleKey) {
     Path updateStatusPath = storageManager.getModuleUpdateStatusPath(moduleKey);
 
     if (updateStatusPath.toFile().exists()) {
       final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
       final boolean stale = (updateStatusFromStorage.getSonarlintCoreVersion() == null) ||
         !updateStatusFromStorage.getSonarlintCoreVersion().equals(VersionUtils.getLibraryVersion());
-      return new DefaultModuleUpdateStatus(new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
+      return new DefaultModuleStorageStatus(new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;
   }

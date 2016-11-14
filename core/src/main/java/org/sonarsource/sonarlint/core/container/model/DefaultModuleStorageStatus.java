@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2016 SonarSource SA
  * mailto:contact AT sonarsource DOT com
  *
@@ -17,14 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.Date;
 
-public interface ModuleUpdateStatus {
+import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 
-  Date getLastUpdateDate();
-  
-  boolean isStale();
+public class DefaultModuleStorageStatus implements ModuleStorageStatus {
+  private final Date lastUpdateDate;
+  private final boolean stale;
 
+  public DefaultModuleStorageStatus(Date lastUpdateDate, boolean stale) {
+    this.lastUpdateDate = lastUpdateDate;
+    this.stale = stale;
+  }
+
+  @Override
+  public Date getLastUpdateDate() {
+    return lastUpdateDate;
+  }
+
+  @Override
+  public boolean isStale() {
+    return stale;
+  }
 }

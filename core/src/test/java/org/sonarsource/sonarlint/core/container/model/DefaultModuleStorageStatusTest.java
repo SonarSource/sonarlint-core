@@ -17,21 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.util.function.Supplier;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import java.util.Date;
 
-public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
-  private final StorageManager storageManager;
+import org.junit.Test;
 
-  public GlobalUpdateStatusReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
-  }
+public class DefaultModuleStorageStatusTest {
+  private DefaultModuleStorageStatus status;
 
-  @Override
-  public GlobalStorageStatus get() {
-    return storageManager.getGlobalStorageStatus();
+  @Test
+  public void testGetters() {
+    Date date = new Date(1000_000);
+    status = new DefaultModuleStorageStatus(date, true);
+    assertThat(status.getLastUpdateDate()).isEqualTo(date);
+    assertThat(status.isStale()).isTrue();
   }
 }

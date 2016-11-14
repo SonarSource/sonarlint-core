@@ -17,21 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+public class DefaultGlobalStorageUpdateCheckResult implements GlobalStorageUpdateCheckResult {
 
-public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
-  private final StorageManager storageManager;
+  private List<String> changelog = new ArrayList<>();
 
-  public GlobalUpdateStatusReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
+  @Override
+  public boolean needUpdate() {
+    return !changelog.isEmpty();
   }
 
   @Override
-  public GlobalStorageStatus get() {
-    return storageManager.getGlobalStorageStatus();
+  public List<String> changelog() {
+    return Collections.unmodifiableList(changelog);
   }
+
+  void appendToChangelog(String line) {
+    changelog.add(line);
+  }
+
 }

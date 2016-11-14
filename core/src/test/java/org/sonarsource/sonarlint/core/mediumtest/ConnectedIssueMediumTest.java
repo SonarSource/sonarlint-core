@@ -162,7 +162,7 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void testStaleModule() throws IOException {
-    assertThat(sonarlint.getModuleUpdateStatus("stale_module").isStale()).isTrue();
+    assertThat(sonarlint.getModuleStorageStatus("stale_module").isStale()).isTrue();
     ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",
       baseDir.toPath(),
       temp.newFolder().toPath(),
