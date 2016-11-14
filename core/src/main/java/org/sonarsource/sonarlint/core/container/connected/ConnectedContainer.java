@@ -25,15 +25,18 @@ import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCh
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateChecker;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalSettingsUpdateChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalUpdateChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.check.PluginsUpdateChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.check.QualityProfilesUpdateChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ModuleConfigUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
@@ -63,6 +66,10 @@ public class ConnectedContainer extends ComponentContainer {
       SonarLintWsClient.class,
       GlobalUpdateExecutor.class,
       GlobalUpdateChecker.class,
+      PluginsUpdateChecker.class,
+      GlobalSettingsUpdateChecker.class,
+      PluginVersionChecker.class,
+      QualityProfilesUpdateChecker.class,
       ModuleConfigUpdateExecutor.class,
       PluginReferencesDownloader.class,
       GlobalPropertiesDownloader.class,
