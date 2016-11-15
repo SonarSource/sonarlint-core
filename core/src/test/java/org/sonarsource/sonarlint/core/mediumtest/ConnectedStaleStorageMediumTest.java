@@ -20,6 +20,12 @@
 package org.sonarsource.sonarlint.core.mediumtest;
 
 import com.google.common.collect.ImmutableMap;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Date;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -34,14 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Date;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -70,19 +69,20 @@ public class ConnectedStaleStorageMediumTest {
   }
 
   private static void writeUpdateStatus(Path storage, String version) throws IOException {
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+    StorageStatus storageStatus = StorageStatus.newBuilder()
+      .setStorageVersion(version)
       .setClientUserAgent("agent")
-      .setSonarlintCoreVersion(version)
+      .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Path global = storage.resolve("global");
     Files.createDirectories(global);
-    ProtobufUtil.writeToFile(updateStatus, global.resolve(StorageManager.UPDATE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, global.resolve(StorageManager.STORAGE_STATUS_PB));
   }
 
   @Test
   public void test_stale_global() throws Exception {
-    writeUpdateStatus(storage, "1.0");
+    writeUpdateStatus(storage, "0");
     ConnectedSonarLintEngine sonarlint = new ConnectedSonarLintEngineImpl(config);
 
     assertThat(sonarlint.getState()).isEqualTo(State.NEED_UPDATE);

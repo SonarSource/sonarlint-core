@@ -22,13 +22,10 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.function.Function;
-
 import javax.annotation.CheckForNull;
-
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultModuleStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ModuleStorageStatusReader implements Function<String, ModuleStorageStatus> {
   private final StorageManager storageManager;
@@ -43,10 +40,9 @@ public class ModuleStorageStatusReader implements Function<String, ModuleStorage
     Path updateStatusPath = storageManager.getModuleUpdateStatusPath(moduleKey);
 
     if (updateStatusPath.toFile().exists()) {
-      final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
-      final boolean stale = (updateStatusFromStorage.getSonarlintCoreVersion() == null) ||
-        !updateStatusFromStorage.getSonarlintCoreVersion().equals(VersionUtils.getLibraryVersion());
-      return new DefaultModuleStorageStatus(new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
+      final Sonarlint.StorageStatus statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());
+      final boolean stale = !statusFromStorage.getStorageVersion().equals(StorageManager.STORAGE_VERSION);
+      return new DefaultModuleStorageStatus(new Date(statusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;
   }

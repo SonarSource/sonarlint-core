@@ -35,13 +35,12 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownl
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -88,7 +87,7 @@ public class GlobalUpdateExecutorTest {
   public void testUpdate() throws Exception {
     globalUpdate.update(new ProgressWrapper(null));
 
-    UpdateStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.UPDATE_STATUS_PB), UpdateStatus.parser());
+    StorageStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.STORAGE_STATUS_PB), StorageStatus.parser());
     assertThat(updateStatus.getClientUserAgent()).isEqualTo("UT");
     assertThat(updateStatus.getSonarlintCoreVersion()).isEqualTo(VersionUtils.getLibraryVersion());
     assertThat(updateStatus.getUpdateTimestamp()).isNotEqualTo(0);

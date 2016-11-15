@@ -34,6 +34,7 @@ import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.WsResponse;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -42,8 +43,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -103,12 +103,12 @@ public class ModuleConfigUpdateExecutor {
   }
 
   private void updateStatus(Path temp) {
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+    StorageStatus storageStatus = StorageStatus.newBuilder()
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
       .build();
-    ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, temp.resolve(StorageManager.STORAGE_STATUS_PB));
   }
 
   private void fetchModuleHierarchy(String moduleKey, ModuleConfiguration.Builder builder) {
