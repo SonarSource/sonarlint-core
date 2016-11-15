@@ -68,7 +68,6 @@ public class ConnectedContainer extends ComponentContainer {
       GlobalUpdateChecker.class,
       PluginsUpdateChecker.class,
       GlobalSettingsUpdateChecker.class,
-      PluginVersionChecker.class,
       QualityProfilesUpdateChecker.class,
       ModuleConfigUpdateExecutor.class,
       PluginReferencesDownloader.class,
