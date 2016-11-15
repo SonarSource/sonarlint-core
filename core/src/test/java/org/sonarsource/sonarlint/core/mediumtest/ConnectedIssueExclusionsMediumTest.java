@@ -52,7 +52,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -121,25 +121,27 @@ public class ConnectedIssueExclusionsMediumTest {
   private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
     Path module = storage.resolve("local").resolve("modules").resolve(name);
 
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+    StorageStatus storageStatus = StorageStatus.newBuilder()
+      .setStorageVersion(StorageManager.STORAGE_VERSION)
       .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
     Path module = storage.resolve("local").resolve("global");
 
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+    StorageStatus storageStatus = StorageStatus.newBuilder()
+      .setStorageVersion(StorageManager.STORAGE_VERSION)
       .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
   }
 
   @AfterClass

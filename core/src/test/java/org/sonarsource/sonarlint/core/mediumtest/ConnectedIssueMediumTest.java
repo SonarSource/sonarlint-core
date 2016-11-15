@@ -51,7 +51,7 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -112,9 +112,9 @@ public class ConnectedIssueMediumTest {
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
-    writeModuleStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
-    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, VersionUtils.getLibraryVersion());
-    writeModuleStatus(tmpStorage, "stale_module", "1.0");
+    writeModuleStatus(tmpStorage, "test-project", StorageManager.STORAGE_VERSION);
+    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, StorageManager.STORAGE_VERSION);
+    writeModuleStatus(tmpStorage, "stale_module", "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -131,25 +131,27 @@ public class ConnectedIssueMediumTest {
   private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
     Path module = storage.resolve("local").resolve("modules").resolve(name);
 
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+    StorageStatus storageStatus = StorageStatus.newBuilder()
+      .setStorageVersion(version)
       .setClientUserAgent("agent")
-      .setSonarlintCoreVersion(version)
+      .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
     Path module = storage.resolve("local").resolve("global");
 
-    UpdateStatus updateStatus = UpdateStatus.newBuilder()
+    StorageStatus storageStatus = StorageStatus.newBuilder()
+      .setStorageVersion(StorageManager.STORAGE_VERSION)
       .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(updateStatus, module.resolve(StorageManager.UPDATE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
   }
 
   @AfterClass

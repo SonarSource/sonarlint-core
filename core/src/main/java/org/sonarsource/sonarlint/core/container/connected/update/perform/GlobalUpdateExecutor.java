@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersion
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.UpdateStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -95,12 +95,12 @@ public class GlobalUpdateExecutor {
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
 
-      UpdateStatus updateStatus = UpdateStatus.newBuilder()
+      StorageStatus storageStatus = StorageStatus.newBuilder()
         .setClientUserAgent(wsClient.getUserAgent())
         .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
         .setUpdateTimestamp(new Date().getTime())
         .build();
-      ProtobufUtil.writeToFile(updateStatus, temp.resolve(StorageManager.UPDATE_STATUS_PB));
+      ProtobufUtil.writeToFile(storageStatus, temp.resolve(StorageManager.STORAGE_STATUS_PB));
 
       Path dest = storageManager.getGlobalStorageRoot();
       FileUtils.deleteDirectory(dest);

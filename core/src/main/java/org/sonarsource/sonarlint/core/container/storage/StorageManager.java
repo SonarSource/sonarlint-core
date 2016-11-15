@@ -30,16 +30,20 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class StorageManager {
+
+  /**
+   * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
+   */
+  public static final String STORAGE_VERSION = "1";
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
   public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
   public static final String RULES_PB = "rules.pb";
   public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
-  public static final String UPDATE_STATUS_PB = "update_status.pb";
+  public static final String STORAGE_STATUS_PB = "storage_status.pb";
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
   public static final String MODULE_LIST_PB = "module_list.pb";
@@ -82,7 +86,7 @@ public class StorageManager {
   }
 
   public Path getModuleUpdateStatusPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(UPDATE_STATUS_PB);
+    return getModuleStorageRoot(moduleKey).resolve(STORAGE_STATUS_PB);
   }
 
   public Path getPluginReferencesPath() {
@@ -109,8 +113,8 @@ public class StorageManager {
     return getGlobalStorageRoot().resolve(ACTIVE_RULES_FOLDER).resolve(encodeForFs(qProfileKey) + ".pb");
   }
 
-  public Path getUpdateStatusPath() {
-    return getGlobalStorageRoot().resolve(UPDATE_STATUS_PB);
+  public Path getStorageStatusPath() {
+    return getGlobalStorageRoot().resolve(STORAGE_STATUS_PB);
   }
 
   public Path getServerInfosPath() {
@@ -128,11 +132,10 @@ public class StorageManager {
 
   @CheckForNull
   private GlobalStorageStatus initStorageStatus() {
-    Path updateStatusPath = getUpdateStatusPath();
-    if (Files.exists(updateStatusPath)) {
-      final Sonarlint.UpdateStatus updateStatusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.UpdateStatus.parser());
-      final boolean stale = (updateStatusFromStorage.getSonarlintCoreVersion() == null) ||
-        !updateStatusFromStorage.getSonarlintCoreVersion().equals(VersionUtils.getLibraryVersion());
+    Path storageStatusPath = getStorageStatusPath();
+    if (Files.exists(storageStatusPath)) {
+      final Sonarlint.StorageStatus currentStorageStatus = ProtobufUtil.readFile(storageStatusPath, Sonarlint.StorageStatus.parser());
+      final boolean stale = !currentStorageStatus.getStorageVersion().equals(STORAGE_VERSION);
 
       String version = null;
       if (!stale) {
@@ -140,7 +143,7 @@ public class StorageManager {
         version = serverInfoFromStorage.getVersion();
       }
 
-      return new DefaultGlobalStorageStatus(version, new Date(updateStatusFromStorage.getUpdateTimestamp()), stale);
+      return new DefaultGlobalStorageStatus(version, new Date(currentStorageStatus.getUpdateTimestamp()), stale);
     }
     return null;
   }

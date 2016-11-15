@@ -26,10 +26,11 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.proto";
 option optimize_for = SPEED;
 
-message UpdateStatus {
-  string sonarlint_core_version = 1;
-  string client_user_agent = 2;
-  int64 update_timestamp = 3;
+message StorageStatus {
+  string storage_version = 1;
+  string sonarlint_core_version = 2;
+  string client_user_agent = 3;
+  int64 update_timestamp = 4;
 }
 
 message ServerInfos {
