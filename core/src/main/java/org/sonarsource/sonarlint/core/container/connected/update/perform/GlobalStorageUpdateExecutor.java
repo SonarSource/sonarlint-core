@@ -24,7 +24,7 @@ import java.util.Date;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -38,11 +38,11 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-public class GlobalUpdateExecutor {
+public class GlobalStorageUpdateExecutor {
 
   private final StorageManager storageManager;
   private final PluginReferencesDownloader pluginReferenceDownloader;
-  private final GlobalPropertiesDownloader globalPropertiesDownloader;
+  private final PropertiesDownloader globalPropertiesDownloader;
   private final RulesDownloader rulesDownloader;
   private final TempFolder tempFolder;
   private final ModuleListDownloader moduleListDownloader;
@@ -51,8 +51,8 @@ public class GlobalUpdateExecutor {
   private final PluginVersionChecker pluginsChecker;
   private final QualityProfilesDownloader qualityProfilesDownloader;
 
-  public GlobalUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
-    PluginReferencesDownloader pluginReferenceDownloader, GlobalPropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
+  public GlobalStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
+    PluginReferencesDownloader pluginReferenceDownloader, PropertiesDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
     ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;

@@ -23,21 +23,21 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class GlobalSettingsUpdateChecker {
 
   private final StorageManager storageManager;
-  private final GlobalPropertiesDownloader globalPropertiesDownloader;
+  private final PropertiesDownloader globalPropertiesDownloader;
 
-  public GlobalSettingsUpdateChecker(StorageManager storageManager, GlobalPropertiesDownloader globalPropertiesDownloader) {
+  public GlobalSettingsUpdateChecker(StorageManager storageManager, PropertiesDownloader globalPropertiesDownloader) {
     this.storageManager = storageManager;
     this.globalPropertiesDownloader = globalPropertiesDownloader;
   }
 
-  public void checkForUpdates(DefaultGlobalStorageUpdateCheckResult result) {
+  public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
     GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalProperties();
     GlobalProperties storageGlobalProperties = storageManager.readGlobalPropertiesFromStorage();
     MapDifference<String, String> propDiff = Maps.difference(storageGlobalProperties.getPropertiesMap(), serverGlobalProperties.getPropertiesMap());

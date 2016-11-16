@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 
-public class DefaultGlobalStorageUpdateCheckResult implements GlobalStorageUpdateCheckResult {
+public class DefaultStorageUpdateCheckResult implements StorageUpdateCheckResult {
 
   private List<String> changelog = new ArrayList<>();
 

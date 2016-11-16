@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-public class GlobalUpdateChecker {
+public class GlobalStorageUpdateChecker {
 
   private final PluginsUpdateChecker pluginsUpdateChecker;
   private final GlobalSettingsUpdateChecker globalSettingsUpdateChecker;
@@ -33,7 +33,7 @@ public class GlobalUpdateChecker {
   private final PluginVersionChecker pluginsChecker;
   private final QualityProfilesUpdateChecker qualityProfilesUpdateChecker;
 
-  public GlobalUpdateChecker(PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
+  public GlobalStorageUpdateChecker(PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
     PluginsUpdateChecker pluginsUpdateChecker, GlobalSettingsUpdateChecker globalSettingsUpdateChecker,
     QualityProfilesUpdateChecker qualityProfilesUpdateChecker) {
     this.pluginsChecker = pluginsChecker;
@@ -43,8 +43,8 @@ public class GlobalUpdateChecker {
     this.qualityProfilesUpdateChecker = qualityProfilesUpdateChecker;
   }
 
-  public GlobalStorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+  public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
 
     progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
     ServerInfos serverStatus = statusChecker.checkVersionAndStatus();

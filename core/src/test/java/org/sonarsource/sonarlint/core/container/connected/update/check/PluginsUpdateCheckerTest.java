@@ -52,7 +52,7 @@ public class PluginsUpdateCheckerTest {
 
   @Test
   public void testNoChanges() {
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, ServerInfos.newBuilder().build());
 
     assertThat(result.needUpdate()).isFalse();
@@ -64,7 +64,7 @@ public class PluginsUpdateCheckerTest {
     when(pluginReferenceDownloader.fetchPlugins(anyString()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, ServerInfos.newBuilder().build());
 
     assertThat(result.needUpdate()).isTrue();
@@ -76,7 +76,7 @@ public class PluginsUpdateCheckerTest {
     when(storageManager.readPluginReferencesFromStorage())
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, ServerInfos.newBuilder().build());
 
     assertThat(result.needUpdate()).isTrue();
@@ -90,7 +90,7 @@ public class PluginsUpdateCheckerTest {
     when(storageManager.readPluginReferencesFromStorage())
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, ServerInfos.newBuilder().build());
 
     assertThat(result.needUpdate()).isTrue();

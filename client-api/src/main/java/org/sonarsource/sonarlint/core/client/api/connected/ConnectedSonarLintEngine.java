@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 /**
@@ -140,7 +141,15 @@ public interface ConnectedSonarLintEngine {
    * Check server to see if global storage need updates.
    * @since 2.6
    * @throws GlobalUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
+   * @throws DownloadException if it fails to download
    */
-  GlobalStorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
+  /**
+   * Check server to see if module storage need updates.
+   * @since 2.6
+   * @throws StorageException if module storage is not initialized or stale (see {@link #getModuleStorageStatus(String)})
+   * @throws DownloadException if it fails to download
+   */
+  StorageUpdateCheckResult checkIfModuleStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
 }

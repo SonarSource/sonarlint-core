@@ -21,7 +21,10 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.List;
 
-public interface GlobalStorageUpdateCheckResult {
+/**
+ * @since 2.6
+ */
+public interface StorageUpdateCheckResult {
 
   boolean needUpdate();
 

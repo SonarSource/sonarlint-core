@@ -30,7 +30,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -51,11 +51,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GlobalUpdateExecutorTest {
+public class GlobalStorageUpdateExecutorTest {
   private TempFolder tempFolder;
   private StorageManager storageManager;
   private SonarLintWsClient wsClient;
-  private GlobalUpdateExecutor globalUpdate;
+  private GlobalStorageUpdateExecutor globalUpdate;
   private RulesDownloader rulesDownloader;
 
   private File destDir;
@@ -78,8 +78,8 @@ public class GlobalUpdateExecutorTest {
     when(tempFolder.newDir()).thenReturn(tempDir);
     storageManager = mock(StorageManager.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    globalUpdate = new GlobalUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
-      mock(PluginReferencesDownloader.class), mock(GlobalPropertiesDownloader.class), rulesDownloader, mock(ModuleListDownloader.class),
+    globalUpdate = new GlobalStorageUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
+      mock(PluginReferencesDownloader.class), mock(PropertiesDownloader.class), rulesDownloader, mock(ModuleListDownloader.class),
       mock(QualityProfilesDownloader.class), tempFolder);
   }
 
