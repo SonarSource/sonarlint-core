@@ -104,6 +104,7 @@ public class ModuleConfigUpdateExecutor {
 
   private void updateStatus(Path temp) {
     StorageStatus storageStatus = StorageStatus.newBuilder()
+      .setStorageVersion(StorageManager.STORAGE_VERSION)
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
