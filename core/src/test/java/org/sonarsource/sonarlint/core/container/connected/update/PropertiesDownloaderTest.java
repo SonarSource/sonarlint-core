@@ -31,11 +31,13 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class GlobalPropertiesDownloaderTest {
+public class PropertiesDownloaderTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -48,13 +50,13 @@ public class GlobalPropertiesDownloaderTest {
   }
 
   @Test
-  public void testFetchGlobalPropsDefaultPluginWhitelist() throws Exception {
+  public void testFetchGlobalProperties() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json",
       new StringReader("[{\"key\": \"sonar.core.treemap.colormetric\",\"value\": \"violations_density\"},"
         + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
         + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
-    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
+    new PropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
@@ -62,11 +64,36 @@ public class GlobalPropertiesDownloaderTest {
       entry("views.servers", "135817900907501"));
   }
 
+  @Test
+  public void testFetchProjectProperties() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json&resource=foo",
+      new StringReader("[{\"key\": \"sonar.inclusions\",\"value\": \"**/*.java\"},"
+        + "{\"key\": \"sonar.java.fileSuffixes\",\"value\": \"*.java\"}]"));
+
+    Builder builder = ModuleConfiguration.newBuilder();
+    new PropertiesDownloader(wsClient).fetchProjectProperties("foo", GlobalProperties.newBuilder().build(), builder);
+
+    assertThat(builder.getPropertiesMap()).containsOnly(entry("sonar.inclusions", "**/*.java"),
+      entry("sonar.java.fileSuffixes", "*.java"));
+  }
+
+  @Test
+  public void testFetchProjectProperties_exclude_global_props() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json&resource=foo",
+      new StringReader("[{\"key\": \"sonar.inclusions\",\"value\": \"**/*.java\"},"
+        + "{\"key\": \"sonar.java.fileSuffixes\",\"value\": \"*.java\"}]"));
+
+    Builder builder = ModuleConfiguration.newBuilder();
+    new PropertiesDownloader(wsClient).fetchProjectProperties("foo", GlobalProperties.newBuilder().putProperties("sonar.inclusions", "**/*.java").build(), builder);
+
+    assertThat(builder.getPropertiesMap()).containsOnly(entry("sonar.java.fileSuffixes", "*.java"));
+  }
+
   @Test(expected = IllegalStateException.class)
   public void invalidResponse() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json", new StringReader("foo bar"));
 
-    new GlobalPropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
+    new PropertiesDownloader(wsClient).fetchGlobalPropertiesTo(destDir);
   }
 
 }

@@ -19,13 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.junit.Assume.assumeTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,15 +26,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
@@ -50,28 +39,26 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.perform.ModuleConfigUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityProfilesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
 import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.newEmptyStream;
 
-@RunWith(Parameterized.class)
-public class ModuleConfigUpdateExecutorTest {
-
-  private static final String LTS = "4.5.6";
-
-  @Parameters(name = "SQ version={0}")
-  public static Object[] data() {
-    return new Object[] {LTS, "5.2"};
-  }
+public class ModuleStorageUpdateExecutorTest {
 
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
   private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH);
@@ -82,32 +69,18 @@ public class ModuleConfigUpdateExecutorTest {
   public ExpectedException exception = ExpectedException.none();
 
   private SonarLintWsClient wsClient;
-  private ModuleConfigUpdateExecutor moduleUpdate;
+  private ModuleStorageUpdateExecutor moduleUpdate;
   private StorageManager storageManager;
   private TempFolder tempFolder;
-  private String serverVersion;
   private ModuleHierarchyDownloader moduleHierarchy;
   private IssueStore issueStore;
   private IssueStoreFactory issueStoreFactory;
-
-  public ModuleConfigUpdateExecutorTest(String serverVersion) {
-    this.serverVersion = serverVersion;
-  }
+  private ModuleConfigurationDownloader moduleConfigurationDownloader;
 
   @Before
   public void setUp() throws IOException {
-    // After 5.2
     wsClient = WsClientTestUtils.createMockWithStreamResponse(getQualityProfileUrl(),
       "/update/qualityprofiles_project.pb");
-
-    // Before 5.2
-    WsClientTestUtils.addResponse(wsClient, "/batch/project?preview=true&key=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
-      "{\"timestamp\":123456,\"activeRules\":[],"
-        + "\"qprofilesByLanguage\":{"
-        + "\"java\":{\"key\": \"java-empty-74333\", \"name\": \"Java Empty\", \"language\": \"java\"},"
-        + "\"js\":{\"key\": \"js-sonar-way-60746\", \"name\": \"Java Empty\", \"language\": \"js\"},"
-        + "\"cs\":{\"key\": \"cs-sonar-way-58886\", \"name\": \"Sonar Way\", \"language\": \"cs\"}"
-        + "}}");
 
     WsClientTestUtils.addResponse(wsClient, "/api/properties?format=json&resource=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
       "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
@@ -126,8 +99,6 @@ public class ModuleConfigUpdateExecutorTest {
     propBuilder.getMutableProperties().put("sonar.core.version", "5.5-SNAPSHOT");
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(propBuilder.build());
 
-    ServerInfos serverInfos = ServerInfos.newBuilder().setVersion(serverVersion).build();
-    when(storageManager.readServerInfosFromStorage()).thenReturn(serverInfos);
     moduleHierarchy = mock(ModuleHierarchyDownloader.class);
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
@@ -137,12 +108,12 @@ public class ModuleConfigUpdateExecutorTest {
     issueStoreFactory = mock(IssueStoreFactory.class);
     issueStore = new InMemoryIssueStore();
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
+
+    moduleConfigurationDownloader = new ModuleConfigurationDownloader(wsClient, moduleHierarchy, new ModuleQualityProfilesDownloader(wsClient), mock(PropertiesDownloader.class));
   }
 
   @Test
   public void exception_ws_load_qps() throws IOException {
-    assumeTrue(!serverVersion.equals(LTS));
-
     when(wsClient.get(getQualityProfileUrl())).thenThrow(IOException.class);
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
@@ -153,7 +124,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -174,7 +145,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -186,12 +157,11 @@ public class ModuleConfigUpdateExecutorTest {
 
     assertThat(moduleConfiguration.getModulePathByKey()).containsOnly(
       entry(MODULE_KEY_WITH_BRANCH, ""),
-      entry( MODULE_KEY_WITH_BRANCH + "child1", "child 1"));
+      entry(MODULE_KEY_WITH_BRANCH + "child1", "child 1"));
   }
 
   @Test
   public void test_error_if_qp_doesnt_exist() throws IOException {
-    assumeTrue(!serverVersion.equals(LTS));
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
 
@@ -203,7 +173,7 @@ public class ModuleConfigUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
@@ -238,7 +208,7 @@ public class ModuleConfigUpdateExecutorTest {
 
     IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue).iterator();
 
-    moduleUpdate = new ModuleConfigUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, moduleHierarchy, tempFolder);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder, moduleConfigurationDownloader);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
     assertThat(issueStore.load(createFileKey(fileIssue1))).containsOnly(fileIssue1, fileIssue2);

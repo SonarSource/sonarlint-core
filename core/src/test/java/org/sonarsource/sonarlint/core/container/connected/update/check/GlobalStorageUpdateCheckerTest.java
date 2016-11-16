@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
@@ -31,9 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GlobalUpdateCheckerTest {
+public class GlobalStorageUpdateCheckerTest {
 
-  private GlobalUpdateChecker checker;
+  private GlobalStorageUpdateChecker checker;
   private ServerVersionAndStatusChecker statusChecker;
 
   @Before
@@ -41,13 +41,13 @@ public class GlobalUpdateCheckerTest {
     statusChecker = mock(ServerVersionAndStatusChecker.class);
     when(statusChecker.checkVersionAndStatus()).thenReturn(ServerInfos.newBuilder().build());
 
-    checker = new GlobalUpdateChecker(mock(PluginVersionChecker.class), statusChecker, mock(PluginsUpdateChecker.class),
+    checker = new GlobalStorageUpdateChecker(mock(PluginVersionChecker.class), statusChecker, mock(PluginsUpdateChecker.class),
       mock(GlobalSettingsUpdateChecker.class), mock(QualityProfilesUpdateChecker.class));
   }
 
   @Test
   public void testNoChanges() {
-    GlobalStorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
+    StorageUpdateCheckResult result = checker.checkForUpdate(mock(ProgressWrapper.class));
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();

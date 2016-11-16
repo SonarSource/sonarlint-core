@@ -39,7 +39,7 @@ public class QualityProfilesUpdateChecker {
     this.qualityProfilesDownloader = qualityProfilesDownloader;
   }
 
-  public void checkForUpdates(DefaultGlobalStorageUpdateCheckResult result) {
+  public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
     QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles();
     QProfiles storageQProfiles = storageManager.readQProfilesFromStorage();
     Map<String, String> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap().values().stream()

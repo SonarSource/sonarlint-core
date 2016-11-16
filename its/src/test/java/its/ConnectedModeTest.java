@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
@@ -60,8 +61,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
@@ -463,7 +464,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(issueListener.getIssues()).hasSize(2);
 
     // Override default file suffixes in global props so that input file is not considered as a Java file
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".foo"));
+    setSettings(null, "sonar.java.file.suffixes", ".foo");
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
@@ -474,7 +475,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener);
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.java.file.suffixes", ".java", PROJECT_KEY_JAVA));
+    setSettings(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
@@ -509,6 +510,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void checkForUpdate() {
     updateGlobal();
+    updateModule(PROJECT_KEY_JAVA);
 
     ServerConfiguration serverConfig = ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
@@ -516,18 +518,32 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build();
 
-    GlobalStorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isFalse();
 
-    // Change a setting
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.1")) {
-      newAdminWsClient().settingsService().set(SetRequest.builder().setKey("sonar.foo").setValue("bar").build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.foo", "bar"));
-    }
+    // Change a global setting
+    setSettings(null, "sonar.foo", "bar");
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
+
+    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    assertThat(result.needUpdate()).isFalse();
+
+    // Change a project setting
+    setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
+
+    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    assertThat(result.needUpdate()).isTrue();
+
+  }
+
+  private void setSettings(@Nullable String moduleKey, String key, String value) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.1")) {
+      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValue(value).setComponentKey(moduleKey).build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
+    }
   }
 
   private boolean supportHtmlDesc() {

@@ -50,7 +50,7 @@ public class QualityProfilesUpdateCheckerTest {
 
   @Test
   public void testNoChanges() {
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isFalse();
@@ -62,7 +62,7 @@ public class QualityProfilesUpdateCheckerTest {
     when(qualityProfilesDownloader.fetchQualityProfiles())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").build()).build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
@@ -74,7 +74,7 @@ public class QualityProfilesUpdateCheckerTest {
     when(storageManager.readQProfilesFromStorage())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").build()).build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
@@ -88,7 +88,7 @@ public class QualityProfilesUpdateCheckerTest {
     when(storageManager.readQProfilesFromStorage())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setRulesUpdatedAt("foo2").build()).build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();

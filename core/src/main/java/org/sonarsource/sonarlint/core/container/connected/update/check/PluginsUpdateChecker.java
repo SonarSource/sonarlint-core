@@ -40,7 +40,7 @@ public class PluginsUpdateChecker {
     this.pluginReferenceDownloader = pluginReferenceDownloader;
   }
 
-  public void checkForUpdates(DefaultGlobalStorageUpdateCheckResult result, ServerInfos serverStatus) {
+  public void checkForUpdates(DefaultStorageUpdateCheckResult result, ServerInfos serverStatus) {
     PluginReferences serverPluginReferences = pluginReferenceDownloader.fetchPlugins(serverStatus.getVersion());
     PluginReferences storagePluginReferences = storageManager.readPluginReferencesFromStorage();
     Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));

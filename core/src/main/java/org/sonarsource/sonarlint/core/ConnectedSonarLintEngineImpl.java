@@ -38,12 +38,12 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
@@ -205,7 +205,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public GlobalStorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, ProgressMonitor monitor) {
+  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, ProgressMonitor monitor) {
     checkNotNull(serverConfig);
     return withReadLock(() -> {
       checkUpdateStatus();
@@ -213,6 +213,26 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       try {
         connectedContainer.startComponents();
         return connectedContainer.checkForUpdate(new ProgressWrapper(monitor));
+      } finally {
+        try {
+          connectedContainer.stopComponents(false);
+        } catch (Exception e) {
+          // Ignore
+        }
+      }
+    });
+  }
+
+  @Override
+  public StorageUpdateCheckResult checkIfModuleStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, ProgressMonitor monitor) {
+    checkNotNull(serverConfig);
+    checkNotNull(moduleKey);
+    return withReadLock(() -> {
+      checkUpdateStatus();
+      ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+      try {
+        connectedContainer.startComponents();
+        return connectedContainer.checkForUpdate(moduleKey, new ProgressWrapper(monitor));
       } finally {
         try {
           connectedContainer.stopComponents(false);

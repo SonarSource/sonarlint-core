@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.container.connected.update.GlobalPropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
@@ -33,12 +33,12 @@ public class GlobalSettingsUpdateCheckerTest {
 
   private GlobalSettingsUpdateChecker checker;
   private StorageManager storageManager;
-  private GlobalPropertiesDownloader globalPropertiesDownloader;
+  private PropertiesDownloader globalPropertiesDownloader;
 
   @Before
   public void prepare() {
     storageManager = mock(StorageManager.class);
-    globalPropertiesDownloader = mock(GlobalPropertiesDownloader.class);
+    globalPropertiesDownloader = mock(PropertiesDownloader.class);
 
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().build());
     when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
@@ -48,7 +48,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void testNoChanges() {
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isFalse();
@@ -59,7 +59,7 @@ public class GlobalSettingsUpdateCheckerTest {
   public void addedProp() {
     when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.new", "value").build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
@@ -70,7 +70,7 @@ public class GlobalSettingsUpdateCheckerTest {
   public void removedProp() {
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.old", "value").build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
@@ -82,7 +82,7 @@ public class GlobalSettingsUpdateCheckerTest {
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.prop", "old").build());
     when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.prop", "new").build());
 
-    DefaultGlobalStorageUpdateCheckResult result = new DefaultGlobalStorageUpdateCheckResult();
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
