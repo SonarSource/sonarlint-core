@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -156,6 +157,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
       .build());
+    assertThat(engine.getGlobalStorageStatus()).isNull();
+    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
   }
 
   @After
@@ -231,7 +234,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void globalUpdate() throws Exception {
     updateGlobal();
 
+    assertThat(engine.getState()).isEqualTo(State.UPDATED);
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
+    assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
     if (supportHtmlDesc()) {

@@ -96,6 +96,7 @@ public class GlobalUpdateExecutor {
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
 
       StorageStatus storageStatus = StorageStatus.newBuilder()
+        .setStorageVersion(StorageManager.STORAGE_VERSION)
         .setClientUserAgent(wsClient.getUserAgent())
         .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
         .setUpdateTimestamp(new Date().getTime())
