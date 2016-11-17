@@ -97,8 +97,7 @@ public class StorageContainer extends ComponentContainer {
       new StorageQProfilesProvider(),
       new SonarQubeRulesProvider(),
       SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
-      System2.INSTANCE,
-      this);
+      System2.INSTANCE);
   }
 
   @Override
