@@ -28,6 +28,10 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.QualityProfiles;
@@ -97,7 +101,8 @@ public class ModuleConfigUpdateExecutor {
 
     Path basedir = temp.resolve(StorageManager.SERVER_ISSUES_DIR);
 
-    issueStoreFactory.apply(basedir).save(issues);
+    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
+    issueStoreFactory.apply(basedir).save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
   }
 
   private void updateStatus(Path temp) {

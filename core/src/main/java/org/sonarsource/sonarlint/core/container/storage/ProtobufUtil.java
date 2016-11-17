@@ -83,6 +83,12 @@ public class ProtobufUtil {
     }
   }
 
+  public static <T extends Message> void writeMessages(OutputStream output, Iterable<T> messages) {
+    for (Message message : messages) {
+      writeMessage(output, message);
+    }
+  }
+
   public static <T extends Message> void writeMessage(OutputStream output, T message) {
     try {
       message.writeDelimitedTo(output);

@@ -57,7 +57,7 @@ public class ServerIssueStoreTest {
     issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
     issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
 
-    store.save(issueList.iterator());
+    store.save(issueList);
 
     assertThat(store.load("module1:path1")).containsExactly(issueList.get(0));
     assertThat(store.load("module1:path2")).containsExactly(issueList.get(1));
@@ -74,10 +74,10 @@ public class ServerIssueStoreTest {
     ServerIssue issue1 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(11).build();
     ServerIssue issue2 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(22).build();
 
-    store.save(Collections.singletonList(issue1).iterator());
+    store.save(Collections.singletonList(issue1));
     assertThat(store.load("module:myfile")).containsOnly(issue1);
 
-    store.save(Collections.singletonList(issue2).iterator());
+    store.save(Collections.singletonList(issue2));
     assertThat(store.load("module:myfile")).containsOnly(issue2);
   }
 
@@ -91,7 +91,7 @@ public class ServerIssueStoreTest {
     ServerIssueStore store = new ServerIssueStore(forbiddenDir.toPath());
 
     exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()).iterator());
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()));
   }
 
   @Test
@@ -104,7 +104,7 @@ public class ServerIssueStoreTest {
 
     ServerIssue issue = ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(key1).build();
 
-    store.save(Collections.singletonList(issue).iterator());
+    store.save(Collections.singletonList(issue));
 
     File f = root.resolve("1").resolve("8").resolve("18054aada7bd3b7ddd6de55caf50ae7bee376430").toFile();
     if (!f.setReadOnly() || !f.getParentFile().setReadOnly()) {
@@ -128,7 +128,7 @@ public class ServerIssueStoreTest {
     issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
     issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
 
-    store.save(issueList.iterator());
+    store.save(issueList);
     store.delete("module1:path1");
     store.delete("module1:path2");
     store.delete("module1:non_existing");
