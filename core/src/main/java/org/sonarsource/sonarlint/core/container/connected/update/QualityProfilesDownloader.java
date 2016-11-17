@@ -52,6 +52,8 @@ public class QualityProfilesDownloader {
         QProfile.Builder qpBuilder = QProfile.newBuilder();
         qpBuilder.setKey(qp.getKey());
         qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
+        qpBuilder.setRulesUpdatedAt(qp.getRulesUpdatedAt());
+        qpBuilder.setUserUpdatedAt(qp.getUserUpdatedAt());
 
         qProfileBuilder.putQprofilesByKey(qp.getKey(), qpBuilder.build());
         if (qp.getIsDefault()) {

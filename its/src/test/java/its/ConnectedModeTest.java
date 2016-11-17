@@ -160,6 +160,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
+
+    // This profile is altered in a test
+    ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
   }
 
   @After
@@ -523,9 +526,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     // Change a global setting
     setSettings(null, "sonar.foo", "bar");
+    // Activate a new rule
+    SearchWsResponse response = newAdminWsClient().qualityProfiles().search(new SearchWsRequest().setProfileName("SonarLint IT Java"));
+    String profileKey = response.getProfiles(0).getKey();
+    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "profile_key", profileKey, "rule_key", "squid:S1228");
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Property 'sonar.foo' added with value 'bar'", "Quality profile '" + profileKey + "' updated");
 
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();

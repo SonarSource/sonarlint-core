@@ -43,9 +43,9 @@ public class QualityProfilesUpdateChecker {
     QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles();
     QProfiles storageQProfiles = storageManager.readQProfilesFromStorage();
     Map<String, String> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap().values().stream()
-      .collect(Collectors.toMap(QProfile::getKey, QProfile::getRulesUpdatedAt));
+      .collect(Collectors.toMap(QProfile::getKey, QualityProfilesUpdateChecker::concatQpTimestamps));
     Map<String, String> storagePluginHashes = storageQProfiles.getQprofilesByKeyMap().values().stream()
-      .collect(Collectors.toMap(QProfile::getKey, QProfile::getRulesUpdatedAt));
+      .collect(Collectors.toMap(QProfile::getKey, QualityProfilesUpdateChecker::concatQpTimestamps));
     MapDifference<String, String> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);
     if (!pluginDiff.areEqual()) {
       for (Map.Entry<String, String> entry : pluginDiff.entriesOnlyOnLeft().entrySet()) {
@@ -58,6 +58,10 @@ public class QualityProfilesUpdateChecker {
         result.appendToChangelog("Quality profile '" + entry.getKey() + "' updated");
       }
     }
+  }
+
+  private static String concatQpTimestamps(QProfile qp) {
+    return qp.getRulesUpdatedAt() + qp.getUserUpdatedAt();
   }
 
 }

@@ -82,7 +82,7 @@ public class QualityProfilesUpdateCheckerTest {
   }
 
   @Test
-  public void updatedQProfile() {
+  public void updatedQProfile_rules_updated_at() {
     when(qualityProfilesDownloader.fetchQualityProfiles())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setRulesUpdatedAt("foo").build()).build());
     when(storageManager.readQProfilesFromStorage())
@@ -95,4 +95,17 @@ public class QualityProfilesUpdateCheckerTest {
     assertThat(result.changelog()).containsOnly("Quality profile 'java-123' updated");
   }
 
+  @Test
+  public void updatedQProfile_user_updated_at() {
+    when(qualityProfilesDownloader.fetchQualityProfiles())
+      .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setRulesUpdatedAt("foo").setUserUpdatedAt("user").build()).build());
+    when(storageManager.readQProfilesFromStorage())
+      .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setRulesUpdatedAt("foo").build()).build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result);
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Quality profile 'java-123' updated");
+  }
 }
