@@ -69,7 +69,7 @@ public class LoggedErrorHandlerTest {
 
   @Test
   public void testOtherError() {
-    handler.handleError("Unablerewe to parse source file : /my/file1");
+    handler.handleError("Unable to parse source file : /my/file1");
     assertThat(handler.getErrorFiles()).isEmpty();
   }
 }
