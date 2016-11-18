@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -66,6 +67,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -524,8 +526,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isFalse();
 
-    // Change a global setting
+    // restarting server should not lead to notify an update
+    ORCHESTRATOR.restartServer();
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    assertThat(result.needUpdate()).isFalse();
+
+    // Change a global setting that is not in the whitelist
     setSettings(null, "sonar.foo", "bar");
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    assertThat(result.needUpdate()).isFalse();
+
+    // Change a global setting that *is* in the whitelist
+    setMultiValuesSettings(null, "sonar.inclusions", "**/*");
     // Activate a new rule
     SearchWsResponse response = newAdminWsClient().qualityProfiles().search(new SearchWsRequest().setProfileName("SonarLint IT Java"));
     String profileKey = response.getProfiles(0).getKey();
@@ -533,13 +545,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.foo' added with value 'bar'", "Quality profile '" + profileKey + "' updated");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.inclusions' added with value '**/*'", "Quality profile '" + profileKey + "' updated");
 
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
-    // Change a project setting
+    // Change a project setting that is not in the whitelist
     setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
+    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    assertThat(result.needUpdate()).isFalse();
+
+    // Change a project setting that *is* in the whitelist
+    setMultiValuesSettings(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
 
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
@@ -551,6 +568,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValue(value).setComponentKey(moduleKey).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
+    }
+  }
+
+  private void setMultiValuesSettings(@Nullable String moduleKey, String key, String... values) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.1")) {
+      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValues(asList(values)).setComponentKey(moduleKey).build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient()
+        .create(new PropertyCreateQuery(key, asList(values).stream().collect(Collectors.joining(","))).setResourceKeyOrId(moduleKey));
     }
   }
 

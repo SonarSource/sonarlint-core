@@ -56,37 +56,48 @@ public class GlobalSettingsUpdateCheckerTest {
   }
 
   @Test
+  public void ignore_unused_props() {
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.foo", "value").build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result);
+
+    assertThat(result.needUpdate()).isFalse();
+    assertThat(result.changelog()).isEmpty();
+  }
+
+  @Test
   public void addedProp() {
-    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.new", "value").build());
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.test.inclusions", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.new' added with value 'value'");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.test.inclusions' added with value 'value'");
   }
 
   @Test
   public void removedProp() {
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.old", "value").build());
+    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.old' removed");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.issue.ignore.allFiles' removed");
   }
 
   @Test
   public void changedProp() {
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.prop", "old").build());
-    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.prop", "new").build());
+    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "old").build());
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "new").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Value of property 'sonar.prop' changed from 'old' to 'new'");
+    assertThat(result.changelog()).containsOnly("Value of property 'sonar.exclusions' changed from 'old' to 'new'");
   }
 
 }

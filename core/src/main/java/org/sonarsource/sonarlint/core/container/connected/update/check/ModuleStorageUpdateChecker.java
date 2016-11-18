@@ -24,8 +24,8 @@ import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
@@ -51,7 +51,8 @@ public class ModuleStorageUpdateChecker {
     ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(moduleKey, globalProps);
     ModuleConfiguration storageModuleConfiguration = storageManager.readModuleConfigFromStorage(moduleKey);
 
-    MapDifference<String, String> propDiff = Maps.difference(storageModuleConfiguration.getPropertiesMap(), serverModuleConfiguration.getPropertiesMap());
+    MapDifference<String, String> propDiff = Maps.difference(GlobalSettingsUpdateChecker.filter(storageModuleConfiguration.getPropertiesMap()),
+      GlobalSettingsUpdateChecker.filter(serverModuleConfiguration.getPropertiesMap()));
     if (!propDiff.areEqual()) {
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {
         result.appendToChangelog(String.format("Property '%s' removed", entry.getKey()));

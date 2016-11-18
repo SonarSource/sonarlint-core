@@ -19,15 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.sonar.api.CoreProperties;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class GlobalSettingsUpdateChecker {
+
+  private static final Set<String> WHITELIST = ImmutableSet.of(
+    CoreProperties.PROJECT_INCLUSIONS_PROPERTY,
+    CoreProperties.PROJECT_TEST_INCLUSIONS_PROPERTY,
+    CoreProperties.PROJECT_EXCLUSIONS_PROPERTY,
+    CoreProperties.PROJECT_TEST_EXCLUSIONS_PROPERTY);
 
   private final StorageManager storageManager;
   private final PropertiesDownloader globalPropertiesDownloader;
@@ -40,7 +52,7 @@ public class GlobalSettingsUpdateChecker {
   public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
     GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalProperties();
     GlobalProperties storageGlobalProperties = storageManager.readGlobalPropertiesFromStorage();
-    MapDifference<String, String> propDiff = Maps.difference(storageGlobalProperties.getPropertiesMap(), serverGlobalProperties.getPropertiesMap());
+    MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties.getPropertiesMap()), filter(serverGlobalProperties.getPropertiesMap()));
     if (!propDiff.areEqual()) {
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {
         result.appendToChangelog(String.format("Property '%s' removed", entry.getKey()));
@@ -52,5 +64,14 @@ public class GlobalSettingsUpdateChecker {
         result.appendToChangelog("Value of property '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
       }
     }
+  }
+
+  static Map<String, String> filter(Map<String, String> propertiesMap) {
+    return propertiesMap.entrySet().stream()
+      .filter(entry -> WHITELIST.contains(entry.getKey())
+        || entry.getKey().startsWith(IssueExclusionPatternInitializer.EXCLUSION_KEY_PREFIX)
+        || entry.getKey().startsWith(IssueInclusionPatternInitializer.INCLUSION_KEY_PREFIX)
+        || entry.getKey().endsWith(".license.secured"))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }

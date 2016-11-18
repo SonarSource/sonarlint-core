@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
@@ -66,34 +66,34 @@ public class ModuleStorageUpdateCheckerTest {
   @Test
   public void addedProp() {
     when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(MODULE_KEY), any(GlobalProperties.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.new", "value").build());
+      .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.new' added with value 'value'");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.issue.enforce.allFiles' added with value 'value'");
   }
 
   @Test
   public void removedProp() {
-    when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.old", "value").build());
+    when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.cobol.license.secured", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.old' removed");
+    assertThat(result.changelog()).containsOnly("Property 'sonar.cobol.license.secured' removed");
   }
 
   @Test
   public void changedProp() {
-    when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.prop", "old").build());
+    when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
     when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(MODULE_KEY), any(GlobalProperties.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.prop", "new").build());
+      .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Value of property 'sonar.prop' changed from 'old' to 'new'");
+    assertThat(result.changelog()).containsOnly("Value of property 'sonar.inclusions' changed from 'old' to 'new'");
   }
 
   @Test
