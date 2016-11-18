@@ -40,7 +40,7 @@ public class LoggedErrorHandlerTest {
     file1 = new TestClientInputFile(Paths.get("/my/file1"), false, StandardCharsets.UTF_8);
     file2 = new TestClientInputFile(Paths.get("/my/file2"), false, StandardCharsets.UTF_8);
 
-    handler = new LoggedErrorHandler(Arrays.asList(new ClientInputFile[] {file1, file2}));
+    handler = new LoggedErrorHandler(Arrays.asList(file1, file2));
   }
 
   @Test
