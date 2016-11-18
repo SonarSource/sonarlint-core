@@ -80,7 +80,7 @@ public class IssueStoreReaderTest {
       createServerIssue("root:module1", "path1"),
       createServerIssue("root:module1", "path2"),
       createServerIssue("root:module2", "path1"),
-      createServerIssue("root:module2", "path2")).iterator());
+      createServerIssue("root:module2", "path2")));
 
     // test
 
@@ -118,7 +118,7 @@ public class IssueStoreReaderTest {
     when(storage.readModuleConfigFromStorage("root")).thenReturn(moduleConfigBuilder.build());
 
     // setup issues
-    issueStore.save(Arrays.asList(createServerIssue("root", "src/path1")).iterator());
+    issueStore.save(Arrays.asList(createServerIssue("root", "src/path1")));
 
     // test
 

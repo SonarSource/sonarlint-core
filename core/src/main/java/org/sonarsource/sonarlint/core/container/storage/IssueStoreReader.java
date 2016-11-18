@@ -22,11 +22,8 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.StreamSupport;
-
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
@@ -49,10 +46,9 @@ public class IssueStoreReader {
     Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
-    Iterator<ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
-    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(loadedIssues, 0);
+    List<ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
 
-    return StreamSupport.stream(spliterator, false)
+    return loadedIssues.stream()
       .map(pbIssue -> transformIssue(pbIssue, moduleKey, filePath))
       .iterator();
   }

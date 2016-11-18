@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
 
+import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,11 +80,12 @@ public class PartialUpdaterTest {
   @Test
   public void update_file_issues() {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
-    Iterator<ServerIssue> issues = Collections.singletonList(issue).iterator();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+    Iterator<ServerIssue> issueIterator = issues.iterator();
 
     when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
-    when(downloader.apply("module:file")).thenReturn(issues);
+    when(downloader.apply("module:file")).thenReturn(issueIterator);
 
     updater.updateFileIssues("module", "file");
 

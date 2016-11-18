@@ -22,15 +22,10 @@ package org.sonarsource.sonarlint.core.container.connected;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.HashingPathMapper;
@@ -43,27 +38,26 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 
 public class ServerIssueStore implements IssueStore {
-  private final ObjectStore<String, Iterator<ScannerInput.ServerIssue>> store;
+  private final ObjectStore<String, List<ServerIssue>> store;
 
   public ServerIssueStore(Path base) {
     HashingPathMapper pathGenerator = new HashingPathMapper(base, 2);
 
-    Reader<Iterator<ScannerInput.ServerIssue>> reader = input -> ProtobufUtil.streamMessages(input, ScannerInput.ServerIssue.parser());
+    Reader<List<ScannerInput.ServerIssue>> reader = input -> ProtobufUtil.readMessages(input, ScannerInput.ServerIssue.parser());
 
-    Writer<Iterator<ScannerInput.ServerIssue>> writer = ProtobufUtil::writeMessages;
+    Writer<List<ServerIssue>> writer = ProtobufUtil::writeMessages;
 
     store = new SimpleObjectStore<>(pathGenerator, reader, writer);
   }
 
   @Override
-  public synchronized void save(Iterator<ScannerInput.ServerIssue> issues) {
+  public synchronized void save(List<ServerIssue> issues) {
     // organize everything in memory to avoid making an IO access per issue
-    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
-    Map<String, List<ServerIssue>> issuesPerFile = StreamSupport.stream(spliterator, false).collect(Collectors.groupingBy(IssueUtils::createFileKey));
+    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(IssueUtils::createFileKey));
 
     for (Map.Entry<String, List<ServerIssue>> entry : issuesPerFile.entrySet()) {
       try {
-        store.write(entry.getKey(), entry.getValue().iterator());
+        store.write(entry.getKey(), entry.getValue());
       } catch (IOException e) {
         throw new StorageException("failed to save issues for fileKey = " + entry.getKey(), e);
       }
@@ -80,15 +74,15 @@ public class ServerIssueStore implements IssueStore {
   }
 
   @Override
-  public synchronized Iterator<ScannerInput.ServerIssue> load(String fileKey) {
+  public synchronized List<ServerIssue> load(String fileKey) {
     try {
-      Optional<Iterator<ScannerInput.ServerIssue>> issues = store.read(fileKey);
+      Optional<List<ScannerInput.ServerIssue>> issues = store.read(fileKey);
       if (issues.isPresent()) {
         return issues.get();
       }
     } catch (IOException e) {
       throw new StorageException("failed to load issues for fileKey = " + fileKey, e);
     }
-    return Collections.emptyIterator();
+    return Collections.emptyList();
   }
 }
