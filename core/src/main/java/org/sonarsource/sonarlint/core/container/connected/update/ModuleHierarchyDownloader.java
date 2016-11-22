@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.CheckForNull;
@@ -39,6 +41,8 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ModuleHierarchyDownloader {
+  public static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
+
   private final SonarLintWsClient wsClient;
 
   public ModuleHierarchyDownloader(SonarLintWsClient wsClient) {
@@ -87,7 +91,7 @@ public class ModuleHierarchyDownloader {
       c = ancestors.get(c);
     } while (c != null);
 
-    return path.toString();
+    return toCanonicalPath(path.toString());
   }
 
   @CheckForNull
@@ -97,5 +101,18 @@ public class ModuleHierarchyDownloader {
       ShowWsResponse showResponse = WsComponents.ShowWsResponse.parseFrom(stream);
       return showResponse.getAncestorsList().stream().map(Component::getId).findFirst().orElse(null);
     }
+  }
+
+  /**
+   * Convert relative path to SonarQube canonical path
+   *
+   * @param relativePath relative path string in the local OS
+   * @return SonarQube canonical path
+   */
+  public static String toCanonicalPath(String relativePath) {
+    if (File.separatorChar != '/') {
+      return relativePath.replaceAll(PATH_SEPARATOR_PATTERN, "/");
+    }
+    return relativePath;
   }
 }
