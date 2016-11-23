@@ -39,7 +39,9 @@ public class GlobalSettingsUpdateChecker {
     CoreProperties.PROJECT_INCLUSIONS_PROPERTY,
     CoreProperties.PROJECT_TEST_INCLUSIONS_PROPERTY,
     CoreProperties.PROJECT_EXCLUSIONS_PROPERTY,
-    CoreProperties.PROJECT_TEST_EXCLUSIONS_PROPERTY);
+    CoreProperties.PROJECT_TEST_EXCLUSIONS_PROPERTY,
+    CoreProperties.GLOBAL_EXCLUSIONS_PROPERTY,
+    CoreProperties.GLOBAL_TEST_EXCLUSIONS_PROPERTY);
 
   private final StorageManager storageManager;
   private final PropertiesDownloader globalPropertiesDownloader;
