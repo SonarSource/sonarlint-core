@@ -20,7 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -34,6 +37,9 @@ public class GlobalSettingsUpdateCheckerTest {
   private GlobalSettingsUpdateChecker checker;
   private StorageManager storageManager;
   private PropertiesDownloader globalPropertiesDownloader;
+
+  @Rule
+  public LogTester logTester = new LogTester();
 
   @Before
   public void prepare() {
@@ -64,6 +70,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
+    assertThat(logTester.logs()).isEmpty();
   }
 
   @Test
@@ -74,7 +81,8 @@ public class GlobalSettingsUpdateCheckerTest {
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.test.inclusions' added with value 'value'");
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.test.inclusions' added with value 'value'");
   }
 
   @Test
@@ -85,7 +93,8 @@ public class GlobalSettingsUpdateCheckerTest {
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.issue.ignore.allFiles' removed");
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.issue.ignore.allFiles' removed");
   }
 
   @Test
@@ -97,7 +106,8 @@ public class GlobalSettingsUpdateCheckerTest {
     checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Value of property 'sonar.exclusions' changed from 'old' to 'new'");
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Value of property 'sonar.exclusions' changed from 'old' to 'new'");
   }
 
 }

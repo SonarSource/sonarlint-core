@@ -20,7 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
@@ -35,6 +38,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ModuleStorageUpdateCheckerTest {
+
+  @Rule
+  public LogTester logTester = new LogTester();
 
   private static final String MODULE_KEY = "foo";
   private ModuleStorageUpdateChecker checker;
@@ -71,7 +77,8 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.issue.enforce.allFiles' added with value 'value'");
+    assertThat(result.changelog()).containsOnly("Project settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.issue.enforce.allFiles' added with value 'value'");
   }
 
   @Test
@@ -81,7 +88,8 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.cobol.license.secured' removed");
+    assertThat(result.changelog()).containsOnly("Project settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.cobol.license.secured' removed");
   }
 
   @Test
@@ -93,7 +101,8 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Value of property 'sonar.inclusions' changed from 'old' to 'new'");
+    assertThat(result.changelog()).containsOnly("Project settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Value of property 'sonar.inclusions' changed from 'old' to 'new'");
   }
 
   @Test
@@ -104,17 +113,18 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Quality profile for language 'java' added with value 'sonar-way-123'");
+    assertThat(result.changelog()).containsOnly("Quality profile configuration changed");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' added with value 'sonar-way-123'");
   }
 
   @Test
-  public void removedProfile() {
+  public void ignoreRemovedProfile() {
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
-    assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Quality profile for language 'java' removed");
+    assertThat(result.needUpdate()).isFalse();
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' removed");
   }
 
   @Test
@@ -126,7 +136,8 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Quality profile for language 'java' changed from 'sonar-way-123' to 'sonar-way-456'");
+    assertThat(result.changelog()).containsOnly("Quality profile configuration changed");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' changed from 'sonar-way-123' to 'sonar-way-456'");
   }
 
 }

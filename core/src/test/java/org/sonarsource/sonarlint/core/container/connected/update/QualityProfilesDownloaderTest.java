@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.IOException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,8 +30,6 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
-
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -58,14 +57,14 @@ public class QualityProfilesDownloaderTest {
     qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
     QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
-    assertThat(qProfiles.getQprofilesByKey()).containsOnlyKeys(
+    assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
       "cs-sonar-way-58886",
       "java-sonar-way-74592",
       "java-empty-74333",
       "js-sonar-security-way-70539",
       "js-sonar-way-60746");
 
-    assertThat(qProfiles.getDefaultQProfilesByLanguage()).containsOnly(
+    assertThat(qProfiles.getDefaultQProfilesByLanguageMap()).containsOnly(
       entry("cs", "cs-sonar-way-58886"),
       entry("java", "java-sonar-way-74592"),
       entry("js", "js-sonar-way-60746"));

@@ -76,9 +76,12 @@ message QProfiles {
 
   message QProfile {
     string key = 1;
-    int64 activeRuleCount = 2;
-    string rulesUpdatedAt = 3;
-    string userUpdatedAt = 4;
+    string name = 2;
+    string language = 3;
+    string language_name = 4;
+    int64 active_rule_count = 5;
+    string rules_updated_at = 6;
+    string user_updated_at = 7;
   }
 }
 
