@@ -23,6 +23,9 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
+import org.apache.commons.lang.StringUtils;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
@@ -32,6 +35,8 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ModuleStorageUpdateChecker {
+
+  private static final Logger LOG = Loggers.get(ModuleStorageUpdateChecker.class);
 
   private final StorageManager storageManager;
   private final ModuleConfigurationDownloader moduleConfigurationDownloader;
@@ -51,35 +56,50 @@ public class ModuleStorageUpdateChecker {
     ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(moduleKey, globalProps);
     ModuleConfiguration storageModuleConfiguration = storageManager.readModuleConfigFromStorage(moduleKey);
 
-    MapDifference<String, String> propDiff = Maps.difference(GlobalSettingsUpdateChecker.filter(storageModuleConfiguration.getPropertiesMap()),
-      GlobalSettingsUpdateChecker.filter(serverModuleConfiguration.getPropertiesMap()));
-    if (!propDiff.areEqual()) {
-      for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {
-        result.appendToChangelog(String.format("Property '%s' removed", entry.getKey()));
-      }
-      for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnRight().entrySet()) {
-        result.appendToChangelog("Property '" + entry.getKey() + "' added with value '" + entry.getValue() + "'");
-      }
-      for (Map.Entry<String, ValueDifference<String>> entry : propDiff.entriesDiffering().entrySet()) {
-        result.appendToChangelog("Value of property '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
-      }
-    }
+    checkForSettingsUpdates(result, serverModuleConfiguration, storageModuleConfiguration);
 
+    checkForQualityProfilesUpdates(result, serverModuleConfiguration, storageModuleConfiguration);
+
+    return result;
+  }
+
+  private static void checkForQualityProfilesUpdates(DefaultStorageUpdateCheckResult result, ModuleConfiguration serverModuleConfiguration,
+    ModuleConfiguration storageModuleConfiguration) {
     MapDifference<String, String> qProfileDiff = Maps.difference(storageModuleConfiguration.getQprofilePerLanguageMap(), serverModuleConfiguration.getQprofilePerLanguageMap());
     if (!qProfileDiff.areEqual()) {
       for (Map.Entry<String, String> entry : qProfileDiff.entriesOnlyOnLeft().entrySet()) {
-        result.appendToChangelog(String.format("Quality profile for language '%s' removed", entry.getKey()));
+        LOG.debug("Quality profile for language '{}' removed", entry.getKey());
       }
       for (Map.Entry<String, String> entry : qProfileDiff.entriesOnlyOnRight().entrySet()) {
-        result.appendToChangelog("Quality profile for language '" + entry.getKey() + "' added with value '" + entry.getValue() + "'");
+        LOG.debug("Quality profile for language '{}' added with value '{}'", entry.getKey(), entry.getValue());
       }
       for (Map.Entry<String, ValueDifference<String>> entry : qProfileDiff.entriesDiffering().entrySet()) {
-        result.appendToChangelog(
-          "Quality profile for language '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
+        LOG.debug(
+          "Quality profile for language '{}' changed from '{}' to '{}'", entry.getKey(), entry.getValue().leftValue(), entry.getValue().rightValue());
+      }
+      // Don't report update when QP removed since this is harmless for the analysis
+      if (!qProfileDiff.entriesOnlyOnRight().isEmpty() || !qProfileDiff.entriesDiffering().isEmpty()) {
+        result.appendToChangelog("Quality profile configuration changed");
       }
     }
+  }
 
-    return result;
+  private static void checkForSettingsUpdates(DefaultStorageUpdateCheckResult result, ModuleConfiguration serverModuleConfiguration,
+    ModuleConfiguration storageModuleConfiguration) {
+    MapDifference<String, String> propDiff = Maps.difference(GlobalSettingsUpdateChecker.filter(storageModuleConfiguration.getPropertiesMap()),
+      GlobalSettingsUpdateChecker.filter(serverModuleConfiguration.getPropertiesMap()));
+    if (!propDiff.areEqual()) {
+      result.appendToChangelog("Project settings updated");
+      for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {
+        LOG.debug("Property '{}' removed", entry.getKey());
+      }
+      for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnRight().entrySet()) {
+        LOG.debug("Property '{}' added with value '{}'", entry.getKey(), StringUtils.abbreviate(entry.getValue(), 30));
+      }
+      for (Map.Entry<String, ValueDifference<String>> entry : propDiff.entriesDiffering().entrySet()) {
+        LOG.debug("Value of property '{}' changed from '{}' to '{}'", entry.getKey(), entry.getValue().leftValue(), entry.getValue().rightValue());
+      }
+    }
   }
 
 }

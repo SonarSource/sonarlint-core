@@ -51,6 +51,9 @@ public class QualityProfilesDownloader {
       for (QualityProfile qp : qpResponse.getProfilesList()) {
         QProfile.Builder qpBuilder = QProfile.newBuilder();
         qpBuilder.setKey(qp.getKey());
+        qpBuilder.setName(qp.getName());
+        qpBuilder.setLanguage(qp.getLanguage());
+        qpBuilder.setLanguageName(qp.getLanguageName());
         qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
         qpBuilder.setRulesUpdatedAt(qp.getRulesUpdatedAt());
         qpBuilder.setUserUpdatedAt(qp.getUserUpdatedAt());

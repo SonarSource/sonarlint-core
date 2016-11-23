@@ -539,13 +539,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Change a global setting that *is* in the whitelist
     setMultiValuesSettings(null, "sonar.inclusions", "**/*");
     // Activate a new rule
-    SearchWsResponse response = newAdminWsClient().qualityProfiles().search(new SearchWsRequest().setProfileName("SonarLint IT Java"));
-    String profileKey = response.getProfiles(0).getKey();
+    SearchWsResponse response = newAdminWsClient().qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
+    String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
     ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "profile_key", profileKey, "rule_key", "squid:S1228");
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Property 'sonar.inclusions' added with value '**/*'", "Quality profile '" + profileKey + "' updated");
+    assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
@@ -560,6 +560,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Project settings updated");
 
   }
 

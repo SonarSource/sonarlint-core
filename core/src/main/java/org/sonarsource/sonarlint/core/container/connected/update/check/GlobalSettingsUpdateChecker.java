@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.CoreProperties;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
@@ -34,6 +36,8 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class GlobalSettingsUpdateChecker {
+
+  private static final Logger LOG = Loggers.get(GlobalSettingsUpdateChecker.class);
 
   private static final Set<String> WHITELIST = ImmutableSet.of(
     CoreProperties.PROJECT_INCLUSIONS_PROPERTY,
@@ -56,14 +60,15 @@ public class GlobalSettingsUpdateChecker {
     GlobalProperties storageGlobalProperties = storageManager.readGlobalPropertiesFromStorage();
     MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties.getPropertiesMap()), filter(serverGlobalProperties.getPropertiesMap()));
     if (!propDiff.areEqual()) {
+      result.appendToChangelog("Global settings updated");
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {
-        result.appendToChangelog(String.format("Property '%s' removed", entry.getKey()));
+        LOG.debug(String.format("Property '%s' removed", entry.getKey()));
       }
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnRight().entrySet()) {
-        result.appendToChangelog("Property '" + entry.getKey() + "' added with value '" + entry.getValue() + "'");
+        LOG.debug("Property '" + entry.getKey() + "' added with value '" + entry.getValue() + "'");
       }
       for (Map.Entry<String, ValueDifference<String>> entry : propDiff.entriesDiffering().entrySet()) {
-        result.appendToChangelog("Value of property '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
+        LOG.debug("Value of property '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
       }
     }
   }
