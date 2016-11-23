@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.utils.PathUtils;
 
 public class SonarLintInputDirTest {
   private SonarLintInputDir inputDir;
@@ -40,9 +41,9 @@ public class SonarLintInputDirTest {
 
   @Test
   public void testInputDir() {
-    assertThat(inputDir.absolutePath()).isEqualTo(path.toString());
+    assertThat(inputDir.absolutePath()).isEqualTo(PathUtils.canonicalPath(path.toFile()));
     assertThat(inputDir.file()).isEqualTo(path.toFile());
-    assertThat(inputDir.key()).isEqualTo(path.toString());
+    assertThat(inputDir.key()).isEqualTo(PathUtils.canonicalPath(path.toFile()));
     assertThat(inputDir.isFile()).isFalse();
     assertThat(inputDir.moduleKey()).isNull();
     assertThat(inputDir.path()).isEqualTo(path);

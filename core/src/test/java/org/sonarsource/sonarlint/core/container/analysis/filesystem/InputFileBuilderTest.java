@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,9 +61,9 @@ public class InputFileBuilderTest {
 
     assertThat(inputFile.type()).isEqualTo(InputFile.Type.TEST);
     assertThat(inputFile.file()).isEqualTo(path.toFile());
-    assertThat(inputFile.absolutePath()).isEqualTo(path.toAbsolutePath().toString());
+    assertThat(inputFile.absolutePath()).isEqualTo(toSonarQubePath(path.toString()));
     assertThat(inputFile.language()).isEqualTo("java");
-    assertThat(inputFile.key()).isEqualTo(path.toAbsolutePath().toString());
+    assertThat(inputFile.key()).isEqualTo(toSonarQubePath(path.toAbsolutePath().toString()));
     assertThat(inputFile.lines()).isEqualTo(1);
 
     assertThat(builder.langDetection()).isEqualTo(langDetection);

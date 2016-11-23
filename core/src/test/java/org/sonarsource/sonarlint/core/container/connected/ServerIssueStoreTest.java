@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -83,15 +82,24 @@ public class ServerIssueStoreTest {
 
   @Test
   public void should_fail_to_save_object_if_cannot_write_to_filesystem() throws IOException {
-    File forbiddenDir = temporaryFolder.newFolder();
-    if (!forbiddenDir.setReadOnly()) {
-      fail("could not make dir readonly");
+    Path root = temporaryFolder.newFolder().toPath();
+
+    String moduleKey = "module1";
+    String path = "path1";
+    // the sha1sum of moduleKey:path
+    String sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
+
+    // Create a directory at the path where ServerIssueStore would want to create a file,
+    // in order to obstruct the file creation
+    Path wouldBeFile = root.resolve("1").resolve("8").resolve(sha1sum);
+    if (!wouldBeFile.toFile().mkdirs()) {
+      fail("could not create dummy directory");
     }
 
-    ServerIssueStore store = new ServerIssueStore(forbiddenDir.toPath());
+    ServerIssueStore store = new ServerIssueStore(root);
 
     exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath("myfile").setModuleKey("module").build()));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).build()));
   }
 
   @Test
@@ -99,19 +107,18 @@ public class ServerIssueStoreTest {
     Path root = temporaryFolder.newFolder().toPath();
     ServerIssueStore store = new ServerIssueStore(root);
 
-    String moduleKey = "module1";
-    String key1 = "path1";
+    String fileKey = "module1:path1";
+    // the sha1sum of fileKey
+    String sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
 
-    ServerIssue issue = ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(key1).build();
-
-    store.save(Collections.singletonList(issue));
-
-    File f = root.resolve("1").resolve("8").resolve("18054aada7bd3b7ddd6de55caf50ae7bee376430").toFile();
-    if (!f.setReadOnly() || !f.getParentFile().setReadOnly()) {
-      fail("could not make file readonly");
+    // Create a dummy sub-directory at the path where ServerIssueStore would want to delete a file,
+    // in order to obstruct the file deletion
+    Path dummySubDir = root.resolve("1").resolve("8").resolve(sha1sum).resolve("dummysub");
+    if (!dummySubDir.toFile().mkdirs()) {
+      fail("could not create dummy sub-directory");
     }
     exception.expect(StorageException.class);
-    store.delete("module1:path1");
+    store.delete(fileKey);
   }
 
   @Test
