@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -34,13 +35,15 @@ public class LoggedErrorHandlerTest {
   private LoggedErrorHandler handler;
   private ClientInputFile file1;
   private ClientInputFile file2;
+  private final Path path1 = Paths.get("/my/file1");
+  private final Path path2 = Paths.get("/my/file2");
 
   @Before
   public void setUp() {
-    file1 = new TestClientInputFile(Paths.get("/my/file1"), false, StandardCharsets.UTF_8);
-    file2 = new TestClientInputFile(Paths.get("/my/file2"), false, StandardCharsets.UTF_8);
+    file1 = new TestClientInputFile(path1, false, StandardCharsets.UTF_8);
+    file2 = new TestClientInputFile(path2, false, StandardCharsets.UTF_8);
 
-    handler = new LoggedErrorHandler(Arrays.asList(new ClientInputFile[] {file1, file2}));
+    handler = new LoggedErrorHandler(Arrays.asList(file1, file2));
   }
 
   @Test
@@ -57,19 +60,19 @@ public class LoggedErrorHandlerTest {
 
   @Test
   public void testParsingError() {
-    handler.handleError("Unable to parse source file : /my/file1");
+    handler.handleError("Unable to parse source file : " + path1);
     assertThat(handler.getErrorFiles()).containsOnly(file1);
   }
   
   @Test
   public void testParsingErrorJs() {
-    handler.handleError("Unable to parse file: /my/file1");
+    handler.handleError("Unable to parse file: " + path1);
     assertThat(handler.getErrorFiles()).containsOnly(file1);
   }
 
   @Test
   public void testOtherError() {
-    handler.handleError("Unablerewe to parse source file : /my/file1");
+    handler.handleError("Some other error : " + path1);
     assertThat(handler.getErrorFiles()).isEmpty();
   }
 }

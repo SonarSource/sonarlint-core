@@ -132,9 +132,14 @@ public class DefaultFilePredicatesTest {
     // absolute file
     assertThat(predicates.is(javaFile.file()).apply(javaFile)).isTrue();
     assertThat(predicates.is(javaFile.file().getAbsoluteFile()).apply(javaFile)).isTrue();
-    assertThat(predicates.is(javaFile.file().getCanonicalFile()).apply(javaFile)).isTrue();
     assertThat(predicates.is(new File(javaFile.file().toURI())).apply(javaFile)).isTrue();
     assertThat(predicates.is(temp.newFile()).apply(javaFile)).isFalse();
+
+    // Note: do not add assertion on javaFile.file().getCanonicalFile()
+    // because canonical != absolute in Windows, for example:
+    //    absolute:  C:\Users\JANOSG~1\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
+    //    canonical: C:\Users\Janos Gyerik\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
+    // To make both work, InputFile implementations would have to support multiple representations, which makes little sense
   }
 
   @Test

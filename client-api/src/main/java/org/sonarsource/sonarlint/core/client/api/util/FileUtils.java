@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
@@ -27,8 +28,11 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.regex.Pattern;
 
 public class FileUtils {
+
+  public static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
 
   private FileUtils() {
   }
@@ -75,4 +79,16 @@ public class FileUtils {
     }
   }
 
+  /**
+   * Convert path to format used by SonarQube
+   *
+   * @param path path string in the local OS
+   * @return SonarQube path
+   */
+  public static String toSonarQubePath(String path) {
+    if (File.separatorChar != '/') {
+      return path.replaceAll(PATH_SEPARATOR_PATTERN, "/");
+    }
+    return path;
+  }
 }
