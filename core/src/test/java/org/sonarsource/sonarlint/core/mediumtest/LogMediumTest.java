@@ -22,12 +22,11 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import com.jayway.awaitility.Awaitility;
+import com.google.common.collect.Multimaps;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -66,7 +65,7 @@ public class LogMediumTest {
 
   @Before
   public void prepare() throws IOException {
-    logs = LinkedListMultimap.create();
+    logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
     config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .setLogOutput(createLogOutput(logs))
@@ -96,17 +95,17 @@ public class LogMediumTest {
 
   @Test
   public void changeLogOutputForAnalysis() throws Exception {
+    logs.clear();
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener());
-    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> !logs.get(LogOutput.Level.DEBUG).isEmpty());
+    assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
-    final Multimap<LogOutput.Level, String> logs2 = LinkedListMultimap.create();
+    final Multimap<LogOutput.Level, String> logs2 = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
 
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2));
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
-
-    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> !logs2.get(LogOutput.Level.DEBUG).isEmpty());
+    assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
   }
 
   @Test
