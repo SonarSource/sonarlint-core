@@ -1,4 +1,5 @@
 # SonarLint Core
 Core library to run SonarLint analysis
 
-[![Build Status](https://travis-ci.org/SonarSource/sonarlint-core.svg?branch=master)](https://travis-ci.org/SonarSource/sonarlint-core)
+[![Build status](https://ci.appveyor.com/api/projects/status/teulmha62fw3n07h/branch/master?svg=true)](https://ci.appveyor.com/project/SonarSource/sonarlint-core/branch/master)
+
