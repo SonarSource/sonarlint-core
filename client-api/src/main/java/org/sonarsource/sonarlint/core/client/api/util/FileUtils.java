@@ -80,12 +80,12 @@ public class FileUtils {
   }
 
   /**
-   * Convert path to SonarQube canonical path
+   * Convert path to format used by SonarQube
    *
    * @param path path string in the local OS
-   * @return SonarQube canonical path
+   * @return SonarQube path
    */
-  public static String toCanonicalPath(String path) {
+  public static String toSonarQubePath(String path) {
     if (File.separatorChar != '/') {
       return path.replaceAll(PATH_SEPARATOR_PATTERN, "/");
     }

@@ -38,7 +38,7 @@ import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toCanonicalPath;
+import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class ModuleHierarchyDownloader {
   private final SonarLintWsClient wsClient;
@@ -89,7 +89,7 @@ public class ModuleHierarchyDownloader {
       c = ancestors.get(c);
     } while (c != null);
 
-    return toCanonicalPath(path.toString());
+    return toSonarQubePath(path.toString());
   }
 
   @CheckForNull
