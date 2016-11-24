@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +51,12 @@ public class GlobalSettingsUpdateCheckerTest {
     when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
 
     checker = new GlobalSettingsUpdateChecker(storageManager, globalPropertiesDownloader);
+  }
+  
+  @AfterClass
+  public void end() {
+    // to avoid conflicts with SonarLintLogging
+    logTester.setLevel(LoggerLevel.TRACE);
   }
 
   @Test

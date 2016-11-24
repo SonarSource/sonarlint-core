@@ -29,7 +29,6 @@ import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -92,7 +91,10 @@ public class LogMediumTest {
     return new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of());
   }
 
-  @Ignore("Fails randomly")
+  /**
+   * If this test starts to fail randomly, check if any other test class in the core module is using {@link org.sonar.api.utils.log.LogTester} without
+   * setting the root level back to debug in @AfterClass! 
+   */
   @Test
   public void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
