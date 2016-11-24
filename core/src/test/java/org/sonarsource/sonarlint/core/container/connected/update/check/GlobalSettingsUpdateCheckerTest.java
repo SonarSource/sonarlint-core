@@ -54,9 +54,9 @@ public class GlobalSettingsUpdateCheckerTest {
   }
   
   @AfterClass
-  public void end() {
+  public static void after() {
     // to avoid conflicts with SonarLintLogging
-    logTester.setLevel(LoggerLevel.TRACE);
+    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
