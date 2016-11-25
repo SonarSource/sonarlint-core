@@ -66,9 +66,9 @@ public class ServerVersionAndStatusCheckerTest {
   }
 
   @Test
-  public void report_error() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_NOT_FOUND, "Not found");
+  public void fallbackOnDeprecatedWs_if_404() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/server/version", "4.5");
+    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_NOT_FOUND, "");
 
     ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
 
@@ -76,7 +76,38 @@ public class ServerVersionAndStatusCheckerTest {
       checker.checkVersionAndStatus();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Error 404 on api/system/status: Not found");
+      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
+    }
+  }
+
+  @Test
+  public void report_original_error_if_fallback_failed() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_NOT_FOUND, "Not found");
+    WsClientTestUtils.addFailedResponse(wsClient, "api/server/version", HttpURLConnection.HTTP_UNAUTHORIZED, "Unauthorized");
+
+    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
+
+    try {
+      checker.checkVersionAndStatus();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Error 404 on api/system/status");
+    }
+  }
+
+  @Test
+  public void no_fallback_if_not_404() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_UNAUTHORIZED, "Not authorized");
+
+    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
+
+    try {
+      checker.checkVersionAndStatus();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Not authorized. Please check server credentials.");
     }
   }
 
