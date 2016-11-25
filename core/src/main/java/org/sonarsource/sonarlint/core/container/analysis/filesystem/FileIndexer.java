@@ -86,7 +86,7 @@ public class FileIndexer {
     if (exclusionFilters.accept(inputFile, file.isTest() ? Type.TEST : Type.MAIN)) {
       indexFile(fileSystem, progress, inputFile);
     } else {
-      LOG.debug("{} excluded ignored because of inclusion/exclusion patterns");
+      LOG.debug("{} ignored because of inclusion/exclusion patterns", file.getPath());
     }
   }
 
