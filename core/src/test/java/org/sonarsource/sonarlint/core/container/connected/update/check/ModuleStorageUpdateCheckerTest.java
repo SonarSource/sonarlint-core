@@ -120,7 +120,7 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Quality profile configuration changed");
+    assertThat(result.changelog()).containsOnly("Quality profiles configuration changed");
     assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' added with value 'sonar-way-123'");
   }
 
@@ -143,7 +143,7 @@ public class ModuleStorageUpdateCheckerTest {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
 
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Quality profile configuration changed");
+    assertThat(result.changelog()).containsOnly("Quality profiles configuration changed");
     assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' changed from 'sonar-way-123' to 'sonar-way-456'");
   }
 

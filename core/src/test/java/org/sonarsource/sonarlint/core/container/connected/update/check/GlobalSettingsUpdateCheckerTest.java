@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,7 +53,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
     checker = new GlobalSettingsUpdateChecker(storageManager, globalPropertiesDownloader);
   }
-  
+
   @AfterClass
   public static void after() {
     // to avoid conflicts with SonarLintLogging
@@ -93,6 +94,31 @@ public class GlobalSettingsUpdateCheckerTest {
   }
 
   @Test
+  public void addedPropObfuscateSecured() {
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.java.license.secured", "value").build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result);
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.java.license.secured' added with value '******'");
+  }
+
+  @Test
+  public void addedPropAbbreviateValue() {
+    when(globalPropertiesDownloader.fetchGlobalProperties())
+      .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.enforce.allFiles", StringUtils.repeat("abcde", 10)).build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result);
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.issue.enforce.allFiles' added with value '" + StringUtils.repeat("abcde", 3) + "ab...'");
+  }
+
+  @Test
   public void removedProp() {
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
 
@@ -115,6 +141,34 @@ public class GlobalSettingsUpdateCheckerTest {
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
     assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Value of property 'sonar.exclusions' changed from 'old' to 'new'");
+  }
+
+  @Test
+  public void changedPropDiffAbbreviateEnd() {
+    when(storageManager.readGlobalPropertiesFromStorage())
+      .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "four,five,six,seven,eight").build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result);
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Value of property 'sonar.exclusions' changed from 'one,two,three,fou...' to 'four,five,six,sev...'");
+  }
+
+  @Test
+  public void changedPropDiffAbbreviateBeginEnd() {
+    when(storageManager.readGlobalPropertiesFromStorage())
+      .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
+    when(globalPropertiesDownloader.fetchGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,four,five,six,seven,eight").build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result);
+
+    assertThat(result.needUpdate()).isTrue();
+    assertThat(result.changelog()).containsOnly("Global settings updated");
+    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Value of property 'sonar.exclusions' changed from '...two,three,four...' to '...four,five,six,...'");
   }
 
 }

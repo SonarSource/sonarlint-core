@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -36,6 +37,8 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class GlobalSettingsUpdateChecker {
+
+  private static final int MAX_VALUE_LENGTH = 20;
 
   private static final Logger LOG = Loggers.get(GlobalSettingsUpdateChecker.class);
 
@@ -62,14 +65,47 @@ public class GlobalSettingsUpdateChecker {
     if (!propDiff.areEqual()) {
       result.appendToChangelog("Global settings updated");
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {
-        LOG.debug(String.format("Property '%s' removed", entry.getKey()));
+        LOG.debug("Property '{}' removed", entry.getKey());
       }
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnRight().entrySet()) {
-        LOG.debug("Property '" + entry.getKey() + "' added with value '" + entry.getValue() + "'");
+        LOG.debug("Property '{}' added with value '{}'", entry.getKey(), formatValue(entry.getKey(), entry.getValue()));
       }
       for (Map.Entry<String, ValueDifference<String>> entry : propDiff.entriesDiffering().entrySet()) {
-        LOG.debug("Value of property '" + entry.getKey() + "' changed from '" + entry.getValue().leftValue() + "' to '" + entry.getValue().rightValue() + "'");
+        LOG.debug("Value of property '{}' changed from '{}' to '{}'", entry.getKey(),
+          formatLeftDiff(entry.getKey(), entry.getValue().leftValue(), entry.getValue().rightValue()),
+          formatRightDiff(entry.getKey(), entry.getValue().leftValue(), entry.getValue().rightValue()));
       }
+    }
+  }
+
+  static String formatValue(String key, String value) {
+    if (key.endsWith(".secured")) {
+      return "******";
+    }
+    return StringUtils.abbreviate(value, MAX_VALUE_LENGTH);
+  }
+
+  static String formatRightDiff(String key, String left, String right) {
+    if (right.length() <= MAX_VALUE_LENGTH) {
+      return formatValue(key, right);
+    }
+    String diff = StringUtils.difference(left, right);
+    if (right.startsWith(diff)) {
+      return formatValue(key, diff);
+    } else {
+      return formatValue(key, "..." + diff);
+    }
+  }
+
+  static String formatLeftDiff(String key, String left, String right) {
+    if (left.length() <= MAX_VALUE_LENGTH) {
+      return formatValue(key, left);
+    }
+    String diff = StringUtils.difference(right, left);
+    if (left.startsWith(diff)) {
+      return formatValue(key, diff);
+    } else {
+      return formatValue(key, "..." + diff);
     }
   }
 
