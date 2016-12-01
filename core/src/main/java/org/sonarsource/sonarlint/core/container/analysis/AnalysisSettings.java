@@ -32,23 +32,34 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 public class AnalysisSettings extends Settings {
+  private static final String C_SUFFIXES_KEY = "sonar.c.file.suffixes";
+  private static final String CPP_SUFFIXES_KEY = "sonar.cpp.file.suffixes";
+  private static final String OBJC_SUFFIXES_KEY = "sonar.objc.file.suffixes";
 
   private final Map<String, String> properties = new HashMap<>();
 
   public AnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions, new Encryption(null));
+    addDefaultProperties();
     addProperties(config.extraProperties());
   }
 
   public AnalysisSettings(StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions, new Encryption(null));
     GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
+    addDefaultProperties();
     addProperties(globalProps.getPropertiesMap());
     if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
       ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
       addProperties(projectConfig.getPropertiesMap());
     }
     addProperties(config.extraProperties());
+  }
+  
+  private void addDefaultProperties() {
+    setProperty(C_SUFFIXES_KEY, "disabled");
+    setProperty(CPP_SUFFIXES_KEY, "disabled");
+    setProperty(OBJC_SUFFIXES_KEY, "disabled");
   }
 
   @Override
