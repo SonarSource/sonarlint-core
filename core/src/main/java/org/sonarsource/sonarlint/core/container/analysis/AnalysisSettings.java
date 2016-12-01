@@ -35,6 +35,7 @@ public class AnalysisSettings extends Settings {
   private static final String C_SUFFIXES_KEY = "sonar.c.file.suffixes";
   private static final String CPP_SUFFIXES_KEY = "sonar.cpp.file.suffixes";
   private static final String OBJC_SUFFIXES_KEY = "sonar.objc.file.suffixes";
+  private static final String DISABLED_SUFFIX = "disabled";
 
   private final Map<String, String> properties = new HashMap<>();
 
@@ -57,9 +58,9 @@ public class AnalysisSettings extends Settings {
   }
   
   private void addDefaultProperties() {
-    setProperty(C_SUFFIXES_KEY, "disabled");
-    setProperty(CPP_SUFFIXES_KEY, "disabled");
-    setProperty(OBJC_SUFFIXES_KEY, "disabled");
+    setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
+    setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);
+    setProperty(OBJC_SUFFIXES_KEY, DISABLED_SUFFIX);
   }
 
   @Override
