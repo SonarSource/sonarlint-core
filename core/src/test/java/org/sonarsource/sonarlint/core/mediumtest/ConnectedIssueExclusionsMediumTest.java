@@ -90,13 +90,8 @@ public class ConnectedIssueExclusionsMediumTest {
       .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
       .setKey("java")
       .build());
-    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Downloader() {
-
-      @Override
-      public void download(String filename, Path toFile) throws IOException {
-        FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile());
-      }
-    });
+    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH,
+      (filename, target) -> FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), target.toFile()));
 
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
