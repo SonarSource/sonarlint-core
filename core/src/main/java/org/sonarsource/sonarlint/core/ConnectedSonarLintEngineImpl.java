@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -266,7 +265,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     return withReadLock(() -> {
       checkUpdateStatus();
       return getGlobalContainer().getServerIssues(moduleKey, filePath);
@@ -274,7 +273,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
     return withRwLock(() -> {
       checkUpdateStatus();
       return getGlobalContainer().downloadServerIssues(serverConfig, moduleKey, filePath);

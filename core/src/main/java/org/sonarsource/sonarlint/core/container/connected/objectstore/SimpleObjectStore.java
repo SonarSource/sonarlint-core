@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.objectstore;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,7 +55,9 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
     if (!path.toFile().exists()) {
       return Optional.empty();
     }
-    return Optional.of(reader.apply(Files.newInputStream(path)));
+    try (InputStream inputStream = Files.newInputStream(path)) {
+      return Optional.of(reader.apply(inputStream));
+    }
   }
 
   @Override
