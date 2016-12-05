@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.SimpleDateFormat;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -141,11 +141,11 @@ public class StorageContainer extends ComponentContainer {
     return getComponentByType(AllModulesReader.class).get();
   }
 
-  public Iterator<ServerIssue> getServerIssues(String moduleKey, String filePath) {
+  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     return getComponentByType(IssueStoreReader.class).getServerIssues(moduleKey, filePath);
   }
 
-  public Iterator<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
     IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
     StorageManager storageManager = getComponentByType(StorageManager.class);
     PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
