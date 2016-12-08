@@ -58,6 +58,8 @@ public class SonarLintWsClient {
       .proxyCredentials(serverConfig.getProxyLogin(), serverConfig.getProxyPassword())
       .readTimeoutMilliseconds(serverConfig.getReadTimeoutMs())
       .connectTimeoutMilliseconds(serverConfig.getConnectTimeoutMs())
+      .setSSLSocketFactory(serverConfig.getSSLSocketFactory())
+      .setTrustManager(serverConfig.getTrustManager())
       .build();
     return WsClientFactories.getDefault().newClient(connector);
   }

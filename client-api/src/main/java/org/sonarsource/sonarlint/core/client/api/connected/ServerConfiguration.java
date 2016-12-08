@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.net.Proxy;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 
 public class ServerConfiguration {
 
@@ -37,6 +39,8 @@ public class ServerConfiguration {
   private final String proxyPassword;
   private final int connectTimeoutMs;
   private final int readTimeoutMs;
+  private SSLSocketFactory sslSocketFactory = null;
+  private X509TrustManager sslTrustManager = null;
 
   private ServerConfiguration(Builder builder) {
     this.url = builder.url;
@@ -48,6 +52,8 @@ public class ServerConfiguration {
     this.proxyPassword = builder.proxyPassword;
     this.connectTimeoutMs = builder.connectTimeoutMs;
     this.readTimeoutMs = builder.readTimeoutMs;
+    this.sslSocketFactory = builder.sslSocketFactory;
+    this.sslTrustManager = builder.sslTrustManager;
   }
 
   public String getUrl() {
@@ -62,6 +68,16 @@ public class ServerConfiguration {
   @CheckForNull
   public String getLogin() {
     return login;
+  }
+
+  @CheckForNull
+  public X509TrustManager getTrustManager() {
+    return sslTrustManager;
+  }
+
+  @CheckForNull
+  public SSLSocketFactory getSSLSocketFactory() {
+    return sslSocketFactory;
   }
 
   @CheckForNull
@@ -106,6 +122,8 @@ public class ServerConfiguration {
     private String proxyPassword;
     private int connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MILLISECONDS;
     private int readTimeoutMs = DEFAULT_READ_TIMEOUT_MILLISECONDS;
+    private SSLSocketFactory sslSocketFactory = null;
+    private X509TrustManager sslTrustManager = null;
 
     private Builder() {
     }
@@ -123,6 +141,16 @@ public class ServerConfiguration {
      */
     public Builder url(String url) {
       this.url = url;
+      return this;
+    }
+
+    public Builder sslSocketFactory(SSLSocketFactory sslSocketFactory) {
+      this.sslSocketFactory = sslSocketFactory;
+      return this;
+    }
+
+    public Builder trustManager(X509TrustManager sslTrustManager) {
+      this.sslTrustManager = sslTrustManager;
       return this;
     }
 
