@@ -20,6 +20,10 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.net.Proxy;
+
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
+
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,15 +67,21 @@ public class ServerConfigurationTest {
   @Test
   public void max_builder() {
     Proxy proxy = mock(Proxy.class);
+    X509TrustManager trustManager = mock(X509TrustManager.class);
+    SSLSocketFactory socketFactory = mock(SSLSocketFactory.class);
     ServerConfiguration config = ServerConfiguration.builder()
       .url("http://foo")
       .userAgent("agent")
       .credentials("user", "pwd")
       .proxy(proxy)
+      .sslSocketFactory(socketFactory)
+      .trustManager(trustManager)
       .proxyCredentials("proxyUser", "proxyPwd")
       .readTimeoutMilliseconds(10)
       .connectTimeoutMilliseconds(20)
       .build();
+    assertThat(config.getSSLSocketFactory()).isEqualTo(socketFactory);
+    assertThat(config.getTrustManager()).isEqualTo(trustManager);
     assertThat(config.getUrl()).isEqualTo("http://foo");
     assertThat(config.getUserAgent()).isEqualTo("agent");
     assertThat(config.getLogin()).isEqualTo("user");
