@@ -72,7 +72,7 @@ public class PartialUpdater {
       issues = downloader.apply(fileKey);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
-      throw new DownloadException("Failed to update file issues" + e.getMessage(), null);
+      throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
     Spliterator<ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
     issueStore.save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
@@ -84,7 +84,7 @@ public class PartialUpdater {
       moduleListDownloader.fetchModulesList(moduleListPath);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
-      throw new DownloadException("Failed to update module list" + e.getMessage(), null);
+      throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
     }
   }
 }
