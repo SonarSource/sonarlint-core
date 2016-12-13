@@ -47,17 +47,6 @@ function InstallAppveyorTools
                 FetchAndUnzip $url $localPath
         }
 
-        $mavenLocalRepository = "$env:USERPROFILE\.m2\repository"
-        if (-not(Test-Path $mavenLocalRepository))
-        {
-                mkdir $mavenLocalRepository | Out-Null
-        }
-        echo "Installating Travis Utils closed source Maven projects into $mavenLocalRepository"
-        Copy-Item "$travisUtilsPath\m2repo\*" $mavenLocalRepository -Force -Recurse
-
-        $env:ORCHESTRATOR_CONFIG_URL = ""
-        $env:TRAVIS = "ORCH-332"
-
         $mavenLocal = "$env:USERPROFILE\.m2"
 	if (-not(Test-Path $mavenLocal))
 	{
