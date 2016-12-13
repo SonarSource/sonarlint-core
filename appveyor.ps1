@@ -57,6 +57,15 @@ function InstallAppveyorTools
 
         $env:ORCHESTRATOR_CONFIG_URL = ""
         $env:TRAVIS = "ORCH-332"
+
+        $mavenLocal = "$env:USERPROFILE\.m2"
+	if (-not(Test-Path $mavenLocal))
+	{
+		mkdir $mavenLocal | Out-Null
+	}
+	echo "Installating Travis Utils public Maven settings.xml into $mavenLocal"
+	Copy-Item "$travisUtilsPath\m2\settings-public.xml" "$mavenLocal\settings.xml"
+
 }
 
 function Build
