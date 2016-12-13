@@ -124,3 +124,4 @@ CALLSTACK:$(Get-PSCallStack | Out-String)
 
 InstallAppveyorTools
 mvn verify
+CheckLastExitCode
