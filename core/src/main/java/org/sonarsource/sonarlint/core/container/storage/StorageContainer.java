@@ -29,6 +29,7 @@ import org.sonar.api.Plugin;
 import org.sonar.api.internal.ApiVersion;
 import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.System2;
+import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -42,6 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
@@ -151,6 +153,14 @@ public class StorageContainer extends ComponentContainer {
     PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
     updater.updateFileIssues(moduleKey, filePath);
     return getServerIssues(moduleKey, filePath);
+  }
+
+  public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
+    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
+    StorageManager storageManager = getComponentByType(StorageManager.class);
+    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
+    TempFolder tempFolder = getComponentByType(TempFolder.class);
+    updater.updateFileIssues(moduleKey, tempFolder);
   }
 
   public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig) {

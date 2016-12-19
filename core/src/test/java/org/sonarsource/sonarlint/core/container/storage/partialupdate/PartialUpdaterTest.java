@@ -39,6 +39,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.sonar.api.utils.internal.DefaultTempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -100,6 +101,21 @@ public class PartialUpdaterTest {
 
     exception.expect(DownloadException.class);
     updater.updateFileIssues("module", "file");
+  }
+
+  @Test
+  public void update_file_issues_by_module() throws IOException {
+    ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+    Iterator<ServerIssue> issueIterator = issues.iterator();
+
+    String moduleKey = "dummy";
+    when(storageManager.getServerIssuesPath(moduleKey)).thenReturn(temp.newFolder().toPath());
+    when(downloader.apply(moduleKey)).thenReturn(issueIterator);
+
+    updater.updateFileIssues(moduleKey, new DefaultTempFolder(temp.newFolder()));
+
+    verify(issueStore).save(issues);
   }
 
   @Test

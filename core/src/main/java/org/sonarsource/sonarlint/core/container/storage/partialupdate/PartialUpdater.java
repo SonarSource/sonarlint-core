@@ -26,6 +26,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 
@@ -76,6 +78,10 @@ public class PartialUpdater {
     }
     Spliterator<ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
     issueStore.save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
+  }
+
+  public void updateFileIssues(String moduleKey, TempFolder tempFolder) {
+    new ServerIssueUpdater(storageManager, downloader, issueStoreFactory, tempFolder).update(moduleKey);
   }
 
   public void updateModuleList() {
