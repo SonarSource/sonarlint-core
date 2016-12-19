@@ -62,19 +62,11 @@ public class ModuleStorageUpdateExecutor {
 
   public void update(String moduleKey) {
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
-
-    Path temp = tempFolder.newDir().toPath();
-
-    updateModuleConfiguration(moduleKey, globalProps, temp);
-
-    updateRemoteIssues(moduleKey, temp);
-
-    updateStatus(temp);
-
-    Path dest = storageManager.getModuleStorageRoot(moduleKey);
-    FileUtils.deleteDirectory(dest);
-    FileUtils.forceMkDirs(dest.getParent());
-    FileUtils.moveDir(temp, dest);
+    FileUtils.replaceDir(temp -> {
+      updateModuleConfiguration(moduleKey, globalProps, temp);
+      updateRemoteIssues(moduleKey, temp);
+      updateStatus(temp);
+    }, storageManager.getModuleStorageRoot(moduleKey), tempFolder.newDir().toPath());
   }
 
   private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp) {

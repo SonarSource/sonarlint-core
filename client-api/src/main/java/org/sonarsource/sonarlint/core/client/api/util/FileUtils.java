@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class FileUtils {
@@ -90,5 +91,19 @@ public class FileUtils {
       return path.replaceAll(PATH_SEPARATOR_PATTERN, "/");
     }
     return path;
+  }
+
+  /**
+   * Populate a new temporary directory and when done, replace the target directory with it.
+   *
+   * @param dirContentUpdater function that will be called to create new contant
+   * @param target target location to replace when content is ready
+   * @param work directory to populate with new content (typically a new empty temporary directory)
+   */
+  public static void replaceDir(Consumer<Path> dirContentUpdater, Path target, Path work) {
+    dirContentUpdater.accept(work);
+    FileUtils.deleteDirectory(target);
+    FileUtils.forceMkDirs(target.getParent());
+    FileUtils.moveDir(work, target);
   }
 }
