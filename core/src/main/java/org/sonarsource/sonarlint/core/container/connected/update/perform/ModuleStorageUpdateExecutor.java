@@ -21,14 +21,8 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -82,12 +76,8 @@ public class ModuleStorageUpdateExecutor {
   }
 
   private void updateRemoteIssues(String moduleKey, Path temp) {
-    Iterator<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
-
     Path basedir = temp.resolve(StorageManager.SERVER_ISSUES_DIR);
-
-    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
-    issueStoreFactory.apply(basedir).save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
+    new ServerIssueUpdater(storageManager, issueDownloader, issueStoreFactory, tempFolder).updateServerIssues(moduleKey, basedir);
   }
 
   private void updateStatus(Path temp) {

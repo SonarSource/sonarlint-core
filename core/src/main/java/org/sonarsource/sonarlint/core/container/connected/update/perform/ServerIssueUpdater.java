@@ -52,7 +52,7 @@ public class ServerIssueUpdater {
     FileUtils.replaceDir(temp -> updateServerIssues(moduleKey, temp), target, work);
   }
 
-  private void updateServerIssues(String moduleKey, Path temp) {
+  public void updateServerIssues(String moduleKey, Path temp) {
     Iterator<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
     Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
     issueStoreFactory.apply(temp).save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
