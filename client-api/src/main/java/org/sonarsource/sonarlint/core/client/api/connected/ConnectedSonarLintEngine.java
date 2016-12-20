@@ -91,6 +91,14 @@ public interface ConnectedSonarLintEngine {
   List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
 
   /**
+   * Downloads and stores server issues for a given module.
+   * @param serverConfig form which to download issues
+   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @since 2.9
+   */
+  void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey);
+
+  /**
    * Get information about current global storage state
    * @return null if storage was never updated
    * @since 2.6

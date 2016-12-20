@@ -281,6 +281,15 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
+  public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
+    withRwLock(() -> {
+      checkUpdateStatus();
+      getGlobalContainer().downloadServerIssues(serverConfig, moduleKey);
+      return null;
+    });
+  }
+
+  @Override
   public void updateModule(ServerConfiguration serverConfig, String moduleKey) {
     checkNotNull(serverConfig);
     checkNotNull(moduleKey);
