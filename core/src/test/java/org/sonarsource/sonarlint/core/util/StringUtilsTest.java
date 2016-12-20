@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.util.StringUtils.isEmpty;
 
 import org.junit.Test;
 
@@ -46,5 +47,20 @@ public class StringUtilsTest {
     assertThat(StringUtils.describe(withToString)).isEqualTo(("desc"));
     assertThat(StringUtils.describe(withoutToString)).isEqualTo("java.lang.Object");
     assertThat(StringUtils.describe(new MyClass())).endsWith("MyClass");
+  }
+
+  @Test
+  public void test_null_string_is_empty() {
+    assertThat(isEmpty(null)).isTrue();
+  }
+
+  @Test
+  public void test_empty_string_is_empty() {
+    assertThat(isEmpty("")).isTrue();
+  }
+
+  @Test
+  public void test_whitespace_string_is_not_empty() {
+    assertThat(isEmpty("  ")).isFalse();
   }
 }
