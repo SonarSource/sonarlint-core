@@ -32,7 +32,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Issue getIssue() {
-    throw new IllegalStateException("should not try to get Issue from this kind of trackable");
+    throw new UnsupportedOperationException();
   }
 
   @Override
