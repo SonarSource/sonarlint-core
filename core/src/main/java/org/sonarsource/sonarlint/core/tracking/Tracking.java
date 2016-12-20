@@ -66,10 +66,6 @@ public class Tracking<R extends Trackable, B extends Trackable> {
     return rawToBase;
   }
 
-  public B baseFor(R raw) {
-    return rawToBase.get(raw);
-  }
-
   /**
    * The base issues that are not matched by a raw issue and that need to be closed.
    */
@@ -81,10 +77,6 @@ public class Tracking<R extends Trackable, B extends Trackable> {
       }
     }
     return result;
-  }
-
-  boolean containsUnmatchedBase(B base) {
-    return !baseToRaw.containsKey(base);
   }
 
   void match(R raw, B base) {
