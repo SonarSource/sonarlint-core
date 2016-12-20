@@ -54,7 +54,7 @@ public class RulesDownloader {
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
     fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile);
     Path activeRulesDir = destDir.resolve(StorageManager.ACTIVE_RULES_FOLDER);
-    FileUtils.forceMkDirs(activeRulesDir);
+    FileUtils.mkdirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
       ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(StorageManager.encodeForFs(entry.getKey()) + ".pb"));
     }

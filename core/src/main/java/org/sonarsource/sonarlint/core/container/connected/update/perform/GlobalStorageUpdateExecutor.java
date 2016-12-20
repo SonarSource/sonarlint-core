@@ -104,12 +104,12 @@ public class GlobalStorageUpdateExecutor {
       ProtobufUtil.writeToFile(storageStatus, temp.resolve(StorageManager.STORAGE_STATUS_PB));
 
       Path dest = storageManager.getGlobalStorageRoot();
-      FileUtils.deleteDirectory(dest);
-      FileUtils.forceMkDirs(dest.getParent());
+      FileUtils.deleteRecursively(dest);
+      FileUtils.mkdirs(dest.getParent());
       FileUtils.moveDir(temp, dest);
     } catch (RuntimeException e) {
       try {
-        FileUtils.deleteDirectory(temp);
+        FileUtils.deleteRecursively(temp);
       } catch (RuntimeException ignore) {
         // ignore because we want to throw original exception
       }
