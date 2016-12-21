@@ -2,6 +2,7 @@ package org.sonarsource.sonarlint.core.client.api.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.Rule;
@@ -152,14 +153,12 @@ public class FileUtilsTest {
   }
 
   private File createNewFile(File basedir, String filename) {
-    File file = new File(basedir, filename);
+    Path path = basedir.toPath().resolve(filename);
     try {
-      if (!file.createNewFile()) {
-        fail("could not create file: " + filename);
-      }
+      return Files.createFile(path).toFile();
     } catch (IOException e) {
-      fail("I/O error while creating new file: " + filename);
+      fail("could not create file: " + path);
     }
-    return file;
+    throw new IllegalStateException("should be unreachable");
   }
 }
