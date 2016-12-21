@@ -42,7 +42,7 @@ public class IssueTrackable implements Trackable {
     this.lineHash = hashOrNull(lineContent);
   }
 
-  private Integer hashOrNull(@Nullable String content) {
+  private static Integer hashOrNull(@Nullable String content) {
     return content != null ? digest(content).hashCode() : null;
   }
 
