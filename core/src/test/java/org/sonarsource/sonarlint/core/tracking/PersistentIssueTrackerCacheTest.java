@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,7 +31,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PersistentIssueTrackerCacheTest {
 
@@ -43,7 +49,7 @@ public class PersistentIssueTrackerCacheTest {
   class StubIssueStore extends IssueStore {
     private final Map<String, Collection<Trackable>> cache = new HashMap<>();
 
-    public StubIssueStore() throws IOException {
+    StubIssueStore() throws IOException {
       super(temporaryFolder.newFolder().toPath(), temporaryFolder.newFolder().toPath(), mock(Logger.class));
     }
 
@@ -89,7 +95,7 @@ public class PersistentIssueTrackerCacheTest {
     cache.put("file" + i++, Collections.emptyList());
     assertThat(stubIssueStore.size()).isEqualTo(1);
 
-    cache.put("file" + i++, Collections.emptyList());
+    cache.put("file" + i, Collections.emptyList());
     assertThat(stubIssueStore.size()).isEqualTo(2);
   }
 
@@ -140,5 +146,52 @@ public class PersistentIssueTrackerCacheTest {
     cache.clear();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
     assertThat(stubIssueStore.size()).isEqualTo(0);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void getLiveOrFail_should_fail_if_no_live_issues() {
+    cache.getLiveOrFail("nonexistent");
+  }
+
+  @Test
+  public void getLiveOrFail_should_return_live_issues_when_present() {
+    String file = "dummy file";
+    List<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
+    cache.put(file, trackables);
+    assertThat(cache.getLiveOrFail(file)).isEqualTo(trackables);
+  }
+
+  @Test
+  public void getCurrentTrackables_should_gracefully_return_empty_list_if_io_failures_during_store_read() throws IOException {
+    String file = "nonexistent";
+    IssueStore store = mock(IssueStore.class);
+    when(store.read(file)).thenThrow(new IOException("failed to read from store"));
+    IssueTrackerCache cache = new PersistentIssueTrackerCache(store, mock(Logger.class));
+    assertThat(cache.getCurrentTrackables(file)).isEmpty();
+    verify(store).read(file);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void flushAll_should_crash_on_io_failures_during_store_write() throws IOException {
+    String file = "dummy file";
+    Collection<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
+
+    IssueStore store = mock(IssueStore.class);
+    doThrow(new IOException("failed to write to store")).when(store).save(file, trackables);
+
+    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store, mock(Logger.class));
+    cache.put(file, trackables);
+    cache.flushAll();
+    verify(store).save(file, trackables);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void put_should_crash_on_io_failures_during_store_write() throws IOException {
+    IssueStore store = mock(IssueStore.class);
+    doThrow(new IOException("failed to write to store")).when(store).save(anyString(), any());
+    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store, mock(Logger.class));
+    for (int i = 0; i < PersistentIssueTrackerCache.MAX_ENTRIES + 1; i++) {
+      cache.put("dummy" + i, Collections.emptyList());
+    }
   }
 }
