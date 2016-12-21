@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.util;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import javax.annotation.Nullable;
 
 public class StringUtils {
 
@@ -49,6 +50,10 @@ public class StringUtils {
     }
 
     return o.getClass().getName();
+  }
+
+  public static boolean isEmpty(@Nullable String str) {
+    return str == null || str.isEmpty();
   }
 
 }

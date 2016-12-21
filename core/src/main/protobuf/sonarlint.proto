@@ -132,3 +132,25 @@ message ModuleConfiguration {
   map<string, string> properties = 2;
   map<string, string> module_path_by_key = 3;
 }
+
+message Issues {
+  repeated Issue issue = 1;
+
+  message Issue {
+    // used for matching
+    string serverIssueKey = 1;
+    string ruleKey = 2;
+    int32 line = 3;
+    string message = 4;
+    int32 checksum = 5;
+
+    // values carried forward
+    string assignee = 6;
+    int64 creationDate = 7;
+    bool resolved = 8;
+  }
+}
+
+message StorageIndex {
+  map<string, string> mapped_path_by_key = 1;
+}
