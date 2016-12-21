@@ -56,7 +56,9 @@ public class ServerIssueTracker {
         issueTracker.matchAndTrackAsBase(fileKey, serverIssuesTrackable);
       }
     } catch (Exception e) {
-      console.error("error while fetching and matching server issues", e);
+      String message = "error while fetching and matching server issues";
+      console.error(message, e);
+      logger.error(message, e);
     }
   }
 
