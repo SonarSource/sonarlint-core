@@ -263,13 +263,12 @@ public class IssueTrackerTest {
     String message = "should make this condition not always false";
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
-    int c = 1;
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).message(message).assignee(id).textRangeHash(c++).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).message(message).assignee(id).build()));
 
-    Trackable differentLine = base.line(line + 1).message(message).textRangeHash(c++).build();
-    Trackable differentMessage = base.line(line).message(message + "x").textRangeHash(c++).build();
-    Trackable differentBoth = base.line(line + 1).message(message + "x").textRangeHash(c++).build();
-    Trackable same = base.line(line).message(message).textRangeHash(c++).build();
+    Trackable differentLine = base.line(line + 1).message(message).build();
+    Trackable differentMessage = base.line(line).message(message + "x").build();
+    Trackable differentBoth = base.line(line + 1).message(message + "x").build();
+    Trackable same = base.line(line).message(message).build();
     tracker.matchAndTrackAsNew(file1, Arrays.asList(differentLine, differentMessage, differentBoth, same));
 
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
