@@ -322,8 +322,12 @@ public class IssueTrackerTest {
     String id = "dummy id";
     int newLine = 7;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).assignee(id).build()));
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
+    // note: need to make textRangeHash unique, to avoid maching by other matchers that are evaluated first
+    int c = 1;
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().assignee(id)
+      .line(newLine + 3).textRangeHash(c++).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base
+      .line(newLine).textRangeHash(c++).build()));
 
     assertThat(cache.getCurrentTrackables(file1)).extracting("line", "assignee").containsExactly(tuple(newLine, id));
   }
