@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -140,5 +141,18 @@ public class PersistentIssueTrackerCacheTest {
     cache.clear();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
     assertThat(stubIssueStore.size()).isEqualTo(0);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void getLiveOrFail_should_fail_if_no_live_issues() {
+    cache.getLiveOrFail("nonexistent");
+  }
+
+  @Test
+  public void getLiveOrFail_should_return_live_issues_when_present() {
+    String file = "dummy file";
+    List<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
+    cache.put(file, trackables);
+    assertThat(cache.getLiveOrFail(file)).isEqualTo(trackables);
   }
 }
