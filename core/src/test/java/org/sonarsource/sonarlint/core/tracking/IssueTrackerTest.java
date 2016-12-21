@@ -129,7 +129,7 @@ public class IssueTrackerTest {
       when(mock.isResolved()).thenReturn(resolved);
       when(mock.getAssignee()).thenReturn(assignee);
 
-      // set unique values for nullable fields used by the matchers in Tracker
+      // ensure default unique values for fields used by matchers (except server issue key)
       if (line == null) {
         when(mock.getLine()).thenReturn(counter++);
       }
@@ -138,6 +138,9 @@ public class IssueTrackerTest {
       }
       if (textRangeHash == null) {
         when(mock.getTextRangeHash()).thenReturn(counter++);
+      }
+      if (message.isEmpty()) {
+        when(mock.getMessage()).thenReturn("m" + (counter++));
       }
 
       return mock;
@@ -252,8 +255,12 @@ public class IssueTrackerTest {
 
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
-    assertThat(current).extracting("assignee").containsOnlyOnce(id);
-    assertThat(current).extracting("line", "textRangeHash", "assignee").containsOnlyOnce(tuple(line, textRangeHash, id));
+    assertThat(current)
+      .extracting("assignee")
+      .containsOnlyOnce(id);
+    assertThat(current)
+      .extracting("line", "textRangeHash", "assignee")
+      .containsOnlyOnce(tuple(line, textRangeHash, id));
   }
 
   @Test
@@ -265,18 +272,20 @@ public class IssueTrackerTest {
     String id = "dummy id";
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).lineHash(lineHash).assignee(id).build()));
 
-    // note: need to make messages unique, to avoid maching by the line + message matcher that's evaluated first
-    int c = 1;
-    Trackable differentLine = base.line(line + 1).lineHash(lineHash).message("m" + (c++)).build();
-    Trackable differentLineHash = base.line(line).lineHash(lineHash + 1).message("m" + (c++)).build();
-    Trackable differentBoth = base.line(line + 1).lineHash(lineHash + 1).message("m" + (c++)).build();
-    Trackable same = base.line(line).lineHash(lineHash).message("m" + (c++)).build();
+    Trackable differentLine = base.line(line + 1).lineHash(lineHash).build();
+    Trackable differentLineHash = base.line(line).lineHash(lineHash + 1).build();
+    Trackable differentBoth = base.line(line + 1).lineHash(lineHash + 1).build();
+    Trackable same = base.line(line).lineHash(lineHash).build();
     tracker.matchAndTrackAsNew(file1, Arrays.asList(differentLine, differentLineHash, differentBoth, same));
 
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
-    assertThat(current).extracting("assignee").containsOnlyOnce(id);
-    assertThat(current).extracting("line", "lineHash", "assignee").containsOnlyOnce(tuple(line, lineHash, id));
+    assertThat(current)
+      .extracting("assignee")
+      .containsOnlyOnce(id);
+    assertThat(current)
+      .extracting("line", "lineHash", "assignee")
+      .containsOnlyOnce(tuple(line, lineHash, id));
   }
 
   @Test
@@ -296,8 +305,12 @@ public class IssueTrackerTest {
 
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
-    assertThat(current).extracting("assignee").containsOnlyOnce(id);
-    assertThat(current).extracting("line", "message", "assignee").containsOnlyOnce(tuple(line, message, id));
+    assertThat(current)
+      .extracting("assignee")
+      .containsOnlyOnce(id);
+    assertThat(current)
+      .extracting("line", "message", "assignee")
+      .containsOnlyOnce(tuple(line, message, id));
   }
 
   @Test
@@ -307,12 +320,12 @@ public class IssueTrackerTest {
     String id = "dummy id";
     int newLine = 7;
 
-    // note: need to make messages unique, to avoid maching by the textRangeHash + message matcher that's evaluated first
-    int c = 1;
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).assignee(id).message("m" + (c++)).build()));
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).message("m" + (c++)).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("line", "assignee").containsExactly(tuple(newLine, id));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("line", "assignee")
+      .containsExactly(tuple(newLine, id));
   }
 
   @Test
@@ -322,14 +335,12 @@ public class IssueTrackerTest {
     String id = "dummy id";
     int newLine = 7;
 
-    // note: need to make textRangeHash unique, to avoid maching by other matchers that are evaluated first
-    int c = 1;
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().assignee(id)
-      .line(newLine + 3).textRangeHash(c++).build()));
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base
-      .line(newLine).textRangeHash(c++).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().assignee(id).line(newLine + 3).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("line", "assignee").containsExactly(tuple(newLine, id));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("line", "assignee")
+      .containsExactly(tuple(newLine, id));
   }
 
   @Test
@@ -356,12 +367,14 @@ public class IssueTrackerTest {
     Collection<Trackable> next = cache.getCurrentTrackables(file1);
 
     // matched trackable has no date
-    assertThat(next.stream().filter(t -> t.getCreationDate() == null)).extracting("line", "lineHash").containsOnly(
-      tuple(movedTrackable.getLine(), movedTrackable.getLineHash()));
+    assertThat(next.stream().filter(t -> t.getCreationDate() == null))
+      .extracting("line", "lineHash")
+      .containsOnly(tuple(movedTrackable.getLine(), movedTrackable.getLineHash()));
 
     // unmatched trackable has a date -> it is a leak
-    assertThat(next.stream().filter(t -> t.getCreationDate() != null)).extracting("line", "lineHash").containsOnly(
-      tuple(nonMatchingTrackable.getLine(), nonMatchingTrackable.getLineHash()));
+    assertThat(next.stream().filter(t -> t.getCreationDate() != null))
+      .extracting("line", "lineHash")
+      .containsOnly(tuple(nonMatchingTrackable.getLine(), nonMatchingTrackable.getLineHash()));
   }
 
   @Test
@@ -396,8 +409,9 @@ public class IssueTrackerTest {
     assertThat(movedTrackable.getLineHash()).isEqualTo(trackable.getLineHash());
     assertThat(movedTrackable.getLineHash()).isNotEqualTo(nonMatchingTrackable.getLineHash());
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("line", "lineHash", "serverIssueKey", "resolved").containsOnly(
-      tuple(newLine, movedTrackable.getLineHash(), movedTrackable.getServerIssueKey(), movedTrackable.isResolved()));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("line", "lineHash", "serverIssueKey", "resolved")
+      .containsOnly(tuple(newLine, movedTrackable.getLineHash(), movedTrackable.getServerIssueKey(), movedTrackable.isResolved()));
   }
 
   @Test
@@ -410,7 +424,9 @@ public class IssueTrackerTest {
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).assignee(id).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("line", "assignee").containsExactly(tuple(newLine, id));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("line", "assignee")
+      .containsExactly(tuple(newLine, id));
   }
 
   @Test
@@ -423,7 +439,9 @@ public class IssueTrackerTest {
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().creationDate(creationDate).assignee(id).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("creationDate", "assignee").containsExactly(tuple(creationDate, id));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("creationDate", "assignee")
+      .containsExactly(tuple(creationDate, id));
   }
 
   @Test
@@ -451,7 +469,9 @@ public class IssueTrackerTest {
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().serverIssueKey(serverIssueKey).resolved(resolved).assignee(id).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("serverIssueKey", "resolved", "assignee").containsExactly(tuple(serverIssueKey, resolved, id));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("serverIssueKey", "resolved", "assignee")
+      .containsExactly(tuple(serverIssueKey, resolved, id));
   }
 
   @Test
@@ -465,7 +485,9 @@ public class IssueTrackerTest {
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().serverIssueKey(serverIssueKey).resolved(resolved).assignee(id).build()));
     tracker.matchAndTrackAsBase(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("serverIssueKey", "resolved", "assignee").containsExactly(tuple(null, false, ""));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("serverIssueKey", "resolved", "assignee")
+      .containsExactly(tuple(null, false, ""));
   }
 
   @Test
@@ -478,7 +500,9 @@ public class IssueTrackerTest {
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().resolved(!resolved).assignee(assignee + "x").build()));
     tracker.matchAndTrackAsBase(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1)).extracting("serverIssueKey", "resolved", "assignee").containsExactly(tuple(serverIssueKey, resolved, assignee));
+    assertThat(cache.getCurrentTrackables(file1))
+      .extracting("serverIssueKey", "resolved", "assignee")
+      .containsExactly(tuple(serverIssueKey, resolved, assignee));
   }
 
   @Test
@@ -493,7 +517,9 @@ public class IssueTrackerTest {
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(serverIssueTrackable));
 
     Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
-    assertThat(trackables).extracting("serverIssueKey", "resolved", "assignee").containsExactly(tuple(null, !resolved, ""));
+    assertThat(trackables)
+      .extracting("serverIssueKey", "resolved", "assignee")
+      .containsExactly(tuple(null, !resolved, ""));
     assertThat(trackables.iterator().next().getCreationDate()).isGreaterThanOrEqualTo(start);
   }
 
