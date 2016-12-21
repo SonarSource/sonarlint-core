@@ -38,12 +38,12 @@ public class IssueTrackable implements Trackable {
   public IssueTrackable(Issue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
     this.issue = issue;
     this.textRange = textRange;
-    this.textRangeHash = textRangeContent != null ? checksum(textRangeContent) : null;
-    this.lineHash = lineContent != null ? checksum(lineContent) : null;
+    this.textRangeHash = hashOrNull(textRangeContent);
+    this.lineHash = hashOrNull(lineContent);
   }
 
-  private static int checksum(String content) {
-    return digest(content).hashCode();
+  private Integer hashOrNull(@Nullable String content) {
+    return content != null ? digest(content).hashCode() : null;
   }
 
   @Override
