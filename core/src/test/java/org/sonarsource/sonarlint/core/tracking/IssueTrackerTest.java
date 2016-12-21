@@ -257,6 +257,29 @@ public class IssueTrackerTest {
   }
 
   @Test
+  public void should_match_by_line_and_line_hash() {
+    MockTrackableBuilder base = builder().ruleKey("dummy ruleKey");
+    int line = 7;
+    int lineHash = 11;
+    // note: (ab)using the assignee field to uniquely identify the trackable
+    String id = "dummy id";
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).lineHash(lineHash).assignee(id).build()));
+
+    // note: need to make messages unique, to avoid maching by the line + message matcher that's evaluated first
+    int c = 1;
+    Trackable differentLine = base.line(line + 1).lineHash(lineHash).message("m" + (c++)).build();
+    Trackable differentLineHash = base.line(line).lineHash(lineHash + 1).message("m" + (c++)).build();
+    Trackable differentBoth = base.line(line + 1).lineHash(lineHash + 1).message("m" + (c++)).build();
+    Trackable same = base.line(line).lineHash(lineHash).message("m" + (c++)).build();
+    tracker.matchAndTrackAsNew(file1, Arrays.asList(differentLine, differentLineHash, differentBoth, same));
+
+    Collection<Trackable> current = cache.getCurrentTrackables(file1);
+    assertThat(current).hasSize(4);
+    assertThat(current).extracting("assignee").containsOnlyOnce(id);
+    assertThat(current).extracting("line", "lineHash", "assignee").containsOnlyOnce(tuple(line, lineHash, id));
+  }
+
+  @Test
   public void should_match_by_line_and_message() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey");
     int line = 7;
