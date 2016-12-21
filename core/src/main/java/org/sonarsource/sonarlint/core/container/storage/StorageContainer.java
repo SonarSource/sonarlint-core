@@ -172,6 +172,6 @@ public class StorageContainer extends ComponentContainer {
 
   public void deleteStorage() {
     StorageManager storageManager = getComponentByType(StorageManager.class);
-    FileUtils.deleteDirectory(storageManager.getServerStorageRoot());
+    FileUtils.deleteRecursively(storageManager.getServerStorageRoot());
   }
 }

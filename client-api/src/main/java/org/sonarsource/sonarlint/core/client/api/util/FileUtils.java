@@ -33,9 +33,10 @@ import java.util.regex.Pattern;
 
 public class FileUtils {
 
-  public static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
+  private static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
 
   private FileUtils() {
+    // utility class, forbidden constructor
   }
 
   public static void moveDir(Path temp, Path dest) {
@@ -48,12 +49,17 @@ public class FileUtils {
     }
   }
 
-  public static void deleteDirectory(Path dir) {
-    if (!dir.toFile().exists()) {
+  /**
+   * Deletes recursively the specified file or directory tree.
+   *
+   * @param path
+   */
+  public static void deleteRecursively(Path path) {
+    if (!path.toFile().exists()) {
       return;
     }
     try {
-      Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+      Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
           Files.delete(file);
@@ -65,14 +71,18 @@ public class FileUtils {
           Files.delete(dir);
           return FileVisitResult.CONTINUE;
         }
-
       });
     } catch (IOException e) {
-      throw new IllegalStateException("Unable to delete directory " + dir, e);
+      throw new IllegalStateException("Unable to delete directory " + path, e);
     }
   }
 
-  public static void forceMkDirs(Path path) {
+  /**
+   * Creates a directory by creating all nonexistent parent directories first.
+   *
+   * @param path the directory to create
+   */
+  public static void mkdirs(Path path) {
     try {
       Files.createDirectories(path);
     } catch (IOException e) {
@@ -81,7 +91,7 @@ public class FileUtils {
   }
 
   /**
-   * Convert path to format used by SonarQube
+   * Converts path to format used by SonarQube
    *
    * @param path path string in the local OS
    * @return SonarQube path
@@ -94,7 +104,7 @@ public class FileUtils {
   }
 
   /**
-   * Populate a new temporary directory and when done, replace the target directory with it.
+   * Populates a new temporary directory and when done, replace the target directory with it.
    *
    * @param dirContentUpdater function that will be called to create new contant
    * @param target target location to replace when content is ready
@@ -102,8 +112,8 @@ public class FileUtils {
    */
   public static void replaceDir(Consumer<Path> dirContentUpdater, Path target, Path work) {
     dirContentUpdater.accept(work);
-    FileUtils.deleteDirectory(target);
-    FileUtils.forceMkDirs(target.getParent());
+    FileUtils.deleteRecursively(target);
+    FileUtils.mkdirs(target.getParent());
     FileUtils.moveDir(work, target);
   }
 }
