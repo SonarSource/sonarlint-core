@@ -19,12 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+import java.util.List;
+
 import javax.annotation.CheckForNull;
 
 public interface Issue extends IssueLocation {
 
   String getSeverity();
 
+  @CheckForNull
+  @Override
+  String getMessage();
+
+  String getRuleKey();
+
+  String getRuleName();
+  
   @CheckForNull
   @Override
   Integer getStartLine();
@@ -40,17 +50,17 @@ public interface Issue extends IssueLocation {
   @CheckForNull
   @Override
   Integer getEndLineOffset();
-
-  String getMessage();
-
-  String getRuleKey();
-
-  String getRuleName();
+  
+  List<Flow> flows();
 
   /**
    * @return null for global issues
    */
   @CheckForNull
   ClientInputFile getInputFile();
+  
+  interface Flow {
+    List<IssueLocation> locations();
+  }
 
 }

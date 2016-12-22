@@ -19,12 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
+import java.util.List;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
+import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+
+import com.google.common.collect.Lists;
 
 public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;
@@ -33,24 +38,17 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
   private final TextRange textRange;
   private final ClientInputFile clientInputFile;
   private final Rule rule;
+  private final List<Flow> flows;
 
-  public DefaultClientIssue(String severity, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange, @Nullable ClientInputFile clientInputFile) {
+  public DefaultClientIssue(String severity, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
+    @Nullable ClientInputFile clientInputFile, List<org.sonar.api.batch.sensor.issue.Issue.Flow> flows) {
     this.severity = severity;
     this.activeRule = activeRule;
     this.rule = rule;
     this.primaryMessage = primaryMessage;
     this.textRange = textRange;
     this.clientInputFile = clientInputFile;
-  }
-
-  @Override
-  public Integer getStartLineOffset() {
-    return textRange != null ? textRange.start().lineOffset() : null;
-  }
-
-  @Override
-  public Integer getStartLine() {
-    return textRange != null ? textRange.start().line() : null;
+    this.flows = Lists.transform(flows, f -> new DefaultFlow(f.locations()));
   }
 
   @Override
@@ -73,11 +71,14 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     return primaryMessage;
   }
 
-  @SuppressWarnings("unchecked")
-  @CheckForNull
   @Override
-  public ClientInputFile getInputFile() {
-    return clientInputFile;
+  public Integer getStartLineOffset() {
+    return textRange != null ? textRange.start().lineOffset() : null;
+  }
+
+  @Override
+  public Integer getStartLine() {
+    return textRange != null ? textRange.start().line() : null;
   }
 
   @Override
@@ -88,6 +89,18 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
   @Override
   public Integer getEndLine() {
     return textRange != null ? textRange.end().line() : null;
+  }
+
+  @SuppressWarnings("unchecked")
+  @CheckForNull
+  @Override
+  public ClientInputFile getInputFile() {
+    return clientInputFile;
+  }
+
+  @Override
+  public List<Flow> flows() {
+    return flows;
   }
 
   @Override
@@ -104,5 +117,53 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     }
     sb.append("]");
     return sb.toString();
+  }
+
+  private class DefaultLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
+    private final TextRange textRange;
+    private final String message;
+
+    private DefaultLocation(@Nullable TextRange textRange, @Nullable String message) {
+      this.textRange = textRange;
+      this.message = message;
+    }
+
+    @Override
+    public Integer getStartLineOffset() {
+      return textRange != null ? textRange.start().lineOffset() : null;
+    }
+
+    @Override
+    public Integer getStartLine() {
+      return textRange != null ? textRange.start().line() : null;
+    }
+
+    @Override
+    public Integer getEndLineOffset() {
+      return textRange != null ? textRange.end().lineOffset() : null;
+    }
+
+    @Override
+    public Integer getEndLine() {
+      return textRange != null ? textRange.end().line() : null;
+    }
+
+    @Override
+    public String getMessage() {
+      return message;
+    }
+  }
+
+  private class DefaultFlow implements Flow {
+    private List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations;
+
+    private DefaultFlow(List<IssueLocation> issueLocations) {
+      this.locations = Lists.transform(issueLocations, i -> new DefaultLocation(i.textRange(), i.message()));
+    }
+
+    @Override
+    public List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations() {
+      return locations;
+    }
   }
 }

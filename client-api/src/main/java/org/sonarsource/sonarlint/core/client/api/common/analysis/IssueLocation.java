@@ -33,4 +33,7 @@ public interface IssueLocation {
 
   @CheckForNull
   Integer getEndLineOffset();
+  
+  @CheckForNull
+  String getMessage();
 }
