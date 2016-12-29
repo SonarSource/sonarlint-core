@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
@@ -67,6 +68,19 @@ public class InputFileBuilderTest {
     assertThat(inputFile.lines()).isEqualTo(1);
 
     assertThat(builder.langDetection()).isEqualTo(langDetection);
+  }
+
+  @Test
+  public void testCreateWithLanguageSet() throws IOException {
+    Path path = temp.getRoot().toPath().resolve("file");
+    Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
+    ClientInputFile file = new TestClientInputFile(path, true, StandardCharsets.ISO_8859_1, "cpp");
+
+    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
+    SonarLintInputFile inputFile = builder.create(file);
+
+    assertThat(inputFile.language()).isEqualTo("cpp");
+    verifyZeroInteractions(langDetection);
   }
 
   @Test
