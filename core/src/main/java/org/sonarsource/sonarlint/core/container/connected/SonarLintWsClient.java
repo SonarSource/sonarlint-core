@@ -88,7 +88,9 @@ public class SonarLintWsClient {
     PostRequest request = new PostRequest(path);
     WsResponse response = client.wsConnector().call(request);
     long duration = System2.INSTANCE.now() - startTime;
-    LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+    }
     return new CloseableWsResponse(response);
   }
 
@@ -100,7 +102,9 @@ public class SonarLintWsClient {
     GetRequest request = new GetRequest(path);
     WsResponse response = client.wsConnector().call(request);
     long duration = System2.INSTANCE.now() - startTime;
-    LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+    }
     return new CloseableWsResponse(response);
   }
 

@@ -56,45 +56,48 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
         }
 
         String qProfileKey = entry.getValue();
-
         QProfile qProfile = qProfiles.getQprofilesByKeyOrThrow(qProfileKey);
 
         if (qProfile.getActiveRuleCount() == 0) {
-          LOG.debug("  * " + language + ": " + qProfileKey + " (0 rules)");
+          LOG.debug("  * {}: {} (0 rules)", language, qProfileKey);
           continue;
         }
 
         org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
           Sonarlint.ActiveRules.parser());
 
-        LOG.debug("  * " + language + ": " + qProfileKey + " (" + activeRulesFromStorage.getActiveRulesByKeyMap().size() + " rules)");
+        LOG.debug("  * {}: {} ({} rules)", language, qProfileKey, activeRulesFromStorage.getActiveRulesByKeyMap().size());
 
         for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKeyMap().entrySet()) {
           ActiveRule activeRule = arEntry.getValue();
-          RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
-          Rule rule = rules.find(ruleKey);
-          Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());
-          NewActiveRule newActiveRule = builder.create(ruleKey)
-            .setLanguage(language)
-            .setName(rule.name())
-            .setInternalKey(rule.internalKey())
-            .setSeverity(activeRule.getSeverity());
-
-          if (!StringUtils.isEmpty(storageRule.getTemplateKey())) {
-            RuleKey templateRuleKey = RuleKey.parse(storageRule.getTemplateKey());
-            newActiveRule.setTemplateRuleKey(templateRuleKey.rule());
-          }
-
-          for (Map.Entry<String, String> param : activeRule.getParamsMap().entrySet()) {
-            newActiveRule.setParam(param.getKey(), param.getValue());
-          }
-          newActiveRule.activate();
+          createNewActiveRule(builder, activeRule, storageRules, language, rules);
         }
       }
 
       activeRules = builder.build();
     }
     return activeRules;
+  }
+
+  private void createNewActiveRule(ActiveRulesBuilder builder, ActiveRule activeRule, Sonarlint.Rules storageRules, String language, Rules rules) {
+    RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
+    Rule rule = rules.find(ruleKey);
+    Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());
+    NewActiveRule newActiveRule = builder.create(ruleKey)
+      .setLanguage(language)
+      .setName(rule.name())
+      .setInternalKey(rule.internalKey())
+      .setSeverity(activeRule.getSeverity());
+
+    if (!StringUtils.isEmpty(storageRule.getTemplateKey())) {
+      RuleKey templateRuleKey = RuleKey.parse(storageRule.getTemplateKey());
+      newActiveRule.setTemplateRuleKey(templateRuleKey.rule());
+    }
+
+    for (Map.Entry<String, String> param : activeRule.getParamsMap().entrySet()) {
+      newActiveRule.setParam(param.getKey(), param.getValue());
+    }
+    newActiveRule.activate();
   }
 
   private static Map<String, String> loadQualityProfilesFromStorage(Sonarlint.QProfiles qProfiles, StorageManager storageManager,

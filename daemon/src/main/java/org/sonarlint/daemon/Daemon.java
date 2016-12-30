@@ -71,7 +71,7 @@ public class Daemon {
         .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(), interceptor))
         .build()
         .start();
-      LOGGER.info("Server started, listening on " + port);
+      LOGGER.info("Server started, listening on {}", port);
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {

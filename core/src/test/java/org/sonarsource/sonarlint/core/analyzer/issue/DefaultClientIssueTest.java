@@ -68,6 +68,8 @@ public class DefaultClientIssueTest {
     when(location2.textRange()).thenReturn(new DefaultTextRange(new DefaultTextPointer(6, 6), new DefaultTextPointer(7, 7)));
     when(location2.message()).thenReturn("location2");
 
+    when(rule.name()).thenReturn("name");
+
     Flow flow1 = mock(Flow.class);
     when(flow1.locations()).thenReturn(Collections.singletonList(location1));
 
@@ -85,6 +87,8 @@ public class DefaultClientIssueTest {
     assertThat(issue.getSeverity()).isEqualTo("MAJOR");
     assertThat(issue.getInputFile()).isEqualTo(clientInputFile);
 
+    assertThat(issue.getRuleName()).isEqualTo("name");
+
     assertThat(issue.flows()).hasSize(2);
     assertThat(issue.flows().get(0).locations()).hasSize(1);
     assertThat(issue.flows().get(0).locations().get(0)).extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "message")
@@ -92,8 +96,20 @@ public class DefaultClientIssueTest {
 
     assertThat(issue.flows().get(1).locations()).hasSize(2);
     assertThat(issue.flows().get(1).locations().get(0)).extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "message")
-    .containsExactly(4, 4, 5, 5, "location1");
+      .containsExactly(4, 4, 5, 5, "location1");
     assertThat(issue.flows().get(1).locations().get(1)).extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "message")
-    .containsExactly(6, 6, 7, 7, "location2");
+      .containsExactly(6, 6, 7, 7, "location2");
+  }
+
+  @Test
+  public void nullRange() {
+    issue = new DefaultClientIssue("MAJOR", activeRule, rule, "msg", null, null, Collections.emptyList());
+
+    assertThat(issue.getStartLine()).isNull();
+    assertThat(issue.getStartLineOffset()).isNull();
+    assertThat(issue.getEndLine()).isNull();
+    assertThat(issue.getEndLineOffset()).isNull();
+
+    assertThat(issue.flows()).isEmpty();
   }
 }

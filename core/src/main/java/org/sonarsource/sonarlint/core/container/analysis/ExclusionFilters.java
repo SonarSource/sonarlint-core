@@ -57,7 +57,7 @@ public class ExclusionFilters {
     if (patterns.length > 0) {
       LOG.debug(title);
       for (PathPattern pattern : patterns) {
-        LOG.debug("  " + pattern);
+        LOG.debug("  {}", pattern);
       }
     }
   }

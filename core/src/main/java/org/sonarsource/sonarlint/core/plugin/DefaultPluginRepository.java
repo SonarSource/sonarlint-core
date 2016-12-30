@@ -79,13 +79,13 @@ public class DefaultPluginRepository implements Startable {
 
   public PluginInfo getPluginInfo(String key) {
     PluginInfo info = infosByKeys.get(key);
-    Preconditions.checkState(info != null, String.format("Plugin [%s] does not exist", key));
+    Preconditions.checkState(info != null, "Plugin [%s] does not exist", key);
     return info;
   }
 
   public Plugin getPluginInstance(String key) {
     Plugin instance = pluginInstancesByKeys.get(key);
-    Preconditions.checkState(instance != null, String.format("Plugin [%s] does not exist", key));
+    Preconditions.checkState(instance != null, "Plugin [%s] does not exist", key);
     return instance;
   }
 

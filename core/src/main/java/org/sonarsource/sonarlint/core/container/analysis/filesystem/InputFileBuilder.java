@@ -48,7 +48,7 @@ public class InputFileBuilder {
     SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile);
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     if (inputFile.language() != null) {
-      LOG.debug(String.format("Language of file '%s' is set to '%s'", inputFile.getPath(), inputFile.language()));
+      LOG.debug("Language of file '{}' is set to '{}'", inputFile.getPath(), inputFile.language());
       defaultInputFile.setLanguage(inputFile.language());
     } else {
       defaultInputFile.setLanguage(langDetection.language(defaultInputFile));

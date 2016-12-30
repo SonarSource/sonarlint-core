@@ -69,7 +69,9 @@ public class SensorsExecutor {
   }
 
   private void executeSensor(SensorContext context, Sensor sensor) {
-    LOG.debug("Execute Sensor: {}", StringUtils.describe(sensor));
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Execute Sensor: {}", StringUtils.describe(sensor));
+    }
     sensor.analyse(module, context);
   }
 

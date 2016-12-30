@@ -56,7 +56,9 @@ public class LanguageDetection {
       }
       PathPattern[] defaultLanguagePatterns = PathPattern.create(patterns);
       patternsByLanguage.put(language.key(), defaultLanguagePatterns);
-      LOG.debug("Declared extensions of language " + language + " were converted to " + getDetails(language.key()));
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Declared extensions of language {} were converted to {}", language, getDetails(language.key()));
+      }
     }
 
     languagesToConsider.addAll(patternsByLanguage.keySet());
@@ -81,7 +83,7 @@ public class LanguageDetection {
       }
     }
     if (detectedLanguage != null) {
-      LOG.debug(String.format("Language of file '%s' is detected to be '%s'", inputFile.absolutePath(), detectedLanguage));
+      LOG.debug("Language of file '{}' is detected to be '{}'", inputFile.absolutePath(), detectedLanguage);
       return detectedLanguage;
     }
     return null;
