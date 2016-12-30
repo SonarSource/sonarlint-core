@@ -48,23 +48,6 @@ public class FileUtilsTest {
     assertThat(newDir.isDirectory()).isTrue();
   }
 
-  @Test
-  public void moveDir_should_replace_empty_destination() throws IOException {
-    File oldDir = temporaryFolder.newFolder();
-    assertThat(oldDir.isDirectory()).isTrue();
-
-    File fileInDir = createNewFile(oldDir, "dummy");
-    assertThat(fileInDir.isFile()).isTrue();
-
-    File newDir = temporaryFolder.newFolder();
-    assertThat(newDir.isDirectory()).isTrue();
-
-    FileUtils.moveDir(oldDir.toPath(), newDir.toPath());
-    assertThat(oldDir.isDirectory()).isFalse();
-    assertThat(newDir.isDirectory()).isTrue();
-    assertThat(new File(newDir, fileInDir.getName()).isFile()).isTrue();
-  }
-
   @Test(expected = IllegalStateException.class)
   public void moveDir_should_fail_to_replace_nonempty_destination() throws IOException {
     File oldDir = temporaryFolder.newFolder();
@@ -77,17 +60,6 @@ public class FileUtilsTest {
     assertThat(fileInDir.isFile()).isTrue();
 
     FileUtils.moveDir(oldDir.toPath(), newDir.toPath());
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void moveDir_should_fail_to_move_if_destination_is_a_file() throws IOException {
-    File oldDir = temporaryFolder.newFolder();
-    assertThat(oldDir.isDirectory()).isTrue();
-
-    File target = temporaryFolder.newFile();
-    assertThat(target.isFile()).isTrue();
-
-    FileUtils.moveDir(oldDir.toPath(), target.toPath());
   }
 
   @Test
