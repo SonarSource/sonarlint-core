@@ -119,7 +119,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     return sb.toString();
   }
 
-  private class DefaultLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
+  private static class DefaultLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
     private final TextRange textRange;
     private final String message;
 
