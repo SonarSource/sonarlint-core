@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import org.apache.commons.lang.StringUtils;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import javax.annotation.Nullable;
 

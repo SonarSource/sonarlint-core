@@ -23,12 +23,12 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class ModuleListDownloader {
 

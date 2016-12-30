@@ -34,9 +34,9 @@ import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
 import org.sonarqube.ws.WsComponents.TreeWsResponse;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 

@@ -22,7 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import org.sonarqube.ws.client.WsResponse;
+
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class CloseableWsResponse implements WsResponse, AutoCloseable {
 

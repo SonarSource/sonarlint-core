@@ -19,30 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.util.ws.GetRequest;
+import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
+import org.sonarsource.sonarlint.core.util.ws.PostRequest;
+import org.sonarsource.sonarlint.core.util.ws.WsConnector;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
+
 import com.google.common.base.Joiner;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sonar.api.utils.System2;
-import org.sonarqube.ws.client.GetRequest;
-import org.sonarqube.ws.client.HttpConnector;
-import org.sonarqube.ws.client.PostRequest;
-import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.WsClientFactories;
-import org.sonarqube.ws.client.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 public class SonarLintWsClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
 
-  private final WsClient client;
+  private final WsConnector client;
   private final String userAgent;
 
   public SonarLintWsClient(ServerConfiguration serverConfig) {
@@ -50,8 +51,8 @@ public class SonarLintWsClient {
     client = buildClient(serverConfig);
   }
 
-  private static WsClient buildClient(ServerConfiguration serverConfig) {
-    HttpConnector connector = HttpConnector.newBuilder().url(serverConfig.getUrl())
+  private static WsConnector buildClient(ServerConfiguration serverConfig) {
+    return HttpConnector.newBuilder().url(serverConfig.getUrl())
       .userAgent(serverConfig.getUserAgent())
       .credentials(serverConfig.getLogin(), serverConfig.getPassword())
       .proxy(serverConfig.getProxy())
@@ -61,7 +62,6 @@ public class SonarLintWsClient {
       .setSSLSocketFactory(serverConfig.getSSLSocketFactory())
       .setTrustManager(serverConfig.getTrustManager())
       .build();
-    return WsClientFactories.getDefault().newClient(connector);
   }
 
   public CloseableWsResponse get(String path) {
@@ -86,7 +86,7 @@ public class SonarLintWsClient {
   public CloseableWsResponse rawPost(String path) {
     long startTime = System2.INSTANCE.now();
     PostRequest request = new PostRequest(path);
-    WsResponse response = client.wsConnector().call(request);
+    WsResponse response = client.call(request);
     long duration = System2.INSTANCE.now() - startTime;
     if (LOG.isDebugEnabled()) {
       LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
@@ -100,7 +100,7 @@ public class SonarLintWsClient {
   public CloseableWsResponse rawGet(String path) {
     long startTime = System2.INSTANCE.now();
     GetRequest request = new GetRequest(path);
-    WsResponse response = client.wsConnector().call(request);
+    WsResponse response = client.call(request);
     long duration = System2.INSTANCE.now() - startTime;
     if (LOG.isDebugEnabled()) {
       LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);

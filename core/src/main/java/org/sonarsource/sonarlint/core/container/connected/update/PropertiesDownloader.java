@@ -25,13 +25,13 @@ import java.nio.file.Path;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class PropertiesDownloader {
   private static final String API_PROPERTIES_PATH = "/api/properties?format=json";

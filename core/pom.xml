@@ -26,6 +26,13 @@
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-ws</artifactId>
       <version>${sonar-ws.version}</version>
+      <exclusions>
+        <!--  Only interested in the protobuf stubs -->
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
@@ -43,6 +50,11 @@
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.7</version>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>3.3.1</version>
     </dependency>
     <dependency>
       <groupId>org.picocontainer</groupId>
@@ -126,6 +138,12 @@
 
     <!-- unit tests -->
     <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>mockwebserver</artifactId>
+      <scope>test</scope>
+      <version>3.3.1</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
@@ -134,7 +152,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.4.1</version>
+      <version>3.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -213,6 +231,12 @@
                     <exclude>META-INF/NOTICE*</exclude>
                     <exclude>LICENSE*</exclude>
                     <exclude>NOTICE*</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                    <artifact>org.sonarsource.sonarqube:sonar-ws</artifact>
+                  <excludes>
+                    <exclude>org/sonarqube/ws/client/**</exclude>
                   </excludes>
                 </filter>
               </filters>
