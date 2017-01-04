@@ -21,20 +21,17 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Map;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 public class ModuleConfigurationDownloader {
 
-  private final SonarLintWsClient wsClient;
   private final ModuleHierarchyDownloader moduleHierarchyDownloader;
   private final ModuleQualityProfilesDownloader moduleQualityProfilesDownloader;
   private final PropertiesDownloader propertiesDownloader;
 
-  public ModuleConfigurationDownloader(SonarLintWsClient wsClient, ModuleHierarchyDownloader moduleHierarchyDownloader,
+  public ModuleConfigurationDownloader(ModuleHierarchyDownloader moduleHierarchyDownloader,
     ModuleQualityProfilesDownloader moduleQualityProfilesDownloader, PropertiesDownloader propertiesDownloader) {
-    this.wsClient = wsClient;
     this.moduleHierarchyDownloader = moduleHierarchyDownloader;
     this.moduleQualityProfilesDownloader = moduleQualityProfilesDownloader;
     this.propertiesDownloader = propertiesDownloader;

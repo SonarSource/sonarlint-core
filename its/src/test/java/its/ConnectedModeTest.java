@@ -513,7 +513,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void checkForUpdate() {
+  public void checkForUpdate() throws Exception {
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
@@ -561,7 +561,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
-
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {

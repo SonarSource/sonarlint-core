@@ -109,7 +109,7 @@ public class ModuleStorageUpdateExecutorTest {
     issueStore = new InMemoryIssueStore();
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
-    moduleConfigurationDownloader = new ModuleConfigurationDownloader(wsClient, moduleHierarchy, new ModuleQualityProfilesDownloader(wsClient), mock(PropertiesDownloader.class));
+    moduleConfigurationDownloader = new ModuleConfigurationDownloader(moduleHierarchy, new ModuleQualityProfilesDownloader(wsClient), mock(PropertiesDownloader.class));
   }
 
   @Test

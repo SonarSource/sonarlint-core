@@ -24,9 +24,9 @@ import java.util.Date;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -73,7 +73,7 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
       progress.setProgressAndCheckCancel("Checking plugins versions", 0.15f);
-      pluginsChecker.checkPlugins(serverStatus.getVersion());
+      pluginsChecker.checkPlugins();
 
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 

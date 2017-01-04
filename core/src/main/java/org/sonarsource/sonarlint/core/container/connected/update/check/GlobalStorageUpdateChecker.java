@@ -49,7 +49,7 @@ public class GlobalStorageUpdateChecker {
     progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
     ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
     progress.setProgressAndCheckCancel("Checking plugins versions", 0.15f);
-    pluginsChecker.checkPlugins(serverStatus.getVersion());
+    pluginsChecker.checkPlugins();
 
     // Currently with don't check server version change since it is unlikely to have impact on SL
 
