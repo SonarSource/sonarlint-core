@@ -65,7 +65,7 @@ public class PluginReferencesDownloaderTest {
 
   @Test
   public void update_all_plugins_before_6_0() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt", PLUGIN_INDEX);
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt", PLUGIN_INDEX);
 
     PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache, pluginVersionChecker);
 
@@ -85,7 +85,7 @@ public class PluginReferencesDownloaderTest {
 
   @Test
   public void download_plugin() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt", PLUGIN_INDEX);
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt", PLUGIN_INDEX);
 
     PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache, pluginVersionChecker);
 
@@ -112,7 +112,7 @@ public class PluginReferencesDownloaderTest {
 
   @Test
   public void update_compatible_plugins_on_6_0() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("deploy/plugins/index.txt",
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt",
       "scmsvn,false,sonar-scm-svn-plugin-1.3-SNAPSHOT.jar|d0a68d150314d96d3469e0f2246f3537\n" +
         "javascript,false,sonar-javascript-plugin-2.10.jar|79dba9cab72d8d31767f47c03d169598\n" +
         "csharp,false,sonar-csharp-plugin-4.4.jar|e78bc8ac2e376c4a7a2a2cae914bdc52\n" +
