@@ -79,7 +79,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
     return activeRules;
   }
 
-  private void createNewActiveRule(ActiveRulesBuilder builder, ActiveRule activeRule, Sonarlint.Rules storageRules, String language, Rules rules) {
+  private static void createNewActiveRule(ActiveRulesBuilder builder, ActiveRule activeRule, Sonarlint.Rules storageRules, String language, Rules rules) {
     RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
     Rule rule = rules.find(ruleKey);
     Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());
