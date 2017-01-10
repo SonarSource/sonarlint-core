@@ -6,6 +6,6 @@ Core library to run SonarLint analysis
 
 ### License
 
-Copyright 2008-2016 SonarSource.
+Copyright 2016-2017 SonarSource.
 
 Licensed under the [GNU Lesser General Public License, Version 3.0](http://www.gnu.org/licenses/lgpl.txt)
