@@ -92,6 +92,12 @@ public class IssueStoreTest {
   }
 
   @Test
+  public void read_should_return_null_when_no_issues() throws IOException {
+    IssueStore issueStore = newIssueStore();
+    assertThat(issueStore.read("nonexistent")).isNull();
+  }
+
+  @Test
   public void clear_should_empty_the_store() throws IOException {
     IssueStore issueStore = newIssueStore();
 
