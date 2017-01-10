@@ -130,6 +130,11 @@ public class IssueStoreTest {
     Trackable trackable = mock(Trackable.class);
     when(trackable.getRuleKey()).thenReturn("ruleKey" + counter.incrementAndGet());
     when(trackable.getMessage()).thenReturn("message" + counter.incrementAndGet());
+
+    // just to cover more lines
+    when(trackable.getAssignee()).thenReturn("assignee" + counter.incrementAndGet());
+    when(trackable.getServerIssueKey()).thenReturn("serverIssueKey" + counter.incrementAndGet());
+
     return trackable;
   }
 
