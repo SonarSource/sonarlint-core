@@ -154,7 +154,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     }
   }
 
-  private class DefaultFlow implements Flow {
+  private static class DefaultFlow implements Flow {
     private List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations;
 
     private DefaultFlow(List<IssueLocation> issueLocations) {
