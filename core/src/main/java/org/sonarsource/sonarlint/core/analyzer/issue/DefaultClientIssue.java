@@ -31,22 +31,21 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 
 import com.google.common.collect.Lists;
 
-public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
+public final class DefaultClientIssue extends TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;
   private final ActiveRule activeRule;
   private final String primaryMessage;
-  private final TextRange textRange;
   private final ClientInputFile clientInputFile;
   private final Rule rule;
   private final List<Flow> flows;
 
   public DefaultClientIssue(String severity, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<org.sonar.api.batch.sensor.issue.Issue.Flow> flows) {
+    super(textRange);
     this.severity = severity;
     this.activeRule = activeRule;
     this.rule = rule;
     this.primaryMessage = primaryMessage;
-    this.textRange = textRange;
     this.clientInputFile = clientInputFile;
     this.flows = Lists.transform(flows, f -> new DefaultFlow(f.locations()));
   }
@@ -69,26 +68,6 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
   @Override
   public String getMessage() {
     return primaryMessage;
-  }
-
-  @Override
-  public Integer getStartLineOffset() {
-    return textRange != null ? textRange.start().lineOffset() : null;
-  }
-
-  @Override
-  public Integer getStartLine() {
-    return textRange != null ? textRange.start().line() : null;
-  }
-
-  @Override
-  public Integer getEndLineOffset() {
-    return textRange != null ? textRange.end().lineOffset() : null;
-  }
-
-  @Override
-  public Integer getEndLine() {
-    return textRange != null ? textRange.end().line() : null;
   }
 
   @SuppressWarnings("unchecked")
@@ -119,33 +98,12 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     return sb.toString();
   }
 
-  private static class DefaultLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
-    private final TextRange textRange;
+  private static class DefaultLocation extends TextRangeLocation {
     private final String message;
 
     private DefaultLocation(@Nullable TextRange textRange, @Nullable String message) {
-      this.textRange = textRange;
+      super(textRange);
       this.message = message;
-    }
-
-    @Override
-    public Integer getStartLineOffset() {
-      return textRange != null ? textRange.start().lineOffset() : null;
-    }
-
-    @Override
-    public Integer getStartLine() {
-      return textRange != null ? textRange.start().line() : null;
-    }
-
-    @Override
-    public Integer getEndLineOffset() {
-      return textRange != null ? textRange.end().lineOffset() : null;
-    }
-
-    @Override
-    public Integer getEndLine() {
-      return textRange != null ? textRange.end().line() : null;
     }
 
     @Override
