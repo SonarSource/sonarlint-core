@@ -104,7 +104,7 @@ public class IssueStoreTest {
   }
 
   @Test
-  public void clean_should_remove_entries_without_valid_files() throws Exception {
+  public void clean_should_remove_entries_without_valid_files() throws IOException {
     Path base = temporaryFolder.newFolder().toPath();
     Path projectPath = base.resolve("project");
     IssueStore issueStore = new IssueStore(base.resolve("store"), projectPath, mock(Logger.class));
@@ -124,6 +124,28 @@ public class IssueStoreTest {
     issueStore.clean();
     assertThat(issueStore.contains(nonexistentFileKey)).isFalse();
     assertThat(issueStore.contains(validFileKey)).isTrue();
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void should_fail_to_create_issue_store_if_cannot_write_to_filesystem() throws IOException {
+    Path base = temporaryFolder.newFolder().toPath();
+    Path storePath = base.resolve("store");
+    // the presence of a file will effectively prevent writing to the store
+    Files.createFile(storePath);
+
+    new IssueStore(storePath, base.resolve("project"), mock(Logger.class));
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void should_fail_to_save_issues_if_cannot_write_to_filesystem() throws IOException {
+    Path base = temporaryFolder.newFolder().toPath();
+    Path storePath = base.resolve("store");
+    IssueStore issueStore = new IssueStore(storePath, base.resolve("project"), mock(Logger.class));
+
+    Files.delete(storePath);
+    // the presence of a file will effectively prevent writing to the store
+    Files.createFile(storePath);
+    issueStore.save("filePath", Collections.emptyList());
   }
 
   private Trackable newMockTrackable() {
