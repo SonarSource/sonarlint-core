@@ -171,8 +171,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @After
   public void stop() {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      newAdminWsClient().settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
-      newAdminWsClient().settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
+      newAdminWsClient(ORCHESTRATOR).settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
+      newAdminWsClient(ORCHESTRATOR).settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
       ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
@@ -545,7 +545,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Change a global setting that *is* in the whitelist
     setMultiValuesSettings(null, "sonar.inclusions", "**/*");
     // Activate a new rule
-    SearchWsResponse response = newAdminWsClient().qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
+    SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
     ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "profile_key", profileKey, "rule_key", "squid:S1228");
 
@@ -571,7 +571,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValue(value).setComponent(moduleKey).build());
+      newAdminWsClient(ORCHESTRATOR).settingsService().set(SetRequest.builder().setKey(key).setValue(value).setComponent(moduleKey).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
     }
@@ -579,7 +579,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private void setMultiValuesSettings(@Nullable String moduleKey, String key, String... values) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValues(asList(values)).setComponent(moduleKey).build());
+      newAdminWsClient(ORCHESTRATOR).settingsService().set(SetRequest.builder().setKey(key).setValues(asList(values)).setComponent(moduleKey).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient()
         .create(new PropertyCreateQuery(key, asList(values).stream().collect(Collectors.joining(","))).setResourceKeyOrId(moduleKey));
@@ -616,10 +616,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     }
   }
 
-  public static WsClient newAdminWsClient() {
-    Server server = ORCHESTRATOR.getServer();
-    ORCHESTRATOR.getServer();
-    ORCHESTRATOR.getServer();
+  public static WsClient newAdminWsClient(Orchestrator orchestrator) {
+    Server server = orchestrator.getServer();
     return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(server.getUrl())
       .credentials(Server.ADMIN_LOGIN, Server.ADMIN_PASSWORD)

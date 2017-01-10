@@ -22,6 +22,7 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.config.Licenses;
 import com.sonar.orchestrator.locator.FileLocation;
+import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -37,14 +38,13 @@ import org.sonar.wsclient.services.PropertyUpdateQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
+import org.sonarqube.ws.client.setting.ResetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
-
-import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -72,7 +72,7 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
     sonarUserHome = temp.newFolder().toPath();
 
@@ -127,8 +127,11 @@ public class LicenseTest extends AbstractConnectedTest {
   }
 
   private void removeLicense(String pluginKey) {
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery(
-      licenses.licensePropertyKey(pluginKey)));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settingsService().reset(ResetRequest.builder().setKeys(licenses.licensePropertyKey(pluginKey)).build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery(licenses.licensePropertyKey(pluginKey)));
+    }
   }
 
   private void addLicense(String pluginKey) {

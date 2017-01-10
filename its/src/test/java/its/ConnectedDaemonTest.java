@@ -21,7 +21,6 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
-import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.locator.FileLocation;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -54,10 +53,9 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
-import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
+import org.sonarqube.ws.client.setting.ResetRequest;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc.ConnectedSonarLintBlockingStub;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
@@ -73,8 +71,6 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
-import static com.sonar.orchestrator.container.Server.ADMIN_LOGIN;
-import static com.sonar.orchestrator.container.Server.ADMIN_PASSWORD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedDaemonTest {
@@ -106,7 +102,7 @@ public class ConnectedDaemonTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
     sonarUserHome = temp.newFolder().toPath();
 
@@ -132,8 +128,13 @@ public class ConnectedDaemonTest {
 
   @After
   public void stop() {
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
+      adminWsClient.settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
+      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
+    }
   }
 
   @Test
@@ -288,14 +289,6 @@ public class ConnectedDaemonTest {
     public List<LogEvent> get() {
       return list;
     }
-  }
-
-  public static WsClient newAdminWsClient(Orchestrator orchestrator) {
-    Server server = orchestrator.getServer();
-    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
-      .url(server.getUrl())
-      .credentials(ADMIN_LOGIN, ADMIN_PASSWORD)
-      .build());
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
