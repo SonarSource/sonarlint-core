@@ -63,13 +63,12 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
           continue;
         }
 
-        org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
+        Sonarlint.ActiveRules activeRulesFromStorage = ProtobufUtil.readFile(storageManager.getActiveRulesPath(qProfileKey),
           Sonarlint.ActiveRules.parser());
 
         LOG.debug("  * {}: {} ({} rules)", language, qProfileKey, activeRulesFromStorage.getActiveRulesByKeyMap().size());
 
-        for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKeyMap().entrySet()) {
-          ActiveRule activeRule = arEntry.getValue();
+        for (ActiveRule activeRule : activeRulesFromStorage.getActiveRulesByKeyMap().values()) {
           createNewActiveRule(builder, activeRule, storageRules, language, rules);
         }
       }
@@ -79,7 +78,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
     return activeRules;
   }
 
-  private void createNewActiveRule(ActiveRulesBuilder builder, ActiveRule activeRule, Sonarlint.Rules storageRules, String language, Rules rules) {
+  private static void createNewActiveRule(ActiveRulesBuilder builder, ActiveRule activeRule, Sonarlint.Rules storageRules, String language, Rules rules) {
     RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
     Rule rule = rules.find(ruleKey);
     Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());

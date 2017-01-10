@@ -17,53 +17,37 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.util.ws;
+package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import java.io.File;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import javax.annotation.Nullable;
+import org.sonar.api.batch.fs.TextRange;
 
-/**
- * @since 5.3
- */
-public class PostRequest extends BaseRequest<PostRequest> {
+abstract class TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
 
-  private final Map<String, Part> parts = new LinkedHashMap<>();
+  final TextRange textRange;
 
-  public PostRequest(String path) {
-    super(path);
+  TextRangeLocation(@Nullable TextRange textRange) {
+    this.textRange = textRange;
   }
 
   @Override
-  public Method getMethod() {
-    return Method.POST;
+  public Integer getStartLineOffset() {
+    return textRange != null ? textRange.start().lineOffset() : null;
   }
 
-  public PostRequest setPart(String name, Part part) {
-    this.parts.put(name, part);
-    return this;
+  @Override
+  public Integer getStartLine() {
+    return textRange != null ? textRange.start().line() : null;
   }
 
-  public Map<String, Part> getParts() {
-    return parts;
+  @Override
+  public Integer getEndLineOffset() {
+    return textRange != null ? textRange.end().lineOffset() : null;
   }
 
-  public static class Part {
-    private final String mediaType;
-    private final File file;
-
-    public Part(String mediaType, File file) {
-      this.mediaType = mediaType;
-      this.file = file;
-    }
-
-    public String getMediaType() {
-      return mediaType;
-    }
-
-    public File getFile() {
-      return file;
-    }
+  @Override
+  public Integer getEndLine() {
+    return textRange != null ? textRange.end().line() : null;
   }
 
 }
