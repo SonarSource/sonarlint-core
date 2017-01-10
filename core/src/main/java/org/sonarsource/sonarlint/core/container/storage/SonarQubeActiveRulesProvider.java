@@ -68,8 +68,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
         LOG.debug("  * {}: {} ({} rules)", language, qProfileKey, activeRulesFromStorage.getActiveRulesByKeyMap().size());
 
-        for (Map.Entry<String, ActiveRule> arEntry : activeRulesFromStorage.getActiveRulesByKeyMap().entrySet()) {
-          ActiveRule activeRule = arEntry.getValue();
+        for (ActiveRule activeRule : activeRulesFromStorage.getActiveRulesByKeyMap().values()) {
           createNewActiveRule(builder, activeRule, storageRules, language, rules);
         }
       }
