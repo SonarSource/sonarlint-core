@@ -55,6 +55,7 @@ import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
+import org.sonarqube.ws.client.setting.ResetRequest;
 import org.sonarqube.ws.client.setting.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
@@ -169,8 +170,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @After
   public void stop() {
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      newAdminWsClient().settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
+      newAdminWsClient().settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
+      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
+    }
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -564,16 +570,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.1")) {
-      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValue(value).setComponentKey(moduleKey).build());
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValue(value).setComponent(moduleKey).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
     }
   }
 
   private void setMultiValuesSettings(@Nullable String moduleKey, String key, String... values) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.1")) {
-      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValues(asList(values)).setComponentKey(moduleKey).build());
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      newAdminWsClient().settingsService().set(SetRequest.builder().setKey(key).setValues(asList(values)).setComponent(moduleKey).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient()
         .create(new PropertyCreateQuery(key, asList(values).stream().collect(Collectors.joining(","))).setResourceKeyOrId(moduleKey));

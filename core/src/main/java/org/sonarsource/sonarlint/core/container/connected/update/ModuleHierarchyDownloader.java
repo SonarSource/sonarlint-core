@@ -27,9 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import javax.annotation.CheckForNull;
-
 import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
@@ -48,8 +46,8 @@ public class ModuleHierarchyDownloader {
   }
 
   /**
-   * Downloads the module hierarchy information starting from a give module key.
-   * It returns the relative paths to the given root module for all its sob modules.
+   * Downloads the module hierarchy information starting from a given module key.
+   * It returns the relative paths to the given root module for all its sub modules.
    * 
    * @param moduleKey moduleKey for which the hierarchy will be returned.
    * @return Mapping of moduleKey -> relativePath from given module
