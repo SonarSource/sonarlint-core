@@ -32,14 +32,23 @@ public class IssueTrackableTest {
   private final Issue issue = mock(Issue.class);
 
   @Test
-  public void test_constructor_with_null_textRangeContent_null_lineContent() {
-    IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
+  public void should_have_null_content_hashes_when_constructed_without_content_info() {
+    IssueTrackable trackable = new IssueTrackable(issue);
+    assertThat(trackable.getTextRange()).isNull();
     assertThat(trackable.getTextRangeHash()).isNull();
     assertThat(trackable.getLineHash()).isNull();
   }
 
   @Test
-  public void test_constructor_with_nonnull_textRangeContent_nonnull_lineContent() {
+  public void should_have_null_content_hashes_when_constructed_without_null_content_info() {
+    IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
+    assertThat(trackable.getTextRange()).isNull();
+    assertThat(trackable.getTextRangeHash()).isNull();
+    assertThat(trackable.getLineHash()).isNull();
+  }
+
+  @Test
+  public void should_have_non_null_hashes_when_constructed_with_non_null_content_info() {
     String textRangeContent = "text range content";
     String lineContent = "line content";
     IssueTrackable trackable = new IssueTrackable(issue, null, textRangeContent, lineContent);

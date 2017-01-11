@@ -84,7 +84,8 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
           counter++;
           delete(k);
         } catch (IOException e) {
-          logger.error("Failed to delete file in the store", e);
+          Path path = pathMapper.apply(k);
+          logger.error(String.format("failed to delete file '%s' for invalidated key '%s'", path, k), e);
         }
       }
     }
