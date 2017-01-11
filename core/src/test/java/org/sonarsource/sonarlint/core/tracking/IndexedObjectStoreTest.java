@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,7 +45,7 @@ public class IndexedObjectStoreTest {
   @Test
   public void should_log_failures_to_delete_invalid_files() throws IOException {
     StoreIndex<String> index = mock(StoreIndex.class);
-    when(index.keys()).thenReturn(Collections.singleton("dummy"));
+    when(index.keys()).thenReturn(Collections.singleton("dummy key"));
 
     // attempt to delete this with Files.deleteIfExists will fail
     Path nonEmptyDir = temporaryFolder.newFolder().toPath();
@@ -58,7 +59,7 @@ public class IndexedObjectStoreTest {
     IndexedObjectStore<String, String> store = new IndexedObjectStore<>(index, mapper, reader, writer, validator, logger);
     store.deleteInvalid();
 
-    verify(logger).error(eq("Failed to delete file in the store"), any());
+    verify(logger).error(contains("failed to delete file"), any());
     verify(logger).debug(eq("1 entries removed from the store"));
   }
 
