@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
@@ -84,7 +84,7 @@ public class ConnectedContainer extends ComponentContainer {
       QualityProfilesUpdateChecker.class,
       ModuleStorageUpdateExecutor.class,
       PluginReferencesDownloader.class,
-      PropertiesDownloader.class,
+      SettingsDownloader.class,
       ModuleQualityProfilesDownloader.class,
       ModuleListDownloader.class,
       ModuleHierarchyDownloader.class,
