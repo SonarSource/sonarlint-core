@@ -39,6 +39,7 @@ import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarqube.ws.client.setting.ResetRequest;
+import org.sonarqube.ws.client.setting.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -139,8 +140,11 @@ public class LicenseTest extends AbstractConnectedTest {
     if (license == null) {
       fail("ITs could not get license for " + pluginKey);
     }
-    ORCHESTRATOR.getServer().getAdminWsClient().update(new PropertyUpdateQuery(
-      licenses.licensePropertyKey(pluginKey), license));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settingsService().set(SetRequest.builder().setKey(licenses.licensePropertyKey(pluginKey)).setValue(license).build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().update(new PropertyUpdateQuery(licenses.licensePropertyKey(pluginKey), license));
+    }
   }
 
   @Test

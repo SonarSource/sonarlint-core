@@ -117,7 +117,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settingsService().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
+    }
     sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
