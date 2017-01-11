@@ -34,6 +34,7 @@ public class IssueTrackableTest {
   @Test
   public void test_constructor_with_null_textRangeContent_null_lineContent() {
     IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
+    assertThat(trackable.getTextRange()).isNull();
     assertThat(trackable.getTextRangeHash()).isNull();
     assertThat(trackable.getLineHash()).isNull();
   }
