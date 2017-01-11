@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 /**
  * Match and track a collection of issues.
@@ -111,17 +110,9 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       this.textRangeHash = trackable.getTextRangeHash();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
-    public boolean equals(@Nullable Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (this.getClass() != o.getClass()) {
-        return false;
-      }
+    public boolean equals(Object o) {
       LineAndTextRangeHashKey that = (LineAndTextRangeHashKey) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
@@ -158,17 +149,9 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       this.lineHash = trackable.getLineHash();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
-    public boolean equals(@Nullable Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (this.getClass() != o.getClass()) {
-        return false;
-      }
+    public boolean equals(Object o) {
       LineAndLineHashKey that = (LineAndLineHashKey) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
@@ -203,17 +186,9 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       this.lineHash = trackable.getLineHash();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
-    public boolean equals(@Nullable Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (this.getClass() != o.getClass()) {
-        return false;
-      }
+    public boolean equals(Object o) {
       LineHashKey that = (LineHashKey) o;
       // start with most discriminant field
       return Objects.equals(lineHash, that.lineHash)
@@ -248,17 +223,9 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       this.textRangeHash = trackable.getTextRangeHash();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
-    public boolean equals(@Nullable Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (this.getClass() != o.getClass()) {
-        return false;
-      }
+    public boolean equals(Object o) {
       TextRangeHashAndMessageKey that = (TextRangeHashAndMessageKey) o;
       // start with most discriminant field
       return Objects.equals(textRangeHash, that.textRangeHash)
@@ -295,17 +262,9 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       this.line = trackable.getLine();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
-    public boolean equals(@Nullable Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (this.getClass() != o.getClass()) {
-        return false;
-      }
+    public boolean equals(Object o) {
       LineAndMessageKey that = (LineAndMessageKey) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
@@ -340,17 +299,9 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       this.textRangeHash = trackable.getTextRangeHash();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
-    public boolean equals(@Nullable Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (this.getClass() != o.getClass()) {
-        return false;
-      }
+    public boolean equals(Object o) {
       TextRangeHashKey that = (TextRangeHashKey) o;
       // start with most discriminant field
       return Objects.equals(textRangeHash, that.textRangeHash)
@@ -381,17 +332,10 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       serverIssueKey = trackable.getServerIssueKey();
     }
 
+    // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
       ServerIssueSearchKey that = (ServerIssueSearchKey) o;
-
       return !isBlank(serverIssueKey) && !isBlank(that.serverIssueKey) && serverIssueKey.equals(that.serverIssueKey);
     }
 
