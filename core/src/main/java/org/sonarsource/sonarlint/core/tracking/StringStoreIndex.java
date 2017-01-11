@@ -30,13 +30,18 @@ import java.util.Map;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 class StringStoreIndex implements StoreIndex<String> {
-  public static final String INDEX_FILENAME = "index.pb";
+  private static final String DEFAULT_INDEX_FILENAME = "index.pb";
+
   private final Path storeBasePath;
   private final Path indexFilePath;
 
   public StringStoreIndex(Path storeBasePath) {
+    this(storeBasePath, DEFAULT_INDEX_FILENAME);
+  }
+
+  protected StringStoreIndex(Path storeBasePath, String indexFileName) {
     this.storeBasePath = storeBasePath;
-    this.indexFilePath = storeBasePath.resolve(INDEX_FILENAME);
+    this.indexFilePath = storeBasePath.resolve(indexFileName);
   }
 
   @Override
