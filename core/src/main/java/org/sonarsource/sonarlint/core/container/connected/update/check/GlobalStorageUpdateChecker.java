@@ -54,7 +54,7 @@ public class GlobalStorageUpdateChecker {
     // Currently with don't check server version change since it is unlikely to have impact on SL
 
     progress.setProgressAndCheckCancel("Checking global properties", 0.4f);
-    globalSettingsUpdateChecker.checkForUpdates(serverStatus.getVersion(), result);
+    globalSettingsUpdateChecker.checkForUpdates(result);
 
     progress.setProgressAndCheckCancel("Checking plugins", 0.6f);
     pluginsUpdateChecker.checkForUpdates(result, serverStatus);

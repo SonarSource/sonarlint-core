@@ -55,7 +55,6 @@ import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarqube.ws.client.setting.ResetRequest;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc.ConnectedSonarLintBlockingStub;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
@@ -128,13 +127,8 @@ public class ConnectedDaemonTest {
 
   @After
   public void stop() {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
-      adminWsClient.settingsService().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
-    }
+    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
+    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
   }
 
   @Test
