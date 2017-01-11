@@ -28,19 +28,19 @@ public class ModuleConfigurationDownloader {
 
   private final ModuleHierarchyDownloader moduleHierarchyDownloader;
   private final ModuleQualityProfilesDownloader moduleQualityProfilesDownloader;
-  private final PropertiesDownloader propertiesDownloader;
+  private final SettingsDownloader settingsDownloader;
 
   public ModuleConfigurationDownloader(ModuleHierarchyDownloader moduleHierarchyDownloader,
-    ModuleQualityProfilesDownloader moduleQualityProfilesDownloader, PropertiesDownloader propertiesDownloader) {
+    ModuleQualityProfilesDownloader moduleQualityProfilesDownloader, SettingsDownloader settingsDownloader) {
     this.moduleHierarchyDownloader = moduleHierarchyDownloader;
     this.moduleQualityProfilesDownloader = moduleQualityProfilesDownloader;
-    this.propertiesDownloader = propertiesDownloader;
+    this.settingsDownloader = settingsDownloader;
   }
 
-  public ModuleConfiguration fetchModuleConfiguration(String moduleKey, GlobalProperties globalProps) {
+  public ModuleConfiguration fetchModuleConfiguration(String serverVersion, String moduleKey, GlobalProperties globalProps) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     fetchProjectQualityProfiles(moduleKey, builder);
-    propertiesDownloader.fetchProjectProperties(moduleKey, globalProps, builder);
+    settingsDownloader.fetchProjectSettings(serverVersion, moduleKey, globalProps, builder);
     fetchModuleHierarchy(moduleKey, builder);
 
     return builder.build();

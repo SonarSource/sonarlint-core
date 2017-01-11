@@ -42,12 +42,13 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.PropertiesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,6 +99,7 @@ public class ModuleStorageUpdateExecutorTest {
     propBuilder.getMutableProperties().put("sonar.qualitygate", "2");
     propBuilder.getMutableProperties().put("sonar.core.version", "5.5-SNAPSHOT");
     when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(propBuilder.build());
+    when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().build());
 
     moduleHierarchy = mock(ModuleHierarchyDownloader.class);
     Map<String, String> modulesPath = new HashMap<>();
@@ -109,7 +111,7 @@ public class ModuleStorageUpdateExecutorTest {
     issueStore = new InMemoryIssueStore();
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
-    moduleConfigurationDownloader = new ModuleConfigurationDownloader(moduleHierarchy, new ModuleQualityProfilesDownloader(wsClient), mock(PropertiesDownloader.class));
+    moduleConfigurationDownloader = new ModuleConfigurationDownloader(moduleHierarchy, new ModuleQualityProfilesDownloader(wsClient), mock(SettingsDownloader.class));
   }
 
   @Test
