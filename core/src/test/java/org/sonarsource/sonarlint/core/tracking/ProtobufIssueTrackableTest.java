@@ -28,6 +28,16 @@ public class ProtobufIssueTrackableTest {
 
   private final Trackable empty = new ProtobufIssueTrackable(Sonarlint.Issues.Issue.newBuilder().build());
 
+  private final Sonarlint.Issues.Issue completeIssue = Sonarlint.Issues.Issue.newBuilder()
+    .setMessage("message")
+    .setChecksum(7)
+    .setRuleKey("rule key")
+    .setResolved(true)
+    .setAssignee("user")
+    .build();
+
+  private final Trackable completeTrackabe = new ProtobufIssueTrackable(completeIssue);
+
   @Test
   public void should_return_null_serverIssueKey_when_unset() {
     assertThat(empty.getServerIssueKey()).isNull();
@@ -41,5 +51,39 @@ public class ProtobufIssueTrackableTest {
   @Test
   public void should_return_null_creationDate_when_unset() {
     assertThat(empty.getCreationDate()).isNull();
+  }
+
+  @Test
+  public void should_have_null_textRangeHash() {
+    assertThat(completeTrackabe.getTextRangeHash()).isNull();
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void should_not_have_issue() {
+    completeTrackabe.getIssue();
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void should_not_have_ruleName() {
+    completeTrackabe.getRuleName();
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void should_not_have_severity() {
+    completeTrackabe.getSeverity();
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void should_not_have_textRange() {
+    completeTrackabe.getTextRange();
+  }
+
+  @Test
+  public void should_get_fields_from_protobuf_issue() {
+    assertThat(completeTrackabe.getMessage()).isEqualTo(completeIssue.getMessage());
+    assertThat(completeTrackabe.getLineHash()).isEqualTo(completeIssue.getChecksum());
+    assertThat(completeTrackabe.getRuleKey()).isEqualTo(completeIssue.getRuleKey());
+    assertThat(completeTrackabe.isResolved()).isEqualTo(completeIssue.getResolved());
+    assertThat(completeTrackabe.getAssignee()).isEqualTo(completeIssue.getAssignee());
   }
 }
