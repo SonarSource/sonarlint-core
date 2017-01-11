@@ -36,7 +36,7 @@ public class ProtobufIssueTrackableTest {
     .setAssignee("user")
     .build();
 
-  private final Trackable completeTrackabe = new ProtobufIssueTrackable(completeIssue);
+  private final Trackable completeTrackable = new ProtobufIssueTrackable(completeIssue);
 
   @Test
   public void should_return_null_serverIssueKey_when_unset() {
@@ -55,35 +55,35 @@ public class ProtobufIssueTrackableTest {
 
   @Test
   public void should_have_null_textRangeHash() {
-    assertThat(completeTrackabe.getTextRangeHash()).isNull();
+    assertThat(completeTrackable.getTextRangeHash()).isNull();
   }
 
   @Test(expected = UnsupportedOperationException.class)
   public void should_not_have_issue() {
-    completeTrackabe.getIssue();
+    completeTrackable.getIssue();
   }
 
   @Test(expected = UnsupportedOperationException.class)
   public void should_not_have_ruleName() {
-    completeTrackabe.getRuleName();
+    completeTrackable.getRuleName();
   }
 
   @Test(expected = UnsupportedOperationException.class)
   public void should_not_have_severity() {
-    completeTrackabe.getSeverity();
+    completeTrackable.getSeverity();
   }
 
   @Test(expected = UnsupportedOperationException.class)
   public void should_not_have_textRange() {
-    completeTrackabe.getTextRange();
+    completeTrackable.getTextRange();
   }
 
   @Test
-  public void should_get_fields_from_protobuf_issue() {
-    assertThat(completeTrackabe.getMessage()).isEqualTo(completeIssue.getMessage());
-    assertThat(completeTrackabe.getLineHash()).isEqualTo(completeIssue.getChecksum());
-    assertThat(completeTrackabe.getRuleKey()).isEqualTo(completeIssue.getRuleKey());
-    assertThat(completeTrackabe.isResolved()).isEqualTo(completeIssue.getResolved());
-    assertThat(completeTrackabe.getAssignee()).isEqualTo(completeIssue.getAssignee());
+  public void should_delegate_fields_to_protobuf_issue() {
+    assertThat(completeTrackable.getMessage()).isEqualTo(completeIssue.getMessage());
+    assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getChecksum());
+    assertThat(completeTrackable.getRuleKey()).isEqualTo(completeIssue.getRuleKey());
+    assertThat(completeTrackable.isResolved()).isEqualTo(completeIssue.getResolved());
+    assertThat(completeTrackable.getAssignee()).isEqualTo(completeIssue.getAssignee());
   }
 }
