@@ -64,7 +64,8 @@ public class ModuleStorageUpdateExecutor {
   }
 
   private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp) {
-    ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(moduleKey, globalProps);
+    ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(storageManager.readServerInfosFromStorage().getVersion(), moduleKey,
+      globalProps);
     final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKeyMap().keySet();
     for (String qpKey : moduleConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
