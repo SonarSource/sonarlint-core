@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd its
 
-if [[ $SQ_VERSION = "4.5"* ]]
+if [[ $SQ_VERSION = LTS ]]
 then
   JAVA_VERSION=3.14
   PHP_VERSION=2.8
