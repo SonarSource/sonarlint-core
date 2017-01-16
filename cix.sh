@@ -7,8 +7,7 @@ cd its
 
 if [[ $SQ_VERSION = LTS ]]
 then
-  JAVA_VERSION=3.8
-  JAVA_VERSION=3.14  # old? to delete?
+  JAVA_VERSION=3.12
   PHP_VERSION=2.7
   JAVASCRIPT_VERSION=2.11
   PYTHON_VERSION=1.5
