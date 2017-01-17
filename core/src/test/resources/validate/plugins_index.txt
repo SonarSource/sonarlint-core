@@ -27,7 +27,7 @@ vb,sonar-vb-plugin-2.1.jar|93742a079e3e87a39da879c1ae91a2bb
 javascript,sonar-javascript-plugin-2.12-M1_2016-04-07.jar|931a5cb39668fb7e6c87985020b521de
 puppet,sonar-puppet-plugin-1.3.jar|c796ac9fec222a90e972e015fff4c942
 groovy,sonar-groovy-plugin-1.3.1.jar|a431bc3100464129efa9c9881f121b37
-cobol,sonar-cobol-plugin-3.0.jar|2db4f124c98648610da94760557da9d7
+cobol,sonar-cobol-plugin-3.2.jar|2db4f124c98648610da94760557da9d7
 scmgit,sonar-scm-git-plugin-1.2-M8_2016-03-31.jar|f3833e898e302742e6a3623cb2725246
 php,sonar-php-plugin-2.8.jar|ad4a30852db2871bd344ab66b3d83587
 abap,sonar-abap-plugin-3.2.1.jar|c0d407bcaea55afb621cd963f223f478
