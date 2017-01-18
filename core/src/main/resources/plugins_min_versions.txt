@@ -1,11 +1,12 @@
-#minimum supported analyzer versions
-java=3.8
-php=2.7
-javascript=2.9
-python=1.5
+# Minimum supported analyzer versions: the first versions supported by SonarQube 5.6,
+# as defined in https://github.com/SonarSource/sonar-update-center-properties
+java=4.0
+php=2.9
+javascript=2.14
+python=1.6
 cobol=3.2
-abap=3.2
-plsql=2.7
-swift=1.5.1
+abap=3.2.1
+plsql=2.8
+swift=1.7
 rpg=2.0
 cpp=4.0
