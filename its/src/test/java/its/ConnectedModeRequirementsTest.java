@@ -97,7 +97,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void checkMinimalPluginVersionDuringGlobalUpdate() throws IOException {
     exception.expect(UnsupportedServerException.class);
-    exception.expectMessage("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 3.8)");
+    exception.expectMessage("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 4.0)");
 
     engine.update(config());
   }
@@ -106,7 +106,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void checkMinimalPluginVersionWhenValidatingConnection() throws IOException {
     ValidationResult result = new WsHelperImpl().validateConnection(config());
     assertThat(result.success()).isFalse();
-    assertThat(result.message()).isEqualTo("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 3.8)");
+    assertThat(result.message()).isEqualTo("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 4.0)");
   }
 
   private ServerConfiguration config() {
