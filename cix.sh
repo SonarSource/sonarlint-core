@@ -1,17 +1,21 @@
 #!/bin/bash
 set -euo pipefail
 
+plugins_min_versions_path=core/src/main/resources/plugins_min_versions.txt
+
 ./set_maven_build_version.sh "$CI_BUILD_NUMBER"
 
 cd its
 
 case "$SQ_VERSION" in
   LTS)
-    JAVA_VERSION=3.12
-    PHP_VERSION=2.7
-    JAVASCRIPT_VERSION=2.11
-    PYTHON_VERSION=1.5
-    COBOL_VERSION=3.2
+    minVersions=$(sed -ne '/^[a-z]*=[0-9.]*$/s/$/;/p' < "../$plugins_min_versions_path")
+    eval "$minVersions"
+    JAVA_VERSION=$java
+    PHP_VERSION=$php
+    JAVASCRIPT_VERSION=$javascript
+    PYTHON_VERSION=$python
+    COBOL_VERSION=$cobol
     ;;
   DEV|LATEST_RELEASE)
     JAVA_VERSION=LATEST_RELEASE
@@ -27,4 +31,9 @@ esac
 
 echo "Running with SQ=$SQ_VERSION JAVA_VERSION=$JAVA_VERSION JAVASCRIPT_VERSION=$JAVASCRIPT_VERSION PHP_VERSION=$PHP_VERSION PYTHON_VERSION=$PYTHON_VERSION COBOL_VERSION=$COBOL_VERSION"
 
-mvn verify -Prun-its -Dsonar.runtimeVersion=$SQ_VERSION -DjavaVersion=$JAVA_VERSION -DphpVersion=$PHP_VERSION -DjavascriptVersion=$JAVASCRIPT_VERSION -DpythonVersion=$PYTHON_VERSION -DcobolVersion=$COBOL_VERSION
+mvn verify -Prun-its -Dsonar.runtimeVersion=$SQ_VERSION \
+    -DjavaVersion=$JAVA_VERSION \
+    -DphpVersion=$PHP_VERSION \
+    -DjavascriptVersion=$JAVASCRIPT_VERSION \
+    -DpythonVersion=$PYTHON_VERSION \
+    -DcobolVersion=$COBOL_VERSION
