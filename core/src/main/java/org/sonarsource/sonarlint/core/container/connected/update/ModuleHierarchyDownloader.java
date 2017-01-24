@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,6 +41,7 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class ModuleHierarchyDownloader {
+  static final int PAGE_SIZE = 500;
   private final SonarLintWsClient wsClient;
 
   public ModuleHierarchyDownloader(SonarLintWsClient wsClient) {
@@ -53,29 +56,37 @@ public class ModuleHierarchyDownloader {
    * @return Mapping of moduleKey -> relativePath from given module
    */
   public Map<String, String> fetchModuleHierarchy(String moduleKey) {
-    WsResponse response = wsClient.get("api/components/tree.protobuf?qualifiers=TRK,BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey));
-    try (InputStream stream = response.contentStream()) {
-      TreeWsResponse treeResponse = WsComponents.TreeWsResponse.parseFrom(stream);
+    List<Component> modules = new ArrayList<>();
 
-      // doesn't include root
-      Map<String, Component> components = treeResponse.getComponentsList().stream().collect(Collectors.toMap(Component::getId, Function.identity()));
+    int page = 0;
+    TreeWsResponse treeResponse;
+    do {
+      page++;
+      WsResponse response = wsClient.get("api/components/tree.protobuf?ps=" + PAGE_SIZE + "&p=" + page + "&qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey));
+      try (InputStream stream = response.contentStream()) {
+        treeResponse = WsComponents.TreeWsResponse.parseFrom(stream);
 
-      // component -> ancestorComponent. Doesn't include root
-      Map<Component, Component> ancestors = new HashMap<>();
-      for (Component c : treeResponse.getComponentsList()) {
-        ancestors.put(c, components.get(fetchAncestorId(c.getId())));
+        modules.addAll(treeResponse.getComponentsList());
+      } catch (IOException e) {
+        throw new IllegalStateException("Failed to load module hierarchy", e);
       }
+    } while (page * PAGE_SIZE < treeResponse.getPaging().getTotal());
+    // doesn't include root
+    Map<String, Component> modulesById = modules.stream().collect(Collectors.toMap(Component::getId, Function.identity()));
 
-      // module key -> path from root project base directory
-      Map<String, String> modulesWithPath = new HashMap<>();
-      modulesWithPath.put(moduleKey, "");
-      treeResponse.getComponentsList().forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
-
-      return modulesWithPath;
-
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load module hierarchy", e);
+    // component -> ancestorComponent. Doesn't include root
+    Map<Component, Component> ancestors = new HashMap<>();
+    for (Component c : modules) {
+      ancestors.put(c, modulesById.get(fetchAncestorId(c.getId())));
     }
+
+    // module key -> path from root project base directory
+    Map<String, String> modulesWithPath = new HashMap<>();
+    modulesWithPath.put(moduleKey, "");
+    modules.forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
+
+    return modulesWithPath;
+
   }
 
   private static String findPathFromRoot(Component component, Map<Component, Component> ancestors) {
@@ -91,11 +102,13 @@ public class ModuleHierarchyDownloader {
   }
 
   @CheckForNull
-  private String fetchAncestorId(String moduleId) throws IOException {
+  private String fetchAncestorId(String moduleId) {
     WsResponse response = wsClient.get("api/components/show.protobuf?id=" + StringUtils.urlEncode(moduleId));
     try (InputStream stream = response.contentStream()) {
       ShowWsResponse showResponse = WsComponents.ShowWsResponse.parseFrom(stream);
       return showResponse.getAncestorsList().stream().map(Component::getId).findFirst().orElse(null);
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to load module hierarchy", e);
     }
   }
 }

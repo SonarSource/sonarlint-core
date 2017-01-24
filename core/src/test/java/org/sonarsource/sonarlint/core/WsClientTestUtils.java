@@ -19,14 +19,16 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.protobuf.Message;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -69,6 +71,13 @@ public class WsClientTestUtils {
     when(wsResponse.contentStream()).thenReturn(inputStream);
     when(wsResponse.isSuccessful()).thenReturn(true);
     return wsClient;
+  }
+
+  public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, Message m) throws IOException {
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+      m.writeTo(bos);
+      return addResponse(wsClient, url, new ByteArrayInputStream(bos.toByteArray()));
+    }
   }
 
   public static SonarLintWsClient addPostResponse(SonarLintWsClient wsClient, String url, String response) {
