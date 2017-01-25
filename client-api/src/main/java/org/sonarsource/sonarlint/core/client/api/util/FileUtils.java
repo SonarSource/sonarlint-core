@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.client.api.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,13 +40,48 @@ public class FileUtils {
     // utility class, forbidden constructor
   }
 
-  public static void moveDir(Path temp, Path dest) {
+  public static void moveDir(Path src, Path dest) {
     try {
-      Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE);
-    } catch (AtomicMoveNotSupportedException e) {
-      throw new IllegalStateException("Atomic move not supported for " + temp + " to " + dest, e);
+      moveDirPreferAtomic(src, dest);
     } catch (IOException e) {
-      throw new IllegalStateException("Unable to move " + temp + " to " + dest, e);
+      throw new IllegalStateException("Unable to move " + src + " to " + dest, e);
+    }
+  }
+
+  private static void moveDirPreferAtomic(Path src, Path dest) throws IOException {
+    try {
+      Files.move(src, dest, StandardCopyOption.ATOMIC_MOVE);
+    } catch (AtomicMoveNotSupportedException e) {
+      // Fallback to non atomic move
+      Files.walkFileTree(src, new CopyRecursivelyVisitor(src, dest));
+      deleteRecursively(src);
+    }
+  }
+
+  private static class CopyRecursivelyVisitor extends SimpleFileVisitor<Path> {
+    private final Path fromPath;
+    private final Path toPath;
+    private final CopyOption[] copyOptions;
+
+    public CopyRecursivelyVisitor(Path fromPath, Path toPath, CopyOption... copyOptions) {
+      this.fromPath = fromPath;
+      this.toPath = toPath;
+      this.copyOptions = copyOptions;
+    }
+
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+      Path targetPath = toPath.resolve(fromPath.relativize(dir));
+      if (!Files.exists(targetPath)) {
+        Files.createDirectory(targetPath);
+      }
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+      Files.copy(file, toPath.resolve(fromPath.relativize(file)), copyOptions);
+      return FileVisitResult.CONTINUE;
     }
   }
 
@@ -106,7 +142,7 @@ public class FileUtils {
   /**
    * Populates a new temporary directory and when done, replace the target directory with it.
    *
-   * @param dirContentUpdater function that will be called to create new contant
+   * @param dirContentUpdater function that will be called to create new content
    * @param target target location to replace when content is ready
    * @param work directory to populate with new content (typically a new empty temporary directory)
    */

@@ -27,9 +27,15 @@ import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FileUtilsTest {
   @Rule
@@ -44,8 +50,34 @@ public class FileUtilsTest {
     assertThat(newDir.isDirectory()).isFalse();
 
     FileUtils.moveDir(oldDir.toPath(), newDir.toPath());
-    assertThat(oldDir.isDirectory()).isFalse();
-    assertThat(newDir.isDirectory()).isTrue();
+    assertThat(oldDir).doesNotExist();
+    assertThat(newDir).exists().isDirectory();
+  }
+
+  @Test
+  public void moveDir_non_atomic() throws IOException {
+    File oldDir = temporaryFolder.newFolder();
+    File foo = new File(oldDir, "foo");
+    foo.mkdirs();
+    new File(foo, "foo.txt").createNewFile();
+
+    File newDir = temporaryFolder.newFolder();
+
+    Path destPath = newDir.toPath();
+
+    Path destMock = mock(Path.class, RETURNS_DEEP_STUBS);
+    // Make the dest path look like it doesn't belong to the same FileSystem
+    when(destMock.getFileSystem().provider()).thenReturn(null);
+    when(destMock.resolve(any(Path.class))).thenAnswer(new Answer<Path>() {
+      @Override
+      public Path answer(InvocationOnMock invocation) throws Throwable {
+        return destPath.resolve(invocation.<Path>getArgument(0));
+      };
+    });
+
+    FileUtils.moveDir(oldDir.toPath(), destMock);
+    assertThat(oldDir).doesNotExist();
+    assertThat(new File(newDir, "foo/foo.txt")).exists();
   }
 
   @Test(expected = IllegalStateException.class)

@@ -34,13 +34,14 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ModuleStorageUpdateCheckerTest {
+
+  private static final String SERVER_VERSION = "6.0";
 
   @Rule
   public LogTester logTester = new LogTester();
@@ -56,10 +57,13 @@ public class ModuleStorageUpdateCheckerTest {
     moduleConfigurationDownloader = mock(ModuleConfigurationDownloader.class);
 
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().build());
-    when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().build());
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(anyString(), eq(MODULE_KEY), any(GlobalProperties.class))).thenReturn(ModuleConfiguration.newBuilder().build());
+    when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
+      .thenReturn(ModuleConfiguration.newBuilder().build());
 
-    checker = new ModuleStorageUpdateChecker(storageManager, moduleConfigurationDownloader, mock(SettingsDownloader.class));
+    SettingsDownloader settingsDownloader = mock(SettingsDownloader.class);
+    when(settingsDownloader.fetchGlobalSettings(SERVER_VERSION)).thenReturn(GlobalProperties.newBuilder().build());
+    checker = new ModuleStorageUpdateChecker(storageManager, moduleConfigurationDownloader, settingsDownloader);
   }
 
   @AfterClass
@@ -78,7 +82,7 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void addedProp() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(anyString(), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
@@ -102,7 +106,7 @@ public class ModuleStorageUpdateCheckerTest {
   @Test
   public void changedProp() {
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(anyString(), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
@@ -114,7 +118,7 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void addedProfile() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(anyString(), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
@@ -136,7 +140,7 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void changedQualityProfile() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(anyString(), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-456").build());
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
