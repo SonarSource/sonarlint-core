@@ -19,17 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import static org.mockito.Mockito.mock;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
-
+import com.google.common.base.Objects;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,9 +38,12 @@ import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
 
-import com.google.common.base.Objects;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class IssueStoreReaderTest {
+  private static final String MODULE_KEY = "root";
   private IssueStoreReader issueStoreReader;
   private IssueStore issueStore;
   private StorageManager storage;
@@ -57,8 +55,10 @@ public class IssueStoreReaderTest {
   public void setUp() {
     IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
     issueStore = new InMemoryIssueStore();
-    when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
     storage = mock(StorageManager.class);
+    Path storagePath = mock(Path.class);
+    when(storage.getServerIssuesPath(MODULE_KEY)).thenReturn(storagePath);
+    when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
     issueStoreReader = new IssueStoreReader(issueStoreFactory, storage);
   }
 
@@ -66,14 +66,14 @@ public class IssueStoreReaderTest {
   public void testMultiModule() {
     // setup module hierarchy
     Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put("root", "");
+    modulePaths.put(MODULE_KEY, "");
     modulePaths.put("root:module1", "module1/src");
     modulePaths.put("root:module2", "module2");
 
     Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storage.readModuleConfigFromStorage("root")).thenReturn(moduleConfigBuilder.build());
+    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
 
     // setup issues
     issueStore.save(Arrays.asList(
@@ -85,17 +85,17 @@ public class IssueStoreReaderTest {
     // test
 
     // matches module1 path
-    assertThat(issueStoreReader.getServerIssues("root", "module1/src/path1"))
+    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module1/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("root", "module1/src/path1"));
+      .containsOnly(createApiIssue(MODULE_KEY, "module1/src/path1"));
 
     // matches module2
-    assertThat(issueStoreReader.getServerIssues("root", "module2/path2"))
+    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module2/path2"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("root", "module2/path2"));
+      .containsOnly(createApiIssue(MODULE_KEY, "module2/path2"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues("root", "module1/src/path3"))
+    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module1/src/path3"))
       .isEmpty();
 
     // module not in storage
@@ -110,25 +110,25 @@ public class IssueStoreReaderTest {
   public void testSingleModule() {
     // setup module hierarchy
     Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put("root", "");
+    modulePaths.put(MODULE_KEY, "");
 
     Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storage.readModuleConfigFromStorage("root")).thenReturn(moduleConfigBuilder.build());
+    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
 
     // setup issues
-    issueStore.save(Arrays.asList(createServerIssue("root", "src/path1")));
+    issueStore.save(Arrays.asList(createServerIssue(MODULE_KEY, "src/path1")));
 
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues("root", "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("root", "src/path1"));
+      .containsOnly(createApiIssue(MODULE_KEY, "src/path1"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues("root", "src/path3"))
+    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "src/path3"))
       .isEmpty();
 
     // module not in storage

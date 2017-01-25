@@ -19,20 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
+import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
-import org.sonar.api.batch.Sensor;
 import org.sonar.api.resources.Project;
-
-import java.util.Collections;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -64,12 +62,12 @@ public class SensorsExecutorTest {
 
     InOrder inOrder = Mockito.inOrder(handler, sensor);
 
-    inOrder.verify(handler).onSensorsPhase(Matchers.argThat(new EventMatcher(true)));
+    inOrder.verify(handler).onSensorsPhase(ArgumentMatchers.argThat(new EventMatcher(true)));
     inOrder.verify(sensor).analyse(project, context);
-    inOrder.verify(handler).onSensorsPhase(Matchers.argThat(new EventMatcher(false)));
+    inOrder.verify(handler).onSensorsPhase(ArgumentMatchers.argThat(new EventMatcher(false)));
   }
 
-  class EventMatcher extends BaseMatcher<SensorsPhaseEvent> {
+  class EventMatcher implements ArgumentMatcher<SensorsPhaseEvent> {
     private boolean start;
 
     EventMatcher(boolean start) {
@@ -77,14 +75,8 @@ public class SensorsExecutorTest {
     }
 
     @Override
-    public boolean matches(Object item) {
-      SensorsPhaseEvent event = (SensorsPhaseEvent) item;
-      return event.isStart() == start && event.getSensors().contains(sensor);
-    }
-
-    @Override
-    public void describeTo(Description description) {
-
+    public boolean matches(SensorsPhaseEvent argument) {
+      return argument.isStart() == start && argument.getSensors().contains(sensor);
     }
   }
 }
