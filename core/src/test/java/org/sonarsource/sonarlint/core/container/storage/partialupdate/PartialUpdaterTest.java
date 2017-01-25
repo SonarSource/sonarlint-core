@@ -19,17 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
-
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,8 +42,16 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PartialUpdaterTest {
+  private static final String SERVER_VERSION = "6.0";
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   @Rule
@@ -76,6 +77,7 @@ public class PartialUpdaterTest {
     MockitoAnnotations.initMocks(this);
     updater = new PartialUpdater(issueStoreFactory, downloader, storageManager, issueStoreReader, moduleListDownloader);
     when(issueStoreFactory.apply(Mockito.any(Path.class))).thenReturn(issueStore);
+    when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
   }
 
   @Test
@@ -120,8 +122,8 @@ public class PartialUpdaterTest {
 
   @Test
   public void error_downloading_modules() {
-    when(storageManager.getModuleListPath()).thenReturn(temp.getRoot().toPath());
-    doThrow(IOException.class).when(moduleListDownloader).fetchModulesList(temp.getRoot().toPath());
+    when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
+    doThrow(IOException.class).when(moduleListDownloader).fetchModulesListTo(temp.getRoot().toPath(), SERVER_VERSION);
     exception.expect(DownloadException.class);
 
     updater.updateModuleList();
@@ -136,8 +138,8 @@ public class PartialUpdaterTest {
 
   @Test
   public void update_module_list() {
-    when(storageManager.getModuleListPath()).thenReturn(temp.getRoot().toPath());
+    when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
     updater.updateModuleList();
-    verify(moduleListDownloader).fetchModulesList(temp.getRoot().toPath());
+    verify(moduleListDownloader).fetchModulesListTo(temp.getRoot().toPath(), SERVER_VERSION);
   }
 }

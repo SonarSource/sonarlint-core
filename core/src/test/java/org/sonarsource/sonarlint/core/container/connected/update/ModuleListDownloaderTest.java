@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -31,7 +29,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 
-import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ModuleListDownloaderTest {
@@ -40,17 +37,33 @@ public class ModuleListDownloaderTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void update_modules() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("api/projects/index?format=json&subprojects=true",
-      new InputStreamReader(requireNonNull(WsClientTestUtils.class.getResourceAsStream("/update/all_projects.json")), StandardCharsets.UTF_8));
+  public void update_modules_before_6_dot_3() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addReaderResponse(wsClient, "api/projects/index?format=json&subprojects=true", "/update/all_projects.json");
 
     File tempDir = temp.newFolder();
 
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
-    moduleListUpdate.fetchModulesList(tempDir.toPath());
+    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.2");
 
     ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
-    assertThat(moduleList.getModulesByKey()).hasSize(1559);
-    assertThat(moduleList.getModulesByKey().values()).extracting("qu").contains("TRK", "BRC");
+    assertThat(moduleList.getModulesByKeyMap()).hasSize(1559);
+    assertThat(moduleList.getModulesByKeyMap().values()).extracting("qu").contains("TRK", "BRC");
+  }
+
+  @Test
+  public void update_modules_after_6_dot_3() throws Exception {
+
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addStreamResponse(wsClient, "api/components/search.protobuf?qualifiers=TRK,BRC&ps=500&p=1", "/update/searchmodulesp1.pb");
+
+    File tempDir = temp.newFolder();
+
+    ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
+    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3");
+
+    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
+    assertThat(moduleList.getModulesByKeyMap()).hasSize(282);
+    assertThat(moduleList.getModulesByKeyMap().values()).extracting("qu").contains("TRK", "BRC");
   }
 }

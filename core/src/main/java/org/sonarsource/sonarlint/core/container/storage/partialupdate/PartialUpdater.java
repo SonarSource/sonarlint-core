@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.Iterator;
-
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -85,9 +84,8 @@ public class PartialUpdater {
   }
 
   public void updateModuleList() {
-    Path moduleListPath = storageManager.getModuleListPath();
     try {
-      moduleListDownloader.fetchModulesList(moduleListPath);
+      moduleListDownloader.fetchModulesListTo(storageManager.getGlobalStorageRoot(), storageManager.readServerInfosFromStorage().getVersion());
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update module list: " + e.getMessage(), null);

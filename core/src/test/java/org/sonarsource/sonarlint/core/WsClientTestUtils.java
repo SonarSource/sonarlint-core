@@ -126,7 +126,7 @@ public class WsClientTestUtils {
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
     InputStream is = requireNonNull(WsClientTestUtils.class.getResourceAsStream(resourcePath));
-    when(wsResponse.contentReader()).thenReturn(new BufferedReader(new InputStreamReader(is)));
+    when(wsResponse.contentReader()).thenReturn(new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)));
     when(wsResponse.isSuccessful()).thenReturn(true);
     return wsClient;
   }

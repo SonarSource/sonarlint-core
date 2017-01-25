@@ -19,13 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import com.google.common.base.Joiner;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
+import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.util.ws.GetRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
@@ -33,15 +42,11 @@ import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 import org.sonarsource.sonarlint.core.util.ws.WsConnector;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
-import com.google.common.base.Joiner;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 public class SonarLintWsClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
+
+  public static final int PAGE_SIZE = 500;
 
   private final WsConnector client;
   private final String userAgent;
@@ -145,6 +150,28 @@ public class SonarLintWsClient {
 
   public String getUserAgent() {
     return userAgent;
+  }
+
+  public static <G> void paginate(SonarLintWsClient wsclient, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
+    Consumer<G> responseConsummer) {
+    int page = 0;
+    G protoBufResponse;
+    do {
+      page++;
+      WsResponse response = wsclient.get(baseUrl + "&ps=" + PAGE_SIZE + "&p=" + page);
+      try (InputStream stream = response.contentStream()) {
+        protoBufResponse = responseParser.apply(stream);
+
+        responseConsummer.accept(protoBufResponse);
+      } catch (IOException e) {
+        throw new IllegalStateException("Failed to process paginated WS", e);
+      }
+    } while (page * PAGE_SIZE < getPaging.apply(protoBufResponse).getTotal());
+  }
+
+  @FunctionalInterface
+  public interface CheckedFunction<T, R> {
+    R apply(T t) throws IOException;
   }
 
 }

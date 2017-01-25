@@ -33,12 +33,12 @@ import javax.annotation.CheckForNull;
 import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
-import org.sonarqube.ws.WsComponents.TreeWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
+import static org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient.paginate;
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
@@ -58,19 +58,9 @@ public class ModuleHierarchyDownloader {
   public Map<String, String> fetchModuleHierarchy(String moduleKey) {
     List<Component> modules = new ArrayList<>();
 
-    int page = 0;
-    TreeWsResponse treeResponse;
-    do {
-      page++;
-      WsResponse response = wsClient.get("api/components/tree.protobuf?ps=" + PAGE_SIZE + "&p=" + page + "&qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey));
-      try (InputStream stream = response.contentStream()) {
-        treeResponse = WsComponents.TreeWsResponse.parseFrom(stream);
+    paginate(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey), WsComponents.TreeWsResponse::parseFrom,
+      WsComponents.TreeWsResponse::getPaging, treeResponse -> modules.addAll(treeResponse.getComponentsList()));
 
-        modules.addAll(treeResponse.getComponentsList());
-      } catch (IOException e) {
-        throw new IllegalStateException("Failed to load module hierarchy", e);
-      }
-    } while (page * PAGE_SIZE < treeResponse.getPaging().getTotal());
     // doesn't include root
     Map<String, Component> modulesById = modules.stream().collect(Collectors.toMap(Component::getId, Function.identity()));
 

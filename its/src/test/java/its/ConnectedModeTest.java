@@ -37,7 +37,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -181,6 +180,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     } catch (Exception e) {
       // Ignore
     }
+  }
+
+  @Test
+  public void downloadModules() throws Exception {
+    updateGlobal();
+    assertThat(engine.allModulesByKey()).hasSize(8);
+    ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
+    assertThat(engine.downloadAllModules(getServerConfig())).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allModulesByKey()).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -500,11 +508,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void generateToken() {
     WsHelper ws = new WsHelperImpl();
-    ServerConfiguration serverConfig = ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
+    ServerConfiguration serverConfig = getServerConfig();
 
     if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.4")) {
       exception.expect(UnsupportedServerException.class);
@@ -517,17 +521,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(token).isNotNull();
   }
 
-  @Ignore  // TODO un-ignore after release
   @Test
   public void checkForUpdate() throws Exception {
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
-    ServerConfiguration serverConfig = ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
+    ServerConfiguration serverConfig = getServerConfig();
 
     StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isFalse();
@@ -583,19 +582,19 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateModule(String projectKey) {
-    engine.updateModule(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), projectKey);
+    engine.updateModule(getServerConfig(), projectKey);
   }
 
   private void updateGlobal() {
-    engine.update(ServerConfiguration.builder()
+    engine.update(getServerConfig());
+  }
+
+  private ServerConfiguration getServerConfig() {
+    return ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build());
+      .build();
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
