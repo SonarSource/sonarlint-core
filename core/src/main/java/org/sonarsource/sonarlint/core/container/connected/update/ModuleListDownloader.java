@@ -23,14 +23,20 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
+import org.sonarqube.ws.WsComponents;
+import org.sonarqube.ws.WsComponents.Component;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
+import static org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient.paginate;
+
 public class ModuleListDownloader {
+  static final int PAGE_SIZE = 500;
 
   private final SonarLintWsClient wsClient;
 
@@ -38,7 +44,34 @@ public class ModuleListDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchModulesList(Path dest) {
+  public void fetchModulesListTo(Path dest, String serverVersion) {
+    if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
+      fetchModulesListAfter6dot3(dest);
+    } else {
+      fetchModulesListBefore6dot3(dest);
+    }
+  }
+
+  private void fetchModulesListAfter6dot3(Path dest) {
+    ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
+    Builder moduleBuilder = ModuleList.Module.newBuilder();
+
+    paginate(wsClient, "api/components/search.protobuf?qualifiers=TRK,BRC", WsComponents.SearchWsResponse::parseFrom, WsComponents.SearchWsResponse::getPaging,
+      searchResponse -> {
+        for (Component module : searchResponse.getComponentsList()) {
+          moduleBuilder.clear();
+          moduleListBuilder.putModulesByKey(module.getKey(), moduleBuilder
+            .setKey(module.getKey())
+            .setName(module.getName())
+            .setQu(module.getQualifier())
+            .build());
+        }
+      });
+
+    ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
+  }
+
+  private void fetchModulesListBefore6dot3(Path dest) {
     WsResponse response = wsClient.get("api/projects/index?format=json&subprojects=true");
     try (Reader contentReader = response.contentReader()) {
       DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
