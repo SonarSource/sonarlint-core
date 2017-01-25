@@ -1,5 +1,5 @@
 // SonarLint, open source software quality management tool.
-// Copyright (C) 2015-2016 SonarSource
+// Copyright (C) 2015-2017 SonarSource
 // mailto:contact AT sonarsource DOT com
 //
 // SonarLint is free software; you can redistribute it and/or
@@ -54,7 +54,7 @@ message RuleKey {
 
 message StorageState {
   State state = 1;
-  
+
   enum State {
     UNKNOW = 0;
     UPDATING = 1;
@@ -71,13 +71,13 @@ message LogEvent {
   string level = 1;
   string log = 2;
   bool is_debug = 3;
-  
+
   enum Level {
-  	ERROR = 0;
-  	WARN = 1;
-  	INFO = 2;
-  	DEBUG = 3;
-  	TRACE = 4;
+    ERROR = 0;
+    WARN = 1;
+    INFO = 2;
+    DEBUG = 3;
+    TRACE = 4;
   }
 }
 
@@ -88,35 +88,35 @@ message ServerConfig {
     string token = 3;
     Credentials credentials = 4;
   }
-  
+
   message Credentials {
     string login = 1;
     string password = 2;
   }
 }
 
- message Issue {
-   Severity severity = 1;
-   int32 start_line = 2;
-   int32 start_line_offset = 3;
-   int32 end_line = 4;
-   int32 end_line_offset = 5;
-   string message = 6;
-   string rule_key = 7;
-   string rule_name = 8;
-   string file_path = 9;
-   string user_object = 10;
-   
-   enum Severity {
-     BLOCKER = 0;
-     CRITICAL = 1;
-     MAJOR = 2;
-     MINOR = 3;
-     INFO = 4;
-   }
- }
- 
- message RuleDetails {
+message Issue {
+  Severity severity = 1;
+  int32 start_line = 2;
+  int32 start_line_offset = 3;
+  int32 end_line = 4;
+  int32 end_line_offset = 5;
+  string message = 6;
+  string rule_key = 7;
+  string rule_name = 8;
+  string file_path = 9;
+  string user_object = 10;
+
+  enum Severity {
+    BLOCKER = 0;
+    CRITICAL = 1;
+    MAJOR = 2;
+    MINOR = 3;
+    INFO = 4;
+  }
+}
+
+message RuleDetails {
   string key = 1;
   string name = 2;
   string html_description = 3;
@@ -124,22 +124,22 @@ message ServerConfig {
   string severity = 5;
   repeated string tags = 6;
 }
- 
- message AnalysisReq {
+
+message AnalysisReq {
   map<string, string> properties = 1;
   repeated InputFile file = 2;
   string base_dir = 3;
   string work_dir = 4;
 }
 
- message InputFile {
-    string path = 1;
-    string charset = 2;
-    bool is_test = 3;
-    string user_object = 4;
-  }
+message InputFile {
+  string path = 1;
+  string charset = 2;
+  bool is_test = 3;
+  string user_object = 4;
+}
 
- message ConnectedAnalysisReq {
+message ConnectedAnalysisReq {
   map<string, string> properties = 1;
   repeated InputFile file = 2;
   string base_dir = 3;
