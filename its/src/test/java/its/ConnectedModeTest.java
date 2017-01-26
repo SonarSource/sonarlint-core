@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
@@ -569,12 +570,29 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settingsService().set(SetRequest.builder()
+        .setKey(key)
+        .setValue(value)
+        .setComponent(moduleKey)
+        .build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient()
+        .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
+    }
   }
 
   private void setMultiValuesSettings(@Nullable String moduleKey, String key, String... values) {
-    ORCHESTRATOR.getServer().getAdminWsClient()
-      .create(new PropertyCreateQuery(key, asList(values).stream().collect(Collectors.joining(","))).setResourceKeyOrId(moduleKey));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settingsService().set(SetRequest.builder()
+        .setKey(key)
+        .setValues(Arrays.asList(values))
+        .setComponent(moduleKey)
+        .build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient()
+        .create(new PropertyCreateQuery(key, asList(values).stream().collect(Collectors.joining(","))).setResourceKeyOrId(moduleKey));
+    }
   }
 
   private boolean supportHtmlDesc() {
