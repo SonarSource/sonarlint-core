@@ -20,11 +20,7 @@
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.List;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -68,15 +64,14 @@ public class PartialUpdater {
     Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStoreReader.getFileKey(moduleKey, filePath);
-    Iterator<ServerIssue> issues;
+    List<ServerIssue> issues;
     try {
       issues = downloader.apply(fileKey);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
-    Spliterator<ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
-    issueStore.save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
+    issueStore.save(issues);
   }
 
   public void updateFileIssues(String moduleKey, TempFolder tempFolder) {

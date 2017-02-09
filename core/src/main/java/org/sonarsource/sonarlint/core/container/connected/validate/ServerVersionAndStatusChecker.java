@@ -24,10 +24,10 @@ import com.google.protobuf.util.JsonFormat;
 import java.net.HttpURLConnection;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.apache.commons.lang.StringUtils.trimToEmpty;
 
@@ -93,7 +93,7 @@ public class ServerVersionAndStatusChecker {
   }
 
   private ServerInfos fetchServerInfos() {
-    try (CloseableWsResponse response = wsClient.rawGet("api/system/status")) {
+    try (WsResponse response = wsClient.rawGet("api/system/status")) {
       if (!response.isSuccessful()) {
         if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
           return tryFromDeprecatedApi(response);
@@ -113,9 +113,9 @@ public class ServerVersionAndStatusChecker {
     }
   }
 
-  private ServerInfos tryFromDeprecatedApi(CloseableWsResponse originalReponse) {
+  private ServerInfos tryFromDeprecatedApi(WsResponse originalReponse) {
     // Maybe a server version prior to 5.2. Fallback on deprecated api/server/version
-    try (CloseableWsResponse responseFallback = wsClient.rawGet("api/server/version")) {
+    try (WsResponse responseFallback = wsClient.rawGet("api/server/version")) {
       if (!responseFallback.isSuccessful()) {
         // We prefer to report original error
         throw SonarLintWsClient.handleError(originalReponse);

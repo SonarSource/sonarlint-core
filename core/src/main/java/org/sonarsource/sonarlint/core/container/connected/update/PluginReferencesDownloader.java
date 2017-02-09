@@ -56,10 +56,11 @@ public class PluginReferencesDownloader {
 
   public PluginReferences fetchPlugins(String serverVersion) {
     boolean compatibleFlagPresent = Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.0")) >= 0;
-    WsResponse response = wsClient.get(PluginVersionChecker.WS_PATH_LTS);
     PluginReferences.Builder builder = PluginReferences.newBuilder();
-    String responseStr = response.content();
-
+    String responseStr;
+    try (WsResponse response = wsClient.get(PluginVersionChecker.WS_PATH_LTS)) {
+      responseStr = response.content();
+    }
     pluginVersionChecker.checkPlugins(responseStr);
 
     Scanner scanner = new Scanner(responseStr);

@@ -20,9 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.gson.Gson;
+
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class AuthenticationChecker {
 
@@ -33,7 +34,7 @@ public class AuthenticationChecker {
   }
 
   public ValidationResult validateCredentials() {
-    try (CloseableWsResponse response = wsClient.rawGet("api/authentication/validate?format=json")) {
+    try (WsResponse response = wsClient.rawGet("api/authentication/validate?format=json")) {
       int code = response.code();
       if (response.isSuccessful()) {
         String responseStr = response.content();

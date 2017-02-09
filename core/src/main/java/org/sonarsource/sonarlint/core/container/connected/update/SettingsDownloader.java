@@ -126,17 +126,18 @@ public class SettingsDownloader {
     if (moduleKey != null) {
       url += "&resource=" + StringUtils.urlEncode(moduleKey);
     }
-    WsResponse response = wsClient.get(url);
-    try (JsonReader reader = new JsonReader(response.contentReader())) {
-      reader.beginArray();
-      while (reader.hasNext()) {
-        reader.beginObject();
-        parseProperty(filter, consumer, reader);
-        reader.endObject();
+    try (WsResponse response = wsClient.get(url)) {
+      try (JsonReader reader = new JsonReader(response.contentReader())) {
+        reader.beginArray();
+        while (reader.hasNext()) {
+          reader.beginObject();
+          parseProperty(filter, consumer, reader);
+          reader.endObject();
+        }
+        reader.endArray();
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
       }
-      reader.endArray();
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
     }
   }
 

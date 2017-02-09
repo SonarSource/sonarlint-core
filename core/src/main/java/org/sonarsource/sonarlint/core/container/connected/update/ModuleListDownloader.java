@@ -72,23 +72,24 @@ public class ModuleListDownloader {
   }
 
   private void fetchModulesListBefore6dot3(Path dest) {
-    WsResponse response = wsClient.get("api/projects/index?format=json&subprojects=true");
-    try (Reader contentReader = response.contentReader()) {
-      DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
+    try (WsResponse response = wsClient.get("api/projects/index?format=json&subprojects=true")) {
+      try (Reader contentReader = response.contentReader()) {
+        DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
 
-      ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
-      Builder moduleBuilder = ModuleList.Module.newBuilder();
-      for (DefaultModule module : results) {
-        moduleBuilder.clear();
-        moduleListBuilder.putModulesByKey(module.k, moduleBuilder
-          .setKey(module.k)
-          .setName(module.nm)
-          .setQu(module.qu)
-          .build());
+        ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
+        Builder moduleBuilder = ModuleList.Module.newBuilder();
+        for (DefaultModule module : results) {
+          moduleBuilder.clear();
+          moduleListBuilder.putModulesByKey(module.k, moduleBuilder
+            .setKey(module.k)
+            .setName(module.nm)
+            .setQu(module.qu)
+            .build());
+        }
+        ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
+      } catch (IOException e) {
+        throw new IllegalStateException("Failed to load module list", e);
       }
-      ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load module list", e);
     }
   }
 

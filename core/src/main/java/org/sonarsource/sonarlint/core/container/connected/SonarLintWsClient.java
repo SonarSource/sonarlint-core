@@ -69,16 +69,16 @@ public class SonarLintWsClient {
       .build();
   }
 
-  public CloseableWsResponse get(String path) {
-    CloseableWsResponse response = rawGet(path);
+  public WsResponse get(String path) {
+    WsResponse response = rawGet(path);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
     return response;
   }
 
-  public CloseableWsResponse post(String path) {
-    CloseableWsResponse response = rawPost(path);
+  public WsResponse post(String path) {
+    WsResponse response = rawPost(path);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
@@ -88,7 +88,7 @@ public class SonarLintWsClient {
   /**
    * Execute POST and don't check response
    */
-  public CloseableWsResponse rawPost(String path) {
+  public WsResponse rawPost(String path) {
     long startTime = System2.INSTANCE.now();
     PostRequest request = new PostRequest(path);
     WsResponse response = client.call(request);
@@ -96,13 +96,13 @@ public class SonarLintWsClient {
     if (LOG.isDebugEnabled()) {
       LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
     }
-    return new CloseableWsResponse(response);
+    return response;
   }
 
   /**
    * Execute GET and don't check response
    */
-  public CloseableWsResponse rawGet(String path) {
+  public WsResponse rawGet(String path) {
     long startTime = System2.INSTANCE.now();
     GetRequest request = new GetRequest(path);
     WsResponse response = client.call(request);
@@ -110,11 +110,11 @@ public class SonarLintWsClient {
     if (LOG.isDebugEnabled()) {
       LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
     }
-    return new CloseableWsResponse(response);
+    return response;
   }
 
-  public static RuntimeException handleError(CloseableWsResponse toBeClosed) {
-    try (CloseableWsResponse failedResponse = toBeClosed) {
+  public static RuntimeException handleError(WsResponse toBeClosed) {
+    try (WsResponse failedResponse = toBeClosed) {
       if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
         return new IllegalStateException("Not authorized. Please check server credentials.");
       }

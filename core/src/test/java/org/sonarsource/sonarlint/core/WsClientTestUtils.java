@@ -30,8 +30,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static java.util.Objects.requireNonNull;
 import static org.mockito.Mockito.mock;
@@ -51,7 +51,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, String response) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
@@ -63,7 +63,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, InputStream inputStream) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.code()).thenReturn(200);
@@ -81,7 +81,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addPostResponse(SonarLintWsClient wsClient, String url, String response) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.post(url)).thenReturn(wsResponse);
     when(wsClient.rawPost(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
@@ -91,7 +91,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addFailedResponse(SonarLintWsClient wsClient, String url, int errorCode, @Nullable String errorMsg) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     IllegalStateException ex = new IllegalStateException(
       "Error " + errorCode + " on " + url + (errorMsg != null ? (": " + errorMsg) : ""));
 
@@ -111,7 +111,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addStreamResponse(SonarLintWsClient wsClient, String url, String resourcePath) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
@@ -121,7 +121,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addReaderResponse(SonarLintWsClient wsClient, String url, String resourcePath) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
@@ -137,7 +137,7 @@ public class WsClientTestUtils {
   }
 
   public static SonarLintWsClient addReaderResponse(SonarLintWsClient wsClient, String url, Reader reader) {
-    CloseableWsResponse wsResponse = mock(CloseableWsResponse.class);
+    WsResponse wsResponse = mock(WsResponse.class);
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.contentReader()).thenReturn(reader);
