@@ -126,7 +126,7 @@ public class ModuleStorageUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -147,7 +147,7 @@ public class ModuleStorageUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -175,7 +175,7 @@ public class ModuleStorageUpdateExecutorTest {
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyIterator(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
@@ -208,7 +208,7 @@ public class ModuleStorageUpdateExecutorTest {
       .setPath("yet/another/path")
       .build();
 
-    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue).iterator();
+    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
 
     moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder, moduleConfigurationDownloader);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);

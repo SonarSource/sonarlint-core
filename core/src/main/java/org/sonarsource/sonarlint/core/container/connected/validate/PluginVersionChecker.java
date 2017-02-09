@@ -53,8 +53,9 @@ public class PluginVersionChecker {
   public ValidationResult validatePlugins(@Nullable String pluginsIndex) {
     String pluginsList = pluginsIndex;
     if (pluginsList == null) {
-      WsResponse response = wsClient.get(WS_PATH_LTS);
-      pluginsList = response.content();
+      try (WsResponse response = wsClient.get(WS_PATH_LTS)) {
+        pluginsList = response.content();
+      }
     }
     Properties minimalPluginVersions = new Properties();
     try {

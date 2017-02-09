@@ -93,8 +93,8 @@ public class ModuleHierarchyDownloader {
 
   @CheckForNull
   private String fetchAncestorId(String moduleId) {
-    WsResponse response = wsClient.get("api/components/show.protobuf?id=" + StringUtils.urlEncode(moduleId));
-    try (InputStream stream = response.contentStream()) {
+    try (WsResponse response = wsClient.get("api/components/show.protobuf?id=" + StringUtils.urlEncode(moduleId))) {
+      InputStream stream = response.contentStream();
       ShowWsResponse showResponse = WsComponents.ShowWsResponse.parseFrom(stream);
       return showResponse.getAncestorsList().stream().map(Component::getId).findFirst().orElse(null);
     } catch (IOException e) {

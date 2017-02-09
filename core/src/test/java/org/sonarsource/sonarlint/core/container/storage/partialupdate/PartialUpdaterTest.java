@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -84,11 +83,10 @@ public class PartialUpdaterTest {
   public void update_file_issues() {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
-    Iterator<ServerIssue> issueIterator = issues.iterator();
 
     when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
-    when(downloader.apply("module:file")).thenReturn(issueIterator);
+    when(downloader.apply("module:file")).thenReturn(issues);
 
     updater.updateFileIssues("module", "file");
 
@@ -109,11 +107,10 @@ public class PartialUpdaterTest {
   public void update_file_issues_by_module() throws IOException {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
-    Iterator<ServerIssue> issueIterator = issues.iterator();
 
     String moduleKey = "dummy";
     when(storageManager.getServerIssuesPath(moduleKey)).thenReturn(temp.newFolder().toPath());
-    when(downloader.apply(moduleKey)).thenReturn(issueIterator);
+    when(downloader.apply(moduleKey)).thenReturn(issues);
 
     updater.updateFileIssues(moduleKey, new DefaultTempFolder(temp.newFolder()));
 

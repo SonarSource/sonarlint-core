@@ -26,12 +26,12 @@ import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -71,9 +71,10 @@ public class WsHelperImpl implements WsHelper {
       }
 
       // create
-      CloseableWsResponse response = client.post("api/user_tokens/generate?name=" + name);
-      Map<?, ?> javaRootMapObject = new Gson().fromJson(response.content(), Map.class);
-      return (String) javaRootMapObject.get("token");
+      try (WsResponse response = client.post("api/user_tokens/generate?name=" + name)) {
+        Map<?, ?> javaRootMapObject = new Gson().fromJson(response.content(), Map.class);
+        return (String) javaRootMapObject.get("token");
+      }
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }

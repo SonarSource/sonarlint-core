@@ -22,13 +22,13 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import com.google.protobuf.Parser;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.List;
 
 import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonarsource.sonarlint.core.container.connected.CloseableWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class IssueDownloaderImpl implements IssueDownloader {
 
@@ -47,16 +47,17 @@ public class IssueDownloaderImpl implements IssueDownloader {
    * @return Iterator of issues. It can be empty but never null.
    */
   @Override
-  public Iterator<ScannerInput.ServerIssue> apply(String key) {
-    CloseableWsResponse response = wsClient.rawGet(getIssuesUrl(key));
-    if (response.code() == 403 || response.code() == 404) {
-      return Collections.emptyIterator();
-    } else if (response.code() != 200) {
-      throw SonarLintWsClient.handleError(response);
+  public List<ScannerInput.ServerIssue> apply(String key) {
+    try (WsResponse response = wsClient.rawGet(getIssuesUrl(key))) {
+      if (response.code() == 403 || response.code() == 404) {
+        return Collections.emptyList();
+      } else if (response.code() != 200) {
+        throw SonarLintWsClient.handleError(response);
+      }
+      InputStream input = response.contentStream();
+      Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
+      return ProtobufUtil.readMessages(input, parser);
     }
-    InputStream input = response.contentStream();
-    Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
-    return ProtobufUtil.streamMessages(input, parser);
   }
 
   private static String getIssuesUrl(String key) {

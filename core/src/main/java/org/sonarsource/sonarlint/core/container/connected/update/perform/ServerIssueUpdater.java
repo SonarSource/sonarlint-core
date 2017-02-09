@@ -20,11 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.List;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
@@ -53,8 +49,7 @@ public class ServerIssueUpdater {
   }
 
   public void updateServerIssues(String moduleKey, Path temp) {
-    Iterator<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
-    Spliterator<ScannerInput.ServerIssue> spliterator = Spliterators.spliteratorUnknownSize(issues, 0);
-    issueStoreFactory.apply(temp).save(StreamSupport.stream(spliterator, false).collect(Collectors.toList()));
+    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
+    issueStoreFactory.apply(temp).save(issues);
   }
 }
