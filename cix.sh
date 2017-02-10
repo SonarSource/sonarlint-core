@@ -14,6 +14,7 @@ case "$SQ_VERSION" in
     JAVA_VERSION=$java
     PHP_VERSION=$php
     JAVASCRIPT_VERSION=$javascript
+    JAVASCRIPT_BUILD_VERSION=2.14
     PYTHON_VERSION=$python
     COBOL_VERSION=$cobol
     ;;
@@ -21,6 +22,8 @@ case "$SQ_VERSION" in
     JAVA_VERSION=LATEST_RELEASE
     PHP_VERSION=LATEST_RELEASE
     JAVASCRIPT_VERSION=LATEST_RELEASE
+    # There was an API change that requires to build with this version
+    JAVASCRIPT_BUILD_VERSION=2.20.0.4207
     PYTHON_VERSION=LATEST_RELEASE
     COBOL_VERSION=LATEST_RELEASE
     ;;
@@ -31,9 +34,10 @@ esac
 
 echo "Running with SQ=$SQ_VERSION JAVA_VERSION=$JAVA_VERSION JAVASCRIPT_VERSION=$JAVASCRIPT_VERSION PHP_VERSION=$PHP_VERSION PYTHON_VERSION=$PYTHON_VERSION COBOL_VERSION=$COBOL_VERSION"
 
-mvn verify -Prun-its -Dsonar.runtimeVersion=$SQ_VERSION \
+mvn verify -Pits -Dsonar.runtimeVersion=$SQ_VERSION \
     -DjavaVersion=$JAVA_VERSION \
     -DphpVersion=$PHP_VERSION \
     -DjavascriptVersion=$JAVASCRIPT_VERSION \
+    -Djavascript.buildVersion=$JAVASCRIPT_BUILD_VERSION \
     -DpythonVersion=$PYTHON_VERSION \
     -DcobolVersion=$COBOL_VERSION

@@ -29,7 +29,6 @@
     <module>daemon-protocol</module>
     <module>daemon-java-client</module>
     <module>rule-extractor</module>
-    <module>its</module>
   </modules>
 
   <properties>
@@ -107,6 +106,12 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>its</id>
+      <modules>
+        <module>its</module>
+      </modules>
     </profile>
   </profiles>
 </project>

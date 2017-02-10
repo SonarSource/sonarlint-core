@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - ITs
+ * SonarLint Core - ITs - Tests
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -91,8 +91,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .addPlugin("javascript")
     .addPlugin("php")
     .addPlugin("python")
-    .addPlugin(FileLocation.of("plugins/javascript-custom-rules/target/javascript-custom-rules-plugin-1.0-SNAPSHOT.jar"))
-    .addPlugin(FileLocation.of("plugins/custom-sensor-plugin/target/custom-sensor-plugin-0.1-SNAPSHOT.jar"))
+    .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+    .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
