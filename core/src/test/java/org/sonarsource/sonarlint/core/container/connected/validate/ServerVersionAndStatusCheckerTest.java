@@ -40,6 +40,14 @@ public class ServerVersionAndStatusCheckerTest {
     ValidationResult validateStatusAndVersion = checker.validateStatusAndVersion();
     assertThat(validateStatusAndVersion.success()).isFalse();
     assertThat(validateStatusAndVersion.message()).isEqualTo("Server not ready (DOWN)");
+  }
+
+  @Test
+  public void failWhenServerNotReady() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
+
+    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
+
     try {
       checker.checkVersionAndStatus();
       fail("Expected exception");
@@ -57,6 +65,14 @@ public class ServerVersionAndStatusCheckerTest {
     ValidationResult validateStatusAndVersion = checker.validateStatusAndVersion();
     assertThat(validateStatusAndVersion.success()).isFalse();
     assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
+  }
+
+  @Test
+  public void failWhenIncompatibleVersion() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"4.5\",\"status\": \"UP\"}");
+
+    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
+
     try {
       checker.checkVersionAndStatus();
       fail("Expected exception");

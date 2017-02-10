@@ -55,7 +55,7 @@ public class WsClientTestUtils {
     when(wsClient.get(url)).thenReturn(wsResponse);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
-    when(wsResponse.content()).thenReturn(response);
+    when(wsResponse.content()).thenReturn(response).thenThrow(new IllegalStateException("Should not call content() twice"));
     when(wsResponse.contentStream()).thenReturn(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)));
     when(wsResponse.contentReader()).thenReturn(new StringReader(response));
     when(wsResponse.isSuccessful()).thenReturn(true);
@@ -85,7 +85,7 @@ public class WsClientTestUtils {
     when(wsClient.post(url)).thenReturn(wsResponse);
     when(wsClient.rawPost(url)).thenReturn(wsResponse);
     when(wsResponse.requestUrl()).thenReturn(url);
-    when(wsResponse.content()).thenReturn(response);
+    when(wsResponse.content()).thenReturn(response).thenThrow(new IllegalStateException("Should not call content() twice"));
     when(wsResponse.isSuccessful()).thenReturn(true);
     return wsClient;
   }
@@ -97,7 +97,7 @@ public class WsClientTestUtils {
 
     when(wsClient.get(url)).thenThrow(ex);
     when(wsClient.rawGet(url)).thenReturn(wsResponse);
-    when(wsResponse.content()).thenReturn(errorMsg);
+    when(wsResponse.content()).thenReturn(errorMsg).thenThrow(new IllegalStateException("Should not call content() twice"));
     when(wsResponse.hasContent()).thenReturn(errorMsg != null);
     when(wsResponse.requestUrl()).thenReturn(url);
     when(wsResponse.isSuccessful()).thenReturn(false);
