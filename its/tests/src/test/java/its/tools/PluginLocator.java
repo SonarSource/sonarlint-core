@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - ITs
+ * SonarLint Core - ITs - Tests
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
