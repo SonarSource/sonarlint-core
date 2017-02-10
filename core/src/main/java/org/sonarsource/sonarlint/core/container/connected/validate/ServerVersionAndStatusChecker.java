@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.net.HttpURLConnection;
+import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -107,7 +108,7 @@ public class ServerVersionAndStatusChecker {
           JsonFormat.parser().merge(responseStr, builder);
           return builder.build();
         } catch (InvalidProtocolBufferException e) {
-          throw new IllegalStateException("Unable to parse server infos from: " + response.content(), e);
+          throw new IllegalStateException("Unable to parse server infos from: " + StringUtils.abbreviate(responseStr, 100), e);
         }
       }
     }
