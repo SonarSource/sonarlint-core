@@ -55,6 +55,7 @@
         <configuration>
           <pluginClass>org.sonar.samples.javascript.JavaScriptCustomRulesPlugin</pluginClass>
           <basePlugin>javascript</basePlugin>
+          <sonarQubeMinVersion>5.6</sonarQubeMinVersion>
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
         </configuration>
