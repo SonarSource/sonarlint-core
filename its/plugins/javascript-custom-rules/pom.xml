@@ -12,14 +12,14 @@
   <description>JavaScript Custom Rules</description>
 
   <properties>
-    <javascript.version>2.20.0.4207</javascript.version>
+    <javascript.version>2.14</javascript.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
-      <version>6.2</version>
+      <version>5.6</version>
       <scope>provided</scope>
     </dependency>
 
@@ -42,6 +42,7 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.10</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

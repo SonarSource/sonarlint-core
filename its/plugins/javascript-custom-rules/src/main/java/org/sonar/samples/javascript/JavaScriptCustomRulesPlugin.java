@@ -5,21 +5,16 @@
  */
 package org.sonar.samples.javascript;
 
-import com.google.common.collect.ImmutableList;
-import org.sonar.api.SonarPlugin;
-
-import java.util.List;
+import org.sonar.api.Plugin;
 
 /**
- * Extension point to define a Sonar Plugin.
+ * Extension point to define a SonarQube Plugin.
  */
-public class JavaScriptCustomRulesPlugin extends SonarPlugin {
+public class JavaScriptCustomRulesPlugin implements Plugin {
 
   @Override
-  public List getExtensions() {
-    return ImmutableList.of(
-      JavascriptCustomRulesDefinition.class
-    );
+  public void define(Context context) {
+    context.addExtension(JavascriptCustomRulesDefinition.class);
   }
 
 }
