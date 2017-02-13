@@ -27,6 +27,8 @@ import java.util.List;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
+import org.sonar.api.batch.fs.internal.FilenamePredicate;
 import org.sonar.api.batch.fs.internal.PathPattern;
 
 /**
@@ -146,11 +148,6 @@ public class DefaultFilePredicates implements FilePredicates {
   }
 
   @Override
-  public FilePredicate hasStatus(InputFile.Status status) {
-    return new StatusPredicate(status);
-  }
-
-  @Override
   public FilePredicate hasType(InputFile.Type type) {
     return new TypePredicate(type);
   }
@@ -188,5 +185,15 @@ public class DefaultFilePredicates implements FilePredicates {
   @Override
   public FilePredicate and(FilePredicate first, FilePredicate second) {
     return AndPredicate.create(Arrays.asList(first, second));
+  }
+
+  @Override
+  public FilePredicate hasFilename(String s) {
+    return new FilenamePredicate(s);
+  }
+
+  @Override
+  public FilePredicate hasExtension(String s) {
+    return new FileExtensionPredicate(s);
   }
 }

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 import java.io.Serializable;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
+import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.SensorContext;
@@ -138,6 +139,11 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public void addContextProperty(String key, String value) {
+    // NO OP
+  }
+
+  @Override
+  public void markForPublishing(InputFile inputFile) {
     // NO OP
   }
 

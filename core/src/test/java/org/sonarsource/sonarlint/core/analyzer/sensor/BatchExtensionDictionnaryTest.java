@@ -34,6 +34,7 @@ import org.sonar.api.batch.Phase;
 import org.sonar.api.batch.PostJob;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.resources.Project;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
@@ -228,7 +229,8 @@ public class BatchExtensionDictionnaryTest {
     BatchExtension ko = new CheckProjectKO();
 
     BatchExtensionDictionnary selector = newSelector(ok, ko);
-    List<BatchExtension> extensions = Lists.newArrayList(selector.select(BatchExtension.class, new Project("key"), true, null));
+    List<BatchExtension> extensions = Lists.newArrayList(selector.select(BatchExtension.class, 
+      new Project(ProjectDefinition.create().setKey("key")), true, null));
 
     assertThat(extensions).hasSize(1);
     assertThat(extensions.get(0)).isInstanceOf(CheckProjectOK.class);

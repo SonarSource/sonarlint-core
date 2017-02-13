@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.utils.MessageException;
@@ -100,7 +100,7 @@ public class LanguageDetectionTest {
 
   private InputFile newInputFile(String path) throws IOException {
     File basedir = temp.newFolder();
-    return new DefaultInputFile("foo", path).setModuleBaseDir(basedir.toPath());
+    return new TestInputFileBuilder("foo", path).setModuleBaseDir(basedir.toPath()).build();
   }
 
   static class MockLanguage implements Language {

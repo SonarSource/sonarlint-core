@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.picocontainer.injectors.ProviderAdapter;
+import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.resources.Project;
 
 /**
@@ -31,11 +32,12 @@ public class ProjectProvider extends ProviderAdapter {
 
   public Project provide(AnalysisSettings settings) {
     if (singleton == null) {
-      singleton = new Project("sonarlint", null, "Project");
-      singleton.setDescription("");
-      singleton.setSettings(settings);
+      singleton = new Project(ProjectDefinition.create()
+        .setKey("sonarlint")
+        .setProperties(settings.getProperties())
+        .setDescription("")
+        .setName("SonarLint"));
     }
     return singleton;
   }
-
 }

@@ -19,19 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.SetMultimap;
+
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
+import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
+import org.sonar.api.batch.fs.internal.FilenamePredicate;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @SonarLintSide
 public class InputPathCache extends DefaultFileSystem.Cache {
 
-  private final Map<Path, InputFile> inputFileCache = Maps.newLinkedHashMap();
-  private final Map<Path, InputDir> inputDirCache = Maps.newLinkedHashMap();
+  private final Map<Path, InputFile> inputFileCache = new LinkedHashMap<>();
+  private final Map<Path, InputDir> inputDirCache = new LinkedHashMap<>();
+  private final SetMultimap<String, InputFile> filesByNameCache = LinkedHashMultimap.create();
+  private final SetMultimap<String, InputFile> filesByExtensionCache = LinkedHashMultimap.create();
+
 
   @Override
   public Iterable<InputFile> inputFiles() {
@@ -45,6 +53,8 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   @Override
   public void doAdd(InputFile inputFile) {
     inputFileCache.put(inputFile.path(), inputFile);
+    filesByNameCache.put(FilenamePredicate.getFilename(inputFile), inputFile);
+    filesByExtensionCache.put(FileExtensionPredicate.getExtension(inputFile), inputFile);
   }
 
   @Override
@@ -68,6 +78,16 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   public InputDir inputDir(Path path) {
     return inputDirCache.get(path);
+  }
+
+  @Override
+  public Iterable<InputFile> getFilesByName(String filename) {
+    return filesByNameCache.get(filename);
+  }
+
+  @Override
+  public Iterable<InputFile> getFilesByExtension(String extension) {
+    return filesByExtensionCache.get(extension);
   }
 
 }

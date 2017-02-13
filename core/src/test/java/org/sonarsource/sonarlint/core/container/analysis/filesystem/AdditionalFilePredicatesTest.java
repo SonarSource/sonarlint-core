@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import org.junit.Test;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,10 +32,10 @@ public class AdditionalFilePredicatesTest {
   public void key() {
     FilePredicate predicate = new AdditionalFilePredicates.KeyPredicate("struts:Action.java");
 
-    DefaultInputFile inputFile = new DefaultInputFile("struts", "Action.java");
+    DefaultInputFile inputFile = new TestInputFileBuilder("struts", "Action.java").build();
     assertThat(predicate.apply(inputFile)).isTrue();
 
-    inputFile = new DefaultInputFile("struts", "Filter.java");
+    inputFile = new TestInputFileBuilder("struts", "Filter.java").build();
     assertThat(predicate.apply(inputFile)).isFalse();
   }
 }

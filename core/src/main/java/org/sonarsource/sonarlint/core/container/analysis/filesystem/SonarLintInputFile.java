@@ -26,6 +26,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import javax.annotation.CheckForNull;
+
+import org.sonar.api.batch.fs.internal.DefaultIndexedFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -34,9 +37,11 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata
 public class SonarLintInputFile extends DefaultInputFile {
 
   private final ClientInputFile clientInputFile;
+  private String language;
+  private Type type;
 
   public SonarLintInputFile(ClientInputFile clientInputFile) {
-    super(null, null);
+    super(new DefaultIndexedFile("", Paths.get(clientInputFile.getPath()), clientInputFile.getPath()), null);
     this.clientInputFile = clientInputFile;
   }
 
@@ -47,6 +52,25 @@ public class SonarLintInputFile extends DefaultInputFile {
   @Override
   public String relativePath() {
     return absolutePath();
+  }
+
+  public void setLanguage(String language) {
+    this.language = language;
+  }
+
+  public void setType(Type type) {
+    this.type = type;
+  }
+
+  @CheckForNull
+  @Override
+  public String language() {
+    return language;
+  }
+
+  @Override
+  public Type type() {
+    return type;
   }
 
   @Override
@@ -63,7 +87,7 @@ public class SonarLintInputFile extends DefaultInputFile {
   public Path path() {
     return Paths.get(clientInputFile.getPath());
   }
-  
+
   @Override
   public InputStream inputStream() throws IOException {
     return clientInputFile.inputStream();
@@ -103,9 +127,8 @@ public class SonarLintInputFile extends DefaultInputFile {
   }
 
   public SonarLintInputFile init(Metadata metadata) {
-    this.setLines(metadata.lines);
-    this.setLastValidOffset(metadata.lastValidOffset);
-    this.setOriginalLineOffsets(metadata.originalLineOffsets);
+    this.setMetadata(new org.sonar.api.batch.fs.internal.Metadata(
+      metadata.lines, metadata.lines, "", metadata.originalLineOffsets, metadata.lastValidOffset));
     return this;
   }
 

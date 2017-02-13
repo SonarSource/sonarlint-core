@@ -108,7 +108,7 @@ class DeprecatedIssueAdapterForFilter implements Issue {
 
   @Override
   public Date creationDate() {
-    return project.getAnalysisDate();
+    return new Date();
   }
 
   @Override

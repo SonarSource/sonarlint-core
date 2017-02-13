@@ -31,6 +31,7 @@ import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,10 +46,11 @@ public class DefaultFilePredicatesTest {
   @Before
   public void before() throws IOException {
     predicates = new DefaultFilePredicates();
-    javaFile = new DefaultInputFile("foo", "src/main/java/struts/Action.java")
+    javaFile = new TestInputFileBuilder("foo", "src/main/java/struts/Action.java")
       .setModuleBaseDir(temp.newFolder().toPath())
       .setLanguage("java")
-      .setStatus(InputFile.Status.ADDED);
+      .setStatus(InputFile.Status.ADDED)
+      .build();
   }
 
   @Test
@@ -155,12 +157,6 @@ public class DefaultFilePredicatesTest {
     assertThat(predicates.hasLanguages(Arrays.asList("cobol", "php")).apply(javaFile)).isFalse();
     assertThat(predicates.hasLanguages("cobol", "php").apply(javaFile)).isFalse();
     assertThat(predicates.hasLanguages(Collections.<String>emptyList()).apply(javaFile)).isTrue();
-  }
-
-  @Test
-  public void has_status() {
-    assertThat(predicates.hasStatus(InputFile.Status.ADDED).apply(javaFile)).isTrue();
-    assertThat(predicates.hasStatus(InputFile.Status.CHANGED).apply(javaFile)).isFalse();
   }
 
   @Test
