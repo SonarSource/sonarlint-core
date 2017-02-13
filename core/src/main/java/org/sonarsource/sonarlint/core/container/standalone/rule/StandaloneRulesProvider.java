@@ -47,6 +47,7 @@ public class StandaloneRulesProvider extends ProviderAdapter {
           .setInternalKey(ruleDef.internalKey())
           .setDescription(ruleDef.htmlDescription() != null ? ruleDef.htmlDescription() : Markdown.convertToHtml(ruleDef.markdownDescription()))
           .setSeverity(ruleDef.severity())
+          .setType(ruleDef.type() != null ? ruleDef.type().toString() : null)
           .setName(ruleDef.name());
         for (Param p : ruleDef.params()) {
           newRule.addParam(p.key())

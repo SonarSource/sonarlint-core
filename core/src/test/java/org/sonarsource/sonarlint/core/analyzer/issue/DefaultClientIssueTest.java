@@ -76,7 +76,7 @@ public class DefaultClientIssueTest {
     Flow flow2 = mock(Flow.class);
     when(flow2.locations()).thenReturn(Arrays.asList(location1, location2));
 
-    issue = new DefaultClientIssue("MAJOR", activeRule, rule, "msg", textRange, clientInputFile, Arrays.asList(flow1, flow2));
+    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", textRange, clientInputFile, Arrays.asList(flow1, flow2));
 
     assertThat(issue.getStartLine()).isEqualTo(1);
     assertThat(issue.getStartLineOffset()).isEqualTo(2);
@@ -103,7 +103,7 @@ public class DefaultClientIssueTest {
 
   @Test
   public void nullRange() {
-    issue = new DefaultClientIssue("MAJOR", activeRule, rule, "msg", null, null, Collections.emptyList());
+    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", null, null, Collections.emptyList());
 
     assertThat(issue.getStartLine()).isNull();
     assertThat(issue.getStartLineOffset()).isNull();

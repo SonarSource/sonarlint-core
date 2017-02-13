@@ -25,7 +25,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.annotation.CheckForNull;
+
 import org.sonar.api.rule.RuleKey;
+import org.sonarqube.ws.Common.RuleType;
 import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
@@ -40,7 +44,7 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 
 public class RulesDownloader {
-  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
+  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,type,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
 
   private final SonarLintWsClient wsClient;
@@ -98,9 +102,10 @@ public class RulesDownloader {
   private static void readPage(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, SearchResponse response) {
     Builder ruleBuilder = Rules.Rule.newBuilder();
     for (Rule r : response.getRulesList()) {
-      ruleBuilder.clear();
       RuleKey ruleKey = RuleKey.parse(r.getKey());
-      rulesBuilder.putRulesByKey(r.getKey(), ruleBuilder
+
+      ruleBuilder.clear();
+      ruleBuilder
         .setRepo(ruleKey.repository())
         .setKey(ruleKey.rule())
         .setName(r.getName())
@@ -110,8 +115,14 @@ public class RulesDownloader {
         .setHtmlDesc(r.getHtmlDesc())
         .setHtmlNote(r.getHtmlNote())
         .setIsTemplate(r.getIsTemplate())
-        .setTemplateKey(r.getTemplateKey())
-        .build());
+        .setTemplateKey(r.getTemplateKey());
+
+      String type = typeToString(r.getType());
+      if (type != null) {
+        ruleBuilder.setType(type);
+      }
+
+      rulesBuilder.putRulesByKey(r.getKey(), ruleBuilder.build());
     }
     ActiveRules.ActiveRule.Builder arBuilder = ActiveRules.ActiveRule.newBuilder();
     for (Map.Entry<String, ActiveList> entry : response.getActives().getActives().entrySet()) {
@@ -136,6 +147,19 @@ public class RulesDownloader {
       if (!activeRulesBuildersByQProfile.containsKey(entry.getValue().getName())) {
         activeRulesBuildersByQProfile.put(entry.getValue().getName(), ActiveRules.newBuilder());
       }
+    }
+  }
+
+  @CheckForNull
+  private static String typeToString(RuleType type) {
+    switch (type) {
+      case BUG:
+      case CODE_SMELL:
+      case VULNERABILITY:
+        return type.toString();
+      case UNKNOWN:
+      default:
+        return null;
     }
   }
 

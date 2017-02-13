@@ -26,6 +26,7 @@ import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageRuleDetailsReader implements Function<String, RuleDetails> {
   private StorageManager storageManager;
@@ -42,6 +43,9 @@ public class StorageRuleDetailsReader implements Function<String, RuleDetails> {
     if (rule == null) {
       throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
     }
-    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), rule.getLang(), Collections.<String>emptySet(), rule.getHtmlNote());
+
+    String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
+
+    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), type, rule.getLang(), Collections.<String>emptySet(), rule.getHtmlNote());
   }
 }

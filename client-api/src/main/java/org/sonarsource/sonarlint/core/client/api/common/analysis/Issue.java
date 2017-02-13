@@ -26,6 +26,9 @@ import javax.annotation.CheckForNull;
 public interface Issue extends IssueLocation {
 
   String getSeverity();
+  
+  @CheckForNull
+  String getType();
 
   @CheckForNull
   @Override

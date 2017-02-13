@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 
 public class DefaultRuleDetails implements RuleDetails {
@@ -30,13 +33,16 @@ public class DefaultRuleDetails implements RuleDetails {
   private final String name;
   private final String htmlDescription;
   private final String severity;
+  private final String type;
   private final String extendedDescription;
 
-  public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, String language, Set<String> tags, String extendedDescription) {
+  public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, @Nullable String type, String language, Set<String> tags,
+    String extendedDescription) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
     this.severity = severity;
+    this.type = type;
     this.language = language;
     this.tags = tags;
     this.extendedDescription = extendedDescription;
@@ -65,6 +71,11 @@ public class DefaultRuleDetails implements RuleDetails {
   @Override
   public String getSeverity() {
     return severity;
+  }
+  
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override

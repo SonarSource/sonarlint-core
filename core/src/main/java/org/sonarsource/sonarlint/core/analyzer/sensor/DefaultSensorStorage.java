@@ -29,6 +29,7 @@ import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
+import org.sonar.api.batch.rule.internal.DefaultRule;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
 import org.sonar.api.batch.sensor.error.AnalysisError;
@@ -72,25 +73,26 @@ public class DefaultSensorStorage implements SensorStorage {
   public void store(Issue issue) {
     InputComponent inputComponent = issue.primaryLocation().inputComponent();
 
-    Rule rule = validateRule(issue);
-    final ActiveRule activeRule = activeRules.find(issue.ruleKey());
+    DefaultRule rule = validateRule(issue);
+    ActiveRule activeRule = activeRules.find(issue.ruleKey());
     if (activeRule == null) {
       // rule does not exist or is not enabled -> ignore the issue
       return;
     }
 
-    final String primaryMessage = Strings.isNullOrEmpty(issue.primaryLocation().message()) ? rule.name() : issue.primaryLocation().message();
+    String primaryMessage = Strings.isNullOrEmpty(issue.primaryLocation().message()) ? rule.name() : issue.primaryLocation().message();
     org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
-    final String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
+    String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
+    String type = rule.type();
 
-    DefaultClientIssue newIssue = new DefaultClientIssue(severity, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
+    DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, issue.flows());
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }
   }
 
-  private Rule validateRule(Issue issue) {
+  private DefaultRule validateRule(Issue issue) {
     RuleKey ruleKey = issue.ruleKey();
     Rule rule = rules.find(ruleKey);
     if (rule == null) {
@@ -99,7 +101,7 @@ public class DefaultSensorStorage implements SensorStorage {
     if (Strings.isNullOrEmpty(rule.name()) && Strings.isNullOrEmpty(issue.primaryLocation().message())) {
       throw MessageException.of(String.format("The rule '%s' has no name and the related issue has no message.", ruleKey));
     }
-    return rule;
+    return (DefaultRule) rule;
   }
 
   @Override

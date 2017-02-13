@@ -25,8 +25,8 @@ import java.util.List;
 import org.sonar.api.Plugin;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
-import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
+import org.sonar.api.batch.rule.internal.DefaultRule;
 import org.sonar.api.internal.ApiVersion;
 import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.rule.RuleKey;
@@ -121,13 +121,14 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
-    Rule rule = rules.find(ruleKey);
+    DefaultRule rule = (DefaultRule) rules.find(ruleKey);
     if (rule == null) {
       throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
     }
     Repository repo = rulesDefinitions.repository(rule.key().repository());
 
-    return new DefaultRuleDetails(ruleKeyStr, rule.name(), rule.description(), rule.severity(), repo.language(), repo.rule(rule.key().rule()).tags(), "");
+    return new DefaultRuleDetails(ruleKeyStr, rule.name(), rule.description(), rule.severity(), rule.type(),
+      repo.language(), repo.rule(rule.key().rule()).tags(), "");
   }
 
   public Collection<String> getActiveRuleKeys() {

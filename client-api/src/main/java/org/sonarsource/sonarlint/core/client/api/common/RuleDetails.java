@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import javax.annotation.CheckForNull;
+
 /**
  * @since 1.2
  */
@@ -33,6 +35,9 @@ public interface RuleDetails {
   String getLanguage();
 
   String getSeverity();
+  
+  @CheckForNull
+  String getType();
 
   String[] getTags();
 

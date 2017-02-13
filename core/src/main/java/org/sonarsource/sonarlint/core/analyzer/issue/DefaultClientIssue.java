@@ -33,16 +33,18 @@ import com.google.common.collect.Lists;
 
 public final class DefaultClientIssue extends TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;
+  private final String type;
   private final ActiveRule activeRule;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
   private final Rule rule;
   private final List<Flow> flows;
 
-  public DefaultClientIssue(String severity, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
+  public DefaultClientIssue(String severity, @Nullable String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<org.sonar.api.batch.sensor.issue.Issue.Flow> flows) {
     super(textRange);
     this.severity = severity;
+    this.type = type;
     this.activeRule = activeRule;
     this.rule = rule;
     this.primaryMessage = primaryMessage;
@@ -53,6 +55,11 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   @Override
   public String getSeverity() {
     return severity;
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override

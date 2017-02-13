@@ -20,8 +20,11 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.rule.Rules;
+import org.sonar.api.batch.rule.internal.NewRule;
 import org.sonar.api.batch.rule.internal.RulesBuilder;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -36,11 +39,15 @@ public class SonarQubeRulesProvider extends ProviderAdapter {
 
       for (Map.Entry<String, Sonarlint.Rules.Rule> entry : storageRules.getRulesByKeyMap().entrySet()) {
         Sonarlint.Rules.Rule r = entry.getValue();
-        builder.add(RuleKey.of(r.getRepo(), r.getKey()))
+        NewRule newRule = builder.add(RuleKey.of(r.getRepo(), r.getKey()))
           .setName(r.getName())
           .setInternalKey(r.getInternalKey())
           .setSeverity(r.getSeverity())
           .setDescription(r.getHtmlDesc());
+
+        if (StringUtils.isNotEmpty(r.getType())) {
+          newRule.setType(r.getType());
+        }
       }
 
       rules = builder.build();
