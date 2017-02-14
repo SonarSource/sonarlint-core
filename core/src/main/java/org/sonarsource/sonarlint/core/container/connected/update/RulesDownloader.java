@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 
 public class RulesDownloader {
-  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,type,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
+  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY";
 
   private final SonarLintWsClient wsClient;
