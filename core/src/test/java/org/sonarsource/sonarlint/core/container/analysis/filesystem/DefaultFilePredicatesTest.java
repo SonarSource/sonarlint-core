@@ -115,6 +115,26 @@ public class DefaultFilePredicatesTest {
   }
 
   @Test
+  public void has_name() throws IOException {
+    String fileName = javaFile.path().getFileName().toString();
+    assertThat(predicates.hasFilename(fileName).apply(javaFile)).isTrue();
+
+    assertThat(predicates.hasFilename(temp.newFile().toPath().getFileName().toString()).apply(javaFile)).isFalse();
+    assertThat(predicates.hasFilename("Action.php").apply(javaFile)).isFalse();
+  }
+
+  @Test
+  public void has_extension() throws IOException {
+    String extension = "java";
+    assertThat(predicates.hasExtension(extension).apply(javaFile)).isTrue();
+
+    assertThat(predicates.hasFilename(temp.newFile().toPath().getFileName().toString()).apply(javaFile)).isFalse();
+    assertThat(predicates.hasExtension("php").apply(javaFile)).isFalse();
+    assertThat(predicates.hasExtension("").apply(javaFile)).isFalse();
+
+  }
+
+  @Test
   public void has_path() throws Exception {
     // is relative path
     assertThat(predicates.hasPath("src/main/java/struts/Action.java").apply(javaFile)).isTrue();
@@ -139,8 +159,9 @@ public class DefaultFilePredicatesTest {
 
     // Note: do not add assertion on javaFile.file().getCanonicalFile()
     // because canonical != absolute in Windows, for example:
-    //    absolute:  C:\Users\JANOSG~1\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
-    //    canonical: C:\Users\Janos Gyerik\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
+    // absolute: C:\Users\JANOSG~1\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
+    // canonical: C:\Users\Janos
+    // Gyerik\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
     // To make both work, InputFile implementations would have to support multiple representations, which makes little sense
   }
 

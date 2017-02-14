@@ -19,12 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
@@ -38,6 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL;
 
 public class RulesDownloaderTest {
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
@@ -62,8 +69,38 @@ public class RulesDownloaderTest {
     rulesUpdate.fetchRulesTo(tempDir.toPath());
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
-    assertThat(rules.getRulesByKey()).hasSize(939);
+    assertThat(rules.getRulesByKeyMap()).hasSize(939);
     ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
-    assertThat(jsActiveRules.getActiveRulesByKey()).hasSize(85);
+    assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
+  }
+
+  @Test
+  public void unknown_type() throws IOException {
+    org.sonarqube.ws.Rules.SearchResponse response = org.sonarqube.ws.Rules.SearchResponse.newBuilder()
+      .addRules(org.sonarqube.ws.Rules.Rule.newBuilder().setKey("S:101").build())
+      .build();
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addResponse(wsClient, RULES_SEARCH_URL + "&p=1&ps=500", response);
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    File tempDir = temp.newFolder();
+    rulesUpdate.fetchRulesTo(tempDir.toPath());
+
+    Rules saved = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    assertThat(saved.getRulesByKeyMap()).hasSize(1);
+    assertThat(saved.getRulesByKeyMap().get("S:101").getType()).isEqualTo("");
+  }
+
+  @Test
+  public void errorReadingStream() throws IOException {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    InputStream stream = new ByteArrayInputStream("trash".getBytes(StandardCharsets.UTF_8));
+    WsClientTestUtils.addResponse(wsClient, RULES_SEARCH_URL + "&p=1&ps=500", stream);
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    File tempDir = temp.newFolder();
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Failed to load rules");
+    rulesUpdate.fetchRulesTo(tempDir.toPath());
   }
 }
