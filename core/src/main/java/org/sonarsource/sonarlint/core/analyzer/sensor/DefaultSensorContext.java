@@ -27,7 +27,6 @@ import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
-import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.error.NewAnalysisError;
 import org.sonar.api.batch.sensor.error.internal.DefaultAnalysisError;
@@ -36,12 +35,13 @@ import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
-import org.sonar.api.batch.sensor.measure.internal.DefaultMeasure;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
 
 public class DefaultSensorContext implements SensorContext {
@@ -49,6 +49,7 @@ public class DefaultSensorContext implements SensorContext {
   private static final NoOpNewHighlighting NO_OP_NEW_HIGHLIGHTING = new NoOpNewHighlighting();
   private static final NoOpNewSymbolTable NO_OP_NEW_SYMBOL_TABLE = new NoOpNewSymbolTable();
   private static final NoOpNewCpdTokens NO_OP_NEW_CPD_TOKENS = new NoOpNewCpdTokens();
+  private static final NoOpNewCoverage NO_OP_NEW_COVERAGE = new NoOpNewCoverage();
 
   private final Settings settings;
   private final FileSystem fs;
@@ -84,7 +85,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public <G extends Serializable> NewMeasure<G> newMeasure() {
-    return new DefaultMeasure<>(sensorStorage);
+    return new NoOpNewMeasure<>();
   }
 
   @Override
@@ -99,7 +100,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewCoverage newCoverage() {
-    return new DefaultCoverage(sensorStorage);
+    return NO_OP_NEW_COVERAGE;
   }
 
   @Override

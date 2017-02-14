@@ -36,8 +36,10 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
 
 public class DefaultSensorContextTest {
@@ -78,7 +80,11 @@ public class DefaultSensorContextTest {
     assertThat(ctx.newCpdTokens()).isInstanceOf(NoOpNewCpdTokens.class);
     assertThat(ctx.newSymbolTable()).isInstanceOf(NoOpNewSymbolTable.class);
     assertThat(ctx.newHighlighting()).isInstanceOf(NoOpNewHighlighting.class);
+    assertThat(ctx.newMeasure()).isInstanceOf(NoOpNewMeasure.class);
+    assertThat(ctx.newCoverage()).isInstanceOf(NoOpNewCoverage.class);
+    assertThat(ctx.isCancelled()).isFalse();
     ctx.addContextProperty(null, null);
+    ctx.markForPublishing(null);
 
     verify(sqRuntime).getApiVersion();
 
