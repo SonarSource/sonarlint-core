@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
 
 import javax.annotation.CheckForNull;
 
@@ -45,8 +44,8 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 
 public class RulesDownloader {
-  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?statuses=BETA,DEPRECATED,READY";
-  static final String ACTIVES_RULES_SEARCH_URL = "/api/rules/search.protobuf?f=actives&statuses=BETA,DEPRECATED,READY";
+  static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,type,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
+    + "actives&statuses=BETA,DEPRECATED,READY";
 
   private final SonarLintWsClient wsClient;
 
@@ -68,18 +67,13 @@ public class RulesDownloader {
   }
 
   private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile) {
-    fetchPages(RULES_SEARCH_URL, response -> readRulesPage(rulesBuilder, response));
-    fetchPages(ACTIVES_RULES_SEARCH_URL, response -> readActiveRulesPage(activeRulesBuildersByQProfile, response));
-  }
-
-  private void fetchPages(String baseUrl, Consumer<SearchResponse> pageConsumer) {
     int page = 1;
     int pageSize = 500;
     int loaded = 0;
 
     while (true) {
-      SearchResponse response = loadFromStream(wsClient.get(getUrl(baseUrl, page, pageSize)));
-      pageConsumer.accept(response);
+      SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)));
+      readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
 
       if (response.getTotal() <= loaded) {
@@ -89,9 +83,9 @@ public class RulesDownloader {
     }
   }
 
-  private static String getUrl(String baseUrl, int page, int pageSize) {
+  private static String getUrl(int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
-    builder.append(baseUrl);
+    builder.append(RULES_SEARCH_URL);
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();
@@ -105,7 +99,31 @@ public class RulesDownloader {
     }
   }
 
-  private static void readActiveRulesPage(Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, SearchResponse response) {
+  private static void readPage(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, SearchResponse response) {
+    Builder ruleBuilder = Rules.Rule.newBuilder();
+    for (Rule r : response.getRulesList()) {
+      RuleKey ruleKey = RuleKey.parse(r.getKey());
+
+      ruleBuilder.clear();
+      ruleBuilder
+        .setRepo(ruleKey.repository())
+        .setKey(ruleKey.rule())
+        .setName(r.getName())
+        .setSeverity(r.getSeverity())
+        .setLang(r.getLang())
+        .setInternalKey(r.getInternalKey())
+        .setHtmlDesc(r.getHtmlDesc())
+        .setHtmlNote(r.getHtmlNote())
+        .setIsTemplate(r.getIsTemplate())
+        .setTemplateKey(r.getTemplateKey());
+
+      String type = typeToString(r.getType());
+      if (type != null) {
+        ruleBuilder.setType(type);
+      }
+
+      rulesBuilder.putRulesByKey(r.getKey(), ruleBuilder.build());
+    }
     ActiveRules.ActiveRule.Builder arBuilder = ActiveRules.ActiveRule.newBuilder();
     for (Map.Entry<String, ActiveList> entry : response.getActives().getActives().entrySet()) {
       RuleKey ruleKey = RuleKey.parse(entry.getKey());
@@ -129,34 +147,6 @@ public class RulesDownloader {
       if (!activeRulesBuildersByQProfile.containsKey(entry.getValue().getName())) {
         activeRulesBuildersByQProfile.put(entry.getValue().getName(), ActiveRules.newBuilder());
       }
-    }
-  }
-
-  private static void readRulesPage(Rules.Builder rulesBuilder, SearchResponse response) {
-    Builder ruleBuilder = Rules.Rule.newBuilder();
-
-    for (Rule r : response.getRulesList()) {
-      RuleKey ruleKey = RuleKey.parse(r.getKey());
-
-      ruleBuilder.clear();
-      ruleBuilder
-        .setRepo(ruleKey.repository())
-        .setKey(ruleKey.rule())
-        .setName(r.getName())
-        .setSeverity(r.getSeverity())
-        .setLang(r.getLang())
-        .setInternalKey(r.getInternalKey())
-        .setHtmlDesc(r.getHtmlDesc())
-        .setHtmlNote(r.getHtmlNote())
-        .setIsTemplate(r.getIsTemplate())
-        .setTemplateKey(r.getTemplateKey());
-
-      String type = typeToString(r.getType());
-      if (type != null) {
-        ruleBuilder.setType(type);
-      }
-
-      rulesBuilder.putRulesByKey(r.getKey(), ruleBuilder.build());
     }
   }
 

@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +36,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL;
-import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.ACTIVES_RULES_SEARCH_URL;
 
 public class RulesDownloaderTest {
   @Rule
@@ -54,12 +55,6 @@ public class RulesDownloaderTest {
       "/update/rulesp1.pb");
     WsClientTestUtils.addStreamResponse(wsClient,
       RULES_SEARCH_URL + "&p=2&ps=500",
-      "/update/rulesp2.pb");
-    WsClientTestUtils.addStreamResponse(wsClient,
-      ACTIVES_RULES_SEARCH_URL + "&p=1&ps=500",
-      "/update/rulesp2.pb");
-    WsClientTestUtils.addStreamResponse(wsClient,
-      ACTIVES_RULES_SEARCH_URL + "&p=2&ps=500",
       "/update/rulesp2.pb");
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
