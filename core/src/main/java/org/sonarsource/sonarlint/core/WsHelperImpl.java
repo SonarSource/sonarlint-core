@@ -20,7 +20,10 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
+
 import java.util.Map;
+import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
+import org.sonarsource.sonarlint.core.client.api.common.TelemetryData;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -31,11 +34,17 @@ import org.sonarsource.sonarlint.core.container.connected.validate.Authenticatio
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryPayload;
+import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
+import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class WsHelperImpl implements WsHelper {
+  private static final String TELEMETRY_ENDPOINT = "";
+  private static final String TELEMETRY_PATH = "";
+  private static final int TELEMETRY_TIMEOUT = 30_000;
 
   @Override
   public ValidationResult validateConnection(ServerConfiguration serverConfig) {
@@ -84,5 +93,33 @@ public class WsHelperImpl implements WsHelper {
   public String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force) {
     SonarLintWsClient client = createClient(serverConfig);
     return generateAuthenticationToken(new ServerVersionAndStatusChecker(client), client, name, force);
+  }
+
+  @Override
+  public boolean sendTelemetryData(TelemetryClientConfig clientConfig, TelemetryData data) {
+    try {
+      TelemetryPayload payload = new TelemetryPayload(data.daysSinceInstallation(), data.daysOfUse(), data.product(), data.version(), data.connectedMode());
+      String json = payload.toJson();
+
+      HttpConnector httpConnector = buildTelemetryClient(clientConfig);
+      PostRequest post = new PostRequest(TELEMETRY_PATH);
+      post.setMediaType("application/json");
+      httpConnector.post(post, json).failIfNotSuccessful();
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  private static HttpConnector buildTelemetryClient(TelemetryClientConfig clientConfig) {
+    return HttpConnector.newBuilder().url(TELEMETRY_ENDPOINT)
+      .userAgent(clientConfig.userAgent())
+      .proxy(clientConfig.proxy())
+      .proxyCredentials(clientConfig.proxyLogin(), clientConfig.proxyPassword())
+      .readTimeoutMilliseconds(TELEMETRY_TIMEOUT)
+      .connectTimeoutMilliseconds(TELEMETRY_TIMEOUT)
+      .setSSLSocketFactory(clientConfig.sslSocketFactory())
+      .setTrustManager(clientConfig.trustManager())
+      .build();
   }
 }

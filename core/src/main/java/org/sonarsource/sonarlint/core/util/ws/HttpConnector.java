@@ -133,6 +133,13 @@ public class HttpConnector implements WsConnector {
     return doCall(okRequestBuilder.build());
   }
 
+  public WsResponse post(PostRequest postRequest, String body) {
+    HttpUrl.Builder urlBuilder = prepareUrlBuilder(postRequest);
+    Request.Builder okRequestBuilder = prepareOkRequestBuilder(postRequest, urlBuilder);
+    okRequestBuilder.post(RequestBody.create(MediaType.parse(postRequest.getMediaType()), body));
+    return doCall(okRequestBuilder.build());
+  }
+
   private HttpUrl.Builder prepareUrlBuilder(WsRequest wsRequest) {
     String path = wsRequest.getPath();
     HttpUrl.Builder urlBuilder = baseUrl
@@ -235,7 +242,7 @@ public class HttpConnector implements WsConnector {
       this.connectTimeoutMs = i;
       return this;
     }
-    
+
     /**
      * Optional SSL socket factory with which SSL sockets will be created to establish SSL connections.
      * If not set, a default SSL socket factory will be used, base d on the JVM's default key store.
