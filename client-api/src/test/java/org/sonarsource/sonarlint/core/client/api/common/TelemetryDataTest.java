@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.client.api.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
-public class TelemetryPayloadTest {
+public class TelemetryDataTest {
   @Test
-  public void testGenerationJson() {
-    TelemetryPayload m = new TelemetryPayload(30, 15, "SLI", "2.4", true);
-    String s = m.toJson();
-
-    assertThat(s).isEqualTo("{\"days_since_installation\":30,"
-      + "\"days_of_use\":15,"
-      + "\"sonarlint_version\":\"2.4\","
-      + "\"sonarlint_product\":\"SLI\","
-      + "\"connected_mode_used\":true}");
-
-    assertThat(m.daysOfUse()).isEqualTo(15);
-    assertThat(m.daysSinceInstallation()).isEqualTo(30);
-    assertThat(m.product()).isEqualTo("SLI");
-    assertThat(m.version()).isEqualTo("2.4");
-    assertThat(m.connectedMode()).isTrue();
-
+  public void testRoundTrip() {
+    TelemetryData data = new TelemetryData(10, 5, "product", "version", true);
+    assertThat(data.connectedMode()).isTrue();
+    assertThat(data.daysSinceInstallation()).isEqualTo(10);
+    assertThat(data.daysOfUse()).isEqualTo(5);
+    assertThat(data.product()).isEqualTo("product");
+    assertThat(data.version()).isEqualTo("version");
   }
 }
