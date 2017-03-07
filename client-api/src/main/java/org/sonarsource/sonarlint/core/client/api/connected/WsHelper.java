@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
-import org.sonarsource.sonarlint.core.client.api.common.TelemetryData;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 public interface WsHelper {
@@ -39,14 +37,4 @@ public interface WsHelper {
    * and force is not set to true
    */
   String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force);
-
-  /**
-   * Send usage statistics, using the provided configuration to establish the network connection. No exceptions are thrown in case things go bad.
-   * 
-   * @since 2.11
-   * @param clientConfig Settings for the networking client
-   * @param data Statistics to send
-   * @return Whether it was successfully sent. 
-   */
-  boolean sendTelemetryData(TelemetryClientConfig clientConfig, TelemetryData data);
 }

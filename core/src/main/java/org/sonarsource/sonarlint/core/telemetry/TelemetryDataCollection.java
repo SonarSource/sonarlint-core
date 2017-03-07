@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.telemetry;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
+import java.time.LocalDate;
 
-import org.junit.Test;
+/**
+ * Collects usage data.
+ */
+public class TelemetryDataCollection {
+  private final TelemetryStorage storage;
+  private Path filePath;
 
-public class TelemetryDataTest {
-  @Test
-  public void testRoundTrip() {
-    TelemetryData data = new TelemetryData(10, 5, "product", "version", true);
-    assertThat(data.connectedMode()).isTrue();
-    assertThat(data.daysSinceInstallation()).isEqualTo(10);
-    assertThat(data.daysOfUse()).isEqualTo(5);
-    assertThat(data.product()).isEqualTo("product");
-    assertThat(data.version()).isEqualTo("version");
+  TelemetryDataCollection(TelemetryStorage storage, Path filePath) {
+    this.storage = storage;
+    this.filePath = filePath;
+  }
+
+  public void analysisDone() {
+    LocalDate today = LocalDate.now();
+    LocalDate lastUsed = storage.lastUseDate();
+    if (lastUsed == null || !lastUsed.equals(today)) {
+      storage.setLastUseDate(today);
+      storage.setNumUseDays(storage.numUseDays() + 1);
+      storage.safeSave(filePath);
+    }
   }
 }
