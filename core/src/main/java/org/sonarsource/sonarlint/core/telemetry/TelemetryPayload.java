@@ -22,7 +22,10 @@ package org.sonarsource.sonarlint.core.telemetry;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
-public class TelemetryPayload {
+/**
+ * Models the usage data uploaded
+ */
+class TelemetryPayload {
   @SerializedName("days_since_installation")
   long daysSinceInstallation;
 
@@ -38,7 +41,7 @@ public class TelemetryPayload {
   @SerializedName("connected_mode_used")
   boolean connectedMode;
 
-  public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode) {
+  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
