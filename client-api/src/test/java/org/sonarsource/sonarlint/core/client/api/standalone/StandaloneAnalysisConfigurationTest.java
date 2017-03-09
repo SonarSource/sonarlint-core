@@ -45,23 +45,26 @@ public class StandaloneAnalysisConfigurationTest {
 
     final Path srcFile1 = temp.newFile().toPath();
     final Path srcFile2 = temp.newFile().toPath();
-    ClientInputFile inputFile = new TestClientInputFile(srcFile1, false, StandardCharsets.UTF_8);
-    ClientInputFile testInputFile = new TestClientInputFile(srcFile2, true, StandardCharsets.UTF_8);
+    final Path srcFile3 = temp.newFile().toPath();
+    ClientInputFile inputFile = new TestClientInputFile(srcFile1, false, StandardCharsets.UTF_8, null);
+    ClientInputFile inputFileWithLanguage = new TestClientInputFile(srcFile2, false, StandardCharsets.UTF_8, "java");
+    ClientInputFile testInputFile = new TestClientInputFile(srcFile3, true, StandardCharsets.UTF_8, "php");
     Path baseDir = temp.newFolder().toPath();
     Path workDir = temp.newFolder().toPath();
-    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
+    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, inputFileWithLanguage, testInputFile), props);
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toString() + "\n" +
-      "    " + srcFile2.toString() + " [test]\n" +
+      "    " + srcFile2.toString() + " [java]\n" +
+      "    " + srcFile3.toString() + " [test] [php]\n" +
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.workDir()).isEqualTo(workDir);
-    assertThat(config.inputFiles()).containsExactly(inputFile, testInputFile);
+    assertThat(config.inputFiles()).containsExactly(inputFile, inputFileWithLanguage, testInputFile);
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
   }
 }

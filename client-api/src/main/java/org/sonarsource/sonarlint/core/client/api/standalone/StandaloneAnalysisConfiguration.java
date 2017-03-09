@@ -73,6 +73,9 @@ public class StandaloneAnalysisConfiguration {
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
+      if (inputFile.language() != null) {
+        sb.append(" [" + inputFile.language() + "]");
+      }
       sb.append("\n");
     }
     sb.append("  ]\n");

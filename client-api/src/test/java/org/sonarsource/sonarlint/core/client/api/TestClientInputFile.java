@@ -24,18 +24,20 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public class TestClientInputFile implements ClientInputFile {
   private Path path;
   private boolean isTest;
   private Charset encoding;
+  private String language;
 
-  public TestClientInputFile(final Path path, final boolean isTest, final Charset encoding) {
+  public TestClientInputFile(final Path path, final boolean isTest, final Charset encoding, @Nullable String language) {
     this.path = path;
     this.isTest = isTest;
     this.encoding = encoding;
+    this.language = language;
   }
 
   @Override
@@ -66,5 +68,10 @@ public class TestClientInputFile implements ClientInputFile {
   @Override
   public String contents() throws IOException {
     return new String(Files.readAllBytes(path), encoding);
+  }
+
+  @Override
+  public String language() {
+    return language;
   }
 }
