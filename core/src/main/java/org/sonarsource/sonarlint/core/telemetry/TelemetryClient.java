@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryStorage;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 
@@ -33,8 +32,8 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import java.nio.file.Path;
 
 public class TelemetryClient {
-  private static final String TELEMETRY_ENDPOINT = "";
-  private static final String TELEMETRY_PATH = "";
+  private static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
+  private static final String TELEMETRY_PATH = "telemetry";
   private static final int TELEMETRY_TIMEOUT = 30_000;
   private static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
