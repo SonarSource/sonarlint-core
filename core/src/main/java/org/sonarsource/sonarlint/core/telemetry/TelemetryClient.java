@@ -23,7 +23,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryStorage;
+import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 
@@ -32,17 +35,21 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import java.nio.file.Path;
 
 public class TelemetryClient {
-  private static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
   private static final String TELEMETRY_PATH = "telemetry";
-  private static final int TELEMETRY_TIMEOUT = 30_000;
   private static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
   private final String product;
   private final String version;
   private final TelemetryStorage telemetryStorage;
   private final Path filePath;
+  private TelemetryHttpFactory httpFactory;
 
   TelemetryClient(String product, String version, TelemetryStorage telemetryStorage, Path filePath) {
+    this(new TelemetryHttpFactory(), product, version, telemetryStorage, filePath);
+  }
+
+  TelemetryClient(TelemetryHttpFactory httpFactory, String product, String version, TelemetryStorage telemetryStorage, Path filePath) {
+    this.httpFactory = httpFactory;
     this.product = product;
     this.version = version;
     this.telemetryStorage = telemetryStorage;
@@ -57,11 +64,18 @@ public class TelemetryClient {
       doUpload(clientConfig, connected);
     }
   }
-  
+
+  /**
+   * Sends an opt-out request.
+   */
+  public void optOut(TelemetryClientConfig clientConfig, boolean connected) {
+    doOptOut(clientConfig, connected);
+  }
+
   public String product() {
     return product;
   }
-  
+
   public String version() {
     return version;
   }
@@ -91,29 +105,30 @@ public class TelemetryClient {
   private void doUpload(TelemetryClientConfig clientConfig, boolean connected) {
     long daysSinceInstallation = telemetryStorage.installDate().until(LocalDate.now(), DAYS);
     TelemetryPayload payload = new TelemetryPayload(daysSinceInstallation, telemetryStorage.numUseDays(), product, version, connected);
-    postTelemetryData(clientConfig, payload);
+    sendPost(httpFactory.buildClient(clientConfig), payload);
     telemetryStorage.setLastUploadTime(LocalDateTime.now());
     telemetryStorage.safeSave(filePath);
   }
 
-  private static void postTelemetryData(TelemetryClientConfig clientConfig, TelemetryPayload payload) {
-    String json = payload.toJson();
-
-    HttpConnector httpConnector = buildTelemetryClient(clientConfig);
-    PostRequest post = new PostRequest(TELEMETRY_PATH);
-    post.setMediaType("application/json");
-    httpConnector.post(post, json).failIfNotSuccessful();
+  private void doOptOut(TelemetryClientConfig clientConfig, boolean connected) {
+    long daysSinceInstallation = telemetryStorage.installDate().until(LocalDate.now(), DAYS);
+    TelemetryPayload payload = new TelemetryPayload(daysSinceInstallation, telemetryStorage.numUseDays(), product, version, connected);
+    sendDelete(httpFactory.buildClient(clientConfig), payload);
+    telemetryStorage.setLastUploadTime(LocalDateTime.now());
+    telemetryStorage.safeSave(filePath);
   }
 
-  private static HttpConnector buildTelemetryClient(TelemetryClientConfig clientConfig) {
-    return HttpConnector.newBuilder().url(TELEMETRY_ENDPOINT)
-      .userAgent(clientConfig.userAgent())
-      .proxy(clientConfig.proxy())
-      .proxyCredentials(clientConfig.proxyLogin(), clientConfig.proxyPassword())
-      .readTimeoutMilliseconds(TELEMETRY_TIMEOUT)
-      .connectTimeoutMilliseconds(TELEMETRY_TIMEOUT)
-      .setSSLSocketFactory(clientConfig.sslSocketFactory())
-      .setTrustManager(clientConfig.trustManager())
-      .build();
+  private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
+    String json = payload.toJson();
+    DeleteRequest post = new DeleteRequest(TELEMETRY_PATH);
+    post.setMediaType(MediaTypes.JSON);
+    httpConnector.delete(post, json).failIfNotSuccessful();
+  }
+
+  private static void sendPost(HttpConnector httpConnector, TelemetryPayload payload) {
+    String json = payload.toJson();
+    PostRequest post = new PostRequest(TELEMETRY_PATH);
+    post.setMediaType(MediaTypes.JSON);
+    httpConnector.post(post, json).failIfNotSuccessful();
   }
 }

@@ -139,6 +139,13 @@ public class HttpConnector implements WsConnector {
     okRequestBuilder.post(RequestBody.create(MediaType.parse(postRequest.getMediaType()), body));
     return doCall(okRequestBuilder.build());
   }
+  
+  public WsResponse delete(DeleteRequest deleteRequest, String body) {
+    HttpUrl.Builder urlBuilder = prepareUrlBuilder(deleteRequest);
+    Request.Builder okRequestBuilder = prepareOkRequestBuilder(deleteRequest, urlBuilder);
+    okRequestBuilder.delete(RequestBody.create(MediaType.parse(deleteRequest.getMediaType()), body));
+    return doCall(okRequestBuilder.build());
+  }
 
   private HttpUrl.Builder prepareUrlBuilder(WsRequest wsRequest) {
     String path = wsRequest.getPath();

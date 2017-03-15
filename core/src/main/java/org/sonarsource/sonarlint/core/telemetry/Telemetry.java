@@ -26,6 +26,8 @@ import java.nio.file.Path;
 public class Telemetry {
   private final TelemetryStorage storage;
   private final Path storageFilePath;
+  private final String productName;
+  private final String productVersion;
 
   private TelemetryDataCollection dataCollection;
   private TelemetryClient client;
@@ -34,8 +36,10 @@ public class Telemetry {
    * Creates telemetry based on a file path where data is persisted.
    * Will throw an exception if for any reason the file is not accessible or has data that can't be parsed. 
    */
-  public Telemetry(Path storageFilePath) throws Exception {
+  public Telemetry(Path storageFilePath, String productName, String productVersion) throws Exception {
     this.storageFilePath = storageFilePath;
+    this.productName = productName;
+    this.productVersion = productVersion;
     if (Files.exists(storageFilePath)) {
       this.storage = TelemetryStorage.load(storageFilePath);
     } else {
@@ -43,9 +47,9 @@ public class Telemetry {
     }
   }
 
-  public TelemetryClient getClient(String product, String version) {
+  public TelemetryClient getClient() {
     if (client == null) {
-      client = new TelemetryClient(product, version, storage, storageFilePath);
+      client = new TelemetryClient(productName, productVersion, storage, storageFilePath);
     }
     return client;
   }
@@ -65,7 +69,7 @@ public class Telemetry {
     storage.setEnabled(enable);
     storage.safeSave(storageFilePath);
   }
-  
+
   public boolean enabled() {
     return storage.enabled();
   }
