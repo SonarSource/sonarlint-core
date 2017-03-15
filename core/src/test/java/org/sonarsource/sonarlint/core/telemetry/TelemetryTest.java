@@ -46,15 +46,15 @@ public class TelemetryTest {
   @Before
   public void setUp() throws Exception {
     filePath = temp.getRoot().toPath().resolve("file");
-    telemetry = new Telemetry(filePath);
+    telemetry = new Telemetry(filePath, "product", "version");
   }
 
   @Test
   public void should_cache_objects() {
-    assertThat(telemetry.getClient("product", "version")).isNotNull();
+    assertThat(telemetry.getClient()).isNotNull();
     assertThat(telemetry.getDataCollection()).isNotNull();
 
-    assertThat(telemetry.getClient("product", "version") == telemetry.getClient("product", "version")).isTrue();
+    assertThat(telemetry.getClient() == telemetry.getClient()).isTrue();
     assertThat(telemetry.getDataCollection() == telemetry.getDataCollection()).isTrue();
   }
 
@@ -62,7 +62,7 @@ public class TelemetryTest {
   public void should_save() throws Exception {
     telemetry.enable(false);
     telemetry.save();
-    telemetry = new Telemetry(filePath);
+    telemetry = new Telemetry(filePath, "product", "version");
     assertThat(telemetry.enabled()).isFalse();
   }
 
@@ -71,6 +71,6 @@ public class TelemetryTest {
     Files.write(filePath, "trash".getBytes(StandardCharsets.UTF_8));
 
     exception.expect(JsonSyntaxException.class);
-    telemetry = new Telemetry(filePath);
+    telemetry = new Telemetry(filePath, "product", "version");
   }
 }

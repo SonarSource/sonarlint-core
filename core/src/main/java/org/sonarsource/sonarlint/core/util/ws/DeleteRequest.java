@@ -19,20 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.util.ws;
 
-/**
- * @since 5.3
- */
-public interface WsRequest {
-
-  Method getMethod();
-
-  String getPath();
-
-  String getMediaType();
-
-  Parameters getParameters();
-
-  enum Method {
-    GET, POST, DELETE
+public class DeleteRequest extends BaseRequest<DeleteRequest> {
+  public DeleteRequest(String path) {
+    super(path);
   }
+
+  @Override
+  public Method getMethod() {
+    return Method.DELETE;
+  }
+
 }

@@ -20,6 +20,10 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -28,6 +32,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
+import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
+import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
+import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
+import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 
 public class TelemetryClientTest {
   @Rule
@@ -36,18 +45,35 @@ public class TelemetryClientTest {
   private TelemetryClient client;
   private TelemetryStorage storage;
   private Path file;
+  private TelemetryHttpFactory httpFactory;
+  private HttpConnector http;
 
   @Before
   public void setUp() {
+    http = mock(HttpConnector.class, RETURNS_DEEP_STUBS);
+    httpFactory = mock(TelemetryHttpFactory.class, RETURNS_DEEP_STUBS);
+    when(httpFactory.buildClient(Mockito.any(TelemetryClientConfig.class))).thenReturn(http);
     storage = new TelemetryStorage();
     file = temp.getRoot().toPath().resolve("file");
-    client = new TelemetryClient("product", "version", storage, file);
+    client = new TelemetryClient(httpFactory, "product", "version", storage, file);
   }
 
   @Test
   public void getters() {
     assertThat(client.version()).isEqualTo("version");
     assertThat(client.product()).isEqualTo("product");
+  }
+
+  @Test
+  public void opt_out() {
+    client.optOut(mock(TelemetryClientConfig.class), true);
+    verify(http).delete(Mockito.any(DeleteRequest.class), Mockito.anyString());
+  }
+
+  @Test
+  public void upload() {
+    client.tryUpload(mock(TelemetryClientConfig.class), true);
+    verify(http).post(Mockito.any(PostRequest.class), Mockito.anyString());
   }
 
   @Test

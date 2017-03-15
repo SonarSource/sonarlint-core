@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.util.ws;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import javax.net.ssl.SSLSocketFactory;
 import okhttp3.ConnectionSpec;
@@ -148,6 +149,21 @@ public class HttpConnectorTest {
 
     RecordedRequest recordedRequest = server.takeRequest();
     assertThat(recordedRequest.getHeader("Proxy-Authorization")).isEqualTo(basic("theProxyLogin", "theProxyPassword"));
+  }
+
+  @Test
+  public void delete_request() throws InterruptedException, IOException {
+    answerHelloWorld();
+    underTest = HttpConnector.newBuilder().url(serverUrl).build();
+    assertThat(underTest.baseUrl()).isEqualTo(serverUrl);
+    DeleteRequest request = new DeleteRequest("api/issues/search").setMediaType(MediaTypes.JSON);
+    WsResponse response = underTest.delete(request, "body");
+    
+    assertThat(response.code()).isEqualTo(200);
+    RecordedRequest recordedRequest = server.takeRequest();
+    assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
+    String body = IOUtils.toString(recordedRequest.getBody().inputStream());
+    assertThat(body).isEqualTo("body");
   }
 
   @Test
