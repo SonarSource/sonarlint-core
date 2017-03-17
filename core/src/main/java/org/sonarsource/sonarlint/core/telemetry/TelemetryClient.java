@@ -122,13 +122,13 @@ public class TelemetryClient {
     String json = payload.toJson();
     DeleteRequest post = new DeleteRequest(TELEMETRY_PATH);
     post.setMediaType(MediaTypes.JSON);
-    httpConnector.delete(post, json).failIfNotSuccessful();
+    httpConnector.delete(post, json).failIfNotSuccessful().close();
   }
 
   private static void sendPost(HttpConnector httpConnector, TelemetryPayload payload) {
     String json = payload.toJson();
     PostRequest post = new PostRequest(TELEMETRY_PATH);
     post.setMediaType(MediaTypes.JSON);
-    httpConnector.post(post, json).failIfNotSuccessful();
+    httpConnector.post(post, json).failIfNotSuccessful().close();
   }
 }
