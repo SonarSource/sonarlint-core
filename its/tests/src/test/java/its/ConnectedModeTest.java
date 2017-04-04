@@ -72,6 +72,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class ConnectedModeTest extends AbstractConnectedTest {
@@ -422,13 +423,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("template_key", "squid:S2253")
       .setParam("severity", "MAJOR");
     WsResponse response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+    assertTrue(response.isSuccessful());
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
       .setParam("profile_key", qp.getKey())
       .setParam("rule_key", "squid:myrule");
     response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+    assertTrue(response.isSuccessful());
 
     try {
 
@@ -450,7 +451,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       request = new PostRequest("/api/rules/delete")
         .setParam("key", "squid:myrule");
       response = adminWsClient.wsConnector().call(request);
-      assertThat(response.code()).isEqualTo(200);
+      assertTrue(response.isSuccessful());
     }
   }
 
