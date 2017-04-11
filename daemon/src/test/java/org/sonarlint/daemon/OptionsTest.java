@@ -77,7 +77,7 @@ public class OptionsTest {
     
     verify(mockAppender).doAppend(argThat(new ArgumentMatcher<ILoggingEvent>() {
       @Override
-      public boolean matches(final Object argument) {
+      public boolean matches(final ILoggingEvent argument) {
         return ((LoggingEvent)argument).getFormattedMessage().contains("usage: sonarlint-daemon");
       }
     }));

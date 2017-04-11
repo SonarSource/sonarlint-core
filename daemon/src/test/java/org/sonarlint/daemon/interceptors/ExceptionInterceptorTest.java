@@ -63,7 +63,6 @@ public class ExceptionInterceptorTest {
   @Test
   public void testInterceptor() {
     ExceptionInterceptor interceptor = new ExceptionInterceptor();
-    MethodDescriptor<Void, Void> method = mock(MethodDescriptor.class);
     ServerCall<Void, Void> call = mock(ServerCall.class);
     Metadata headers = new Metadata();
     ServerCallHandler<Void, Void> next = mock(ServerCallHandler.class);
