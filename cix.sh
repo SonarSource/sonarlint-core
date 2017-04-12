@@ -25,7 +25,7 @@ case "$SQ_VERSION" in
     # There was an API change that requires to build with this version
     JAVASCRIPT_BUILD_VERSION=2.20.0.4207
     PYTHON_VERSION=LATEST_RELEASE
-    COBOL_VERSION=LATEST_RELEASE
+    COBOL_VERSION=3.3.1.1636
     ;;
   *)
     echo "fatal: unknown SQ_VERSION value '$SQ_VERSION'"

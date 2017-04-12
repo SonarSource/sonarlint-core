@@ -92,7 +92,7 @@ public class StandaloneDaemonTest {
 
       assertThat(issues).hasSize(4);
       assertThat(logs.getLogsAndClear()).contains("1 files indexed");
-      call.cancel(null, null);
+      call.cancel("no more logs needed", null);
     }
 
     System.out.println("TIME " + (System.currentTimeMillis() - start));
