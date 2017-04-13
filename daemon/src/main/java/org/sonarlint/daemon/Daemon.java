@@ -23,25 +23,27 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.interceptors.ExceptionInterceptor;
 import org.sonarlint.daemon.services.ConnectedSonarLintImpl;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
 
 public class Daemon {
-  private static final Logger LOGGER = LoggerFactory.getLogger(Daemon.class);
   private static final int DEFAULT_PORT = 8050;
   private Server server;
+  private final Logger logger;
+
+  Daemon(Logger logger) {
+    this.logger = logger;
+  }
 
   public static void main(String[] args) {
     int port;
-
+    Logger logger = new Logger();
     try {
       Options options = Options.parse(args);
 
       if (options.isHelp()) {
-        Options.printUsage();
+        Options.printUsage(logger);
         return;
       }
 
@@ -51,11 +53,11 @@ public class Daemon {
         port = DEFAULT_PORT;
       }
     } catch (Exception e) {
-      LOGGER.error("Error parsing arguments", e);
+      logger.error("Error parsing arguments", e);
       return;
     }
 
-    new Daemon().start(port);
+    new Daemon(logger).start(port);
   }
 
   public void stop() {
@@ -64,26 +66,27 @@ public class Daemon {
 
   public void start(int port) {
     try {
+      logger.info("Starting server on port " + port);
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
       server = ServerBuilder.forPort(port)
-        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(), interceptor))
-        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(), interceptor))
+        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(logger), interceptor))
+        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers(), logger), interceptor))
         .build()
         .start();
-      LOGGER.info("Server started, listening on {}", port);
+      logger.info("Server started, listening on " + port);
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
-          System.err.println("*** shutting down gRPC server since JVM is shutting down");
+          logger.info("Shutting down gRPC server since JVM is shutting down");
           Daemon.this.stop();
-          System.err.println("*** server shut down");
+          logger.info("Server shut down");
         }
       });
       server.awaitTermination();
     } catch (Exception e) {
       // grpc threads are daemon, so should not hang process
-      LOGGER.error("Error running daemon", e);
+      logger.error("Error running daemon", e);
     }
   }
 }

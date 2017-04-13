@@ -17,17 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.daemon.services;
+@ParametersAreNonnullByDefault
+package org.sonarlint.daemon.model;
 
-import java.util.Arrays;
-
-import org.junit.Test;
-import org.sonarlint.daemon.Logger;
-import static org.mockito.Mockito.mock;
-
-public class StandaloneSonarLintImplTest {
-  @Test
-  public void testStart() {
-    StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Arrays.asList(), mock(Logger.class));
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

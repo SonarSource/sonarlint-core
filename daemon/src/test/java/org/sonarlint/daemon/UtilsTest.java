@@ -17,17 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.daemon.services;
+package org.sonarlint.daemon;
 
-import java.util.Arrays;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
-import org.sonarlint.daemon.Logger;
-import static org.mockito.Mockito.mock;
+import org.junit.rules.ExpectedException;
 
-public class StandaloneSonarLintImplTest {
+public class UtilsTest {
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
   @Test
-  public void testStart() {
-    StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Arrays.asList(), mock(Logger.class));
+  public void test() {
+    assertThat(Utils.getStandaloneHome()).isNotNull();
+  }
+
+  @Test
+  public void fail_if_sonarlint_inst_home_not_defined() {
+    Assume.assumeFalse(System.getProperty("sonarlint.home") != null);
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("The system property 'sonarlint.home' must be defined");
+    assertThat(Utils.getSonarLintInstallationHome()).isNotNull();
   }
 }

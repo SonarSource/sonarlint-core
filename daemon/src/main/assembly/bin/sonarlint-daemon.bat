@@ -1,10 +1,9 @@
-@REM SonarLint Startup Script for Windows
+@REM SonarLint Daemon Startup Script for Windows
 @REM
 @REM Required ENV vars:
 @REM   JAVA_HOME - location of a JDK home dir
 @REM
 @REM Optional ENV vars:
-@REM   SONARLINT_DAEMON_HOME - location of SonarLint's installed home dir
 @REM   SONARLINT_DAEMON_OPTS - parameters passed to the Java VM when running SonarLint
 
 @echo off
@@ -14,8 +13,17 @@ set ERROR_CODE=0
 @REM set local scope for the variables with windows NT shell
 @setlocal
 
+set SONARLINT_DAEMON_HOME=%~dp0..
+
+
 @REM ==== START VALIDATION ====
 @REM *** JAVA EXEC VALIDATION ***
+
+set use_embedded_jre=${use_embedded_jre}
+if "%use_embedded_jre%" == "true" (
+  set JAVA_HOME="%SONARLINT_DAEMON_HOME%\jre"
+)
+
 if not "%JAVA_HOME%" == "" goto foundJavaHome
 
 for %%i in (java.exe) do set JAVA_EXEC=%%~$PATH:i
@@ -49,13 +57,6 @@ set JAVA_EXEC="%JAVA_HOME%\bin\java.exe"
 
 @REM *** SONARLINT HOME VALIDATION ***
 :OkJava
-if NOT "%SONARLINT_DAEMON_HOME%"=="" goto cleanSonarLintHome
-set SONARLINT_DAEMON_HOME=%~dp0..
-goto run
-
-:cleanSonarLintHome
-@REM If the property has a trailing backslash, remove it
-if "%SONARLINT_DAEMON_HOME:~-1%"=="\" set SONARLINT_DAEMON_HOME=%SONARLINT_DAEMON_HOME:~0,-1%
 
 @REM Check if the provided SONARLINT_DAEMON_HOME is a valid install dir
 IF EXIST "%SONARLINT_DAEMON_HOME%\lib\sonarlint-daemon-${project.version}.jar" goto run

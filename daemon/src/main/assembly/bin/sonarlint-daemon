@@ -101,7 +101,7 @@ JAR_FILE="${SONARLINT_DAEMON_HOME}"/lib/sonarlint-daemon-${project.version}.jar
 exec "$JAVA_CMD" \
   -Djava.awt.headless=true \
   $SONARLINT_DAEMON_OPTS \
-  -classpath  $JAR_FILE \
+  -classpath  "$JAR_FILE" \
   "-Dsonarlint.home=\${SONARLINT_DAEMON_HOME}" \
   org.sonarlint.daemon.Daemon "$@"
 

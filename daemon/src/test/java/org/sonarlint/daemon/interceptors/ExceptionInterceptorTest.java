@@ -20,7 +20,6 @@
 package org.sonarlint.daemon.interceptors;
 
 import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.Status;

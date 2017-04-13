@@ -17,17 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.daemon.services;
+package org.sonarlint.daemon;
 
-import java.util.Arrays;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import org.junit.Test;
-import org.sonarlint.daemon.Logger;
-import static org.mockito.Mockito.mock;
+public class Logger {
+  private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
 
-public class StandaloneSonarLintImplTest {
-  @Test
-  public void testStart() {
-    StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Arrays.asList(), mock(Logger.class));
+  public synchronized void info(String log) {
+    System.out.println(format(log, "INFO"));
+  }
+
+  private static String format(String log, String level) {
+    return String.format("%s [%s] %s %s", TIME_FORMAT.format(new Date()), Thread.currentThread().getName(), level, log);
+  }
+
+  public synchronized void error(String log, Exception e) {
+    System.err.println(format(log, "ERROR"));
+    e.printStackTrace();
   }
 }

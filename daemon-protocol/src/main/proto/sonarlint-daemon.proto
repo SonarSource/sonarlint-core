@@ -37,7 +37,6 @@ service ConnectedSonarLint {
 }
 
 service StandaloneSonarLint {
-  rpc Start(StandaloneConfiguration) returns (Void); // must be called before any other rpc 
   rpc Analyze(AnalysisReq) returns (stream Issue);
   rpc StreamLogs(Void) returns (stream LogEvent); // stream all logs from the server
   rpc GetRuleDetails(RuleKey) returns (RuleDetails);
@@ -145,11 +144,6 @@ message ConnectedAnalysisReq {
   string base_dir = 3;
   string work_dir = 4;
   string module_key = 5;
-}
-
-message StandaloneConfiguration {
-  string home_path = 1;
-  repeated string plugin_url = 2;
 }
 
 message ConnectedConfiguration {

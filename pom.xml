@@ -27,7 +27,6 @@
     <module>core</module>
     <module>daemon</module>
     <module>daemon-protocol</module>
-    <module>daemon-java-client</module>
     <module>rule-extractor</module>
   </modules>
 
