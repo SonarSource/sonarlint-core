@@ -26,7 +26,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
-import its.tools.PluginLocator;
 import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.IOException;
@@ -46,7 +45,6 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq.Builde
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
-import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StandaloneConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc.StandaloneSonarLintBlockingStub;
@@ -78,9 +76,8 @@ public class StandaloneDaemonTest {
 
     LogCollector logs = new LogCollector();
     StandaloneSonarLintBlockingStub sonarlint = StandaloneSonarLintGrpc.newBlockingStub(channel);
-    sonarlint.start(createStandaloneConfig());
 
-    AnalysisReq analysisConfig = createAnalysisConfig("sample-java");
+    AnalysisReq analysisConfig = createAnalysisConfig("sample-javascript");
 
     long start = System.currentTimeMillis();
 
@@ -90,7 +87,7 @@ public class StandaloneDaemonTest {
       System.out.println("ITERATION: " + i);
       Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
 
-      assertThat(issues).hasSize(4);
+      assertThat(issues).hasSize(1);
       assertThat(logs.getLogsAndClear()).contains("1 files indexed");
       call.cancel("no more logs needed", null);
     }
@@ -108,15 +105,6 @@ public class StandaloneDaemonTest {
     call.halfClose();
     call.request(Integer.MAX_VALUE);
     return call;
-  }
-
-  private StandaloneConfiguration createStandaloneConfig() throws IOException {
-    return StandaloneConfiguration.newBuilder()
-      .addPluginUrl(PluginLocator.getJavaPluginUrl().toString())
-      .addPluginUrl(PluginLocator.getPhpPluginUrl().toString())
-      .addPluginUrl(PluginLocator.getJavaScriptPluginUrl().toString())
-      .setHomePath(temp.newFolder().getAbsolutePath())
-      .build();
   }
 
   private AnalysisReq createAnalysisConfig(String projectName) throws IOException {

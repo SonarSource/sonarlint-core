@@ -25,11 +25,11 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sonarlint.daemon.services.StandaloneSonarLintImpl.DefaultClientInputFile;
-import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyIssueListener;
-import org.sonarlint.daemon.services.StandaloneSonarLintImpl.ProxyLogOutput;
+
+import org.sonarlint.daemon.Logger;
+import org.sonarlint.daemon.model.DefaultClientInputFile;
+import org.sonarlint.daemon.model.ProxyIssueListener;
+import org.sonarlint.daemon.model.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -51,9 +51,14 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState.State
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 
 public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedSonarLintImpl.class);
   private ConnectedSonarLintEngine engine;
-  private ProxyLogOutput logOutput = new ProxyLogOutput();
+  private final ProxyLogOutput logOutput;
+  private final Logger logger;
+
+  public ConnectedSonarLintImpl(Logger logger) {
+    this.logger = logger;
+    this.logOutput = new ProxyLogOutput(logger);
+  }
 
   @Override
   public void start(ConnectedConfiguration requestConfig, StreamObserver<Void> response) {
@@ -74,7 +79,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("Error registering", e);
+      logger.error("Error registering", e);
       response.onError(e);
     }
   }
@@ -99,7 +104,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       engine.analyze(config, new ProxyIssueListener(response), logOutput);
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("Error analyzing", e);
+      logger.error("Error analyzing", e);
       response.onError(e);
     }
   }
@@ -117,7 +122,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("update", e);
+      logger.error("update", e);
       response.onError(e);
     }
   }
@@ -169,7 +174,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(StorageState.newBuilder().setState(transformed).build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("status", e);
+      logger.error("status", e);
       response.onError(e);
     }
   }
@@ -182,7 +187,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("updateModule", e);
+      logger.error("updateModule", e);
       response.onError(e);
     }
   }
@@ -201,7 +206,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
         .build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("getRuleDetails", e);
+      logger.error("getRuleDetails", e);
       response.onError(e);
     }
   }
