@@ -220,6 +220,18 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  public void simpleJavaTestUnbinded() throws Exception {
+    ClientInputFile inputFile = prepareJavaTestInputFile();
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new StoreIssueListener(issues));
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S2187", 1, inputFile.getPath(), "MAJOR"));
+  }
+
+  @Test
   public void simpleJavaBinded() throws Exception {
     ClientInputFile inputFile = prepareJavaInputFile();
 
@@ -256,6 +268,15 @@ public class ConnectedIssueMediumTest {
         + "  }\n"
         + "}",
       false);
+  }
+
+  private ClientInputFile prepareJavaTestInputFile() throws IOException {
+    return prepareInputFile("FooTest.java",
+      "public class FooTest {\n"
+        + "  public void foo() {\n"
+        + "  }\n"
+        + "}",
+      true);
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
