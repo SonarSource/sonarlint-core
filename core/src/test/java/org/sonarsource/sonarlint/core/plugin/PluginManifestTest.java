@@ -41,7 +41,7 @@ public class PluginManifestTest {
     PluginManifest manifest = new PluginManifest(new File(PluginLocator.getJavaPluginUrl().toURI()));
 
     assertThat(manifest.getKey()).isEqualTo("java");
-    assertThat(manifest.getName()).isEqualTo("Java");
+    assertThat(manifest.getName()).isEqualTo("SonarJava");
     assertThat(manifest.getRequirePlugins()).isEmpty();
     assertThat(manifest.getMainClass()).isEqualTo("org.sonar.plugins.java.JavaPlugin");
     assertThat(manifest.getVersion().length()).isGreaterThan(1);
