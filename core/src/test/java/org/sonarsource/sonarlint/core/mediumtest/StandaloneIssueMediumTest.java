@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.apache.commons.io.FileUtils;
-import org.assertj.core.util.Files;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -59,7 +58,6 @@ public class StandaloneIssueMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
   private File baseDir;
-  private static Path workDir;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -74,19 +72,11 @@ public class StandaloneIssueMediumTest {
       .setLogOutput((msg, level) -> System.out.println(msg))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
-
-    workDir = sonarlintUserHome.resolve("work");
-    List<String> tmpFiles = Files.fileNamesIn(workDir.toString(), true);
-    assertThat(tmpFiles).hasSize(1);
-    assertThat(tmpFiles.get(0)).contains("sonar-plugin-api-deps");
-
   }
 
   @AfterClass
   public static void stop() {
     sonarlint.stop();
-    List<String> tmpFiles = Files.fileNamesIn(workDir.toString(), true);
-    assertThat(tmpFiles).isEmpty();
   }
 
   @Before
@@ -98,11 +88,11 @@ public class StandaloneIssueMediumTest {
   public void simpleJavaScript() throws Exception {
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable");
-    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
+    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo("js");
-    assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
+    assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
     assertThat(ruleDetails.getTags()).containsOnly("unused");
-    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
+    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
       + "  var x;\n"
@@ -201,7 +191,6 @@ public class StandaloneIssueMediumTest {
         + "  public void foo() {\n"
         + "    int x;\n"
         + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
         + "  }\n"
         + "}",
       false);
@@ -211,10 +200,8 @@ public class StandaloneIssueMediumTest {
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("squid:UndocumentedApi", 1, inputFile.getPath(), "MINOR"),
-      tuple("squid:UndocumentedApi", 2, inputFile.getPath(), "MINOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"));
   }
 
   @Test
@@ -233,7 +220,7 @@ public class StandaloneIssueMediumTest {
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S3421", 6, inputFile.getPath(), "MAJOR"));
+      tuple("squid:S3421", 6, inputFile.getPath(), "MINOR"));
   }
 
   @Test
@@ -253,10 +240,8 @@ public class StandaloneIssueMediumTest {
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:UndocumentedApi", 1, inputFile.getPath(), "MINOR"),
-      tuple("squid:UndocumentedApi", 3, inputFile.getPath(), "MINOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 4, inputFile.getPath(), "MAJOR"));
+      tuple("squid:S1481", 4, inputFile.getPath(), "MINOR"));
   }
 
   @Test
@@ -265,14 +250,13 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
-      ImmutableMap.of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())), issue -> issues.add(issue));
+      ImmutableMap.of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())),
+      issue -> issues.add(issue));
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 5, inputFile.getPath()),
       tuple("squid:S1220", null, inputFile.getPath()),
-      tuple("squid:UndocumentedApi", 1, inputFile.getPath()),
-      tuple("squid:UndocumentedApi", 3, inputFile.getPath()),
-      tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
+      // FIXME bug in Java plugin 4.8.0.9441 tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
       tuple("squid:S1186", 8, inputFile.getPath()));
   }
 
@@ -313,8 +297,6 @@ public class StandaloneIssueMediumTest {
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath()),
       tuple("squid:S1220", null, inputFile.getPath()),
-      tuple("squid:UndocumentedApi", 1, inputFile.getPath()),
-      tuple("squid:UndocumentedApi", 2, inputFile.getPath()),
       tuple("squid:S1481", 3, inputFile.getPath()),
       tuple("squid:S2187", 1, inputFileTest.getPath()));
   }
