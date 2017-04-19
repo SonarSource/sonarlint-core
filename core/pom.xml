@@ -39,10 +39,10 @@
       <artifactId>sonar-scanner-protocol</artifactId>
       <version>${sonar-scanner-protocol.version}</version>
       <exclusions>
+        <!--  Only interested in the protobuf stubs -->
         <exclusion>
-          <!-- because it's a newer version that breaks some ITs -->
-          <groupId>org.sonarsource.update-center</groupId>
-          <artifactId>sonar-update-center-common</artifactId>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -215,8 +215,7 @@
             </goals>
             <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
-              <!-- Don't set to true: it will remove runtime plugin dependencies from SQ Plugin API for example -->
-              <minimizeJar>false</minimizeJar>
+              <minimizeJar>true</minimizeJar>
               <artifactSet>
                 <excludes>
                   <exclude>${project.groupId}:sonarlint-client-api</exclude>
@@ -233,10 +232,16 @@
                   </excludes>
                 </filter>
                 <filter>
-                    <artifact>org.sonarsource.sonarqube:sonar-ws</artifact>
-                  <excludes>
-                    <exclude>org/sonarqube/ws/client/**</exclude>
-                  </excludes>
+                  <artifact>org.sonarsource.sonarlint.core:sonarlint-core</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <artifact>org.sonarsource.sonarqube:sonar-plugin-api</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
                 </filter>
               </filters>
             </configuration>
