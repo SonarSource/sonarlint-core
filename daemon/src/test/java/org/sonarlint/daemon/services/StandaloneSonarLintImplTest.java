@@ -22,12 +22,10 @@ package org.sonarlint.daemon.services;
 import java.util.Arrays;
 
 import org.junit.Test;
-import org.sonarlint.daemon.Logger;
-import static org.mockito.Mockito.mock;
 
 public class StandaloneSonarLintImplTest {
   @Test
   public void testStart() {
-    StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Arrays.asList(), mock(Logger.class));
+    StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Arrays.asList());
   }
 }

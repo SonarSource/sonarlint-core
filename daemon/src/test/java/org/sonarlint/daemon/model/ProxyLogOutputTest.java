@@ -28,7 +28,6 @@ import static org.mockito.Mockito.verify;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.sonarlint.daemon.Logger;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 
@@ -36,18 +35,16 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 public class ProxyLogOutputTest {
-  private Logger logger;
   private StreamObserver<LogEvent> observer;
 
   @Before
   public void setup() {
-    logger = mock(Logger.class);
     observer = mock(StreamObserver.class);
   }
 
   @Test
   public void testProxyLog() {
-    ProxyLogOutput log = new ProxyLogOutput(logger);
+    ProxyLogOutput log = new ProxyLogOutput();
     log.log("log msg", Level.INFO);
 
     log.setObserver(observer);
@@ -64,7 +61,7 @@ public class ProxyLogOutputTest {
 
   @Test
   public void testProxyLogError() {
-    ProxyLogOutput log = new ProxyLogOutput(logger);
+    ProxyLogOutput log = new ProxyLogOutput();
     doThrow(StatusRuntimeException.class).when(observer).onNext(any(LogEvent.class));
     log.setObserver(observer);
     log.log("msg", Level.DEBUG);

@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.sonarlint.daemon.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.Utils;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
@@ -50,15 +50,14 @@ import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 import io.grpc.stub.StreamObserver;
 
 public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneSonarLintImplBase {
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(StandaloneSonarLintImpl.class);
   private final ProxyLogOutput logOutput;
   private final Collection<URL> analyzers;
-  private final Logger logger;
   private StandaloneSonarLintEngine engine;
 
-  public StandaloneSonarLintImpl(Collection<URL> analyzers, Logger logger) {
+  public StandaloneSonarLintImpl(Collection<URL> analyzers) {
     this.analyzers = analyzers;
-    this.logger = logger;
-    this.logOutput = new ProxyLogOutput(logger);
+    this.logOutput = new ProxyLogOutput();
     start();
   }
 
@@ -98,7 +97,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
       engine.analyze(config, new ProxyIssueListener(response), logOutput);
       response.onCompleted();
     } catch (Exception e) {
-      logger.error("Error analyzing", e);
+      LOGGER.error("Error analyzing", e);
       response.onError(e);
     }
   }
@@ -122,7 +121,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         .build());
       response.onCompleted();
     } catch (Exception e) {
-      logger.error("getRuleDetails", e);
+      LOGGER.error("getRuleDetails", e);
       response.onError(e);
     }
   }
