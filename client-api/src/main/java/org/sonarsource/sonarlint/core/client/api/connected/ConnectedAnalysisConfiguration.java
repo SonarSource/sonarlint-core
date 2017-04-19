@@ -30,24 +30,24 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 @Immutable
 public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfiguration {
 
-  private final String moduleKey;
+  private final ProjectId projectId;
 
-  public ConnectedAnalysisConfiguration(@Nullable String moduleKey, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+  public ConnectedAnalysisConfiguration(@Nullable ProjectId projectId, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
     super(baseDir, workDir, inputFiles, extraProperties);
-    this.moduleKey = moduleKey;
+    this.projectId = projectId;
   }
 
   @CheckForNull
-  public String moduleKey() {
-    return moduleKey;
+  public ProjectId projectId() {
+    return projectId;
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
-    if (moduleKey != null) {
-      sb.append("  moduleKey: ").append(moduleKey).append("\n");
+    if (projectId != null) {
+      sb.append("  projectId: ").append(projectId).append("\n");
     }
     sb.append("  baseDir: ").append(baseDir()).append("\n");
     sb.append("  workDir: ").append(workDir()).append("\n");

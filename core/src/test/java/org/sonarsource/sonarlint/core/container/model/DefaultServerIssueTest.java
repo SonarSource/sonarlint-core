@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Instant;
-
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultServerIssueTest {
   @Test
@@ -40,7 +40,8 @@ public class DefaultServerIssueTest {
     assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");
     assertThat(issue.setRuleKey("rule1").ruleKey()).isEqualTo("rule1");
     assertThat(issue.setResolution("RESOLVED").resolution()).isEqualTo("RESOLVED");
-    assertThat(issue.setModuleKey("module1").moduleKey()).isEqualTo("module1");
+    ProjectId projectId = new ProjectId(null, "module1");
+    assertThat(issue.setProjectId(projectId).projectId()).isEqualTo(projectId);
     assertThat(issue.setMessage("msg1").message()).isEqualTo("msg1");
   }
 }

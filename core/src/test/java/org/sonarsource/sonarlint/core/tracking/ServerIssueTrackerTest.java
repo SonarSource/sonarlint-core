@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.util.Collections;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 
@@ -31,43 +32,42 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class ServerIssueTrackerTest {
+  private static final ProjectId PROJECT_ID = new ProjectId(null, "dummy module");
+
   @Test
   public void should_get_issues_from_engine_without_downloading() {
-    String moduleKey = "dummy module";
     String filePath = "dummy file";
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
 
     ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
-    tracker.update(engine, moduleKey, Collections.singleton(filePath));
-    verify(engine).getServerIssues(moduleKey, filePath);
+    tracker.update(engine, PROJECT_ID, Collections.singleton(filePath));
+    verify(engine).getServerIssues(PROJECT_ID, filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
   public void should_download_issues_from_engine() {
-    String moduleKey = "dummy module";
     String filePath = "dummy file";
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
 
     ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
-    tracker.update(serverConfiguration, engine, moduleKey, Collections.singleton(filePath));
-    verify(engine).downloadServerIssues(serverConfiguration, moduleKey, filePath);
+    tracker.update(serverConfiguration, engine, PROJECT_ID, Collections.singleton(filePath));
+    verify(engine).downloadServerIssues(serverConfiguration, PROJECT_ID, filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
   public void should_get_issues_from_engine_if_download_failed() {
-    String moduleKey = "dummy module";
     String filePath = "dummy file";
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
 
     ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
-    when(engine.downloadServerIssues(serverConfiguration, moduleKey, filePath)).thenThrow(new DownloadException());
-    tracker.update(serverConfiguration, engine, moduleKey, Collections.singleton(filePath));
-    verify(engine).downloadServerIssues(serverConfiguration, moduleKey, filePath);
-    verify(engine).getServerIssues(moduleKey, filePath);
+    when(engine.downloadServerIssues(serverConfiguration, PROJECT_ID, filePath)).thenThrow(new DownloadException());
+    tracker.update(serverConfiguration, engine, PROJECT_ID, Collections.singleton(filePath));
+    verify(engine).downloadServerIssues(serverConfiguration, PROJECT_ID, filePath);
+    verify(engine).getServerIssues(PROJECT_ID, filePath);
     verifyNoMoreInteractions(engine);
   }
 }

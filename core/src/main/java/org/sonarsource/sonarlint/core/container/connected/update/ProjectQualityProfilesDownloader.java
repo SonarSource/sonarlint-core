@@ -25,20 +25,26 @@ import java.util.List;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-public class ModuleQualityProfilesDownloader {
+public class ProjectQualityProfilesDownloader {
 
   private final SonarLintWsClient wsClient;
 
-  public ModuleQualityProfilesDownloader(SonarLintWsClient wsClient) {
+  public ProjectQualityProfilesDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
-  public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey) {
+  public List<QualityProfile> fetchProjectQualityProfiles(ProjectId projectId) {
     SearchWsResponse qpResponse;
-    try (InputStream contentStream = wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey)).contentStream()) {
+    String url = "/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(projectId.getProjectKey());
+    String organizationKey = projectId.getOrganizationKey();
+    if (organizationKey != null) {
+      url += "&organization=" + StringUtils.urlEncode(organizationKey);
+    }
+    try (InputStream contentStream = wsClient.get(url).contentStream()) {
       qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load module quality profiles", e);

@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -42,14 +43,14 @@ public class ServerIssueUpdater {
     this.tempFolder = tempFolder;
   }
 
-  public void update(String moduleKey) {
+  public void update(ProjectId projectId) {
     Path work = tempFolder.newDir().toPath();
-    Path target = storageManager.getServerIssuesPath(moduleKey);
-    FileUtils.replaceDir(temp -> updateServerIssues(moduleKey, temp), target, work);
+    Path target = storageManager.getServerIssuesPath(projectId);
+    FileUtils.replaceDir(temp -> updateServerIssues(projectId, temp), target, work);
   }
 
-  public void updateServerIssues(String moduleKey, Path temp) {
-    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(moduleKey);
+  public void updateServerIssues(ProjectId projectId, Path temp) {
+    List<ScannerInput.ServerIssue> issues = issueDownloader.download(projectId.getOrganizationKey(), projectId.getProjectKey());
     issueStoreFactory.apply(temp).save(issues);
   }
 }

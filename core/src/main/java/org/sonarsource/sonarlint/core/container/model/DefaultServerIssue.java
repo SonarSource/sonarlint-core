@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
-
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 public class DefaultServerIssue implements ServerIssue {
@@ -31,7 +31,7 @@ public class DefaultServerIssue implements ServerIssue {
   private String message;
   private String checksum;
   private String assigneeLogin;
-  private String moduleKey;
+  private ProjectId projectId;
   private String filePath;
   private boolean manualSeverity;
   private Instant creationDate;
@@ -73,8 +73,8 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public String moduleKey() {
-    return moduleKey;
+  public ProjectId projectId() {
+    return projectId;
   }
 
   @Override
@@ -132,8 +132,8 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setModuleKey(String moduleKey) {
-    this.moduleKey = moduleKey;
+  public DefaultServerIssue setProjectId(ProjectId projectId) {
+    this.projectId = projectId;
     return this;
   }
 

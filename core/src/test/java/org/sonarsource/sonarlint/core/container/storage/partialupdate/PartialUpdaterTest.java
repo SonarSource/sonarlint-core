@@ -33,6 +33,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.sonar.api.utils.internal.DefaultTempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
@@ -84,23 +85,25 @@ public class PartialUpdaterTest {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
-    when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
-    when(downloader.apply("module:file")).thenReturn(issues);
+    ProjectId projectId = new ProjectId(null, "module");
+    when(storageManager.getServerIssuesPath(projectId)).thenReturn(temp.getRoot().toPath());
+    when(issueStoreReader.getFileKey(projectId, "file")).thenReturn("module:file");
+    when(downloader.download(null, "module:file")).thenReturn(issues);
 
-    updater.updateFileIssues("module", "file");
+    updater.updateFileIssues(projectId, "file");
 
     verify(issueStore).save(issues);
   }
 
   @Test
   public void error_downloading_issues() {
-    when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
-    when(downloader.apply("module:file")).thenThrow(IOException.class);
+    ProjectId projectId = new ProjectId(null, "module");
+    when(storageManager.getServerIssuesPath(projectId)).thenReturn(temp.getRoot().toPath());
+    when(issueStoreReader.getFileKey(projectId, "file")).thenReturn("module:file");
+    when(downloader.download(null, "module:file")).thenThrow(IOException.class);
 
     exception.expect(DownloadException.class);
-    updater.updateFileIssues("module", "file");
+    updater.updateFileIssues(projectId, "file");
   }
 
   @Test
@@ -109,10 +112,11 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     String moduleKey = "dummy";
-    when(storageManager.getServerIssuesPath(moduleKey)).thenReturn(temp.newFolder().toPath());
-    when(downloader.apply(moduleKey)).thenReturn(issues);
+    ProjectId projectId = new ProjectId(null, moduleKey);
+    when(storageManager.getServerIssuesPath(projectId)).thenReturn(temp.newFolder().toPath());
+    when(downloader.download(null, moduleKey)).thenReturn(issues);
 
-    updater.updateFileIssues(moduleKey, new DefaultTempFolder(temp.newFolder()));
+    updater.updateFileIssues(projectId, new DefaultTempFolder(temp.newFolder()));
 
     verify(issueStore).save(issues);
   }

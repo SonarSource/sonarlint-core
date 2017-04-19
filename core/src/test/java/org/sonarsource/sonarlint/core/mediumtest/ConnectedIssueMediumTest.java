@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -63,7 +64,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class ConnectedIssueMediumTest {
 
-  private static final String JAVA_MODULE_KEY = "test-project-2";
+  private static final ProjectId JAVA_MODULE_KEY = new ProjectId(null, "test-project-2");
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
@@ -112,9 +113,9 @@ public class ConnectedIssueMediumTest {
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
-    writeModuleStatus(tmpStorage, "test-project", StorageManager.STORAGE_VERSION);
+    writeModuleStatus(tmpStorage, new ProjectId(null, "test-project"), StorageManager.STORAGE_VERSION);
     writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, StorageManager.STORAGE_VERSION);
-    writeModuleStatus(tmpStorage, "stale_module", "0");
+    writeModuleStatus(tmpStorage, new ProjectId(null, "stale_module"), "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -128,8 +129,8 @@ public class ConnectedIssueMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("modules").resolve(name);
+  private static void writeModuleStatus(Path storage, ProjectId projectId, String version) throws IOException {
+    Path module = storage.resolve("local").resolve("defaultOrg").resolve(projectId.getProjectKey());
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
@@ -164,8 +165,9 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void testStaleModule() throws IOException {
-    assertThat(sonarlint.getModuleStorageStatus("stale_module").isStale()).isTrue();
-    ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",
+    ProjectId projectId = new ProjectId(null, "stale_module");
+    assertThat(sonarlint.getProjectStorageStatus(projectId).isStale()).isTrue();
+    ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration(projectId,
       baseDir.toPath(),
       temp.newFolder().toPath(),
       Collections.<ClientInputFile>emptyList(),
@@ -184,7 +186,7 @@ public class ConnectedIssueMediumTest {
   public void simpleJavaScriptUnbinded() throws Exception {
 
     String ruleKey = "javascript:UnusedVariable";
-    RuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
+    RuleDetails ruleDetails = sonarlint.getRuleDetails(null, ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo("js");
@@ -252,7 +254,8 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new ConnectedAnalysisConfiguration("test-project", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      new ConnectedAnalysisConfiguration(new ProjectId(null, "test-project"), baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
+        ImmutableMap.<String, String>of()),
       new StoreIssueListener(issues));
 
     assertThat(issues).isEmpty();

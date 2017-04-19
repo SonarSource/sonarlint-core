@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
@@ -56,7 +57,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class ConnectedFileExclusionsMediumTest {
 
-  private static final String MODULE_KEY = "test-project-2";
+  private static final ProjectId PROJECT_ID = new ProjectId(null, "test-project-2");
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
@@ -76,7 +77,7 @@ public class ConnectedFileExclusionsMediumTest {
 
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
-    writeModuleStatus(tmpStorage, MODULE_KEY, VersionUtils.getLibraryVersion());
+    writeModuleStatus(tmpStorage, PROJECT_ID, VersionUtils.getLibraryVersion());
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -90,8 +91,8 @@ public class ConnectedFileExclusionsMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("modules").resolve(name);
+  private static void writeModuleStatus(Path storage, ProjectId projectId, String version) throws IOException {
+    Path module = storage.resolve("local").resolve("defaultOrg").resolve(projectId.getProjectKey());
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StorageManager.STORAGE_VERSION)
@@ -132,7 +133,7 @@ public class ConnectedFileExclusionsMediumTest {
     ClientInputFile testFile2 = prepareInputFile("test/foo2Test.xoo", "function xoo() {}", true);
 
     StorageManager storageManager = sonarlint.getGlobalContainer().getComponentByType(StorageManager.class);
-    ModuleConfiguration originalModuleConfig = storageManager.readModuleConfigFromStorage(MODULE_KEY);
+    ModuleConfiguration originalModuleConfig = storageManager.readProjectConfigFromStorage(PROJECT_ID);
 
     AnalysisResults result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(4);
@@ -165,12 +166,12 @@ public class ConnectedFileExclusionsMediumTest {
   private void updateModuleConfig(StorageManager storageManager, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
     Builder newBuilder = ModuleConfiguration.newBuilder(originalModuleConfig);
     newBuilder.putAllProperties(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), storageManager.getModuleConfigurationPath(MODULE_KEY));
+    ProtobufUtil.writeToFile(newBuilder.build(), storageManager.getProjectConfigurationPath(PROJECT_ID));
   }
 
   private AnalysisResults analyze(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {
     AnalysisResults result = sonarlint.analyze(
-      new ConnectedAnalysisConfiguration(MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(mainFile1, mainFile2, testFile1, testFile2),
+      new ConnectedAnalysisConfiguration(PROJECT_ID, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(mainFile1, mainFile2, testFile1, testFile2),
         ImmutableMap.<String, String>of()),
       issue -> {
       });

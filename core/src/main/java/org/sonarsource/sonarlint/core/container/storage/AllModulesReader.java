@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-
+import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteModule;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
@@ -41,7 +41,9 @@ public class AllModulesReader implements Supplier<Map<String, RemoteModule>> {
     ModuleList readModuleListFromStorage = storageManager.readModuleListFromStorage();
     Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKeyMap();
     for (Map.Entry<String, Module> entry : modulesByKey.entrySet()) {
-      results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));
+      results.put(entry.getKey(),
+        new DefaultRemoteModule(entry.getValue(),
+          StringUtils.isNotBlank(entry.getValue().getOrgaKey()) ? readModuleListFromStorage.getOrgaByKeyOrThrow(entry.getValue().getOrgaKey()) : null));
     }
     return results;
   }

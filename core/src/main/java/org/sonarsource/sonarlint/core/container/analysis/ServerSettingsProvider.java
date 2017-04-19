@@ -57,8 +57,8 @@ public class ServerSettingsProvider {
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
         addProperties(globalProps.getPropertiesMap());
-        if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
-          ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
+        if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).projectId() != null) {
+          ModuleConfiguration projectConfig = storage.readProjectConfigFromStorage(((ConnectedAnalysisConfiguration) config).projectId());
           addProperties(projectConfig.getPropertiesMap());
         }
       }

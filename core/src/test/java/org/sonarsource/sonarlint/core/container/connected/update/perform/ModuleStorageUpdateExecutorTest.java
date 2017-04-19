@@ -34,14 +34,16 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityProfilesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -53,7 +55,7 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
@@ -61,8 +63,8 @@ import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.
 
 public class ModuleStorageUpdateExecutorTest {
 
-  private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
-  private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH);
+  private static final ProjectId MODULE_KEY_WITH_BRANCH = new ProjectId(null, "module:key/with_branch");
+  private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH.getProjectKey());
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -76,7 +78,7 @@ public class ModuleStorageUpdateExecutorTest {
   private ModuleHierarchyDownloader moduleHierarchy;
   private IssueStore issueStore;
   private IssueStoreFactory issueStoreFactory;
-  private ModuleConfigurationDownloader moduleConfigurationDownloader;
+  private ProjectConfigurationDownloader moduleConfigurationDownloader;
 
   @Before
   public void setUp() throws IOException {
@@ -103,15 +105,15 @@ public class ModuleStorageUpdateExecutorTest {
 
     moduleHierarchy = mock(ModuleHierarchyDownloader.class);
     Map<String, String> modulesPath = new HashMap<>();
-    modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
-    modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
+    modulesPath.put(MODULE_KEY_WITH_BRANCH.getProjectKey(), "");
+    modulesPath.put(MODULE_KEY_WITH_BRANCH.getProjectKey() + "child1", "child 1");
     when(moduleHierarchy.fetchModuleHierarchy(MODULE_KEY_WITH_BRANCH)).thenReturn(modulesPath);
 
     issueStoreFactory = mock(IssueStoreFactory.class);
     issueStore = new InMemoryIssueStore();
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
-    moduleConfigurationDownloader = new ModuleConfigurationDownloader(moduleHierarchy, new ModuleQualityProfilesDownloader(wsClient), mock(SettingsDownloader.class));
+    moduleConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(wsClient), mock(SettingsDownloader.class));
   }
 
   @Test
@@ -124,9 +126,9 @@ public class ModuleStorageUpdateExecutorTest {
     mutableQprofilesByKey.put("java-empty-74333", QProfiles.QProfile.newBuilder().build());
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    when(storageManager.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (orga, key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -145,9 +147,9 @@ public class ModuleStorageUpdateExecutorTest {
     mutableQprofilesByKey.put("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    when(storageManager.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (orga, key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
 
@@ -158,8 +160,8 @@ public class ModuleStorageUpdateExecutorTest {
       entry("js", "js-sonar-way-60746"));
 
     assertThat(moduleConfiguration.getModulePathByKey()).containsOnly(
-      entry(MODULE_KEY_WITH_BRANCH, ""),
-      entry(MODULE_KEY_WITH_BRANCH + "child1", "child 1"));
+      entry(MODULE_KEY_WITH_BRANCH.getProjectKey(), ""),
+      entry(MODULE_KEY_WITH_BRANCH.getProjectKey() + "child1", "child 1"));
   }
 
   @Test
@@ -173,11 +175,11 @@ public class ModuleStorageUpdateExecutorTest {
     mutableQprofilesByKey.put("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    when(storageManager.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (orga, key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
-    exception.expect(IllegalStateException.class);
+    exception.expect(GlobalUpdateRequiredException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
   }
@@ -187,7 +189,7 @@ public class ModuleStorageUpdateExecutorTest {
     WsClientTestUtils.addResponse(wsClient, getQualityProfileUrl(), newEmptyStream());
     when(storageManager.readQProfilesFromStorage()).thenReturn(QProfiles.getDefaultInstance());
 
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
+    when(storageManager.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
 
     ScannerInput.ServerIssue fileIssue1 = ScannerInput.ServerIssue.newBuilder()
       .setModuleKey("someModuleKey")
@@ -208,7 +210,7 @@ public class ModuleStorageUpdateExecutorTest {
       .setPath("yet/another/path")
       .build();
 
-    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
+    IssueDownloader issueDownloader = (orga, moduleKey) -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
 
     moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder, moduleConfigurationDownloader);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH);

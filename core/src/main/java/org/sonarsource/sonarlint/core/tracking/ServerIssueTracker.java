@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -40,12 +41,12 @@ public class ServerIssueTracker {
     this.issueTracker = issueTracker;
   }
 
-  public void update(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, String moduleKey, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> fetchServerIssues(serverConfiguration, engine, moduleKey, fileKey));
+  public void update(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, ProjectId projectId, Collection<String> fileKeys) {
+    update(fileKeys, fileKey -> fetchServerIssues(serverConfiguration, engine, projectId, fileKey));
   }
 
-  public void update(ConnectedSonarLintEngine engine, String moduleKey, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> engine.getServerIssues(moduleKey, fileKey));
+  public void update(ConnectedSonarLintEngine engine, ProjectId projectId, Collection<String> fileKeys) {
+    update(fileKeys, fileKey -> engine.getServerIssues(projectId, fileKey));
   }
 
   private void update(Collection<String> fileKeys, Function<String, List<ServerIssue>> issueGetter) {
@@ -62,14 +63,14 @@ public class ServerIssueTracker {
     }
   }
 
-  private List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, String moduleKey, String fileKey) {
+  private List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, ProjectId projectId, String fileKey) {
     try {
-      logger.debug("fetchServerIssues moduleKey=" + moduleKey + ", fileKey=" + fileKey);
-      return engine.downloadServerIssues(serverConfiguration, moduleKey, fileKey);
+      logger.debug("fetchServerIssues moduleKey=" + projectId + ", fileKey=" + fileKey);
+      return engine.downloadServerIssues(serverConfiguration, projectId, fileKey);
     } catch (DownloadException e) {
       logger.debug("failed to download server issues", e);
       console.info(e.getMessage());
-      return engine.getServerIssues(moduleKey, fileKey);
+      return engine.getServerIssues(projectId, fileKey);
     }
   }
 }

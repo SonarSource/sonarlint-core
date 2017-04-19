@@ -33,6 +33,7 @@ import javax.annotation.CheckForNull;
 import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -55,10 +56,15 @@ public class ModuleHierarchyDownloader {
    * @param moduleKey moduleKey for which the hierarchy will be returned.
    * @return Mapping of moduleKey -> relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(String moduleKey) {
+  public Map<String, String> fetchModuleHierarchy(ProjectId projectId) {
     List<Component> modules = new ArrayList<>();
 
-    paginate(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey), WsComponents.TreeWsResponse::parseFrom,
+    String url = "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(projectId.getProjectKey());
+    String organizationKey = projectId.getOrganizationKey();
+    if (organizationKey != null) {
+      url += "&organization=" + StringUtils.urlEncode(organizationKey);
+    }
+    paginate(wsClient, url, WsComponents.TreeWsResponse::parseFrom,
       WsComponents.TreeWsResponse::getPaging, treeResponse -> modules.addAll(treeResponse.getComponentsList()));
 
     // doesn't include root
@@ -72,7 +78,7 @@ public class ModuleHierarchyDownloader {
 
     // module key -> path from root project base directory
     Map<String, String> modulesWithPath = new HashMap<>();
-    modulesWithPath.put(moduleKey, "");
+    modulesWithPath.put(projectId.getProjectKey(), "");
     modules.forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
 
     return modulesWithPath;

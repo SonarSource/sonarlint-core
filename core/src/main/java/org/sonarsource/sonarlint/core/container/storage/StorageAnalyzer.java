@@ -20,44 +20,44 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import javax.annotation.Nullable;
-
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
 public class StorageAnalyzer {
-  private final ModuleStorageStatusReader moduleUpdateStatusReader;
+  private final ProjectStorageStatusReader moduleUpdateStatusReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
 
-  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ModuleStorageStatusReader moduleUpdateStatusReader) {
+  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ProjectStorageStatusReader moduleUpdateStatusReader) {
     this.globalUpdateStatusReader = globalUpdateStatusReader;
     this.moduleUpdateStatusReader = moduleUpdateStatusReader;
   }
 
-  private void checkStatus(@Nullable String moduleKey) {
+  private void checkStatus(@Nullable ProjectId projectId) {
     GlobalStorageStatus updateStatus = globalUpdateStatusReader.get();
     if (updateStatus == null) {
       throw new StorageException("Missing global data. Please update server.", false);
     }
-    if (moduleKey != null) {
-      ModuleStorageStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
-      if (moduleUpdateStatus == null) {
-        throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", moduleKey), false);
-      } else if (moduleUpdateStatus.isStale()) {
+    if (projectId != null) {
+      ProjectStorageStatus projectUpdateStatus = moduleUpdateStatusReader.readStatus(projectId);
+      if (projectUpdateStatus == null) {
+        throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", projectId), false);
+      } else if (projectUpdateStatus.isStale()) {
         throw new StorageException(String.format("Stored data for module '%s' is stale because "
-          + "it was created with a different version of SonarLint. Please update the binding.", moduleKey), false);
+          + "it was created with a different version of SonarLint. Please update the binding.", projectId), false);
       }
     }
   }
 
   public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
-    checkStatus(configuration.moduleKey());
+    checkStatus(configuration.projectId());
 
     AnalysisContainer analysisContainer = new AnalysisContainer(container);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
