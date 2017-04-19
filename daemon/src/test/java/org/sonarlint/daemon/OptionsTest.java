@@ -19,23 +19,13 @@
  */
 package org.sonarlint.daemon;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.text.ParseException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.Test;
 
 public class OptionsTest {
-  private Logger logger;
-
-  @Before
-  public void addLogger() {
-    logger = mock(Logger.class);
-  }
-
   @Test
   public void testPort() throws ParseException {
     String[] args = {"--port", "1234"};
@@ -52,12 +42,5 @@ public class OptionsTest {
   public void testInvalid() throws ParseException {
     String[] args = {"--unknown", "1234"};
     Options.parse(args);
-  }
-
-  @Test
-  public void testUsage() {
-    Options.printUsage(logger);
-
-    verify(logger).info("usage: sonarlint-daemon [options]");
   }
 }

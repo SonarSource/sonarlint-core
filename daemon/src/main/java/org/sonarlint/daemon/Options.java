@@ -21,9 +21,13 @@ package org.sonarlint.daemon;
 
 import javax.annotation.CheckForNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.ParseException;
 
 public class Options {
+  private static final Logger LOGGER = LoggerFactory.getLogger(Options.class);
   private boolean help = false;
   private String port = null;
 
@@ -62,13 +66,13 @@ public class Options {
     return port;
   }
 
-  public static void printUsage(Logger logger) {
-    logger.info("");
-    logger.info("usage: sonarlint-daemon [options]");
-    logger.info("");
-    logger.info("Options:");
-    logger.info(" -h,--help              Display help information");
-    logger.info(" --port <port>          Network port to listen to");
+  public static void printUsage() {
+    LOGGER.info("");
+    LOGGER.info("usage: sonarlint-daemon [options]");
+    LOGGER.info("");
+    LOGGER.info("Options:");
+    LOGGER.info(" -h,--help              Display help information");
+    LOGGER.info(" --port <port>          Network port to listen to");
   }
 
 }

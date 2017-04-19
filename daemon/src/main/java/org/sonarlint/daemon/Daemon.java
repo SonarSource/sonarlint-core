@@ -26,36 +26,26 @@ import io.grpc.ServerInterceptors;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.interceptors.ExceptionInterceptor;
 import org.sonarlint.daemon.services.ConnectedSonarLintImpl;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.ConsoleAppender;
-
 public class Daemon {
+  private static final Logger LOGGER = LoggerFactory.getLogger(Daemon.class);
   private static final int DEFAULT_PORT = 8050;
   private Server server;
-  private final Logger logger;
-
-  Daemon(Logger logger) {
-    this.logger = logger;
-  }
 
   public static void main(String[] args) {
     setUpNettyLogging();
 
     int port;
-    Logger logger = new Logger();
     try {
       Options options = Options.parse(args);
 
       if (options.isHelp()) {
-        Options.printUsage(logger);
+        Options.printUsage();
         return;
       }
 
@@ -65,33 +55,15 @@ public class Daemon {
         port = DEFAULT_PORT;
       }
     } catch (Exception e) {
-      logger.error("Error parsing arguments", e);
+      LOGGER.error("Error parsing arguments", e);
       return;
     }
 
-    new Daemon(logger).start(port);
+    new Daemon().start(port);
   }
 
   private static void setUpNettyLogging() {
     InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
-
-    // root logger will be modified by sonarlint-core (all appenders removed)
-    LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-    encoder.setPattern("%date{HH:mm:ss.SSS} [%thread] %level %logger{10} %msg%n");
-    encoder.setContext(lc);
-    encoder.start();
-
-    ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
-    consoleAppender.setEncoder(encoder);
-    consoleAppender.setContext(lc);
-    consoleAppender.start();
-
-    ch.qos.logback.classic.Logger nettyLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("io.netty");
-    nettyLogger.setAdditive(false);
-    nettyLogger.setLevel(Level.DEBUG);
-    nettyLogger.addAppender(consoleAppender);
   }
 
   public void stop() {
@@ -100,27 +72,27 @@ public class Daemon {
 
   public void start(int port) {
     try {
-      logger.info("Starting server on port " + port);
+      LOGGER.info("Starting server on port {}", port);
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
       server = ServerBuilder.forPort(port)
-        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(logger), interceptor))
-        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers(), logger), interceptor))
+        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(), interceptor))
+        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers()), interceptor))
         .build()
         .start();
-      logger.info("Server started, listening on " + port);
+      LOGGER.info("Server started, listening on {}", port);
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
-          logger.info("Shutting down gRPC server since JVM is shutting down");
+          LOGGER.info("Shutting down gRPC server since JVM is shutting down");
           Daemon.this.stop();
-          logger.info("Server shut down");
+          LOGGER.info("Server shut down");
         }
       });
       server.awaitTermination();
     } catch (Exception e) {
       // grpc threads are daemon, so should not hang process
-      logger.error("Error running daemon", e);
+      LOGGER.error("Error running daemon", e);
     }
   }
 }
