@@ -23,9 +23,19 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
+
+import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.interceptors.ExceptionInterceptor;
 import org.sonarlint.daemon.services.ConnectedSonarLintImpl;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
 
 public class Daemon {
   private static final int DEFAULT_PORT = 8050;
@@ -37,6 +47,8 @@ public class Daemon {
   }
 
   public static void main(String[] args) {
+    setUpNettyLogging();
+
     int port;
     Logger logger = new Logger();
     try {
@@ -58,6 +70,28 @@ public class Daemon {
     }
 
     new Daemon(logger).start(port);
+  }
+
+  private static void setUpNettyLogging() {
+    InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
+
+    // root logger will be modified by sonarlint-core (all appenders removed)
+    LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+
+    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+    encoder.setPattern("%date{HH:mm:ss.SSS} [%thread] %level %logger{10} %msg%n");
+    encoder.setContext(lc);
+    encoder.start();
+
+    ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
+    consoleAppender.setEncoder(encoder);
+    consoleAppender.setContext(lc);
+    consoleAppender.start();
+
+    ch.qos.logback.classic.Logger nettyLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("io.netty");
+    nettyLogger.setAdditive(false);
+    nettyLogger.setLevel(Level.DEBUG);
+    nettyLogger.addAppender(consoleAppender);
   }
 
   public void stop() {
