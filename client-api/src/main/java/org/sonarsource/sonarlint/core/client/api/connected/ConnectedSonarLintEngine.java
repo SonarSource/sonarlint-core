@@ -81,22 +81,6 @@ public interface ConnectedSonarLintEngine {
   List<ServerIssue> getServerIssues(ProjectId projectId, String filePath);
 
   /**
-   * Downloads, stores and returns server issues for a given file. 
-   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   * @param filePath relative to the module to which the moduleKey refers.
-   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
-   * @throws DownloadException if it fails to download
-   */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectId projectId, String filePath);
-
-  /**
-   * Downloads and stores server issues for a given project.
-   * @param serverConfig from which to download issues
-   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   */
-  void downloadServerIssues(ServerConfiguration serverConfig, ProjectId project);
-
-  /**
    * Get information about current global storage state
    * @return null if storage was never updated
    */
@@ -115,16 +99,16 @@ public interface ConnectedSonarLintEngine {
    */
   Map<String, RemoteModule> allModulesByKey();
 
+  // REQUIRES SERVER TO BE REACHABLE
+
   /**
    * Attempts to download and store the list of modules and to return all modules by key
    * @throws DownloadException if it fails to download
    */
-  Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig);
-
-  // REQUIRES SERVER TO BE REACHABLE
+  Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
-   * Update current server.
+   * Update global storage for the given server.
    * @throws UnsupportedServerException if server version is too low
    * @throws CanceledException if the update task was cancelled
    */
@@ -132,8 +116,9 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Update given project storage.
+   * @param forceUpdate if <code>true</code> then global and organization storage will be also updated
    */
-  void updateProjectStorage(ServerConfiguration serverConfig, ProjectId projectId, @Nullable ProgressMonitor monitor);
+  void updateProjectStorage(ServerConfiguration serverConfig, ProjectId projectId, boolean forceUpdate, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -148,4 +133,21 @@ public interface ConnectedSonarLintEngine {
    * @throws DownloadException if it fails to download
    */
   StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, ProjectId projectId, @Nullable ProgressMonitor monitor);
+
+  /**
+   * Downloads, stores and returns server issues for a given file. 
+   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param filePath relative to the module to which the moduleKey refers.
+   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
+   * @throws DownloadException if it fails to download
+   */
+  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectId projectId, String filePath, @Nullable ProgressMonitor monitor);
+
+  /**
+   * Downloads and stores server issues for a given project.
+   * @param serverConfig from which to download issues
+   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   */
+  void downloadServerIssues(ServerConfiguration serverConfig, ProjectId project, @Nullable ProgressMonitor monitor);
+
 }

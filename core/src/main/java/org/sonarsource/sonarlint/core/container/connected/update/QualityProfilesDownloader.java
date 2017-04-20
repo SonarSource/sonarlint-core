@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import javax.annotation.Nullable;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
@@ -30,6 +31,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfilesDownloader {
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
@@ -39,14 +41,18 @@ public class QualityProfilesDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchQualityProfilesTo(Path destDir) {
-    ProtobufUtil.writeToFile(fetchQualityProfiles(), destDir.resolve(StorageManager.QUALITY_PROFILES_PB));
+  public void fetchQualityProfilesTo(@Nullable String organization, Path destDir) {
+    ProtobufUtil.writeToFile(fetchQualityProfiles(organization), destDir.resolve(StorageManager.QUALITY_PROFILES_PB));
   }
 
-  public QProfiles fetchQualityProfiles() {
+  public QProfiles fetchQualityProfiles(@Nullable String organization) {
     QProfiles.Builder qProfileBuilder = QProfiles.newBuilder();
 
-    try (InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream()) {
+    StringBuilder url = new StringBuilder(DEFAULT_QP_SEARCH_URL);
+    if (organization != null) {
+      url.append("?organization=").append(StringUtils.urlEncode(organization));
+    }
+    try (InputStream contentStream = wsClient.get(url.toString()).contentStream()) {
       SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
       for (QualityProfile qp : qpResponse.getProfilesList()) {
         QProfile.Builder qpBuilder = QProfile.newBuilder();

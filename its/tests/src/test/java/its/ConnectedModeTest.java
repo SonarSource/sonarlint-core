@@ -190,7 +190,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allModulesByKey()).hasSize(8);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllModules(getServerConfig())).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
     assertThat(engine.allModulesByKey()).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
@@ -602,7 +602,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateModule(String projectKey) {
-    engine.updateProjectStorage(getServerConfig(), new ProjectId(null, projectKey), null);
+    engine.updateProjectStorage(getServerConfig(), new ProjectId(null, projectKey), false, null);
   }
 
   private void updateGlobal() {

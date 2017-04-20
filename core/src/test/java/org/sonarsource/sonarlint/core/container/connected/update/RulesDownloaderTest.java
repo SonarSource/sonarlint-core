@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,7 +65,26 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(null, tempDir.toPath());
+
+    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    assertThat(rules.getRulesByKeyMap()).hasSize(939);
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
+  }
+
+  @Test
+  public void rules_update_in_orga_protobuf() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
+      RULES_SEARCH_URL + "&organization=myOrg&p=1&ps=500",
+      "/update/rulesp1.pb");
+    WsClientTestUtils.addStreamResponse(wsClient,
+      RULES_SEARCH_URL + "&organization=myOrg&p=2&ps=500",
+      "/update/rulesp2.pb");
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    File tempDir = temp.newFolder();
+    rulesUpdate.fetchRulesTo("myOrg", tempDir.toPath());
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
@@ -84,7 +102,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(null, tempDir.toPath());
 
     Rules saved = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
     assertThat(saved.getRulesByKeyMap()).hasSize(1);
@@ -101,6 +119,6 @@ public class RulesDownloaderTest {
     File tempDir = temp.newFolder();
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load rules");
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(null, tempDir.toPath());
   }
 }

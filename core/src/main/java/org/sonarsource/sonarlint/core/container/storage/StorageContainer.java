@@ -41,9 +41,11 @@ import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
@@ -54,6 +56,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginCopier;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = LoggerFactory.getLogger(StorageContainer.class);
@@ -83,7 +86,6 @@ public class StorageContainer extends ComponentContainer {
       // storage readers
       AllModulesReader.class,
       IssueStoreReader.class,
-      GlobalUpdateStatusReader.class,
       ProjectStorageStatusReader.class,
       StorageRuleDetailsReader.class,
       IssueStoreFactory.class,
@@ -131,7 +133,7 @@ public class StorageContainer extends ComponentContainer {
   }
 
   public GlobalStorageStatus getGlobalStorageStatus() {
-    return getComponentByType(GlobalUpdateStatusReader.class).get();
+    return getComponentByType(StorageManager.class).getGlobalStorageStatus();
   }
 
   public ProjectStorageStatus getProjectStorageStatus(ProjectId projectId) {
@@ -162,11 +164,15 @@ public class StorageContainer extends ComponentContainer {
     updater.updateFileIssues(projectId, tempFolder);
   }
 
-  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig) {
-    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
+  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig, ProgressWrapper progress) {
+    ModuleListDownloader moduleListDownloader = getComponentByType(ModuleListDownloader.class);
     StorageManager storageManager = getComponentByType(StorageManager.class);
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
-    updater.updateModuleList();
+    try {
+      moduleListDownloader.fetchModulesListTo(storageManager.getGlobalStorageRoot(), storageManager.readServerInfosFromStorage().getVersion());
+    } catch (Exception e) {
+      // null as cause so that it doesn't get wrapped
+      throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
+    }
     return allModulesByKey();
   }
 

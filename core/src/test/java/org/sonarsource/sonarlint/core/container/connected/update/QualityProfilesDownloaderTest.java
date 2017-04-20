@@ -54,7 +54,27 @@ public class QualityProfilesDownloaderTest {
   public void test() {
     WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
-    qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
+    qProfilesDownloader.fetchQualityProfilesTo(null, temp.getRoot().toPath());
+
+    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
+    assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
+      "cs-sonar-way-58886",
+      "java-sonar-way-74592",
+      "java-empty-74333",
+      "js-sonar-security-way-70539",
+      "js-sonar-way-60746");
+
+    assertThat(qProfiles.getDefaultQProfilesByLanguageMap()).containsOnly(
+      entry("cs", "cs-sonar-way-58886"),
+      entry("java", "java-sonar-way-74592"),
+      entry("js", "js-sonar-way-60746"));
+  }
+
+  @Test
+  public void testOrga() {
+    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf?organization=myOrga", "/update/qualityprofiles.pb");
+    qProfilesDownloader = new QualityProfilesDownloader(wsClient);
+    qProfilesDownloader.fetchQualityProfilesTo("myOrga", temp.getRoot().toPath());
 
     QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
     assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
@@ -78,7 +98,7 @@ public class QualityProfilesDownloaderTest {
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load default quality profiles");
-    qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
+    qProfilesDownloader.fetchQualityProfilesTo(null, temp.getRoot().toPath());
 
   }
 

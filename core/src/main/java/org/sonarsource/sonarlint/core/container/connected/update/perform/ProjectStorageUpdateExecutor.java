@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-public class ModuleStorageUpdateExecutor {
+public class ProjectStorageUpdateExecutor {
 
   private final StorageManager storageManager;
   private final SonarLintWsClient wsClient;
@@ -46,7 +46,7 @@ public class ModuleStorageUpdateExecutor {
   private final TempFolder tempFolder;
   private final ProjectConfigurationDownloader projectConfigurationDownloader;
 
-  public ModuleStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
+  public ProjectStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
     IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder, ProjectConfigurationDownloader moduleConfigurationDownloader) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;

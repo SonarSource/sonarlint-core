@@ -23,6 +23,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
@@ -38,8 +39,8 @@ public class QualityProfilesUpdateChecker {
     this.qualityProfilesDownloader = qualityProfilesDownloader;
   }
 
-  public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
-    QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles();
+  public void checkForUpdates(@Nullable String organization, DefaultStorageUpdateCheckResult result) {
+    QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles(organization);
     QProfiles storageQProfiles = storageManager.readQProfilesFromStorage();
     Map<String, QProfile> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap();
     Map<String, QProfile> storagePluginHashes = storageQProfiles.getQprofilesByKeyMap();

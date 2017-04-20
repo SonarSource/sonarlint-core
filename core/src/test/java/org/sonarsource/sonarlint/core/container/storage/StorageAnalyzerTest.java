@@ -42,7 +42,7 @@ public class StorageAnalyzerTest {
   public ExpectedException exception = ExpectedException.none();
 
   @Mock
-  private GlobalUpdateStatusReader globalReader;
+  private StorageManager storageManager;
   @Mock
   private ProjectStorageStatusReader moduleReader;
   @Mock
@@ -54,12 +54,12 @@ public class StorageAnalyzerTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     when(config.projectId()).thenReturn(PROJECT_ID);
-    analyzer = new StorageAnalyzer(globalReader, moduleReader);
+    analyzer = new StorageAnalyzer(storageManager, moduleReader);
   }
 
   @Test
   public void testNoGlobalStorage() {
-    when(globalReader.get()).thenReturn(null);
+    when(storageManager.getGlobalStorageStatus()).thenReturn(null);
 
     exception.expect(StorageException.class);
     exception.expectMessage("Missing global data");
@@ -68,7 +68,7 @@ public class StorageAnalyzerTest {
 
   @Test
   public void testNoModuleStorage() {
-    when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
+    when(storageManager.getGlobalStorageStatus()).thenReturn(mock(GlobalStorageStatus.class));
     when(moduleReader.readStatus(PROJECT_ID)).thenReturn(null);
 
     exception.expect(StorageException.class);
@@ -78,7 +78,7 @@ public class StorageAnalyzerTest {
 
   @Test
   public void testStaleModuleStorage() {
-    when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
+    when(storageManager.getGlobalStorageStatus()).thenReturn(mock(GlobalStorageStatus.class));
     ProjectStorageStatus moduleStatus = mock(ProjectStorageStatus.class);
     when(moduleStatus.isStale()).thenReturn(true);
     when(moduleReader.readStatus(PROJECT_ID)).thenReturn(moduleStatus);

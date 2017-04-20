@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -122,25 +121,9 @@ public class PartialUpdaterTest {
   }
 
   @Test
-  public void error_downloading_modules() {
-    when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    doThrow(IOException.class).when(moduleListDownloader).fetchModulesListTo(temp.getRoot().toPath(), SERVER_VERSION);
-    exception.expect(DownloadException.class);
-
-    updater.updateModuleList();
-  }
-
-  @Test
   public void create() {
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
     when(serverConfiguration.getUrl()).thenReturn("http://fake.com");
     assertThat(PartialUpdater.create(storageManager, serverConfiguration, issueStoreReader)).isNotNull();
-  }
-
-  @Test
-  public void update_module_list() {
-    when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    updater.updateModuleList();
-    verify(moduleListDownloader).fetchModulesListTo(temp.getRoot().toPath(), SERVER_VERSION);
   }
 }

@@ -164,7 +164,7 @@ public class LicenseTest extends AbstractConnectedTest {
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), new ProjectId(null, projectKey), null);
+      .build(), new ProjectId(null, projectKey), false, null);
   }
 
   private void updateGlobal() {

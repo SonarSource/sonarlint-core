@@ -179,7 +179,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   public void updateModule(ModuleUpdateReq request, StreamObserver<Void> response) {
     try {
       ServerConfiguration serverConfig = transformServerConfig(request.getServerConfig());
-      engine.updateProjectStorage(serverConfig, new ProjectId(null, request.getModuleKey()), null);
+      engine.updateProjectStorage(serverConfig, new ProjectId(null, request.getModuleKey()), true, null);
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {

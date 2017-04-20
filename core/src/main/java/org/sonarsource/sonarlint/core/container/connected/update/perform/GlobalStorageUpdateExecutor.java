@@ -26,8 +26,6 @@ import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -43,26 +41,22 @@ public class GlobalStorageUpdateExecutor {
   private final StorageManager storageManager;
   private final PluginReferencesDownloader pluginReferenceDownloader;
   private final SettingsDownloader globalSettingsDownloader;
-  private final RulesDownloader rulesDownloader;
   private final TempFolder tempFolder;
   private final ModuleListDownloader moduleListDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
   private final SonarLintWsClient wsClient;
   private final PluginVersionChecker pluginsChecker;
-  private final QualityProfilesDownloader qualityProfilesDownloader;
 
   public GlobalStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
-    PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
-    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, TempFolder tempFolder) {
+    PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader,
+    ModuleListDownloader moduleListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.pluginsChecker = pluginsChecker;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalSettingsDownloader = globalPropertiesDownloader;
-    this.rulesDownloader = rulesDownloader;
     this.moduleListDownloader = moduleListDownloader;
-    this.qualityProfilesDownloader = qualityProfilesDownloader;
     this.tempFolder = tempFolder;
   }
 
@@ -82,12 +76,6 @@ public class GlobalStorageUpdateExecutor {
 
       progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
       pluginReferenceDownloader.fetchPluginsTo(temp, serverStatus.getVersion());
-
-      progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp);
-
-      progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
-      qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
       moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion());

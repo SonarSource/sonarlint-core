@@ -17,21 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.util.function.Supplier;
+import java.util.Date;
 
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 
-public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
-  private final StorageManager storageManager;
+public class DefaultProjectStorageStatus implements ProjectStorageStatus {
+  private final Date lastUpdateDate;
+  private final boolean stale;
 
-  public GlobalUpdateStatusReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
+  public DefaultProjectStorageStatus(Date lastUpdateDate, boolean stale) {
+    this.lastUpdateDate = lastUpdateDate;
+    this.stale = stale;
   }
 
   @Override
-  public GlobalStorageStatus get() {
-    return storageManager.getGlobalStorageStatus();
+  public Date getLastUpdateDate() {
+    return lastUpdateDate;
+  }
+
+  @Override
+  public boolean isStale() {
+    return stale;
   }
 }

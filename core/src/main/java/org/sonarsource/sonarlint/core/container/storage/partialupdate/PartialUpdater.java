@@ -78,13 +78,4 @@ public class PartialUpdater {
   public void updateFileIssues(ProjectId projectId, TempFolder tempFolder) {
     new ServerIssueUpdater(storageManager, downloader, issueStoreFactory, tempFolder).update(projectId);
   }
-
-  public void updateModuleList() {
-    try {
-      moduleListDownloader.fetchModulesListTo(storageManager.getGlobalStorageRoot(), storageManager.readServerInfosFromStorage().getVersion());
-    } catch (Exception e) {
-      // null as cause so that it doesn't get wrapped
-      throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
-    }
-  }
 }

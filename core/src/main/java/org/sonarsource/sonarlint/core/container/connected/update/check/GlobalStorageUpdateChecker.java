@@ -31,16 +31,13 @@ public class GlobalStorageUpdateChecker {
   private final GlobalSettingsUpdateChecker globalSettingsUpdateChecker;
   private final ServerVersionAndStatusChecker statusChecker;
   private final PluginVersionChecker pluginsChecker;
-  private final QualityProfilesUpdateChecker qualityProfilesUpdateChecker;
 
   public GlobalStorageUpdateChecker(PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
-    PluginsUpdateChecker pluginsUpdateChecker, GlobalSettingsUpdateChecker globalSettingsUpdateChecker,
-    QualityProfilesUpdateChecker qualityProfilesUpdateChecker) {
+    PluginsUpdateChecker pluginsUpdateChecker, GlobalSettingsUpdateChecker globalSettingsUpdateChecker) {
     this.pluginsChecker = pluginsChecker;
     this.statusChecker = statusChecker;
     this.pluginsUpdateChecker = pluginsUpdateChecker;
     this.globalSettingsUpdateChecker = globalSettingsUpdateChecker;
-    this.qualityProfilesUpdateChecker = qualityProfilesUpdateChecker;
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
@@ -58,9 +55,6 @@ public class GlobalStorageUpdateChecker {
 
     progress.setProgressAndCheckCancel("Checking plugins", 0.6f);
     pluginsUpdateChecker.checkForUpdates(result, serverStatus);
-
-    progress.setProgressAndCheckCancel("Checking quality profiles", 0.8f);
-    qualityProfilesUpdateChecker.checkForUpdates(result);
 
     progress.setProgressAndCheckCancel("Done", 1.0f);
 

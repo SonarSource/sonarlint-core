@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
 import java.util.Date;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -49,15 +50,15 @@ public class OrganizationStorageUpdateExecutor {
     this.tempFolder = tempFolder;
   }
 
-  public void update(String organizationKey, ProgressWrapper progress) {
+  public void update(@Nullable String organizationKey, ProgressWrapper progress) {
     Path temp = tempFolder.newDir().toPath();
 
     try {
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp);
+      rulesDownloader.fetchRulesTo(organizationKey, temp);
 
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
-      qualityProfilesDownloader.fetchQualityProfilesTo(temp);
+      qualityProfilesDownloader.fetchQualityProfilesTo(organizationKey, temp);
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

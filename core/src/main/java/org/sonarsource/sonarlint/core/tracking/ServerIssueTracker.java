@@ -66,7 +66,7 @@ public class ServerIssueTracker {
   private List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, ProjectId projectId, String fileKey) {
     try {
       logger.debug("fetchServerIssues moduleKey=" + projectId + ", fileKey=" + fileKey);
-      return engine.downloadServerIssues(serverConfiguration, projectId, fileKey);
+      return engine.downloadServerIssues(serverConfiguration, projectId, fileKey, null);
     } catch (DownloadException e) {
       logger.debug("failed to download server issues", e);
       console.info(e.getMessage());

@@ -41,11 +41,11 @@ import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalSettingsUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalStorageUpdateChecker;
-import org.sonarsource.sonarlint.core.container.connected.update.check.ProjectStorageUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.PluginsUpdateChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.check.ProjectStorageUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.QualityProfilesUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
-import org.sonarsource.sonarlint.core.container.connected.update.perform.ModuleStorageUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
@@ -83,7 +83,7 @@ public class ConnectedContainer extends ComponentContainer {
       GlobalSettingsUpdateChecker.class,
       ProjectConfigurationDownloader.class,
       QualityProfilesUpdateChecker.class,
-      ModuleStorageUpdateExecutor.class,
+      ProjectStorageUpdateExecutor.class,
       PluginReferencesDownloader.class,
       SettingsDownloader.class,
       ProjectQualityProfilesDownloader.class,
@@ -99,16 +99,16 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectStorageStatusReader.class);
   }
 
-  public void update(ProgressWrapper progress) {
+  public void updateGlobalStorage(ProgressWrapper progress) {
     getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateModule(ProjectId projectId) {
+  public void updateProjectStorage(ProjectId projectId, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageManager.class).getGlobalStorageStatus();
     if (updateStatus == null) {
       throw new IllegalStateException("Please update server first");
     }
-    getComponentByType(ModuleStorageUpdateExecutor.class).update(projectId);
+    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectId);
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
@@ -123,14 +123,14 @@ public class ConnectedContainer extends ComponentContainer {
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProjectId projectId, ProgressWrapper progress) {
-    ProjectStorageStatus moduleUpdateStatus = getComponentByType(ProjectStorageStatusReader.class).readStatus(projectId);
-    if (moduleUpdateStatus == null || moduleUpdateStatus.isStale()) {
-      throw new StorageException(String.format("No data stored for module '%s' or invalid format. Please update the binding.", projectId), false);
+    ProjectStorageStatus projectUpdateStatus = getComponentByType(ProjectStorageStatusReader.class).readStatus(projectId);
+    if (projectUpdateStatus == null || projectUpdateStatus.isStale()) {
+      throw new StorageException(String.format("No data stored for project '%s' or invalid format. Please update the binding.", projectId), false);
     }
     try {
       return getComponentByType(ProjectStorageUpdateChecker.class).checkForUpdates(projectId, progress);
     } catch (Exception e) {
-      String msg = "Error when checking for configuration update of module '" + projectId + "'";
+      String msg = "Error when checking for configuration update of project '" + projectId + "'";
       LOG.debug(msg, e);
       // null as cause so that it doesn't get wrapped
       throw new DownloadException(msg + ": " + e.getMessage(), null);

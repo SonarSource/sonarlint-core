@@ -17,28 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import java.util.Date;
+import org.junit.Before;
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-public class DefaultModuleStorageStatus implements ProjectStorageStatus {
-  private final Date lastUpdateDate;
-  private final boolean stale;
+public class OrganizationStorageUpdateCheckerTest {
 
-  public DefaultModuleStorageStatus(Date lastUpdateDate, boolean stale) {
-    this.lastUpdateDate = lastUpdateDate;
-    this.stale = stale;
+  private OrganizationStorageUpdateChecker checker;
+
+  @Before
+  public void prepare() {
+    checker = new OrganizationStorageUpdateChecker(mock(QualityProfilesUpdateChecker.class));
   }
 
-  @Override
-  public Date getLastUpdateDate() {
-    return lastUpdateDate;
+  @Test
+  public void testNoChanges() {
+    StorageUpdateCheckResult result = checker.checkForUpdate(null, mock(ProgressWrapper.class));
+
+    assertThat(result.needUpdate()).isFalse();
+    assertThat(result.changelog()).isEmpty();
   }
 
-  @Override
-  public boolean isStale() {
-    return stale;
-  }
 }

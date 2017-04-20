@@ -25,23 +25,23 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.annotation.CheckForNull;
-
+import javax.annotation.Nullable;
 import org.sonar.api.rule.RuleKey;
 import org.sonarqube.ws.Common.RuleType;
 import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 
 public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
@@ -53,10 +53,10 @@ public class RulesDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchRulesTo(Path destDir) {
+  public void fetchRulesTo(@Nullable String organization, Path destDir) {
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
-    fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile);
+    fetchRulesAndActiveRules(organization, rulesBuilder, activeRulesBuildersByQProfile);
     Path activeRulesDir = destDir.resolve(StorageManager.ACTIVE_RULES_FOLDER);
     FileUtils.mkdirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
@@ -66,13 +66,13 @@ public class RulesDownloader {
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StorageManager.RULES_PB));
   }
 
-  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile) {
+  private void fetchRulesAndActiveRules(@Nullable String organization, Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile) {
     int page = 1;
     int pageSize = 500;
     int loaded = 0;
 
     while (true) {
-      SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)));
+      SearchResponse response = loadFromStream(wsClient.get(getUrl(organization, page, pageSize)));
       readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
 
@@ -83,9 +83,12 @@ public class RulesDownloader {
     }
   }
 
-  private static String getUrl(int page, int pageSize) {
+  private static String getUrl(@Nullable String organization, int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
+    if (organization != null) {
+      builder.append("&organization=").append(StringUtils.urlEncode(organization));
+    }
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();

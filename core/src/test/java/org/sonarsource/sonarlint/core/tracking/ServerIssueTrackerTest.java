@@ -53,7 +53,7 @@ public class ServerIssueTrackerTest {
 
     ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
     tracker.update(serverConfiguration, engine, PROJECT_ID, Collections.singleton(filePath));
-    verify(engine).downloadServerIssues(serverConfiguration, PROJECT_ID, filePath);
+    verify(engine).downloadServerIssues(serverConfiguration, PROJECT_ID, filePath, null);
     verifyNoMoreInteractions(engine);
   }
 
@@ -64,9 +64,9 @@ public class ServerIssueTrackerTest {
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
 
     ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
-    when(engine.downloadServerIssues(serverConfiguration, PROJECT_ID, filePath)).thenThrow(new DownloadException());
+    when(engine.downloadServerIssues(serverConfiguration, PROJECT_ID, filePath, null)).thenThrow(new DownloadException());
     tracker.update(serverConfiguration, engine, PROJECT_ID, Collections.singleton(filePath));
-    verify(engine).downloadServerIssues(serverConfiguration, PROJECT_ID, filePath);
+    verify(engine).downloadServerIssues(serverConfiguration, PROJECT_ID, filePath, null);
     verify(engine).getServerIssues(PROJECT_ID, filePath);
     verifyNoMoreInteractions(engine);
   }

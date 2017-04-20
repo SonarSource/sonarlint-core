@@ -24,7 +24,7 @@ import java.util.Date;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.container.model.DefaultModuleStorageStatus;
+import org.sonarsource.sonarlint.core.container.model.DefaultProjectStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class ProjectStorageStatusReader {
@@ -41,7 +41,7 @@ public class ProjectStorageStatusReader {
     if (updateStatusPath.toFile().exists()) {
       final Sonarlint.StorageStatus statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());
       final boolean stale = !statusFromStorage.getStorageVersion().equals(StorageManager.STORAGE_VERSION);
-      return new DefaultModuleStorageStatus(new Date(statusFromStorage.getUpdateTimestamp()), stale);
+      return new DefaultProjectStorageStatus(new Date(statusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;
   }

@@ -32,21 +32,22 @@ import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
 public class StorageAnalyzer {
-  private final ProjectStorageStatusReader moduleUpdateStatusReader;
-  private final GlobalUpdateStatusReader globalUpdateStatusReader;
+  private final ProjectStorageStatusReader projectUpdateStatusReader;
+  private final StorageManager storageManager;
 
-  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ProjectStorageStatusReader moduleUpdateStatusReader) {
-    this.globalUpdateStatusReader = globalUpdateStatusReader;
-    this.moduleUpdateStatusReader = moduleUpdateStatusReader;
+  public StorageAnalyzer(StorageManager storageManager, ProjectStorageStatusReader moduleUpdateStatusReader) {
+    this.storageManager = storageManager;
+    this.projectUpdateStatusReader = moduleUpdateStatusReader;
   }
 
   private void checkStatus(@Nullable ProjectId projectId) {
-    GlobalStorageStatus updateStatus = globalUpdateStatusReader.get();
+    GlobalStorageStatus updateStatus = storageManager.getGlobalStorageStatus();
     if (updateStatus == null) {
-      throw new StorageException("Missing global data. Please update server.", false);
+      throw new StorageException("Missing global storage. Please update server.", false);
     }
     if (projectId != null) {
-      ProjectStorageStatus projectUpdateStatus = moduleUpdateStatusReader.readStatus(projectId);
+
+      ProjectStorageStatus projectUpdateStatus = projectUpdateStatusReader.readStatus(projectId);
       if (projectUpdateStatus == null) {
         throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", projectId), false);
       } else if (projectUpdateStatus.isStale()) {

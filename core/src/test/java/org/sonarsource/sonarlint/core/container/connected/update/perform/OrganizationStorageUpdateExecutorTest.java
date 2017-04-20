@@ -30,14 +30,10 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
@@ -45,64 +41,59 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GlobalStorageUpdateExecutorTest {
+public class OrganizationStorageUpdateExecutorTest {
   private TempFolder tempFolder;
   private StorageManager storageManager;
   private SonarLintWsClient wsClient;
-  private GlobalStorageUpdateExecutor globalUpdate;
+  private OrganizationStorageUpdateExecutor orgaUpdate;
+  private RulesDownloader rulesDownloader;
 
   private File destDir;
   private File tempDir;
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private ModuleListDownloader moduleListDownloader;
 
   @Before
   public void setUp() throws IOException {
     storageManager = mock(StorageManager.class);
     tempFolder = mock(TempFolder.class);
+    rulesDownloader = mock(RulesDownloader.class);
 
-    wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6-SNAPSHOT\",\"status\": \"UP\"}");
+    wsClient = WsClientTestUtils.createMock();
 
     tempDir = temp.newFolder();
     destDir = temp.newFolder();
 
     when(tempFolder.newDir()).thenReturn(tempDir);
     storageManager = mock(StorageManager.class);
-    when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    moduleListDownloader = mock(ModuleListDownloader.class);
-    globalUpdate = new GlobalStorageUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
-      mock(PluginReferencesDownloader.class), mock(SettingsDownloader.class), moduleListDownloader,
+    when(storageManager.getOrganizationStorageRoot(null)).thenReturn(destDir.toPath());
+    orgaUpdate = new OrganizationStorageUpdateExecutor(storageManager, wsClient, rulesDownloader, mock(QualityProfilesDownloader.class),
       tempFolder);
   }
 
   @Test
-  public void testUpdate() throws Exception {
-    globalUpdate.update(new ProgressWrapper(null));
+  public void testUpdateDefaultOrga() throws Exception {
+    orgaUpdate.update(null, new ProgressWrapper(null));
 
     StorageStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.STORAGE_STATUS_PB), StorageStatus.parser());
     assertThat(updateStatus.getClientUserAgent()).isEqualTo("UT");
     assertThat(updateStatus.getSonarlintCoreVersion()).isEqualTo(VersionUtils.getLibraryVersion());
     assertThat(updateStatus.getUpdateTimestamp()).isNotEqualTo(0);
-
-    ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SERVER_INFO_PB), ServerInfos.parser());
-    assertThat(serverInfos.getId()).isEqualTo("20160308094653");
-    assertThat(serverInfos.getVersion()).isEqualTo("5.6-SNAPSHOT");
   }
 
   @Test
   public void dontCopyOnError() throws IOException {
     Files.createDirectories(destDir.toPath());
     Files.createFile(destDir.toPath().resolve("test"));
-    doThrow(IllegalStateException.class).when(moduleListDownloader).fetchModulesListTo(any(Path.class), anyString());
+    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(isNull(), any(Path.class));
     try {
-      globalUpdate.update(new ProgressWrapper(null));
+      orgaUpdate.update(null, new ProgressWrapper(null));
       fail("Expected exception");
     } catch (IllegalStateException e) {
       // dest left untouched

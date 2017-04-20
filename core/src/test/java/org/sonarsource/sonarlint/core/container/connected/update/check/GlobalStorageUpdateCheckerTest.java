@@ -42,7 +42,7 @@ public class GlobalStorageUpdateCheckerTest {
     when(statusChecker.checkVersionAndStatus()).thenReturn(ServerInfos.newBuilder().build());
 
     checker = new GlobalStorageUpdateChecker(mock(PluginVersionChecker.class), statusChecker, mock(PluginsUpdateChecker.class),
-      mock(GlobalSettingsUpdateChecker.class), mock(QualityProfilesUpdateChecker.class));
+      mock(GlobalSettingsUpdateChecker.class));
   }
 
   @Test
