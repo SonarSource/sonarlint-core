@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -77,6 +78,7 @@ import static org.junit.Assume.assumeTrue;
 public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final ProjectId PROJECT_ID_JAVA = new ProjectId(null, PROJECT_KEY_JAVA);
   private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
   private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
@@ -195,10 +197,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void updateNoAuth() throws Exception {
     try {
-      engine.update(ServerConfiguration.builder()
+      engine.updateGlobalStorage(ServerConfiguration.builder()
         .url(ORCHESTRATOR.getServer().getUrl())
         .userAgent("SonarLint ITs")
-        .build());
+        .build(), null);
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
@@ -260,12 +262,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
 
     if (supportHtmlDesc()) {
-      assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
+      assertThat(engine.getRuleDetails(null, "squid:S106").getHtmlDescription()).contains("When logging a message there are");
     } else {
-      assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("Rule descriptions are only available in SonarLint with SonarQube 5.1+");
+      assertThat(engine.getRuleDetails(null, "squid:S106").getHtmlDescription()).contains("Rule descriptions are only available in SonarLint with SonarQube 5.1+");
     }
 
-    assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNull();
+    assertThat(engine.getProjectStorageStatus(PROJECT_ID_JAVA)).isNull();
   }
 
   @Test
@@ -274,7 +276,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     updateModule(PROJECT_KEY_JAVA);
 
-    assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNotNull();
+    assertThat(engine.getProjectStorageStatus(PROJECT_ID_JAVA)).isNotNull();
   }
 
   @Test
@@ -284,7 +286,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     String ruleKey = "squid:S106";
 
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
+    assertThat(engine.getRuleDetails(null, ruleKey).getExtendedDescription()).isEmpty();
 
     String extendedDescription = "my dummy extended description";
 
@@ -296,7 +298,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     updateGlobal();
 
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getRuleDetails(null, ruleKey).getExtendedDescription()).isEqualTo(extendedDescription);
   }
 
   @Test
@@ -443,7 +445,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       assertThat(issueListener.getIssues()).hasSize(3);
 
-      assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("my_rule_description");
+      assertThat(engine.getRuleDetails(null, "squid:myrule").getHtmlDescription()).contains("my_rule_description");
 
     } finally {
 
@@ -553,18 +555,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
-    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_ID_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that is not in the whitelist
     setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
-    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_ID_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that *is* in the whitelist
     setMultiValuesSettings(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
 
-    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_ID_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
   }
@@ -600,11 +602,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateModule(String projectKey) {
-    engine.updateModule(getServerConfig(), projectKey);
+    engine.updateProjectStorage(getServerConfig(), new ProjectId(null, projectKey), null);
   }
 
   private void updateGlobal() {
-    engine.update(getServerConfig());
+    engine.updateGlobalStorage(getServerConfig(), null);
   }
 
   private ServerConfiguration getServerConfig() {

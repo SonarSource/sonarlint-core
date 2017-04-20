@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 
@@ -159,19 +160,19 @@ public class LicenseTest extends AbstractConnectedTest {
   }
 
   private void updateModule(String projectKey) {
-    engine.updateModule(ServerConfiguration.builder()
+    engine.updateProjectStorage(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), projectKey);
+      .build(), new ProjectId(null, projectKey), null);
   }
 
   private void updateGlobal() {
-    engine.update(ServerConfiguration.builder()
+    engine.updateGlobalStorage(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build());
+      .build(), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

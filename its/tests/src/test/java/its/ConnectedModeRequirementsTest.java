@@ -99,7 +99,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     exception.expect(UnsupportedServerException.class);
     exception.expectMessage("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 4.0)");
 
-    engine.update(config());
+    engine.updateGlobalStorage(config(), null);
   }
 
   @Test

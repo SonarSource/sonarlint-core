@@ -35,6 +35,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 
 public class AbstractConnectedTest {
   protected static final String SONARLINT_USER = "sonarlint";
@@ -62,7 +63,7 @@ public class AbstractConnectedTest {
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
     final Path path = Paths.get("projects/" + projectDir + "/" + filePath).toAbsolutePath();
-    return new ConnectedAnalysisConfiguration(projectKey,
+    return new ConnectedAnalysisConfiguration(new ProjectId(null, projectKey),
       new File("projects/" + projectDir).toPath().toAbsolutePath(),
       t.newFolder().toPath(),
       Collections.singletonList(new TestClientInputFile(path, false, StandardCharsets.UTF_8)),
@@ -71,7 +72,7 @@ public class AbstractConnectedTest {
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
     final Path path = Paths.get(absoluteFilePath).toAbsolutePath();
-    return new ConnectedAnalysisConfiguration(projectKey,
+    return new ConnectedAnalysisConfiguration(new ProjectId(null, projectKey),
       path.getParent(),
       t.newFolder().toPath(),
       Collections.singletonList(new TestClientInputFile(path, false, StandardCharsets.UTF_8)),

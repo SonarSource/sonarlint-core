@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
@@ -90,7 +91,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       }
 
       ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration(
-        requestConfig.getModuleKey(),
+        new ProjectId(null, requestConfig.getModuleKey()),
         Paths.get(requestConfig.getBaseDir()),
         Paths.get(requestConfig.getWorkDir()),
         files,
@@ -113,7 +114,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   public void update(ServerConfig request, StreamObserver<Void> response) {
     try {
       ServerConfiguration config = transformServerConfig(request);
-      engine.update(config);
+      engine.updateGlobalStorage(config, null);
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
@@ -178,7 +179,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   public void updateModule(ModuleUpdateReq request, StreamObserver<Void> response) {
     try {
       ServerConfiguration serverConfig = transformServerConfig(request.getServerConfig());
-      engine.updateModule(serverConfig, request.getModuleKey());
+      engine.updateProjectStorage(serverConfig, new ProjectId(null, request.getModuleKey()), null);
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
@@ -190,7 +191,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   @Override
   public void getRuleDetails(RuleKey key, StreamObserver<RuleDetails> response) {
     try {
-      org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(key.getKey());
+      org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(null, key.getKey());
       response.onNext(RuleDetails.newBuilder()
         .setKey(ruleDetails.getKey())
         .setName(ruleDetails.getName())
