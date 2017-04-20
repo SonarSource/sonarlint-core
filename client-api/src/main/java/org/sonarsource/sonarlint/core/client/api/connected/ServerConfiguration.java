@@ -31,6 +31,7 @@ public class ServerConfiguration {
   public static final int DEFAULT_READ_TIMEOUT_MILLISECONDS = 60_000;
 
   private final String url;
+  private final String organizationKey;
   private final String userAgent;
   private final String login;
   private final String password;
@@ -44,6 +45,7 @@ public class ServerConfiguration {
 
   private ServerConfiguration(Builder builder) {
     this.url = builder.url;
+    this.organizationKey = builder.organizationKey;
     this.userAgent = builder.userAgent;
     this.login = builder.login;
     this.password = builder.password;
@@ -58,6 +60,11 @@ public class ServerConfiguration {
 
   public String getUrl() {
     return url;
+  }
+
+  @CheckForNull
+  public String getOrganizationKey() {
+    return organizationKey;
   }
 
   @CheckForNull
@@ -114,6 +121,7 @@ public class ServerConfiguration {
 
   public static class Builder {
     private String url;
+    private String organizationKey;
     private String userAgent;
     private String login;
     private String password;
@@ -141,6 +149,15 @@ public class ServerConfiguration {
      */
     public Builder url(String url) {
       this.url = url;
+      return this;
+    }
+
+    /**
+     * Optional organization
+     * @param organizationKey key
+     */
+    public Builder organizationKey(@Nullable String organizationKey) {
+      this.organizationKey = organizationKey;
       return this;
     }
 

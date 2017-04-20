@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.CheckForNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
@@ -50,9 +51,11 @@ public class SonarLintWsClient {
 
   private final WsConnector client;
   private final String userAgent;
+  private final String organizationKey;
 
   public SonarLintWsClient(ServerConfiguration serverConfig) {
     this.userAgent = serverConfig.getUserAgent();
+    this.organizationKey = serverConfig.getOrganizationKey();
     client = buildClient(serverConfig);
   }
 
@@ -152,21 +155,38 @@ public class SonarLintWsClient {
     return userAgent;
   }
 
-  public static <G> void paginate(SonarLintWsClient wsclient, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
-    Consumer<G> responseConsummer) {
+  @CheckForNull
+  public String getOrganizationKey() {
+    return organizationKey;
+  }
+
+  // static to allow mocking SonarLintWsClient while still using this method
+  /**
+   * @param responseParser ProtoBuf parser
+   * @param getPaging extract {@link Paging} from the protobuf message
+   * @param responseConsummer consume the protobuf message and return <code>true</code> if some elements where present (or <code>false</code> is response is empty)
+   */
+  public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer) {
     int page = 0;
-    G protoBufResponse;
+    boolean stop = false;
     do {
       page++;
-      WsResponse response = wsclient.get(baseUrl + "&ps=" + PAGE_SIZE + "&p=" + page);
+      WsResponse response = client.get(baseUrl + (baseUrl.contains("?") ? "&" : "?") + "ps=" + PAGE_SIZE + "&p=" + page);
       try (InputStream stream = response.contentStream()) {
-        protoBufResponse = responseParser.apply(stream);
-
-        responseConsummer.accept(protoBufResponse);
+        G protoBufResponse = responseParser.apply(stream);
+        List<F> items = itemExtractor.apply(protoBufResponse);
+        for (F item : items) {
+          itemConsumer.accept(item);
+        }
+        boolean isEmpty = items.isEmpty();
+        Paging paging = getPaging.apply(protoBufResponse);
+        // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
+        stop = isEmpty || (paging.getTotal() > 0 && page * PAGE_SIZE >= paging.getTotal());
       } catch (IOException e) {
         throw new IllegalStateException("Failed to process paginated WS", e);
       }
-    } while (page * PAGE_SIZE < getPaging.apply(protoBufResponse).getTotal());
+    } while (!stop);
   }
 
   @FunctionalInterface

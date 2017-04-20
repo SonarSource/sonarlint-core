@@ -570,6 +570,21 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(result.changelog()).containsOnly("Project settings updated");
   }
 
+  @Test
+  public void downloadOrganizations() throws Exception {
+    WsHelper helper = new WsHelperImpl();
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      assertThat(helper.listOrganizations(getServerConfig())).hasSize(1);
+    } else {
+      try {
+        helper.listOrganizations(getServerConfig());
+        fail("Expected exception");
+      } catch (Exception e) {
+        assertThat(e).isInstanceOf(UnsupportedServerException.class);
+      }
+    }
+  }
+
   private void setSettings(@Nullable String moduleKey, String key, String value) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
       adminWsClient.settingsService().set(SetRequest.builder()

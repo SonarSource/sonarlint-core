@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
@@ -30,9 +32,9 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -100,11 +102,6 @@ public class WsHelperImplTest {
 
   @Test
   public void testConnection() {
-    ServerInfos serverInfo = ServerInfos.newBuilder()
-      .setStatus("OK")
-      .setVersion("5.5")
-      .build();
-    when(serverChecker.checkVersionAndStatus()).thenReturn(serverInfo);
     WsHelperImpl.validateConnection(serverChecker, pluginChecker, authChecker);
     verify(serverChecker).checkVersionAndStatus();
     verify(pluginChecker).checkPlugins();
@@ -117,6 +114,25 @@ public class WsHelperImplTest {
     ValidationResult validation = WsHelperImpl.validateConnection(serverChecker, pluginChecker, authChecker);
     verify(serverChecker).checkVersionAndStatus();
     assertThat(validation.success()).isFalse();
+  }
+
+  @Test
+  public void testListOrganizations() {
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=1", "/orgs/orgsp1.pb");
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=2", "/orgs/orgsp2.pb");
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=3", "/orgs/orgsp3.pb");
+    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker);
+    assertThat(orgs).hasSize(4);
+
+    verify(serverChecker).checkVersionAndStatus("6.3");
+
+    when(serverChecker.checkVersionAndStatus("6.3")).thenThrow(UnsupportedServerException.class);
+    try {
+      WsHelperImpl.listOrganizations(client, serverChecker);
+      fail("Expected exception");
+    } catch (UnsupportedServerException e) {
+      // Success
+    }
   }
 
 }

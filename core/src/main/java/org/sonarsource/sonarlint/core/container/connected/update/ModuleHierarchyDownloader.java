@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
-import static org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient.paginate;
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
@@ -58,8 +57,11 @@ public class ModuleHierarchyDownloader {
   public Map<String, String> fetchModuleHierarchy(String moduleKey) {
     List<Component> modules = new ArrayList<>();
 
-    paginate(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey), WsComponents.TreeWsResponse::parseFrom,
-      WsComponents.TreeWsResponse::getPaging, treeResponse -> modules.addAll(treeResponse.getComponentsList()));
+    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey),
+      WsComponents.TreeWsResponse::parseFrom,
+      WsComponents.TreeWsResponse::getPaging,
+      WsComponents.TreeWsResponse::getComponentsList,
+      modules::add);
 
     // doesn't include root
     Map<String, Component> modulesById = modules.stream().collect(Collectors.toMap(Component::getId, Function.identity()));

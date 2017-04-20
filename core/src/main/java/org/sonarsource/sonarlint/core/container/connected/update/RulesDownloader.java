@@ -25,23 +25,22 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.annotation.CheckForNull;
-
 import org.sonar.api.rule.RuleKey;
 import org.sonarqube.ws.Common.RuleType;
 import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 
 public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
@@ -83,9 +82,12 @@ public class RulesDownloader {
     }
   }
 
-  private static String getUrl(int page, int pageSize) {
+  private String getUrl(int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
+    if (wsClient.getOrganizationKey() != null) {
+      builder.append("&organization=").append(StringUtils.urlEncode(wsClient.getOrganizationKey()));
+    }
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();

@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 public class ModuleListDownloaderTest {
 
@@ -56,6 +57,23 @@ public class ModuleListDownloaderTest {
 
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
     WsClientTestUtils.addStreamResponse(wsClient, "api/components/search.protobuf?qualifiers=TRK,BRC&ps=500&p=1", "/update/searchmodulesp1.pb");
+
+    File tempDir = temp.newFolder();
+
+    ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
+    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3");
+
+    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
+    assertThat(moduleList.getModulesByKeyMap()).hasSize(282);
+    assertThat(moduleList.getModulesByKeyMap().values()).extracting("qu").contains("TRK", "BRC");
+  }
+
+  @Test
+  public void update_modules_after_6_dot_3_with_org() throws Exception {
+
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
+    WsClientTestUtils.addStreamResponse(wsClient, "api/components/search.protobuf?qualifiers=TRK,BRC&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
 
     File tempDir = temp.newFolder();
 

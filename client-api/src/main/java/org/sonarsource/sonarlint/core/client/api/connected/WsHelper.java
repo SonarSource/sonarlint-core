@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.List;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 public interface WsHelper {
@@ -37,4 +38,11 @@ public interface WsHelper {
    * and force is not set to true
    */
   String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force);
+
+  /**
+   * Return the list of remote organizations
+   * @param serverConfig
+   * @return
+   */
+  List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig);
 }
