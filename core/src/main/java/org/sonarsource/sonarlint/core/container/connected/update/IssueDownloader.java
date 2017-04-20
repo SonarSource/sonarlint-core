@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.List;
-import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 
-public interface IssueDownloader extends Function<String, List<ScannerInput.ServerIssue>> {
+public interface IssueDownloader {
+
+  List<ScannerInput.ServerIssue> download(@Nullable String organizationKey, String componentKey);
 }

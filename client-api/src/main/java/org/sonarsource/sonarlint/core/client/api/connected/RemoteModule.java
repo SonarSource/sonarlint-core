@@ -19,7 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import javax.annotation.CheckForNull;
+
 public interface RemoteModule {
+
+  @CheckForNull
+  String getOrganizationKey();
+
+  @CheckForNull
+  String getOrganizationName();
 
   String getKey();
 

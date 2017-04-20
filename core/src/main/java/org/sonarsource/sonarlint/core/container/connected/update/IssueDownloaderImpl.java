@@ -23,7 +23,7 @@ import com.google.protobuf.Parser;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
-
+import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -43,12 +43,12 @@ public class IssueDownloaderImpl implements IssueDownloader {
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
    * See also sonarqube:/web_api/batch
    *
-   * @param key project key, module key, or file key.
+   * @param componentKey project key, module key, or file key.
    * @return Iterator of issues. It can be empty but never null.
    */
   @Override
-  public List<ScannerInput.ServerIssue> apply(String key) {
-    try (WsResponse response = wsClient.rawGet(getIssuesUrl(key))) {
+  public List<ScannerInput.ServerIssue> download(@Nullable String organizationKey, String componentKey) {
+    try (WsResponse response = wsClient.rawGet(getIssuesUrl(organizationKey, componentKey))) {
       if (response.code() == 403 || response.code() == 404) {
         return Collections.emptyList();
       } else if (response.code() != 200) {
@@ -60,7 +60,8 @@ public class IssueDownloaderImpl implements IssueDownloader {
     }
   }
 
-  private static String getIssuesUrl(String key) {
-    return "/batch/issues?key=" + StringUtils.urlEncode(key);
+  private static String getIssuesUrl(@Nullable String organizationKey, String componentKey) {
+    String withoutOrg = "/batch/issues?key=" + StringUtils.urlEncode(componentKey);
+    return organizationKey != null ? (withoutOrg + "&organization=" + StringUtils.urlEncode(organizationKey)) : withoutOrg;
   }
 }

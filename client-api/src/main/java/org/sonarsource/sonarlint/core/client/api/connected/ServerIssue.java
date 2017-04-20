@@ -36,10 +36,10 @@ public interface ServerIssue {
 
   String assigneeLogin();
 
-  String moduleKey();
+  ProjectId projectId();
 
   String filePath();
-  
+
   String severity();
 
   boolean manualSeverity();

@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
@@ -60,13 +61,13 @@ public class PartialUpdater {
     return new PartialUpdater(issueStoreFactory, downloader, storageManager, issueStoreReader, moduleListDownloader);
   }
 
-  public void updateFileIssues(String moduleKey, String filePath) {
-    Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
+  public void updateFileIssues(ProjectId projectId, String filePath) {
+    Path serverIssuesPath = storageManager.getServerIssuesPath(projectId);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
-    String fileKey = issueStoreReader.getFileKey(moduleKey, filePath);
+    String fileKey = issueStoreReader.getFileKey(projectId, filePath);
     List<ServerIssue> issues;
     try {
-      issues = downloader.apply(fileKey);
+      issues = downloader.download(projectId.getOrganizationKey(), fileKey);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
@@ -74,8 +75,8 @@ public class PartialUpdater {
     issueStore.save(issues);
   }
 
-  public void updateFileIssues(String moduleKey, TempFolder tempFolder) {
-    new ServerIssueUpdater(storageManager, downloader, issueStoreFactory, tempFolder).update(moduleKey);
+  public void updateFileIssues(ProjectId projectId, TempFolder tempFolder) {
+    new ServerIssueUpdater(storageManager, downloader, issueStoreFactory, tempFolder).update(projectId);
   }
 
   public void updateModuleList() {

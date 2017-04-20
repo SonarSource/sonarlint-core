@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,8 +43,21 @@ public class StorageManagerTest {
       .setServerId("server_id")
       .build());
 
-    Path moduleStorageRoot = manager.getModuleStorageRoot("module.:key/with_branch%");
-    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("modules").resolve("module.%3Akey%2Fwith_branch%25"));
+    Path moduleStorageRoot = manager.getProjectStorageRoot(new ProjectId(null, "module.:key/with_branch%"));
+    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("defaultOrg").resolve("module.%3Akey%2Fwith_branch%25"));
+  }
+
+  @Test
+  public void encodeOrgaKeyForFs() throws Exception {
+
+    Path sonarUserHome = temp.newFolder().toPath();
+    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+      .setSonarLintUserHome(sonarUserHome)
+      .setServerId("server_id")
+      .build());
+
+    Path moduleStorageRoot = manager.getProjectStorageRoot(new ProjectId("my.orga%_", "module.:key/with_branch%"));
+    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("orgs").resolve("my.orga%25_").resolve("module.%3Akey%2Fwith_branch%25"));
   }
 
   @Test
@@ -68,10 +81,10 @@ public class StorageManagerTest {
       .setServerId("server")
       .build());
 
-    assertThat(manager.getServerIssuesPath("module")).isEqualTo(sonarUserHome
+    assertThat(manager.getServerIssuesPath(new ProjectId(null, "module"))).isEqualTo(sonarUserHome
       .resolve("storage")
       .resolve("server")
-      .resolve("modules")
+      .resolve("defaultOrg")
       .resolve("module")
       .resolve("server_issues"));
 

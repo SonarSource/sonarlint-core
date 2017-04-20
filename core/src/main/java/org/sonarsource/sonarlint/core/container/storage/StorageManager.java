@@ -26,8 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
@@ -36,7 +38,7 @@ public class StorageManager {
   /**
    * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
    */
-  public static final String STORAGE_VERSION = "1";
+  public static final String STORAGE_VERSION = "2";
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
@@ -51,13 +53,15 @@ public class StorageManager {
 
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
-  private final Path moduleStorageRoot;
+  private final Path organizationStorageRoot;
+  private final Path defaultOrganizationStorageRoot;
   private final GlobalStorageStatus storageStatus;
 
   public StorageManager(ConnectedGlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getServerId()));
     globalStorageRoot = serverStorageRoot.resolve("global");
-    moduleStorageRoot = serverStorageRoot.resolve("modules");
+    organizationStorageRoot = serverStorageRoot.resolve("orgs");
+    defaultOrganizationStorageRoot = serverStorageRoot.resolve("defaultOrg");
     storageStatus = initStorageStatus();
   }
 
@@ -69,8 +73,12 @@ public class StorageManager {
     return globalStorageRoot;
   }
 
-  public Path getModuleStorageRoot(String moduleKey) {
-    return moduleStorageRoot.resolve(encodeForFs(moduleKey));
+  public Path getOrganizationStorageRoot(@Nullable String organizationKey) {
+    return organizationKey == null ? defaultOrganizationStorageRoot : organizationStorageRoot.resolve(encodeForFs(organizationKey));
+  }
+
+  public Path getProjectStorageRoot(ProjectId project) {
+    return getOrganizationStorageRoot(project.getOrganizationKey()).resolve(encodeForFs(project.getProjectKey()));
   }
 
   public static String encodeForFs(String name) {
@@ -81,12 +89,12 @@ public class StorageManager {
     }
   }
 
-  public Path getModuleConfigurationPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(MODULE_CONFIGURATION_PB);
+  public Path getProjectConfigurationPath(ProjectId project) {
+    return getProjectStorageRoot(project).resolve(MODULE_CONFIGURATION_PB);
   }
 
-  public Path getModuleUpdateStatusPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(STORAGE_STATUS_PB);
+  public Path getProjectUpdateStatusPath(ProjectId project) {
+    return getProjectStorageRoot(project).resolve(STORAGE_STATUS_PB);
   }
 
   public Path getPluginReferencesPath() {
@@ -121,8 +129,8 @@ public class StorageManager {
     return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
   }
 
-  public Path getServerIssuesPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(SERVER_ISSUES_DIR);
+  public Path getServerIssuesPath(ProjectId project) {
+    return getProjectStorageRoot(project).resolve(SERVER_ISSUES_DIR);
   }
 
   @CheckForNull
@@ -152,8 +160,8 @@ public class StorageManager {
     return ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
   }
 
-  public Sonarlint.ServerIssues readServerIssesFromStorage(String moduleKey) {
-    return ProtobufUtil.readFile(getServerIssuesPath(moduleKey), Sonarlint.ServerIssues.parser());
+  public Sonarlint.ServerIssues readServerIssesFromStorage(ProjectId project) {
+    return ProtobufUtil.readFile(getServerIssuesPath(project), Sonarlint.ServerIssues.parser());
   }
 
   public Sonarlint.Rules readRulesFromStorage() {
@@ -172,8 +180,8 @@ public class StorageManager {
     return ProtobufUtil.readFile(getPluginReferencesPath(), Sonarlint.PluginReferences.parser());
   }
 
-  public Sonarlint.ModuleConfiguration readModuleConfigFromStorage(String moduleKey) {
-    return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
+  public Sonarlint.ModuleConfiguration readProjectConfigFromStorage(ProjectId project) {
+    return ProtobufUtil.readFile(getProjectConfigurationPath(project), Sonarlint.ModuleConfiguration.parser());
   }
 
   public Sonarlint.ModuleList readModuleListFromStorage() {

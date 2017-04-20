@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
@@ -26,8 +27,12 @@ public class DefaultRemoteModule implements RemoteModule {
   private final String key;
   private final String name;
   private final boolean root;
+  private final String organizationKey;
+  private final String organizationName;
 
-  public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
+  public DefaultRemoteModule(Sonarlint.ModuleList.Module module, @Nullable String organizationName) {
+    this.organizationKey = module.getOrgaKey();
+    this.organizationName = organizationName;
     this.key = module.getKey();
     this.name = module.getName();
     this.root = "TRK".equals(module.getQu());
@@ -36,6 +41,16 @@ public class DefaultRemoteModule implements RemoteModule {
   @Override
   public String getKey() {
     return key;
+  }
+
+  @Override
+  public String getOrganizationKey() {
+    return organizationKey;
+  }
+
+  @Override
+  public String getOrganizationName() {
+    return organizationName;
   }
 
   @Override

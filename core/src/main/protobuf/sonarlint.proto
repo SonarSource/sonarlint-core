@@ -119,12 +119,14 @@ message ServerIssues {
 }
 
 message ModuleList {
-  map<string,Module> modules_by_key = 1;
+  map<string, Module> modules_by_key = 1;
+  map<string, string> orga_by_key = 2;
   
   message Module {
-    string key = 1;
-    string name = 2;
-    string qu = 3;
+    string orga_key = 1;
+    string key = 2;
+    string name = 3;
+    string qu = 4;
   }
 }
 

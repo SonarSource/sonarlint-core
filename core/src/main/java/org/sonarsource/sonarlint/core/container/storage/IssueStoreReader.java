@@ -24,8 +24,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -41,31 +41,31 @@ public class IssueStoreReader {
     this.storageManager = storageManager;
   }
 
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    String fileKey = getFileKey(moduleKey, filePath);
+  public List<ServerIssue> getServerIssues(ProjectId projectId, String filePath) {
+    String fileKey = getFileKey(projectId, filePath);
 
-    Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
+    Path serverIssuesPath = storageManager.getServerIssuesPath(projectId);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
     List<ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
 
     return loadedIssues.stream()
-      .map(pbIssue -> transformIssue(pbIssue, moduleKey, filePath))
+      .map(pbIssue -> transformIssue(pbIssue, projectId, filePath))
       .collect(Collectors.toList());
   }
 
-  public String getFileKey(String moduleKey, String filePath) {
-    ModuleConfiguration moduleConfig = storageManager.readModuleConfigFromStorage(moduleKey);
+  public String getFileKey(ProjectId projectId, String filePath) {
+    ModuleConfiguration moduleConfig = storageManager.readProjectConfigFromStorage(projectId);
 
     if (moduleConfig == null) {
       // unknown module
-      throw new IllegalStateException("module not in storage: " + moduleKey);
+      throw new IllegalStateException("module not in storage: " + projectId);
     }
 
     Map<String, String> modulePaths = moduleConfig.getModulePathByKeyMap();
 
     // find longest prefix match
-    String subModuleKey = moduleKey;
+    String subModuleKey = projectId.getProjectKey();
     int prefixLen = 0;
 
     for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
@@ -81,14 +81,14 @@ public class IssueStoreReader {
     return subModuleKey + ":" + relativeFilePath;
   }
 
-  private static ServerIssue transformIssue(ScannerInput.ServerIssue pbIssue, String moduleKey, String filePath) {
+  private static ServerIssue transformIssue(ScannerInput.ServerIssue pbIssue, ProjectId projectId, String filePath) {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setChecksum(pbIssue.getChecksum());
     issue.setLine(pbIssue.getLine());
     issue.setFilePath(filePath);
-    issue.setModuleKey(moduleKey);
+    issue.setProjectId(projectId);
     issue.setManualSeverity(pbIssue.getManualSeverity());
     issue.setMessage(pbIssue.getMsg());
     issue.setSeverity(pbIssue.getSeverity().name());

@@ -19,9 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,17 +28,23 @@ import org.mockito.MockitoAnnotations;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public class StorageAnalyzerTest {
+  private static final ProjectId PROJECT_ID = new ProjectId(null, "module1");
+
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
   @Mock
   private GlobalUpdateStatusReader globalReader;
   @Mock
-  private ModuleStorageStatusReader moduleReader;
+  private ProjectStorageStatusReader moduleReader;
   @Mock
   private ConnectedAnalysisConfiguration config;
 
@@ -50,7 +53,7 @@ public class StorageAnalyzerTest {
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    when(config.moduleKey()).thenReturn("module1");
+    when(config.projectId()).thenReturn(PROJECT_ID);
     analyzer = new StorageAnalyzer(globalReader, moduleReader);
   }
 
@@ -66,7 +69,7 @@ public class StorageAnalyzerTest {
   @Test
   public void testNoModuleStorage() {
     when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
-    when(moduleReader.apply("module1")).thenReturn(null);
+    when(moduleReader.readStatus(PROJECT_ID)).thenReturn(null);
 
     exception.expect(StorageException.class);
     exception.expectMessage("No data stored for module");
@@ -76,9 +79,9 @@ public class StorageAnalyzerTest {
   @Test
   public void testStaleModuleStorage() {
     when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
-    ModuleStorageStatus moduleStatus = mock(ModuleStorageStatus.class);
+    ProjectStorageStatus moduleStatus = mock(ProjectStorageStatus.class);
     when(moduleStatus.isStale()).thenReturn(true);
-    when(moduleReader.apply("module1")).thenReturn(moduleStatus);
+    when(moduleReader.readStatus(PROJECT_ID)).thenReturn(moduleStatus);
 
     exception.expect(StorageException.class);
     exception.expectMessage("Stored data for module 'module1' is stale");

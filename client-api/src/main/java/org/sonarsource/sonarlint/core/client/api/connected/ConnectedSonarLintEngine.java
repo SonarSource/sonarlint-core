@@ -58,12 +58,12 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Return rule details.
+   * @param organizationKey Optional organization key
    * @param ruleKey See {@link Issue#getRuleKey()}
    * @return Rule details
    * @throws IllegalArgumentException if ruleKey is unknown
-   * @since 1.2
    */
-  RuleDetails getRuleDetails(String ruleKey);
+  RuleDetails getRuleDetails(@Nullable String organizationKey, String ruleKey);
 
   /**
    * Trigger an analysis
@@ -74,55 +74,49 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Gets locally stored server issues for a given file. 
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
    * @param filePath relative to the module to which the moduleKey refers.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
-  List<ServerIssue> getServerIssues(String moduleKey, String filePath);
+  List<ServerIssue> getServerIssues(ProjectId projectId, String filePath);
 
   /**
    * Downloads, stores and returns server issues for a given file. 
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
    * @param filePath relative to the module to which the moduleKey refers.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
-   * @since 2.5
    * @throws DownloadException if it fails to download
    */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
+  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectId projectId, String filePath);
 
   /**
-   * Downloads and stores server issues for a given module.
-   * @param serverConfig form which to download issues
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   * @since 2.9
+   * Downloads and stores server issues for a given project.
+   * @param serverConfig from which to download issues
+   * @param projectId to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
    */
-  void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey);
+  void downloadServerIssues(ServerConfiguration serverConfig, ProjectId project);
 
   /**
    * Get information about current global storage state
    * @return null if storage was never updated
-   * @since 2.6
    */
   @CheckForNull
   GlobalStorageStatus getGlobalStorageStatus();
 
   /**
-   * Get information about module storage state
-   * @return null if module was never updated
-   * @since 2.6
+   * Get information about project storage state
+   * @return null if project was never updated
    */
   @CheckForNull
-  ModuleStorageStatus getModuleStorageStatus(String moduleKey);
+  ProjectStorageStatus getProjectStorageStatus(ProjectId project);
 
   /**
    * Return all modules by key
-   * @since 2.0
    */
   Map<String, RemoteModule> allModulesByKey();
 
   /**
    * Attempts to download and store the list of modules and to return all modules by key
-   * @since 2.5
    * @throws DownloadException if it fails to download
    */
   Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig);
@@ -131,33 +125,27 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Update current server.
-   * @since 2.0
    * @throws UnsupportedServerException if server version is too low
    * @throws CanceledException if the update task was cancelled
    */
-  GlobalStorageStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
-
-  GlobalStorageStatus update(ServerConfiguration serverConfig);
+  GlobalStorageStatus updateGlobalStorage(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
-   * Update given module.
-   * @since 2.0
+   * Update given project storage.
    */
-  void updateModule(ServerConfiguration serverConfig, String moduleKey);
+  void updateProjectStorage(ServerConfiguration serverConfig, ProjectId projectId, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
-   * @since 2.6
    * @throws GlobalUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
    * @throws DownloadException if it fails to download
    */
   StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
-   * Check server to see if module storage need updates.
-   * @since 2.6
-   * @throws StorageException if module storage is not initialized or stale (see {@link #getModuleStorageStatus(String)})
+   * Check server to see if project storage need updates.
+   * @throws StorageException if project storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
    * @throws DownloadException if it fails to download
    */
-  StorageUpdateCheckResult checkIfModuleStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, ProjectId projectId, @Nullable ProgressMonitor monitor);
 }

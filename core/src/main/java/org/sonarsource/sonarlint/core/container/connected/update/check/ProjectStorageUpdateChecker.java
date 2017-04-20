@@ -25,35 +25,36 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-public class ModuleStorageUpdateChecker {
+public class ProjectStorageUpdateChecker {
 
-  private static final Logger LOG = Loggers.get(ModuleStorageUpdateChecker.class);
+  private static final Logger LOG = Loggers.get(ProjectStorageUpdateChecker.class);
 
   private final StorageManager storageManager;
-  private final ModuleConfigurationDownloader moduleConfigurationDownloader;
+  private final ProjectConfigurationDownloader moduleConfigurationDownloader;
   private final SettingsDownloader settingsDownloader;
 
-  public ModuleStorageUpdateChecker(StorageManager storageManager, ModuleConfigurationDownloader moduleConfigurationDownloader, SettingsDownloader settingsDownloader) {
+  public ProjectStorageUpdateChecker(StorageManager storageManager, ProjectConfigurationDownloader moduleConfigurationDownloader, SettingsDownloader settingsDownloader) {
     this.storageManager = storageManager;
     this.moduleConfigurationDownloader = moduleConfigurationDownloader;
     this.settingsDownloader = settingsDownloader;
   }
 
-  public StorageUpdateCheckResult checkForUpdates(String moduleKey, ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdates(ProjectId projectId, ProgressWrapper progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     String serverVersion = storageManager.readServerInfosFromStorage().getVersion();
     GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
 
-    ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey, globalProps);
-    ModuleConfiguration storageModuleConfiguration = storageManager.readModuleConfigFromStorage(moduleKey);
+    ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchProjectConfiguration(serverVersion, projectId, globalProps);
+    ModuleConfiguration storageModuleConfiguration = storageManager.readProjectConfigFromStorage(projectId);
 
     checkForSettingsUpdates(result, serverModuleConfiguration, storageModuleConfiguration);
 

@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultRemoteModuleTest {
   private DefaultRemoteModule remoteModule;
@@ -36,7 +36,7 @@ public class DefaultRemoteModuleTest {
       .setName("name")
       .setQu("TRK")
       .build();
-    remoteModule = new DefaultRemoteModule(module);
+    remoteModule = new DefaultRemoteModule(module, null);
   }
 
   @Test

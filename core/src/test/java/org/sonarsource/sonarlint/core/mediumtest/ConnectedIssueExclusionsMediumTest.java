@@ -44,10 +44,10 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -62,7 +62,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class ConnectedIssueExclusionsMediumTest {
 
-  private static final String JAVA_MODULE_KEY = "test-project-2";
+  private static final ProjectId JAVA_MODULE_KEY = new ProjectId(null, "test-project-2");
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
@@ -96,7 +96,7 @@ public class ConnectedIssueExclusionsMediumTest {
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
-    writeModuleStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
+    writeModuleStatus(tmpStorage, new ProjectId(null, "test-project"), VersionUtils.getLibraryVersion());
     writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, VersionUtils.getLibraryVersion());
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
@@ -108,13 +108,13 @@ public class ConnectedIssueExclusionsMediumTest {
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
     storageManager = sonarlint.getGlobalContainer().getComponentByType(StorageManager.class);
-    originalModuleConfig = storageManager.readModuleConfigFromStorage(JAVA_MODULE_KEY);
+    originalModuleConfig = storageManager.readProjectConfigFromStorage(JAVA_MODULE_KEY);
 
     baseDir = temp.newFolder();
   }
 
-  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("modules").resolve(name);
+  private static void writeModuleStatus(Path storage, ProjectId projectId, String version) throws IOException {
+    Path module = storage.resolve("local").resolve("defaultOrg").resolve(projectId.getProjectKey());
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StorageManager.STORAGE_VERSION)
@@ -255,8 +255,8 @@ public class ConnectedIssueExclusionsMediumTest {
 
   private void updateModuleConfig(StorageManager storageManager, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
     Builder newBuilder = ModuleConfiguration.newBuilder(originalModuleConfig);
-    newBuilder.getMutableProperties().putAll(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), storageManager.getModuleConfigurationPath(JAVA_MODULE_KEY));
+    newBuilder.putAllProperties(props);
+    ProtobufUtil.writeToFile(newBuilder.build(), storageManager.getProjectConfigurationPath(JAVA_MODULE_KEY));
   }
 
   private ClientInputFile prepareJavaInputFile1() throws IOException {

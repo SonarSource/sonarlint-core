@@ -21,23 +21,22 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.file.Path;
 import java.util.Date;
-import java.util.function.Function;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultModuleStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class ModuleStorageStatusReader implements Function<String, ModuleStorageStatus> {
+public class ProjectStorageStatusReader {
   private final StorageManager storageManager;
 
-  public ModuleStorageStatusReader(StorageManager storageManager) {
+  public ProjectStorageStatusReader(StorageManager storageManager) {
     this.storageManager = storageManager;
   }
 
-  @Override
   @CheckForNull
-  public ModuleStorageStatus apply(String moduleKey) {
-    Path updateStatusPath = storageManager.getModuleUpdateStatusPath(moduleKey);
+  public ProjectStorageStatus readStatus(ProjectId projectId) {
+    Path updateStatusPath = storageManager.getProjectUpdateStatusPath(projectId);
 
     if (updateStatusPath.toFile().exists()) {
       final Sonarlint.StorageStatus statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());

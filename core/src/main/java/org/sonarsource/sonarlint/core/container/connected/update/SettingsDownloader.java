@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import org.sonarqube.ws.Settings.FieldValues.Value;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -61,22 +62,26 @@ public class SettingsDownloader {
     return builder.build();
   }
 
-  public void fetchProjectSettings(String serverVersion, String moduleKey, GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder) {
-    fetchSettings(serverVersion, moduleKey, (k, v) -> !v.equals(globalProps.getPropertiesMap().get(k)), projectConfigurationBuilder::putProperties);
+  public void fetchProjectSettings(String serverVersion, ProjectId projectId, GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder) {
+    fetchSettings(serverVersion, projectId, (k, v) -> !v.equals(globalProps.getPropertiesMap().get(k)), projectConfigurationBuilder::putProperties);
   }
 
-  private void fetchSettings(String serverVersion, @Nullable String moduleKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
+  private void fetchSettings(String serverVersion, @Nullable ProjectId projectId, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
     if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchUsingSettingsWS(moduleKey, consumer);
+      fetchUsingSettingsWS(projectId, consumer);
     } else {
-      fetchUsingPropertiesWS(moduleKey, filter, consumer);
+      fetchUsingPropertiesWS(projectId != null ? projectId.getProjectKey() : null, filter, consumer);
     }
   }
 
-  private void fetchUsingSettingsWS(@Nullable String moduleKey, BiConsumer<String, String> consumer) {
+  private void fetchUsingSettingsWS(@Nullable ProjectId projectId, BiConsumer<String, String> consumer) {
     String url = API_SETTINGS_PATH;
-    if (moduleKey != null) {
-      url += "?component=" + StringUtils.urlEncode(moduleKey);
+    if (projectId != null) {
+      url += "?component=" + StringUtils.urlEncode(projectId.getProjectKey());
+      String organizationKey = projectId.getOrganizationKey();
+      if (organizationKey != null) {
+        url += "&organization=" + StringUtils.urlEncode(organizationKey);
+      }
     }
     WsResponse response = wsClient.get(url);
     try (InputStream is = response.contentStream()) {

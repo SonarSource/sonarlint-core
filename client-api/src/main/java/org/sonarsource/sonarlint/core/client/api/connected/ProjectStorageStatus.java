@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Date;
 
-public interface ModuleStorageStatus {
+public interface ProjectStorageStatus {
 
   Date getLastUpdateDate();
   

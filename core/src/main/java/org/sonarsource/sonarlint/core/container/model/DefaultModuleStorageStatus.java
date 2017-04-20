@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.Date;
 
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 
-public class DefaultModuleStorageStatus implements ModuleStorageStatus {
+public class DefaultModuleStorageStatus implements ProjectStorageStatus {
   private final Date lastUpdateDate;
   private final boolean stale;
 

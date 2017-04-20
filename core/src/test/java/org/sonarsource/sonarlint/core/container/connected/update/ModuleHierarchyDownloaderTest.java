@@ -29,6 +29,7 @@ import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.TreeWsResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectId;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader.PAGE_SIZE;
 
 public class ModuleHierarchyDownloaderTest {
+  private static final ProjectId PROJECT_ID = new ProjectId(null, "testRoot");
   private SonarLintWsClient wsClient;
   private ModuleHierarchyDownloader downloader;
 
@@ -63,7 +65,7 @@ public class ModuleHierarchyDownloaderTest {
       "/update/show_module1_module12.pb");
     WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=AVeumyM5SDj1uJJMtck9",
       "/update/show_module2.pb");
-    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy("testRoot");
+    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy(PROJECT_ID);
     assertThat(fetchModuleHierarchy).contains(
       entry("testRoot", ""),
       entry("testRoot:module1", "module1"),
@@ -86,7 +88,7 @@ public class ModuleHierarchyDownloaderTest {
     WsClientTestUtils
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=testRoot&ps=500&p=1", responseBuilder.build());
 
-    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy("testRoot");
+    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy(PROJECT_ID);
     assertThat(fetchModuleHierarchy).hasSize(PAGE_SIZE + 1 /* root module */);
   }
 
@@ -115,7 +117,7 @@ public class ModuleHierarchyDownloaderTest {
     WsClientTestUtils
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=testRoot&ps=500&p=2", responseBuilder.build());
 
-    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy("testRoot");
+    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy(PROJECT_ID);
     assertThat(fetchModuleHierarchy).hasSize(501 + 1);
   }
 
@@ -126,7 +128,7 @@ public class ModuleHierarchyDownloaderTest {
     downloader = new ModuleHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Error 503");
-    downloader.fetchModuleHierarchy("testRoot");
+    downloader.fetchModuleHierarchy(PROJECT_ID);
   }
 
   @Test
@@ -137,6 +139,6 @@ public class ModuleHierarchyDownloaderTest {
     downloader = new ModuleHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to process paginated WS");
-    downloader.fetchModuleHierarchy("testRoot");
+    downloader.fetchModuleHierarchy(PROJECT_ID);
   }
 }

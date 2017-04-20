@@ -19,19 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.toByteArray;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.toByteArray;
 
 public class IssueDownloaderImplTest {
   @Rule
@@ -49,7 +48,7 @@ public class IssueDownloaderImplTest {
     }
 
     IssueDownloader issueDownloader = new IssueDownloaderImpl(wsClient);
-    assertThat(issueDownloader.apply(key)).containsOnly(issue);
+    assertThat(issueDownloader.download(null, key)).containsOnly(issue);
   }
 
   @Test
@@ -59,7 +58,7 @@ public class IssueDownloaderImplTest {
     WsClientTestUtils.addFailedResponse(wsClient, "/batch/issues?key=" + key, 403, "");
 
     IssueDownloader issueDownloader = new IssueDownloaderImpl(wsClient);
-    assertThat(issueDownloader.apply(key)).isEmpty();
+    assertThat(issueDownloader.download(null, key)).isEmpty();
   }
 
   @Test
@@ -71,7 +70,7 @@ public class IssueDownloaderImplTest {
     IssueDownloader issueDownloader = new IssueDownloaderImpl(wsClient);
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Error 503");
-    issueDownloader.apply(key);
+    issueDownloader.download(null, key);
   }
 
   @Test
@@ -81,6 +80,6 @@ public class IssueDownloaderImplTest {
     WsClientTestUtils.addFailedResponse(wsClient, "/batch/issues?key=" + key, 404, "");
 
     IssueDownloader issueDownloader = new IssueDownloaderImpl(wsClient);
-    assertThat(issueDownloader.apply(key)).isEmpty();
+    assertThat(issueDownloader.download(null, key)).isEmpty();
   }
 }
