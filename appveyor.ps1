@@ -111,5 +111,5 @@ CALLSTACK:$(Get-PSCallStack | Out-String)
 }
 
 InstallAppveyorTools
-mvn verify
+mvn verify "--batch-mode"
 CheckLastExitCode
