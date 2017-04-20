@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,6 +38,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL;
 
 public class RulesDownloaderTest {
@@ -63,6 +63,26 @@ public class RulesDownloaderTest {
     WsClientTestUtils.addStreamResponse(wsClient,
       RULES_SEARCH_URL + "&p=2&ps=500",
       "/update/rulesp2.pb");
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    File tempDir = temp.newFolder();
+    rulesUpdate.fetchRulesTo(tempDir.toPath());
+
+    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    assertThat(rules.getRulesByKeyMap()).hasSize(939);
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
+  }
+
+  @Test
+  public void rules_update_protobuf_with_org() throws Exception {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse(
+      RULES_SEARCH_URL + "&organization=myOrg&p=1&ps=500",
+      "/update/rulesp1.pb");
+    WsClientTestUtils.addStreamResponse(wsClient,
+      RULES_SEARCH_URL + "&organization=myOrg&p=2&ps=500",
+      "/update/rulesp2.pb");
+    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();

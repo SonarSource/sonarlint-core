@@ -81,24 +81,6 @@ public interface ConnectedSonarLintEngine {
   List<ServerIssue> getServerIssues(String moduleKey, String filePath);
 
   /**
-   * Downloads, stores and returns server issues for a given file. 
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   * @param filePath relative to the module to which the moduleKey refers.
-   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
-   * @since 2.5
-   * @throws DownloadException if it fails to download
-   */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
-
-  /**
-   * Downloads and stores server issues for a given module.
-   * @param serverConfig form which to download issues
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   * @since 2.9
-   */
-  void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey);
-
-  /**
    * Get information about current global storage state
    * @return null if storage was never updated
    * @since 2.6
@@ -120,14 +102,14 @@ public interface ConnectedSonarLintEngine {
    */
   Map<String, RemoteModule> allModulesByKey();
 
+  // REQUIRES SERVER TO BE REACHABLE
+
   /**
    * Attempts to download and store the list of modules and to return all modules by key
    * @since 2.5
    * @throws DownloadException if it fails to download
    */
   Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig);
-
-  // REQUIRES SERVER TO BE REACHABLE
 
   /**
    * Update current server.
@@ -160,4 +142,23 @@ public interface ConnectedSonarLintEngine {
    * @throws DownloadException if it fails to download
    */
   StorageUpdateCheckResult checkIfModuleStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
+
+  /**
+   * Downloads, stores and returns server issues for a given file. 
+   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param filePath relative to the module to which the moduleKey refers.
+   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
+   * @since 2.5
+   * @throws DownloadException if it fails to download
+   */
+  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
+
+  /**
+   * Downloads and stores server issues for a given module.
+   * @param serverConfig form which to download issues
+   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @since 2.9
+   */
+  void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey);
+
 }

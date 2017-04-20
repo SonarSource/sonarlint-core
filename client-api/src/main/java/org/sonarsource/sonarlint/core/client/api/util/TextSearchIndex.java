@@ -28,10 +28,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
 /**
  * Indexes text associated to objects, and performs full text search to find matching objects.
@@ -53,6 +53,14 @@ public class TextSearchIndex<T> {
 
   public TextSearchIndex() {
     clear();
+  }
+
+  public int size() {
+    return indexedObjs.size();
+  }
+
+  public boolean isEmpty() {
+    return indexedObjs.isEmpty();
   }
 
   public void index(T obj, String text) {

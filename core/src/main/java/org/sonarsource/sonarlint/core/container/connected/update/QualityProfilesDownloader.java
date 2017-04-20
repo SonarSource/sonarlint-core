@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfilesDownloader {
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
@@ -46,7 +47,11 @@ public class QualityProfilesDownloader {
   public QProfiles fetchQualityProfiles() {
     QProfiles.Builder qProfileBuilder = QProfiles.newBuilder();
 
-    try (InputStream contentStream = wsClient.get(DEFAULT_QP_SEARCH_URL).contentStream()) {
+    String searchUrl = DEFAULT_QP_SEARCH_URL;
+    if (wsClient.getOrganizationKey() != null) {
+      searchUrl += "?organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
+    }
+    try (InputStream contentStream = wsClient.get(searchUrl).contentStream()) {
       SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
       for (QualityProfile qp : qpResponse.getProfilesList()) {
         QProfile.Builder qpBuilder = QProfile.newBuilder();

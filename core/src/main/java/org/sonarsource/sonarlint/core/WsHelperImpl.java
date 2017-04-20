@@ -20,8 +20,11 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import org.sonarqube.ws.Organizations;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -32,6 +35,7 @@ import org.sonarsource.sonarlint.core.container.connected.validate.Authenticatio
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -84,5 +88,33 @@ public class WsHelperImpl implements WsHelper {
   public String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force) {
     SonarLintWsClient client = createClient(serverConfig);
     return generateAuthenticationToken(new ServerVersionAndStatusChecker(client), client, name, force);
+  }
+
+  @Override
+  public List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig) {
+    SonarLintWsClient client = createClient(serverConfig);
+    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
+    return listOrganizations(client, serverChecker);
+  }
+
+  static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker) {
+    try {
+      serverChecker.checkVersionAndStatus("6.3");
+      return fetchOrganizations(client);
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    }
+  }
+
+  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client) {
+    List<RemoteOrganization> result = new ArrayList<>();
+
+    SonarLintWsClient.getPaginated(client, "api/organizations/search.protobuf",
+      Organizations.SearchWsResponse::parseFrom,
+      Organizations.SearchWsResponse::getPaging,
+      Organizations.SearchWsResponse::getOrganizationsList,
+      org -> result.add(new DefaultRemoteOrganization(org)));
+
+    return result;
   }
 }

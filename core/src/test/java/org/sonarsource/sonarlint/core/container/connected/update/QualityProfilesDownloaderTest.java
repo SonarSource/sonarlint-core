@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,11 +32,10 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class QualityProfilesDownloaderTest {
   private QualityProfilesDownloader qProfilesDownloader;
-  private SonarLintWsClient wsClient;
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -45,14 +43,30 @@ public class QualityProfilesDownloaderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
-  @Before
-  public void setUp() {
-    wsClient = mock(SonarLintWsClient.class);
+  @Test
+  public void test() {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
+    qProfilesDownloader = new QualityProfilesDownloader(wsClient);
+    qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
+
+    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
+    assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
+      "cs-sonar-way-58886",
+      "java-sonar-way-74592",
+      "java-empty-74333",
+      "js-sonar-security-way-70539",
+      "js-sonar-way-60746");
+
+    assertThat(qProfiles.getDefaultQProfilesByLanguageMap()).containsOnly(
+      entry("cs", "cs-sonar-way-58886"),
+      entry("java", "java-sonar-way-74592"),
+      entry("js", "js-sonar-way-60746"));
   }
 
   @Test
-  public void test() {
-    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
+  public void testWithOrg() {
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?organization=myOrg", "/update/qualityprofiles.pb");
+    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
     qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
@@ -73,7 +87,7 @@ public class QualityProfilesDownloaderTest {
   @Test
   public void testParsingError() throws IOException {
     // wrong file
-    WsClientTestUtils.addStreamResponse(wsClient, "/api/qualityprofiles/search.protobuf", "/update/all_projects.json");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf", "/update/all_projects.json");
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
 
     exception.expect(IllegalStateException.class);

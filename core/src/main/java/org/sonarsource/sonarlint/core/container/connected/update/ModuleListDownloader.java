@@ -24,16 +24,14 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
 import org.sonarqube.ws.WsComponents;
-import org.sonarqube.ws.WsComponents.Component;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-
-import static org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient.paginate;
 
 public class ModuleListDownloader {
   static final int PAGE_SIZE = 500;
@@ -56,16 +54,21 @@ public class ModuleListDownloader {
     ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
     Builder moduleBuilder = ModuleList.Module.newBuilder();
 
-    paginate(wsClient, "api/components/search.protobuf?qualifiers=TRK,BRC", WsComponents.SearchWsResponse::parseFrom, WsComponents.SearchWsResponse::getPaging,
-      searchResponse -> {
-        for (Component module : searchResponse.getComponentsList()) {
-          moduleBuilder.clear();
-          moduleListBuilder.putModulesByKey(module.getKey(), moduleBuilder
-            .setKey(module.getKey())
-            .setName(module.getName())
-            .setQu(module.getQualifier())
-            .build());
-        }
+    String baseUrl = "api/components/search.protobuf?qualifiers=TRK,BRC";
+    if (wsClient.getOrganizationKey() != null) {
+      baseUrl += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
+    }
+    SonarLintWsClient.getPaginated(wsClient, baseUrl,
+      WsComponents.SearchWsResponse::parseFrom,
+      WsComponents.SearchWsResponse::getPaging,
+      WsComponents.SearchWsResponse::getComponentsList,
+      module -> {
+        moduleBuilder.clear();
+        moduleListBuilder.putModulesByKey(module.getKey(), moduleBuilder
+          .setKey(module.getKey())
+          .setName(module.getName())
+          .setQu(module.getQualifier())
+          .build());
       });
 
     ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));

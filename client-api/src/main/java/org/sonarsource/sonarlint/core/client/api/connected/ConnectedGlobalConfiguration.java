@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
@@ -52,7 +51,6 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return storageRoot;
   }
 
-  @CheckForNull
   public String getServerId() {
     return serverId;
   }
