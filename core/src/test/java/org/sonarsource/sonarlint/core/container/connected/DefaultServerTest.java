@@ -19,24 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
+import org.sonar.api.SonarRuntime;
 import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.sonar.api.utils.Version;
 
 public class DefaultServerTest {
 
   @Test
   public void shouldLoadServerProperties() {
+    SonarRuntime runtime = mock(SonarRuntime.class);
+    when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
     Settings settings = new MapSettings();
     settings.setProperty(CoreProperties.SERVER_ID, "123");
-    settings.setProperty(CoreProperties.SERVER_VERSION, "2.2");
     settings.setProperty(CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000");
     settings.setProperty(CoreProperties.PERMANENT_SERVER_ID, "abcde");
 
-    DefaultServer metadata = new DefaultServer(settings);
+    DefaultServer metadata = new DefaultServer(settings, runtime);
 
     assertThat(metadata.getId()).isEqualTo("123");
     assertThat(metadata.getVersion()).isEqualTo("2.2");
@@ -47,7 +52,9 @@ public class DefaultServerTest {
 
   @Test
   public void coverageUnusedMethods() {
-    DefaultServer metadata = new DefaultServer(new MapSettings());
+    SonarRuntime runtime = mock(SonarRuntime.class);
+    when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
+    DefaultServer metadata = new DefaultServer(new MapSettings(), runtime);
     assertThat(metadata.getStartedAt()).isNull();
     assertThat(metadata.getRootDir()).isNull();
     assertThat(metadata.getDeployDir()).isNull();

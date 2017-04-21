@@ -31,8 +31,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.gson.JsonSyntaxException;
-
 public class TelemetryTest {
   private Telemetry telemetry;
   private Path filePath;
@@ -70,7 +68,7 @@ public class TelemetryTest {
   public void should_throw_exception_if_invalid_file() throws Exception {
     Files.write(filePath, "trash".getBytes(StandardCharsets.UTF_8));
 
-    exception.expect(JsonSyntaxException.class);
+    exception.expect(IllegalArgumentException.class);
     telemetry = new Telemetry(filePath, "product", "version");
   }
 }

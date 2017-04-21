@@ -19,19 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.annotation.CheckForNull;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.PathPattern;
 import org.sonar.api.utils.MessageException;
+
+import com.google.common.base.Joiner;
 
 /**
  * Detect language of a source file based on its suffix and configured patterns.
@@ -43,8 +46,8 @@ public class LanguageDetection {
   /**
    * Lower-case extension -> languages
    */
-  private final Map<String, PathPattern[]> patternsByLanguage = Maps.newLinkedHashMap();
-  private final List<String> languagesToConsider = Lists.newArrayList();
+  private final Map<String, PathPattern[]> patternsByLanguage = new LinkedHashMap<>();
+  private final List<String> languagesToConsider = new ArrayList<>();
 
   public LanguageDetection(LanguagesRepository languages) {
     for (Language language : languages.all()) {

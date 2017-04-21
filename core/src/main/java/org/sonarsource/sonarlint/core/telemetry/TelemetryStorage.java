@@ -26,9 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Base64;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.apache.commons.codec.binary.Base64;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -100,7 +101,7 @@ class TelemetryStorage {
   static TelemetryStorage load(Path filePath) throws IOException {
     Gson gson = new Gson();
     byte[] bytes = Files.readAllBytes(filePath);
-    byte[] decoded = Base64.decodeBase64(bytes);
+    byte[] decoded = Base64.getDecoder().decode(bytes);
     String json = new String(decoded, StandardCharsets.UTF_8);
     return validate(gson.fromJson(json, TelemetryStorage.class));
   }
@@ -109,7 +110,7 @@ class TelemetryStorage {
     Files.createDirectories(filePath.getParent());
     Gson gson = new Gson();
     String json = gson.toJson(this);
-    byte[] encoded = Base64.encodeBase64(json.getBytes(StandardCharsets.UTF_8));
+    byte[] encoded = Base64.getEncoder().encode(json.getBytes(StandardCharsets.UTF_8));
     Files.write(filePath, encoded);
   }
 

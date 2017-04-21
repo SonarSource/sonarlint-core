@@ -26,15 +26,18 @@ import java.util.Date;
 import javax.annotation.CheckForNull;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.CoreProperties;
+import org.sonar.api.SonarRuntime;
 import org.sonar.api.config.Settings;
 import org.sonar.api.platform.Server;
 
 public class DefaultServer extends Server {
 
   private Settings settings;
+  private SonarRuntime runtime;
 
-  public DefaultServer(Settings settings) {
+  public DefaultServer(Settings settings, SonarRuntime runtime) {
     this.settings = settings;
+    this.runtime = runtime;
   }
 
   @Override
@@ -44,7 +47,7 @@ public class DefaultServer extends Server {
 
   @Override
   public String getVersion() {
-    return settings.getString(CoreProperties.SERVER_VERSION);
+    return runtime.getApiVersion().toString();
   }
 
   @Override

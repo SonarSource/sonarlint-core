@@ -19,9 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -30,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.annotation.Nullable;
 import org.apache.commons.lang.ClassUtils;
 import org.sonar.api.batch.CheckProject;
@@ -79,7 +78,7 @@ public class BatchExtensionDictionnary {
   }
 
   private <T> List<T> getFilteredExtensions(Class<T> type, @Nullable Project project, @Nullable ExtensionMatcher matcher) {
-    List<T> result = Lists.newArrayList();
+    List<T> result = new ArrayList<>();
     for (Object extension : getExtensions(type)) {
       if (org.sonar.api.batch.Sensor.class.equals(type) && extension instanceof Sensor) {
         extension = new SensorWrapper((Sensor) extension, sensorContext, sensorOptimizer);
@@ -101,7 +100,7 @@ public class BatchExtensionDictionnary {
   }
 
   protected List<Object> getExtensions(Class type) {
-    List<Object> extensions = Lists.newArrayList();
+    List<Object> extensions = new ArrayList<>();
     completeBatchExtensions(componentContainer, extensions, type);
     return extensions;
   }
@@ -126,9 +125,10 @@ public class BatchExtensionDictionnary {
       }
       completePhaseDependencies(dag, extension);
     }
-    List sortedList = dag.sort();
-
-    return Collections2.filter(sortedList, Predicates.in(extensions));
+    List<T> sortedList = dag.sort();
+    return sortedList.stream()
+      .filter(extensions::contains)
+      .collect(Collectors.toList());
   }
 
   /**
@@ -162,7 +162,7 @@ public class BatchExtensionDictionnary {
   }
 
   protected List<Object> evaluateAnnotatedClasses(Object extension, Class<? extends Annotation> annotation) {
-    List<Object> results = Lists.newArrayList();
+    List<Object> results = new ArrayList<>();
     Class aClass = extension.getClass();
     while (aClass != null) {
       evaluateClass(aClass, annotation, results);

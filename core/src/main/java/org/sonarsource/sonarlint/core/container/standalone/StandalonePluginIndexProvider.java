@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
-import org.apache.commons.codec.digest.DigestUtils;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider;
 
@@ -43,7 +43,7 @@ public class StandalonePluginIndexProvider implements PluginIndexProvider {
       try {
         PluginReference ref = new PluginReference();
         try (InputStream is = input.openStream()) {
-          ref.setHash(DigestUtils.md5Hex(is));
+          ref.setHash(org.sonarsource.sonarlint.core.util.StringUtils.md5(is));
         }
         ref.setDownloadUrl(input);
         ref.setFilename(StringUtils.substringAfterLast(input.getFile(), "/"));
@@ -62,6 +62,8 @@ public class StandalonePluginIndexProvider implements PluginIndexProvider {
 
   @Override
   public List<PluginReference> references() {
-    return Lists.transform(pluginUrls, new UrlToPluginReference());
+    return pluginUrls.stream()
+      .map(new UrlToPluginReference())
+      .collect(Collectors.toList());
   }
 }

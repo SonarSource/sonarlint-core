@@ -19,18 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.SetMultimap;
-
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
 import org.sonar.api.batch.fs.internal.FilenamePredicate;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.SetMultimap;
 
 @SonarLintSide
 public class InputPathCache extends DefaultFileSystem.Cache {
@@ -39,7 +42,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   private final Map<Path, InputDir> inputDirCache = new LinkedHashMap<>();
   private final SetMultimap<String, InputFile> filesByNameCache = LinkedHashMultimap.create();
   private final SetMultimap<String, InputFile> filesByExtensionCache = LinkedHashMultimap.create();
-
+  private final SortedSet<String> languages = new TreeSet<>();
 
   @Override
   public Iterable<InputFile> inputFiles() {
@@ -52,6 +55,9 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   @Override
   public void doAdd(InputFile inputFile) {
+    if (inputFile.language() != null) {
+      languages.add(inputFile.language());
+    }
     inputFileCache.put(inputFile.path(), inputFile);
     filesByNameCache.put(FilenamePredicate.getFilename(inputFile), inputFile);
     filesByExtensionCache.put(FileExtensionPredicate.getExtension(inputFile), inputFile);
@@ -88,6 +94,11 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   @Override
   public Iterable<InputFile> getFilesByExtension(String extension) {
     return filesByExtensionCache.get(extension);
+  }
+
+  @Override
+  protected SortedSet<String> languages() {
+    return languages;
   }
 
 }

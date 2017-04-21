@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
@@ -47,8 +47,8 @@ public class DefaultPluginRepository implements Startable {
 
   @Override
   public void start() {
-    infosByKeys = Maps.newHashMap(installer.installRemotes());
-    pluginInstancesByKeys = Maps.newHashMap(loader.load(infosByKeys));
+    infosByKeys = new HashMap<>(installer.installRemotes());
+    pluginInstancesByKeys = new HashMap<>(loader.load(infosByKeys));
 
     logPlugins();
   }
