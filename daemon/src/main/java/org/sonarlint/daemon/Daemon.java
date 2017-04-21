@@ -20,11 +20,13 @@
 package org.sonarlint.daemon;
 
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
+import io.grpc.netty.NettyServerBuilder;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
+
+import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +77,7 @@ public class Daemon {
       LOGGER.info("Starting server on port {}", port);
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
-      server = ServerBuilder.forPort(port)
+      server = NettyServerBuilder.forAddress(new InetSocketAddress("localhost", port))
         .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(), interceptor))
         .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers()), interceptor))
         .build()
