@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.perspectives;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.fs.InputPath;
@@ -29,7 +29,7 @@ import org.sonar.api.resources.Resource;
 
 public class BatchPerspectives implements ResourcePerspectives {
 
-  private final Map<Class<?>, PerspectiveBuilder<?>> builders = Maps.newHashMap();
+  private final Map<Class<?>, PerspectiveBuilder<?>> builders = new HashMap<>();
 
   public BatchPerspectives(PerspectiveBuilder[] builders) {
     for (PerspectiveBuilder builder : builders) {

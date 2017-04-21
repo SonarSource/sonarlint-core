@@ -19,11 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
@@ -92,7 +93,7 @@ public class RuleFinderCompatibility implements RuleFinder {
 
   private Collection<Rule> byRepository(RuleQuery query) {
     Repository repository = context.repository(query.getRepositoryKey());
-    return repository != null ? Collections2.transform(repository.rules(), ruleTransformer) : Collections.<Rule>emptyList();
+    return repository != null ? repository.rules().stream().map(ruleTransformer).collect(Collectors.toList()) : Collections.<Rule>emptyList();
   }
 
   private Collection<Rule> byKey(RuleQuery query) {

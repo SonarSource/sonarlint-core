@@ -19,9 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import javax.annotation.Nullable;
 
 public class StringUtils {
@@ -55,5 +60,23 @@ public class StringUtils {
   public static boolean isEmpty(@Nullable String str) {
     return str == null || str.isEmpty();
   }
+  
+  public static String md5(InputStream data) throws IOException, NoSuchAlgorithmException {
+    MessageDigest md = MessageDigest.getInstance("MD5");
+    int bufLen = 8192;
+    final byte[] buffer = new byte[bufLen];
+    int read = data.read(buffer, 0, bufLen);
 
+    while (read > -1) {
+      md.update(buffer, 0, read);
+      read = data.read(buffer, 0, bufLen);
+    }
+
+    byte[] array = md.digest();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < array.length; ++i) {
+      sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
+    }
+    return sb.toString();
+  }
 }

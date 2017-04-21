@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -28,8 +29,6 @@ import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-
-import com.google.common.collect.Lists;
 
 public final class DefaultClientIssue extends TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;
@@ -49,7 +48,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     this.rule = rule;
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
-    this.flows = Lists.transform(flows, f -> new DefaultFlow(f.locations()));
+    this.flows = flows.stream().map(f -> new DefaultFlow(f.locations())).collect(Collectors.toList());
   }
 
   @Override
@@ -123,7 +122,9 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     private List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations;
 
     private DefaultFlow(List<IssueLocation> issueLocations) {
-      this.locations = Lists.transform(issueLocations, i -> new DefaultLocation(i.textRange(), i.message()));
+      this.locations = issueLocations.stream()
+        .map(i -> new DefaultLocation(i.textRange(), i.message()))
+        .collect(Collectors.toList());
     }
 
     @Override
