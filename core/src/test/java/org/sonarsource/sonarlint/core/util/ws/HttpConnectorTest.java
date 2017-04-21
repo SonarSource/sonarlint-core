@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.util.ws;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.List;
 import javax.net.ssl.SSLSocketFactory;
 import okhttp3.ConnectionSpec;
@@ -138,16 +140,23 @@ public class HttpConnectorTest {
 
   @Test
   public void use_proxy_authentication() throws Exception {
-    answerHelloWorld();
+    MockWebServer proxy = new MockWebServer();
+    proxy.start();
+
     underTest = HttpConnector.newBuilder()
       .url(serverUrl)
+      .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxy.getHostName(), proxy.getPort())))
       .proxyCredentials("theProxyLogin", "theProxyPassword")
       .build();
 
     GetRequest request = new GetRequest("api/issues/search");
+    proxy.enqueue(new MockResponse().setResponseCode(407));
+    proxy.enqueue(new MockResponse().setBody("OK!"));
     underTest.call(request);
 
-    RecordedRequest recordedRequest = server.takeRequest();
+    RecordedRequest recordedRequest = proxy.takeRequest();
+    assertThat(recordedRequest.getHeader("Proxy-Authorization")).isNull();
+    recordedRequest = proxy.takeRequest();
     assertThat(recordedRequest.getHeader("Proxy-Authorization")).isEqualTo(basic("theProxyLogin", "theProxyPassword"));
   }
 
@@ -158,7 +167,7 @@ public class HttpConnectorTest {
     assertThat(underTest.baseUrl()).isEqualTo(serverUrl);
     DeleteRequest request = new DeleteRequest("api/issues/search").setMediaType(MediaTypes.JSON);
     WsResponse response = underTest.delete(request, "body");
-    
+
     assertThat(response.code()).isEqualTo(200);
     RecordedRequest recordedRequest = server.takeRequest();
     assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
@@ -316,4 +325,5 @@ public class HttpConnectorTest {
   private void answerHelloWorld() {
     server.enqueue(new MockResponse().setBody("hello, world!"));
   }
+
 }
