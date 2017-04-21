@@ -217,6 +217,11 @@
   
     <profile>
       <id>dist-windows</id>
+        <activation>
+          <property>
+            <name>!skipDistWindows</name>
+          </property>
+        </activation>
       <properties>
         <use_embedded_jre>true</use_embedded_jre>
       </properties>
