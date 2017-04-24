@@ -47,12 +47,12 @@ public class TextSearchIndexTest {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
 
-    assertThat(index.search("org")).containsOnly("o1", "o2");
-    assertThat(index.search("jazzrtc")).containsOnly("o2");
-    assertThat(index.search("sonarlint")).containsOnly("o1");
-    assertThat(index.search("plugin")).containsOnly("o2");
-    assertThat(index.search("scm")).containsOnly("o2");
-    assertThat(index.search("org.sonarsource.sonarlint.intellij:sonarlint-intellij")).contains("o1");
+    assertThat(index.search("org").keySet()).containsOnly("o1", "o2");
+    assertThat(index.search("jazzrtc").keySet()).containsOnly("o2");
+    assertThat(index.search("sonarlint").keySet()).containsOnly("o1");
+    assertThat(index.search("plugin").keySet()).containsOnly("o2");
+    assertThat(index.search("scm").keySet()).containsOnly("o2");
+    assertThat(index.search("org.sonarsource.sonarlint.intellij:sonarlint-intellij").keySet()).contains("o1");
     assertThat(index.search("unknown")).isEmpty();
   }
 
@@ -82,23 +82,43 @@ public class TextSearchIndexTest {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
 
-    assertThat(index.search("sonar-plugins")).contains("o2");
+    assertThat(index.search("sonar-plugins").keySet()).contains("o2");
 
-    // multi term matches full terms only
-    assertThat(index.search("sona-plugins")).isEmpty();
+    // multi term matches partially
+    assertThat(index.search("sona-plugins").keySet()).contains("o2");
 
-    // distance is 1
+    // max distance between terms is 1
     assertThat(index.search("org.plugins")).isEmpty();
   }
 
   @Test
-  public void testScoring() {
-    index.index("o1", "A A A B B C");
-    index.index("o2", "A A A B B C C");
-    index.index("o3", "A A B B B C D");
+  public void testScoringPartialTermMatch() {
+    index.index("o1", "org.codehaus.sonar-plugins");
+    index.index("o2", "or.codehaus.sonar-plugins");
+    index.index("o3", "org.codehau.sonar-plugins");
 
-    assertThat(index.search("A")).containsExactly("o1", "o2", "o3");
-    assertThat(index.search("B")).containsExactly("o3", "o1", "o2");
-    assertThat(index.search("C")).containsExactly("o2", "o1", "o3");
+    // o2 has higher score than o3 because 's' missing in 'codehaus' has lower impact on score than 'g' missing in 'org'
+    assertThat(index.search("or codehau").keySet()).containsExactly("o2", "o3", "o1");
+  }
+
+  @Test
+  public void testNoMultipleMatchesSameObj() {
+    index.index("o1", "or.codehau.or.codehau.or.codehau");
+    index.index("o2", "or.codehaus.sonar-plugins");
+    index.index("o3", "org.codehau.sonar-plugins");
+
+    // o1 should not accumulate score from multiple matches
+    assertThat(index.search("or codehau").keySet()).containsExactly("o2", "o3", "o1");
+  }
+
+  @Test
+  public void testMatchSingleTerm() {
+    index.index("o1", "mod1");
+    index.index("o2", "mod10");
+    index.index("o3", "mod103");
+
+    assertThat(index.search("mod1").keySet()).containsExactly("o1", "o2", "o3");
+    assertThat(index.search("mod10").keySet()).containsExactly("o2", "o3");
+    assertThat(index.search("mod103").keySet()).containsExactly("o3");
   }
 }

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -32,12 +33,13 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 /**
  * Indexes text associated to objects, and performs full text search to find matching objects.
- * It is a positional index, so it supports queries consisted of multiple terms, in which case it will find the exact terms in sequence (distance = 1).
- * When the query is a single term, it will match any term that begins by the query. 
- * The result is sorted by score. The score is the number of matches in the object divided by the total term frequency in the object.
+ * It is a positional index, so it supports queries consisted of multiple terms, in which case it will find partial term matches in sequence (distance = 1).
+ * The result is sorted by score. The score of each term matches is the ratio of the term matches (1 for exact match), 
+ * and the global score is the sum of the term's scores in the object divided by the total term frequency in the object.
  * 
  * The generic type should properly implement equals and hashCode.
  * <b>An object cannot be indexed twice</b>. 
@@ -47,7 +49,7 @@ import java.util.TreeMap;
  */
 public class TextSearchIndex<T> {
   private static final String SPLIT_PATTERN = "\\W";
-  private TreeMap<String, List<DictEntry>> wordToObj;
+  private TreeMap<String, List<DictEntry>> termToObj;
   private Set<T> indexedObjs;
   private Map<T, Integer> objToWordFrequency;
 
@@ -80,25 +82,23 @@ public class TextSearchIndex<T> {
   /**
    * @return Can be empty, but never null
    */
-  public List<T> search(String query) {
+  public Map<T, Double> search(String query) {
     List<String> terms = tokenize(query);
 
     if (terms.isEmpty()) {
-      return Collections.emptyList();
+      return Collections.emptyMap();
     }
 
-    Iterator<String> it = terms.iterator();
-    String first = it.next();
-
-    List<DictEntry> matched;
+    List<SearchResult> matched;
 
     // positional search
     if (terms.size() > 1) {
-      matched = searchTerm(first, true);
+      Iterator<String> it = terms.iterator();
+      matched = searchTerm(it.next());
 
       while (it.hasNext()) {
-        List<DictEntry> entries = searchTerm(it.next(), true);
-        matched = matchPositional(matched, entries, 1);
+        List<SearchResult> termMatches = searchTerm(it.next());
+        matched = matchPositional(matched, termMatches, 1);
 
         if (matched.isEmpty()) {
           break;
@@ -107,63 +107,45 @@ public class TextSearchIndex<T> {
 
       // simple term search with partial match
     } else {
-      matched = searchTerm(first, false);
+      matched = searchTerm(terms.get(0));
     }
 
     // convert results and calc score
     return prepareResult(matched);
   }
 
-  private List<T> prepareResult(List<DictEntry> entries) {
-    Map<T, Double> projectToScore = new HashMap<>();
+  private Map<T, Double> prepareResult(List<SearchResult> entries) {
+    Map<T, Double> objToScore = new HashMap<>();
 
-    for (DictEntry e : entries) {
-      Double score = projectToScore.get(e.obj);
-      if (score == null) {
-        score = 0.0;
+    for (SearchResult e : entries) {
+      double score = e.score / objToWordFrequency.get(e.obj);
+      Double previousScore = objToScore.get(e.obj);
+
+      if (previousScore == null || previousScore < score) {
+        objToScore.put(e.obj, score);
       }
-
-      score += 1.0 / objToWordFrequency.get(e.obj);
-      projectToScore.put(e.obj, score);
     }
 
-    List<ScorableObject> scoredProjects = new LinkedList<>();
-    for (Entry<T, Double> e : projectToScore.entrySet()) {
-      scoredProjects.add(new ScorableObject(e.getKey(), e.getValue()));
-    }
-
-    Collections.sort(scoredProjects, (o1, o2) -> {
-      double score = o2.score - o1.score;
-      if (score > 0) {
-        return 1;
-      } else if (score < 0) {
-        return -1;
-      }
-      return 0;
-    });
-
-    List<T> projects = new LinkedList<>();
-    for (ScorableObject p : scoredProjects) {
-      projects.add(p.obj);
-    }
-
-    return projects;
+    return objToScore.entrySet().stream()
+      .sorted(Map.Entry.<T, Double>comparingByValue().reversed())
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
   }
 
-  private List<DictEntry> searchTerm(String term, boolean fullMatchOnly) {
-    List<DictEntry> entries = new LinkedList<>();
+  /**
+   * Returns any term prefixed by the given text
+   */
+  private List<SearchResult> searchTerm(String termPrefix) {
+    List<SearchResult> entries = new LinkedList<>();
 
-    if (fullMatchOnly) {
-      entries = wordToObj.get(term);
-      return entries != null ? entries : Collections.<DictEntry>emptyList();
-    }
-
-    SortedMap<String, List<DictEntry>> tailMap = wordToObj.tailMap(term);
+    SortedMap<String, List<DictEntry>> tailMap = termToObj.tailMap(termPrefix);
     for (Entry<String, List<DictEntry>> e : tailMap.entrySet()) {
-      if (!e.getKey().startsWith(term)) {
+      if (!e.getKey().startsWith(termPrefix)) {
         break;
       }
-      entries.addAll(e.getValue());
+      double score = ((double) termPrefix.length()) / e.getKey().length();
+      e.getValue().stream()
+        .map(v -> new SearchResult(score, v.obj, v.tokenIndex))
+        .forEach(entries::add);
     }
 
     return entries;
@@ -171,7 +153,7 @@ public class TextSearchIndex<T> {
 
   public void clear() {
     indexedObjs = new HashSet<>();
-    wordToObj = new TreeMap<>();
+    termToObj = new TreeMap<>();
     objToWordFrequency = new HashMap<>();
   }
 
@@ -179,16 +161,16 @@ public class TextSearchIndex<T> {
    * @return Can be empty, but never null
    */
   public Set<String> getTokens() {
-    return wordToObj.keySet();
+    return Collections.unmodifiableSet(termToObj.keySet());
   }
 
   private void addToDictionary(String token, int tokenIndex, T obj) {
-    List<DictEntry> projects = wordToObj.get(token);
+    List<DictEntry> objects = termToObj.get(token);
     Integer count = objToWordFrequency.get(obj);
 
-    if (projects == null) {
-      projects = new LinkedList<>();
-      wordToObj.put(token, projects);
+    if (objects == null) {
+      objects = new LinkedList<>();
+      termToObj.put(token, objects);
     }
 
     if (count == null) {
@@ -196,7 +178,7 @@ public class TextSearchIndex<T> {
     }
 
     count++;
-    projects.add(new DictEntry(obj, tokenIndex));
+    objects.add(new DictEntry(obj, tokenIndex));
     objToWordFrequency.put(obj, count);
   }
 
@@ -213,18 +195,18 @@ public class TextSearchIndex<T> {
     return terms;
   }
 
-  private List<DictEntry> matchPositional(List<DictEntry> results1, List<DictEntry> results2, int maxDistance) {
-    List<DictEntry> matches = new LinkedList<>();
+  private List<SearchResult> matchPositional(List<SearchResult> previousMatches, List<SearchResult> termMatches, int maxDistance) {
+    List<SearchResult> matches = new LinkedList<>();
 
-    // TODO: optimize this n2 ugliness
-    for (DictEntry e1 : results1) {
-      for (DictEntry e2 : results2) {
+    for (SearchResult e1 : previousMatches) {
+      for (SearchResult e2 : termMatches) {
         if (!e1.obj.equals(e2.obj)) {
           continue;
         }
 
-        int dist = e2.tokenIndex - e1.tokenIndex;
+        int dist = e2.lastIdx - e1.lastIdx;
         if (dist > 0 && dist <= maxDistance) {
+          e2.score += e1.score;
           matches.add(e2);
         }
       }
@@ -232,13 +214,15 @@ public class TextSearchIndex<T> {
     return matches;
   }
 
-  private class ScorableObject {
-    double score;
-    T obj;
+  private class SearchResult {
+    private double score;
+    private T obj;
+    private int lastIdx;
 
-    public ScorableObject(T obj, double score) {
+    public SearchResult(double score, T obj, int lastIdx) {
       this.score = score;
       this.obj = obj;
+      this.lastIdx = lastIdx;
     }
   }
 
