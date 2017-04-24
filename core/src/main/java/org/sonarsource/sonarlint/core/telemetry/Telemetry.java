@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Telemetry {
+  public static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
   private final TelemetryStorage storage;
   private final Path storageFilePath;
   private final String productName;
