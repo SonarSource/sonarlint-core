@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.client.api.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -50,7 +49,6 @@ import java.util.stream.Collectors;
 public class TextSearchIndex<T> {
   private static final String SPLIT_PATTERN = "\\W";
   private TreeMap<String, List<DictEntry>> termToObj;
-  private Set<T> indexedObjs;
   private Map<T, Integer> objToWordFrequency;
 
   public TextSearchIndex() {
@@ -58,19 +56,19 @@ public class TextSearchIndex<T> {
   }
 
   public int size() {
-    return indexedObjs.size();
+    return objToWordFrequency.size();
   }
 
   public boolean isEmpty() {
-    return indexedObjs.isEmpty();
+    return objToWordFrequency.isEmpty();
   }
 
   public void index(T obj, String text) {
-    if (indexedObjs.contains(obj)) {
+    if (objToWordFrequency.containsKey(obj)) {
       throw new IllegalArgumentException("Already indexed");
     }
-    indexedObjs.add(obj);
     List<String> terms = tokenize(text);
+    objToWordFrequency.put(obj, terms.size());
 
     int i = 0;
     for (String s : terms) {
@@ -80,7 +78,10 @@ public class TextSearchIndex<T> {
   }
 
   /**
-   * @return Can be empty, but never null
+   * Search for indexed objects based on a query. Results will be sorted by score (highest first).
+   * Score is in the interval ]0,1].
+   * 
+   * @return A map of results reverse-sorted by value (score). Can be empty, but never null
    */
   public Map<T, Double> search(String query) {
     List<String> terms = tokenize(query);
@@ -92,26 +93,39 @@ public class TextSearchIndex<T> {
     List<SearchResult> matched;
 
     // positional search
-    if (terms.size() > 1) {
-      Iterator<String> it = terms.iterator();
-      matched = searchTerm(it.next());
+    Iterator<String> it = terms.iterator();
+    matched = searchTerm(it.next());
 
-      while (it.hasNext()) {
-        List<SearchResult> termMatches = searchTerm(it.next());
-        matched = matchPositional(matched, termMatches, 1);
+    while (it.hasNext()) {
+      List<SearchResult> termMatches = searchTerm(it.next());
+      matched = matchPositional(matched, termMatches, 1);
 
-        if (matched.isEmpty()) {
-          break;
-        }
+      if (matched.isEmpty()) {
+        break;
       }
-
-      // simple term search with partial match
-    } else {
-      matched = searchTerm(terms.get(0));
     }
 
     // convert results and calc score
     return prepareResult(matched);
+  }
+
+  private List<SearchResult> matchPositional(List<SearchResult> previousMatches, List<SearchResult> termMatches, int maxDistance) {
+    List<SearchResult> matches = new LinkedList<>();
+
+    for (SearchResult e1 : previousMatches) {
+      for (SearchResult e2 : termMatches) {
+        if (!e1.obj.equals(e2.obj)) {
+          continue;
+        }
+
+        int dist = e2.lastIdx - e1.lastIdx;
+        if (dist > 0 && dist <= maxDistance) {
+          e2.score += e1.score;
+          matches.add(e2);
+        }
+      }
+    }
+    return matches;
   }
 
   private Map<T, Double> prepareResult(List<SearchResult> entries) {
@@ -152,7 +166,6 @@ public class TextSearchIndex<T> {
   }
 
   public void clear() {
-    indexedObjs = new HashSet<>();
     termToObj = new TreeMap<>();
     objToWordFrequency = new HashMap<>();
   }
@@ -165,21 +178,14 @@ public class TextSearchIndex<T> {
   }
 
   private void addToDictionary(String token, int tokenIndex, T obj) {
-    List<DictEntry> objects = termToObj.get(token);
-    Integer count = objToWordFrequency.get(obj);
+    List<DictEntry> entries = termToObj.get(token);
 
-    if (objects == null) {
-      objects = new LinkedList<>();
-      termToObj.put(token, objects);
+    if (entries == null) {
+      entries = new LinkedList<>();
+      termToObj.put(token, entries);
     }
 
-    if (count == null) {
-      count = 0;
-    }
-
-    count++;
-    objects.add(new DictEntry(obj, tokenIndex));
-    objToWordFrequency.put(obj, count);
+    entries.add(new DictEntry(obj, tokenIndex));
   }
 
   private static List<String> tokenize(String text) {
@@ -193,25 +199,6 @@ public class TextSearchIndex<T> {
     }
 
     return terms;
-  }
-
-  private List<SearchResult> matchPositional(List<SearchResult> previousMatches, List<SearchResult> termMatches, int maxDistance) {
-    List<SearchResult> matches = new LinkedList<>();
-
-    for (SearchResult e1 : previousMatches) {
-      for (SearchResult e2 : termMatches) {
-        if (!e1.obj.equals(e2.obj)) {
-          continue;
-        }
-
-        int dist = e2.lastIdx - e1.lastIdx;
-        if (dist > 0 && dist <= maxDistance) {
-          e2.score += e1.score;
-          matches.add(e2);
-        }
-      }
-    }
-    return matches;
   }
 
   private class SearchResult {
