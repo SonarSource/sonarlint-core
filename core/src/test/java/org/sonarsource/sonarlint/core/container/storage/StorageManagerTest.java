@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.apache.commons.lang.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -58,6 +58,21 @@ public class StorageManagerTest {
 
     Path storageRoot = manager.getServerStorageRoot();
     assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("complicated.%3Aname%2Fwith_invalid%25chars"));
+  }
+
+  @Test
+  public void encodeTooLongServerId() throws Exception {
+
+    Path sonarUserHome = temp.newFolder().toPath();
+    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+      .setSonarLintUserHome(sonarUserHome)
+      .setServerId(StringUtils.repeat("a", 260))
+      .build());
+
+    Path storageRoot = manager.getServerStorageRoot();
+    String folderName = StringUtils.repeat("a", 223) + "6eeae9bf4dbb517d471f397af83bc76b";
+    assertThat(folderName.length()).isLessThanOrEqualTo(255);
+    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve(folderName));
   }
 
   @Test

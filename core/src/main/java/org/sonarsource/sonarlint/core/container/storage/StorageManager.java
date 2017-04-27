@@ -33,6 +33,8 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class StorageManager {
 
+  private static final int MAX_FOLDER_NAME_SIZE = 255;
+
   /**
    * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
    */
@@ -74,11 +76,18 @@ public class StorageManager {
   }
 
   public static String encodeForFs(String name) {
+    String encoded;
     try {
-      return URLEncoder.encode(name, StandardCharsets.UTF_8.name());
+      encoded = URLEncoder.encode(name, StandardCharsets.UTF_8.name());
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("Unable to encode name: " + name, e);
     }
+    if (encoded.length() > MAX_FOLDER_NAME_SIZE) {
+      // Most FS will not support a folder name greater than 255
+      String md5 = org.sonarsource.sonarlint.core.util.StringUtils.md5(name);
+      return encoded.substring(0, MAX_FOLDER_NAME_SIZE - md5.length()) + md5;
+    }
+    return encoded;
   }
 
   public Path getModuleConfigurationPath(String moduleKey) {

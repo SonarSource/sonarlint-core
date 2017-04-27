@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -63,6 +64,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class ConnectedIssueMediumTest {
 
+  private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -80,6 +82,7 @@ public class ConnectedIssueMediumTest {
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
     FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
+    Files.move(tmpStorage.resolve("local"), tmpStorage.resolve(StorageManager.encodeForFs(SERVER_ID)));
     PluginCache cache = PluginCache.create(pluginCache);
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -109,7 +112,7 @@ public class ConnectedIssueMediumTest {
       }
     });
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StorageManager.encodeForFs(SERVER_ID)).resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
     writeModuleStatus(tmpStorage, "test-project", StorageManager.STORAGE_VERSION);
@@ -118,7 +121,7 @@ public class ConnectedIssueMediumTest {
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("local")
+      .setServerId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
@@ -129,7 +132,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("modules").resolve(name);
+    Path module = storage.resolve(StorageManager.encodeForFs(SERVER_ID)).resolve("modules").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
@@ -142,7 +145,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("global");
+    Path module = storage.resolve(StorageManager.encodeForFs(SERVER_ID)).resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StorageManager.STORAGE_VERSION)

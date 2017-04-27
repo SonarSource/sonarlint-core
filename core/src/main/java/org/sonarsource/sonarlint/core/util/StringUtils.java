@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -26,7 +27,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
 import javax.annotation.Nullable;
 
 public class StringUtils {
@@ -41,7 +41,7 @@ public class StringUtils {
       throw new IllegalStateException("Should never happen", e);
     }
   }
-  
+
   public static String describe(Object o) {
     try {
       if (o.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
@@ -60,9 +60,24 @@ public class StringUtils {
   public static boolean isEmpty(@Nullable String str) {
     return str == null || str.isEmpty();
   }
-  
-  public static String md5(InputStream data) throws IOException, NoSuchAlgorithmException {
-    MessageDigest md = MessageDigest.getInstance("MD5");
+
+  public static String md5(String s) {
+    try {
+      return md5(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8)));
+    } catch (IOException e) {
+      // Should never occurs
+      throw new IllegalStateException(e);
+    }
+  }
+
+  public static String md5(InputStream data) throws IOException {
+    MessageDigest md;
+    try {
+      md = MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e) {
+      // Shound never occurs
+      throw new IllegalStateException(e);
+    }
     int bufLen = 8192;
     final byte[] buffer = new byte[bufLen];
     int read = data.read(buffer, 0, bufLen);
