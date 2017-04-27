@@ -22,6 +22,7 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import java.nio.file.Path;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -126,6 +127,13 @@ public class OrganizationTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void testConnection() throws Exception {
+    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(ORGANIZATION)).success()).isTrue();
+    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(null)).success()).isTrue();
+    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg("not-exists")).success()).isFalse();
+  }
+
+  @Test
   public void downloadModules() throws Exception {
     updateGlobal();
     assertThat(engineOnTestOrg.allModulesByKey()).hasSize(1);
@@ -135,13 +143,13 @@ public class OrganizationTest extends AbstractConnectedTest {
       "organization", ORGANIZATION);
     // Project in default org is not visible
     ORCHESTRATOR.getServer().provisionProject("foo-bar2", "Foo");
-    assertThat(engineOnTestOrg.downloadAllModules(getServerConfigForTestOrg())).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
+    assertThat(engineOnTestOrg.downloadAllModules(getServerConfigForOrg(ORGANIZATION))).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
   }
 
   @Test
   public void downloadOrganizations() throws Exception {
     WsHelper helper = new WsHelperImpl();
-    List<RemoteOrganization> organizations = helper.listOrganizations(getServerConfigForDefaultOrg());
+    List<RemoteOrganization> organizations = helper.listOrganizations(getServerConfigForOrg(null));
     assertThat(organizations).hasSize(2);
   }
 
@@ -171,22 +179,14 @@ public class OrganizationTest extends AbstractConnectedTest {
   }
 
   private void updateGlobal() {
-    engineOnTestOrg.update(getServerConfigForTestOrg());
-    engineOnDefaultOrg.update(getServerConfigForDefaultOrg());
+    engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION));
+    engineOnDefaultOrg.update(getServerConfigForOrg(null));
   }
 
-  private ServerConfiguration getServerConfigForTestOrg() {
+  private ServerConfiguration getServerConfigForOrg(@Nullable String orgKey) {
     return ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
-      .organizationKey(ORGANIZATION)
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
-  }
-
-  private ServerConfiguration getServerConfigForDefaultOrg() {
-    return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
+      .organizationKey(orgKey)
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build();

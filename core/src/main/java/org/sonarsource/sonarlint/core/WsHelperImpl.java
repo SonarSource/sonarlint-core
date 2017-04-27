@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.sonarqube.ws.Organizations;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -36,22 +37,39 @@ import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValida
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
+import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class WsHelperImpl implements WsHelper {
+  private static final String MIN_VERSION_FOR_ORGANIZATIONS = "6.3";
+
   @Override
   public ValidationResult validateConnection(ServerConfiguration serverConfig) {
-    SonarLintWsClient client = createClient(serverConfig);
-    return validateConnection(new ServerVersionAndStatusChecker(client), new PluginVersionChecker(client), new AuthenticationChecker(client));
+    return validateConnection(createClient(serverConfig), serverConfig.getOrganizationKey());
   }
 
-  static ValidationResult validateConnection(ServerVersionAndStatusChecker serverChecker, PluginVersionChecker pluginsChecker, AuthenticationChecker authChecker) {
+  static ValidationResult validateConnection(SonarLintWsClient client, @Nullable String organizationKey) {
+    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
+    PluginVersionChecker pluginsChecker = new PluginVersionChecker(client);
+    AuthenticationChecker authChecker = new AuthenticationChecker(client);
     try {
-      serverChecker.checkVersionAndStatus();
+      ServerInfos serverStatus = serverChecker.checkVersionAndStatus();
       pluginsChecker.checkPlugins();
-      return authChecker.validateCredentials();
+      ValidationResult validateCredentials = authChecker.validateCredentials();
+      if (validateCredentials.success() && organizationKey != null) {
+        Version serverVersion = Version.create(serverStatus.getVersion());
+        if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_VERSION_FOR_ORGANIZATIONS)) < 0) {
+          return new DefaultValidationResult(false, "No organization support for this server version: " + serverStatus.getVersion());
+        }
+        if (fetchOrganizations(client, organizationKey).isEmpty()) {
+          return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey);
+        }
+      }
+      return validateCredentials;
     } catch (UnsupportedServerException e) {
       return new DefaultValidationResult(false, e.getMessage());
     } catch (RuntimeException e) {
@@ -99,20 +117,26 @@ public class WsHelperImpl implements WsHelper {
 
   static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker) {
     try {
-      serverChecker.checkVersionAndStatus("6.3");
-      return fetchOrganizations(client);
+      serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);
+      return fetchOrganizations(client, null);
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
   }
 
-  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client) {
+  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, @Nullable String organizationKey) {
     List<RemoteOrganization> result = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(client, "api/organizations/search.protobuf",
+    String url = "api/organizations/search.protobuf";
+    if (organizationKey != null) {
+      url += "?organizations=" + StringUtils.urlEncode(organizationKey);
+    }
+
+    SonarLintWsClient.getPaginated(client, url,
       Organizations.SearchWsResponse::parseFrom,
       Organizations.SearchWsResponse::getPaging,
       Organizations.SearchWsResponse::getOrganizationsList,
+
       org -> result.add(new DefaultRemoteOrganization(org)));
 
     return result;
