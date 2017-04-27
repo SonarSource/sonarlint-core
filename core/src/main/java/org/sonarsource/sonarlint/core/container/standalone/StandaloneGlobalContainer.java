@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.sonar.api.Plugin;
+import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rules;
@@ -34,6 +35,7 @@ import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
+import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -69,6 +71,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
+    Version version = ApiVersion.load(System2.INSTANCE);
     add(
       DefaultPluginRepository.class,
       PluginCopier.class,
@@ -76,7 +79,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
-      SonarRuntimeImpl.forSonarLint(ApiVersion.load(System2.INSTANCE)),
+      new SonarQubeVersion(version),
+      SonarRuntimeImpl.forSonarLint(version),
 
       new GlobalTempFolderProvider(),
       UriReader.class,
