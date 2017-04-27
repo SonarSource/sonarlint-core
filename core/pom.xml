@@ -54,7 +54,7 @@
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
-      <version>3.3.1</version>
+      <version>${okhttp.version}</version>
     </dependency>
     <dependency>
       <groupId>org.picocontainer</groupId>
@@ -142,7 +142,7 @@
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver</artifactId>
       <scope>test</scope>
-      <version>3.3.1</version>
+      <version>${okhttp.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
