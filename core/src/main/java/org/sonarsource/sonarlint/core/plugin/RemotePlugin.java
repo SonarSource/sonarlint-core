@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-
 import org.apache.commons.lang.StringUtils;
 
 public class RemotePlugin {
@@ -69,7 +67,7 @@ public class RemotePlugin {
   public RemotePlugin setFile(File f) {
     try (FileInputStream fis = new FileInputStream(f)) {
       return this.setFile(f.getName(), org.sonarsource.sonarlint.core.util.StringUtils.md5(fis));
-    } catch (IOException | NoSuchAlgorithmException e) {
+    } catch (IOException e) {
       throw new IllegalStateException("Fail to compute hash", e);
     }
   }
