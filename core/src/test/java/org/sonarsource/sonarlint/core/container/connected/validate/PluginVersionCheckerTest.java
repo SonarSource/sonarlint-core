@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.common.io.Resources;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,14 +31,11 @@ import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class PluginVersionCheckerTest {
-  private static final String RESPONSE_FILE_LTS = "/validate/plugins_index.txt";
+  public static final String RESPONSE_FILE_LTS = "/validate/plugins_index.txt";
   private static final String RESPONSE_FILE_LTS_FAIL = "/validate/plugins_index_fail.txt";
   private PluginVersionChecker checker;
   private SonarLintWsClient client;
