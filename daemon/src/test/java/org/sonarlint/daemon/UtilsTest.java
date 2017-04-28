@@ -26,7 +26,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.After;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,9 +41,25 @@ public class UtilsTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  private String sonarlintHome;
+
   @Test
   public void test() {
     assertThat(Utils.getStandaloneHome()).isNotNull();
+  }
+
+  @Before
+  public void backupProps() {
+    sonarlintHome = System.getProperty("sonarlint.home");
+  }
+
+  @After
+  public void restoreProps() {
+    if (sonarlintHome != null) {
+      System.setProperty("sonarlint.home", sonarlintHome);
+    } else {
+      System.clearProperty("sonarlint.home");
+    }
   }
 
   @Test
@@ -57,6 +75,12 @@ public class UtilsTest {
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to find analyzers");
     Utils.getAnalyzers(Paths.get("invalid"));
+  }
+
+  @Test
+  public void getInstallationHome() {
+    System.setProperty("sonarlint.home", "home");
+    assertThat(Utils.getSonarLintInstallationHome()).isEqualTo(Paths.get("home"));
   }
 
   @Test

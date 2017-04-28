@@ -65,7 +65,7 @@ public class StringUtils {
     try {
       return md5(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8)));
     } catch (IOException e) {
-      // Should never occurs
+      // Should never occur
       throw new IllegalStateException(e);
     }
   }
@@ -75,7 +75,7 @@ public class StringUtils {
     try {
       md = MessageDigest.getInstance("MD5");
     } catch (NoSuchAlgorithmException e) {
-      // Shound never occurs
+      // Should never occur
       throw new IllegalStateException(e);
     }
     int bufLen = 8192;
