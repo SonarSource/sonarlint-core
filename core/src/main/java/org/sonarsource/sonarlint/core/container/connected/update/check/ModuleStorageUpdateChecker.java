@@ -52,7 +52,7 @@ public class ModuleStorageUpdateChecker {
     String serverVersion = storageManager.readServerInfosFromStorage().getVersion();
     GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
 
-    ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey, globalProps);
+    ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey, globalProps, progress);
     ModuleConfiguration storageModuleConfiguration = storageManager.readModuleConfigFromStorage(moduleKey);
 
     checkForSettingsUpdates(result, serverModuleConfiguration, storageModuleConfiguration);

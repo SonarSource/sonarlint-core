@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ModuleStorageUpdateExecutor {
@@ -54,18 +55,18 @@ public class ModuleStorageUpdateExecutor {
     this.moduleConfigurationDownloader = moduleConfigurationDownloader;
   }
 
-  public void update(String moduleKey) {
+  public void update(String moduleKey, ProgressWrapper progress) {
     GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
     FileUtils.replaceDir(temp -> {
-      updateModuleConfiguration(moduleKey, globalProps, temp);
+      updateModuleConfiguration(moduleKey, globalProps, temp, progress);
       updateRemoteIssues(moduleKey, temp);
       updateStatus(temp);
     }, storageManager.getModuleStorageRoot(moduleKey), tempFolder.newDir().toPath());
   }
 
-  private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp) {
+  private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp, ProgressWrapper progress) {
     ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(storageManager.readServerInfosFromStorage().getVersion(), moduleKey,
-      globalProps);
+      globalProps, progress);
     final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKeyMap().keySet();
     for (String qpKey : moduleConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {

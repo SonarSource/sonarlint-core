@@ -143,13 +143,13 @@ public class OrganizationTest extends AbstractConnectedTest {
       "organization", ORGANIZATION);
     // Project in default org is not visible
     ORCHESTRATOR.getServer().provisionProject("foo-bar2", "Foo");
-    assertThat(engineOnTestOrg.downloadAllModules(getServerConfigForOrg(ORGANIZATION))).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
+    assertThat(engineOnTestOrg.downloadAllModules(getServerConfigForOrg(ORGANIZATION), null)).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
   }
 
   @Test
   public void downloadOrganizations() throws Exception {
     WsHelper helper = new WsHelperImpl();
-    List<RemoteOrganization> organizations = helper.listOrganizations(getServerConfigForOrg(null));
+    List<RemoteOrganization> organizations = helper.listOrganizations(getServerConfigForOrg(null), null);
     assertThat(organizations).hasSize(2);
   }
 
@@ -179,8 +179,8 @@ public class OrganizationTest extends AbstractConnectedTest {
   }
 
   private void updateGlobal() {
-    engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION));
-    engineOnDefaultOrg.update(getServerConfigForOrg(null));
+    engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
+    engineOnDefaultOrg.update(getServerConfigForOrg(null), null);
   }
 
   private ServerConfiguration getServerConfigForOrg(@Nullable String orgKey) {

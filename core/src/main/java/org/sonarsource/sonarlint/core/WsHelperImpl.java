@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonarqube.ws.Organizations;
+import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersion
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
@@ -65,7 +67,7 @@ public class WsHelperImpl implements WsHelper {
         if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_VERSION_FOR_ORGANIZATIONS)) < 0) {
           return new DefaultValidationResult(false, "No organization support for this server version: " + serverStatus.getVersion());
         }
-        if (fetchOrganizations(client, organizationKey).isEmpty()) {
+        if (fetchOrganizations(client, organizationKey, new ProgressWrapper(null)).isEmpty()) {
           return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey);
         }
       }
@@ -109,22 +111,22 @@ public class WsHelperImpl implements WsHelper {
   }
 
   @Override
-  public List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig) {
+  public List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     SonarLintWsClient client = createClient(serverConfig);
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-    return listOrganizations(client, serverChecker);
+    return listOrganizations(client, serverChecker, new ProgressWrapper(monitor));
   }
 
-  static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker) {
+  static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, ProgressWrapper progress) {
     try {
       serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);
-      return fetchOrganizations(client, null);
+      return fetchOrganizations(client, null, progress);
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
   }
 
-  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, @Nullable String organizationKey) {
+  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, @Nullable String organizationKey, ProgressWrapper progress) {
     List<RemoteOrganization> result = new ArrayList<>();
 
     String url = "api/organizations/search.protobuf";
@@ -137,7 +139,8 @@ public class WsHelperImpl implements WsHelper {
       Organizations.SearchWsResponse::getPaging,
       Organizations.SearchWsResponse::getOrganizationsList,
 
-      org -> result.add(new DefaultRemoteOrganization(org)));
+      org -> result.add(new DefaultRemoteOrganization(org)),
+      progress);
 
     return result;
   }

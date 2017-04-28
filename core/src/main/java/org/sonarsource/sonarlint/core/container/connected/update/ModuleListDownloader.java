@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
@@ -42,15 +43,15 @@ public class ModuleListDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchModulesListTo(Path dest, String serverVersion) {
+  public void fetchModulesListTo(Path dest, String serverVersion, ProgressWrapper progress) {
     if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchModulesListAfter6dot3(dest);
+      fetchModulesListAfter6dot3(dest, progress);
     } else {
       fetchModulesListBefore6dot3(dest);
     }
   }
 
-  private void fetchModulesListAfter6dot3(Path dest) {
+  private void fetchModulesListAfter6dot3(Path dest, ProgressWrapper progress) {
     ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
     Builder moduleBuilder = ModuleList.Module.newBuilder();
 
@@ -69,7 +70,8 @@ public class ModuleListDownloader {
           .setName(module.getName())
           .setQu(module.getQualifier())
           .build());
-      });
+      },
+      progress);
 
     ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
   }

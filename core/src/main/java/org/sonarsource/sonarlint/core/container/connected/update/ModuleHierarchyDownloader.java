@@ -34,6 +34,7 @@ import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
@@ -54,14 +55,15 @@ public class ModuleHierarchyDownloader {
    * @param moduleKey moduleKey for which the hierarchy will be returned.
    * @return Mapping of moduleKey -> relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(String moduleKey) {
+  public Map<String, String> fetchModuleHierarchy(String moduleKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
     SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey),
       WsComponents.TreeWsResponse::parseFrom,
       WsComponents.TreeWsResponse::getPaging,
       WsComponents.TreeWsResponse::getComponentsList,
-      modules::add);
+      modules::add,
+      progress);
 
     // doesn't include root
     Map<String, Component> modulesById = modules.stream().collect(Collectors.toMap(Component::getId, Function.identity()));

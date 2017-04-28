@@ -189,7 +189,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allModulesByKey()).hasSize(8);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllModules(getServerConfig())).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
     assertThat(engine.allModulesByKey()).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
@@ -199,7 +199,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       engine.update(ServerConfiguration.builder()
         .url(ORCHESTRATOR.getServer().getUrl())
         .userAgent("SonarLint ITs")
-        .build());
+        .build(), null);
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
@@ -574,10 +574,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void downloadOrganizations() throws Exception {
     WsHelper helper = new WsHelperImpl();
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      assertThat(helper.listOrganizations(getServerConfig())).hasSize(1);
+      assertThat(helper.listOrganizations(getServerConfig(), null)).hasSize(1);
     } else {
       try {
-        helper.listOrganizations(getServerConfig());
+        helper.listOrganizations(getServerConfig(), null);
         fail("Expected exception");
       } catch (Exception e) {
         assertThat(e).isInstanceOf(UnsupportedServerException.class);
@@ -616,11 +616,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateModule(String projectKey) {
-    engine.updateModule(getServerConfig(), projectKey);
+    engine.updateModule(getServerConfig(), projectKey, null);
   }
 
   private void updateGlobal() {
-    engine.update(getServerConfig());
+    engine.update(getServerConfig(), null);
   }
 
   private ServerConfiguration getServerConfig() {

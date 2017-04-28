@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
@@ -117,7 +116,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   public void update(ServerConfig request, StreamObserver<Void> response) {
     try {
       ServerConfiguration config = transformServerConfig(request);
-      engine.update(config);
+      engine.update(config, null);
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
@@ -182,7 +181,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   public void updateModule(ModuleUpdateReq request, StreamObserver<Void> response) {
     try {
       ServerConfiguration serverConfig = transformServerConfig(request.getServerConfig());
-      engine.updateModule(serverConfig, request.getModuleKey());
+      engine.updateModule(serverConfig, request.getModuleKey(), null);
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {

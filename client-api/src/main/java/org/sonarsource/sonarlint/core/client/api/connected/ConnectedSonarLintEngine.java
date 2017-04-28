@@ -109,7 +109,7 @@ public interface ConnectedSonarLintEngine {
    * @since 2.5
    * @throws DownloadException if it fails to download
    */
-  Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig);
+  Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
    * Update current server.
@@ -119,13 +119,11 @@ public interface ConnectedSonarLintEngine {
    */
   GlobalStorageStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
-  GlobalStorageStatus update(ServerConfiguration serverConfig);
-
   /**
    * Update given module.
    * @since 2.0
    */
-  void updateModule(ServerConfiguration serverConfig, String moduleKey);
+  void updateModule(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.

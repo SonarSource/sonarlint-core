@@ -23,6 +23,7 @@ import java.util.Map;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ModuleConfigurationDownloader {
 
@@ -37,17 +38,17 @@ public class ModuleConfigurationDownloader {
     this.settingsDownloader = settingsDownloader;
   }
 
-  public ModuleConfiguration fetchModuleConfiguration(String serverVersion, String moduleKey, GlobalProperties globalProps) {
+  public ModuleConfiguration fetchModuleConfiguration(String serverVersion, String moduleKey, GlobalProperties globalProps, ProgressWrapper progress) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     fetchProjectQualityProfiles(moduleKey, builder);
     settingsDownloader.fetchProjectSettings(serverVersion, moduleKey, globalProps, builder);
-    fetchModuleHierarchy(moduleKey, builder);
+    fetchModuleHierarchy(moduleKey, builder, progress);
 
     return builder.build();
   }
 
-  private void fetchModuleHierarchy(String moduleKey, ModuleConfiguration.Builder builder) {
-    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(moduleKey);
+  private void fetchModuleHierarchy(String moduleKey, ModuleConfiguration.Builder builder, ProgressWrapper progress) {
+    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(moduleKey, progress);
     builder.putAllModulePathByKey(moduleHierarchy);
   }
 

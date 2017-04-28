@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -45,7 +46,7 @@ public class ModuleListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
-    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.2");
+    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.2", new ProgressWrapper(null));
 
     ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKeyMap()).hasSize(1559);
@@ -61,7 +62,7 @@ public class ModuleListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
-    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3");
+    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
 
     ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKeyMap()).hasSize(282);
@@ -78,7 +79,7 @@ public class ModuleListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
-    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3");
+    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
 
     ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKeyMap()).hasSize(282);

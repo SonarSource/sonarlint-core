@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 public interface WsHelper {
@@ -44,5 +46,5 @@ public interface WsHelper {
    * @param serverConfig
    * @return
    */
-  List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig);
+  List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 }

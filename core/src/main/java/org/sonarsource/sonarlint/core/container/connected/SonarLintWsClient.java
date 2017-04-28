@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.ws.GetRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
@@ -167,10 +168,11 @@ public class SonarLintWsClient {
    * @param responseConsummer consume the protobuf message and return <code>true</code> if some elements where present (or <code>false</code> is response is empty)
    */
   public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer) {
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, ProgressWrapper progress) {
     int page = 0;
     boolean stop = false;
     do {
+      progress.checkCancel();
       page++;
       WsResponse response = client.get(baseUrl + (baseUrl.contains("?") ? "&" : "?") + "ps=" + PAGE_SIZE + "&p=" + page);
       try (InputStream stream = response.contentStream()) {

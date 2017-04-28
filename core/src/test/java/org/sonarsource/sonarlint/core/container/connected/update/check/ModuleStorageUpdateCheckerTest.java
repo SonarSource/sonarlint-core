@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +59,7 @@ public class ModuleStorageUpdateCheckerTest {
 
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().build());
     when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
       .thenReturn(ModuleConfiguration.newBuilder().build());
 
     SettingsDownloader settingsDownloader = mock(SettingsDownloader.class);
@@ -74,7 +75,7 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void testNoChanges() {
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
@@ -82,10 +83,10 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void addedProp() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
 
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
@@ -96,7 +97,7 @@ public class ModuleStorageUpdateCheckerTest {
   public void removedProp() {
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.cobol.license.secured", "value").build());
 
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
@@ -106,10 +107,10 @@ public class ModuleStorageUpdateCheckerTest {
   @Test
   public void changedProp() {
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
 
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
@@ -118,10 +119,10 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void addedProfile() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Quality profiles configuration changed");
@@ -132,7 +133,7 @@ public class ModuleStorageUpdateCheckerTest {
   public void ignoreRemovedProfile() {
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' removed");
@@ -140,11 +141,11 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void changedQualityProfile() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class)))
+    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
       .thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-456").build());
     when(storageManager.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
-    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, null);
+    StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Quality profiles configuration changed");

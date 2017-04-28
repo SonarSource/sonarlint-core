@@ -90,7 +90,7 @@ public class GlobalStorageUpdateExecutor {
       qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion());
+      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress);
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

@@ -171,11 +171,6 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public GlobalStorageStatus update(ServerConfiguration serverConfig) {
-    return update(serverConfig, null);
-  }
-
-  @Override
   public GlobalStorageStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
     setLogging(null);
@@ -251,10 +246,10 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig) {
+  public Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getGlobalContainer().downloadModuleList(serverConfig);
+      return getGlobalContainer().downloadModuleList(serverConfig, new ProgressWrapper(monitor));
     });
   }
 
@@ -290,7 +285,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void updateModule(ServerConfiguration serverConfig, String moduleKey) {
+  public void updateModule(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
     checkNotNull(moduleKey);
     setLogging(null);
@@ -300,7 +295,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.updateModule(moduleKey);
+      connectedContainer.updateModule(moduleKey, new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {

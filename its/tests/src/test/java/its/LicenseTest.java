@@ -156,7 +156,7 @@ public class LicenseTest extends AbstractConnectedTest {
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), projectKey);
+      .build(), projectKey, null);
   }
 
   private void updateGlobal() {
@@ -164,7 +164,7 @@ public class LicenseTest extends AbstractConnectedTest {
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build());
+      .build(), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

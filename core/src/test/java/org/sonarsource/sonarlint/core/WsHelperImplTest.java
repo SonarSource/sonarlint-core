@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.container.connected.validate.Authenticatio
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionCheckerTest;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -163,14 +164,14 @@ public class WsHelperImplTest {
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=1", "/orgs/orgsp1.pb");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=2", "/orgs/orgsp2.pb");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=3", "/orgs/orgsp3.pb");
-    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker);
+    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, new ProgressWrapper(null));
     assertThat(orgs).hasSize(4);
 
     verify(serverChecker).checkVersionAndStatus("6.3");
 
     when(serverChecker.checkVersionAndStatus("6.3")).thenThrow(UnsupportedServerException.class);
     try {
-      WsHelperImpl.listOrganizations(client, serverChecker);
+      WsHelperImpl.listOrganizations(client, serverChecker, new ProgressWrapper(null));
       fail("Expected exception");
     } catch (UnsupportedServerException e) {
       // Success

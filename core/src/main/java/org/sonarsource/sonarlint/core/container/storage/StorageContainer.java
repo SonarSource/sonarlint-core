@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginCopier;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = LoggerFactory.getLogger(StorageContainer.class);
@@ -165,11 +166,11 @@ public class StorageContainer extends ComponentContainer {
     updater.updateFileIssues(moduleKey, tempFolder);
   }
 
-  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig) {
+  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig, ProgressWrapper progress) {
     IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
     StorageManager storageManager = getComponentByType(StorageManager.class);
     PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
-    updater.updateModuleList();
+    updater.updateModuleList(progress);
     return allModulesByKey();
   }
 

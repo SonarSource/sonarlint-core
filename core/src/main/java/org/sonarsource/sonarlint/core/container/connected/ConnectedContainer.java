@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
@@ -38,6 +37,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityPr
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalSettingsUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalStorageUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.ModuleStorageUpdateChecker;
@@ -102,12 +102,12 @@ public class ConnectedContainer extends ComponentContainer {
     getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateModule(String moduleKey) {
+  public void updateModule(String moduleKey, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageManager.class).getGlobalStorageStatus();
     if (updateStatus == null) {
       throw new IllegalStateException("Please update server first");
     }
-    getComponentByType(ModuleStorageUpdateExecutor.class).update(moduleKey);
+    getComponentByType(ModuleStorageUpdateExecutor.class).update(moduleKey, progress);
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {

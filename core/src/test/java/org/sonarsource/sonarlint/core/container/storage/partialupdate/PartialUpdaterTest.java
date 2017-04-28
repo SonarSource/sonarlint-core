@@ -42,8 +42,11 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownl
 import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -120,10 +123,10 @@ public class PartialUpdaterTest {
   @Test
   public void error_downloading_modules() {
     when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    doThrow(IOException.class).when(moduleListDownloader).fetchModulesListTo(temp.getRoot().toPath(), SERVER_VERSION);
+    doThrow(IOException.class).when(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
     exception.expect(DownloadException.class);
 
-    updater.updateModuleList();
+    updater.updateModuleList(new ProgressWrapper(null));
   }
 
   @Test
@@ -136,7 +139,7 @@ public class PartialUpdaterTest {
   @Test
   public void update_module_list() {
     when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    updater.updateModuleList();
-    verify(moduleListDownloader).fetchModulesListTo(temp.getRoot().toPath(), SERVER_VERSION);
+    updater.updateModuleList(new ProgressWrapper(null));
+    verify(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
   }
 }

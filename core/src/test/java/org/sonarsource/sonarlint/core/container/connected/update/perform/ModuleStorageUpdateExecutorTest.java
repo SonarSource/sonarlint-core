@@ -49,11 +49,13 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
@@ -105,7 +107,7 @@ public class ModuleStorageUpdateExecutorTest {
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
-    when(moduleHierarchy.fetchModuleHierarchy(MODULE_KEY_WITH_BRANCH)).thenReturn(modulesPath);
+    when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class))).thenReturn(modulesPath);
 
     issueStoreFactory = mock(IssueStoreFactory.class);
     issueStore = new InMemoryIssueStore();
@@ -130,7 +132,7 @@ public class ModuleStorageUpdateExecutorTest {
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
   }
 
   @Test
@@ -149,7 +151,7 @@ public class ModuleStorageUpdateExecutorTest {
 
     moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
 
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
     ModuleConfiguration moduleConfiguration = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.MODULE_CONFIGURATION_PB), ModuleConfiguration.parser());
     assertThat(moduleConfiguration.getQprofilePerLanguage()).containsOnly(
@@ -179,7 +181,7 @@ public class ModuleStorageUpdateExecutorTest {
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in storage");
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
   }
 
   @Test
@@ -211,7 +213,7 @@ public class ModuleStorageUpdateExecutorTest {
     IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
 
     moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder, moduleConfigurationDownloader);
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH);
+    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
     assertThat(issueStore.load(createFileKey(fileIssue1))).containsOnly(fileIssue1, fileIssue2);
     assertThat(issueStore.load(createFileKey(anotherFileIssue))).containsOnly(anotherFileIssue);

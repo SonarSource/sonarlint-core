@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownl
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PartialUpdater {
   private final IssueStoreFactory issueStoreFactory;
@@ -78,9 +79,9 @@ public class PartialUpdater {
     new ServerIssueUpdater(storageManager, downloader, issueStoreFactory, tempFolder).update(moduleKey);
   }
 
-  public void updateModuleList() {
+  public void updateModuleList(ProgressWrapper progress) {
     try {
-      moduleListDownloader.fetchModulesListTo(storageManager.getGlobalStorageRoot(), storageManager.readServerInfosFromStorage().getVersion());
+      moduleListDownloader.fetchModulesListTo(storageManager.getGlobalStorageRoot(), storageManager.readServerInfosFromStorage().getVersion(), progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
