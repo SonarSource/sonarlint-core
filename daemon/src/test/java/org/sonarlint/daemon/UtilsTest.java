@@ -21,14 +21,23 @@ package org.sonarlint.daemon;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 public class UtilsTest {
   @Rule
   public ExpectedException exception = ExpectedException.none();
+
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
   public void test() {
@@ -42,4 +51,21 @@ public class UtilsTest {
     exception.expectMessage("The system property 'sonarlint.home' must be defined");
     assertThat(Utils.getSonarLintInstallationHome()).isNotNull();
   }
+
+  @Test
+  public void fail_if_no_analyzers() {
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Failed to find analyzers");
+    Utils.getAnalyzers(Paths.get("invalid"));
+  }
+
+  @Test
+  public void find_analyzers() throws IOException {
+    Path plugins = temp.getRoot().toPath().resolve("plugins");
+    Files.createDirectory(plugins);
+    Path jar = plugins.resolve("test.jar");
+    Files.createFile(jar);
+    assertThat(Utils.getAnalyzers(plugins.getParent())).contains(jar.toUri().toURL());
+  }
+
 }

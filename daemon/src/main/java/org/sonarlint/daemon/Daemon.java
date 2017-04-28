@@ -27,6 +27,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,17 +52,14 @@ public class Daemon {
         return;
       }
 
-      if (options.getPort() != null) {
-        port = Integer.parseInt(options.getPort());
-      } else {
-        port = DEFAULT_PORT;
-      }
+      port = options.getPort() != null ? options.getPort() : DEFAULT_PORT;
     } catch (Exception e) {
       LOGGER.error("Error parsing arguments", e);
       return;
     }
 
-    new Daemon().start(port);
+    Path sonarlintHome = Utils.getSonarLintInstallationHome();
+    new Daemon().start(port, sonarlintHome);
   }
 
   private static void setUpNettyLogging() {
@@ -72,14 +70,14 @@ public class Daemon {
     server.shutdown();
   }
 
-  public void start(int port) {
+  public void start(int port, Path sonarlintHome) {
     try {
       LOGGER.info("Starting server on port {}", port);
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
       server = NettyServerBuilder.forAddress(new InetSocketAddress("localhost", port))
         .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(), interceptor))
-        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers()), interceptor))
+        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers(sonarlintHome)), interceptor))
         .build()
         .start();
       LOGGER.info("Server started, listening on {}", port);

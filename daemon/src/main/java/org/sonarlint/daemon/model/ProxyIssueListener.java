@@ -68,8 +68,10 @@ public class ProxyIssueListener implements IssueListener {
       .setEndLineOffset(issue.getEndLineOffset() != null ? issue.getEndLineOffset() : 0);
 
     if (inputFile != null) {
-      builder.setFilePath(inputFile.getPath())
-        .setUserObject((String) inputFile.getClientObject());
+      builder.setFilePath(inputFile.getPath());
+      if (inputFile.getClientObject() != null) {
+        builder.setUserObject((String) inputFile.getClientObject());
+      }
     }
 
     observer.onNext(builder.build());

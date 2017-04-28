@@ -19,12 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
+import java.io.IOException;
+
 public class RemotePluginTest {
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+
   @Test
   public void shouldEqual() {
     RemotePlugin clirr1 = new RemotePlugin("clirr");
@@ -40,6 +49,16 @@ public class RemotePluginTest {
     RemotePlugin clirr = new RemotePlugin("clirr").setFile("clirr-1.1.jar", "fakemd5");
     String text = clirr.marshal();
     assertThat(text, is("clirr,clirr-1.1.jar|fakemd5"));
+  }
+
+  @Test
+  public void shouldCreateRemotePlugin() throws IOException {
+    File f = temp.newFile();
+    FileUtils.write(f, "test");
+    PluginInfo info = new PluginInfo("key");
+    info.setJarFile(f);
+    RemotePlugin plugin = RemotePlugin.create(info);
+    assertThat(plugin.getKey(), is("key"));
   }
 
   @Test

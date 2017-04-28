@@ -57,6 +57,19 @@ public class TextSearchIndexTest {
   }
 
   @Test
+  public void testSearchNoTerms() {
+    assertThat(index.size()).isEqualTo(0);
+    assertThat(index.isEmpty()).isTrue();
+    index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
+    index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
+
+    assertThat(index.size()).isEqualTo(2);
+    assertThat(index.isEmpty()).isFalse();
+    assertThat(index.search(": .")).isEmpty();
+
+  }
+
+  @Test
   public void clear() {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");

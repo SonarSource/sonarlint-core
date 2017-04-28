@@ -29,7 +29,7 @@ public class OptionsTest {
   @Test
   public void testPort() throws ParseException {
     String[] args = {"--port", "1234"};
-    assertThat(Options.parse(args).getPort()).isEqualTo("1234");
+    assertThat(Options.parse(args).getPort()).isEqualTo(1234);
   }
 
   @Test
@@ -39,8 +39,19 @@ public class OptionsTest {
   }
 
   @Test(expected = ParseException.class)
+  public void testAdditionalArgMissing() throws ParseException {
+    String[] args = {"--port"};
+    Options.parse(args);
+  }
+
+  @Test(expected = ParseException.class)
   public void testInvalid() throws ParseException {
     String[] args = {"--unknown", "1234"};
     Options.parse(args);
+  }
+
+  @Test
+  public void printUsage() {
+    Options.printUsage();
   }
 }

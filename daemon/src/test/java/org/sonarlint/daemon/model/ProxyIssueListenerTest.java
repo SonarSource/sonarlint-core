@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 
@@ -34,7 +35,19 @@ import io.grpc.stub.StreamObserver;
 public class ProxyIssueListenerTest {
   @Test
   public void testIssueListener() {
+    for (Severity s : Severity.values()) {
+      if (s == Severity.UNRECOGNIZED) {
+        continue;
+      }
+      testWithSeverity(s);
+    }
+  }
+
+  private void testWithSeverity(Severity severity) {
     StreamObserver<Issue> observer = mock(StreamObserver.class);
+    ClientInputFile inputFile = mock(ClientInputFile.class);
+    when(inputFile.getPath()).thenReturn("filename");
+    when(inputFile.getClientObject()).thenReturn("obj");
     ProxyIssueListener listener = new ProxyIssueListener(observer);
 
     org.sonarsource.sonarlint.core.client.api.common.analysis.Issue i = mock(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.class);
@@ -45,7 +58,8 @@ public class ProxyIssueListenerTest {
     when(i.getMessage()).thenReturn("msg");
     when(i.getRuleKey()).thenReturn("key");
     when(i.getRuleName()).thenReturn("name");
-    when(i.getSeverity()).thenReturn("MAJOR");
+    when(i.getSeverity()).thenReturn(severity.toString().toUpperCase());
+    when(i.getInputFile()).thenReturn(inputFile);
 
     listener.handle(i);
 
@@ -60,6 +74,44 @@ public class ProxyIssueListenerTest {
     assertThat(captured.getMessage()).isEqualTo("msg");
     assertThat(captured.getRuleKey()).isEqualTo("key");
     assertThat(captured.getRuleName()).isEqualTo("name");
-    assertThat(captured.getSeverity()).isEqualTo(Severity.MAJOR);
+    assertThat(captured.getSeverity()).isEqualTo(severity);
+    assertThat(captured.getFilePath()).isEqualTo("filename");
+    assertThat(captured.getUserObject()).isEqualTo("obj");
+  }
+
+  @Test
+  public void dont_fail_if_no_user_obj() {
+    StreamObserver<Issue> observer = mock(StreamObserver.class);
+    ClientInputFile inputFile = mock(ClientInputFile.class);
+    when(inputFile.getPath()).thenReturn("filename");
+    ProxyIssueListener listener = new ProxyIssueListener(observer);
+
+    org.sonarsource.sonarlint.core.client.api.common.analysis.Issue i = mock(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.class);
+    when(i.getEndLine()).thenReturn(10);
+    when(i.getStartLine()).thenReturn(11);
+    when(i.getStartLineOffset()).thenReturn(12);
+    when(i.getEndLineOffset()).thenReturn(13);
+    when(i.getMessage()).thenReturn("msg");
+    when(i.getRuleKey()).thenReturn("key");
+    when(i.getRuleName()).thenReturn("name");
+    when(i.getSeverity()).thenReturn("MINOR");
+    when(i.getInputFile()).thenReturn(inputFile);
+
+    listener.handle(i);
+
+    ArgumentCaptor<Issue> argument = ArgumentCaptor.forClass(Issue.class);
+    verify(observer).onNext(argument.capture());
+
+    Issue captured = argument.getValue();
+    assertThat(captured.getEndLine()).isEqualTo(10);
+    assertThat(captured.getStartLine()).isEqualTo(11);
+    assertThat(captured.getStartLineOffset()).isEqualTo(12);
+    assertThat(captured.getEndLineOffset()).isEqualTo(13);
+    assertThat(captured.getMessage()).isEqualTo("msg");
+    assertThat(captured.getRuleKey()).isEqualTo("key");
+    assertThat(captured.getRuleName()).isEqualTo("name");
+    assertThat(captured.getSeverity()).isEqualTo(Severity.MINOR);
+    assertThat(captured.getFilePath()).isEqualTo("filename");
+    assertThat(captured.getUserObject()).isEqualTo("");
   }
 }

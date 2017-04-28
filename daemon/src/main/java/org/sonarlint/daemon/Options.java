@@ -62,8 +62,8 @@ public class Options {
   }
 
   @CheckForNull
-  public String getPort() {
-    return port;
+  public Integer getPort() {
+    return Integer.parseInt(port);
   }
 
   public static void printUsage() {

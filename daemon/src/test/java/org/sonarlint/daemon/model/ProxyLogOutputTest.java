@@ -58,6 +58,31 @@ public class ProxyLogOutputTest {
     assertThat(event.getLevel()).isEqualTo("DEBUG");
     assertThat(event.getLog()).isEqualTo("msg");
   }
+  
+  @Test
+  public void testLogError() {
+    ProxyLogOutput log = new ProxyLogOutput();
+    log.log("log msg", Level.INFO);
+
+    log.setObserver(observer);
+    log.log("msg", Level.ERROR);
+
+    ArgumentCaptor<LogEvent> argument = ArgumentCaptor.forClass(LogEvent.class);
+    verify(observer).onNext(argument.capture());
+    LogEvent event = argument.getValue();
+
+    assertThat(event.getIsDebug()).isFalse();
+    assertThat(event.getLevel()).isEqualTo("ERROR");
+    assertThat(event.getLog()).isEqualTo("msg");
+  }
+  
+  @Test
+  public void testSetLogTwice() {
+    ProxyLogOutput log = new ProxyLogOutput();
+    log.setObserver(observer);
+    log.setObserver(observer);
+    verify(observer).onCompleted();
+  }
 
   @Test
   public void testProxyLogError() {

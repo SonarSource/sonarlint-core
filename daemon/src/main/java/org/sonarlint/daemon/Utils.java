@@ -36,9 +36,9 @@ public class Utils {
     // only static
   }
 
-  public static Collection<URL> getAnalyzers() {
+  public static Collection<URL> getAnalyzers(Path home) {
     List<URL> plugins = new ArrayList<>();
-    Path analyzerDir = getSonarLintInstallationHome().resolve("plugins");
+    Path analyzerDir = home.resolve("plugins");
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(analyzerDir, "*.jar")) {
       for (Path p : stream) {
         plugins.add(p.toUri().toURL());
