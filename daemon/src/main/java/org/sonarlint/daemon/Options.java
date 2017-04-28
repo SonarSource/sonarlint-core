@@ -63,7 +63,7 @@ public class Options {
 
   @CheckForNull
   public Integer getPort() {
-    return Integer.parseInt(port);
+    return port == null ? null : Integer.parseInt(port);
   }
 
   public static void printUsage() {

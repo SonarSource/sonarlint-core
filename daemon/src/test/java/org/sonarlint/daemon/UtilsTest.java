@@ -53,10 +53,19 @@ public class UtilsTest {
   }
 
   @Test
-  public void fail_if_no_analyzers() {
+  public void fail_if_invalid_path_for_analyzers() {
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to find analyzers");
     Utils.getAnalyzers(Paths.get("invalid"));
+  }
+
+  @Test
+  public void fail_if_no_analyzers() throws IOException {
+    Path plugins = temp.getRoot().toPath().resolve("plugins");
+    Files.createDirectory(plugins);
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Found no analyzers");
+    Utils.getAnalyzers(plugins.getParent());
   }
 
   @Test

@@ -61,9 +61,11 @@ public class InputPathCacheTest {
     InputFile file1 = mock(InputFile.class);
     when(file1.path()).thenReturn(Paths.get("file1.java"));
     when(file1.file()).thenReturn(new File("file1.java"));
+    when(file1.language()).thenReturn("lang1");
     InputFile file2 = mock(InputFile.class);
     when(file2.path()).thenReturn(Paths.get("file2"));
     when(file2.file()).thenReturn(new File("file2"));
+    when(file2.language()).thenReturn("lang2");
 
     cache.doAdd(file1);
     cache.doAdd(file2);
@@ -77,6 +79,8 @@ public class InputPathCacheTest {
     assertThat(cache.getFilesByExtension("java")).containsOnly(file1);
     assertThat(cache.getFilesByExtension("")).containsOnly(file2);
     assertThat(cache.getFilesByName("file1.java")).containsOnly(file1);
+
+    assertThat(cache.languages()).containsExactly("lang1", "lang2");
 
   }
 }

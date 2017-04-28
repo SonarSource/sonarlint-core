@@ -79,6 +79,7 @@ public class ServerConfigurationTest {
       .proxyCredentials("proxyUser", "proxyPwd")
       .readTimeoutMilliseconds(10)
       .connectTimeoutMilliseconds(20)
+      .organizationKey("org")
       .build();
     assertThat(config.getSSLSocketFactory()).isEqualTo(socketFactory);
     assertThat(config.getTrustManager()).isEqualTo(trustManager);
@@ -91,6 +92,7 @@ public class ServerConfigurationTest {
     assertThat(config.getProxyPassword()).isEqualTo("proxyPwd");
     assertThat(config.getReadTimeoutMs()).isEqualTo(10);
     assertThat(config.getConnectTimeoutMs()).isEqualTo(20);
+    assertThat(config.getOrganizationKey()).isEqualTo("org");
   }
 
   @Test
