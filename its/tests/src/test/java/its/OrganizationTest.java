@@ -178,6 +178,13 @@ public class OrganizationTest extends AbstractConnectedTest {
     assertThat(engineOnDefaultOrg.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
   }
 
+  @Test
+  public void updateModuleInOrga() {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.4"));
+    engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
+    engineOnTestOrg.updateModule(getServerConfigForOrg(ORGANIZATION), PROJECT_KEY_JAVA, null);
+  }
+
   private void updateGlobal() {
     engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
     engineOnDefaultOrg.update(getServerConfigForOrg(null), null);

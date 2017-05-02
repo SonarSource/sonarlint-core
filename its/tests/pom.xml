@@ -120,4 +120,13 @@
   </build>
 
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.squareup.okio</groupId>
+        <artifactId>okio</artifactId>
+        <version>1.12.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 </project>

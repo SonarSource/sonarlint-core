@@ -38,7 +38,11 @@ public class ModuleQualityProfilesDownloader {
 
   public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey) {
     SearchWsResponse qpResponse;
-    try (InputStream contentStream = wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey)).contentStream()) {
+    String baseUrl = "/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey);
+    if (wsClient.getOrganizationKey() != null) {
+      baseUrl += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
+    }
+    try (InputStream contentStream = wsClient.get(baseUrl).contentStream()) {
       qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load module quality profiles", e);

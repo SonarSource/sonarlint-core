@@ -26,11 +26,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
@@ -61,16 +65,24 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.IssueUtils.createFileKey;
 import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.newEmptyStream;
 
+@RunWith(Parameterized.class)
 public class ModuleStorageUpdateExecutorTest {
 
+  private static final String ORGA_KEY = "myOrga";
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
   private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH);
+
+  @Parameters(name = "organizationKey=[{0}]")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] {{null}, {ORGA_KEY}});
+  }
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
+  private final String organizationKey;
   private SonarLintWsClient wsClient;
   private ModuleStorageUpdateExecutor moduleUpdate;
   private StorageManager storageManager;
@@ -80,10 +92,15 @@ public class ModuleStorageUpdateExecutorTest {
   private IssueStoreFactory issueStoreFactory;
   private ModuleConfigurationDownloader moduleConfigurationDownloader;
 
+  public ModuleStorageUpdateExecutorTest(@Nullable String organizationKey) {
+    this.organizationKey = organizationKey;
+  }
+
   @Before
   public void setUp() throws IOException {
     wsClient = WsClientTestUtils.createMockWithStreamResponse(getQualityProfileUrl(),
       "/update/qualityprofiles_project.pb");
+    when(wsClient.getOrganizationKey()).thenReturn(organizationKey);
 
     WsClientTestUtils.addResponse(wsClient, "/api/properties?format=json&resource=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
       "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
@@ -122,8 +139,7 @@ public class ModuleStorageUpdateExecutorTest {
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
 
-    Map<String, QProfiles.QProfile> mutableQprofilesByKey = builder.getMutableQprofilesByKey();
-    mutableQprofilesByKey.put("java-empty-74333", QProfiles.QProfile.newBuilder().build());
+    builder.putQprofilesByKey("java-empty-74333", QProfiles.QProfile.newBuilder().build());
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
@@ -140,11 +156,10 @@ public class ModuleStorageUpdateExecutorTest {
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
 
-    Map<String, QProfiles.QProfile> mutableQprofilesByKey = builder.getMutableQprofilesByKey();
-    mutableQprofilesByKey.put("cs-sonar-way-58886", QProfiles.QProfile.newBuilder().build());
-    mutableQprofilesByKey.put("java-empty-74333", QProfiles.QProfile.newBuilder().build());
-    mutableQprofilesByKey.put("js-sonar-way-60746", QProfiles.QProfile.newBuilder().build());
-    mutableQprofilesByKey.put("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
+    builder.putQprofilesByKey("cs-sonar-way-58886", QProfiles.QProfile.newBuilder().build());
+    builder.putQprofilesByKey("java-empty-74333", QProfiles.QProfile.newBuilder().build());
+    builder.putQprofilesByKey("js-sonar-way-60746", QProfiles.QProfile.newBuilder().build());
+    builder.putQprofilesByKey("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
     when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
     when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
@@ -221,7 +236,11 @@ public class ModuleStorageUpdateExecutorTest {
   }
 
   private String getQualityProfileUrl() {
-    return "/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
+    String url = "/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
+    if (organizationKey != null) {
+      url += "&organization=" + organizationKey;
+    }
+    return url;
   }
 
 }
