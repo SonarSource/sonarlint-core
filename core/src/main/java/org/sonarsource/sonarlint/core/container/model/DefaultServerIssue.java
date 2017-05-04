@@ -36,6 +36,7 @@ public class DefaultServerIssue implements ServerIssue {
   private boolean manualSeverity;
   private Instant creationDate;
   private String severity;
+  private String type;
 
   @Override
   public String key() {
@@ -96,6 +97,11 @@ public class DefaultServerIssue implements ServerIssue {
   public String severity() {
     return severity;
   }
+  
+  @Override
+  public String type() {
+    return type;
+  }
 
   public DefaultServerIssue setKey(String key) {
     this.key = key;
@@ -154,6 +160,11 @@ public class DefaultServerIssue implements ServerIssue {
 
   public DefaultServerIssue setSeverity(String severity) {
     this.severity = severity;
+    return this;
+  }
+  
+  public DefaultServerIssue setType(String type) {
+    this.type = type;
     return this;
   }
 }

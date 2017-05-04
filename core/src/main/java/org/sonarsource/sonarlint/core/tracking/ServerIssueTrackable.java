@@ -49,6 +49,11 @@ public class ServerIssueTrackable implements Trackable {
   public String getSeverity() {
     return serverIssue.severity();
   }
+  
+  @Override
+  public String getType() {
+    return serverIssue.type();
+  }
 
   @Override
   public String getMessage() {

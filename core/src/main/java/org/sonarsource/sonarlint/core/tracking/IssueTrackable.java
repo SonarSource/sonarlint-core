@@ -65,6 +65,11 @@ public class IssueTrackable implements Trackable {
   public String getSeverity() {
     return issue.getSeverity();
   }
+  
+  @Override
+  public String getType() {
+    return issue.getType();
+  }
 
   @Override
   public String getMessage() {

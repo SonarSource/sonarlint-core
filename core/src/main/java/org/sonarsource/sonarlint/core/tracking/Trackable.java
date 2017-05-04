@@ -34,6 +34,9 @@ public interface Trackable {
 
   String getMessage();
 
+  @CheckForNull
+  String getType();
+
   /**
    * The line index, starting with 1. Null means that
    * issue does not relate to a line (file issue for example).

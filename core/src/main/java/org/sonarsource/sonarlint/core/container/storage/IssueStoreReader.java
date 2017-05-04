@@ -92,6 +92,10 @@ public class IssueStoreReader {
     issue.setManualSeverity(pbIssue.getManualSeverity());
     issue.setMessage(pbIssue.getMsg());
     issue.setSeverity(pbIssue.getSeverity().name());
+    if (pbIssue.hasType()) {
+      // type was added recently
+      issue.setType(pbIssue.getType());
+    }
     issue.setCreationDate(Instant.ofEpochMilli(pbIssue.getCreationDate()));
     issue.setResolution(pbIssue.getResolution());
     issue.setKey(pbIssue.getKey());

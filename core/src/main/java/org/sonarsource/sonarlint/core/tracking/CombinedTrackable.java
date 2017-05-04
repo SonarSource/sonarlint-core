@@ -22,14 +22,14 @@ package org.sonarsource.sonarlint.core.tracking;
 /**
  * Combine a new Trackable ("next") with a previous state ("base")
  */
-public class CombinedTrackable extends WrappedTrackable {
-
-  private final String serverIssueKey;
-  private final Long creationDate;
-  private final boolean resolved;
-  private final String assignee;
-
-  public CombinedTrackable(Trackable base, Trackable next) {
+public class CombinedTrackable extends AbstractTrackable {
+  /**
+   * Local issue tracking: base are existing issues, next are raw issues coming from the analysis. We don't want to inherit severity and type
+   * so that latest analysis always overrides them.
+   * Server issue tracking: base are server issues, next are the existing issue, coming from local issue tracking. We want to inherit severity and type
+   * so that the server issues override analyzers.
+   */
+  public CombinedTrackable(Trackable base, Trackable next, boolean inheritSeverity) {
     super(next);
 
     // Warning: do not store a reference to base, as it might never get garbage collected
@@ -37,25 +37,12 @@ public class CombinedTrackable extends WrappedTrackable {
     this.serverIssueKey = base.getServerIssueKey();
     this.resolved = base.isResolved();
     this.assignee = base.getAssignee();
-  }
-
-  @Override
-  public Long getCreationDate() {
-    return creationDate;
-  }
-
-  @Override
-  public String getServerIssueKey() {
-    return serverIssueKey;
-  }
-
-  @Override
-  public boolean isResolved() {
-    return resolved;
-  }
-
-  @Override
-  public String getAssignee() {
-    return assignee;
+    if (inheritSeverity) {
+      this.severity = base.getSeverity();
+      if (base.getType() != null) {
+        // this can be null for old SQ servers that didn't have issue types yet
+        this.type = base.getType();
+      }
+    }
   }
 }

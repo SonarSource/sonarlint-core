@@ -21,29 +21,36 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * {@inheritDoc}
  */
 public class IssueTrackerImpl implements IssueTracker {
 
+  /**
+   * Local issue tracking: baseIssues are existing issue, nextIssues are raw issues coming from the analysis.
+   * Server issue tracking: baseIssues are server issues, nextIssues are the existing issue, coming from local issue tracking.
+   */
   @Override
-  public Collection<Trackable> apply(Collection<Trackable> baseIssues, Collection<Trackable> nextIssues) {
+  public Collection<Trackable> apply(Collection<Trackable> baseIssues, Collection<Trackable> nextIssues, boolean inheritSeverity) {
     Collection<Trackable> trackedIssues = new ArrayList<>();
     Tracking<Trackable, Trackable> tracking = new Tracker<Trackable, Trackable>().track(() -> nextIssues, () -> baseIssues);
-    for (Map.Entry<Trackable, Trackable> entry : tracking.getMatchedRaws().entrySet()) {
-      Trackable next = new CombinedTrackable(entry.getValue(), entry.getKey());
-      trackedIssues.add(next);
-    }
+
+    tracking.getMatchedRaws().entrySet().stream()
+      .map(e -> new CombinedTrackable(e.getValue(), e.getKey(), inheritSeverity))
+      .forEach(trackedIssues::add);
+
     for (Trackable next : tracking.getUnmatchedRaws()) {
       if (next.getServerIssueKey() != null) {
+        // not matched with server anymore
         next = new DisconnectedTrackable(next);
       } else if (next.getCreationDate() == null) {
+        // first time we see this issue locally
         next = new LeakedTrackable(next);
       }
       trackedIssues.add(next);
     }
+
     return trackedIssues;
   }
 }
