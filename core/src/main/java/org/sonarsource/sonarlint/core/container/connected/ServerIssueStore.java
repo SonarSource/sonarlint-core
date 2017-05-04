@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.HashingPathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
@@ -43,7 +42,7 @@ public class ServerIssueStore implements IssueStore {
   public ServerIssueStore(Path base) {
     HashingPathMapper pathGenerator = new HashingPathMapper(base, 2);
 
-    Reader<List<ScannerInput.ServerIssue>> reader = input -> ProtobufUtil.readMessages(input, ScannerInput.ServerIssue.parser());
+    Reader<List<ServerIssue>> reader = input -> ProtobufUtil.readMessages(input, ServerIssue.parser());
 
     Writer<List<ServerIssue>> writer = ProtobufUtil::writeMessages;
 
@@ -76,7 +75,7 @@ public class ServerIssueStore implements IssueStore {
   @Override
   public synchronized List<ServerIssue> load(String fileKey) {
     try {
-      Optional<List<ScannerInput.ServerIssue>> issues = store.read(fileKey);
+      Optional<List<ServerIssue>> issues = store.read(fileKey);
       if (issues.isPresent()) {
         return issues.get();
       }

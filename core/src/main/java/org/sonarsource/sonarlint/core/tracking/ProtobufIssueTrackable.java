@@ -89,6 +89,11 @@ public class ProtobufIssueTrackable implements Trackable {
   public String getSeverity() {
     throw new UnsupportedOperationException();
   }
+  
+  @Override
+  public String getType() {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public TextRange getTextRange() {

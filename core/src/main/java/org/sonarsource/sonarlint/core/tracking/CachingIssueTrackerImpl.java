@@ -41,7 +41,7 @@ public class CachingIssueTrackerImpl extends IssueTrackerImpl implements Caching
     if (cache.isFirstAnalysis(file)) {
       tracked = trackables;
     } else {
-      tracked = apply(cache.getCurrentTrackables(file), trackables);
+      tracked = apply(cache.getCurrentTrackables(file), trackables, false);
     }
     cache.put(file, tracked);
     return tracked;
@@ -59,7 +59,7 @@ public class CachingIssueTrackerImpl extends IssueTrackerImpl implements Caching
       // whatever is the base, if current is empty, then nothing to do
       return Collections.emptyList();
     }
-    Collection<Trackable> tracked = apply(trackables, current);
+    Collection<Trackable> tracked = apply(trackables, current, true);
     cache.put(file, tracked);
     return tracked;
   }

@@ -21,76 +21,107 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 
-public class WrappedTrackable implements Trackable {
+public class AbstractTrackable implements Trackable {
+  protected Issue issue;
+  protected String ruleKey;
+  protected String ruleName;
+  protected String severity;
+  protected String type;
+  protected String message;
+  protected Integer line;
+  protected Integer lineHash;
+  protected TextRange textRange;
+  protected Integer textRangeHash;
+  protected Long creationDate;
+  protected String serverIssueKey;
+  protected boolean resolved;
+  protected String assignee;
 
-  private final Trackable trackable;
-
-  public WrappedTrackable(Trackable trackable) {
-    this.trackable = trackable;
+  protected AbstractTrackable(Trackable trackable) {
+    // copy fieds instead of using given trackable to avoid always increase level of proxying
+    this.issue = trackable.getIssue();
+    this.ruleKey = trackable.getRuleKey();
+    this.ruleName = trackable.getRuleName();
+    this.severity = trackable.getSeverity();
+    this.type = trackable.getType();
+    this.message = trackable.getMessage();
+    this.line = trackable.getLine();
+    this.lineHash = trackable.getLineHash();
+    this.textRange = trackable.getTextRange();
+    this.textRangeHash = trackable.getTextRangeHash();
+    this.creationDate = trackable.getCreationDate();
+    this.serverIssueKey = trackable.getServerIssueKey();
+    this.resolved = trackable.isResolved();
+    this.assignee = trackable.getAssignee();
   }
 
   @Override
   public Issue getIssue() {
-    return trackable.getIssue();
+    return issue;
   }
 
   @Override
   public String getRuleKey() {
-    return trackable.getRuleKey();
+    return ruleKey;
   }
 
   @Override
   public String getRuleName() {
-    return trackable.getRuleName();
+    return ruleName;
   }
 
   @Override
   public String getSeverity() {
-    return trackable.getSeverity();
+    return severity;
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override
   public String getMessage() {
-    return trackable.getMessage();
+    return message;
   }
 
   @Override
   public Integer getLine() {
-    return trackable.getLine();
+    return line;
   }
 
   @Override
   public Integer getLineHash() {
-    return trackable.getLineHash();
+    return lineHash;
   }
 
   @Override
   public TextRange getTextRange() {
-    return trackable.getTextRange();
+    return textRange;
   }
 
   @Override
   public Integer getTextRangeHash() {
-    return trackable.getTextRangeHash();
+    return textRangeHash;
   }
 
   @Override
   public Long getCreationDate() {
-    return trackable.getCreationDate();
+    return creationDate;
   }
 
   @Override
   public String getServerIssueKey() {
-    return trackable.getServerIssueKey();
+    return serverIssueKey;
   }
 
   @Override
   public boolean isResolved() {
-    return trackable.isResolved();
+    return resolved;
   }
 
   @Override
   public String getAssignee() {
-    return trackable.getAssignee();
+    return assignee;
   }
 }

@@ -42,5 +42,8 @@ public class DefaultServerIssueTest {
     assertThat(issue.setResolution("RESOLVED").resolution()).isEqualTo("RESOLVED");
     assertThat(issue.setModuleKey("module1").moduleKey()).isEqualTo("module1");
     assertThat(issue.setMessage("msg1").message()).isEqualTo("msg1");
+    assertThat(issue.type()).isEqualTo(null);
+    assertThat(issue.setType("type").type()).isEqualTo("type");
+
   }
 }

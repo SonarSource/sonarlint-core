@@ -33,7 +33,7 @@
   <properties>
     <sonarqube.version>6.4.0.23373</sonarqube.version>
     <sonar-ws.version>6.4.0.23373</sonar-ws.version>
-    <sonar-scanner-protocol.version>6.2</sonar-scanner-protocol.version>
+    <sonar-scanner-protocol.version>6.4.0.23373</sonar-scanner-protocol.version>
     <logback.version>1.1.3</logback.version>
     <slf4j.version>1.7.21</slf4j.version>
     <log4j.version>2.5</log4j.version>

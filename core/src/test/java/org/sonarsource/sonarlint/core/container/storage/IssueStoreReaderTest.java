@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 import com.google.common.base.Objects;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +105,28 @@ public class IssueStoreReaderTest {
     assertThat(issueStoreReader.getServerIssues("root:module1", "path2"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue("module1", "path2"));
+  }
+
+  @Test
+  public void testDontSetTypeIfDoesntExist() {
+    // setup module hierarchy
+    Map<String, String> modulePaths = new HashMap<>();
+    modulePaths.put(MODULE_KEY, "");
+
+    Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
+    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
+
+    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+
+    ScannerInput.ServerIssue serverIssue = ScannerInput.ServerIssue.newBuilder()
+      .setModuleKey(MODULE_KEY)
+      .setPath("path")
+      .build();
+
+    issueStore.save(Collections.singletonList(serverIssue));
+
+    ServerIssue issue = issueStoreReader.getServerIssues(MODULE_KEY, "path").iterator().next();
+    assertThat(issue.type()).isNull();
   }
 
   @Test

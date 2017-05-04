@@ -22,17 +22,9 @@ package org.sonarsource.sonarlint.core.tracking;
 /**
  * A new leak
  */
-public class LeakedTrackable extends WrappedTrackable {
-
-  private final Long creationDate;
-
+public class LeakedTrackable extends AbstractTrackable {
   public LeakedTrackable(Trackable trackable) {
     super(trackable);
     this.creationDate = System.currentTimeMillis();
-  }
-
-  @Override
-  public Long getCreationDate() {
-    return creationDate;
   }
 }
