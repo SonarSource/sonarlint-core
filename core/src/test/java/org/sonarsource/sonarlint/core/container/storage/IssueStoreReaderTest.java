@@ -108,6 +108,32 @@ public class IssueStoreReaderTest {
   }
 
   @Test
+  public void testMultiModule2() {
+    // setup module hierarchy
+    Map<String, String> modulePaths = new HashMap<>();
+    modulePaths.put(MODULE_KEY, "");
+    modulePaths.put("root:module1", "module1");
+    modulePaths.put("root:module12", "module12");
+
+    Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
+    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
+
+    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+
+    // setup issues
+    issueStore.save(Arrays.asList(
+      createServerIssue("root:module1", "path1"),
+      createServerIssue("root:module12", "path12")));
+
+    // test
+
+    // matches module12 path
+    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module12/path12"))
+      .usingElementComparator(simpleComparator)
+      .containsOnly(createApiIssue(MODULE_KEY, "module12/path12"));
+  }
+
+  @Test
   public void testDontSetTypeIfDoesntExist() {
     // setup module hierarchy
     Map<String, String> modulePaths = new HashMap<>();

@@ -71,7 +71,7 @@ public class IssueStoreReader {
     for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
       String entryModuleKey = entry.getKey();
       String entryPath = entry.getValue();
-      if (filePath.startsWith(entryPath) && prefixLen < entryPath.length()) {
+      if (!entryPath.isEmpty() && filePath.startsWith(entryPath) && prefixLen <= entryPath.length()) {
         subModuleKey = entryModuleKey;
         prefixLen = entryPath.length() + 1;
       }
