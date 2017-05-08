@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigura
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityProfilesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
@@ -90,6 +91,7 @@ public class ConnectedContainer extends ComponentContainer {
       SettingsDownloader.class,
       ModuleQualityProfilesDownloader.class,
       ModuleListDownloader.class,
+      PluginListDownloader.class,
       ModuleHierarchyDownloader.class,
       RulesDownloader.class,
       QualityProfilesDownloader.class,
