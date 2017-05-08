@@ -19,10 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,12 +38,12 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -43,13 +51,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class GlobalStorageUpdateExecutorTest {
   private TempFolder tempFolder;
@@ -78,9 +79,9 @@ public class GlobalStorageUpdateExecutorTest {
     when(tempFolder.newDir()).thenReturn(tempDir);
     storageManager = mock(StorageManager.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
-    globalUpdate = new GlobalStorageUpdateExecutor(storageManager, wsClient, mock(PluginVersionChecker.class), new ServerVersionAndStatusChecker(wsClient),
+    globalUpdate = new GlobalStorageUpdateExecutor(storageManager, wsClient, new ServerVersionAndStatusChecker(wsClient),
       mock(PluginReferencesDownloader.class), mock(SettingsDownloader.class), rulesDownloader, mock(ModuleListDownloader.class),
-      mock(QualityProfilesDownloader.class), tempFolder);
+      mock(QualityProfilesDownloader.class), mock(PluginListDownloader.class), tempFolder);
   }
 
   @Test

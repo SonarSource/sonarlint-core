@@ -19,8 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
+import java.util.List;
+
+import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -30,15 +33,14 @@ public class GlobalStorageUpdateChecker {
   private final PluginsUpdateChecker pluginsUpdateChecker;
   private final GlobalSettingsUpdateChecker globalSettingsUpdateChecker;
   private final ServerVersionAndStatusChecker statusChecker;
-  private final PluginVersionChecker pluginsChecker;
   private final QualityProfilesUpdateChecker qualityProfilesUpdateChecker;
+  private final PluginListDownloader pluginListDownloader;
 
-  public GlobalStorageUpdateChecker(PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
-    PluginsUpdateChecker pluginsUpdateChecker, GlobalSettingsUpdateChecker globalSettingsUpdateChecker,
-    QualityProfilesUpdateChecker qualityProfilesUpdateChecker) {
-    this.pluginsChecker = pluginsChecker;
+  public GlobalStorageUpdateChecker(ServerVersionAndStatusChecker statusChecker, PluginsUpdateChecker pluginsUpdateChecker, PluginListDownloader pluginListDownloader,
+    GlobalSettingsUpdateChecker globalSettingsUpdateChecker, QualityProfilesUpdateChecker qualityProfilesUpdateChecker) {
     this.statusChecker = statusChecker;
     this.pluginsUpdateChecker = pluginsUpdateChecker;
+    this.pluginListDownloader = pluginListDownloader;
     this.globalSettingsUpdateChecker = globalSettingsUpdateChecker;
     this.qualityProfilesUpdateChecker = qualityProfilesUpdateChecker;
   }
@@ -48,18 +50,16 @@ public class GlobalStorageUpdateChecker {
 
     progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
     ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
-    progress.setProgressAndCheckCancel("Checking plugins versions", 0.15f);
-    pluginsChecker.checkPlugins();
-
     // Currently with don't check server version change since it is unlikely to have impact on SL
 
-    progress.setProgressAndCheckCancel("Checking global properties", 0.4f);
+    progress.setProgressAndCheckCancel("Checking global properties", 0.3f);
     globalSettingsUpdateChecker.checkForUpdates(serverStatus.getVersion(), result);
 
-    progress.setProgressAndCheckCancel("Checking plugins", 0.6f);
-    pluginsUpdateChecker.checkForUpdates(result, serverStatus);
+    progress.setProgressAndCheckCancel("Checking plugins", 0.5f);
+    List<SonarAnalyzer> pluginList = pluginListDownloader.downloadPluginList(serverStatus.getVersion());
+    pluginsUpdateChecker.checkForUpdates(result, pluginList);
 
-    progress.setProgressAndCheckCancel("Checking quality profiles", 0.8f);
+    progress.setProgressAndCheckCancel("Checking quality profiles", 0.7f);
     qualityProfilesUpdateChecker.checkForUpdates(result);
 
     progress.setProgressAndCheckCancel("Done", 1.0f);

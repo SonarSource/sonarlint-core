@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -37,12 +38,15 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
@@ -171,7 +175,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public GlobalStorageStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
+  public UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
     setLogging(null);
     rwl.writeLock().lock();
@@ -179,9 +183,10 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     changeState(State.UPDATING);
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
     try {
+      List<SonarAnalyzer> analyzers;
       try {
         connectedContainer.startComponents();
-        connectedContainer.update(new ProgressWrapper(monitor));
+        analyzers = connectedContainer.update(new ProgressWrapper(monitor));
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.wrap(e);
       } finally {
@@ -192,10 +197,17 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
         }
         start();
       }
-      return getGlobalContainer().getGlobalStorageStatus();
+      return new UpdateResult(getGlobalContainer().getGlobalStorageStatus(), analyzers);
     } finally {
       rwl.writeLock().unlock();
     }
+  }
+
+  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+    return withReadLock(() -> {
+      checkUpdateStatus();
+      return getGlobalContainer().getAnalyzers();
+    });
   }
 
   @Override

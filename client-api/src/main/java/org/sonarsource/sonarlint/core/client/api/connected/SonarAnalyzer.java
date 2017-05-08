@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.validate;
-
-import java.io.IOException;
-import java.util.Properties;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
 import javax.annotation.CheckForNull;
 
-public class PluginVersionChecker {
-  public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
+public interface SonarAnalyzer {
+  String key();
 
-  private final Properties minimalPluginVersions;
-
-  public PluginVersionChecker() {
-    this.minimalPluginVersions = new Properties();
-    try {
-      minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load minimum plugin versions", e);
-    }
-  }
+  String filename();
 
   @CheckForNull
-  public String getMinimumVersion(String key) {
-    return minimalPluginVersions.getProperty(key);
-  }
+  String version();
+
+  String hash();
+
+  boolean sonarlintCompatible();
+
+  @CheckForNull
+  String minimumVersion();
 }

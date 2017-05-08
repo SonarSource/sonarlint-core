@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.validate;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-public class InstalledPlugin {
-  private String key;
-  private String name;
-  private String version;
-  
-  public String getKey() {
-    return key;
+import java.util.Collection;
+
+public class UpdateResult {
+  private GlobalStorageStatus status;
+  private Collection<SonarAnalyzer> analyzers;
+
+  public UpdateResult(GlobalStorageStatus status, Collection<SonarAnalyzer> analyzers) {
+    this.status = status;
+    this.analyzers = analyzers;
+
   }
-  public void setKey(String key) {
-    this.key = key;
+
+  public GlobalStorageStatus status() {
+    return status;
   }
-  public String getName() {
-    return name;
-  }
-  public void setName(String name) {
-    this.name = name;
-  }
-  public String getVersion() {
-    return version;
-  }
-  public void setVersion(String version) {
-    this.version = version;
+
+  public Collection<SonarAnalyzer> analyzers() {
+    return analyzers;
   }
 }

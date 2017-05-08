@@ -117,7 +117,7 @@ public interface ConnectedSonarLintEngine {
    * @throws UnsupportedServerException if server version is too low
    * @throws CanceledException if the update task was cancelled
    */
-  GlobalStorageStatus update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
    * Update given module.
