@@ -19,9 +19,11 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.nio.file.Path;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -37,11 +39,12 @@ import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.sonar.orchestrator.Orchestrator;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
@@ -96,17 +99,15 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   @Test
   public void checkMinimalPluginVersionDuringGlobalUpdate() throws IOException {
-    exception.expect(UnsupportedServerException.class);
-    exception.expectMessage("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 4.0)");
-
-    engine.update(config(), null);
+    UpdateResult update = engine.update(config(), null);
+    assertThat(update.status().getLastUpdateDate()).isNotNull();
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
   }
 
   @Test
-  public void checkMinimalPluginVersionWhenValidatingConnection() throws IOException {
+  public void dontCheckMinimalPluginVersionWhenValidatingConnection() throws IOException {
     ValidationResult result = new WsHelperImpl().validateConnection(config());
-    assertThat(result.success()).isFalse();
-    assertThat(result.message()).isEqualTo("The following plugins do not meet the required minimum versions, please upgrade them: java (installed: 3.7, minimum: 4.0)");
+    assertThat(result.success()).isTrue();
   }
 
   private ServerConfiguration config() {

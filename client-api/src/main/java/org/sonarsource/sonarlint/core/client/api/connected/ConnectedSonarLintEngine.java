@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.CheckForNull;
@@ -158,5 +159,11 @@ public interface ConnectedSonarLintEngine {
    * @since 2.9
    */
   void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey);
+
+  /**
+   * Get information about the analyzers that are currently loaded.
+   * Should only be called when engine is started.
+   */
+  Collection<LoadedAnalyzer> getLoadedAnalyzers();
 
 }

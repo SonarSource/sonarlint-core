@@ -203,6 +203,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     }
   }
 
+  @Override
   public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
     return withReadLock(() -> {
       checkUpdateStatus();
