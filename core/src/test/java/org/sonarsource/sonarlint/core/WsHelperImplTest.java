@@ -19,9 +19,15 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.io.Resources;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -31,19 +37,18 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionCheckerTest;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import com.google.common.io.Resources;
 
 public class WsHelperImplTest {
+  private static final String RESPONSE_FILE_LTS = "/validate/plugins_index.txt";
+  private static final String RESPONSE_FILE_LTS_FAIL = "/validate/plugins_index_fail.txt";
+
   private WsHelperImpl helper;
 
   private SonarLintWsClient client;
@@ -107,8 +112,8 @@ public class WsHelperImplTest {
   @Test
   public void testConnection_ok() throws Exception {
     WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(PluginVersionCheckerTest.RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
+    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     ValidationResult validation = WsHelperImpl.validateConnection(client, null);
     assertThat(validation.success()).isTrue();
@@ -118,8 +123,8 @@ public class WsHelperImplTest {
   @Test
   public void testConnectionUnsupportedOrganizations() throws Exception {
     WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(PluginVersionCheckerTest.RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
+    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     ValidationResult validation = WsHelperImpl.validateConnection(client, "myOrg");
     assertThat(validation.success()).isFalse();
@@ -129,8 +134,8 @@ public class WsHelperImplTest {
   @Test
   public void testConnectionOrganizationNotFound() throws Exception {
     WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.3\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(PluginVersionCheckerTest.RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
+    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1", "/orgs/empty.pb");
     ValidationResult validation = WsHelperImpl.validateConnection(client, "myOrg");
@@ -141,8 +146,8 @@ public class WsHelperImplTest {
   @Test
   public void testConnection_ok_with_org() throws Exception {
     WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.3\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(PluginVersionCheckerTest.RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginVersionChecker.WS_PATH_LTS, content);
+    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=1", "/orgs/single.pb");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=2", "/orgs/empty.pb");

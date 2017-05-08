@@ -24,5 +24,4 @@ public interface ValidationResult {
   boolean success();
 
   String message();
-
 }

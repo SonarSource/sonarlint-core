@@ -21,15 +21,18 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
 import java.util.Date;
+import java.util.List;
+
 import org.sonar.api.utils.TempFolder;
+import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
@@ -48,40 +51,40 @@ public class GlobalStorageUpdateExecutor {
   private final ModuleListDownloader moduleListDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
   private final SonarLintWsClient wsClient;
-  private final PluginVersionChecker pluginsChecker;
   private final QualityProfilesDownloader qualityProfilesDownloader;
+  private final PluginListDownloader pluginListDownloader;
 
-  public GlobalStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, PluginVersionChecker pluginsChecker, ServerVersionAndStatusChecker statusChecker,
+  public GlobalStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
-    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, TempFolder tempFolder) {
+    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, PluginListDownloader pluginListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
-    this.pluginsChecker = pluginsChecker;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalSettingsDownloader = globalPropertiesDownloader;
     this.rulesDownloader = rulesDownloader;
     this.moduleListDownloader = moduleListDownloader;
     this.qualityProfilesDownloader = qualityProfilesDownloader;
+    this.pluginListDownloader = pluginListDownloader;
     this.tempFolder = tempFolder;
   }
 
-  public void update(ProgressWrapper progress) {
+  public List<SonarAnalyzer> update(ProgressWrapper progress) {
     Path temp = tempFolder.newDir().toPath();
 
     try {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
-      progress.setProgressAndCheckCancel("Checking plugins versions", 0.15f);
-      pluginsChecker.checkPlugins();
 
+      progress.setProgressAndCheckCancel("Fetching list of analyzers", 0.12f);
+      List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList(serverStatus.getVersion());
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StorageManager.SERVER_INFO_PB));
 
-      progress.setProgressAndCheckCancel("Fetching global properties", 0.2f);
+      progress.setProgressAndCheckCancel("Fetching global properties", 0.15f);
       globalSettingsDownloader.fetchGlobalSettingsTo(serverStatus.getVersion(), temp);
 
-      progress.setProgressAndCheckCancel("Fetching plugins", 0.3f);
-      pluginReferenceDownloader.fetchPluginsTo(temp, serverStatus.getVersion());
+      progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
+      pluginReferenceDownloader.fetchPluginsTo(temp, analyzers);
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp);
@@ -107,6 +110,7 @@ public class GlobalStorageUpdateExecutor {
       FileUtils.deleteRecursively(dest);
       FileUtils.mkdirs(dest.getParent());
       FileUtils.moveDir(temp, dest);
+      return analyzers;
     } catch (RuntimeException e) {
       try {
         FileUtils.deleteRecursively(temp);

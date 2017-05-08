@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.Plugin;
@@ -38,6 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -47,6 +50,7 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
@@ -136,6 +140,17 @@ public class StorageContainer extends ComponentContainer {
 
   public GlobalStorageStatus getGlobalStorageStatus() {
     return getComponentByType(GlobalUpdateStatusReader.class).get();
+  }
+
+  public List<LoadedAnalyzer> getAnalyzers() {
+    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    return pluginRepository.getPluginInfos().stream()
+      .map(StorageContainer::pluginInfoToAnalyzer)
+      .collect(Collectors.toList());
+  }
+
+  private static LoadedAnalyzer pluginInfoToAnalyzer(PluginInfo p) {
+    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), p.getVersion() == null ? null : p.getVersion().toString());
   }
 
   public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {

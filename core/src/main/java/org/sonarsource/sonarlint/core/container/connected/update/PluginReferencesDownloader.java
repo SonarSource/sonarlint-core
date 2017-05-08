@@ -19,75 +19,71 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Scanner;
+import java.util.List;
+
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
-import org.sonarsource.sonarlint.core.plugin.PluginCopier;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-
-import static java.lang.String.format;
 
 public class PluginReferencesDownloader {
 
   private static final Logger LOG = LoggerFactory.getLogger(PluginReferencesDownloader.class);
 
-  private final SonarLintWsClient wsClient;
   private final PluginCache pluginCache;
-  private final PluginVersionChecker pluginVersionChecker;
+  private final SonarLintWsClient wsClient;
 
-  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache, PluginVersionChecker pluginVersionChecker) {
+  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache) {
     this.wsClient = wsClient;
     this.pluginCache = pluginCache;
-    this.pluginVersionChecker = pluginVersionChecker;
   }
 
-  public PluginReferences fetchPlugins(String serverVersion) {
-    boolean compatibleFlagPresent = Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.0")) >= 0;
-    PluginReferences.Builder builder = PluginReferences.newBuilder();
-    String responseStr;
-    try (WsResponse response = wsClient.get(PluginVersionChecker.WS_PATH_LTS)) {
-      responseStr = response.content();
-    }
-    pluginVersionChecker.checkPlugins(responseStr);
-
-    Scanner scanner = new Scanner(responseStr);
-    while (scanner.hasNextLine()) {
-      String line = scanner.nextLine();
-      String[] fields = StringUtils.split(line, ",");
-      String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
-      String key = fields[0];
-      boolean compatible = PluginCopier.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
-      if (!compatible) {
-        LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", key);
+  public PluginReferences fetchPlugins(List<SonarAnalyzer> analyzers) {
+    Builder builder = PluginReferences.newBuilder();
+    for (SonarAnalyzer analyzer : analyzers) {
+      if (!analyzer.sonarlintCompatible()) {
+        LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", analyzer.key());
         continue;
       }
-      String filename = nameAndHash[0];
-      String hash = nameAndHash[1];
-      builder.addReference(PluginReference.newBuilder()
-        .setKey(key)
-        .setHash(hash)
-        .setFilename(filename)
-        .build());
+      if (checkVersion(analyzer.version(), analyzer.minimumVersion())) {
+        builder.addReference(PluginReference.newBuilder()
+          .setKey(analyzer.key())
+          .setHash(analyzer.hash())
+          .setFilename(analyzer.filename())
+          .build());
+      }
     }
-    scanner.close();
     return builder.build();
   }
 
-  public PluginReferences fetchPluginsTo(Path dest, String serverVersion) {
-    PluginReferences refs = fetchPlugins(serverVersion);
+  private static boolean checkVersion(@Nullable String version, @Nullable String minVersion) {
+    if (version != null && minVersion != null) {
+      Version v = Version.create(version);
+      Version minimalVersion = Version.create(minVersion);
+
+      return v.compareTo(minimalVersion) >= 0;
+    }
+    return true;
+  }
+
+  public PluginReferences fetchPluginsTo(Path dest, List<SonarAnalyzer> analyzers) {
+    PluginReferences refs = fetchPlugins(analyzers);
     for (PluginReference ref : refs.getReferenceList()) {
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
     }

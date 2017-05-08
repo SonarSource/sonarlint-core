@@ -17,29 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.validate;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.io.IOException;
-import java.util.Properties;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 
-import javax.annotation.CheckForNull;
+public class DefaultLoadedAnalyzer implements LoadedAnalyzer {
+  private String key;
+  private String name;
+  private String version;
 
-public class PluginVersionChecker {
-  public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
-
-  private final Properties minimalPluginVersions;
-
-  public PluginVersionChecker() {
-    this.minimalPluginVersions = new Properties();
-    try {
-      minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load minimum plugin versions", e);
-    }
+  public DefaultLoadedAnalyzer(String key, String name, String version) {
+    this.key = key;
+    this.name = name;
+    this.version = version;
   }
 
-  @CheckForNull
-  public String getMinimumVersion(String key) {
-    return minimalPluginVersions.getProperty(key);
+  @Override
+  public String key() {
+    return key;
+  }
+
+  @Override
+  public String name() {
+    return name;
+  }
+
+  @Override
+  public String version() {
+    return version;
   }
 }

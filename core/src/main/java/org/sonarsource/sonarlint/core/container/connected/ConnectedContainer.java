@@ -19,12 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
@@ -98,8 +101,8 @@ public class ConnectedContainer extends ComponentContainer {
       ModuleStorageStatusReader.class);
   }
 
-  public void update(ProgressWrapper progress) {
-    getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
+  public List<SonarAnalyzer> update(ProgressWrapper progress) {
+    return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
   public void updateModule(String moduleKey, ProgressWrapper progress) {

@@ -19,11 +19,14 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.gson.Gson;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import javax.annotation.Nullable;
+
 import org.sonarqube.ws.Organizations;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
@@ -35,7 +38,6 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerExc
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.plugin.Version;
@@ -44,7 +46,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.gson.Gson;
 
 public class WsHelperImpl implements WsHelper {
   private static final String MIN_VERSION_FOR_ORGANIZATIONS = "6.3";
@@ -56,11 +58,9 @@ public class WsHelperImpl implements WsHelper {
 
   static ValidationResult validateConnection(SonarLintWsClient client, @Nullable String organizationKey) {
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-    PluginVersionChecker pluginsChecker = new PluginVersionChecker(client);
     AuthenticationChecker authChecker = new AuthenticationChecker(client);
     try {
       ServerInfos serverStatus = serverChecker.checkVersionAndStatus();
-      pluginsChecker.checkPlugins();
       ValidationResult validateCredentials = authChecker.validateCredentials();
       if (validateCredentials.success() && organizationKey != null) {
         Version serverVersion = Version.create(serverStatus.getVersion());

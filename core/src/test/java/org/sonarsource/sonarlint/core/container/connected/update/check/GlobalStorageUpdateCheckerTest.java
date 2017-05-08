@@ -19,17 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class GlobalStorageUpdateCheckerTest {
 
@@ -40,9 +40,8 @@ public class GlobalStorageUpdateCheckerTest {
   public void prepare() {
     statusChecker = mock(ServerVersionAndStatusChecker.class);
     when(statusChecker.checkVersionAndStatus()).thenReturn(ServerInfos.newBuilder().build());
-
-    checker = new GlobalStorageUpdateChecker(mock(PluginVersionChecker.class), statusChecker, mock(PluginsUpdateChecker.class),
-      mock(GlobalSettingsUpdateChecker.class), mock(QualityProfilesUpdateChecker.class));
+    checker = new GlobalStorageUpdateChecker(statusChecker, mock(PluginsUpdateChecker.class),
+      mock(PluginListDownloader.class), mock(GlobalSettingsUpdateChecker.class), mock(QualityProfilesUpdateChecker.class));
   }
 
   @Test
@@ -52,5 +51,4 @@ public class GlobalStorageUpdateCheckerTest {
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
   }
-
 }
