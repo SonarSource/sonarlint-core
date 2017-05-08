@@ -67,12 +67,7 @@ public class PluginListDownloader {
       String hash = nameAndHash[1];
       String version = VersionUtils.getJarVersion(filename);
       String minVersion = pluginVersionChecker.getMinimumVersion(key);
-      boolean sonarlintCompatible;
-      if (compatibleFlagPresent) {
-        sonarlintCompatible = PluginCopier.isWhitelisted(key) || "true".equals(fields[1]);
-      } else {
-        sonarlintCompatible = PluginCopier.isWhitelisted(key);
-      }
+      boolean sonarlintCompatible = PluginCopier.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
       DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, version, sonarlintCompatible);
       analyzer.minimumVersion(minVersion);
       analyzers.add(analyzer);
