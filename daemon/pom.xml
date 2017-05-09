@@ -25,6 +25,9 @@
     
     <!-- embedded analyzer -->
     <sonar.javascript.version>2.18.0.3454</sonar.javascript.version>
+
+    <!-- Release: enable publication to Bintray -->
+    <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>
   </properties>
   
   <dependencies>
