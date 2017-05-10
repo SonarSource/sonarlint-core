@@ -49,8 +49,6 @@ public class PluginLoader {
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
 
-  public static final Version COMPATIBILITY_MODE_MAX_VERSION = Version.create("5.2");
-
   private final PluginJarExploder jarExploder;
   private final PluginClassloaderFactory classloaderFactory;
 
@@ -93,14 +91,6 @@ public class PluginLoader {
       // They can't change metadata like ordering strategy or compatibility mode.
       if (Strings.isNullOrEmpty(info.getBasePlugin())) {
         def.setSelfFirstStrategy(info.isUseChildFirstClassLoader());
-        Version minSqVersion = info.getMinimalSqVersion();
-        boolean compatibilityMode = minSqVersion != null && minSqVersion.compareToIgnoreQualifier(COMPATIBILITY_MODE_MAX_VERSION) < 0;
-        def.setCompatibilityMode(compatibilityMode);
-        if (compatibilityMode) {
-          Loggers.get(getClass()).debug("API compatibility mode is enabled on plugin {} [{}] " +
-            "(built with API lower than {})",
-            info.getName(), info.getKey(), COMPATIBILITY_MODE_MAX_VERSION);
-        }
       }
     }
     return classloadersByBasePlugin.values();
