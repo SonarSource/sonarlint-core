@@ -25,8 +25,6 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
-import org.sonar.api.utils.TempFolder;
 import org.sonar.classloader.ClassloaderBuilder;
 import org.sonar.classloader.Mask;
 import org.sonarsource.api.sonarlint.SonarLintSide;
@@ -50,13 +48,6 @@ public class PluginClassloaderFactory {
   // underscores are used to not conflict with plugin keys (if someday a plugin key is "api")
   private static final String API_CLASSLOADER_KEY = "_api_";
 
-  private final TempFolder temp;
-  private URL compatibilityModeJar;
-
-  public PluginClassloaderFactory(TempFolder temp) {
-    this.temp = temp;
-  }
-
   /**
    * Creates as many classloaders as requested by the input parameter.
    */
@@ -73,9 +64,6 @@ public class PluginClassloaderFactory {
       builder.setLoadingOrder(def.getBasePluginKey(), def.isSelfFirstStrategy() ? SELF_FIRST : PARENT_FIRST);
       for (File jar : def.getFiles()) {
         builder.addURL(def.getBasePluginKey(), fileToUrl(jar));
-      }
-      if (def.isCompatibilityMode()) {
-        builder.addURL(def.getBasePluginKey(), extractCompatibilityModeJar());
       }
       exportResources(def, builder, defs);
     }
@@ -114,19 +102,6 @@ public class PluginClassloaderFactory {
 
   ClassLoader baseClassLoader() {
     return getClass().getClassLoader();
-  }
-
-  private URL extractCompatibilityModeJar() {
-    if (compatibilityModeJar == null) {
-      File jar = temp.newFile("sonar-plugin-api-deps", "jar");
-      try {
-        FileUtils.copyURLToFile(getClass().getResource("/sonar-plugin-api-deps.jar"), jar);
-        compatibilityModeJar = jar.toURI().toURL();
-      } catch (Exception e) {
-        throw new IllegalStateException("Can not extract sonar-plugin-api-deps.jar to " + jar.getAbsolutePath(), e);
-      }
-    }
-    return compatibilityModeJar;
   }
 
   private static URL fileToUrl(File file) {

@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -86,21 +85,6 @@ public class PluginLoaderTest {
     assertThat(def.getFiles()).containsOnly(jarFile);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(MapEntry.entry("foo", "org.foo.FooPlugin"));
     // TODO test mask - require change in sonar-classloader
-
-    // built with SQ 5.2+ -> does not need API compatibility mode
-    assertThat(def.isCompatibilityMode()).isFalse();
-  }
-
-  @Test
-  public void enable_compatibility_mode_if_plugin_is_built_before_5_2() throws Exception {
-    File jarFile = temp.newFile();
-    PluginInfo info = new PluginInfo("foo")
-      .setJarFile(jarFile)
-      .setMainClass("org.foo.FooPlugin")
-      .setMinimalSqVersion(Version.create("4.5.2"));
-
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("foo", info));
-    assertThat(defs.iterator().next().isCompatibilityMode()).isTrue();
   }
 
   /**
@@ -144,25 +128,6 @@ public class PluginLoaderTest {
       entry("fooExtension1", "org.foo.Extension1Plugin"),
       entry("fooExtension2", "org.foo.Extension2Plugin"));
     // TODO test mask - require change in sonar-classloader
-  }
-
-  @Test
-  public void plugin_is_not_recognised_as_system_extension_if_key_is_views_and_extends_another_plugin() throws IOException {
-    PluginInfo foo = create52PluginInfo("foo");
-    PluginInfo views = create52PluginInfo("views")
-      .setBasePlugin("foo");
-
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("foo", foo, "views", views));
-
-    assertThat(defs).extracting("compatibilityMode").containsOnly(false, false);
-  }
-
-  private PluginInfo create52PluginInfo(String pluginKey) throws IOException {
-    File jarFile = temp.newFile();
-    return new PluginInfo(pluginKey)
-      .setJarFile(jarFile)
-      .setMainClass("org.foo." + pluginKey + "Plugin")
-      .setMinimalSqVersion(Version.create("5.2"));
   }
 
   /**
