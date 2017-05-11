@@ -17,13 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.ctc.wstx.exc;
+package org.sonarsource.sonarlint.core.container.model;
 
-/**
- * Big hack to make Python plugin happy (SLCORE-56)
- * Can be removed once minimal version of python is raised to >= 1.7.
- *
- */
-public class WstxEOFException extends Exception {
+import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.Test;
+
+public class DefaultSonarAnalyzerTest {
+  @Test
+  public void testRoundTrip() {
+    DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer("key", "file", "hash", "version", false);
+
+    assertThat(analyzer.key()).isEqualTo("key");
+    assertThat(analyzer.filename()).isEqualTo("file");
+    assertThat(analyzer.hash()).isEqualTo("hash");
+    assertThat(analyzer.version()).isEqualTo("version");
+    assertThat(analyzer.sonarlintCompatible()).isFalse();
+    assertThat(analyzer.minimumVersion()).isNull();
+
+    analyzer.minimumVersion("min");
+    assertThat(analyzer.minimumVersion()).isEqualTo("min");
+  }
 }

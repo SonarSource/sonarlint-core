@@ -23,9 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -75,52 +72,5 @@ public class PluginListDownloader {
 
     scanner.close();
     return analyzers;
-  }
-
-  public static class SonarQubePlugin {
-    private String key;
-    private String filename;
-    private String version;
-    private String hash;
-    private Boolean sonarlintCompatibleFlag;
-
-    public SonarQubePlugin(String key, String filename, String hash, @Nullable String version) {
-      this(key, filename, hash, version, null);
-    }
-
-    public SonarQubePlugin(String key, String filename, String hash, @Nullable String version, @Nullable Boolean sonarLintFlag) {
-      this.key = key;
-      this.filename = filename;
-      this.hash = hash;
-      this.version = version;
-      this.sonarlintCompatibleFlag = sonarLintFlag;
-    }
-
-    @CheckForNull
-    public Boolean sonarlintCompatibleFlag() {
-      return sonarlintCompatibleFlag;
-    }
-
-    public String key() {
-      return key;
-    }
-
-    public String hash() {
-      return hash;
-    }
-
-    public String filename() {
-      return filename;
-    }
-
-    @CheckForNull
-    public String version() {
-      return version;
-    }
-
-    @Override
-    public String toString() {
-      return key;
-    }
   }
 }
