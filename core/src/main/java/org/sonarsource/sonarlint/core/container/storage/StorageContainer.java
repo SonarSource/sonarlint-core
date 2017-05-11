@@ -114,8 +114,7 @@ public class StorageContainer extends ComponentContainer {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
     GlobalStorageStatus updateStatus = getGlobalStorageStatus();
     if (updateStatus != null) {
-      LOG.info("Using storage for server '{}' (last update {})", config.getServerId(),
-        new SimpleDateFormat().format(updateStatus.getLastUpdateDate()));
+      LOG.info("Using storage for server '{}' (last update {})", config.getServerId(), new SimpleDateFormat().format(updateStatus.getLastUpdateDate()));
       installPlugins();
     } else {
       LOG.warn("No storage for server '{}'. Please update.", config.getServerId());
@@ -150,7 +149,8 @@ public class StorageContainer extends ComponentContainer {
   }
 
   private static LoadedAnalyzer pluginInfoToAnalyzer(PluginInfo p) {
-    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), p.getVersion() == null ? null : p.getVersion().toString());
+    org.sonarsource.sonarlint.core.plugin.Version version = p.getVersion();
+    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), version == null ? null : version.toString());
   }
 
   public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {
