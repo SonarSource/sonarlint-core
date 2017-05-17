@@ -27,7 +27,9 @@
     <module>core</module>
     <module>daemon</module>
     <module>daemon-protocol</module>
+    <module>language-server</module>
     <module>rule-extractor</module>
+    <module>its</module>
   </modules>
 
   <properties>
