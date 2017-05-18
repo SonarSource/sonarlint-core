@@ -19,17 +19,13 @@
  */
 package org.sonarlint.languageserver;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -105,7 +101,9 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 
-public class SonarLintLanguageServer implements LanguageServer, LanguageClientAware {
+public class SonarLintLanguageServer implements LanguageServer, LanguageClientAware, WorkspaceService, TextDocumentService {
+
+  private static final String TEST_FILE_PATTERN = "testFilePattern";
 
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
 
@@ -224,6 +222,10 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
         throw new IllegalStateException(e);
       }
     }
+
+    Map<String, Object> options = (Map<String, Object>) params.getInitializationOptions();
+    testFilePattern = (String) options.get(TEST_FILE_PATTERN);
+
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
     TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
@@ -249,151 +251,150 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
   @Override
   public TextDocumentService getTextDocumentService() {
-    return new TextDocumentService() {
+    return this;
+  }
 
-      @Override
-      public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(TextDocumentPositionParams position) {
-        return null;
+  @Override
+  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(TextDocumentPositionParams position) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
+    return null;
+  }
+
+  @Override
+  public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
+    List<Command> commands = new ArrayList<>();
+    for (Diagnostic d : params.getContext().getDiagnostics()) {
+      if (SONARLINT_SOURCE.equals(d.getSource())) {
+        commands.add(new Command("Open description of rule " + d.getCode(), SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND, Arrays.asList(d.getCode())));
       }
+    }
+    return CompletableFuture.completedFuture(commands);
+  }
 
-      @Override
-      public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
-        return null;
-      }
+  @Override
+  public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
+    return null;
+  }
 
-      @Override
-      public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
-        return null;
-      }
+  @Override
+  public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
+    return null;
+  }
 
-      @Override
-      public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
-        return null;
-      }
+  @Override
+  public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
+    return null;
+  }
 
-      @Override
-      public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-        return null;
-      }
+  @Override
+  public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
+    return null;
+  }
 
-      @Override
-      public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-        return null;
-      }
+  @Override
+  public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
+    return null;
+  }
 
-      @Override
-      public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
-        return null;
-      }
+  @Override
+  public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
+    return null;
+  }
 
-      @Override
-      public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        return null;
-      }
+  @Override
+  public void didOpen(DidOpenTextDocumentParams params) {
+    URI uri;
+    try {
+      uri = new URI(params.getTextDocument().getUri());
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException(e.getMessage(), e);
+    }
+    analyze(uri, params.getTextDocument().getText());
+  }
 
-      @Override
-      public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
-        List<Command> commands = new ArrayList<>();
-        for (Diagnostic d : params.getContext().getDiagnostics()) {
-          if (SONARLINT_SOURCE.equals(d.getSource())) {
-            commands.add(new Command("Open description of rule " + d.getCode(), SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND, Arrays.asList(d.getCode())));
-          }
+  @Override
+  public void didChange(DidChangeTextDocumentParams params) {
+    URI uri;
+    try {
+      uri = new URI(params.getTextDocument().getUri());
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException(e.getMessage(), e);
+    }
+    analyze(uri, params.getContentChanges().get(0).getText());
+  }
+
+  @Override
+  public void didClose(DidCloseTextDocumentParams params) {
+    // Nothing to do
+  }
+
+  @Override
+  public void didSave(DidSaveTextDocumentParams params) {
+    URI uri;
+    try {
+      uri = new URI(params.getTextDocument().getUri());
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException(e.getMessage(), e);
+    }
+    analyze(uri, params.getText());
+  }
+
+  private void analyze(URI uri, String content) {
+    info("Analysis triggered on " + uri);
+    Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
+    files.put(uri, newPublishDiagnostics(uri));
+    Path baseDir = workspaceDir != null ? workspaceDir : Paths.get(uri).getParent();
+    Objects.requireNonNull(baseDir);
+    Objects.requireNonNull(engine);
+    AnalysisResults analysisResults = engine.analyze(
+      new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"), Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern)),
+        Collections.emptyMap()),
+      issue -> {
+        ClientInputFile inputFile = issue.getInputFile();
+        if (inputFile != null) {
+          URI uri1 = inputFile.getClientObject();
+          PublishDiagnosticsParams publish = files.computeIfAbsent(uri1, SonarLintLanguageServer::newPublishDiagnostics);
+
+          convert(issue).ifPresent(publish.getDiagnostics()::add);
         }
-        return CompletableFuture.completedFuture(commands);
-      }
-
-      @Override
-      public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
-        return null;
-      }
-
-      @Override
-      public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
-        return null;
-      }
-
-      @Override
-      public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
-        return null;
-      }
-
-      @Override
-      public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
-        return null;
-      }
-
-      @Override
-      public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
-        return null;
-      }
-
-      @Override
-      public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
-        return null;
-      }
-
-      @Override
-      public void didOpen(DidOpenTextDocumentParams params) {
-        URI uri;
-        try {
-          uri = new URI(params.getTextDocument().getUri());
-        } catch (URISyntaxException e) {
-          throw new IllegalStateException(e.getMessage(), e);
-        }
-        analyze(uri, params.getTextDocument().getText());
-      }
-
-      @Override
-      public void didChange(DidChangeTextDocumentParams params) {
-        URI uri;
-        try {
-          uri = new URI(params.getTextDocument().getUri());
-        } catch (URISyntaxException e) {
-          throw new IllegalStateException(e.getMessage(), e);
-        }
-        analyze(uri, params.getContentChanges().get(0).getText());
-      }
-
-      @Override
-      public void didClose(DidCloseTextDocumentParams params) {
-        // Nothing to do
-      }
-
-      @Override
-      public void didSave(DidSaveTextDocumentParams params) {
-        URI uri;
-        try {
-          uri = new URI(params.getTextDocument().getUri());
-        } catch (URISyntaxException e) {
-          throw new IllegalStateException(e.getMessage(), e);
-        }
-        analyze(uri, params.getText());
-      }
-
-      private void analyze(URI uri, String content) {
-        info("Analysis triggered on " + uri);
-        Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
-        files.put(uri, newPublishDiagnostics(uri));
-        Path baseDir = workspaceDir != null ? workspaceDir : Paths.get(uri).getParent();
-        Objects.requireNonNull(baseDir);
-        Objects.requireNonNull(engine);
-        AnalysisResults analysisResults = engine.analyze(
-          new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"), Arrays.asList(new DefaultClientInputFile(uri, content)), Collections.emptyMap()),
-          issue -> {
-            ClientInputFile inputFile = issue.getInputFile();
-            if (inputFile != null) {
-              URI uri1 = inputFile.getClientObject();
-              PublishDiagnosticsParams publish = files.computeIfAbsent(uri1, SonarLintLanguageServer::newPublishDiagnostics);
-
-              convert(issue).ifPresent(publish.getDiagnostics()::add);
-            }
-          }, LOG_OUTPUT);
-        // Ignore files with parsing error
-        analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
-        client.thenAccept(resolved -> files.values().forEach(resolved::publishDiagnostics));
-      }
-
-    };
+      }, LOG_OUTPUT);
+    // Ignore files with parsing error
+    analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
+    client.thenAccept(resolved -> files.values().forEach(resolved::publishDiagnostics));
   }
 
   static Optional<Diagnostic> convert(Issue issue) {
@@ -446,88 +447,34 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
     return p;
   }
 
-  private class DefaultClientInputFile implements ClientInputFile {
+  @Override
+  public WorkspaceService getWorkspaceService() {
+    return this;
+  }
 
-    private final URI fileUri;
-    private final String content;
+  @Override
+  public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
+    // No command
+    return null;
+  }
 
-    public DefaultClientInputFile(URI uri, String content) {
-      this.fileUri = uri;
-      this.content = content;
-    }
+  @Override
+  public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
+    return null;
+  }
 
-    @Override
-    public Charset getCharset() {
-      return StandardCharsets.UTF_8;
-    }
-
-    @Override
-    public <G> G getClientObject() {
-      return (G) fileUri;
-    }
-
-    @Override
-    public String getPath() {
-      return Paths.get(fileUri).toString();
-    }
-
-    @Override
-    public boolean isTest() {
-      if (testFilePattern == null) {
-        return false;
-      }
-      return Paths.get(fileUri).toFile().getName().matches(testFilePattern);
-    }
-
-    @Override
-    public String contents() throws IOException {
-      return content;
-    }
-
-    @Override
-    public InputStream inputStream() throws IOException {
-      return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+  @Override
+  public void didChangeConfiguration(DidChangeConfigurationParams params) {
+    Object settings = params.getSettings();
+    if (settings instanceof Map) {
+      Map<String, Object> entries = (Map<String, Object>) ((Map<String, Object>) settings).get(SONARLINT_CONFIGURATION_NAMESPACE);
+      testFilePattern = (String) entries.get(TEST_FILE_PATTERN);
     }
   }
 
   @Override
-  public WorkspaceService getWorkspaceService() {
-    return new WorkspaceService() {
-      @Override
-      public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
-        info(params.toString());
-
-        switch (params.getCommand()) {
-          // case SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND:
-          // String ruleKey = (String) params.getArguments().get(0);
-          // RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
-          // client.join().showMessage(new MessageParams(MessageType.Info, ruleDetails.getKey() + " " + ruleDetails.getName()));
-          // break;
-          default:
-            warn("Don't know what to do with " + params.getCommand());
-        }
-
-        return CompletableFuture.completedFuture("Done");
-      }
-
-      @Override
-      public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        return null;
-      }
-
-      @Override
-      public void didChangeConfiguration(DidChangeConfigurationParams params) {
-        Object settings = params.getSettings();
-        if (settings instanceof Map) {
-          Map entries = (Map) ((Map) settings).get(SONARLINT_CONFIGURATION_NAMESPACE);
-          testFilePattern = (String) entries.get("testFilePattern");
-        }
-      }
-
-      @Override
-      public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
-      }
-    };
+  public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
+    // No watched files
   }
 
   public RuleDetails getRuleDescription(String ruleKey) {
