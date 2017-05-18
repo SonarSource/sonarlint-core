@@ -96,6 +96,7 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -105,6 +106,12 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 
 public class SonarLintLanguageServer implements LanguageServer, LanguageClientAware {
+
+  private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
+
+  private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
+
+  private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
 
   private final LogOutputImplementation LOG_OUTPUT = new LogOutputImplementation();
 
@@ -137,6 +144,8 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
   private Path workspaceDir;
 
+  private String testFilePattern;
+
   private void info(String message) {
     client.thenAccept(resolved -> resolved.logMessage(new MessageParams(MessageType.Info, message)));
   }
@@ -145,7 +154,7 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
     client.thenAccept(resolved -> resolved.logMessage(new MessageParams(MessageType.Warning, message)));
   }
 
-  private void error(String message, Throwable t) {
+  public void error(String message, Throwable t) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
@@ -207,7 +216,6 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
   @Override
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-    info("initialize");
     String rootUri = params.getRootUri();
     if (rootUri != null) {
       try {
@@ -216,7 +224,6 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
         throw new IllegalStateException(e);
       }
     }
-
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
     TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
@@ -224,13 +231,13 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
     textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
     textDocumentSyncOptions.setSave(new SaveOptions(true));
     c.setTextDocumentSync(textDocumentSyncOptions);
+    c.setCodeActionProvider(true);
     result.setCapabilities(c);
     return CompletableFuture.completedFuture(result);
   }
 
   @Override
   public CompletableFuture<Object> shutdown() {
-    info("shutdown");
     engine.stop();
     return CompletableFuture.completedFuture("Stopped");
   }
@@ -286,7 +293,13 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
       @Override
       public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
-        return null;
+        List<Command> commands = new ArrayList<>();
+        for (Diagnostic d : params.getContext().getDiagnostics()) {
+          if (SONARLINT_SOURCE.equals(d.getSource())) {
+            commands.add(new Command("Open description of rule " + d.getCode(), SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND, Arrays.asList(d.getCode())));
+          }
+        }
+        return CompletableFuture.completedFuture(commands);
       }
 
       @Override
@@ -392,8 +405,8 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
       diagnostic.setSeverity(severity);
       diagnostic.setRange(range);
       diagnostic.setCode(issue.getRuleKey());
-      diagnostic.setMessage(issue.getMessage());
-      diagnostic.setSource("SonarLint");
+      diagnostic.setMessage(issue.getMessage() + " (" + issue.getRuleKey() + ")");
+      diagnostic.setSource(SONARLINT_SOURCE);
 
       return Optional.of(diagnostic);
     } else return Optional.empty();
@@ -433,7 +446,7 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
     return p;
   }
 
-  private static class DefaultClientInputFile implements ClientInputFile {
+  private class DefaultClientInputFile implements ClientInputFile {
 
     private final URI fileUri;
     private final String content;
@@ -460,8 +473,10 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
     @Override
     public boolean isTest() {
-      // FIXME
-      return false;
+      if (testFilePattern == null) {
+        return false;
+      }
+      return Paths.get(fileUri).toFile().getName().matches(testFilePattern);
     }
 
     @Override
@@ -483,25 +498,10 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
         info(params.toString());
 
         switch (params.getCommand()) {
-          // case "Java.importClass":
-          // String fileString = (String) params.getArguments().get(0);
-          // URI fileUri = URI.create(fileString);
-          // String packageName = (String) params.getArguments().get(1);
-          // String className = (String) params.getArguments().get(2);
-          //
-          // findCompiler(fileUri).ifPresent(compiler -> {
-          // FocusedResult compiled = compiler.compileFocused(fileUri, activeContent(fileUri), 1, 1, false);
-          //
-          // if (compiled.compilationUnit.getSourceFile().toUri().equals(fileUri)) {
-          // List<TextEdit> edits = new RefactorFile(compiled.task, compiled.compilationUnit)
-          // .addImport(packageName, className);
-          //
-          // client.join().applyEdit(new ApplyWorkspaceEditParams(new WorkspaceEdit(
-          // Collections.singletonMap(fileString, edits),
-          // null)));
-          // }
-          // });
-          //
+          // case SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND:
+          // String ruleKey = (String) params.getArguments().get(0);
+          // RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
+          // client.join().showMessage(new MessageParams(MessageType.Info, ruleDetails.getKey() + " " + ruleDetails.getName()));
           // break;
           default:
             warn("Don't know what to do with " + params.getCommand());
@@ -517,12 +517,21 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
       @Override
       public void didChangeConfiguration(DidChangeConfigurationParams params) {
+        Object settings = params.getSettings();
+        if (settings instanceof Map) {
+          Map entries = (Map) ((Map) settings).get(SONARLINT_CONFIGURATION_NAMESPACE);
+          testFilePattern = (String) entries.get("testFilePattern");
+        }
       }
 
       @Override
       public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
       }
     };
+  }
+
+  public RuleDetails getRuleDescription(String ruleKey) {
+    return engine.getRuleDetails(ruleKey);
   }
 
 }
