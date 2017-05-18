@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -84,15 +86,14 @@ import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
-import org.eclipse.lsp4j.services.LanguageClientAware;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -101,73 +102,37 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 
-public class SonarLintLanguageServer implements LanguageServer, LanguageClientAware, WorkspaceService, TextDocumentService {
+public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
   private static final String TEST_FILE_PATTERN = "testFilePattern";
-
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
-
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
-
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
 
-  private final LogOutputImplementation LOG_OUTPUT = new LogOutputImplementation();
-
-  private final class LogOutputImplementation implements LogOutput {
-    @Override
-    public void log(String formattedMessage, Level level) {
-      client.thenAccept(resolved -> resolved.logMessage(new MessageParams(messageType(level), formattedMessage)));
-    }
-
-    private MessageType messageType(Level level) {
-      switch (level) {
-        case ERROR:
-          return MessageType.Error;
-        case WARN:
-          return MessageType.Warning;
-        case INFO:
-          return MessageType.Info;
-        case DEBUG:
-        case TRACE:
-          return MessageType.Log;
-        default:
-          throw new IllegalStateException("Unexpected level: " + level);
-      }
-    }
-  }
-
-  private CompletableFuture<LanguageClient> client = new CompletableFuture<>();
-
-  private StandaloneSonarLintEngine engine;
+  private final LanguageClient client;
+  private final StandaloneSonarLintEngine engine;
+  private final Future<?> backgroundProcess;
+  private final RedirectLogsToClient logOutput;
 
   private Path workspaceDir;
-
   private String testFilePattern;
 
-  private void info(String message) {
-    client.thenAccept(resolved -> resolved.logMessage(new MessageParams(MessageType.Info, message)));
-  }
+  public SonarLintLanguageServer(int port) throws IOException {
+    Socket socket = new Socket("localhost", port);
 
-  private void warn(String message) {
-    client.thenAccept(resolved -> resolved.logMessage(new MessageParams(MessageType.Warning, message)));
-  }
+    Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(this,
+      socket.getInputStream(),
+      socket.getOutputStream(),
+      true, new PrintWriter(System.out));
 
-  public void error(String message, Throwable t) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    t.printStackTrace(pw);
-    client.thenAccept(resolved -> resolved.logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString())));
-  }
+    this.client = launcher.getRemoteProxy();
+    this.logOutput = new RedirectLogsToClient(client);
 
-  @Override
-  public void connect(LanguageClient client) {
-    this.client.complete(client);
-
-    info("Starting SonarLint engine");
+    info("Starting SonarLint engine...");
 
     try {
       Builder builder = StandaloneGlobalConfiguration.builder()
-        .setLogOutput(LOG_OUTPUT)
+        .setLogOutput(logOutput)
         .addPlugins(getAnalyzers().toArray(new URL[0]));
 
       this.engine = new StandaloneSonarLintEngineImpl(builder.build());
@@ -177,10 +142,27 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
     }
 
     info("SonarLint engine started");
+
+    backgroundProcess = launcher.startListening();
+  }
+
+  private void info(String message) {
+    client.logMessage(new MessageParams(MessageType.Info, message));
+  }
+
+  private void warn(String message) {
+    client.logMessage(new MessageParams(MessageType.Warning, message));
+  }
+
+  public void error(String message, Throwable t) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    t.printStackTrace(pw);
+    client.logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString()));
   }
 
   private Collection<URL> getAnalyzers() throws IOException, URISyntaxException {
-    info("Load analyzers");
+    info("Load analyzers...");
     List<URL> plugins = new ArrayList<>();
     URI uri = SonarLintLanguageServer.class.getResource("/plugins").toURI();
     Path myPath;
@@ -246,7 +228,7 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
   @Override
   public void exit() {
-    System.exit(0);
+    backgroundProcess.cancel(true);
   }
 
   @Override
@@ -391,10 +373,10 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
 
           convert(issue).ifPresent(publish.getDiagnostics()::add);
         }
-      }, LOG_OUTPUT);
+      }, logOutput);
     // Ignore files with parsing error
     analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
-    client.thenAccept(resolved -> files.values().forEach(resolved::publishDiagnostics));
+    files.values().forEach(client::publishDiagnostics);
   }
 
   static Optional<Diagnostic> convert(Issue issue) {
@@ -477,8 +459,8 @@ public class SonarLintLanguageServer implements LanguageServer, LanguageClientAw
     // No watched files
   }
 
-  public RuleDetails getRuleDescription(String ruleKey) {
-    return engine.getRuleDetails(ruleKey);
+  public StandaloneSonarLintEngine getEngine() {
+    return engine;
   }
 
 }
