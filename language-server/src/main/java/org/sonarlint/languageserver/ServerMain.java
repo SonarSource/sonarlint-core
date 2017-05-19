@@ -31,13 +31,12 @@ public class ServerMain {
   private ServerMain() {
   }
 
-  public static void main(String[] args) {
-    if (args.length < 2) {
-      LOG.error("Usage: java -jar sonarlint-server.jar <jsonRpcPort> <httpPort>");
+  public static void main(String... args) {
+    if (args.length != 1) {
+      LOG.error("Usage: java -jar sonarlint-server.jar <jsonRpcPort>");
       System.exit(1);
     }
     int jsonRpcPort = Integer.parseInt(args[0]);
-    int httpPort = Integer.parseInt(args[1]);
 
     LOG.info("Connecting to {}", jsonRpcPort);
     SonarLintLanguageServer languageServer;
@@ -49,9 +48,12 @@ public class ServerMain {
       return;
     }
 
-    LOG.info("Starting HTTP server on {}", httpPort);
+    LOG.info("Starting HTTP server...");
     try {
-      new RuleDescriptionHttpServer(httpPort, languageServer.getEngine()).start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
+      RuleDescriptionHttpServer ruleServer = new RuleDescriptionHttpServer(0, languageServer.getEngine());
+      ruleServer.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
+      languageServer.setRuleServerPort(ruleServer.getListeningPort());
+      LOG.info("HTTP server started on port {}", ruleServer.getListeningPort());
     } catch (IOException e) {
       LOG.error("Unable to start the HTTP server", e);
       languageServer.shutdown();

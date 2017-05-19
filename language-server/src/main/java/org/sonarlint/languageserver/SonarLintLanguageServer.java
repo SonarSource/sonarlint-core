@@ -104,7 +104,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
-  private static final String TEST_FILE_PATTERN = "testFilePattern";
+  static final String TEST_FILE_PATTERN = "testFilePattern";
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
@@ -116,6 +116,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private Path workspaceDir;
   private String testFilePattern;
+  private int ruleServerPort;
 
   public SonarLintLanguageServer(int port) throws IOException {
     Socket socket = new Socket("localhost", port);
@@ -281,7 +282,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     List<Command> commands = new ArrayList<>();
     for (Diagnostic d : params.getContext().getDiagnostics()) {
       if (SONARLINT_SOURCE.equals(d.getSource())) {
-        commands.add(new Command("Open description of rule " + d.getCode(), SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND, Arrays.asList(d.getCode())));
+        commands.add(new Command("Open description of rule " + d.getCode(), SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND, Arrays.asList(d.getCode(), ruleServerPort)));
       }
     }
     return CompletableFuture.completedFuture(commands);
@@ -458,6 +459,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   public StandaloneSonarLintEngine getEngine() {
     return engine;
+  }
+
+  public void setRuleServerPort(int ruleServerPort) {
+    this.ruleServerPort = ruleServerPort;
   }
 
 }
