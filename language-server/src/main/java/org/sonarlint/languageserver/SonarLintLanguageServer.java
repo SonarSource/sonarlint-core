@@ -319,40 +319,37 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public void didOpen(DidOpenTextDocumentParams params) {
-    URI uri;
-    try {
-      uri = new URI(params.getTextDocument().getUri());
-    } catch (URISyntaxException e) {
-      throw new IllegalStateException(e.getMessage(), e);
-    }
+    URI uri = parseURI(params.getTextDocument().getUri());
     analyze(uri, params.getTextDocument().getText());
   }
 
   @Override
   public void didChange(DidChangeTextDocumentParams params) {
-    URI uri;
-    try {
-      uri = new URI(params.getTextDocument().getUri());
-    } catch (URISyntaxException e) {
-      throw new IllegalStateException(e.getMessage(), e);
-    }
+    URI uri = parseURI(params.getTextDocument().getUri());
     analyze(uri, params.getContentChanges().get(0).getText());
   }
 
   @Override
   public void didClose(DidCloseTextDocumentParams params) {
-    // Nothing to do
+    URI uri = parseURI(params.getTextDocument().getUri());
+    // Clear issues
+    client.publishDiagnostics(newPublishDiagnostics(uri));
   }
 
   @Override
   public void didSave(DidSaveTextDocumentParams params) {
+    URI uri = parseURI(params.getTextDocument().getUri());
+    analyze(uri, params.getText());
+  }
+
+  private static URI parseURI(String uriStr) {
     URI uri;
     try {
-      uri = new URI(params.getTextDocument().getUri());
+      uri = new URI(uriStr);
     } catch (URISyntaxException e) {
       throw new IllegalStateException(e.getMessage(), e);
     }
-    analyze(uri, params.getText());
+    return uri;
   }
 
   private void analyze(URI uri, String content) {
