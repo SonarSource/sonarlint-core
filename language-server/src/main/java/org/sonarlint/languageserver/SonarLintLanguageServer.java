@@ -105,6 +105,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
   static final String TEST_FILE_PATTERN = "testFilePattern";
+  static final String ANALYZER_PROPERTIES = "analyzerProperties";
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
@@ -116,6 +117,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private Path workspaceDir;
   private String testFilePattern;
+  private Map<String, String> analyzerProperties;
   private int ruleServerPort;
 
   public SonarLintLanguageServer(int port) throws IOException {
@@ -145,6 +147,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     info("SonarLint engine started");
 
     backgroundProcess = launcher.startListening();
+  }
+
+  private void debug(String message) {
+    client.logMessage(new MessageParams(MessageType.Log, message));
   }
 
   private void info(String message) {
@@ -208,6 +214,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     Map<String, Object> options = (Map<String, Object>) params.getInitializationOptions();
     testFilePattern = (String) options.get(TEST_FILE_PATTERN);
+    analyzerProperties = (Map) options.get(ANALYZER_PROPERTIES);
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
@@ -354,15 +361,17 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private void analyze(URI uri, String content) {
-    info("Analysis triggered on " + uri);
     Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
     files.put(uri, newPublishDiagnostics(uri));
     Path baseDir = workspaceDir != null ? workspaceDir : Paths.get(uri).getParent();
     Objects.requireNonNull(baseDir);
     Objects.requireNonNull(engine);
+    StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
+      Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern)),
+      analyzerProperties != null ? analyzerProperties : Collections.emptyMap());
+    debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
     AnalysisResults analysisResults = engine.analyze(
-      new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"), Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern)),
-        Collections.emptyMap()),
+      configuration,
       issue -> {
         ClientInputFile inputFile = issue.getInputFile();
         if (inputFile != null) {
@@ -449,6 +458,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     if (settings instanceof Map) {
       Map<String, Object> entries = (Map<String, Object>) ((Map<String, Object>) settings).get(SONARLINT_CONFIGURATION_NAMESPACE);
       testFilePattern = (String) entries.get(TEST_FILE_PATTERN);
+      analyzerProperties = (Map) entries.get(ANALYZER_PROPERTIES);
     }
   }
 

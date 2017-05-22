@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 class DefaultClientInputFile implements ClientInputFile {
@@ -36,7 +37,7 @@ class DefaultClientInputFile implements ClientInputFile {
   private final String content;
   private final String testFilePattern;
 
-  public DefaultClientInputFile(URI uri, String content, String testFilePattern) {
+  public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern) {
     this.fileUri = uri;
     this.content = content;
     this.testFilePattern = testFilePattern;
@@ -59,6 +60,9 @@ class DefaultClientInputFile implements ClientInputFile {
 
   @Override
   public boolean isTest() {
+    if (testFilePattern == null) {
+      return false;
+    }
     PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern);
     return matcher.matches(Paths.get(fileUri));
   }
