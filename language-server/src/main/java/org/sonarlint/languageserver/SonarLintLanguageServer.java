@@ -104,17 +104,20 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
+  private static final String DISABLE_TELEMETRY = "disableTelemetry";
   static final String TEST_FILE_PATTERN = "testFilePattern";
   static final String ANALYZER_PROPERTIES = "analyzerProperties";
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
+  private static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
 
   private final LanguageClient client;
   private final StandaloneSonarLintEngine engine;
   private final Future<?> backgroundProcess;
   private final RedirectLogsToClient logOutput;
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
+  private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
 
   private Path workspaceDir;
   private String testFilePattern;
@@ -216,6 +219,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     Map<String, Object> options = (Map<String, Object>) params.getInitializationOptions();
     testFilePattern = (String) options.get(TEST_FILE_PATTERN);
     analyzerProperties = (Map) options.get(ANALYZER_PROPERTIES);
+    String telemetryStorage = (String) options.get("telemetryStorage");
+    String productName = (String) options.get("productName");
+    String productVersion = (String) options.get("productVersion");
+
+    telemetry.init(Paths.get(telemetryStorage), productName, productVersion);
+    telemetry.optOut((Boolean) options.get(DISABLE_TELEMETRY));
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
@@ -232,6 +241,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @Override
   public CompletableFuture<Object> shutdown() {
     engine.stop();
+    telemetry.stop();
     return CompletableFuture.completedFuture("Stopped");
   }
 
@@ -373,6 +383,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern, languageIdPerFileURI.get(uri))),
       analyzerProperties != null ? analyzerProperties : Collections.emptyMap());
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
+    telemetry.analysisSubmitted();
     AnalysisResults analysisResults = engine.analyze(
       configuration,
       issue -> {
@@ -462,6 +473,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       Map<String, Object> entries = (Map<String, Object>) ((Map<String, Object>) settings).get(SONARLINT_CONFIGURATION_NAMESPACE);
       testFilePattern = (String) entries.get(TEST_FILE_PATTERN);
       analyzerProperties = (Map) entries.get(ANALYZER_PROPERTIES);
+      telemetry.optOut((Boolean) entries.get(DISABLE_TELEMETRY));
     }
   }
 
