@@ -114,6 +114,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private final StandaloneSonarLintEngine engine;
   private final Future<?> backgroundProcess;
   private final RedirectLogsToClient logOutput;
+  private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
 
   private Path workspaceDir;
   private String testFilePattern;
@@ -328,6 +329,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @Override
   public void didOpen(DidOpenTextDocumentParams params) {
     URI uri = parseURI(params.getTextDocument().getUri());
+    languageIdPerFileURI.put(uri, params.getTextDocument().getLanguageId());
     analyze(uri, params.getTextDocument().getText());
   }
 
@@ -340,6 +342,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @Override
   public void didClose(DidCloseTextDocumentParams params) {
     URI uri = parseURI(params.getTextDocument().getUri());
+    languageIdPerFileURI.remove(uri);
     // Clear issues
     client.publishDiagnostics(newPublishDiagnostics(uri));
   }
@@ -367,7 +370,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     Objects.requireNonNull(baseDir);
     Objects.requireNonNull(engine);
     StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
-      Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern)),
+      Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern, languageIdPerFileURI.get(uri))),
       analyzerProperties != null ? analyzerProperties : Collections.emptyMap());
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
     AnalysisResults analysisResults = engine.analyze(

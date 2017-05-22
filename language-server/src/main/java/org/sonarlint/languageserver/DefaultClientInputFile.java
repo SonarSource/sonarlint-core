@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
@@ -36,11 +37,13 @@ class DefaultClientInputFile implements ClientInputFile {
   private final URI fileUri;
   private final String content;
   private final String testFilePattern;
+  private final String sqLanguage;
 
-  public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern) {
+  public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern, @Nullable String vsCodeLanguage) {
     this.fileUri = uri;
     this.content = content;
     this.testFilePattern = testFilePattern;
+    this.sqLanguage = toSqLanguage(vsCodeLanguage);
   }
 
   @Override
@@ -75,5 +78,24 @@ class DefaultClientInputFile implements ClientInputFile {
   @Override
   public InputStream inputStream() throws IOException {
     return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+  }
+
+  @Override
+  public String language() {
+    return this.sqLanguage;
+  }
+
+  @CheckForNull
+  private static String toSqLanguage(@Nullable String vscodeLanguageId) {
+    if (vscodeLanguageId == null) {
+      return null;
+    }
+    switch (vscodeLanguageId) {
+      case "javascript":
+      case "javascriptreact":
+        return "js";
+      default:
+        return vscodeLanguageId;
+    }
   }
 }
