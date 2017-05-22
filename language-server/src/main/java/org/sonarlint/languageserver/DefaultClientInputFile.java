@@ -36,14 +36,15 @@ class DefaultClientInputFile implements ClientInputFile {
 
   private final URI fileUri;
   private final String content;
-  private final String testFilePattern;
+  private final PathMatcher testMatcher;
   private final String sqLanguage;
 
   public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern, @Nullable String vsCodeLanguage) {
     this.fileUri = uri;
     this.content = content;
-    this.testFilePattern = testFilePattern;
     this.sqLanguage = toSqLanguage(vsCodeLanguage);
+    testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : null;
+
   }
 
   @Override
@@ -63,11 +64,7 @@ class DefaultClientInputFile implements ClientInputFile {
 
   @Override
   public boolean isTest() {
-    if (testFilePattern == null) {
-      return false;
-    }
-    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern);
-    return matcher.matches(Paths.get(fileUri));
+    return testMatcher != null && testMatcher.matches(Paths.get(fileUri));
   }
 
   @Override

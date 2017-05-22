@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import org.apache.commons.io.IOUtils;
@@ -35,10 +36,16 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 class RuleDescriptionHttpServer extends NanoHTTPD {
 
   private final StandaloneSonarLintEngine engine;
+  private final String css;
 
   RuleDescriptionHttpServer(int port, StandaloneSonarLintEngine engine) {
     super(port);
     this.engine = engine;
+    try {
+      this.css = IOUtils.toString(this.getClass().getResourceAsStream("/rules.css"), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   @Override
@@ -60,7 +67,7 @@ class RuleDescriptionHttpServer extends NanoHTTPD {
         String typeImg64 = getAsBase64("/images/type/" + type + ".png");
         String severity = ruleDetails.getSeverity().toLowerCase(Locale.ENGLISH);
         String severityImg64 = getAsBase64("/images/severity/" + severity + ".png");
-        return newFixedLengthResponse("<!doctype html><html><head>" + css() + "</head><body><h1><big>"
+        return newFixedLengthResponse("<!doctype html><html><head><style type=\"text/css\">" + css + "</style></head><body><h1><big>"
           + ruleName + "</big> (" + ruleKey
           + ")</h1>"
           + "<div>"
@@ -94,20 +101,4 @@ class RuleDescriptionHttpServer extends NanoHTTPD {
     return StringUtils.capitalize(txt.toLowerCase(Locale.ENGLISH).replace("_", " "));
   }
 
-  private static String css() {
-    return "<style type=\"text/css\">"
-      + "body { font-family: Helvetica Neue,Segoe UI,Helvetica,Arial,sans-serif; font-size: 13px; line-height: 1.23076923; "
-      + "color: #444;"
-      + "}"
-      + "h1 { color: #444;font-size: 14px;font-weight: 500; }"
-      + "h2 { line-height: 24px; color: #444;}"
-      + "a { border-bottom: 1px solid #cae3f2; color: #236a97; cursor: pointer; outline: none; text-decoration: none; transition: all .2s ease;}"
-      + ".rule-desc { line-height: 1.5;}"
-      + ".rule-desc { line-height: 1.5;}"
-      + ".rule-desc h2 { font-size: 16px; font-weight: 400;}"
-      + ".rule-desc code { padding: .2em .45em; margin: 0; border-radius: 3px; white-space: nowrap;}"
-      + ".rule-desc pre { padding: 10px; border-top: 1px solid #e6e6e6; border-bottom: 1px solid #e6e6e6; line-height: 18px; overflow: auto;}"
-      + ".rule-desc code, .rule-desc pre { font-family: Consolas,Liberation Mono,Menlo,Courier,monospace; font-size: 12px;}"
-      + ".rule-desc ul { padding-left: 40px; list-style: disc;}</style>";
-  }
 }

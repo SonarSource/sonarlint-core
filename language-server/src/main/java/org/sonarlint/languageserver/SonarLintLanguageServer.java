@@ -115,7 +115,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private final LanguageClient client;
   private final StandaloneSonarLintEngine engine;
   private final Future<?> backgroundProcess;
-  private final RedirectLogsToClient logOutput;
+  private final LanguageClientLogOutput logOutput;
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
 
@@ -133,7 +133,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       true, new PrintWriter(System.out));
 
     this.client = launcher.getRemoteProxy();
-    this.logOutput = new RedirectLogsToClient(client);
+    this.logOutput = new LanguageClientLogOutput(client);
 
     info("Starting SonarLint engine...");
 

@@ -24,11 +24,11 @@ import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
-class RedirectLogsToClient implements LogOutput {
+class LanguageClientLogOutput implements LogOutput {
 
   private final LanguageClient client;
 
-  public RedirectLogsToClient(LanguageClient client) {
+  public LanguageClientLogOutput(LanguageClient client) {
     this.client = client;
   }
 

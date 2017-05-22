@@ -38,7 +38,7 @@ public class ServerMain {
     }
     int jsonRpcPort = Integer.parseInt(args[0]);
 
-    LOG.info("Connecting to {}", jsonRpcPort);
+    LOG.info("Binding to {}", jsonRpcPort);
     SonarLintLanguageServer languageServer;
     try {
       languageServer = new SonarLintLanguageServer(jsonRpcPort);
