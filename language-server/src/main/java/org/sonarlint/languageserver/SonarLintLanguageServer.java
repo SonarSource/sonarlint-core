@@ -22,7 +22,6 @@ package org.sonarlint.languageserver;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -110,7 +110,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
-  private static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
 
   private final LanguageClient client;
   private final StandaloneSonarLintEngine engine;
@@ -194,11 +193,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return plugins;
   }
 
-  private static void collect(List<URL> plugins, Path myPath) throws MalformedURLException, IOException {
+  private static void collect(List<URL> plugins, Path myPath) throws IOException {
     try (Stream<Path> walk = Files.walk(myPath, 1)) {
       for (Iterator<Path> it = walk.iterator(); it.hasNext();) {
         Path file = it.next();
-        if (file.toString().toLowerCase().endsWith(".jar")) {
+        if (file.toString().toLowerCase(Locale.ENGLISH).endsWith(".jar")) {
           plugins.add(file.toUri().toURL());
         }
       }
@@ -413,11 +412,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       diagnostic.setSource(SONARLINT_SOURCE);
 
       return Optional.of(diagnostic);
-    } else return Optional.empty();
+    }
+    return Optional.empty();
   }
 
   private static DiagnosticSeverity severity(String severity) {
-    switch (severity.toUpperCase()) {
+    switch (severity.toUpperCase(Locale.ENGLISH)) {
       case "BLOCKER":
       case "CRITICAL":
         return DiagnosticSeverity.Error;

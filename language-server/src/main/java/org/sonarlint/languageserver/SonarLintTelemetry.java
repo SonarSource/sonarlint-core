@@ -63,7 +63,7 @@ public class SonarLintTelemetry {
     }
   }
 
-  private TelemetryClientConfig getTelemetryClientConfig() {
+  private static TelemetryClientConfig getTelemetryClientConfig() {
     return new TelemetryClientConfig.Builder()
       .userAgent("SonarLint")
       .build();
@@ -125,7 +125,7 @@ public class SonarLintTelemetry {
     }
   }
 
-  private boolean isAnyProjectConnected() {
+  private static boolean isAnyProjectConnected() {
     return false;
   }
 }
