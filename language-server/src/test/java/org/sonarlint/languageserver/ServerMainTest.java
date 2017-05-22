@@ -21,10 +21,12 @@ package org.sonarlint.languageserver;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,16 +36,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.lsp4j.CodeActionContext;
+import org.eclipse.lsp4j.CodeActionParams;
+import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
@@ -51,11 +62,13 @@ import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.api.internal.apachecommons.io.IOUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -139,15 +152,6 @@ public class ServerMainTest {
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
   }
 
-  private void waitForDiagnostics() throws InterruptedException {
-    int maxLoop = 20;
-    do {
-      Thread.sleep(100);
-      maxLoop--;
-    } while (client.diagnosticsParamsList.isEmpty() || maxLoop == 0);
-
-  }
-
   @Test
   public void noIssueOnTestJSFiles() throws Exception {
     File tempFile = temp.newFile("fooTest.js");
@@ -187,6 +191,80 @@ public class ServerMainTest {
     assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+  }
+
+  @Test
+  public void analyzeSimpleJsFileOnSave() throws Exception {
+    File tempFile = temp.newFile("foo.js");
+    aut.getTextDocumentService()
+      .didSave(new DidSaveTextDocumentParams(new TextDocumentIdentifier(tempFile.toURI().toString()), "function foo() {\n  alert('toto');\n}"));
+
+    waitForDiagnostics();
+
+    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+  }
+
+  @Test
+  public void cleanDiagnosticsOnClose() throws Exception {
+    File tempFile = temp.newFile("foo.js");
+    aut.getTextDocumentService()
+      .didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(tempFile.toURI().toString())));
+
+    waitForDiagnostics();
+
+    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).isEmpty();
+  }
+
+  @Test
+  public void testCodeActionRuleDescription() throws Exception {
+    File tempFile = temp.newFile("foo.js");
+    VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
+    docId.setUri(tempFile.toURI().toString());
+    aut.getTextDocumentService()
+      .didChange(new DidChangeTextDocumentParams(docId, Arrays.asList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
+
+    waitForDiagnostics();
+
+    Diagnostic diagnostic = client.diagnosticsParamsList.get(0).getDiagnostics().get(0);
+
+    List<? extends Command> codeActions = aut.getTextDocumentService()
+      .codeAction(new CodeActionParams(new TextDocumentIdentifier(tempFile.toURI().toString()), new Range(new Position(1, 4), new Position(1, 4)),
+        new CodeActionContext(Arrays.asList(diagnostic))))
+      .get();
+
+    assertThat(codeActions).hasSize(1);
+
+    String ruleKey = (String) codeActions.get(0).getArguments().get(0);
+    int port = ((Double) codeActions.get(0).getArguments().get(1)).intValue();
+    assertThat(ruleKey).isEqualTo("javascript:S1442");
+
+    try {
+      IOUtils.toString(new URL("http://localhost:" + port + "/"));
+      Assert.fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e.getMessage()).contains("400");
+    }
+
+    try {
+      IOUtils.toString(new URL("http://localhost:" + port + "/?ruleKey=foo"));
+      Assert.fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(FileNotFoundException.class);
+    }
+
+    String ruleDesc = IOUtils.toString(new URL("http://localhost:" + port + "/?ruleKey=" + ruleKey));
+    assertThat(ruleDesc).contains("\"alert(...)\" should not be used");
+  }
+
+  private void waitForDiagnostics() throws InterruptedException {
+    int maxLoop = 20;
+    do {
+      Thread.sleep(100);
+      maxLoop--;
+    } while (client.diagnosticsParamsList.isEmpty() || maxLoop == 0);
+
   }
 
   private static class FakeLanguageClient implements LanguageClient {

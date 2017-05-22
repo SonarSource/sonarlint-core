@@ -59,9 +59,6 @@ class DefaultClientInputFile implements ClientInputFile {
 
   @Override
   public boolean isTest() {
-    if (testFilePattern == null) {
-      return false;
-    }
     PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern);
     return matcher.matches(Paths.get(fileUri));
   }

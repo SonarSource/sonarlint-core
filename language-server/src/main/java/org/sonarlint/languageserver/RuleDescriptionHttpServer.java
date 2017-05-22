@@ -47,9 +47,11 @@ class RuleDescriptionHttpServer extends NanoHTTPD {
     if (ruleKey == null) {
       return newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT, "Missing 'ruleKey' parameter");
     } else {
-      RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
-      if (ruleDetails == null) {
-        return newFixedLengthResponse(Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "No rule with key '" + ruleKey + "'");
+      RuleDetails ruleDetails;
+      try {
+        ruleDetails = engine.getRuleDetails(ruleKey);
+      } catch (IllegalArgumentException e) {
+        return newFixedLengthResponse(Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "No rules with key '" + ruleKey + "'");
       }
       try {
         String ruleName = ruleDetails.getName();
