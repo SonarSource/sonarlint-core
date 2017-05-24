@@ -84,7 +84,7 @@ public class SonarLintTelemetry {
       return;
     }
     try {
-      this.telemetryEngine = new Telemetry(storagePath, productName, productVersion);
+      this.telemetryEngine = newTelemetry(storagePath, productName, productVersion);
       scheduler = Executors.newScheduledThreadPool(1);
       this.scheduledFuture = scheduler.scheduleWithFixedDelay(this::upload,
         1, TimeUnit.HOURS.toMinutes(6), TimeUnit.MINUTES);
@@ -93,6 +93,10 @@ public class SonarLintTelemetry {
       // fail silently
       enabled = false;
     }
+  }
+
+  protected Telemetry newTelemetry(Path storagePath, String productName, String productVersion) throws Exception {
+    return new Telemetry(storagePath, productName, productVersion);
   }
 
   private void upload() {
