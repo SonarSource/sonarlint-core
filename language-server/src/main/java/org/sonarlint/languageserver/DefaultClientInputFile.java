@@ -91,6 +91,8 @@ class DefaultClientInputFile implements ClientInputFile {
       case "javascript":
       case "javascriptreact":
         return "js";
+      case "python":
+        return "py";
       default:
         return vscodeLanguageId;
     }

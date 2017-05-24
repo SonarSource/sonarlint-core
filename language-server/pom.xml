@@ -19,6 +19,8 @@
   <properties>
     <!-- embedded analyzer -->
     <sonar.javascript.version>3.0.0.4962</sonar.javascript.version>
+    <sonar.php.version>2.10.0.2087</sonar.php.version>
+    <sonar.python.version>1.8.0.1496</sonar.python.version>
   </properties>
 
   <dependencies>
@@ -117,6 +119,22 @@
                   <groupId>org.sonarsource.javascript</groupId>
                   <artifactId>sonar-javascript-plugin</artifactId>
                   <version>${sonar.javascript.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.basedir}/src/main/resources/plugins</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.python</groupId>
+                  <artifactId>sonar-python-plugin</artifactId>
+                  <version>${sonar.python.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.basedir}/src/main/resources/plugins</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.php</groupId>
+                  <artifactId>sonar-php-plugin</artifactId>
+                  <version>${sonar.php.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
                   <outputDirectory>${project.basedir}/src/main/resources/plugins</outputDirectory>

@@ -153,6 +153,33 @@ public class ServerMainTest {
   }
 
   @Test
+  public void analyzeSimplePythonFileOnOpen() throws Exception {
+    File tempFile = temp.newFile("foo.py");
+    aut.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "python", 1, "def foo():\n  print 'toto'\n")));
+
+    waitForDiagnostics();
+
+    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(
+        tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function. (python:PrintStatementUsage)", DiagnosticSeverity.Error));
+  }
+
+  @Test
+  public void analyzeSimplePhpFileOnOpen() throws Exception {
+    File tempFile = temp.newFile("foo.php");
+    aut.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "php", 1, "<?php\nfunction foo() {\n  echo(\"Hello\");\n}\n?>")));
+
+    waitForDiagnostics();
+
+    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(tuple(2, 2, 2, 6, "php:S2041", "sonarlint", "Remove the parentheses from this \"echo\" call. (php:S2041)", DiagnosticSeverity.Error));
+  }
+
+  @Test
   public void noIssueOnTestJSFiles() throws Exception {
     File tempFile = temp.newFile("fooTest.js");
     aut.getTextDocumentService()
