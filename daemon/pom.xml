@@ -24,7 +24,7 @@
     <unpack.dir>${project.build.directory}/unpack</unpack.dir>
     
     <!-- embedded analyzer -->
-    <sonar.javascript.version>2.18.0.3454</sonar.javascript.version>
+    <sonar.javascript.version>3.0.0.4962</sonar.javascript.version>
 
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>
