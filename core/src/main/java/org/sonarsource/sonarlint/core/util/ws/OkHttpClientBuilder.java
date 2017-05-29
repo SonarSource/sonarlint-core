@@ -56,6 +56,7 @@ import static java.util.Arrays.asList;
  */
 public class OkHttpClientBuilder {
 
+  private static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
   private static final String NONE = "NONE";
   private static final String P11KEYSTORE = "PKCS11";
 
@@ -159,8 +160,14 @@ public class OkHttpClientBuilder {
     builder.addNetworkInterceptor(this::setUserAgent);
     if (proxyLogin != null) {
       builder.proxyAuthenticator((route, response) -> {
-        Request.Builder newRequest = response.request().newBuilder();
-        return newRequest.header("Proxy-Authorization", Credentials.basic(proxyLogin, nullToEmpty(proxyPassword))).build();
+        if (response.request().header(PROXY_AUTHORIZATION) != null) {
+          // Give up, we've already attempted to authenticate.
+          return null;
+        }
+        String credentials = Credentials.basic(proxyLogin, nullToEmpty(proxyPassword));
+        return response.request().newBuilder()
+          .header(PROXY_AUTHORIZATION, credentials)
+          .build();
       });
     }
 
