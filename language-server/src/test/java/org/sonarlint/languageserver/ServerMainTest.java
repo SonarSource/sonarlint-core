@@ -29,13 +29,16 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
@@ -72,6 +75,7 @@ import org.sonar.api.internal.apachecommons.io.IOUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.DISABLE_TELEMETRY;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.TEST_FILE_PATTERN;
 
 public class ServerMainTest {
@@ -79,7 +83,7 @@ public class ServerMainTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   private static ServerSocket serverSocket;
-  private static LanguageServer aut;
+  private static LanguageServer lsProxy;
   private static FakeLanguageClient client;
 
   @BeforeClass
@@ -116,7 +120,7 @@ public class ServerMainTest {
       }
     }
 
-    aut = future.get();
+    lsProxy = future.get();
 
     InitializeParams initializeParams = new InitializeParams();
     initializeParams.setInitializationOptions(ImmutableMap.of(
@@ -125,16 +129,16 @@ public class ServerMainTest {
       "telemetryStorage", "not/exists",
       "productName", "SLCORE tests",
       "productVersion", "0.1"));
-    aut.initialize(initializeParams).get();
+    lsProxy.initialize(initializeParams).get();
   }
 
   @AfterClass
   public static void stop() throws Exception {
     System.clearProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY);
     try {
-      if (aut != null) {
-        aut.shutdown();
-        aut.exit();
+      if (lsProxy != null) {
+        lsProxy.shutdown();
+        lsProxy.exit();
       }
     } finally {
       serverSocket.close();
@@ -149,7 +153,7 @@ public class ServerMainTest {
   @Test
   public void analyzeSimpleJsFileOnOpen() throws Exception {
     File tempFile = temp.newFile("foo.js");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
 
     waitForDiagnostics();
@@ -162,7 +166,7 @@ public class ServerMainTest {
   @Test
   public void analyzeSimplePythonFileOnOpen() throws Exception {
     File tempFile = temp.newFile("foo.py");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "python", 1, "def foo():\n  print 'toto'\n")));
 
     waitForDiagnostics();
@@ -176,7 +180,7 @@ public class ServerMainTest {
   @Test
   public void analyzeSimplePhpFileOnOpen() throws Exception {
     File tempFile = temp.newFile("foo.php");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "php", 1, "<?php\nfunction foo() {\n  echo(\"Hello\");\n}\n?>")));
 
     waitForDiagnostics();
@@ -188,28 +192,37 @@ public class ServerMainTest {
 
   @Test
   public void noIssueOnTestJSFiles() throws Exception {
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("{**/*Test*}", false));
+
     File tempFile = temp.newFile("fooTest.js");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
 
     waitForDiagnostics();
     assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).isEmpty();
     client.clear();
 
-    aut.getWorkspaceService().didChangeConfiguration(new DidChangeConfigurationParams(ImmutableMap.of("sonarlint", ImmutableMap.of(TEST_FILE_PATTERN, "{**/*MyTest*}"))));
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("{**/*MyTest*}", false));
 
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
     waitForDiagnostics();
     assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).hasSize(1);
     client.clear();
 
     File anotherTempFile = temp.newFile("fooMyTest.js");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(anotherTempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
 
     waitForDiagnostics();
     assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).isEmpty();
+  }
+
+  private DidChangeConfigurationParams changedConfiguration(@Nullable String testFilePattern, boolean disableTelemetry) {
+    Map<String, Object> values = new HashMap<>();
+    values.put(TEST_FILE_PATTERN, testFilePattern);
+    values.put(DISABLE_TELEMETRY, disableTelemetry);
+    return new DidChangeConfigurationParams(ImmutableMap.of("sonarlint", values));
   }
 
   @Test
@@ -217,7 +230,7 @@ public class ServerMainTest {
     File tempFile = temp.newFile("foo.js");
     VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
     docId.setUri(tempFile.toURI().toString());
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didChange(new DidChangeTextDocumentParams(docId, Arrays.asList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
 
     waitForDiagnostics();
@@ -230,7 +243,7 @@ public class ServerMainTest {
   @Test
   public void analyzeSimpleJsFileOnSave() throws Exception {
     File tempFile = temp.newFile("foo.js");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didSave(new DidSaveTextDocumentParams(new TextDocumentIdentifier(tempFile.toURI().toString()), "function foo() {\n  alert('toto');\n}"));
 
     waitForDiagnostics();
@@ -243,7 +256,7 @@ public class ServerMainTest {
   @Test
   public void cleanDiagnosticsOnClose() throws Exception {
     File tempFile = temp.newFile("foo.js");
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(tempFile.toURI().toString())));
 
     waitForDiagnostics();
@@ -252,18 +265,25 @@ public class ServerMainTest {
   }
 
   @Test
+  public void optOutTelemetry() throws Exception {
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration(null, true));
+
+    waitForDiagnostics();
+  }
+
+  @Test
   public void testCodeActionRuleDescription() throws Exception {
     File tempFile = temp.newFile("foo.js");
     VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
     docId.setUri(tempFile.toURI().toString());
-    aut.getTextDocumentService()
+    lsProxy.getTextDocumentService()
       .didChange(new DidChangeTextDocumentParams(docId, Arrays.asList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
 
     waitForDiagnostics();
 
     Diagnostic diagnostic = client.diagnosticsParamsList.get(0).getDiagnostics().get(0);
 
-    List<? extends Command> codeActions = aut.getTextDocumentService()
+    List<? extends Command> codeActions = lsProxy.getTextDocumentService()
       .codeAction(new CodeActionParams(new TextDocumentIdentifier(tempFile.toURI().toString()), new Range(new Position(1, 4), new Position(1, 4)),
         new CodeActionContext(Arrays.asList(diagnostic))))
       .get();
@@ -297,7 +317,7 @@ public class ServerMainTest {
     do {
       Thread.sleep(100);
       maxLoop--;
-    } while (client.diagnosticsParamsList.isEmpty() || maxLoop == 0);
+    } while (client.diagnosticsParamsList.isEmpty() && maxLoop > 0);
 
   }
 

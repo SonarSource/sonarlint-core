@@ -106,7 +106,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
-  private static final String DISABLE_TELEMETRY = "disableTelemetry";
+  static final String DISABLE_TELEMETRY = "disableTelemetry";
   static final String TEST_FILE_PATTERN = "testFilePattern";
   static final String ANALYZER_PROPERTIES = "analyzerProperties";
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
@@ -475,13 +475,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
-    Object settings = params.getSettings();
-    if (settings instanceof Map) {
-      Map<String, Object> entries = (Map<String, Object>) ((Map<String, Object>) settings).get(SONARLINT_CONFIGURATION_NAMESPACE);
-      testFilePattern = (String) entries.get(TEST_FILE_PATTERN);
-      analyzerProperties = (Map) entries.get(ANALYZER_PROPERTIES);
-      telemetry.optOut((Boolean) entries.get(DISABLE_TELEMETRY));
-    }
+    Map<String, Object> settings = (Map<String, Object>) params.getSettings();
+    Map<String, Object> entries = (Map<String, Object>) settings.get(SONARLINT_CONFIGURATION_NAMESPACE);
+    testFilePattern = (String) entries.get(TEST_FILE_PATTERN);
+    analyzerProperties = (Map) entries.get(ANALYZER_PROPERTIES);
+    telemetry.optOut((Boolean) entries.get(DISABLE_TELEMETRY));
   }
 
   @Override
