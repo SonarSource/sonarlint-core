@@ -84,6 +84,7 @@ public class ServerMainTest {
 
   @BeforeClass
   public static void startServer() throws Exception {
+    System.setProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY, "true");
     serverSocket = new ServerSocket(0);
     int port = serverSocket.getLocalPort();
 
@@ -118,12 +119,18 @@ public class ServerMainTest {
     aut = future.get();
 
     InitializeParams initializeParams = new InitializeParams();
-    initializeParams.setInitializationOptions(ImmutableMap.of(TEST_FILE_PATTERN, "{**/test/**,**/*test*,**/*Test*}"));
-    aut.initialize(initializeParams);
+    initializeParams.setInitializationOptions(ImmutableMap.of(
+      TEST_FILE_PATTERN, "{**/test/**,**/*test*,**/*Test*}",
+      "disableTelemetry", true,
+      "telemetryStorage", "not/exists",
+      "productName", "SLCORE tests",
+      "productVersion", "0.1"));
+    aut.initialize(initializeParams).get();
   }
 
   @AfterClass
   public static void stop() throws Exception {
+    System.clearProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY);
     try {
       if (aut != null) {
         aut.shutdown();

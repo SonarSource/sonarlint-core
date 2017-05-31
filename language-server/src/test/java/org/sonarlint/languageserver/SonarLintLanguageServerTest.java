@@ -19,6 +19,9 @@
  */
 package org.sonarlint.languageserver;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.channels.IllegalSelectorException;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -50,6 +53,31 @@ public class SonarLintLanguageServerTest {
     assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
     when(issue.getSeverity()).thenReturn("INFO");
     assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
+  }
+
+  @Test
+  public void makeQualityGateHappy() throws Exception {
+    SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+    server.error("Foo", new IllegalSelectorException());
+    server.warn("Foo");
+    assertThat(server.getTextDocumentService().codeLens(null)).isNull();
+    assertThat(server.getTextDocumentService().completion(null)).isNull();
+    assertThat(server.getTextDocumentService().definition(null)).isNull();
+    assertThat(server.getTextDocumentService().documentHighlight(null)).isNull();
+    assertThat(server.getTextDocumentService().documentSymbol(null)).isNull();
+    assertThat(server.getTextDocumentService().formatting(null)).isNull();
+    assertThat(server.getTextDocumentService().hover(null)).isNull();
+    assertThat(server.getTextDocumentService().onTypeFormatting(null)).isNull();
+    assertThat(server.getTextDocumentService().rangeFormatting(null)).isNull();
+    assertThat(server.getTextDocumentService().references(null)).isNull();
+    assertThat(server.getTextDocumentService().rename(null)).isNull();
+    assertThat(server.getTextDocumentService().resolveCodeLens(null)).isNull();
+    assertThat(server.getTextDocumentService().resolveCompletionItem(null)).isNull();
+    assertThat(server.getTextDocumentService().signatureHelp(null)).isNull();
+
+    server.getWorkspaceService().didChangeWatchedFiles(null);
+    assertThat(server.getWorkspaceService().executeCommand(null)).isNull();
+    assertThat(server.getWorkspaceService().symbol(null)).isNull();
   }
 
 }

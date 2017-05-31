@@ -41,7 +41,7 @@ public class ServerMain {
     LOG.info("Binding to {}", jsonRpcPort);
     SonarLintLanguageServer languageServer;
     try {
-      languageServer = new SonarLintLanguageServer(jsonRpcPort);
+      languageServer = SonarLintLanguageServer.bySocket(jsonRpcPort);
     } catch (IOException e) {
       LOG.error("Unable to connect to the client", e);
       System.exit(1);

@@ -19,36 +19,20 @@
  */
 package org.sonarlint.languageserver;
 
-import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
-import org.eclipse.lsp4j.services.LanguageClient;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 
-class LanguageClientLogOutput implements LogOutput {
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private final LanguageClient client;
+public class LanguageClientLogOutputTest {
 
-  public LanguageClientLogOutput(LanguageClient client) {
-    this.client = client;
-  }
-
-  @Override
-  public void log(String formattedMessage, Level level) {
-    client.logMessage(new MessageParams(messageType(level), formattedMessage));
-  }
-
-  static MessageType messageType(Level level) {
-    switch (level) {
-      case ERROR:
-        return MessageType.Error;
-      case WARN:
-        return MessageType.Warning;
-      case INFO:
-        return MessageType.Info;
-      case DEBUG:
-      case TRACE:
-        return MessageType.Log;
-    }
-    throw new IllegalStateException("Unexpected level: " + level);
+  @Test
+  public void coverage() {
+    assertThat(LanguageClientLogOutput.messageType(Level.ERROR)).isEqualTo(MessageType.Error);
+    assertThat(LanguageClientLogOutput.messageType(Level.WARN)).isEqualTo(MessageType.Warning);
+    assertThat(LanguageClientLogOutput.messageType(Level.INFO)).isEqualTo(MessageType.Info);
+    assertThat(LanguageClientLogOutput.messageType(Level.DEBUG)).isEqualTo(MessageType.Log);
+    assertThat(LanguageClientLogOutput.messageType(Level.TRACE)).isEqualTo(MessageType.Log);
   }
 }

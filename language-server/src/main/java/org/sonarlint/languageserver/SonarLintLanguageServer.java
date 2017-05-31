@@ -20,6 +20,8 @@
 package org.sonarlint.languageserver;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.Socket;
@@ -115,6 +117,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private final StandaloneSonarLintEngine engine;
   private final Future<?> backgroundProcess;
   private final LanguageClientLogOutput logOutput;
+
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
 
@@ -123,12 +126,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private Map<String, String> analyzerProperties;
   private int ruleServerPort;
 
-  public SonarLintLanguageServer(int port) throws IOException {
+  public static SonarLintLanguageServer bySocket(int port) throws IOException {
     Socket socket = new Socket("localhost", port);
+    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream());
+  }
+
+  public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream) throws IOException {
 
     Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(this,
-      socket.getInputStream(),
-      socket.getOutputStream(),
+      inputStream,
+      outputStream,
       true, new PrintWriter(System.out));
 
     this.client = launcher.getRemoteProxy();
@@ -160,11 +167,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     client.logMessage(new MessageParams(MessageType.Info, message));
   }
 
-  private void warn(String message) {
+  void warn(String message) {
     client.logMessage(new MessageParams(MessageType.Warning, message));
   }
 
-  public void error(String message, Throwable t) {
+  void error(String message, Throwable t) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
