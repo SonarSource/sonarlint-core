@@ -137,8 +137,10 @@ public class ServerMainTest {
     System.clearProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY);
     try {
       if (lsProxy != null) {
-        lsProxy.shutdown();
+        lsProxy.shutdown().get();
         lsProxy.exit();
+        // Give some time to the server to stop
+        Thread.sleep(100);
       }
     } finally {
       serverSocket.close();
