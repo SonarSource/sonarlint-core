@@ -37,10 +37,20 @@ public class SonarLintWrappedException extends SonarLintException {
     if (t == null) {
       return null;
     }
+
+    if (t instanceof MessageException) {
+      return (SonarLintException) t;
+    }
+
     if (t.getCause() == null && t instanceof SonarLintException) {
       return (SonarLintException) t;
     }
+
     Throwable cause = wrap(t.getCause());
+    if (cause instanceof MessageException) {
+      return (SonarLintException) cause;
+    }
+
     SonarLintWrappedException sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
     sonarLintException.setStackTrace(t.getStackTrace());
     return sonarLintException;
