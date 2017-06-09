@@ -32,6 +32,7 @@ import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.exceptions.MessageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
@@ -81,7 +82,13 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
   private static void createNewActiveRule(ActiveRulesBuilder builder, ActiveRule activeRule, Sonarlint.Rules storageRules, String language, Rules rules) {
     RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
     Rule rule = rules.find(ruleKey);
-    Sonarlint.Rules.Rule storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());
+    Sonarlint.Rules.Rule storageRule;
+    try {
+      storageRule = storageRules.getRulesByKeyOrThrow(ruleKey.toString());
+    } catch (IllegalArgumentException e) {
+      throw new MessageException("Unknown active rule in the quality profile of the project. Please update the SonarQube server binding.");
+    }
+
     NewActiveRule newActiveRule = builder.create(ruleKey)
       .setLanguage(language)
       .setName(rule.name())

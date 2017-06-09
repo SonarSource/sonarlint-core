@@ -71,7 +71,8 @@ public class ModuleStorageUpdateExecutor {
     for (String qpKey : moduleConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
         throw new IllegalStateException(
-          "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in storage. Global storage is probably outdated. Please update binding.");
+          "Module '" + moduleKey + "' is associated to quality profile '" + qpKey + "' that is not in the storage. "
+            + "The SonarQube server binding is probably outdated,  please update it.");
       }
     }
     ProtobufUtil.writeToFile(moduleConfiguration, temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
