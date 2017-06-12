@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 
 public class SonarLintPathManager {
 
-  static final String SONARLINT_USER_HOME_ENV = "SONARLINT_USER_HOME";
+  public static final String SONARLINT_USER_HOME_ENV = "SONARLINT_USER_HOME";
 
   private SonarLintPathManager() {
     // utility class, forbidden constructor
