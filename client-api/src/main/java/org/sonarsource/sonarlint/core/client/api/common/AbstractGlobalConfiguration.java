@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -41,7 +39,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Path workDir;
 
   public AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
-    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : findHome();
+    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
     this.logOutput = builder.logOutput;
   }
@@ -57,15 +55,6 @@ public abstract class AbstractGlobalConfiguration {
   @CheckForNull
   public LogOutput getLogOutput() {
     return logOutput;
-  }
-
-  private static Path findHome() {
-    String path = System.getenv("SONARLINT_USER_HOME");
-    if (path == null) {
-      // Default
-      path = System.getProperty("user.home") + File.separator + ".sonarlint";
-    }
-    return Paths.get(path);
   }
 
   public static class AbstractBuilder<G extends AbstractBuilder> {
