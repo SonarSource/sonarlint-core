@@ -45,13 +45,6 @@
       <groupId>org.sonarsource.sonarlint.core</groupId>
       <artifactId>sonarlint-core</artifactId>
       <version>${project.version}</version>
-      <!-- we only want main artifact, with everything shaded -->
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <!-- it's not being shaded in sonarlint-core -->
