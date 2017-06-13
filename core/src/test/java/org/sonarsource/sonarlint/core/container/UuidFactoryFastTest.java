@@ -24,7 +24,7 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class UuidFactoryFastTest {
-  UuidFactoryFast underTest = UuidFactoryFast.getInstance();
+  UidFactoryFast underTest = UidFactoryFast.getInstance();
 
   @Test
   public void create_different_uuids() {

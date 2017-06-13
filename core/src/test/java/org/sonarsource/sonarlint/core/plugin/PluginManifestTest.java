@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
@@ -33,12 +33,12 @@ public class PluginManifestTest {
 
   @Test(expected = RuntimeException.class)
   public void test() throws Exception {
-    new PluginManifest(new File("fake.jar"));
+    new PluginManifest(Paths.get("fake.jar"));
   }
 
   @Test
   public void should_create_manifest() throws URISyntaxException, IOException {
-    PluginManifest manifest = new PluginManifest(new File(PluginLocator.getJavaPluginUrl().toURI()));
+    PluginManifest manifest = new PluginManifest(Paths.get(PluginLocator.getJavaPluginUrl().toURI()));
 
     assertThat(manifest.getKey()).isEqualTo("java");
     assertThat(manifest.getName()).isEqualTo("SonarJava");
@@ -54,7 +54,7 @@ public class PluginManifestTest {
   public void accessors() throws URISyntaxException, IOException, ParseException {
     URL jar = PluginLocator.getJavaPluginUrl();
 
-    PluginManifest manifest = new PluginManifest(new File(jar.toURI()));
+    PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
 
     manifest.setName("newName");
     String[] requirePlugins = new String[2];
@@ -80,7 +80,7 @@ public class PluginManifestTest {
   public void should_add_requires_plugins() throws URISyntaxException, IOException {
     URL jar = getClass().getResource("/plugin-with-require-plugins.jar");
 
-    PluginManifest manifest = new PluginManifest(new File(jar.toURI()));
+    PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
 
     assertThat(manifest.getRequirePlugins()).hasSize(2);
     assertThat(manifest.getRequirePlugins()[0]).isEqualTo("scm:1.0");

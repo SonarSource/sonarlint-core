@@ -28,4 +28,6 @@ public interface LoadedAnalyzer {
   
   @CheckForNull
   String version();
+  
+  boolean supportsContentStream();
 }

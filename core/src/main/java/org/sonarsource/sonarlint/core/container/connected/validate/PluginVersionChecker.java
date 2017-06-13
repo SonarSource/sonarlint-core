@@ -26,20 +26,34 @@ import javax.annotation.CheckForNull;
 
 public class PluginVersionChecker {
   public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
+  private static final String STREAM_SUPPORT_FILE = "/plugins_stream_support.txt";
 
   private final Properties minimalPluginVersions;
+  private final Properties streamSupportVersions;
 
   public PluginVersionChecker() {
     this.minimalPluginVersions = new Properties();
+    this.streamSupportVersions = new Properties();
     try {
       minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load minimum plugin versions", e);
+    }
+
+    try {
+      streamSupportVersions.load(this.getClass().getResourceAsStream(STREAM_SUPPORT_FILE));
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to load list of plugins supporting file content stream", e);
     }
   }
 
   @CheckForNull
   public String getMinimumVersion(String key) {
     return minimalPluginVersions.getProperty(key);
+  }
+
+  @CheckForNull
+  public String getMinimumStreamSupportVersion(String key) {
+    return streamSupportVersions.getProperty(key);
   }
 }

@@ -19,10 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,14 +49,14 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
@@ -63,6 +64,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = LoggerFactory.getLogger(StorageContainer.class);
+  private static final DateFormat DATE_FORMAT = new SimpleDateFormat();
 
   public static StorageContainer create(ConnectedGlobalConfiguration globalConfig) {
     StorageContainer container = new StorageContainer();
@@ -80,7 +82,8 @@ public class StorageContainer extends ComponentContainer {
 
       // plugins
       DefaultPluginRepository.class,
-      PluginCopier.class,
+      PluginCacheLoader.class,
+      PluginVersionChecker.class,
       PluginLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
@@ -114,7 +117,7 @@ public class StorageContainer extends ComponentContainer {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
     GlobalStorageStatus updateStatus = getGlobalStorageStatus();
     if (updateStatus != null) {
-      LOG.info("Using storage for server '{}' (last update {})", config.getServerId(), new SimpleDateFormat().format(updateStatus.getLastUpdateDate()));
+      LOG.info("Using storage for server '{}' (last update {})", config.getServerId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
       installPlugins();
     } else {
       LOG.warn("No storage for server '{}'. Please update.", config.getServerId());
@@ -141,16 +144,9 @@ public class StorageContainer extends ComponentContainer {
     return getComponentByType(GlobalUpdateStatusReader.class).get();
   }
 
-  public List<LoadedAnalyzer> getAnalyzers() {
+  public Collection<LoadedAnalyzer> getAnalyzers() {
     DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
-    return pluginRepository.getPluginInfos().stream()
-      .map(StorageContainer::pluginInfoToAnalyzer)
-      .collect(Collectors.toList());
-  }
-
-  private static LoadedAnalyzer pluginInfoToAnalyzer(PluginInfo p) {
-    org.sonarsource.sonarlint.core.plugin.Version version = p.getVersion();
-    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), version == null ? null : version.toString());
+    return pluginRepository.getLoadedAnalyzers();
   }
 
   public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {

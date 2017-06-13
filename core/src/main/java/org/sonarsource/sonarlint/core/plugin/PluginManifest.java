@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -78,14 +78,14 @@ public final class PluginManifest {
   /**
    * Load the manifest from a JAR file.
    */
-  public PluginManifest(File file) throws IOException {
+  public PluginManifest(Path jarPath) throws IOException {
     this();
-    try (JarFile jar = new JarFile(file)) {
+    try (JarFile jar = new JarFile(jarPath.toFile())) {
       if (jar.getManifest() != null) {
         loadManifest(jar.getManifest());
       }
     } catch (Exception e) {
-      throw new IllegalStateException("Unable to read plugin manifest from jar : " + file.getAbsolutePath(), e);
+      throw new IllegalStateException("Unable to read plugin manifest from jar : " + jarPath.toAbsolutePath(), e);
     }
   }
 

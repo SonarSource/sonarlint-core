@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 
 public class PluginReferencesDownloaderTest {
@@ -83,14 +83,14 @@ public class PluginReferencesDownloaderTest {
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
         tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"));
 
-    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Downloader.class));
+    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
 
-    ArgumentCaptor<Downloader> downloaderCaptor = ArgumentCaptor.forClass(Downloader.class);
+    ArgumentCaptor<Copier> downloaderCaptor = ArgumentCaptor.forClass(Copier.class);
     verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), downloaderCaptor.capture());
-    Downloader downloader = downloaderCaptor.getValue();
+    Copier downloader = downloaderCaptor.getValue();
     WsClientTestUtils.addResponse(wsClient, "/deploy/plugins/java/test.jar", "content");
     Path testFile = temp.newFile().toPath();
-    downloader.download("test.jar", testFile);
+    downloader.copy("test.jar", testFile);
     assertThat(testFile).hasContent("content");
   }
 
@@ -131,7 +131,7 @@ public class PluginReferencesDownloaderTest {
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
         tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
 
-    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Downloader.class));
+    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
   }
 
 }

@@ -37,6 +37,6 @@ public class Uuids {
   }
 
   public static String createFast() {
-    return UuidFactoryFast.getInstance().create();
+    return UidFactoryFast.getInstance().create();
   }
 }

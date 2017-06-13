@@ -73,21 +73,21 @@ public class PluginCache {
   }
 
   @FunctionalInterface
-  public interface Downloader {
-    void download(String filename, Path toFile) throws IOException;
+  public interface Copier {
+    void copy(String filename, Path toFile) throws IOException;
   }
 
-  public Path get(String filename, String hash, Downloader downloader) {
+  public Path get(String filename, String hash, Copier copier) {
     // Does not fail if another process tries to create the directory at the same time.
     Path hashDir = hashDir(hash);
     Path targetFile = hashDir.resolve(filename);
     if (Files.notExists(targetFile)) {
       Path tempFile = newTempFile();
-      download(downloader, filename, tempFile);
+      copy(copier, filename, tempFile);
       String downloadedHash = hashes.of(tempFile);
       if (!hash.equals(downloadedHash)) {
         throw new IllegalStateException("INVALID HASH: File " + tempFile + " was expected to have hash " + hash
-          + " but was downloaded with hash " + downloadedHash);
+          + " but was copied with hash " + downloadedHash);
       }
       createDirIfNeeded(hashDir, "target directory in cache");
       renameQuietly(tempFile, targetFile);
@@ -95,11 +95,11 @@ public class PluginCache {
     return targetFile;
   }
 
-  private static void download(Downloader downloader, String filename, Path tempFile) {
+  private static void copy(Copier copier, String filename, Path tempFile) {
     try {
-      downloader.download(filename, tempFile);
+      copier.copy(filename, tempFile);
     } catch (IOException e) {
-      throw new IllegalStateException("Fail to download " + filename + " to " + tempFile, e);
+      throw new IllegalStateException("Fail to copy " + filename + " to " + tempFile, e);
     }
   }
 
@@ -107,7 +107,7 @@ public class PluginCache {
     try {
       rename(sourceFile, targetFile);
     } catch (Exception e) {
-      // Check if the file was cached by another process during download
+      // Check if the file was cached by another process during copy
       if (Files.notExists(targetFile)) {
         throw new IllegalStateException("Fail to move " + sourceFile + " to " + targetFile, e);
       }
@@ -118,7 +118,7 @@ public class PluginCache {
     try {
       Files.move(sourceFile, targetFile, StandardCopyOption.ATOMIC_MOVE);
     } catch (AtomicMoveNotSupportedException e) {
-      LOG.warn("Atomic rename from {} to {} not supported", sourceFile, targetFile);
+      LOG.warn("Atomic rename from '{}' to '{}' not supported", sourceFile, targetFile);
       Files.move(sourceFile, targetFile);
     }
   }

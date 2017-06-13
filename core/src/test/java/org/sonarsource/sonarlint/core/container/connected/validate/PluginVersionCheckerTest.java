@@ -44,4 +44,10 @@ public class PluginVersionCheckerTest {
     assertThat(checker.getMinimumVersion("java")).isEqualTo("4.0");
     assertThat(checker.getMinimumVersion("unknown")).isNull();
   }
+
+  @Test
+  public void testStreamSupport() {
+    assertThat(checker.getMinimumStreamSupportVersion("java")).isEqualTo("4.7");
+    assertThat(checker.getMinimumStreamSupportVersion("unknown")).isNull();
+  }
 }

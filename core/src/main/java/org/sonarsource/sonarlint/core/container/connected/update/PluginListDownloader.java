@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
-import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -64,7 +64,7 @@ public class PluginListDownloader {
       String hash = nameAndHash[1];
       String version = VersionUtils.getJarVersion(filename);
       String minVersion = pluginVersionChecker.getMinimumVersion(key);
-      boolean sonarlintCompatible = PluginCopier.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
+      boolean sonarlintCompatible = PluginCacheLoader.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
       DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, version, sonarlintCompatible);
       analyzer.minimumVersion(minVersion);
       analyzers.add(analyzer);

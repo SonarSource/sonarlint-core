@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageManager;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -91,10 +91,10 @@ public class ConnectedIssueMediumTest {
       .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
       .setKey("javascript")
       .build());
-    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Downloader() {
+    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Copier() {
 
       @Override
-      public void download(String filename, Path toFile) throws IOException {
+      public void copy(String filename, Path toFile) throws IOException {
         FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile());
       }
     });
@@ -104,10 +104,10 @@ public class ConnectedIssueMediumTest {
       .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
       .setKey("java")
       .build());
-    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Downloader() {
+    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Copier() {
 
       @Override
-      public void download(String filename, Path toFile) throws IOException {
+      public void copy(String filename, Path toFile) throws IOException {
         FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile());
       }
     });

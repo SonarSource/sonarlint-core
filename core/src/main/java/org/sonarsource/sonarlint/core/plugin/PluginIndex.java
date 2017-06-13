@@ -19,46 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import java.net.URL;
 import java.util.List;
 
-public interface PluginIndexProvider {
+public interface PluginIndex {
 
   List<PluginReference> references();
 
   class PluginReference {
+    private final String hash;
+    private final String filename;
 
-    private String hash;
-    private URL downloadUrl;
-    private String filename;
+    public PluginReference(String hash, String filename) {
+      this.hash = hash;
+      this.filename = filename;
+    }
 
     public String getHash() {
       return hash;
     }
 
-    public PluginReference setHash(String hash) {
-      this.hash = hash;
-      return this;
-    }
-
-    public URL getDownloadUrl() {
-      return downloadUrl;
-    }
-
-    public PluginReference setDownloadUrl(URL downloadUrl) {
-      this.downloadUrl = downloadUrl;
-      return this;
-    }
-
     public String getFilename() {
       return filename;
     }
-
-    public PluginReference setFilename(String filename) {
-      this.filename = filename;
-      return this;
-    }
-
   }
-
 }

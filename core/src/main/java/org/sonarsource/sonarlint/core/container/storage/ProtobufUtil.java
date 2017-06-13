@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.util.ParserIterator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,10 +70,6 @@ public class ProtobufUtil {
       list.add(message);
     }
     return list;
-  }
-
-  public static <T extends Message> Iterator<T> streamMessages(final InputStream input, final Parser<T> parser) {
-    return new ParserIterator<>(input, parser);
   }
 
   public static <T extends Message> void writeMessages(OutputStream output, Iterator<T> messages) {

@@ -21,39 +21,35 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider.PluginReference;
+import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
-public class PluginCopier {
+public class PluginCacheLoader {
 
   private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("xoo", "java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift", "rpg", "cpp",
     "pli");
 
-  private static final Logger LOG = Loggers.get(PluginCopier.class);
+  private static final Logger LOG = Loggers.get(PluginCacheLoader.class);
 
   private final PluginCache fileCache;
-  private final PluginIndexProvider pluginIndexProvider;
+  private final PluginIndex pluginIndex;
 
-  public PluginCopier(PluginCache fileCache, PluginIndexProvider pluginIndexProvider) {
+  public PluginCacheLoader(PluginCache fileCache, PluginIndex pluginIndex) {
     this.fileCache = fileCache;
-    this.pluginIndexProvider = pluginIndexProvider;
+    this.pluginIndex = pluginIndex;
   }
 
-  public Map<String, PluginInfo> installRemotes() {
-    return loadPlugins(pluginIndexProvider.references());
+  public Map<String, PluginInfo> load() {
+    return loadPlugins(pluginIndex.references());
   }
 
   private Map<String, PluginInfo> loadPlugins(List<PluginReference> pluginReferences) {
@@ -61,9 +57,9 @@ public class PluginCopier {
 
     Profiler profiler = Profiler.create(LOG).startDebug("Load plugins");
 
-    for (PluginReference pluginReference : pluginReferences) {
-      File jarFile = getFromCacheOrCopy(pluginReference);
-      PluginInfo info = PluginInfo.create(jarFile);
+    for (PluginReference ref : pluginReferences) {
+      Path jarFilePath = getFromCache(ref);
+      PluginInfo info = PluginInfo.create(jarFilePath);
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if ((sonarLintSupported != null && sonarLintSupported.booleanValue()) || isWhitelisted(info.getKey())) {
         infosByKey.put(info.getKey(), info);
@@ -82,37 +78,18 @@ public class PluginCopier {
   }
 
   @VisibleForTesting
-  File getFromCacheOrCopy(final PluginReference pluginReference) {
+  Path getFromCache(final PluginReference pluginReference) {
+    Path jar;
     try {
-      return fileCache.get(pluginReference.getFilename(), pluginReference.getHash(), new FileDownloader(pluginReference)).toFile();
+      jar = fileCache.get(pluginReference.getFilename(), pluginReference.getHash());
     } catch (StorageException e) {
       throw e;
     } catch (Exception e) {
-      throw new IllegalStateException("Fail to copy plugin " + pluginReference.getFilename() + " from URL: " + pluginReference.getDownloadUrl(), e);
+      throw new IllegalStateException("Fail to find plugin " + pluginReference.getFilename() + " in the cache", e);
     }
-  }
-
-  private static class FileDownloader implements PluginCache.Downloader {
-    private PluginReference pluginReference;
-
-    FileDownloader(PluginReference pluginReference) {
-      this.pluginReference = pluginReference;
+    if (jar == null) {
+      throw new StorageException("Couldn't find plugin '" + pluginReference.getFilename() + "' in the cache. Please update the binding", false);
     }
-
-    @Override
-    public void download(String filename, Path toFile) throws IOException {
-      URL url = pluginReference.getDownloadUrl();
-      if (url == null) {
-        // In connected mode plugins are always supposed to be in the cache.
-        throw new StorageException("Plugin " + pluginReference.getFilename() + " not found in local storage. Please update server configuration.", null);
-      }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Copy plugin {} to {}", url, toFile);
-      } else {
-        LOG.info("Copy {}", StringUtils.substringAfterLast(url.getFile(), "/"));
-      }
-
-      FileUtils.copyURLToFile(url, toFile.toFile());
-    }
+    return jar;
   }
 }

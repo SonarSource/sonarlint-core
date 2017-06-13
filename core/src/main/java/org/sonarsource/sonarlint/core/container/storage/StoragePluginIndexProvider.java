@@ -19,17 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import com.google.common.collect.Lists;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import org.sonarsource.sonarlint.core.plugin.PluginIndexProvider;
+import java.util.stream.Collectors;
+
+import org.sonarsource.sonarlint.core.plugin.PluginIndex;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 /**
- * List of plugins is in local storage
+ * List of plugins is in the local storage
  */
-public class StoragePluginIndexProvider implements PluginIndexProvider {
+public class StoragePluginIndexProvider implements PluginIndex {
 
   private StorageManager storageManager;
 
@@ -43,8 +45,9 @@ public class StoragePluginIndexProvider implements PluginIndexProvider {
     if (!Files.exists(pluginReferencesPath)) {
       return Collections.emptyList();
     }
-    org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences protoReferences = ProtobufUtil.readFile(pluginReferencesPath,
-      org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.parser());
-    return Lists.transform(protoReferences.getReferenceList(), input -> new PluginReference().setHash(input.getHash()).setFilename(input.getFilename()));
+    Sonarlint.PluginReferences protoReferences = ProtobufUtil.readFile(pluginReferencesPath, Sonarlint.PluginReferences.parser());
+    return protoReferences.getReferenceList().stream()
+      .map(r -> new PluginReference(r.getHash(), r.getFilename()))
+      .collect(Collectors.toList());
   }
 }
