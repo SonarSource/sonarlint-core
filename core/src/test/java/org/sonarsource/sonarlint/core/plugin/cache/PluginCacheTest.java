@@ -63,8 +63,8 @@ public class PluginCacheTest {
     PluginCache cache = new PluginCache(tempFolder.newFolder().toPath(), hashes);
     when(hashes.of(any(Path.class))).thenReturn("ABCDE");
 
-    PluginCache.Downloader downloader = new PluginCache.Downloader() {
-      public void download(String filename, Path toFile) throws IOException {
+    PluginCache.Copier downloader = new PluginCache.Copier() {
+      public void copy(String filename, Path toFile) throws IOException {
         FileUtils.write(toFile.toFile(), "body");
       }
     };
@@ -84,8 +84,8 @@ public class PluginCacheTest {
     PluginCache cache = new PluginCache(tempFolder.newFolder().toPath(), hashes);
     when(hashes.of(any(Path.class))).thenReturn("VWXYZ");
 
-    PluginCache.Downloader downloader = new PluginCache.Downloader() {
-      public void download(String filename, Path toFile) throws IOException {
+    PluginCache.Copier downloader = new PluginCache.Copier() {
+      public void copy(String filename, Path toFile) throws IOException {
         FileUtils.write(toFile.toFile(), "corrupted body");
       }
     };
@@ -98,8 +98,8 @@ public class PluginCacheTest {
     when(hashes.of(any(Path.class))).thenReturn("ABCDE");
     final PluginCache cache = new PluginCache(tempFolder.newFolder().toPath(), hashes);
 
-    PluginCache.Downloader downloader = new PluginCache.Downloader() {
-      public void download(String filename, Path toFile) throws IOException {
+    PluginCache.Copier downloader = new PluginCache.Copier() {
+      public void copy(String filename, Path toFile) throws IOException {
         // Emulate a concurrent download that adds file to cache before
         File cachedFile = new File(new File(cache.getCacheDir().toFile(), "ABCDE"), "sonar-foo-plugin-1.5.jar");
         FileUtils.write(cachedFile, "downloaded by other");

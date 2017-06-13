@@ -17,23 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.container.standalone;
 
-public class RemotePluginFile {
+import java.net.URL;
+import java.util.List;
 
-  private String filename;
-  private String hash;
+public class StandalonePluginUrls {
+  private final List<URL> pluginUrls;
 
-  public RemotePluginFile(String filename, String hash) {
-    this.filename = filename;
-    this.hash = hash;
+  public StandalonePluginUrls(List<URL> pluginUrls) {
+    this.pluginUrls = pluginUrls;
   }
-
-  public String getFilename() {
-    return filename;
-  }
-
-  public String getHash() {
-    return hash;
+  
+  public List<URL> urls() {
+    return pluginUrls;
   }
 }

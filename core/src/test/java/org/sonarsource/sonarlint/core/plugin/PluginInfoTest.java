@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -137,13 +140,13 @@ public class PluginInfoTest {
     manifest.setName("Java");
     manifest.setMainClass("org.foo.FooPlugin");
 
-    File jarFile = temp.newFile();
+    Path jarFile = temp.newFile().toPath();
     PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getKey()).isEqualTo("java");
     assertThat(pluginInfo.getName()).isEqualTo("Java");
     assertThat(pluginInfo.getVersion().getName()).isEqualTo("1.0");
-    assertThat(pluginInfo.getJarFile()).isSameAs(jarFile);
+    assertThat(pluginInfo.getJarFile()).isEqualTo(jarFile.toFile());
     assertThat(pluginInfo.getMainClass()).isEqualTo("org.foo.FooPlugin");
     assertThat(pluginInfo.getBasePlugin()).isNull();
     assertThat(pluginInfo.getImplementationBuild()).isNull();
@@ -163,7 +166,7 @@ public class PluginInfoTest {
     manifest.setRequirePlugins(new String[] {"java:2.0", "pmd:1.3"});
     manifest.setImplementationBuild("SHA1");
 
-    File jarFile = temp.newFile();
+    Path jarFile = temp.newFile().toPath();
     PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getBasePlugin()).isEqualTo("findbugs");
@@ -173,8 +176,8 @@ public class PluginInfoTest {
   }
 
   @Test
-  public void create_from_file() {
-    File checkstyleJar = FileUtils.toFile(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar"));
+  public void create_from_file() throws URISyntaxException {
+    Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
     PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar);
 
     assertThat(checkstyleInfo.getName()).isEqualTo("Checkstyle");
@@ -205,11 +208,11 @@ public class PluginInfoTest {
     // this JAR has a manifest but is not a plugin
     File jarRootDir = temp.newFolder();
     FileUtils.write(new File(jarRootDir, "META-INF/MANIFEST.MF"), "Build-Jdk: 1.6.0_15");
-    File jar = temp.newFile();
-    ZipUtils.zipDir(jarRootDir, jar);
+    Path jar = temp.newFile().toPath();
+    ZipUtils.zipDir(jarRootDir, jar.toFile());
 
     expectedException.expect(MessageException.class);
-    expectedException.expectMessage("File is not a plugin. Please delete it and restart: " + jar.getAbsolutePath());
+    expectedException.expectMessage("File is not a plugin. Please delete it and restart: " + jar.toAbsolutePath());
 
     PluginInfo.create(jar);
   }

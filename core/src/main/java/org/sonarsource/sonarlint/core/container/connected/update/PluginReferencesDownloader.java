@@ -91,7 +91,7 @@ public class PluginReferencesDownloader {
     return refs;
   }
 
-  private class SonarQubeServerPluginDownloader implements PluginCache.Downloader {
+  private class SonarQubeServerPluginDownloader implements PluginCache.Copier {
     private String key;
 
     SonarQubeServerPluginDownloader(String key) {
@@ -99,7 +99,7 @@ public class PluginReferencesDownloader {
     }
 
     @Override
-    public void download(String filename, Path toFile) throws IOException {
+    public void copy(String filename, Path toFile) throws IOException {
       String url = format("/deploy/plugins/%s/%s", key, filename);
       if (LOG.isDebugEnabled()) {
         LOG.debug("Download plugin {} to {}", filename, toFile);

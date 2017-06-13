@@ -1,0 +1,10 @@
+# Minimal versions for analyzers that support reading the file's contents through the API.
+java=4.7
+php=2.10
+javascript=2.21
+python=1.8
+cobol=3.4
+plsql=2.9
+xml=1.4.2
+rpg=2.1
+pli=1.5

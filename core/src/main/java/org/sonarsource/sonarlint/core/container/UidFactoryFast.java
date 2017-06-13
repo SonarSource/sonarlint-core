@@ -23,14 +23,14 @@ import java.security.SecureRandom;
 
 /**
  * NOT thread safe
- * It does not take into account the MAC address to calculate the ids, so it is machine-independent.
+ * It does not take into account the MAC address to calculate the ids, so it is machine-dependent.
  */
-public class UuidFactoryFast {
-  private static UuidFactoryFast instance = new UuidFactoryFast();
+public class UidFactoryFast {
+  private static UidFactoryFast instance = new UidFactoryFast();
   private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
   private static int sequenceNumber = new SecureRandom().nextInt();
 
-  private UuidFactoryFast() {
+  private UidFactoryFast() {
     //
   }
 
@@ -48,7 +48,7 @@ public class UuidFactoryFast {
     return byteArrayToHex(uuidBytes);
   }
 
-  public static UuidFactoryFast getInstance() {
+  public static UidFactoryFast getInstance() {
     return instance;
   }
 

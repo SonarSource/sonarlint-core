@@ -27,6 +27,7 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -291,7 +292,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
       .result();
   }
 
-  public static PluginInfo create(File jarFile) {
+  public static PluginInfo create(Path jarFile) {
     try {
       PluginManifest manifest = new PluginManifest(jarFile);
       return create(jarFile, manifest);
@@ -302,13 +303,13 @@ public class PluginInfo implements Comparable<PluginInfo> {
   }
 
   @VisibleForTesting
-  static PluginInfo create(File jarFile, PluginManifest manifest) {
+  static PluginInfo create(Path jarPath, PluginManifest manifest) {
     if (StringUtils.isBlank(manifest.getKey())) {
-      throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarFile.getAbsolutePath()));
+      throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
     PluginInfo info = new PluginInfo(manifest.getKey());
 
-    info.setJarFile(jarFile);
+    info.setJarFile(jarPath.toFile());
     info.setName(manifest.getName());
     info.setMainClass(manifest.getMainClass());
     info.setVersion(Version.create(manifest.getVersion()));

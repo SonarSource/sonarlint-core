@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageManager {
 
@@ -84,7 +85,7 @@ public class StorageManager {
     }
     if (encoded.length() > MAX_FOLDER_NAME_SIZE) {
       // Most FS will not support a folder name greater than 255
-      String md5 = org.sonarsource.sonarlint.core.util.StringUtils.md5(name);
+      String md5 = StringUtils.md5(name);
       return encoded.substring(0, MAX_FOLDER_NAME_SIZE - md5.length()) + md5;
     }
     return encoded;

@@ -26,9 +26,10 @@ import org.junit.Test;
 public class DefaultLoadedAnalyzerTest {
   @Test
   public void testRoundTrip() {
-    DefaultLoadedAnalyzer analyzer = new DefaultLoadedAnalyzer("key", "name", "version");
+    DefaultLoadedAnalyzer analyzer = new DefaultLoadedAnalyzer("key", "name", "version", false);
     assertThat(analyzer.key()).isEqualTo("key");
     assertThat(analyzer.name()).isEqualTo("name");
     assertThat(analyzer.version()).isEqualTo("version");
+    assertThat(analyzer.supportsContentStream()).isFalse();
   }
 }
