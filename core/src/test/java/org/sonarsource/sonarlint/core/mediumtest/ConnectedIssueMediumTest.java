@@ -166,6 +166,12 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  public void testContainerInfo() {
+    assertThat(sonarlint.getLoadedAnalyzers()).extracting("key").containsOnly("java", "javascript");
+    assertThat(sonarlint.allModulesByKey().keySet()).containsOnly("test-project", "test-project-2");
+  }
+
+  @Test
   public void testStaleModule() throws IOException {
     assertThat(sonarlint.getModuleStorageStatus("stale_module").isStale()).isTrue();
     ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",

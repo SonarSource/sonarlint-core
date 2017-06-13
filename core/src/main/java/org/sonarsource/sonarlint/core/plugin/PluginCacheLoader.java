@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -77,8 +76,7 @@ public class PluginCacheLoader {
     return PLUGIN_WHITELIST.contains(pluginKey);
   }
 
-  @VisibleForTesting
-  Path getFromCache(final PluginReference pluginReference) {
+  private Path getFromCache(final PluginReference pluginReference) {
     Path jar;
     try {
       jar = fileCache.get(pluginReference.getFilename(), pluginReference.getHash());

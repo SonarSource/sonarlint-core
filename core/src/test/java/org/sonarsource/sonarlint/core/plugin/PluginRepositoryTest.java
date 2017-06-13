@@ -47,19 +47,31 @@ public class PluginRepositoryTest {
   }
 
   @Test
-  public void test() {
+  public void testRepo() {
     PluginInfo info = new PluginInfo("key");
+    info.setVersion(Version.create("2.0"));
+    test(info, true);
+  }
+
+  @Test
+  public void testAnalyzerWithoutVersion() {
+    PluginInfo info = new PluginInfo("key");
+    test(info, false);
+  }
+
+  private void test(PluginInfo info, boolean assertSupportsStream) {
     Plugin plugin = mock(Plugin.class);
     Map<String, PluginInfo> infos = Collections.singletonMap("key", info);
     when(cacheLoader.load()).thenReturn(infos);
     when(loader.load(infos)).thenReturn(Collections.singletonMap("key", plugin));
-
+    when(versionChecker.getMinimumStreamSupportVersion("key")).thenReturn("1.0");
     pluginRepository.start();
 
     verify(loader).load(infos);
     verify(cacheLoader).load();
 
     assertThat(pluginRepository.getLoadedAnalyzers()).hasSize(1);
+    assertThat(pluginRepository.getLoadedAnalyzers().iterator().next().supportsContentStream()).isEqualTo(assertSupportsStream);
     assertThat(pluginRepository.getPluginInfo("key")).isEqualTo(info);
     assertThat(pluginRepository.getPluginInfos()).containsExactly(info);
     assertThat(pluginRepository.getPluginInstance("key")).isEqualTo(plugin);
