@@ -34,8 +34,6 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
-import com.google.common.annotations.VisibleForTesting;
-
 /**
  * Provides the list of plugins provided by the client.
  * The plugins are cached before being used.
@@ -57,8 +55,7 @@ public class StandalonePluginIndex implements PluginIndex {
       .collect(Collectors.toList());
   }
 
-  @VisibleForTesting
-  PluginReference getFromCacheOrCopy(final URL pluginUrl) {
+  private PluginReference getFromCacheOrCopy(final URL pluginUrl) {
     try (InputStream is = pluginUrl.openStream()) {
       String hash = org.sonarsource.sonarlint.core.util.StringUtils.md5(is);
       String filename = StringUtils.substringAfterLast(pluginUrl.getFile(), "/");

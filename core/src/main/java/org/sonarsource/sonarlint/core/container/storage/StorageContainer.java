@@ -54,7 +54,7 @@ import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -81,7 +81,7 @@ public class StorageContainer extends ComponentContainer {
       new GlobalTempFolderProvider(),
 
       // plugins
-      DefaultPluginRepository.class,
+      PluginRepository.class,
       PluginCacheLoader.class,
       PluginVersionChecker.class,
       PluginLoader.class,
@@ -125,7 +125,7 @@ public class StorageContainer extends ComponentContainer {
   }
 
   protected void installPlugins() {
-    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
@@ -145,7 +145,7 @@ public class StorageContainer extends ComponentContainer {
   }
 
   public Collection<LoadedAnalyzer> getAnalyzers() {
-    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
     return pluginRepository.getLoadedAnalyzers();
   }
 

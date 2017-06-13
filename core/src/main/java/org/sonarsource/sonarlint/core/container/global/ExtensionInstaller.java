@@ -28,7 +28,7 @@ import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
@@ -37,9 +37,9 @@ public class ExtensionInstaller {
   private static final Logger LOG = LoggerFactory.getLogger(ExtensionInstaller.class);
 
   private final SonarRuntime sqRuntime;
-  private final DefaultPluginRepository pluginRepository;
+  private final PluginRepository pluginRepository;
 
-  public ExtensionInstaller(SonarRuntime sqRuntime, DefaultPluginRepository pluginRepository) {
+  public ExtensionInstaller(SonarRuntime sqRuntime, PluginRepository pluginRepository) {
     this.sqRuntime = sqRuntime;
     this.pluginRepository = pluginRepository;
   }

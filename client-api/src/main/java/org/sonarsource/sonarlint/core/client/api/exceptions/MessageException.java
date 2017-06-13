@@ -25,10 +25,6 @@ package org.sonarsource.sonarlint.core.client.api.exceptions;
  * See {@link SonarLintWrappedException}.
  */
 public class MessageException extends SonarLintException {
-  public MessageException() {
-    super();
-  }
-
   public MessageException(String msg) {
     super(msg, null);
   }

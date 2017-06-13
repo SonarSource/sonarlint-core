@@ -38,8 +38,8 @@ import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 /**
  * Orchestrates the installation and loading of plugins
  */
-public class DefaultPluginRepository implements Startable {
-  private static final Logger LOG = Loggers.get(DefaultPluginRepository.class);
+public class PluginRepository implements Startable {
+  private static final Logger LOG = Loggers.get(PluginRepository.class);
 
   private final PluginCacheLoader cacheLoader;
   private final PluginLoader loader;
@@ -48,7 +48,7 @@ public class DefaultPluginRepository implements Startable {
   private Map<String, PluginInfo> infosByKeys;
   private PluginVersionChecker pluginVersionChecker;
 
-  public DefaultPluginRepository(PluginCacheLoader cacheLoader, PluginLoader loader, PluginVersionChecker pluginVersionChecker) {
+  public PluginRepository(PluginCacheLoader cacheLoader, PluginLoader loader, PluginVersionChecker pluginVersionChecker) {
     this.cacheLoader = cacheLoader;
     this.loader = loader;
     this.pluginVersionChecker = pluginVersionChecker;

@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -75,7 +75,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     Version version = ApiVersion.load(System2.INSTANCE);
     add(
       StandalonePluginIndex.class,
-      DefaultPluginRepository.class,
+      PluginRepository.class,
       PluginVersionChecker.class,
       PluginCacheLoader.class,
       PluginLoader.class,
@@ -94,12 +94,11 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     installPlugins();
-
     loadRulesAndActiveRulesFromPlugins();
   }
 
   protected void installPlugins() {
-    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
