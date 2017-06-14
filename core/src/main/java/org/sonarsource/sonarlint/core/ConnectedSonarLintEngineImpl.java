@@ -178,12 +178,13 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     return withRwLock(() -> {
       stop(false);
       changeState(State.UPDATING);
+      List<SonarAnalyzer> analyzers;
       try {
-        List<SonarAnalyzer> analyzers = runInConnectedContainer(serverConfig, container -> container.update(new ProgressWrapper(monitor)));
-        return new UpdateResult(getHandler().getGlobalStorageStatus(), analyzers);
+        analyzers = runInConnectedContainer(serverConfig, container -> container.update(new ProgressWrapper(monitor)));
       } finally {
         start();
       }
+      return new UpdateResult(getHandler().getGlobalStorageStatus(), analyzers);
     });
   }
 
