@@ -21,9 +21,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,27 +29,15 @@ import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.internal.ApiVersion;
 import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.System2;
-import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -60,7 +45,6 @@ import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = LoggerFactory.getLogger(StorageContainer.class);
@@ -76,6 +60,8 @@ public class StorageContainer extends ComponentContainer {
   protected void doBeforeStart() {
     Version version = ApiVersion.load(System2.INSTANCE);
     add(
+      StorageContainerHandler.class,
+
       // storage directories and tmp
       StorageManager.class,
       new GlobalTempFolderProvider(),
@@ -115,7 +101,7 @@ public class StorageContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
-    GlobalStorageStatus updateStatus = getGlobalStorageStatus();
+    GlobalStorageStatus updateStatus = getComponentByType(StorageContainerHandler.class).getGlobalStorageStatus();
     if (updateStatus != null) {
       LOG.info("Using storage for server '{}' (last update {})", config.getServerId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
       installPlugins();
@@ -132,61 +118,7 @@ public class StorageContainer extends ComponentContainer {
     }
   }
 
-  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
-    return getComponentByType(StorageAnalyzer.class).analyze(this, configuration, issueListener);
-  }
-
-  public RuleDetails getRuleDetails(String ruleKeyStr) {
-    return getComponentByType(StorageRuleDetailsReader.class).apply(ruleKeyStr);
-  }
-
-  public GlobalStorageStatus getGlobalStorageStatus() {
-    return getComponentByType(GlobalUpdateStatusReader.class).get();
-  }
-
-  public Collection<LoadedAnalyzer> getAnalyzers() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    return pluginRepository.getLoadedAnalyzers();
-  }
-
-  public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {
-    return getComponentByType(ModuleStorageStatusReader.class).apply(moduleKey);
-  }
-
-  public Map<String, RemoteModule> allModulesByKey() {
-    return getComponentByType(AllModulesReader.class).get();
-  }
-
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    return getComponentByType(IssueStoreReader.class).getServerIssues(moduleKey, filePath);
-  }
-
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
-    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
-    StorageManager storageManager = getComponentByType(StorageManager.class);
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
-    updater.updateFileIssues(moduleKey, filePath);
-    return getServerIssues(moduleKey, filePath);
-  }
-
-  public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
-    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
-    StorageManager storageManager = getComponentByType(StorageManager.class);
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
-    TempFolder tempFolder = getComponentByType(TempFolder.class);
-    updater.updateFileIssues(moduleKey, tempFolder);
-  }
-
-  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig, ProgressWrapper progress) {
-    IssueStoreReader issueStoreReader = getComponentByType(IssueStoreReader.class);
-    StorageManager storageManager = getComponentByType(StorageManager.class);
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
-    updater.updateModuleList(progress);
-    return allModulesByKey();
-  }
-
-  public void deleteStorage() {
-    StorageManager storageManager = getComponentByType(StorageManager.class);
-    FileUtils.deleteRecursively(storageManager.getServerStorageRoot());
+  public StorageContainerHandler getHandler() {
+    return getComponentByType(StorageContainerHandler.class);
   }
 }
