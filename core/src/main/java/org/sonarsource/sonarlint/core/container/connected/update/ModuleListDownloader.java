@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import org.sonarqube.ws.WsComponents;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
@@ -73,7 +73,7 @@ public class ModuleListDownloader {
       },
       progress);
 
-    ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
+    ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StoragePaths.MODULE_LIST_PB));
   }
 
   private void fetchModulesListBefore6dot3(Path dest) {
@@ -91,7 +91,7 @@ public class ModuleListDownloader {
             .setQu(module.qu)
             .build());
         }
-        ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StorageManager.MODULE_LIST_PB));
+        ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StoragePaths.MODULE_LIST_PB));
       } catch (IOException e) {
         throw new IllegalStateException("Failed to load module list", e);
       }

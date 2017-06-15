@@ -38,7 +38,7 @@ public class StorageManagerTest {
   public void encodeModuleKeyForFs() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setServerId("server_id")
       .build());
@@ -51,7 +51,7 @@ public class StorageManagerTest {
   public void encodeServerIdForFs() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setServerId("complicated.:name/with_invalid%chars")
       .build());
@@ -64,7 +64,7 @@ public class StorageManagerTest {
   public void encodeTooLongServerId() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setServerId(StringUtils.repeat("a", 260))
       .build());
@@ -78,7 +78,7 @@ public class StorageManagerTest {
   @Test
   public void paths() throws IOException {
     Path sonarUserHome = temp.newFolder().toPath();
-    StorageManager manager = new StorageManager(ConnectedGlobalConfiguration.builder()
+    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setServerId("server")
       .build());

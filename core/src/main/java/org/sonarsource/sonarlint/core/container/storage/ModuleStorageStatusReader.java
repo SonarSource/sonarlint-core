@@ -28,9 +28,9 @@ import org.sonarsource.sonarlint.core.container.model.DefaultModuleStorageStatus
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class ModuleStorageStatusReader implements Function<String, ModuleStorageStatus> {
-  private final StorageManager storageManager;
+  private final StoragePaths storageManager;
 
-  public ModuleStorageStatusReader(StorageManager storageManager) {
+  public ModuleStorageStatusReader(StoragePaths storageManager) {
     this.storageManager = storageManager;
   }
 
@@ -41,7 +41,7 @@ public class ModuleStorageStatusReader implements Function<String, ModuleStorage
 
     if (updateStatusPath.toFile().exists()) {
       final Sonarlint.StorageStatus statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());
-      final boolean stale = !statusFromStorage.getStorageVersion().equals(StorageManager.STORAGE_VERSION);
+      final boolean stale = !statusFromStorage.getStorageVersion().equals(StoragePaths.STORAGE_VERSION);
       return new DefaultModuleStorageStatus(new Date(statusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;

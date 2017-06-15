@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 
@@ -33,19 +33,19 @@ import static org.mockito.Mockito.when;
 public class QualityProfilesUpdateCheckerTest {
 
   private QualityProfilesUpdateChecker checker;
-  private StorageManager storageManager;
+  private StorageReader storageReader;
   private QualityProfilesDownloader qualityProfilesDownloader;
 
   @Before
   public void prepare() {
 
-    storageManager = mock(StorageManager.class);
+    storageReader = mock(StorageReader.class);
     qualityProfilesDownloader = mock(QualityProfilesDownloader.class);
 
-    when(storageManager.readQProfilesFromStorage()).thenReturn(QProfiles.newBuilder().build());
+    when(storageReader.readQProfiles()).thenReturn(QProfiles.newBuilder().build());
     when(qualityProfilesDownloader.fetchQualityProfiles()).thenReturn(QProfiles.newBuilder().build());
 
-    checker = new QualityProfilesUpdateChecker(storageManager, qualityProfilesDownloader);
+    checker = new QualityProfilesUpdateChecker(storageReader, qualityProfilesDownloader);
   }
 
   @Test
@@ -72,7 +72,7 @@ public class QualityProfilesUpdateCheckerTest {
 
   @Test
   public void removedQProfile() {
-    when(storageManager.readQProfilesFromStorage())
+    when(storageReader.readQProfiles())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setName("Sonar Way")
         .setLanguageName("Java").build()).build());
 
@@ -94,7 +94,7 @@ public class QualityProfilesUpdateCheckerTest {
           .setRulesUpdatedAt("foo")
           .build())
         .build());
-    when(storageManager.readQProfilesFromStorage())
+    when(storageReader.readQProfiles())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123",
         QProfile.newBuilder()
           .setKey("java-123")
@@ -123,7 +123,7 @@ public class QualityProfilesUpdateCheckerTest {
           .setUserUpdatedAt("user")
           .build())
         .build());
-    when(storageManager.readQProfilesFromStorage())
+    when(storageReader.readQProfiles())
       .thenReturn(QProfiles.newBuilder().putQprofilesByKey("java-123",
         QProfile.newBuilder()
           .setKey("java-123")

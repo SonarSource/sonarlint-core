@@ -33,36 +33,39 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PartialUpdater {
   private final IssueStoreFactory issueStoreFactory;
   private final IssueDownloader downloader;
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;
   private final IssueStoreReader issueStoreReader;
-  private ModuleListDownloader moduleListDownloader;
+  private final ModuleListDownloader moduleListDownloader;
+  private final StoragePaths storagePaths;
 
-  public PartialUpdater(IssueStoreFactory issueStoreFactory, IssueDownloader downloader, StorageManager storageManager,
-    IssueStoreReader issueStoreReader, ModuleListDownloader moduleListDownloader) {
+  public PartialUpdater(IssueStoreFactory issueStoreFactory, IssueDownloader downloader, StorageReader storageReader,
+    StoragePaths storagePaths, IssueStoreReader issueStoreReader, ModuleListDownloader moduleListDownloader) {
     this.issueStoreFactory = issueStoreFactory;
     this.downloader = downloader;
-    this.storageManager = storageManager;
+    this.storageReader = storageReader;
+    this.storagePaths = storagePaths;
     this.issueStoreReader = issueStoreReader;
     this.moduleListDownloader = moduleListDownloader;
   }
 
-  public static PartialUpdater create(StorageManager storageManager, ServerConfiguration serverConfig, IssueStoreReader issueStoreReader) {
+  public static PartialUpdater create(StorageReader storageReader, StoragePaths storagePaths, ServerConfiguration serverConfig, IssueStoreReader issueStoreReader) {
     SonarLintWsClient client = new SonarLintWsClient(serverConfig);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
     IssueDownloader downloader = new IssueDownloaderImpl(client);
     ModuleListDownloader moduleListDownloader = new ModuleListDownloader(client);
 
-    return new PartialUpdater(issueStoreFactory, downloader, storageManager, issueStoreReader, moduleListDownloader);
+    return new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, issueStoreReader, moduleListDownloader);
   }
 
   public void updateFileIssues(String moduleKey, String filePath) {
-    Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
+    Path serverIssuesPath = storagePaths.getServerIssuesPath(moduleKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStoreReader.getFileKey(moduleKey, filePath);
     List<ServerIssue> issues;
@@ -76,12 +79,12 @@ public class PartialUpdater {
   }
 
   public void updateFileIssues(String moduleKey, TempFolder tempFolder) {
-    new ServerIssueUpdater(storageManager, downloader, issueStoreFactory, tempFolder).update(moduleKey);
+    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder).update(moduleKey);
   }
 
   public void updateModuleList(ProgressWrapper progress) {
     try {
-      moduleListDownloader.fetchModulesListTo(storageManager.getGlobalStorageRoot(), storageManager.readServerInfosFromStorage().getVersion(), progress);
+      moduleListDownloader.fetchModulesListTo(storagePaths.getGlobalStorageRoot(), storageReader.readServerInfos().getVersion(), progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update module list: " + e.getMessage(), null);

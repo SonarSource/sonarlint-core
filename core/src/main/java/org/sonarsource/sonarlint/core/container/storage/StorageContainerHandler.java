@@ -40,19 +40,20 @@ import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainerHandler {
-  private StorageAnalyzer storageAnalyzer;
-  private StorageRuleDetailsReader storageRuleDetailsReader;
-  private GlobalUpdateStatusReader globalUpdateStatusReader;
-  private PluginRepository pluginRepository;
-  private ModuleStorageStatusReader moduleStorageStatusReader;
-  private IssueStoreReader issueStoreReader;
-  private AllModulesReader allModulesReader;
-  private StorageManager storageManager;
-  private TempFolder tempFolder;
+  private final StorageAnalyzer storageAnalyzer;
+  private final StorageRuleDetailsReader storageRuleDetailsReader;
+  private final GlobalUpdateStatusReader globalUpdateStatusReader;
+  private final PluginRepository pluginRepository;
+  private final ModuleStorageStatusReader moduleStorageStatusReader;
+  private final IssueStoreReader issueStoreReader;
+  private final AllModulesReader allModulesReader;
+  private final StoragePaths storagePaths;
+  private final TempFolder tempFolder;
+  private final StorageReader storageReader;
 
   public StorageContainerHandler(StorageAnalyzer storageAnalyzer, StorageRuleDetailsReader storageRuleDetailsReader, GlobalUpdateStatusReader globalUpdateStatusReader,
     PluginRepository pluginRepository, ModuleStorageStatusReader moduleStorageStatusReader, IssueStoreReader issueStoreReader, AllModulesReader allModulesReader,
-    StorageManager storageManager, TempFolder tempFolder) {
+    StoragePaths storagePaths, StorageReader storageReader, TempFolder tempFolder) {
     this.storageAnalyzer = storageAnalyzer;
     this.storageRuleDetailsReader = storageRuleDetailsReader;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
@@ -60,7 +61,8 @@ public class StorageContainerHandler {
     this.moduleStorageStatusReader = moduleStorageStatusReader;
     this.issueStoreReader = issueStoreReader;
     this.allModulesReader = allModulesReader;
-    this.storageManager = storageManager;
+    this.storagePaths = storagePaths;
+    this.storageReader = storageReader;
     this.tempFolder = tempFolder;
   }
 
@@ -93,23 +95,23 @@ public class StorageContainerHandler {
   }
 
   public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
+    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, issueStoreReader);
     updater.updateFileIssues(moduleKey, filePath);
     return getServerIssues(moduleKey, filePath);
   }
 
   public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
+    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, issueStoreReader);
     updater.updateFileIssues(moduleKey, tempFolder);
   }
 
   public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig, ProgressWrapper progress) {
-    PartialUpdater updater = PartialUpdater.create(storageManager, serverConfig, issueStoreReader);
+    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, issueStoreReader);
     updater.updateModuleList(progress);
     return allModulesByKey();
   }
 
   public void deleteStorage() {
-    FileUtils.deleteRecursively(storageManager.getServerStorageRoot());
+    FileUtils.deleteRecursively(storagePaths.getServerStorageRoot());
   }
 }

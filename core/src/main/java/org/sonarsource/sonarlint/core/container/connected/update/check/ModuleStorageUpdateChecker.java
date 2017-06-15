@@ -28,7 +28,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -37,23 +37,23 @@ public class ModuleStorageUpdateChecker {
 
   private static final Logger LOG = Loggers.get(ModuleStorageUpdateChecker.class);
 
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;;
   private final ModuleConfigurationDownloader moduleConfigurationDownloader;
   private final SettingsDownloader settingsDownloader;
 
-  public ModuleStorageUpdateChecker(StorageManager storageManager, ModuleConfigurationDownloader moduleConfigurationDownloader, SettingsDownloader settingsDownloader) {
-    this.storageManager = storageManager;
+  public ModuleStorageUpdateChecker(StorageReader storageReader, ModuleConfigurationDownloader moduleConfigurationDownloader, SettingsDownloader settingsDownloader) {
+    this.storageReader = storageReader;
     this.moduleConfigurationDownloader = moduleConfigurationDownloader;
     this.settingsDownloader = settingsDownloader;
   }
 
   public StorageUpdateCheckResult checkForUpdates(String moduleKey, ProgressWrapper progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    String serverVersion = storageManager.readServerInfosFromStorage().getVersion();
+    String serverVersion = storageReader.readServerInfos().getVersion();
     GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
 
     ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey, globalProps, progress);
-    ModuleConfiguration storageModuleConfiguration = storageManager.readModuleConfigFromStorage(moduleKey);
+    ModuleConfiguration storageModuleConfiguration = storageReader.readModuleConfig(moduleKey);
 
     checkForSettingsUpdates(result, serverModuleConfiguration, storageModuleConfiguration);
 

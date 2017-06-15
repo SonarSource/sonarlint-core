@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +39,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
   private static final String SQ_VERSION = "6.3";
   private GlobalSettingsUpdateChecker checker;
-  private StorageManager storageManager;
+  private StorageReader storageReader;
   private SettingsDownloader globalPropertiesDownloader;
 
   @Rule
@@ -47,13 +47,13 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Before
   public void prepare() {
-    storageManager = mock(StorageManager.class);
+    storageReader = mock(StorageReader.class);
     globalPropertiesDownloader = mock(SettingsDownloader.class);
 
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().build());
+    when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
     when(globalPropertiesDownloader.fetchGlobalSettings(anyString())).thenReturn(GlobalProperties.newBuilder().build());
 
-    checker = new GlobalSettingsUpdateChecker(storageManager, globalPropertiesDownloader);
+    checker = new GlobalSettingsUpdateChecker(storageReader, globalPropertiesDownloader);
   }
 
   @AfterClass
@@ -122,7 +122,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void removedProp() {
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
+    when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(SQ_VERSION, result);
@@ -134,7 +134,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void changedProp() {
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "old").build());
+    when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "old").build());
     when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION)).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "new").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
@@ -147,7 +147,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void changedPropDiffAbbreviateEnd() {
-    when(storageManager.readGlobalPropertiesFromStorage())
+    when(storageReader.readGlobalProperties())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
     when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION))
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "four,five,six,seven,eight").build());
@@ -162,7 +162,7 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void changedPropDiffAbbreviateBeginEnd() {
-    when(storageManager.readGlobalPropertiesFromStorage())
+    when(storageReader.readGlobalProperties())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
     when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION))
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,four,five,six,seven,eight").build());

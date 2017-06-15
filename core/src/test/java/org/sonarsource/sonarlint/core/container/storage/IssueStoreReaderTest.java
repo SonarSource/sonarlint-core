@@ -47,7 +47,8 @@ public class IssueStoreReaderTest {
   private static final String MODULE_KEY = "root";
   private IssueStoreReader issueStoreReader;
   private IssueStore issueStore;
-  private StorageManager storage;
+  private StorageReader storage;
+  private StoragePaths storagePaths;
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -56,11 +57,12 @@ public class IssueStoreReaderTest {
   public void setUp() {
     IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
     issueStore = new InMemoryIssueStore();
-    storage = mock(StorageManager.class);
+    storage = mock(StorageReader.class);
+    storagePaths = mock(StoragePaths.class);
     Path storagePath = mock(Path.class);
-    when(storage.getServerIssuesPath(MODULE_KEY)).thenReturn(storagePath);
+    when(storagePaths.getServerIssuesPath(MODULE_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
-    issueStoreReader = new IssueStoreReader(issueStoreFactory, storage);
+    issueStoreReader = new IssueStoreReader(issueStoreFactory, storage, storagePaths);
   }
 
   @Test
@@ -74,7 +76,7 @@ public class IssueStoreReaderTest {
     Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
 
     // setup issues
     issueStore.save(Arrays.asList(
@@ -118,7 +120,7 @@ public class IssueStoreReaderTest {
     Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
 
     // setup issues
     issueStore.save(Arrays.asList(
@@ -142,7 +144,7 @@ public class IssueStoreReaderTest {
     Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
 
     ScannerInput.ServerIssue serverIssue = ScannerInput.ServerIssue.newBuilder()
       .setModuleKey(MODULE_KEY)
@@ -164,7 +166,7 @@ public class IssueStoreReaderTest {
     Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storage.readModuleConfigFromStorage(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
 
     // setup issues
     issueStore.save(Arrays.asList(createServerIssue(MODULE_KEY, "src/path1")));

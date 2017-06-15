@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -54,7 +54,7 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalStorageUpdateExecutorTest {
   private TempFolder tempFolder;
-  private StorageManager storageManager;
+  private StoragePaths storageManager;
   private SonarLintWsClient wsClient;
   private GlobalStorageUpdateExecutor globalUpdate;
   private RulesDownloader rulesDownloader;
@@ -67,7 +67,7 @@ public class GlobalStorageUpdateExecutorTest {
 
   @Before
   public void setUp() throws IOException {
-    storageManager = mock(StorageManager.class);
+    storageManager = mock(StoragePaths.class);
     tempFolder = mock(TempFolder.class);
     rulesDownloader = mock(RulesDownloader.class);
 
@@ -77,7 +77,7 @@ public class GlobalStorageUpdateExecutorTest {
     destDir = temp.newFolder();
 
     when(tempFolder.newDir()).thenReturn(tempDir);
-    storageManager = mock(StorageManager.class);
+    storageManager = mock(StoragePaths.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
     globalUpdate = new GlobalStorageUpdateExecutor(storageManager, wsClient, new ServerVersionAndStatusChecker(wsClient),
       mock(PluginReferencesDownloader.class), mock(SettingsDownloader.class), rulesDownloader, mock(ModuleListDownloader.class),
@@ -88,12 +88,12 @@ public class GlobalStorageUpdateExecutorTest {
   public void testUpdate() throws Exception {
     globalUpdate.update(new ProgressWrapper(null));
 
-    StorageStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.STORAGE_STATUS_PB), StorageStatus.parser());
+    StorageStatus updateStatus = ProtobufUtil.readFile(destDir.toPath().resolve(StoragePaths.STORAGE_STATUS_PB), StorageStatus.parser());
     assertThat(updateStatus.getClientUserAgent()).isEqualTo("UT");
     assertThat(updateStatus.getSonarlintCoreVersion()).isEqualTo(VersionUtils.getLibraryVersion());
     assertThat(updateStatus.getUpdateTimestamp()).isNotEqualTo(0);
 
-    ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.SERVER_INFO_PB), ServerInfos.parser());
+    ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StoragePaths.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");
     assertThat(serverInfos.getVersion()).isEqualTo("5.6-SNAPSHOT");
   }

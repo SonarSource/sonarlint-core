@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +77,7 @@ public class ConnectedStaleStorageMediumTest {
       .build();
     Path global = storage.resolve("global");
     Files.createDirectories(global);
-    ProtobufUtil.writeToFile(storageStatus, global.resolve(StorageManager.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, global.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
   @Test

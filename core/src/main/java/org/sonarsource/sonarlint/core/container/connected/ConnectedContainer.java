@@ -53,7 +53,8 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.ModuleStorageStatusReader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -99,7 +100,8 @@ public class ConnectedContainer extends ComponentContainer {
       IssueStoreFactory.class,
       new PluginCacheProvider(),
       PluginHashes.class,
-      StorageManager.class,
+      StoragePaths.class,
+      StorageReader.class,
       ModuleStorageStatusReader.class);
   }
 
@@ -108,7 +110,7 @@ public class ConnectedContainer extends ComponentContainer {
   }
 
   public void updateModule(String moduleKey, ProgressWrapper progress) {
-    GlobalStorageStatus updateStatus = getComponentByType(StorageManager.class).getGlobalStorageStatus();
+    GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
       throw new IllegalStateException("Please update server first");
     }

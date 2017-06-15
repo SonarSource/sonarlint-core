@@ -33,9 +33,9 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
  */
 public class StoragePluginIndexProvider implements PluginIndex {
 
-  private StorageManager storageManager;
+  private StoragePaths storageManager;
 
-  public StoragePluginIndexProvider(StorageManager storageManager) {
+  public StoragePluginIndexProvider(StoragePaths storageManager) {
     this.storageManager = storageManager;
   }
 

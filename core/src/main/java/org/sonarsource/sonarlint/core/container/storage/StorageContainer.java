@@ -63,7 +63,8 @@ public class StorageContainer extends ComponentContainer {
       StorageContainerHandler.class,
 
       // storage directories and tmp
-      StorageManager.class,
+      StoragePaths.class,
+      StorageReader.class,
       new GlobalTempFolderProvider(),
 
       // plugins

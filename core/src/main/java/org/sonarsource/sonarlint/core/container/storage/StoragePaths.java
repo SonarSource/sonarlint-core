@@ -22,17 +22,11 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
-import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-public class StorageManager {
+public class StoragePaths {
 
   private static final int MAX_FOLDER_NAME_SIZE = 255;
 
@@ -55,13 +49,11 @@ public class StorageManager {
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
   private final Path moduleStorageRoot;
-  private final GlobalStorageStatus storageStatus;
 
-  public StorageManager(ConnectedGlobalConfiguration configuration) {
+  public StoragePaths(ConnectedGlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getServerId()));
     globalStorageRoot = serverStorageRoot.resolve("global");
     moduleStorageRoot = serverStorageRoot.resolve("modules");
-    storageStatus = initStorageStatus();
   }
 
   public Path getServerStorageRoot() {
@@ -133,60 +125,5 @@ public class StorageManager {
 
   public Path getServerIssuesPath(String moduleKey) {
     return getModuleStorageRoot(moduleKey).resolve(SERVER_ISSUES_DIR);
-  }
-
-  @CheckForNull
-  public GlobalStorageStatus getGlobalStorageStatus() {
-    return storageStatus;
-  }
-
-  @CheckForNull
-  private GlobalStorageStatus initStorageStatus() {
-    Path storageStatusPath = getStorageStatusPath();
-    if (Files.exists(storageStatusPath)) {
-      final Sonarlint.StorageStatus currentStorageStatus = ProtobufUtil.readFile(storageStatusPath, Sonarlint.StorageStatus.parser());
-      final boolean stale = !currentStorageStatus.getStorageVersion().equals(STORAGE_VERSION);
-
-      String version = null;
-      if (!stale) {
-        final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
-        version = serverInfoFromStorage.getVersion();
-      }
-
-      return new DefaultGlobalStorageStatus(version, new Date(currentStorageStatus.getUpdateTimestamp()), stale);
-    }
-    return null;
-  }
-
-  public Sonarlint.ServerInfos readServerInfosFromStorage() {
-    return ProtobufUtil.readFile(getServerInfosPath(), Sonarlint.ServerInfos.parser());
-  }
-
-  public Sonarlint.ServerIssues readServerIssesFromStorage(String moduleKey) {
-    return ProtobufUtil.readFile(getServerIssuesPath(moduleKey), Sonarlint.ServerIssues.parser());
-  }
-
-  public Sonarlint.Rules readRulesFromStorage() {
-    return ProtobufUtil.readFile(getRulesPath(), Sonarlint.Rules.parser());
-  }
-
-  public Sonarlint.QProfiles readQProfilesFromStorage() {
-    return ProtobufUtil.readFile(getQProfilesPath(), Sonarlint.QProfiles.parser());
-  }
-
-  public Sonarlint.GlobalProperties readGlobalPropertiesFromStorage() {
-    return ProtobufUtil.readFile(getGlobalPropertiesPath(), Sonarlint.GlobalProperties.parser());
-  }
-
-  public Sonarlint.PluginReferences readPluginReferencesFromStorage() {
-    return ProtobufUtil.readFile(getPluginReferencesPath(), Sonarlint.PluginReferences.parser());
-  }
-
-  public Sonarlint.ModuleConfiguration readModuleConfigFromStorage(String moduleKey) {
-    return ProtobufUtil.readFile(getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
-  }
-
-  public Sonarlint.ModuleList readModuleListFromStorage() {
-    return ProtobufUtil.readFile(getModuleListPath(), Sonarlint.ModuleList.parser());
   }
 }

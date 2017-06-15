@@ -29,7 +29,8 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -38,16 +39,18 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ModuleStorageUpdateExecutor {
 
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;
   private final SonarLintWsClient wsClient;
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
   private final ModuleConfigurationDownloader moduleConfigurationDownloader;
+  private final StoragePaths storagePaths;
 
-  public ModuleStorageUpdateExecutor(StorageManager storageManager, SonarLintWsClient wsClient,
+  public ModuleStorageUpdateExecutor(StorageReader storageReader, StoragePaths storagePaths, SonarLintWsClient wsClient,
     IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder, ModuleConfigurationDownloader moduleConfigurationDownloader) {
-    this.storageManager = storageManager;
+    this.storageReader = storageReader;
+    this.storagePaths = storagePaths;
     this.wsClient = wsClient;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
@@ -56,18 +59,18 @@ public class ModuleStorageUpdateExecutor {
   }
 
   public void update(String moduleKey, ProgressWrapper progress) {
-    GlobalProperties globalProps = storageManager.readGlobalPropertiesFromStorage();
+    GlobalProperties globalProps = storageReader.readGlobalProperties();
     FileUtils.replaceDir(temp -> {
       updateModuleConfiguration(moduleKey, globalProps, temp, progress);
       updateRemoteIssues(moduleKey, temp);
       updateStatus(temp);
-    }, storageManager.getModuleStorageRoot(moduleKey), tempFolder.newDir().toPath());
+    }, storagePaths.getModuleStorageRoot(moduleKey), tempFolder.newDir().toPath());
   }
 
   private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp, ProgressWrapper progress) {
-    ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(storageManager.readServerInfosFromStorage().getVersion(), moduleKey,
+    ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(storageReader.readServerInfos().getVersion(), moduleKey,
       globalProps, progress);
-    final Set<String> qProfileKeys = storageManager.readQProfilesFromStorage().getQprofilesByKeyMap().keySet();
+    final Set<String> qProfileKeys = storageReader.readQProfiles().getQprofilesByKeyMap().keySet();
     for (String qpKey : moduleConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
         throw new IllegalStateException(
@@ -75,22 +78,22 @@ public class ModuleStorageUpdateExecutor {
             + "The SonarQube server binding is probably outdated,  please update it.");
       }
     }
-    ProtobufUtil.writeToFile(moduleConfiguration, temp.resolve(StorageManager.MODULE_CONFIGURATION_PB));
+    ProtobufUtil.writeToFile(moduleConfiguration, temp.resolve(StoragePaths.MODULE_CONFIGURATION_PB));
   }
 
   private void updateRemoteIssues(String moduleKey, Path temp) {
-    Path basedir = temp.resolve(StorageManager.SERVER_ISSUES_DIR);
-    new ServerIssueUpdater(storageManager, issueDownloader, issueStoreFactory, tempFolder).updateServerIssues(moduleKey, basedir);
+    Path basedir = temp.resolve(StoragePaths.SERVER_ISSUES_DIR);
+    new ServerIssueUpdater(storagePaths, issueDownloader, issueStoreFactory, tempFolder).updateServerIssues(moduleKey, basedir);
   }
 
   private void updateStatus(Path temp) {
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StorageManager.STORAGE_VERSION)
+      .setStorageVersion(StoragePaths.STORAGE_VERSION)
       .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
       .build();
-    ProtobufUtil.writeToFile(storageStatus, temp.resolve(StorageManager.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
 }

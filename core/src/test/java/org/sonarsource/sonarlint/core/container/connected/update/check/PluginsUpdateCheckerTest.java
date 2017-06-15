@@ -29,26 +29,26 @@ import java.util.LinkedList;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 
 public class PluginsUpdateCheckerTest {
 
   private PluginsUpdateChecker checker;
-  private StorageManager storageManager;
+  private StorageReader storageReader;
   private PluginReferencesDownloader pluginReferenceDownloader;
 
   @Before
   public void prepare() {
 
-    storageManager = mock(StorageManager.class);
+    storageReader = mock(StorageReader.class);
     pluginReferenceDownloader = mock(PluginReferencesDownloader.class);
 
-    when(storageManager.readPluginReferencesFromStorage()).thenReturn(PluginReferences.newBuilder().build());
+    when(storageReader.readPluginReferences()).thenReturn(PluginReferences.newBuilder().build());
     when(pluginReferenceDownloader.fetchPlugins(anyList())).thenReturn(PluginReferences.newBuilder().build());
 
-    checker = new PluginsUpdateChecker(storageManager, pluginReferenceDownloader);
+    checker = new PluginsUpdateChecker(storageReader, pluginReferenceDownloader);
   }
 
   @Test
@@ -74,7 +74,7 @@ public class PluginsUpdateCheckerTest {
 
   @Test
   public void removedPlugin() {
-    when(storageManager.readPluginReferencesFromStorage())
+    when(storageReader.readPluginReferences())
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
@@ -88,7 +88,7 @@ public class PluginsUpdateCheckerTest {
   public void updatedPlugin() {
     when(pluginReferenceDownloader.fetchPlugins(anyList()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
-    when(storageManager.readPluginReferencesFromStorage())
+    when(storageReader.readPluginReferences())
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();

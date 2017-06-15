@@ -38,7 +38,7 @@ import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
@@ -81,7 +81,7 @@ public class SettingsDownloaderTest {
 
     new SettingsDownloader(wsClient).fetchGlobalSettingsTo("6.3", destDir);
 
-    GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
+    GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StoragePaths.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(
       entry("sonar.core.treemap.sizemetric", "ncloc"),
       entry("views.servers", "135817900907501"));
@@ -147,7 +147,7 @@ public class SettingsDownloaderTest {
 
     new SettingsDownloader(wsClient).fetchGlobalSettingsTo("6.2", destDir);
 
-    GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StorageManager.PROPERTIES_PB), GlobalProperties.parser());
+    GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StoragePaths.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
       entry("sonar.core.treemap.sizemetric", "ncloc"),
       entry("views.servers", "135817900907501"));

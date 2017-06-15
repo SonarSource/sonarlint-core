@@ -48,7 +48,8 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchy
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
@@ -85,7 +86,8 @@ public class ModuleStorageUpdateExecutorTest {
   private final String organizationKey;
   private SonarLintWsClient wsClient;
   private ModuleStorageUpdateExecutor moduleUpdate;
-  private StorageManager storageManager;
+  private StoragePaths storagePaths;
+  private StorageReader storageReader;
   private TempFolder tempFolder;
   private ModuleHierarchyDownloader moduleHierarchy;
   private IssueStore issueStore;
@@ -113,12 +115,13 @@ public class ModuleStorageUpdateExecutorTest {
 
     tempFolder = mock(TempFolder.class);
     when(tempFolder.newDir()).thenReturn(tempDir);
-    storageManager = mock(StorageManager.class);
+    storagePaths = mock(StoragePaths.class);
+    storageReader = mock(StorageReader.class);
     org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties.Builder propBuilder = GlobalProperties.newBuilder();
     propBuilder.getMutableProperties().put("sonar.qualitygate", "2");
     propBuilder.getMutableProperties().put("sonar.core.version", "5.5-SNAPSHOT");
-    when(storageManager.readGlobalPropertiesFromStorage()).thenReturn(propBuilder.build());
-    when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().build());
+    when(storageReader.readGlobalProperties()).thenReturn(propBuilder.build());
+    when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().build());
 
     moduleHierarchy = mock(ModuleHierarchyDownloader.class);
     Map<String, String> modulesPath = new HashMap<>();
@@ -141,10 +144,11 @@ public class ModuleStorageUpdateExecutorTest {
 
     builder.putQprofilesByKey("java-empty-74333", QProfiles.QProfile.newBuilder().build());
 
-    when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    when(storageReader.readQProfiles()).thenReturn(builder.build());
+    when(storagePaths.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageReader, storagePaths, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder,
+      moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load module quality profiles");
@@ -161,14 +165,15 @@ public class ModuleStorageUpdateExecutorTest {
     builder.putQprofilesByKey("js-sonar-way-60746", QProfiles.QProfile.newBuilder().build());
     builder.putQprofilesByKey("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
-    when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    when(storageReader.readQProfiles()).thenReturn(builder.build());
+    when(storagePaths.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageReader, storagePaths, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder,
+      moduleConfigurationDownloader);
 
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
-    ModuleConfiguration moduleConfiguration = ProtobufUtil.readFile(destDir.toPath().resolve(StorageManager.MODULE_CONFIGURATION_PB), ModuleConfiguration.parser());
+    ModuleConfiguration moduleConfiguration = ProtobufUtil.readFile(destDir.toPath().resolve(StoragePaths.MODULE_CONFIGURATION_PB), ModuleConfiguration.parser());
     assertThat(moduleConfiguration.getQprofilePerLanguage()).containsOnly(
       entry("cs", "cs-sonar-way-58886"),
       entry("java", "java-empty-74333"),
@@ -189,10 +194,11 @@ public class ModuleStorageUpdateExecutorTest {
     mutableQprofilesByKey.put("java-empty-74333", QProfiles.QProfile.newBuilder().build());
     mutableQprofilesByKey.put("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
-    when(storageManager.readQProfilesFromStorage()).thenReturn(builder.build());
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
+    when(storageReader.readQProfiles()).thenReturn(builder.build());
+    when(storagePaths.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageReader, storagePaths, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder,
+      moduleConfigurationDownloader);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
@@ -202,9 +208,9 @@ public class ModuleStorageUpdateExecutorTest {
   @Test
   public void test_server_issues_are_downloaded_and_stored() throws IOException {
     WsClientTestUtils.addResponse(wsClient, getQualityProfileUrl(), newEmptyStream());
-    when(storageManager.readQProfilesFromStorage()).thenReturn(QProfiles.getDefaultInstance());
+    when(storageReader.readQProfiles()).thenReturn(QProfiles.getDefaultInstance());
 
-    when(storageManager.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
+    when(storagePaths.getModuleStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
 
     ScannerInput.ServerIssue fileIssue1 = ScannerInput.ServerIssue.newBuilder()
       .setModuleKey("someModuleKey")
@@ -227,7 +233,7 @@ public class ModuleStorageUpdateExecutorTest {
 
     IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
 
-    moduleUpdate = new ModuleStorageUpdateExecutor(storageManager, wsClient, issueDownloader, issueStoreFactory, tempFolder, moduleConfigurationDownloader);
+    moduleUpdate = new ModuleStorageUpdateExecutor(storageReader, storagePaths, wsClient, issueDownloader, issueStoreFactory, tempFolder, moduleConfigurationDownloader);
     moduleUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
     assertThat(issueStore.load(createFileKey(fileIssue1))).containsOnly(fileIssue1, fileIssue2);

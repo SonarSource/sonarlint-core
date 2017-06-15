@@ -24,23 +24,23 @@ import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 
 public class QualityProfilesUpdateChecker {
 
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;
   private final QualityProfilesDownloader qualityProfilesDownloader;
 
-  public QualityProfilesUpdateChecker(StorageManager storageManager, QualityProfilesDownloader qualityProfilesDownloader) {
-    this.storageManager = storageManager;
+  public QualityProfilesUpdateChecker(StorageReader storageReader, QualityProfilesDownloader qualityProfilesDownloader) {
+    this.storageReader = storageReader;
     this.qualityProfilesDownloader = qualityProfilesDownloader;
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
     QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles();
-    QProfiles storageQProfiles = storageManager.readQProfilesFromStorage();
+    QProfiles storageQProfiles = storageReader.readQProfiles();
     Map<String, QProfile> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap();
     Map<String, QProfile> storagePluginHashes = storageQProfiles.getQprofilesByKeyMap();
     MapDifference<String, QProfile> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);

@@ -44,7 +44,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -74,7 +75,7 @@ public class ConnectedFileExclusionsMediumTest {
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     writeModuleStatus(tmpStorage, MODULE_KEY, VersionUtils.getLibraryVersion());
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
@@ -94,26 +95,26 @@ public class ConnectedFileExclusionsMediumTest {
     Path module = storage.resolve("local").resolve("modules").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StorageManager.STORAGE_VERSION)
+      .setStorageVersion(StoragePaths.STORAGE_VERSION)
       .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
     Path module = storage.resolve("local").resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StorageManager.STORAGE_VERSION)
+      .setStorageVersion(StoragePaths.STORAGE_VERSION)
       .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
   @AfterClass
@@ -131,41 +132,42 @@ public class ConnectedFileExclusionsMediumTest {
     ClientInputFile testFile1 = prepareInputFile("fooTest.xoo", "function xoo() {}", true);
     ClientInputFile testFile2 = prepareInputFile("test/foo2Test.xoo", "function xoo() {}", true);
 
-    StorageManager storageManager = sonarlint.getGlobalContainer().getComponentByType(StorageManager.class);
-    ModuleConfiguration originalModuleConfig = storageManager.readModuleConfigFromStorage(MODULE_KEY);
+    StoragePaths storagePaths = sonarlint.getGlobalContainer().getComponentByType(StoragePaths.class);
+    StorageReader storageReader = sonarlint.getGlobalContainer().getComponentByType(StorageReader.class);
+    ModuleConfiguration originalModuleConfig = storageReader.readModuleConfig(MODULE_KEY);
 
     AnalysisResults result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(4);
 
-    updateModuleConfig(storageManager, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "src/**"));
+    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "src/**"));
     result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(3);
 
-    updateModuleConfig(storageManager, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
+    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
     result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(3);
 
-    updateModuleConfig(storageManager, originalModuleConfig, ImmutableMap.of("sonar.exclusions", "src/**"));
+    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.exclusions", "src/**"));
     result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(3);
 
-    updateModuleConfig(storageManager, originalModuleConfig, ImmutableMap.of("sonar.test.inclusions", "test/**"));
+    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.test.inclusions", "test/**"));
     result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(3);
 
-    updateModuleConfig(storageManager, originalModuleConfig, ImmutableMap.of("sonar.test.exclusions", "test/**"));
+    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.test.exclusions", "test/**"));
     result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(3);
 
-    updateModuleConfig(storageManager, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
+    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
     result = analyze(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result.fileCount()).isEqualTo(1);
   }
 
-  private void updateModuleConfig(StorageManager storageManager, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
+  private void updateModuleConfig(StoragePaths storagePaths, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
     Builder newBuilder = ModuleConfiguration.newBuilder(originalModuleConfig);
     newBuilder.putAllProperties(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), storageManager.getModuleConfigurationPath(MODULE_KEY));
+    ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getModuleConfigurationPath(MODULE_KEY));
   }
 
   private AnalysisResults analyze(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {

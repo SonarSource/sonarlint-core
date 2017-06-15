@@ -29,11 +29,11 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 
 public class AllModulesReaderTest {
-  private StorageManager storageManager;
+  private StorageReader storageReader;
 
   @Before
   public void setUp() {
-    storageManager = mock(StorageManager.class);
+    storageReader = mock(StorageReader.class);
   }
 
   @Test
@@ -42,9 +42,9 @@ public class AllModulesReaderTest {
     Module m1 = Module.newBuilder().setKey("module1").build();
     list.getMutableModulesByKey().put("module1", m1);
 
-    when(storageManager.readModuleListFromStorage()).thenReturn(list.build());
+    when(storageReader.readModuleList()).thenReturn(list.build());
 
-    AllModulesReader modulesReader = new AllModulesReader(storageManager);
+    AllModulesReader modulesReader = new AllModulesReader(storageReader);
     assertThat(modulesReader.get()).containsOnlyKeys("module1");
   }
 }

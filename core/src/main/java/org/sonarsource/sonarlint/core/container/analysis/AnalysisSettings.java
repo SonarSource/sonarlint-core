@@ -27,7 +27,7 @@ import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
@@ -45,12 +45,12 @@ public class AnalysisSettings extends Settings {
     addProperties(config.extraProperties());
   }
 
-  public AnalysisSettings(StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public AnalysisSettings(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions, new Encryption(null));
-    GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
+    GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
     if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
-      ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
+      ModuleConfiguration projectConfig = storage.readModuleConfig(((ConnectedAnalysisConfiguration) config).moduleKey());
       addProperties(projectConfig.getPropertiesMap());
     }
     addDefaultProperties();

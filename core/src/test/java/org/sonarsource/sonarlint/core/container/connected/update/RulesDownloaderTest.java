@@ -33,7 +33,7 @@ import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
@@ -68,9 +68,9 @@ public class RulesDownloaderTest {
     File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath());
 
-    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
   }
 
@@ -88,9 +88,9 @@ public class RulesDownloaderTest {
     File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath());
 
-    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
   }
 
@@ -106,7 +106,7 @@ public class RulesDownloaderTest {
     File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath());
 
-    Rules saved = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.RULES_PB), Rules.parser());
+    Rules saved = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(saved.getRulesByKeyMap()).hasSize(1);
     assertThat(saved.getRulesByKeyMap().get("S:101").getType()).isEqualTo("");
   }

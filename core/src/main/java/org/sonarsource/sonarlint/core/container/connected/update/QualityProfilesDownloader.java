@@ -27,7 +27,7 @@ import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -41,7 +41,7 @@ public class QualityProfilesDownloader {
   }
 
   public void fetchQualityProfilesTo(Path destDir) {
-    ProtobufUtil.writeToFile(fetchQualityProfiles(), destDir.resolve(StorageManager.QUALITY_PROFILES_PB));
+    ProtobufUtil.writeToFile(fetchQualityProfiles(), destDir.resolve(StoragePaths.QUALITY_PROFILES_PB));
   }
 
   public QProfiles fetchQualityProfiles() {

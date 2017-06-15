@@ -35,7 +35,7 @@ import org.sonarqube.ws.Rules.SearchResponse;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
@@ -56,13 +56,13 @@ public class RulesDownloader {
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
     fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile);
-    Path activeRulesDir = destDir.resolve(StorageManager.ACTIVE_RULES_FOLDER);
+    Path activeRulesDir = destDir.resolve(StoragePaths.ACTIVE_RULES_FOLDER);
     FileUtils.mkdirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(StorageManager.encodeForFs(entry.getKey()) + ".pb"));
+      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(StoragePaths.encodeForFs(entry.getKey()) + ".pb"));
     }
 
-    ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StorageManager.RULES_PB));
+    ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StoragePaths.RULES_PB));
   }
 
   private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile) {

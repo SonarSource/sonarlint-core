@@ -26,7 +26,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -48,7 +48,7 @@ public class ModuleListDownloaderTest {
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
     moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.2", new ProgressWrapper(null));
 
-    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
+    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKeyMap()).hasSize(1559);
     assertThat(moduleList.getModulesByKeyMap().values()).extracting("qu").contains("TRK", "BRC");
   }
@@ -64,7 +64,7 @@ public class ModuleListDownloaderTest {
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
     moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
 
-    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
+    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKeyMap()).hasSize(282);
     assertThat(moduleList.getModulesByKeyMap().values()).extracting("qu").contains("TRK", "BRC");
   }
@@ -81,7 +81,7 @@ public class ModuleListDownloaderTest {
     ModuleListDownloader moduleListUpdate = new ModuleListDownloader(wsClient);
     moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
 
-    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StorageManager.MODULE_LIST_PB), ModuleList.parser());
+    ModuleList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.MODULE_LIST_PB), ModuleList.parser());
     assertThat(moduleList.getModulesByKeyMap()).hasSize(282);
     assertThat(moduleList.getModulesByKeyMap().values()).extracting("qu").contains("TRK", "BRC");
   }

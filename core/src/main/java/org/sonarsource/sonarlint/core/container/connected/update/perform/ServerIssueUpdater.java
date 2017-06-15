@@ -26,17 +26,17 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 
 public class ServerIssueUpdater {
 
-  private final StorageManager storageManager;
+  private final StoragePaths storagePaths;
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
 
-  public ServerIssueUpdater(StorageManager storageManager, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder) {
-    this.storageManager = storageManager;
+  public ServerIssueUpdater(StoragePaths storagePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder) {
+    this.storagePaths = storagePaths;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
     this.tempFolder = tempFolder;
@@ -44,7 +44,7 @@ public class ServerIssueUpdater {
 
   public void update(String moduleKey) {
     Path work = tempFolder.newDir().toPath();
-    Path target = storageManager.getServerIssuesPath(moduleKey);
+    Path target = storagePaths.getServerIssuesPath(moduleKey);
     FileUtils.replaceDir(temp -> updateServerIssues(moduleKey, temp), target, work);
   }
 

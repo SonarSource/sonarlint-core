@@ -35,7 +35,7 @@ import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
@@ -52,7 +52,7 @@ public class SettingsDownloader {
   }
 
   public void fetchGlobalSettingsTo(String serverVersion, Path dest) {
-    ProtobufUtil.writeToFile(fetchGlobalSettings(serverVersion), dest.resolve(StorageManager.PROPERTIES_PB));
+    ProtobufUtil.writeToFile(fetchGlobalSettings(serverVersion), dest.resolve(StoragePaths.PROPERTIES_PB));
   }
 
   public GlobalProperties fetchGlobalSettings(String serverVersion) {

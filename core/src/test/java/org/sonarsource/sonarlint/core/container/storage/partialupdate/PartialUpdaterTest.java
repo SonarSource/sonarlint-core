@@ -40,7 +40,8 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -64,7 +65,9 @@ public class PartialUpdaterTest {
   @Mock
   private IssueDownloader downloader;
   @Mock
-  private StorageManager storageManager;
+  private StoragePaths storagePaths;
+  @Mock
+  private StorageReader storageReader;
   @Mock
   private IssueStoreReader issueStoreReader;
   @Mock
@@ -77,9 +80,9 @@ public class PartialUpdaterTest {
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    updater = new PartialUpdater(issueStoreFactory, downloader, storageManager, issueStoreReader, moduleListDownloader);
+    updater = new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, issueStoreReader, moduleListDownloader);
     when(issueStoreFactory.apply(Mockito.any(Path.class))).thenReturn(issueStore);
-    when(storageManager.readServerInfosFromStorage()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
+    when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
   }
 
   @Test
@@ -87,7 +90,7 @@ public class PartialUpdaterTest {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
-    when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
+    when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
     when(downloader.apply("module:file")).thenReturn(issues);
 
@@ -98,7 +101,7 @@ public class PartialUpdaterTest {
 
   @Test
   public void error_downloading_issues() {
-    when(storageManager.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
+    when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
     when(downloader.apply("module:file")).thenThrow(IOException.class);
 
@@ -112,7 +115,7 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     String moduleKey = "dummy";
-    when(storageManager.getServerIssuesPath(moduleKey)).thenReturn(temp.newFolder().toPath());
+    when(storagePaths.getServerIssuesPath(moduleKey)).thenReturn(temp.newFolder().toPath());
     when(downloader.apply(moduleKey)).thenReturn(issues);
 
     updater.updateFileIssues(moduleKey, new DefaultTempFolder(temp.newFolder()));
@@ -122,7 +125,7 @@ public class PartialUpdaterTest {
 
   @Test
   public void error_downloading_modules() {
-    when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
+    when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
     doThrow(IOException.class).when(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
     exception.expect(DownloadException.class);
 
@@ -133,12 +136,12 @@ public class PartialUpdaterTest {
   public void create() {
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
     when(serverConfiguration.getUrl()).thenReturn("http://fake.com");
-    assertThat(PartialUpdater.create(storageManager, serverConfiguration, issueStoreReader)).isNotNull();
+    assertThat(PartialUpdater.create(storageReader, storagePaths, serverConfiguration, issueStoreReader)).isNotNull();
   }
 
   @Test
   public void update_module_list() {
-    when(storageManager.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
+    when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
     updater.updateModuleList(new ProgressWrapper(null));
     verify(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
   }

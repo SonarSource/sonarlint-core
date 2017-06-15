@@ -34,17 +34,19 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 public class IssueStoreReader {
   private final IssueStoreFactory issueStoreFactory;
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;
+  private final StoragePaths storagePaths;
 
-  public IssueStoreReader(IssueStoreFactory issueStoreFactory, StorageManager storageManager) {
+  public IssueStoreReader(IssueStoreFactory issueStoreFactory, StorageReader storageReader, StoragePaths storagePaths) {
     this.issueStoreFactory = issueStoreFactory;
-    this.storageManager = storageManager;
+    this.storageReader = storageReader;
+    this.storagePaths = storagePaths;
   }
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     String fileKey = getFileKey(moduleKey, filePath);
 
-    Path serverIssuesPath = storageManager.getServerIssuesPath(moduleKey);
+    Path serverIssuesPath = storagePaths.getServerIssuesPath(moduleKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
     List<ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
@@ -55,7 +57,7 @@ public class IssueStoreReader {
   }
 
   public String getFileKey(String moduleKey, String filePath) {
-    ModuleConfiguration moduleConfig = storageManager.readModuleConfigFromStorage(moduleKey);
+    ModuleConfiguration moduleConfig = storageReader.readModuleConfig(moduleKey);
 
     if (moduleConfig == null) {
       // unknown module

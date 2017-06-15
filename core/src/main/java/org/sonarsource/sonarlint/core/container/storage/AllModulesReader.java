@@ -29,16 +29,16 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
 
 public class AllModulesReader implements Supplier<Map<String, RemoteModule>> {
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;
 
-  public AllModulesReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
+  public AllModulesReader(StorageReader storageReader) {
+    this.storageReader = storageReader;
   }
 
   @Override
   public Map<String, RemoteModule> get() {
     Map<String, RemoteModule> results = new HashMap<>();
-    ModuleList readModuleListFromStorage = storageManager.readModuleListFromStorage();
+    ModuleList readModuleListFromStorage = storageReader.readModuleList();
     Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKeyMap();
     for (Map.Entry<String, Module> entry : modulesByKey.entrySet()) {
       results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));

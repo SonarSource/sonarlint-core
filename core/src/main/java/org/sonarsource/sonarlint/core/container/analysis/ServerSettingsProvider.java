@@ -28,7 +28,7 @@ import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
@@ -40,7 +40,7 @@ public class ServerSettingsProvider {
 
   private ServerSettings settings;
 
-  public ServerSettingsProvider(StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public ServerSettingsProvider(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     this.settings = new ServerSettings(storage, config, propertyDefinitions);
   }
 
@@ -52,13 +52,13 @@ public class ServerSettingsProvider {
 
     private final Map<String, String> properties = new HashMap<>();
 
-    private ServerSettings(@Nullable StorageManager storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    private ServerSettings(@Nullable StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions, new Encryption(null));
       if (storage != null) {
-        GlobalProperties globalProps = storage.readGlobalPropertiesFromStorage();
+        GlobalProperties globalProps = storage.readGlobalProperties();
         addProperties(globalProps.getPropertiesMap());
         if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
-          ModuleConfiguration projectConfig = storage.readModuleConfigFromStorage(((ConnectedAnalysisConfiguration) config).moduleKey());
+          ModuleConfiguration projectConfig = storage.readModuleConfig(((ConnectedAnalysisConfiguration) config).moduleKey());
           addProperties(projectConfig.getPropertiesMap());
         }
       }

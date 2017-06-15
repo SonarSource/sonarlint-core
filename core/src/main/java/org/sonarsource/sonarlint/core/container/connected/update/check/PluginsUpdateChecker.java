@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 
@@ -35,17 +35,17 @@ import com.google.common.collect.Maps;
 
 public class PluginsUpdateChecker {
 
-  private final StorageManager storageManager;
+  private final StorageReader storageReader;
   private final PluginReferencesDownloader pluginReferenceDownloader;
 
-  public PluginsUpdateChecker(StorageManager storageManager, PluginReferencesDownloader pluginReferenceDownloader) {
-    this.storageManager = storageManager;
+  public PluginsUpdateChecker(StorageReader storageReader, PluginReferencesDownloader pluginReferenceDownloader) {
+    this.storageReader = storageReader;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result, List<SonarAnalyzer> pluginList) {
     PluginReferences serverPluginReferences = pluginReferenceDownloader.fetchPlugins(pluginList);
-    PluginReferences storagePluginReferences = storageManager.readPluginReferencesFromStorage();
+    PluginReferences storagePluginReferences = storageReader.readPluginReferences();
     Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
     Map<String, String> storagePluginHashes = storagePluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
     MapDifference<String, String> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);

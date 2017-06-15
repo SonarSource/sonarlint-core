@@ -49,7 +49,9 @@ public class StorageContainerHandlerTest {
   @Mock
   private AllModulesReader allModulesReader;
   @Mock
-  private StorageManager storageManager;
+  private StoragePaths storagePaths;
+  @Mock
+  private StorageReader storageReader;
   @Mock
   private TempFolder tempFolder;
   @Mock
@@ -59,7 +61,7 @@ public class StorageContainerHandlerTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     handler = new StorageContainerHandler(storageAnalyzer, storageRuleDetailsReader, globalUpdateStatusReader,
-      pluginRepository, moduleStorageStatusReader, issueStoreReader, allModulesReader, storageManager, tempFolder);
+      pluginRepository, moduleStorageStatusReader, issueStoreReader, allModulesReader, storagePaths, storageReader, tempFolder);
   }
 
   @Test

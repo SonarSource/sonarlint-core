@@ -29,15 +29,15 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageRuleDetailsReader implements Function<String, RuleDetails> {
-  private StorageManager storageManager;
+  private StorageReader storageReader;
 
-  public StorageRuleDetailsReader(StorageManager storageManager) {
-    this.storageManager = storageManager;
+  public StorageRuleDetailsReader(StorageReader storageReader) {
+    this.storageReader = storageReader;
   }
 
   @Override
   public RuleDetails apply(String ruleKeyStr) {
-    Sonarlint.Rules rulesFromStorage = storageManager.readRulesFromStorage();
+    Sonarlint.Rules rulesFromStorage = storageReader.readRules();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
     Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
     if (rule == null) {

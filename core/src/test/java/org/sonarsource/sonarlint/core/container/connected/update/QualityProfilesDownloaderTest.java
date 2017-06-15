@@ -27,7 +27,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +49,7 @@ public class QualityProfilesDownloaderTest {
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
     qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
-    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
+    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StoragePaths.QUALITY_PROFILES_PB), QProfiles.parser());
     assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
       "cs-sonar-way-58886",
       "java-sonar-way-74592",
@@ -70,7 +70,7 @@ public class QualityProfilesDownloaderTest {
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
     qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
-    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StorageManager.QUALITY_PROFILES_PB), QProfiles.parser());
+    QProfiles qProfiles = ProtobufUtil.readFile(temp.getRoot().toPath().resolve(StoragePaths.QUALITY_PROFILES_PB), QProfiles.parser());
     assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
       "cs-sonar-way-58886",
       "java-sonar-way-74592",
