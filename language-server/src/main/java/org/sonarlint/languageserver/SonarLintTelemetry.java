@@ -20,7 +20,6 @@
 package org.sonarlint.languageserver;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,35 +28,28 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
-import org.sonarsource.sonarlint.core.telemetry.Telemetry;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 
 public class SonarLintTelemetry {
   public static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintTelemetry.class);
 
-  private boolean enabled;
-  private Telemetry telemetryEngine;
+  private TelemetryManager telemetry;
 
   @VisibleForTesting
   ScheduledFuture<?> scheduledFuture;
   private ScheduledExecutorService scheduler;
 
-  public SonarLintTelemetry() {
-    this.telemetryEngine = null;
-  }
-
   public void optOut(boolean optOut) {
-    if (telemetryEngine != null) {
-      if (optOut == !telemetryEngine.enabled()) {
-        return;
-      }
-      telemetryEngine.enable(!optOut);
+    if (telemetry != null) {
       if (optOut) {
-        try {
-          TelemetryClientConfig clientConfig = getTelemetryClientConfig();
-          telemetryEngine.getClient().optOut(clientConfig, isAnyProjectConnected());
-        } catch (Exception e) {
-          // fail silently
+        if (telemetry.isEnabled()) {
+          telemetry.disable();
+        }
+      } else {
+        if (!telemetry.isEnabled()) {
+          telemetry.enable();
         }
       }
     }
@@ -70,56 +62,48 @@ public class SonarLintTelemetry {
   }
 
   public boolean enabled() {
-    return enabled;
-  }
-
-  public boolean optedIn() {
-    return enabled && this.telemetryEngine.enabled();
+    return telemetry != null && telemetry.isEnabled();
   }
 
   public void init(Path storagePath, String productName, String productVersion) {
     if ("true".equals(System.getProperty(DISABLE_PROPERTY_KEY))) {
-      this.enabled = false;
       LOG.info("Telemetry disabled by system property");
       return;
     }
+    TelemetryClientConfig clientConfig = getTelemetryClientConfig();
+    TelemetryClient client = new TelemetryClient(clientConfig, productName, productVersion);
+    this.telemetry = newTelemetryManager(storagePath, client);
     try {
-      this.telemetryEngine = newTelemetry(storagePath, productName, productVersion);
       scheduler = Executors.newScheduledThreadPool(1);
       this.scheduledFuture = scheduler.scheduleWithFixedDelay(this::upload,
         1, TimeUnit.HOURS.toMinutes(6), TimeUnit.MINUTES);
-      this.enabled = true;
     } catch (Exception e) {
       // fail silently
-      enabled = false;
     }
   }
 
-  protected Telemetry newTelemetry(Path storagePath, String productName, String productVersion) throws Exception {
-    return new Telemetry(storagePath, productName, productVersion);
+  TelemetryManager newTelemetryManager(Path path, TelemetryClient client) {
+    return new TelemetryManager(path, client);
   }
 
-  private void upload() {
-    if (enabled) {
-      TelemetryClientConfig clientConfig = getTelemetryClientConfig();
-      telemetryEngine.getClient().tryUpload(clientConfig, isAnyProjectConnected());
+  @VisibleForTesting
+  void upload() {
+    if (enabled()) {
+      telemetry.uploadLazily();
     }
   }
 
   public void analysisSubmitted() {
-    if (enabled) {
-      telemetryEngine.getDataCollection().analysisDone();
+    if (enabled()) {
+      telemetry.usedAnalysis();
     }
   }
 
   public void stop() {
-    try {
-      if (telemetryEngine != null) {
-        telemetryEngine.save();
-      }
-    } catch (IOException e) {
-      // ignore
+    if (enabled()) {
+      telemetry.stop();
     }
+
     if (scheduledFuture != null) {
       scheduledFuture.cancel(false);
       scheduledFuture = null;

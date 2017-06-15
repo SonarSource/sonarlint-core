@@ -19,31 +19,33 @@
  */
 package org.sonarlint.languageserver;
 
-import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
-import org.sonarsource.sonarlint.core.telemetry.Telemetry;
+import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class SonarLintTelemetryTest {
   private SonarLintTelemetry telemetry;
-  private Telemetry engine;
-  private TelemetryClient client;
+  private TelemetryManager engine = mock(TelemetryManager.class);
+
+  @Rule
+  public TemporaryFolder tmp = new TemporaryFolder();
 
   @Before
   public void start() throws Exception {
+    Path path = tmp.newFile().toPath();
     this.telemetry = createTelemetry();
   }
 
@@ -52,33 +54,36 @@ public class SonarLintTelemetryTest {
     System.clearProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY);
   }
 
-  private SonarLintTelemetry createTelemetry() throws Exception {
-    engine = mock(Telemetry.class);
-    client = mock(TelemetryClient.class);
-    when(engine.getClient()).thenReturn(client);
-    SonarLintTelemetry sonarLintTelemetry = new SonarLintTelemetry() {
-      protected Telemetry newTelemetry(java.nio.file.Path storagePath, String productName, String productVersion) throws Exception {
+  private SonarLintTelemetry createTelemetry() {
+    when(engine.isEnabled()).thenReturn(true);
+    SonarLintTelemetry telemetry = new SonarLintTelemetry() {
+      @Override
+      TelemetryManager newTelemetryManager(Path path, TelemetryClient client) {
         return engine;
-      };
+      }
     };
-    sonarLintTelemetry.init(null, null, null);
-    return sonarLintTelemetry;
+    telemetry.init(Paths.get("dummy"), "product", "version");
+    return telemetry;
   }
 
   @Test
-  public void disable() throws Exception {
+  public void disable_should_disable_telemetry() throws Exception {
+    assertThat(createTelemetry().enabled()).isTrue();
+
     System.setProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY, "true");
-    telemetry = createTelemetry();
-    assertThat(telemetry.enabled()).isFalse();
+    assertThat(createTelemetry().enabled()).isFalse();
   }
 
   @Test
-  public void testSaveData() {
+  public void stop_should_trigger_stop_telemetry() {
+    when(engine.isEnabled()).thenReturn(true);
     telemetry.stop();
+    verify(engine).isEnabled();
+    verify(engine).stop();
   }
 
   @Test
-  public void testScheduler() throws IOException {
+  public void test_scheduler() {
     assertThat(telemetry.scheduledFuture).isNotNull();
     assertThat(telemetry.scheduledFuture.getDelay(TimeUnit.MINUTES)).isBetween(0L, 1L);
     telemetry.stop();
@@ -86,20 +91,57 @@ public class SonarLintTelemetryTest {
   }
 
   @Test
-  public void testOptOut() throws Exception {
-    when(engine.enabled()).thenReturn(true);
+  public void optOut_should_trigger_disable_telemetry() {
+    when(engine.isEnabled()).thenReturn(true);
     telemetry.optOut(true);
-    verify(engine).enable(false);
-    verify(client).optOut(any(TelemetryClientConfig.class), anyBoolean());
+    verify(engine).disable();
     telemetry.stop();
   }
 
   @Test
-  public void testDontOptOutAgain() {
-    when(engine.enabled()).thenReturn(false);
+  public void should_not_opt_out_twice() {
+    when(engine.isEnabled()).thenReturn(false);
     telemetry.optOut(true);
-    verify(engine).enabled();
+    verify(engine).isEnabled();
     verifyNoMoreInteractions(engine);
-    verifyZeroInteractions(client);
+  }
+
+  @Test
+  public void optIn_should_trigger_enable_telemetry() {
+    when(engine.isEnabled()).thenReturn(false);
+    telemetry.optOut(false);
+    verify(engine).enable();
+  }
+
+  @Test
+  public void upload_should_trigger_upload_when_enabled() {
+    when(engine.isEnabled()).thenReturn(true);
+    telemetry.upload();
+    verify(engine).isEnabled();
+    verify(engine).uploadLazily();
+  }
+
+  @Test
+  public void upload_should_not_trigger_upload_when_disabled() {
+    when(engine.isEnabled()).thenReturn(false);
+    telemetry.upload();
+    verify(engine).isEnabled();
+    verifyNoMoreInteractions(engine);
+  }
+
+  @Test
+  public void analysisSubmitted_should_trigger_usedAnalysis_when_enabled() {
+    when(engine.isEnabled()).thenReturn(true);
+    telemetry.analysisSubmitted();
+    verify(engine).isEnabled();
+    verify(engine).usedAnalysis();
+  }
+
+  @Test
+  public void analysisSubmitted_should_not_trigger_usedAnalysis_when_disabled() {
+    when(engine.isEnabled()).thenReturn(false);
+    telemetry.analysisSubmitted();
+    verify(engine).isEnabled();
+    verifyNoMoreInteractions(engine);
   }
 }
