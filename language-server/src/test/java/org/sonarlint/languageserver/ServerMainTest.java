@@ -270,7 +270,8 @@ public class ServerMainTest {
   public void optOutTelemetry() throws Exception {
     lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration(null, true));
 
-    waitForDiagnostics();
+    // Wait for the JSON RPC request to be processed
+    Thread.sleep(500);
   }
 
   @Test
@@ -315,7 +316,7 @@ public class ServerMainTest {
   }
 
   private void waitForDiagnostics() throws InterruptedException {
-    int maxLoop = 20;
+    int maxLoop = 40;
     do {
       Thread.sleep(100);
       maxLoop--;
