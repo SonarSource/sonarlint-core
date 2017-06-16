@@ -19,18 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,6 +43,13 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GlobalStorageUpdateExecutorTest {
   private TempFolder tempFolder;
@@ -102,7 +101,7 @@ public class GlobalStorageUpdateExecutorTest {
   public void dontCopyOnError() throws IOException {
     Files.createDirectories(destDir.toPath());
     Files.createFile(destDir.toPath().resolve("test"));
-    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class));
+    doThrow(IllegalStateException.class).when(rulesDownloader).fetchRulesTo(any(Path.class), any(ProgressWrapper.class));
     try {
       globalUpdate.update(new ProgressWrapper(null));
       fail("Expected exception");

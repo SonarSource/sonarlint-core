@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -66,7 +67,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
@@ -86,7 +87,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
@@ -104,7 +105,7 @@ public class RulesDownloaderTest {
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     File tempDir = temp.newFolder();
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
 
     Rules saved = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(saved.getRulesByKeyMap()).hasSize(1);
@@ -121,6 +122,6 @@ public class RulesDownloaderTest {
     File tempDir = temp.newFolder();
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load rules");
-    rulesUpdate.fetchRulesTo(tempDir.toPath());
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
   }
 }
