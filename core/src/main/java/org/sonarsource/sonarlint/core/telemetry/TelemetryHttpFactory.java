@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 
-public class TelemetryHttpFactory {
+class TelemetryHttpFactory {
   private static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
   private static final int TELEMETRY_TIMEOUT = 30_000;
 
