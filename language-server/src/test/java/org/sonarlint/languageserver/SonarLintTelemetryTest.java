@@ -41,11 +41,11 @@ public class SonarLintTelemetryTest {
   private TelemetryManager engine = mock(TelemetryManager.class);
 
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public TemporaryFolder temp = new TemporaryFolder();
 
   @Before
   public void start() throws Exception {
-    Path path = tmp.newFile().toPath();
+    Path path = temp.newFile().toPath();
     this.telemetry = createTelemetry();
   }
 

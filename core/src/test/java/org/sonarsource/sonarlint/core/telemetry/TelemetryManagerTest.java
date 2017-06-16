@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
@@ -31,7 +30,7 @@ import static org.mockito.Mockito.*;
 
 public class TelemetryManagerTest {
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public TemporaryFolder temp = new TemporaryFolder();
 
   private TelemetryClient client;
   private TelemetryStorage storage;
@@ -42,7 +41,7 @@ public class TelemetryManagerTest {
     data = new TelemetryData();
     when(storage.tryLoad()).thenReturn(data);
 
-    Path path = tmp.newFile().toPath();
+    Path path = temp.newFile().toPath();
     client = mock(TelemetryClient.class);
 
     TelemetryManager manager = new TelemetryManager(path, client) {
