@@ -24,13 +24,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.util.Base64;
 
 /**
  * Serialize and deserialize telemetry data to persistent storage.
  */
-public class TelemetryStorage {
+class TelemetryStorage {
   private final Path path;
 
   TelemetryStorage(Path path) {
@@ -65,14 +64,7 @@ public class TelemetryStorage {
     try {
       return load();
     } catch (Exception e) {
-      return newDefaultTelemetryData();
+      return new TelemetryData();
     }
-  }
-
-  private TelemetryData newDefaultTelemetryData() {
-    TelemetryData data = new TelemetryData();
-    data.setInstallDate(LocalDate.now());
-    data.setEnabled(true);
-    return data;
   }
 }
