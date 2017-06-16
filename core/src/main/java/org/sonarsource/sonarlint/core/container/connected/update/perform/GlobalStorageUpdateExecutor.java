@@ -86,13 +86,13 @@ public class GlobalStorageUpdateExecutor {
       pluginReferenceDownloader.fetchPluginsTo(temp, analyzers);
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f));
+      rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f, "Fetching rules"));
 
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.6f);
       qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f));
+      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f, "Fetching list of modules"));
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

@@ -44,7 +44,7 @@ public class ModuleConfigurationDownloader {
     progress.setProgressAndCheckCancel("Fetching module settings", 0.1f);
     settingsDownloader.fetchProjectSettings(serverVersion, moduleKey, globalProps, builder);
     progress.setProgressAndCheckCancel("Fetching module hierarchy", 0.2f);
-    fetchModuleHierarchy(moduleKey, builder, progress.subProgress(0.2f, 1f));
+    fetchModuleHierarchy(moduleKey, builder, progress.subProgress(0.2f, 1f, "Fetching module hierarchy"));
 
     return builder.build();
   }

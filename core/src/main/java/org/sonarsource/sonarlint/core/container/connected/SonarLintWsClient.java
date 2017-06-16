@@ -186,7 +186,7 @@ public class SonarLintWsClient {
         Paging paging = getPaging.apply(protoBufResponse);
         // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
         stop = isEmpty || (paging.getTotal() > 0 && page * PAGE_SIZE >= paging.getTotal());
-        progress.setProgressAndCheckCancel("Loading page " + page, loaded / (float) paging.getTotal());
+        progress.setProgressAndCheckCancel("Page " + page, loaded / (float) paging.getTotal());
       } catch (IOException e) {
         throw new IllegalStateException("Failed to process paginated WS", e);
       }

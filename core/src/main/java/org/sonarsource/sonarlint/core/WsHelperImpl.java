@@ -119,7 +119,7 @@ public class WsHelperImpl implements WsHelper {
       progress.setProgressAndCheckCancel("Check server version", 0.1f);
       serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);
       progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
-      return fetchOrganizations(client, null, progress.subProgress(0.2f, 1.0f));
+      return fetchOrganizations(client, null, progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
