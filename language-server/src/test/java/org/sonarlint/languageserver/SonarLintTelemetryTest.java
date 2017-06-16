@@ -130,17 +130,17 @@ public class SonarLintTelemetryTest {
   }
 
   @Test
-  public void analysisSubmitted_should_trigger_usedAnalysis_when_enabled() {
+  public void usedAnalysis_should_trigger_usedAnalysis_when_enabled() {
     when(engine.isEnabled()).thenReturn(true);
-    telemetry.analysisSubmitted();
+    telemetry.usedAnalysis();
     verify(engine).isEnabled();
     verify(engine).usedAnalysis();
   }
 
   @Test
-  public void analysisSubmitted_should_not_trigger_usedAnalysis_when_disabled() {
+  public void usedAnalysis_should_not_trigger_usedAnalysis_when_disabled() {
     when(engine.isEnabled()).thenReturn(false);
-    telemetry.analysisSubmitted();
+    telemetry.usedAnalysis();
     verify(engine).isEnabled();
     verifyNoMoreInteractions(engine);
   }

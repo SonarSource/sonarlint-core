@@ -94,7 +94,7 @@ public class SonarLintTelemetry {
     }
   }
 
-  public void analysisSubmitted() {
+  public void usedAnalysis() {
     if (enabled()) {
       telemetry.usedAnalysis();
     }
