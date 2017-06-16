@@ -61,7 +61,7 @@ public class TelemetryStorageTest {
     TelemetryData data = storage.tryLoad();
     assertThat(filePath).doesNotExist();
 
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     data.usedConnectedMode();
 
     storage.trySave(data);

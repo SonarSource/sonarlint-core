@@ -93,7 +93,7 @@ class TelemetryData {
     return usedConnectedMode;
   }
 
-  public void usedAnalysis() {
+  public void setUsedAnalysis() {
     LocalDate now = LocalDate.now();
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;

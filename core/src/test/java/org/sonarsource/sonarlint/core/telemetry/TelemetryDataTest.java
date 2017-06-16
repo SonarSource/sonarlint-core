@@ -25,7 +25,6 @@ import java.time.temporal.ChronoUnit;
 import org.junit.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.isOlder;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.validate;
 
@@ -35,7 +34,7 @@ public class TelemetryDataTest {
     TelemetryData data = new TelemetryData();
     assertThat(data.numUseDays()).isEqualTo(0);
 
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
   }
 
@@ -44,10 +43,10 @@ public class TelemetryDataTest {
     TelemetryData data = new TelemetryData();
     assertThat(data.numUseDays()).isEqualTo(0);
 
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
 
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
   }
 
@@ -56,14 +55,14 @@ public class TelemetryDataTest {
     TelemetryData data = new TelemetryData();
     assertThat(data.numUseDays()).isEqualTo(0);
 
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
 
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
 
     data.setLastUseDate(LocalDate.now().minusDays(1));
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(2);
   }
 

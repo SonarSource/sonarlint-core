@@ -100,7 +100,7 @@ public class TelemetryManager {
   }
 
   public void usedAnalysis() {
-    data.usedAnalysis();
+    data.setUsedAnalysis();
     saveLazily();
   }
 
