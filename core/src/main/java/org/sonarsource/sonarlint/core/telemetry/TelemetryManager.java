@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.nio.file.Path;
 import java.time.LocalDate;
 
@@ -44,6 +45,7 @@ public class TelemetryManager {
     this.client = client;
   }
 
+  @VisibleForTesting
   TelemetryStorage newTelemetryStorage(Path path) {
     return new TelemetryStorage(path);
   }
