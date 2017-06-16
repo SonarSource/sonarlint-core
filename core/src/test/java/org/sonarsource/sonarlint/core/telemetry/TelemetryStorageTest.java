@@ -38,67 +38,93 @@ public class TelemetryStorageTest {
 
   @Before
   public void setUp() throws IOException {
-    filePath = temp.newFolder().toPath().resolve("file");
+    filePath = temp.newFolder().toPath().resolve("usage");
   }
 
   @Test
-  public void default_data() throws IOException {
-    TelemetryStorage storage = new TelemetryStorage();
-    storage.save(filePath);
+  public void test_default_data() {
+    TelemetryStorage storage = new TelemetryStorage(filePath);
 
+    TelemetryData data = storage.tryLoad();
+    assertThat(filePath).doesNotExist();
+
+    assertThat(data.installDate()).isEqualTo(today);
+    assertThat(data.lastUseDate()).isNull();
+    assertThat(data.numUseDays()).isEqualTo(0);
+    assertThat(data.enabled()).isTrue();
+  }
+
+  @Test
+  public void should_update_data() {
+    TelemetryStorage storage = new TelemetryStorage(filePath);
+
+    TelemetryData data = storage.tryLoad();
+    assertThat(filePath).doesNotExist();
+
+    data.usedAnalysis();
+    data.usedConnectedMode();
+
+    storage.trySave(data);
     assertThat(filePath).exists();
-    storage = TelemetryStorage.load(filePath);
-    assertThat(storage.installDate()).isEqualTo(today);
-    assertThat(storage.lastUseDate()).isNull();
-    assertThat(storage. numUseDays()).isEqualTo(0);
-    assertThat(storage.enabled()).isTrue();
+
+    TelemetryData data2 = storage.tryLoad();
+
+    assertThat(data2.lastUseDate()).isEqualTo(today);
+    assertThat(data2.numUseDays()).isEqualTo(1);
   }
 
   @Test
-  public void set_get_data() throws IOException {
-    createAndSave(today, today, 1L, true);
+  public void should_fix_invalid_installDate() {
+    TelemetryStorage storage = new TelemetryStorage(filePath);
+    TelemetryData data = storage.tryLoad();
+    data.setInstallDate(null);
+    data.setNumUseDays(100);
+    storage.trySave(data);
 
-    assertThat(filePath).exists();
-    TelemetryStorage storage = TelemetryStorage.load(filePath);
-    assertThat(storage.installDate()).isEqualTo(today);
-    assertThat(storage.lastUseDate()).isEqualTo(today);
-    assertThat(storage. numUseDays()).isEqualTo(1L);
-    assertThat(storage.enabled()).isTrue();
+    TelemetryData data2 = storage.tryLoad();
+    assertThat(data2.installDate()).isEqualTo(today);
+    assertThat(data2.lastUseDate()).isNull();
+    assertThat(data2.numUseDays()).isEqualTo(0);
   }
 
   @Test
-  public void should_fix_invalid_data() throws IOException {
-    // null installation date
-    createAndSave(null, null, 100L, true);
-    TelemetryStorage storage = TelemetryStorage.load(filePath);
-    assertThat(storage.installDate()).isEqualTo(today);
-    assertThat(storage.lastUseDate()).isNull();
-    assertThat(storage. numUseDays()).isEqualTo(0L);
+  public void should_fix_invalid_numDays() {
+    TelemetryStorage storage = new TelemetryStorage(filePath);
+    TelemetryData data = storage.tryLoad();
+    LocalDate tenDaysAgo = today.minusDays(10);
+    data.setInstallDate(tenDaysAgo);
+    data.setLastUseDate(today);
+    data.setNumUseDays(100);
+    storage.trySave(data);
 
-    // too many days used
-    createAndSave(LocalDate.of(2017, 1, 1), LocalDate.of(2017, 1, 7), 100L, true);
-    storage = TelemetryStorage.load(filePath);
-    assertThat(storage.installDate()).isEqualTo(LocalDate.of(2017, 1, 1));
-    assertThat(storage.lastUseDate()).isEqualTo(today);
-    assertThat(storage. numUseDays()).isEqualTo(7L);
-    assertThat(storage.enabled()).isTrue();
-
-    // dates in future (will this test fail one day?)
-    createAndSave(LocalDate.of(3000, 1, 1), LocalDate.of(3000, 1, 7), 100L, false);
-    storage = TelemetryStorage.load(filePath);
-    assertThat(storage.installDate()).isEqualTo(today);
-    assertThat(storage.lastUseDate()).isEqualTo(today);
-    assertThat(storage. numUseDays()).isEqualTo(1L);
-    assertThat(storage.enabled()).isFalse();
+    TelemetryData data2 = storage.tryLoad();
+    assertThat(data2.installDate()).isEqualTo(tenDaysAgo);
+    assertThat(data2.lastUseDate()).isEqualTo(today);
+    assertThat(data2.numUseDays()).isEqualTo(11);
   }
 
-  private TelemetryStorage createAndSave(LocalDate install, LocalDate lastUsed, long numDaysUsed, boolean enabled) throws IOException {
-    TelemetryStorage storage = new TelemetryStorage();
-    storage.setEnabled(enabled);
-    storage.setNumUseDays(numDaysUsed);
-    storage.setInstallDate(install);
-    storage.setLastUseDate(lastUsed);
-    storage.save(filePath);
-    return storage;
+  @Test
+  public void should_fix_dates_in_future() {
+    TelemetryStorage storage = new TelemetryStorage(filePath);
+    TelemetryData data = storage.tryLoad();
+    data.setInstallDate(today.plusDays(5));
+    data.setLastUseDate(today.plusDays(7));
+    data.setNumUseDays(100);
+    storage.trySave(data);
+
+    TelemetryData data2 = storage.tryLoad();
+    assertThat(data2.installDate()).isEqualTo(today);
+    assertThat(data2.lastUseDate()).isEqualTo(today);
+    assertThat(data2.numUseDays()).isEqualTo(1);
+  }
+
+  @Test
+  public void should_not_crash_when_cannot_read_storage() {
+    // TODO
+  }
+
+  @Test
+  public void should_not_crash_when_cannot_write_storage() {
+    // TODO
   }
 }

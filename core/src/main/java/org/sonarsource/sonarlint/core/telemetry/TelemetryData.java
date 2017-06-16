@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-public class TelemetryData {
+class TelemetryData {
   private LocalDate installDate;
   private LocalDate lastUseDate;
   private LocalDateTime lastUploadDateTime;
