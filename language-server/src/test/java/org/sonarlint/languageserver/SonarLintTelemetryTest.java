@@ -67,7 +67,7 @@ public class SonarLintTelemetryTest {
   }
 
   @Test
-  public void disable_should_disable_telemetry() throws Exception {
+  public void disable_property_should_disable_telemetry() throws Exception {
     assertThat(createTelemetry().enabled()).isTrue();
 
     System.setProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY, "true");
