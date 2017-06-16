@@ -77,31 +77,31 @@ public class ProgressWrapperTest {
   @Test
   public void testProgressSubMonitor() {
     when(monitor.isCanceled()).thenReturn(false);
-    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f);
+    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
     subProgress.setProgress("msg", 0.0f);
-    verify(monitor).setMessage("msg");
+    verify(monitor).setMessage("prefix - msg");
     verify(monitor).setFraction(0.2f);
     subProgress.setProgress("msg2", 0.5f);
-    verify(monitor).setMessage("msg2");
+    verify(monitor).setMessage("prefix - msg2");
     verify(monitor).setFraction(0.3f);
     subProgress.setProgress("msg3", 1.0f);
-    verify(monitor).setMessage("msg3");
+    verify(monitor).setMessage("prefix - msg3");
     verify(monitor).setFraction(0.4f);
   }
 
   @Test
   public void testProgressSubSubMonitor() {
     when(monitor.isCanceled()).thenReturn(false);
-    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f);
-    ProgressWrapper subSubProgress = subProgress.subProgress(0.5f, 1.0f);
+    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
+    ProgressWrapper subSubProgress = subProgress.subProgress(0.5f, 1.0f, "subprefix");
     subSubProgress.setProgress("msg", 0.0f);
-    verify(monitor).setMessage("msg");
+    verify(monitor).setMessage("prefix - subprefix - msg");
     verify(monitor).setFraction(0.3f);
     subSubProgress.setProgress("msg2", 0.5f);
-    verify(monitor).setMessage("msg2");
+    verify(monitor).setMessage("prefix - subprefix - msg2");
     verify(monitor).setFraction(AdditionalMatchers.eq(0.35f, 0.001f));
     subSubProgress.setProgress("msg3", 1.0f);
-    verify(monitor).setMessage("msg3");
+    verify(monitor).setMessage("prefix - subprefix - msg3");
     verify(monitor).setFraction(0.4f);
   }
 

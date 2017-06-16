@@ -28,10 +28,12 @@ public class ProgressWrapper {
   private final ProgressMonitor handler;
   private final float offset;
   private final float factor;
+  private final String msgPrefix;
 
-  private ProgressWrapper(float offset, float factor, @Nullable ProgressMonitor handler) {
+  private ProgressWrapper(float offset, float factor, @Nullable String msgPrefix, @Nullable ProgressMonitor handler) {
     this.offset = offset;
     this.factor = factor;
+    this.msgPrefix = msgPrefix;
     if (handler == null) {
       this.handler = new NoOpProgressMonitor();
     } else {
@@ -40,11 +42,11 @@ public class ProgressWrapper {
   }
 
   public ProgressWrapper(@Nullable ProgressMonitor handler) {
-    this(0.0f, 1.0f, handler);
+    this(0.0f, 1.0f, null, handler);
   }
 
-  public ProgressWrapper subProgress(float fromFraction, float toFraction) {
-    return new ProgressWrapper(offset + fromFraction * factor, (toFraction - fromFraction) * factor, handler);
+  public ProgressWrapper subProgress(float fromFraction, float toFraction, String msgPrefix) {
+    return new ProgressWrapper(offset + fromFraction * factor, (toFraction - fromFraction) * factor, prependPrefix(msgPrefix), handler);
   }
 
   public void checkCancel() {
@@ -55,14 +57,17 @@ public class ProgressWrapper {
   }
 
   public void setProgress(String msg, float fraction) {
-    handler.setMessage(msg);
+    handler.setMessage(prependPrefix(msg));
     setFraction(fraction);
+  }
+
+  private String prependPrefix(String suffix) {
+    return this.msgPrefix != null ? (this.msgPrefix + " - " + suffix) : suffix;
   }
 
   public void setProgressAndCheckCancel(String msg, float fraction) {
     checkCancel();
-    handler.setMessage(msg);
-    setFraction(fraction);
+    setProgress(msg, fraction);
   }
 
   private void setFraction(float fraction) {
