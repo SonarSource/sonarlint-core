@@ -34,6 +34,11 @@ class TelemetryData {
   private boolean enabled;
   private boolean usedConnectedMode;
 
+  TelemetryData() {
+    installDate = LocalDate.now();
+    enabled = true;
+  }
+
   void setInstallDate(LocalDate date) {
     this.installDate = date;
   }
@@ -122,11 +127,11 @@ class TelemetryData {
   }
 
   static boolean isOlder(@Nullable LocalDate first, @Nullable LocalDate second) {
-    return first == null || second != null && first.isBefore(second);
+    return first == null || (second != null && first.isBefore(second));
   }
 
   static boolean isOlder(@Nullable LocalDateTime first, @Nullable LocalDateTime second) {
-    return first == null || second != null && first.isBefore(second);
+    return first == null || (second != null && first.isBefore(second));
   }
 
   static TelemetryData validate(TelemetryData data) {
