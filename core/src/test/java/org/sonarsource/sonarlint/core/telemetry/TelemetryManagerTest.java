@@ -55,6 +55,11 @@ public class TelemetryManagerTest {
   }
 
   @Test
+  public void should_be_enabled_by_default() throws IOException {
+    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryClient.class)).isEnabled()).isTrue();
+  }
+
+  @Test
   public void should_save_on_first_analysis() throws IOException {
     TelemetryStorage storage = mockTelemetryStorage();
     TelemetryManager manager = stubbedTelemetryManager(storage);

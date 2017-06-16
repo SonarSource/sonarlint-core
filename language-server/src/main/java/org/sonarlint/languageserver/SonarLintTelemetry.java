@@ -82,6 +82,7 @@ public class SonarLintTelemetry {
     }
   }
 
+  @VisibleForTesting
   TelemetryManager newTelemetryManager(Path path, TelemetryClient client) {
     return new TelemetryManager(path, client);
   }
@@ -111,9 +112,5 @@ public class SonarLintTelemetry {
     if (scheduler != null) {
       scheduler.shutdown();
     }
-  }
-
-  private static boolean isAnyProjectConnected() {
-    return false;
   }
 }

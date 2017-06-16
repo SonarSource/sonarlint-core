@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.time.LocalDate;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
@@ -40,6 +41,7 @@ public class TelemetryClient {
     this(clientConfig, product, version, new TelemetryHttpFactory());
   }
 
+  @VisibleForTesting
   TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, TelemetryHttpFactory httpFactory) {
     this.clientConfig = clientConfig;
     this.product = product;
