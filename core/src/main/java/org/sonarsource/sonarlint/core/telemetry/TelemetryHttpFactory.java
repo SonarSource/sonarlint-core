@@ -23,10 +23,11 @@ import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 
 public class TelemetryHttpFactory {
+  private static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
   private static final int TELEMETRY_TIMEOUT = 30_000;
 
   public HttpConnector buildClient(TelemetryClientConfig clientConfig) {
-    return HttpConnector.newBuilder().url(Telemetry.TELEMETRY_ENDPOINT)
+    return HttpConnector.newBuilder().url(TELEMETRY_ENDPOINT)
       .userAgent(clientConfig.userAgent())
       .proxy(clientConfig.proxy())
       .proxyCredentials(clientConfig.proxyLogin(), clientConfig.proxyPassword())
