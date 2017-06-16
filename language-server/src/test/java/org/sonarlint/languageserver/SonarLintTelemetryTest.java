@@ -24,9 +24,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 
@@ -40,12 +38,8 @@ public class SonarLintTelemetryTest {
   private SonarLintTelemetry telemetry;
   private TelemetryManager engine = mock(TelemetryManager.class);
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
   @Before
-  public void start() throws Exception {
-    Path path = temp.newFile().toPath();
+  public void setUp() {
     this.telemetry = createTelemetry();
   }
 
