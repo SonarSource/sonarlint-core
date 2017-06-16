@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.util;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.AdditionalMatchers;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 
@@ -64,13 +65,44 @@ public class ProgressWrapperTest {
     when(monitor.isCanceled()).thenReturn(true);
     progress.checkCancel();
   }
-  
+
   @Test
   public void testProgress() {
-    when(monitor.isCanceled()).thenReturn(true);
+    when(monitor.isCanceled()).thenReturn(false);
     progress.setProgress("msg", 0.5f);
     verify(monitor).setMessage("msg");
     verify(monitor).setFraction(0.5f);
+  }
+
+  @Test
+  public void testProgressSubMonitor() {
+    when(monitor.isCanceled()).thenReturn(false);
+    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f);
+    subProgress.setProgress("msg", 0.0f);
+    verify(monitor).setMessage("msg");
+    verify(monitor).setFraction(0.2f);
+    subProgress.setProgress("msg2", 0.5f);
+    verify(monitor).setMessage("msg2");
+    verify(monitor).setFraction(0.3f);
+    subProgress.setProgress("msg3", 1.0f);
+    verify(monitor).setMessage("msg3");
+    verify(monitor).setFraction(0.4f);
+  }
+
+  @Test
+  public void testProgressSubSubMonitor() {
+    when(monitor.isCanceled()).thenReturn(false);
+    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f);
+    ProgressWrapper subSubProgress = subProgress.subProgress(0.5f, 1.0f);
+    subSubProgress.setProgress("msg", 0.0f);
+    verify(monitor).setMessage("msg");
+    verify(monitor).setFraction(0.3f);
+    subSubProgress.setProgress("msg2", 0.5f);
+    verify(monitor).setMessage("msg2");
+    verify(monitor).setFraction(AdditionalMatchers.eq(0.35f, 0.001f));
+    subSubProgress.setProgress("msg3", 1.0f);
+    verify(monitor).setMessage("msg3");
+    verify(monitor).setFraction(0.4f);
   }
 
   @Test

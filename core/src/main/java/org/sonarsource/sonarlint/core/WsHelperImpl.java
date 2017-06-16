@@ -19,14 +19,11 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nullable;
-
 import org.sonarqube.ws.Organizations;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
@@ -46,7 +43,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
-import com.google.gson.Gson;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class WsHelperImpl implements WsHelper {
   private static final String MIN_VERSION_FOR_ORGANIZATIONS = "6.3";
@@ -119,8 +116,10 @@ public class WsHelperImpl implements WsHelper {
 
   static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, ProgressWrapper progress) {
     try {
+      progress.setProgressAndCheckCancel("Check server version", 0.1f);
       serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);
-      return fetchOrganizations(client, null, progress);
+      progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
+      return fetchOrganizations(client, null, progress.subProgress(0.2f, 1.0f));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }

@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
@@ -52,10 +53,10 @@ public class RulesDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchRulesTo(Path destDir) {
+  public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
-    fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile);
+    fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile, progress);
     Path activeRulesDir = destDir.resolve(StoragePaths.ACTIVE_RULES_FOLDER);
     FileUtils.mkdirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
@@ -65,12 +66,13 @@ public class RulesDownloader {
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StoragePaths.RULES_PB));
   }
 
-  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile) {
-    int page = 1;
+  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, ProgressWrapper progress) {
+    int page = 0;
     int pageSize = 500;
     int loaded = 0;
 
     while (true) {
+      page++;
       SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)));
       readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
@@ -78,7 +80,7 @@ public class RulesDownloader {
       if (response.getTotal() <= loaded) {
         break;
       }
-      page++;
+      progress.setProgressAndCheckCancel("Loading page " + page, loaded / (float) response.getTotal());
     }
   }
 

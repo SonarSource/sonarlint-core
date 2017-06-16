@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
-
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
@@ -87,13 +86,13 @@ public class GlobalStorageUpdateExecutor {
       pluginReferenceDownloader.fetchPluginsTo(temp, analyzers);
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp);
+      rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f));
 
-      progress.setProgressAndCheckCancel("Fetching quality profiles", 0.4f);
+      progress.setProgressAndCheckCancel("Fetching quality profiles", 0.6f);
       qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress);
+      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f));
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

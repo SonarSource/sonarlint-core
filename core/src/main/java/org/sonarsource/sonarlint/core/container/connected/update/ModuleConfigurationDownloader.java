@@ -41,8 +41,10 @@ public class ModuleConfigurationDownloader {
   public ModuleConfiguration fetchModuleConfiguration(String serverVersion, String moduleKey, GlobalProperties globalProps, ProgressWrapper progress) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     fetchProjectQualityProfiles(moduleKey, builder);
+    progress.setProgressAndCheckCancel("Fetching module settings", 0.1f);
     settingsDownloader.fetchProjectSettings(serverVersion, moduleKey, globalProps, builder);
-    fetchModuleHierarchy(moduleKey, builder, progress);
+    progress.setProgressAndCheckCancel("Fetching module hierarchy", 0.2f);
+    fetchModuleHierarchy(moduleKey, builder, progress.subProgress(0.2f, 1f));
 
     return builder.build();
   }

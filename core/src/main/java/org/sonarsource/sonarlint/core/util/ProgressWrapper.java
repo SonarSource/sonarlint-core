@@ -19,20 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 
-import javax.annotation.Nullable;
-
 public class ProgressWrapper {
-  private ProgressMonitor handler;
 
-  public ProgressWrapper(@Nullable ProgressMonitor handler) {
+  private final ProgressMonitor handler;
+  private final float offset;
+  private final float factor;
+
+  private ProgressWrapper(float offset, float factor, @Nullable ProgressMonitor handler) {
+    this.offset = offset;
+    this.factor = factor;
     if (handler == null) {
       this.handler = new NoOpProgressMonitor();
     } else {
       this.handler = handler;
     }
+  }
+
+  public ProgressWrapper(@Nullable ProgressMonitor handler) {
+    this(0.0f, 1.0f, handler);
+  }
+
+  public ProgressWrapper subProgress(float fromFraction, float toFraction) {
+    return new ProgressWrapper(offset + fromFraction * factor, (toFraction - fromFraction) * factor, handler);
   }
 
   public void checkCancel() {
@@ -44,19 +56,23 @@ public class ProgressWrapper {
 
   public void setProgress(String msg, float fraction) {
     handler.setMessage(msg);
-    handler.setFraction(fraction);
+    setFraction(fraction);
   }
 
   public void setProgressAndCheckCancel(String msg, float fraction) {
     checkCancel();
     handler.setMessage(msg);
-    handler.setFraction(fraction);
+    setFraction(fraction);
   }
-  
+
+  private void setFraction(float fraction) {
+    handler.setFraction(offset + fraction * factor);
+  }
+
   public void finishNonCancelableSection() {
     handler.finishNonCancelableSection();
   }
-  
+
   public void startNonCancelableSection() {
     handler.startNonCancelableSection();
   }
