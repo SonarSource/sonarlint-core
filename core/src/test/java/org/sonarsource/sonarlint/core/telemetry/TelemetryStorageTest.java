@@ -119,12 +119,12 @@ public class TelemetryStorageTest {
   }
 
   @Test
-  public void should_not_crash_when_cannot_read_storage() {
-    // TODO
+  public void should_not_crash_when_cannot_read_storage() throws IOException {
+    new TelemetryStorage(temp.newFolder().toPath()).tryLoad();
   }
 
   @Test
-  public void should_not_crash_when_cannot_write_storage() {
-    // TODO
+  public void should_not_crash_when_cannot_write_storage() throws IOException {
+    new TelemetryStorage(temp.newFolder().toPath()).trySave(new TelemetryData());
   }
 }
