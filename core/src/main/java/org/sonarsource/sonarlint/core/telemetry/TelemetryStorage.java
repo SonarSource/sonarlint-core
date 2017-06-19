@@ -48,7 +48,7 @@ class TelemetryStorage {
     try {
       save(data);
     } catch (Exception e) {
-      // ignore
+      // fail silently
     }
   }
 
