@@ -48,12 +48,6 @@ public class TelemetryClientTest {
   }
 
   @Test
-  public void getters() {
-    assertThat(client.version()).isEqualTo("version");
-    assertThat(client.product()).isEqualTo("product");
-  }
-
-  @Test
   public void opt_out() {
     client.optOut(new TelemetryData());
     verify(http).delete(any(DeleteRequest.class), Mockito.anyString());

@@ -45,13 +45,12 @@ public class TelemetryManagerTest {
     Path path = temp.newFile().toPath();
     client = mock(TelemetryClient.class);
 
-    TelemetryManager manager = new TelemetryManager(path, client) {
+    return new TelemetryManager(path, client) {
       @Override
-      TelemetryStorage newTelemetryStorage(Path path) {
+      TelemetryStorage newTelemetryStorage(Path ignored) {
         return storage;
       }
     };
-    return manager;
   }
 
   @Test
