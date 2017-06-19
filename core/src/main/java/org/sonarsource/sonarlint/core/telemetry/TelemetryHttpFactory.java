@@ -22,11 +22,12 @@ package org.sonarsource.sonarlint.core.telemetry;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryManager.TELEMETRY_ENDPOINT;
+
 class TelemetryHttpFactory {
-  private static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
   private static final int TELEMETRY_TIMEOUT = 30_000;
 
-  public HttpConnector buildClient(TelemetryClientConfig clientConfig) {
+  HttpConnector buildClient(TelemetryClientConfig clientConfig) {
     return HttpConnector.newBuilder().url(TELEMETRY_ENDPOINT)
       .userAgent(clientConfig.userAgent())
       .proxy(clientConfig.proxy())
