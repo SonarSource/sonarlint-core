@@ -85,15 +85,15 @@ class TelemetryData {
     return enabled;
   }
 
-  public void setUsedConnectedMode(boolean value) {
+  void setUsedConnectedMode(boolean value) {
     usedConnectedMode = value;
   }
 
-  public boolean usedConnectedMode() {
+  boolean usedConnectedMode() {
     return usedConnectedMode;
   }
 
-  public void setUsedAnalysis() {
+  void setUsedAnalysis() {
     LocalDate now = LocalDate.now();
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
@@ -107,7 +107,7 @@ class TelemetryData {
    *
    * @param other existing telemetry data to merge from
    */
-  public void mergeFrom(TelemetryData other) {
+  void mergeFrom(TelemetryData other) {
     if (other.usedConnectedMode) {
       usedConnectedMode = true;
     }

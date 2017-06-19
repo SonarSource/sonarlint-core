@@ -49,20 +49,20 @@ public class TelemetryClient {
     this.httpFactory = httpFactory;
   }
 
-  public String product() {
-    return product;
+  void upload(TelemetryData data) {
+    try {
+      sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
+    } catch (Exception e) {
+      // fail silently
+    }
   }
 
-  public String version() {
-    return version;
-  }
-
-  public void upload(TelemetryData data) {
-    sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
-  }
-
-  public void optOut(TelemetryData data) {
-    sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
+  void optOut(TelemetryData data) {
+    try {
+      sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
+    } catch (Exception e) {
+      // fail silently
+    }
   }
 
   private TelemetryPayload createPayload(TelemetryData data) {

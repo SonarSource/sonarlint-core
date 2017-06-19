@@ -28,6 +28,8 @@ import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,25 +43,31 @@ public class TelemetryClientTest {
   public void setUp() {
     http = mock(HttpConnector.class, RETURNS_DEEP_STUBS);
     TelemetryHttpFactory httpFactory = mock(TelemetryHttpFactory.class, RETURNS_DEEP_STUBS);
-    when(httpFactory.buildClient(Mockito.any(TelemetryClientConfig.class))).thenReturn(http);
+    when(httpFactory.buildClient(any(TelemetryClientConfig.class))).thenReturn(http);
     client = new TelemetryClient(mock(TelemetryClientConfig.class), "product", "version", httpFactory);
-  }
-
-  @Test
-  public void getters() {
-    assertThat(client.version()).isEqualTo("version");
-    assertThat(client.product()).isEqualTo("product");
   }
 
   @Test
   public void opt_out() {
     client.optOut(new TelemetryData());
-    verify(http).delete(Mockito.any(DeleteRequest.class), Mockito.anyString());
+    verify(http).delete(any(DeleteRequest.class), Mockito.anyString());
   }
 
   @Test
   public void upload() {
     client.upload(new TelemetryData());
-    verify(http).post(Mockito.any(PostRequest.class), Mockito.anyString());
+    verify(http).post(any(PostRequest.class), Mockito.anyString());
+  }
+
+  @Test
+  public void should_not_crash_when_cannot_upload() {
+    when(http.post(any(PostRequest.class), anyString())).thenThrow(new RuntimeException());
+    client.upload(new TelemetryData());
+  }
+
+  @Test
+  public void should_not_crash_when_cannot_opt_out() {
+    when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new RuntimeException());
+    client.optOut(new TelemetryData());
   }
 }
