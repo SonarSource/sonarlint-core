@@ -19,57 +19,34 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-
 import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryStorage;
 import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-import java.nio.file.Path;
-
 public class TelemetryClient {
   private static final String TELEMETRY_PATH = "telemetry";
-  private static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
+  private final TelemetryHttpFactory httpFactory;
+  private final TelemetryClientConfig clientConfig;
   private final String product;
   private final String version;
-  private final TelemetryStorage telemetryStorage;
-  private final Path filePath;
-  private TelemetryHttpFactory httpFactory;
 
-  TelemetryClient(String product, String version, TelemetryStorage telemetryStorage, Path filePath) {
-    this(new TelemetryHttpFactory(), product, version, telemetryStorage, filePath);
+  public TelemetryClient(TelemetryClientConfig clientConfig, String product, String version) {
+    this(clientConfig, product, version, new TelemetryHttpFactory());
   }
 
-  TelemetryClient(TelemetryHttpFactory httpFactory, String product, String version, TelemetryStorage telemetryStorage, Path filePath) {
-    this.httpFactory = httpFactory;
+  @VisibleForTesting
+  TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, TelemetryHttpFactory httpFactory) {
+    this.clientConfig = clientConfig;
     this.product = product;
     this.version = version;
-    this.telemetryStorage = telemetryStorage;
-    this.filePath = filePath;
-  }
-
-  /**
-   * Try to upload data. It will only attempt to actually upload data if {@link #shouldUpload} returns true. 
-   */
-  public void tryUpload(TelemetryClientConfig clientConfig, boolean connected) {
-    if (shouldUpload()) {
-      doUpload(clientConfig, connected);
-    }
-  }
-
-  /**
-   * Sends an opt-out request.
-   */
-  public void optOut(TelemetryClientConfig clientConfig, boolean connected) {
-    doOptOut(clientConfig, connected);
+    this.httpFactory = httpFactory;
   }
 
   public String product() {
@@ -80,42 +57,17 @@ public class TelemetryClient {
     return version;
   }
 
-  /**
-   * Checks if it should upload data, based on the last time the data was uploaded.
-   * It returns false if telemetry is disabled, otherwise it returns true if:
-   *   - data was never uploaded before;
-   *   - data was not uploaded in the same calendar day and also not in the last 5 hours
-   */
-  public boolean shouldUpload() {
-    if (!telemetryStorage.enabled()) {
-      return false;
-    }
-
-    LocalDateTime lastUploadTime = telemetryStorage.lastUploadDateTime();
-    if (lastUploadTime == null) {
-      return true;
-    }
-
-    LocalDate today = LocalDate.now();
-    LocalDateTime now = LocalDateTime.now();
-
-    return !today.equals(lastUploadTime.toLocalDate()) && lastUploadTime.until(now, ChronoUnit.HOURS) >= MIN_HOURS_BETWEEN_UPLOAD;
+  public void upload(TelemetryData data) {
+    sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
   }
 
-  private void doUpload(TelemetryClientConfig clientConfig, boolean connected) {
-    long daysSinceInstallation = telemetryStorage.installDate().until(LocalDate.now(), DAYS);
-    TelemetryPayload payload = new TelemetryPayload(daysSinceInstallation, telemetryStorage.numUseDays(), product, version, connected);
-    sendPost(httpFactory.buildClient(clientConfig), payload);
-    telemetryStorage.setLastUploadTime(LocalDateTime.now());
-    telemetryStorage.safeSave(filePath);
+  public void optOut(TelemetryData data) {
+    sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
   }
 
-  private void doOptOut(TelemetryClientConfig clientConfig, boolean connected) {
-    long daysSinceInstallation = telemetryStorage.installDate().until(LocalDate.now(), DAYS);
-    TelemetryPayload payload = new TelemetryPayload(daysSinceInstallation, telemetryStorage.numUseDays(), product, version, connected);
-    sendDelete(httpFactory.buildClient(clientConfig), payload);
-    telemetryStorage.setLastUploadTime(LocalDateTime.now());
-    telemetryStorage.safeSave(filePath);
+  private TelemetryPayload createPayload(TelemetryData data) {
+    long daysSinceInstallation = data.installDate().until(LocalDate.now(), DAYS);
+    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, data.usedConnectedMode());
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {

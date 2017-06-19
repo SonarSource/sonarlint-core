@@ -126,11 +126,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private Map<String, String> analyzerProperties;
   private int ruleServerPort;
 
-  public static SonarLintLanguageServer bySocket(int port) throws IOException {
-    Socket socket = new Socket("localhost", port);
-    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream());
-  }
-
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream) throws IOException {
 
     Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(this,
@@ -157,6 +152,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     info("SonarLint engine started");
 
     backgroundProcess = launcher.startListening();
+  }
+
+  public static SonarLintLanguageServer bySocket(int port) throws IOException {
+    Socket socket = new Socket("localhost", port);
+    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream());
   }
 
   private void debug(String message) {
@@ -389,7 +389,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern, languageIdPerFileURI.get(uri))),
       analyzerProperties != null ? analyzerProperties : Collections.emptyMap());
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
-    telemetry.analysisSubmitted();
+    telemetry.usedAnalysis();
     AnalysisResults analysisResults = engine.analyze(
       configuration,
       issue -> {
