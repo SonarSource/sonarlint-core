@@ -22,6 +22,7 @@ package org.sonarlint.languageserver;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.channels.IllegalSelectorException;
+import java.util.Collections;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -57,7 +58,7 @@ public class SonarLintLanguageServerTest {
 
   @Test
   public void makeQualityGateHappy() throws Exception {
-    SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+    SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(), Collections.emptyList());
     server.error("Foo", new IllegalSelectorException());
     server.warn("Foo");
     assertThat(server.getTextDocumentService().codeLens(null)).isNull();

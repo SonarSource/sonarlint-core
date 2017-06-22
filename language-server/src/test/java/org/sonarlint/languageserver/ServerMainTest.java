@@ -110,8 +110,12 @@ public class ServerMainTest {
     Future<LanguageServer> future = executor.submit(callable);
     executor.shutdown();
 
+    URL js = new File("target/plugins/javascript.jar").getAbsoluteFile().toURI().toURL();
+    URL php = new File("target/plugins/php.jar").getAbsoluteFile().toURI().toURL();
+    URL py = new File("target/plugins/python.jar").getAbsoluteFile().toURI().toURL();
+
     try {
-      ServerMain.main("" + port);
+      ServerMain.main("" + port, js.toString(), php.toString(), py.toString());
     } catch (Exception e) {
       e.printStackTrace();
       future.get(1, TimeUnit.SECONDS);
