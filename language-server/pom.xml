@@ -17,8 +17,8 @@
   </organization>
 
   <properties>
-    <!-- embedded analyzer -->
-    <sonar.javascript.version>3.0.0.4962</sonar.javascript.version>
+    <!-- analyzers used for tests -->
+    <sonar.javascript.version>3.1.0.5111</sonar.javascript.version>
     <sonar.php.version>2.10.0.2087</sonar.php.version>
     <sonar.python.version>1.8.0.1496</sonar.python.version>
   </properties>
@@ -76,21 +76,6 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-clean-plugin</artifactId>
-        <configuration>
-          <filesets>
-            <fileset>
-              <directory>${project.basedir}/src/main/resources/plugins</directory>
-              <includes>
-                <include>*.jar</include>
-              </includes>
-            </fileset>
-          </filesets>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <archive>
@@ -121,7 +106,8 @@
                   <version>${sonar.javascript.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
-                  <outputDirectory>${project.basedir}/src/main/resources/plugins</outputDirectory>
+                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                  <destFileName>javascript.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.python</groupId>
@@ -129,7 +115,8 @@
                   <version>${sonar.python.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
-                  <outputDirectory>${project.basedir}/src/main/resources/plugins</outputDirectory>
+                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                  <destFileName>python.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.php</groupId>
@@ -137,7 +124,8 @@
                   <version>${sonar.php.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
-                  <outputDirectory>${project.basedir}/src/main/resources/plugins</outputDirectory>
+                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                  <destFileName>php.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>

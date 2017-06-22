@@ -39,10 +39,10 @@ class DefaultClientInputFile implements ClientInputFile {
   private final PathMatcher testMatcher;
   private final String sqLanguage;
 
-  public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern, @Nullable String vsCodeLanguage) {
+  public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern, @Nullable String clientLanguageId) {
     this.fileUri = uri;
     this.content = content;
-    this.sqLanguage = toSqLanguage(vsCodeLanguage);
+    this.sqLanguage = toSqLanguage(clientLanguageId);
     testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : null;
 
   }
@@ -83,18 +83,18 @@ class DefaultClientInputFile implements ClientInputFile {
   }
 
   @CheckForNull
-  private static String toSqLanguage(@Nullable String vscodeLanguageId) {
-    if (vscodeLanguageId == null) {
+  private static String toSqLanguage(@Nullable String clientLanguageId) {
+    if (clientLanguageId == null) {
       return null;
     }
-    switch (vscodeLanguageId) {
+    switch (clientLanguageId) {
       case "javascript":
       case "javascriptreact":
         return "js";
       case "python":
         return "py";
       default:
-        return vscodeLanguageId;
+        return clientLanguageId;
     }
   }
 }

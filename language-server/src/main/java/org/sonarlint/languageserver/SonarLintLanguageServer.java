@@ -28,9 +28,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -38,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,7 +42,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.stream.Stream;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
@@ -126,7 +121,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private Map<String, String> analyzerProperties;
   private int ruleServerPort;
 
-  public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream) throws IOException {
+  public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
     Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(this,
       inputStream,
@@ -137,11 +132,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     this.logOutput = new LanguageClientLogOutput(client);
 
     info("Starting SonarLint engine...");
+    info("Using " + analyzers.size() + " analyzers");
 
     try {
       Builder builder = StandaloneGlobalConfiguration.builder()
         .setLogOutput(logOutput)
-        .addPlugins(getAnalyzers().toArray(new URL[0]));
+        .addPlugins(analyzers.toArray(new URL[0]));
 
       this.engine = new StandaloneSonarLintEngineImpl(builder.build());
     } catch (Exception e) {
@@ -154,9 +150,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     backgroundProcess = launcher.startListening();
   }
 
-  public static SonarLintLanguageServer bySocket(int port) throws IOException {
+  public static SonarLintLanguageServer bySocket(int port, Collection<URL> analyzers) throws IOException {
     Socket socket = new Socket("localhost", port);
-    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream());
+    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), analyzers);
   }
 
   private void debug(String message) {
@@ -176,39 +172,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
     client.logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString()));
-  }
-
-  private Collection<URL> getAnalyzers() throws IOException, URISyntaxException {
-    info("Load analyzers...");
-    List<URL> plugins = new ArrayList<>();
-    URI uri = SonarLintLanguageServer.class.getResource("/plugins").toURI();
-    Path myPath;
-    if ("jar".equals(uri.getScheme())) {
-      try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
-        myPath = fileSystem.getPath("/plugins");
-        collect(plugins, myPath);
-      }
-    } else {
-      myPath = Paths.get(uri);
-      collect(plugins, myPath);
-    }
-
-    if (plugins.isEmpty()) {
-      throw new IllegalStateException("Found no analyzers in server");
-    }
-    info("Found " + plugins.size() + " analyzers");
-    return plugins;
-  }
-
-  private static void collect(List<URL> plugins, Path myPath) throws IOException {
-    try (Stream<Path> walk = Files.walk(myPath, 1)) {
-      for (Iterator<Path> it = walk.iterator(); it.hasNext();) {
-        Path file = it.next();
-        if (file.toString().toLowerCase(Locale.ENGLISH).endsWith(".jar")) {
-          plugins.add(file.toUri().toURL());
-        }
-      }
-    }
   }
 
   @Override
