@@ -175,7 +175,7 @@ public class ConnectedFileExclusionsMediumTest {
       new ConnectedAnalysisConfiguration(MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(mainFile1, mainFile2, testFile1, testFile2),
         ImmutableMap.<String, String>of()),
       issue -> {
-      });
+      }, null, null);
     return result;
   }
 

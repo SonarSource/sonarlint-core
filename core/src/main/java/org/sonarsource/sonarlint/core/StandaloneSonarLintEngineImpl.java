@@ -21,8 +21,9 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -33,8 +34,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
-
-import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -80,12 +80,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   }
 
   @Override
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener) {
-    return analyze(configuration, issueListener, null);
-  }
-
-  @Override
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput) {
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     checkNotNull(configuration);
     checkNotNull(issueListener);
     setLogging(logOutput);
@@ -93,7 +88,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     SonarLintLogging.setErrorHandler(errorHandler);
     rwl.readLock().lock();
     try {
-      AnalysisResults results = globalContainer.analyze(configuration, issueListener);
+      AnalysisResults results = globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
       errorHandler.getErrorFiles().forEach(results.failedAnalysisFiles()::add);
       return results;
     } catch (RuntimeException e) {

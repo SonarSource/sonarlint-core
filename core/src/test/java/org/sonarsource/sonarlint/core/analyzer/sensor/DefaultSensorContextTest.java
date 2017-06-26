@@ -19,12 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -41,6 +35,13 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class DefaultSensorContextTest {
   @Mock
@@ -61,7 +62,7 @@ public class DefaultSensorContextTest {
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    ctx = new DefaultSensorContext(module, settings, fs, activeRules, sensorStorage, sqRuntime);
+    ctx = new DefaultSensorContext(module, settings, fs, activeRules, sensorStorage, sqRuntime, new ProgressWrapper(null));
   }
 
   @Test

@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import javax.annotation.Nullable;
-
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -30,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageAnalyzer {
   private final ModuleStorageStatusReader moduleUpdateStatusReader;
@@ -56,10 +56,10 @@ public class StorageAnalyzer {
     }
   }
 
-  public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
+  public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
     checkStatus(configuration.moduleKey());
 
-    AnalysisContainer analysisContainer = new AnalysisContainer(container);
+    AnalysisContainer analysisContainer = new AnalysisContainer(container, progress);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
 
     analysisContainer.add(

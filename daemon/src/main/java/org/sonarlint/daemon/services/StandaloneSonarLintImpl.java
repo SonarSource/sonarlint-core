@@ -19,6 +19,7 @@
  */
 package org.sonarlint.daemon.services;
 
+import io.grpc.stub.StreamObserver;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
@@ -26,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.Utils;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
@@ -46,8 +46,6 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleDetails;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
-
-import io.grpc.stub.StreamObserver;
 
 public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneSonarLintImplBase {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(StandaloneSonarLintImpl.class);
@@ -94,7 +92,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         files,
         requestConfig.getPropertiesMap());
 
-      engine.analyze(config, new ProxyIssueListener(response), logOutput);
+      engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();
     } catch (Exception e) {
       LOGGER.error("Error analyzing", e);

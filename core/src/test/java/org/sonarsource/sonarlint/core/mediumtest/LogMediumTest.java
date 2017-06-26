@@ -99,13 +99,13 @@ public class LogMediumTest {
   public void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
-    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener());
+    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
     assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
     final Multimap<LogOutput.Level, String> logs2 = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
 
-    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2));
+    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2), null);
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
     assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
   }
@@ -118,7 +118,7 @@ public class LogMediumTest {
     try {
       sonarlint.analyze(createConfig(inputFile), issue -> {
         throw new MyCustomException("Fake");
-      });
+      }, null, null);
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(SonarLintWrappedException.class)

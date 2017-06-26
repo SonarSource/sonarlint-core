@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class DefaultSensorContext implements SensorContext {
 
@@ -57,15 +58,17 @@ public class DefaultSensorContext implements SensorContext {
   private final SensorStorage sensorStorage;
   private final InputModule module;
   private final SonarRuntime sqRuntime;
+  private final ProgressWrapper progress;
 
   public DefaultSensorContext(InputModule module, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarRuntime sqRuntime) {
+    SonarRuntime sqRuntime, ProgressWrapper progress) {
     this.module = module;
     this.settings = settings;
     this.fs = fs;
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
     this.sqRuntime = sqRuntime;
+    this.progress = progress;
   }
 
   @Override
@@ -135,7 +138,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public boolean isCancelled() {
-    return Thread.interrupted();
+    return progress.isCanceled();
   }
 
   @Override

@@ -371,7 +371,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
           convert(issue).ifPresent(publish.getDiagnostics()::add);
         }
-      }, logOutput);
+      }, logOutput, null);
     // Ignore files with parsing error
     analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
     files.values().forEach(client::publishDiagnostics);

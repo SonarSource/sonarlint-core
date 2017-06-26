@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -66,8 +65,8 @@ public class StorageContainerHandler {
     this.tempFolder = tempFolder;
   }
 
-  public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
-    return storageAnalyzer.analyze(container, configuration, issueListener);
+  public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
+    return storageAnalyzer.analyze(container, configuration, issueListener, progress);
   }
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {

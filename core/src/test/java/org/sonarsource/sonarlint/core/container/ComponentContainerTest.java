@@ -28,9 +28,8 @@ import org.sonar.api.Property;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -98,7 +97,7 @@ public class ComponentContainerTest {
     parentContainer.add(parentComponent);
     try {
       parentContainer.execute();
-      fail();
+      fail("Expected exception");
     } catch (Exception e) {
       assertThat(parentComponent.started).isTrue();
       assertThat(parentComponent.stopped).isTrue();
@@ -135,10 +134,10 @@ public class ComponentContainerTest {
     grandParent.startComponents();
 
     StartableComponent component = child.getComponentByType(StartableComponent.class);
-    assertTrue(component.started);
+    assertThat(component.started).isTrue();
 
     parent.stopComponents();
-    assertTrue(component.stopped);
+    assertThat(component.stopped).isTrue();
   }
 
   @Test
@@ -229,7 +228,7 @@ public class ComponentContainerTest {
 
     try {
       container.execute();
-      fail();
+      fail("Expected exception");
     } catch (Exception e) {
       assertThat(startable.started).isTrue();
 
@@ -246,7 +245,7 @@ public class ComponentContainerTest {
 
     try {
       container.execute();
-      fail();
+      fail("Expected exception");
     } catch (Exception e) {
       assertThat(startable.started).isTrue();
 

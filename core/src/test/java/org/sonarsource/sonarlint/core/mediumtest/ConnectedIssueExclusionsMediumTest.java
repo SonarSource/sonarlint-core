@@ -251,7 +251,7 @@ public class ConnectedIssueExclusionsMediumTest {
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       new ConnectedAnalysisConfiguration(JAVA_MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile1, inputFile2), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues));
+      new StoreIssueListener(issues), null, null);
     return issues;
   }
 

@@ -100,7 +100,8 @@ public class StandaloneIssueMediumTest {
       + "}", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), i -> issues.add(i));
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), i -> issues.add(i), null,
+      null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
 
@@ -115,7 +116,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
     assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
       tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
       tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
@@ -131,7 +132,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
     assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
       tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
       tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
@@ -148,7 +149,7 @@ public class StandaloneIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     AnalysisResults results = sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
     assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
       tuple("xoo:HasTag", 2, 6, inputFile.getPath()));
@@ -165,7 +166,8 @@ public class StandaloneIssueMediumTest {
       + "?>", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue),
+      null, null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("php:S1172", 2, inputFile.getPath()));
   }
@@ -179,7 +181,8 @@ public class StandaloneIssueMediumTest {
       + "\n", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue),
+      null, null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
   }
@@ -196,7 +199,8 @@ public class StandaloneIssueMediumTest {
       false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue),
+      null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
@@ -217,7 +221,8 @@ public class StandaloneIssueMediumTest {
       false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue),
+      null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S3421", 6, inputFile.getPath(), "MINOR"));
@@ -237,7 +242,8 @@ public class StandaloneIssueMediumTest {
       false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue));
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue),
+      null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
@@ -251,7 +257,7 @@ public class StandaloneIssueMediumTest {
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
       ImmutableMap.of("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())),
-      issue -> issues.add(issue));
+      issue -> issues.add(issue), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 5, inputFile.getPath()),
@@ -290,7 +296,7 @@ public class StandaloneIssueMediumTest {
     AnalysisResults results = sonarlint.analyze(
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile, inputFileTest),
         ImmutableMap.of("sonar.junit.reportsPath", "reports/")),
-      issue -> issues.add(issue));
+      issue -> issues.add(issue), null, null);
 
     assertThat(results.fileCount()).isEqualTo(2);
 
@@ -326,7 +332,7 @@ public class StandaloneIssueMediumTest {
         @Override
         public void run() {
           sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), workDir, Arrays.asList(inputFile), ImmutableMap.of()), issue -> {
-          });
+          }, null, null);
         }
       };
       results.add(executor.submit(worker));

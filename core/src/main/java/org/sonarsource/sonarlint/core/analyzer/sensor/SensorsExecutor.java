@@ -22,33 +22,33 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
 import org.sonar.api.resources.Project;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-@BatchSide
 public class SensorsExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(SensorsExecutor.class);
 
-  private Project module;
-  private BatchExtensionDictionnary selector;
-  private SensorsPhaseHandler[] handlers;
+  private final Project module;
+  private final BatchExtensionDictionnary selector;
+  private final SensorsPhaseHandler[] handlers;
+  private final ProgressWrapper progress;
 
-  public SensorsExecutor(BatchExtensionDictionnary selector, Project project) {
-    this(selector, project, new SensorsPhaseHandler[0]);
+  public SensorsExecutor(BatchExtensionDictionnary selector, Project project, ProgressWrapper progress) {
+    this(selector, project, progress, new SensorsPhaseHandler[0]);
   }
 
-  public SensorsExecutor(BatchExtensionDictionnary selector, Project project, SensorsPhaseHandler[] handlers) {
+  public SensorsExecutor(BatchExtensionDictionnary selector, Project project, ProgressWrapper progress, SensorsPhaseHandler[] handlers) {
     this.selector = selector;
     this.module = project;
+    this.progress = progress;
     this.handlers = handlers;
   }
 
@@ -60,6 +60,7 @@ public class SensorsExecutor {
     }
 
     for (Sensor sensor : sensors) {
+      progress.checkCancel();
       executeSensor(context, sensor);
     }
 
