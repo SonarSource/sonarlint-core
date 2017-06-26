@@ -143,12 +143,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
-    return analyze(configuration, issueListener, null);
-  }
-
-  @Override
-  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput) {
+  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     checkNotNull(configuration);
     checkNotNull(issueListener);
     setLogging(logOutput);
@@ -156,7 +151,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     SonarLintLogging.setErrorHandler(errorHandler);
     return withReadLock(() -> {
       try {
-        AnalysisResults results = getHandler().analyze(storageContainer, configuration, issueListener);
+        AnalysisResults results = getHandler().analyze(storageContainer, configuration, issueListener, new ProgressWrapper(monitor));
         errorHandler.getErrorFiles().forEach(results.failedAnalysisFiles()::add);
         return results;
       } catch (RuntimeException e) {

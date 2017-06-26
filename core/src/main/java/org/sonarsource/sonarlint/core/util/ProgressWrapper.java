@@ -56,6 +56,10 @@ public class ProgressWrapper {
     }
   }
 
+  public boolean isCanceled() {
+    return handler.isCanceled();
+  }
+
   public void setProgress(String msg, float fraction) {
     handler.setMessage(prependPrefix(msg));
     setFraction(fraction);

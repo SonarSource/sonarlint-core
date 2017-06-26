@@ -124,7 +124,7 @@ public class BrokenStorageMissingPluginMediumTest {
     final List<Issue> issues = new ArrayList<>();
     try {
       sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-        new StoreIssueListener(issues));
+        new StoreIssueListener(issues), null, null);
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isExactlyInstanceOf(GlobalUpdateRequiredException.class);

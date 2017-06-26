@@ -53,13 +53,16 @@ import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssu
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class AnalysisContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(AnalysisContainer.class);
+  private final ProgressWrapper progress;
 
-  public AnalysisContainer(ComponentContainer globalContainer) {
+  public AnalysisContainer(ComponentContainer globalContainer, ProgressWrapper progress) {
     super(globalContainer);
+    this.progress = progress;
   }
 
   @Override
@@ -70,6 +73,7 @@ public class AnalysisContainer extends ComponentContainer {
 
   private void addBatchComponents() {
     add(
+      progress,
       new ProjectProvider(),
       new DefaultInputModule("sonarlint"),
       NoOpFileLinesContextFactory.class,

@@ -50,12 +50,13 @@ import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StandaloneGlobalContainer extends ComponentContainer {
 
@@ -113,8 +114,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     rulesDefinitions = container.getRulesDefinitions();
   }
 
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(this);
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
+    AnalysisContainer analysisContainer = new AnalysisContainer(this, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);

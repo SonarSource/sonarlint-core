@@ -56,7 +56,7 @@ public class StandaloneNoPluginMediumTest {
     LogOutput logOutput = (msg, level) -> logs.put(level, msg);
     sonarlint = new StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration.builder()
       .setLogOutput(logOutput).build());
-    
+
     baseDir = temp.newFolder();
   }
 
@@ -72,7 +72,8 @@ public class StandaloneNoPluginMediumTest {
 
     AnalysisResults results = sonarlint.analyze(
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      i -> {});
+      i -> {
+      }, null, null);
 
     assertThat(results.fileCount()).isEqualTo(1);
     assertThat(logs.get(Level.WARN)).contains("No analyzers installed");

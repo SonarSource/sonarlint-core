@@ -117,7 +117,7 @@ public class LicenseTest extends AbstractConnectedTest {
     exception.expectMessage("No license for cobol");
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
-      "sonar.cobol.file.suffixes", "cbl"), issueListener);
+      "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
   }
 
   private void removeLicense(String pluginKey) {
@@ -147,7 +147,7 @@ public class LicenseTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_COBOL);
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
-      "sonar.cobol.file.suffixes", "cbl"), issueListener);
+      "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 

@@ -31,6 +31,7 @@ import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
 import org.sonar.api.resources.Project;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -50,7 +51,7 @@ public class SensorsExecutorTest {
     dict = mock(BatchExtensionDictionnary.class);
     project = mock(Project.class);
     SensorsPhaseHandler[] handlers = {handler};
-    executor = new SensorsExecutor(dict, project, handlers);
+    executor = new SensorsExecutor(dict, project, new ProgressWrapper(null), handlers);
 
     when(dict.select(Sensor.class, project, true, null)).thenReturn(Collections.singletonList(sensor));
   }

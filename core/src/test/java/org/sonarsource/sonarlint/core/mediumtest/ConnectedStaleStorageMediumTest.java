@@ -106,7 +106,7 @@ public class ConnectedStaleStorageMediumTest {
     try {
       sonarlint.analyze(
         new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Collections.<ClientInputFile>emptyList(), ImmutableMap.<String, String>of()),
-        mock(IssueListener.class));
+        mock(IssueListener.class), null, null);
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");

@@ -216,7 +216,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener);
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
@@ -231,7 +231,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_JAVASCRIPT);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener);
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
@@ -246,7 +246,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener);
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
@@ -306,7 +306,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_JAVASCRIPT);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
@@ -317,7 +317,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_JAVASCRIPT_CUSTOM);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT_CUSTOM, PROJECT_KEY_JAVASCRIPT_CUSTOM, "src/Person.js"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT_CUSTOM, PROJECT_KEY_JAVASCRIPT_CUSTOM, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
       tuple("custom:S1", 3),
       tuple("custom:S1", 7));
@@ -329,7 +329,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_PHP);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
@@ -339,7 +339,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_PYTHON);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
@@ -352,7 +352,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
 
     assertThat(issueListener.getIssues()).hasSize(2);
   }
@@ -366,7 +366,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
       tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
@@ -382,7 +382,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM_SENSOR, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
 
     assertThat(issueListener.getIssues()).isEmpty();
   }
@@ -393,7 +393,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateModule(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "pom.xml"), issueListener);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "pom.xml"), issueListener, null, null);
 
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -440,7 +440,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
         "src/main/java/foo/Foo.java",
         "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener);
+        issueListener, null, null);
 
       assertThat(issueListener.getIssues()).hasSize(3);
 
@@ -466,7 +466,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_EMPTY, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
 
     assertThat(issueListener.getIssues()).isEmpty();
   }
@@ -480,7 +480,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(2);
 
     // Override default file suffixes in global props so that input file is not considered as a Java file
@@ -492,7 +492,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
     setSettings(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
@@ -502,7 +502,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener);
+      issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(2);
 
   }

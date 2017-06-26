@@ -99,7 +99,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
         files,
         requestConfig.getPropertiesMap());
 
-      engine.analyze(config, new ProxyIssueListener(response), logOutput);
+      engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();
     } catch (Exception e) {
       LOGGER.error("Error analyzing", e);

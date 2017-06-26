@@ -69,9 +69,7 @@ public interface ConnectedSonarLintEngine {
   /**
    * Trigger an analysis
    */
-  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener);
-
-  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput);
+  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
 
   /**
    * Gets locally stored server issues for a given file. 

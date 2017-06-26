@@ -181,7 +181,7 @@ public class ConnectedIssueMediumTest {
       ImmutableMap.<String, String>of());
 
     try {
-      sonarlint.analyze(config, createNoOpIssueListener());
+      sonarlint.analyze(config, createNoOpIssueListener(), null, null);
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isInstanceOf(StorageException.class)
@@ -208,7 +208,7 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues));
+      new StoreIssueListener(issues), null, null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple(ruleKey, 2, inputFile.getPath()));
 
@@ -220,7 +220,7 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues));
+      new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
@@ -234,7 +234,7 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues));
+      new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S2187", 1, inputFile.getPath(), "MAJOR"));
@@ -247,7 +247,7 @@ public class ConnectedIssueMediumTest {
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       new ConnectedAnalysisConfiguration(JAVA_MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues));
+      new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
@@ -262,7 +262,7 @@ public class ConnectedIssueMediumTest {
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       new ConnectedAnalysisConfiguration("test-project", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues));
+      new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();
   }

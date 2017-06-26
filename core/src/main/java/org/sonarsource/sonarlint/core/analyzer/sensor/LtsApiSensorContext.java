@@ -41,6 +41,7 @@ import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.utils.PathUtils;
 import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class LtsApiSensorContext extends DefaultSensorContext implements SensorContext {
 
@@ -105,8 +106,8 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
   private final Project project;
 
   public LtsApiSensorContext(Project project, InputModule inputModule, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarRuntime sqRuntime) {
-    super(inputModule, settings, fs, activeRules, sensorStorage, sqRuntime);
+    SonarRuntime sqRuntime, ProgressWrapper progress) {
+    super(inputModule, settings, fs, activeRules, sensorStorage, sqRuntime, progress);
     this.project = project;
 
   }

@@ -19,9 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +30,10 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class StorageAnalyzerTest {
   @Rule
@@ -60,7 +61,7 @@ public class StorageAnalyzerTest {
 
     exception.expect(StorageException.class);
     exception.expectMessage("Missing global data");
-    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class));
+    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
   }
 
   @Test
@@ -70,7 +71,7 @@ public class StorageAnalyzerTest {
 
     exception.expect(StorageException.class);
     exception.expectMessage("No data stored for module");
-    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class));
+    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
   }
 
   @Test
@@ -82,7 +83,7 @@ public class StorageAnalyzerTest {
 
     exception.expect(StorageException.class);
     exception.expectMessage("Stored data for module 'module1' is stale");
-    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class));
+    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
   }
 
 }
