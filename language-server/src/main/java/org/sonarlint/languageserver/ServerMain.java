@@ -19,7 +19,6 @@
  */
 package org.sonarlint.languageserver;
 
-import fi.iki.elonen.NanoHTTPD;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -55,27 +54,14 @@ public class ServerMain {
     }
 
     LOG.info("Binding to {}", jsonRpcPort);
-    SonarLintLanguageServer languageServer;
     try {
-      languageServer = SonarLintLanguageServer.bySocket(jsonRpcPort, analyzers);
+      SonarLintLanguageServer.bySocket(jsonRpcPort, analyzers);
     } catch (IOException e) {
       LOG.error("Unable to connect to the client", e);
       System.exit(1);
       return;
     }
 
-    LOG.info("Starting HTTP server...");
-    try {
-      RuleDescriptionHttpServer ruleServer = new RuleDescriptionHttpServer(0, languageServer.getEngine());
-      ruleServer.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
-      languageServer.setRuleServerPort(ruleServer.getListeningPort());
-      LOG.info("HTTP server started on port {}", ruleServer.getListeningPort());
-    } catch (IOException e) {
-      LOG.error("Unable to start the HTTP server", e);
-      languageServer.shutdown();
-      languageServer.exit();
-      System.exit(1);
-    }
   }
 
   private static int parsePortArgument(String... args) {
