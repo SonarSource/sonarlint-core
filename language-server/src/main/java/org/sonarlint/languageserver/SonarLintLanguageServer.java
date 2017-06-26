@@ -336,8 +336,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public void didSave(DidSaveTextDocumentParams params) {
-    URI uri = parseURI(params.getTextDocument().getUri());
-    analyze(uri, params.getText());
+    String content = params.getText();
+    if (content != null) {
+      URI uri = parseURI(params.getTextDocument().getUri());
+      analyze(uri, params.getText());
+    }
   }
 
   private static URI parseURI(String uriStr) {
