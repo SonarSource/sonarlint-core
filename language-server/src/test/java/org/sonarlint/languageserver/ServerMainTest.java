@@ -21,7 +21,6 @@ package org.sonarlint.languageserver;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -65,13 +64,11 @@ import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.api.internal.apachecommons.io.IOUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -298,25 +295,19 @@ public class ServerMainTest {
     assertThat(codeActions).hasSize(1);
 
     String ruleKey = (String) codeActions.get(0).getArguments().get(0);
-    int port = ((Double) codeActions.get(0).getArguments().get(1)).intValue();
     assertThat(ruleKey).isEqualTo("javascript:S1442");
 
-    try {
-      IOUtils.toString(new URL("http://localhost:" + port + "/"));
-      Assert.fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e.getMessage()).contains("400");
-    }
+    String ruleName = (String) codeActions.get(0).getArguments().get(1);
+    assertThat(ruleName).contains("\"alert(...)\" should not be used");
 
-    try {
-      IOUtils.toString(new URL("http://localhost:" + port + "/?ruleKey=foo"));
-      Assert.fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isInstanceOf(FileNotFoundException.class);
-    }
+    String ruleDesc = (String) codeActions.get(0).getArguments().get(2);
+    assertThat(ruleDesc).contains("can be useful for debugging during development");
 
-    String ruleDesc = IOUtils.toString(new URL("http://localhost:" + port + "/?ruleKey=" + ruleKey));
-    assertThat(ruleDesc).contains("\"alert(...)\" should not be used");
+    String ruleType = (String) codeActions.get(0).getArguments().get(3);
+    assertThat(ruleType).isEqualTo("VULNERABILITY");
+
+    String ruleSev = (String) codeActions.get(0).getArguments().get(4);
+    assertThat(ruleSev).isEqualTo("MINOR");
   }
 
   private void waitForDiagnostics() throws InterruptedException {

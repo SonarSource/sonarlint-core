@@ -91,6 +91,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -119,7 +120,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private Path workspaceDir;
   private String testFilePattern;
   private Map<String, String> analyzerProperties;
-  private int ruleServerPort;
 
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
@@ -269,7 +269,15 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     List<Command> commands = new ArrayList<>();
     for (Diagnostic d : params.getContext().getDiagnostics()) {
       if (SONARLINT_SOURCE.equals(d.getSource())) {
-        commands.add(new Command("Open description of rule " + d.getCode(), SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND, Arrays.asList(d.getCode(), ruleServerPort)));
+        RuleDetails ruleDetails = engine.getRuleDetails(d.getCode());
+        String ruleName = ruleDetails.getName();
+        String htmlDescription = ruleDetails.getHtmlDescription();
+        String type = ruleDetails.getType();
+        String severity = ruleDetails.getSeverity();
+        commands.add(
+          new Command("Open description of rule " + d.getCode(),
+            SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
+            Arrays.asList(d.getCode(), ruleName, htmlDescription, type, severity)));
       }
     }
     return CompletableFuture.completedFuture(commands);
@@ -452,10 +460,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   public StandaloneSonarLintEngine getEngine() {
     return engine;
-  }
-
-  public void setRuleServerPort(int ruleServerPort) {
-    this.ruleServerPort = ruleServerPort;
   }
 
 }
