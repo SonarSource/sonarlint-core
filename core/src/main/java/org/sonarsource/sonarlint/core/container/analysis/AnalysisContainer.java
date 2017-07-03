@@ -33,13 +33,12 @@ import org.sonarsource.sonarlint.core.analyzer.noop.NoOpSymbolizableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestPlanBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
-import org.sonarsource.sonarlint.core.analyzer.sensor.BatchExtensionDictionnary;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorStorage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.LtsApiSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.PhaseExecutor;
+import org.sonarsource.sonarlint.core.analyzer.sensor.ScannerExtensionDictionnary;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
-import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
@@ -67,11 +66,11 @@ public class AnalysisContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    addBatchComponents();
+    addCoreComponents();
     addPluginExtensions();
   }
 
-  private void addBatchComponents() {
+  private void addCoreComponents() {
     add(
       progress,
       new ProjectProvider(),
@@ -94,7 +93,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       AnalysisSettings.class,
       PhaseExecutor.class,
-      SensorsExecutor.class,
 
       // file system
       InputPathCache.class,
@@ -117,7 +115,7 @@ public class AnalysisContainer extends ComponentContainer {
       DefaultSensorContext.class,
       DefaultSensorStorage.class,
       LtsApiSensorContext.class,
-      BatchExtensionDictionnary.class,
+      ScannerExtensionDictionnary.class,
       IssueFilters.class,
 
       // rules

@@ -25,10 +25,8 @@ import io.grpc.ServerInterceptors;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.interceptors.ExceptionInterceptor;
@@ -40,7 +38,7 @@ public class Daemon {
   private static final int DEFAULT_PORT = 8050;
   private Server server;
 
-  public static void main(String[] args) {
+  public static void main(String... args) {
     setUpNettyLogging();
 
     int port;

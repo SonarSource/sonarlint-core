@@ -23,8 +23,9 @@
     
     <unpack.dir>${project.build.directory}/unpack</unpack.dir>
     
-    <!-- embedded analyzer -->
+    <!-- embedded analyzers -->
     <sonar.javascript.version>3.0.0.4962</sonar.javascript.version>
+    <sonar.cfamily.version>4.11.0.8388</sonar.cfamily.version>
 
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>
@@ -164,6 +165,14 @@
                   <overWrite>false</overWrite>
                   <outputDirectory>${project.build.directory}/plugins</outputDirectory>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.cpp</groupId>
+                  <artifactId>sonar-cfamily-plugin</artifactId>
+                  <version>${sonar.cfamily.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -180,10 +189,7 @@
         <property>
           <name>!skipNoArch</name>
         </property>
-        </activation>
-      <properties>
-        <use_embedded_jre>false</use_embedded_jre>
-      </properties>
+      </activation>
       <build>
         <plugins>
           <plugin>
@@ -202,6 +208,9 @@
                   <descriptors>
                     <descriptor>src/main/assembly/noarch.xml</descriptor>
                   </descriptors>
+                  <filters>
+                    <filter>src/main/assembly/noarch.properties</filter>
+                  </filters>
                 </configuration>
               </execution>
             </executions>
@@ -212,14 +221,11 @@
   
     <profile>
       <id>dist-windows</id>
-        <activation>
-          <property>
-            <name>!skipDistWindows</name>
-          </property>
-        </activation>
-      <properties>
-        <use_embedded_jre>true</use_embedded_jre>
-      </properties>
+      <activation>
+        <property>
+          <name>!skipDistWindows</name>
+        </property>
+      </activation>
       <build>
         <plugins>
           <plugin>
@@ -264,6 +270,9 @@
                   <descriptors>
                     <descriptor>src/main/assembly/dist-windows.xml</descriptor>
                   </descriptors>
+                  <filters>
+                    <filter>src/main/assembly/windows.properties</filter>
+                  </filters>
                 </configuration>
               </execution>
             </executions>

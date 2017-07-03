@@ -36,6 +36,7 @@ import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.analyzer.sensor.NewSensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -120,6 +121,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
     analysisContainer.add(activeRules);
+    analysisContainer.add(NewSensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
