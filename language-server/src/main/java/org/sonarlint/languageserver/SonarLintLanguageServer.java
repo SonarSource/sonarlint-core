@@ -19,6 +19,7 @@
  */
 package org.sonarlint.languageserver;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,6 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
@@ -99,6 +101,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
@@ -188,11 +191,15 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     Map<String, Object> options = (Map<String, Object>) params.getInitializationOptions();
     testFilePattern = (String) options.get(TEST_FILE_PATTERN);
     analyzerProperties = (Map) options.get(ANALYZER_PROPERTIES);
+
+    String productKey = (String) options.get("productKey");
+    // deprecated, will be ignored when productKey present
     String telemetryStorage = (String) options.get("telemetryStorage");
+
     String productName = (String) options.get("productName");
     String productVersion = (String) options.get("productVersion");
 
-    telemetry.init(Paths.get(telemetryStorage), productName, productVersion);
+    telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
     telemetry.optOut((Boolean) options.get(DISABLE_TELEMETRY));
 
     InitializeResult result = new InitializeResult();
@@ -205,6 +212,17 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     c.setCodeActionProvider(true);
     result.setCapabilities(c);
     return CompletableFuture.completedFuture(result);
+  }
+
+  @VisibleForTesting
+  static Path getStoragePath(@Nullable String productKey, @Nullable String telemetryStorage) {
+    if (productKey != null) {
+      if (telemetryStorage != null) {
+        TelemetryPathManager.migrate(productKey, Paths.get(telemetryStorage));
+      }
+      return TelemetryPathManager.getPath(productKey);
+    }
+    return telemetryStorage != null ? Paths.get(telemetryStorage) : null;
   }
 
   @Override
