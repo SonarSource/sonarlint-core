@@ -200,7 +200,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     String productVersion = (String) options.get("productVersion");
 
     telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
-    telemetry.optOut((Boolean) options.get(DISABLE_TELEMETRY));
+    telemetry.optOut((Boolean) options.getOrDefault(DISABLE_TELEMETRY, false));
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
