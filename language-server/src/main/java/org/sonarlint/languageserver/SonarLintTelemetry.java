@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
@@ -65,7 +66,11 @@ public class SonarLintTelemetry {
     return telemetry != null && telemetry.isEnabled();
   }
 
-  public void init(Path storagePath, String productName, String productVersion) {
+  public void init(@Nullable Path storagePath, String productName, String productVersion) {
+    if (storagePath == null) {
+      LOG.info("Telemetry disabled because storage path is null");
+      return;
+    }
     if ("true".equals(System.getProperty(DISABLE_PROPERTY_KEY))) {
       LOG.info("Telemetry disabled by system property");
       return;
