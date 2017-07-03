@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,6 +41,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -67,6 +69,7 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
       .addPlugin(PluginLocator.getPythonPluginUrl())
+      .addPlugin(PluginLocator.getCppPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
@@ -112,7 +115,7 @@ public class StandaloneIssueMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
       + "  var xoo1, xoo2;\n"
       + "  var xoo; //NOSONAR\n"
-      + "}", false, StandardCharsets.UTF_16);
+      + "}", false, StandardCharsets.UTF_16, null);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
@@ -137,6 +140,23 @@ public class StandaloneIssueMediumTest {
       tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
       tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
       tuple("xoo:HasTag", 2, 12, inputFile.getPath()));
+  }
+
+  @Test
+  public void simpleCpp() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("foo.cpp", "void fun() {\n "
+      + "  if (false) {}\n"
+      + "  if (false) {} // NOSONAR\n"
+      + "}\n", false, StandardCharsets.UTF_8, "cpp");
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
+        ImmutableMap.of("sonar.cfamily.build-wrapper-output.bypass", "true")),
+      issue -> issues.add(issue), null, null);
+    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
+      tuple("cpp:S2583", 2, 7, inputFile.getPath()),
+      tuple("cpp:EmptyCompoundStatement", 2, 14, inputFile.getPath()));
   }
 
   @Test
@@ -352,15 +372,15 @@ public class StandaloneIssueMediumTest {
 
   }
 
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), isTest, encoding);
+    ClientInputFile inputFile = new TestClientInputFile(file.toPath(), isTest, encoding, language);
     return inputFile;
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8);
+    return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8, null);
   }
 
 }

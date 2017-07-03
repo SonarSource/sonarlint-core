@@ -49,6 +49,7 @@ if EXIST "%JAVA_HOME%\bin\java.exe" goto foundJavaExeFromJavaHome
 echo.
 echo ERROR: JAVA_HOME exists but does not point to a valid Java home
 echo        folder. No "\bin\java.exe" file can be found there.
+echo %JAVA_HOME%
 echo.
 goto error
 

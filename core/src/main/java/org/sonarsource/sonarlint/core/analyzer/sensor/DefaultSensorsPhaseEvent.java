@@ -17,15 +17,35 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import org.sonarsource.api.sonarlint.SonarLintSide;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.sonar.api.batch.Sensor;
+import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
 
-/**
- * @since 3.6
- */
-@SonarLintSide
-@FunctionalInterface
-public interface ExtensionMatcher {
-  boolean accept(Object extension);
+class DefaultSensorsPhaseEvent implements SensorsPhaseEvent {
+  private List<Sensor> sensors;
+  private boolean start;
+
+  DefaultSensorsPhaseEvent(Collection<Sensor> sensors, boolean start) {
+    this.sensors = new ArrayList<>(sensors);
+    this.start = start;
+  }
+
+  @Override
+  public List<Sensor> getSensors() {
+    return sensors;
+  }
+
+  @Override
+  public boolean isStart() {
+    return start;
+  }
+
+  @Override
+  public boolean isEnd() {
+    return !start;
+  }
 }

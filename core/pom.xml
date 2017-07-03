@@ -14,7 +14,7 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <version>3.0.1</version>
+      <version>3.0.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -307,6 +307,12 @@
                   <groupId>org.sonarsource.python</groupId>
                   <artifactId>sonar-python-plugin</artifactId>
                   <version>1.7.0.1195</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.cpp</groupId>
+                  <artifactId>sonar-cfamily-plugin</artifactId>
+                  <version>4.11.0.8388</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>

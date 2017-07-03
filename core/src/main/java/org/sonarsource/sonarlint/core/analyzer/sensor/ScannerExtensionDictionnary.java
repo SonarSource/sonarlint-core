@@ -20,15 +20,11 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
 import org.apache.commons.lang.ClassUtils;
 import org.sonar.api.batch.CheckProject;
@@ -41,22 +37,21 @@ import org.sonar.api.resources.Project;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.global.ExtensionMatcher;
 
-public class BatchExtensionDictionnary {
+public class ScannerExtensionDictionnary {
 
   private final ComponentContainer componentContainer;
   private final SensorContext sensorContext;
   private final SensorOptimizer sensorOptimizer;
 
-  public BatchExtensionDictionnary(ComponentContainer componentContainer, DefaultSensorContext sensorContext, SensorOptimizer sensorOptimizer) {
+  public ScannerExtensionDictionnary(ComponentContainer componentContainer, DefaultSensorContext sensorContext, SensorOptimizer sensorOptimizer) {
     this.componentContainer = componentContainer;
     this.sensorContext = sensorContext;
     this.sensorOptimizer = sensorOptimizer;
   }
 
-  public <T> Collection<T> select(Class<T> type, @Nullable Project project, boolean sort, @Nullable ExtensionMatcher matcher) {
-    List<T> result = getFilteredExtensions(type, project, matcher);
+  public <T> Collection<T> select(Class<T> type, @Nullable Project project, boolean sort) {
+    List<T> result = getFilteredExtensions(type, project);
     if (sort) {
       return sort(result);
     }
@@ -77,13 +72,13 @@ public class BatchExtensionDictionnary {
     return Phase.Name.DEFAULT;
   }
 
-  private <T> List<T> getFilteredExtensions(Class<T> type, @Nullable Project project, @Nullable ExtensionMatcher matcher) {
+  private <T> List<T> getFilteredExtensions(Class<T> type, @Nullable Project project) {
     List<T> result = new ArrayList<>();
     for (Object extension : getExtensions(type)) {
       if (org.sonar.api.batch.Sensor.class.equals(type) && extension instanceof Sensor) {
         extension = new SensorWrapper((Sensor) extension, sensorContext, sensorOptimizer);
       }
-      if (shouldKeep(type, extension, project, matcher)) {
+      if (shouldKeep(type, extension, project)) {
         result.add((T) extension);
       }
     }
@@ -91,7 +86,7 @@ public class BatchExtensionDictionnary {
       // Retrieve new Sensors and wrap then in SensorWrapper
       for (Object extension : getExtensions(Sensor.class)) {
         extension = new SensorWrapper((Sensor) extension, sensorContext, sensorOptimizer);
-        if (shouldKeep(type, extension, project, matcher)) {
+        if (shouldKeep(type, extension, project)) {
           result.add((T) extension);
         }
       }
@@ -112,7 +107,7 @@ public class BatchExtensionDictionnary {
     }
   }
 
-  public <T> Collection<T> sort(Collection<T> extensions) {
+  public static <T> Collection<T> sort(Collection<T> extensions) {
     DirectAcyclicGraph dag = new DirectAcyclicGraph();
 
     for (T extension : extensions) {
@@ -134,7 +129,7 @@ public class BatchExtensionDictionnary {
   /**
    * Extension dependencies
    */
-  private <T> List<Object> getDependencies(T extension) {
+  private static <T> List<Object> getDependencies(T extension) {
     List<Object> result = new ArrayList<>();
     result.addAll(evaluateAnnotatedClasses(extension, DependsUpon.class));
     return result;
@@ -143,7 +138,7 @@ public class BatchExtensionDictionnary {
   /**
    * Objects that depend upon this extension.
    */
-  public <T> List<Object> getDependents(T extension) {
+  public static <T> List<Object> getDependents(T extension) {
     List<Object> result = new ArrayList<>();
     result.addAll(evaluateAnnotatedClasses(extension, DependedUpon.class));
     return result;
@@ -161,18 +156,11 @@ public class BatchExtensionDictionnary {
     }
   }
 
-  protected List<Object> evaluateAnnotatedClasses(Object extension, Class<? extends Annotation> annotation) {
+  protected static List<Object> evaluateAnnotatedClasses(Object extension, Class<? extends Annotation> annotation) {
     List<Object> results = new ArrayList<>();
     Class aClass = extension.getClass();
     while (aClass != null) {
       evaluateClass(aClass, annotation, results);
-
-      for (Method method : aClass.getDeclaredMethods()) {
-        if (method.getAnnotation(annotation) != null) {
-          checkAnnotatedMethod(method);
-          evaluateMethod(extension, method, results);
-        }
-      }
       aClass = aClass.getSuperclass();
     }
 
@@ -196,41 +184,9 @@ public class BatchExtensionDictionnary {
     }
   }
 
-  private void evaluateMethod(Object extension, Method method, List<Object> results) {
-    try {
-      Object result = method.invoke(extension);
-      if (result == null) {
-        return;
-      }
-      if (result instanceof Class<?>) {
-        results.addAll(componentContainer.getComponentsByType((Class<?>) result));
-      } else if (result instanceof Collection<?>) {
-        results.addAll((Collection<?>) result);
-      } else if (result.getClass().isArray()) {
-        for (int i = 0; i < Array.getLength(result); i++) {
-          results.add(Array.get(result, i));
-        }
-      } else {
-        results.add(result);
-      }
-    } catch (Exception e) {
-      throw new IllegalStateException("Can not invoke method " + method, e);
-    }
-  }
-
-  private static void checkAnnotatedMethod(Method method) {
-    if (!Modifier.isPublic(method.getModifiers())) {
-      throw new IllegalStateException("Annotated method must be public:" + method);
-    }
-    if (method.getParameterTypes().length > 0) {
-      throw new IllegalStateException("Annotated method must not have parameters:" + method);
-    }
-  }
-
-  private static boolean shouldKeep(Class type, Object extension, @Nullable Project project, @Nullable ExtensionMatcher matcher) {
+  private static boolean shouldKeep(Class type, Object extension, @Nullable Project project) {
     boolean keep = (ClassUtils.isAssignable(extension.getClass(), type)
-      || (org.sonar.api.batch.Sensor.class.equals(type) && ClassUtils.isAssignable(extension.getClass(), Sensor.class)))
-      && (matcher == null || matcher.accept(extension));
+      || (org.sonar.api.batch.Sensor.class.equals(type) && ClassUtils.isAssignable(extension.getClass(), Sensor.class)));
     if (keep && project != null && ClassUtils.isAssignable(extension.getClass(), CheckProject.class)) {
       keep = ((CheckProject) extension).shouldExecuteOnProject(project);
     }

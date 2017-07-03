@@ -36,30 +36,32 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SensorsExecutorTest {
-  private SensorsExecutor executor;
+public class AllSensorsExecutorTest {
+  private AllSensorsExecutor executor;
 
   private Sensor sensor;
-  private BatchExtensionDictionnary dict;
+  private ScannerExtensionDictionnary dict;
   private Project project;
   private SensorsPhaseHandler handler;
+
+  private SensorContext context;
 
   @Before
   public void setUp() {
     handler = mock(SensorsPhaseHandler.class);
     sensor = mock(Sensor.class);
-    dict = mock(BatchExtensionDictionnary.class);
+    dict = mock(ScannerExtensionDictionnary.class);
     project = mock(Project.class);
     SensorsPhaseHandler[] handlers = {handler};
-    executor = new SensorsExecutor(dict, project, new ProgressWrapper(null), handlers);
+    context = mock(SensorContext.class);
+    executor = new AllSensorsExecutor(context, dict, project, new ProgressWrapper(null), handlers);
 
-    when(dict.select(Sensor.class, project, true, null)).thenReturn(Collections.singletonList(sensor));
+    when(dict.select(Sensor.class, project, true)).thenReturn(Collections.singletonList(sensor));
   }
 
   @Test
   public void test() {
-    SensorContext context = mock(SensorContext.class);
-    executor.execute(context);
+    executor.execute();
 
     InOrder inOrder = Mockito.inOrder(handler, sensor);
 

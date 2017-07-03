@@ -19,29 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import org.sonar.api.batch.SensorContext;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 
 public final class PhaseExecutor {
 
   private final SensorsExecutor sensorsExecutor;
-  private final SensorContext sensorContext;
   private final SonarLintFileSystem fs;
 
-  public PhaseExecutor(SensorsExecutor sensorsExecutor, SensorContext sensorContext, SonarLintFileSystem fs) {
+  public PhaseExecutor(SensorsExecutor sensorsExecutor, SonarLintFileSystem fs) {
     this.sensorsExecutor = sensorsExecutor;
-    this.sensorContext = sensorContext;
     this.fs = fs;
   }
 
-  /**
-   * Executed on each module
-   */
   public void execute() {
-
     fs.index();
-
-    sensorsExecutor.execute(sensorContext);
+    sensorsExecutor.execute();
   }
 
 }
