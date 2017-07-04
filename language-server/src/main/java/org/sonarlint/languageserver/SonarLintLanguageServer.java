@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -120,9 +121,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
 
+  private UserSettings userSettings = new UserSettings();
+
   private Path workspaceDir;
-  private String testFilePattern;
-  private Map<String, String> analyzerProperties;
 
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
@@ -158,6 +159,23 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), analyzers);
   }
 
+  private static class UserSettings {
+    @CheckForNull
+    final String testFilePattern;
+    final Map<String, String> analyzerProperties;
+    final boolean disableTelemetry;
+
+    private UserSettings() {
+      this(Collections.emptyMap());
+    }
+
+    private UserSettings(Map<String, Object> params) {
+      this.testFilePattern = (String) params.get(TEST_FILE_PATTERN);
+      this.analyzerProperties = (Map) params.getOrDefault(ANALYZER_PROPERTIES, Collections.emptyMap());
+      this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
+    }
+  }
+
   private void debug(String message) {
     client.logMessage(new MessageParams(MessageType.Log, message));
   }
@@ -189,8 +207,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
 
     Map<String, Object> options = (Map<String, Object>) params.getInitializationOptions();
-    testFilePattern = (String) options.get(TEST_FILE_PATTERN);
-    analyzerProperties = (Map) options.get(ANALYZER_PROPERTIES);
+    userSettings = new UserSettings(options);
 
     String productKey = (String) options.get("productKey");
     // deprecated, will be ignored when productKey present
@@ -200,7 +217,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     String productVersion = (String) options.get("productVersion");
 
     telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
-    telemetry.optOut((Boolean) options.getOrDefault(DISABLE_TELEMETRY, false));
+    telemetry.optOut(userSettings.disableTelemetry);
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
@@ -378,8 +395,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     Objects.requireNonNull(baseDir);
     Objects.requireNonNull(engine);
     StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
-      Arrays.asList(new DefaultClientInputFile(uri, content, testFilePattern, languageIdPerFileURI.get(uri))),
-      analyzerProperties != null ? analyzerProperties : Collections.emptyMap());
+      Arrays.asList(new DefaultClientInputFile(uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
+      userSettings.analyzerProperties);
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
     telemetry.usedAnalysis();
     AnalysisResults analysisResults = engine.analyze(
@@ -469,9 +486,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
     Map<String, Object> settings = (Map<String, Object>) params.getSettings();
     Map<String, Object> entries = (Map<String, Object>) settings.get(SONARLINT_CONFIGURATION_NAMESPACE);
-    testFilePattern = (String) entries.get(TEST_FILE_PATTERN);
-    analyzerProperties = (Map) entries.get(ANALYZER_PROPERTIES);
-    telemetry.optOut((Boolean) entries.get(DISABLE_TELEMETRY));
+    userSettings = new UserSettings(entries);
+    telemetry.optOut(userSettings.disableTelemetry);
   }
 
   @Override
