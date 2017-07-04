@@ -138,4 +138,17 @@ public class SonarLintTelemetryTest {
     verify(engine).isEnabled();
     verifyNoMoreInteractions(engine);
   }
+
+  @Test
+  public void should_start_disabled_when_storagePath_null() {
+    when(engine.isEnabled()).thenReturn(true);
+    SonarLintTelemetry telemetry = new SonarLintTelemetry() {
+      @Override
+      TelemetryManager newTelemetryManager(Path path, TelemetryClient client) {
+        return engine;
+      }
+    };
+    telemetry.init(null, "product", "version");
+    assertThat(telemetry.enabled()).isFalse();
+  }
 }

@@ -21,15 +21,21 @@ package org.sonarlint.languageserver;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.IllegalSelectorException;
+import java.nio.file.Paths;
 import java.util.Collections;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.InitializeParams;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
 
 public class SonarLintLanguageServerTest {
 
@@ -81,4 +87,28 @@ public class SonarLintLanguageServerTest {
     assertThat(server.getWorkspaceService().symbol(null)).isNull();
   }
 
+  @Test
+  public void getStoragePath_should_return_null_when_configuration_missing() {
+    assertThat(getStoragePath(null, null)).isNull();
+  }
+
+  @Test
+  public void getStoragePath_should_return_old_path_when_product_key_missing() {
+    String oldStorage = "dummy";
+    assertThat(getStoragePath(null, oldStorage)).isEqualTo(Paths.get(oldStorage));
+  }
+
+  @Test
+  public void getStoragePath_should_return_new_path_when_product_key_present() {
+    String productKey = "vim";
+    assertThat(getStoragePath(productKey, "dummy")).isEqualTo(TelemetryPathManager.getPath(productKey));
+  }
+
+  @Test
+  public void initialize_should_not_crash_when_disableTelemetry_param_missing() {
+    SonarLintLanguageServer ls = new SonarLintLanguageServer(mock(InputStream.class), mock(OutputStream.class), Collections.emptyList());
+    InitializeParams params = mock(InitializeParams.class);
+    when(params.getInitializationOptions()).thenReturn(Collections.emptyMap());
+    ls.initialize(params);
+  }
 }
