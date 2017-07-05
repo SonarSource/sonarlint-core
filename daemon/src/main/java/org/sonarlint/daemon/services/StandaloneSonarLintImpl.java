@@ -47,6 +47,8 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
+
 public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneSonarLintImplBase {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(StandaloneSonarLintImpl.class);
   private final ProxyLogOutput logOutput;
@@ -83,7 +85,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
       List<InputFile> requestFiles = requestConfig.getFileList();
 
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject()));
+        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
       }
 
       StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(

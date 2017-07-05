@@ -136,6 +136,7 @@ message InputFile {
   string charset = 2;
   bool is_test = 3;
   string user_object = 4;
+  string language = 5;
 }
 
 message ConnectedAnalysisReq {
