@@ -49,6 +49,8 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState.State;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
+
 public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedSonarLintImpl.class);
   private ConnectedSonarLintEngine engine;
@@ -89,7 +91,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       List<InputFile> requestFiles = requestConfig.getFileList();
 
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject()));
+        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
       }
 
       ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration(

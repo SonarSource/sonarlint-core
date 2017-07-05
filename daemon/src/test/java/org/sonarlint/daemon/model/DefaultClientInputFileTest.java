@@ -19,8 +19,6 @@
  */
 package org.sonarlint.daemon.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,10 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultClientInputFileTest {
   @Rule
@@ -46,10 +45,11 @@ public class DefaultClientInputFileTest {
 
     boolean isTest = true;
     String userObject = new String();
-    DefaultClientInputFile file = new DefaultClientInputFile(path, isTest, charset, userObject);
+    DefaultClientInputFile file = new DefaultClientInputFile(path, isTest, charset, userObject, "cpp");
 
     assertThat(file.getCharset()).isEqualTo(charset);
     assertThat(file.isTest()).isEqualTo(isTest);
+    assertThat(file.language()).isEqualTo("cpp");
     assertThat(file.getPath()).isEqualTo(path.toString());
     assertThat(file.contents()).isEqualTo("test");
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.inputStream(), charset))) {
