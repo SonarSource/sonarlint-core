@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,29 +74,37 @@ public class StandaloneDaemonTest {
     ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8050)
       .usePlaintext(true)
       .build();
+    try {
 
-    LogCollector logs = new LogCollector();
-    StandaloneSonarLintBlockingStub sonarlint = StandaloneSonarLintGrpc.newBlockingStub(channel);
+      LogCollector logs = new LogCollector();
+      StandaloneSonarLintBlockingStub sonarlint = StandaloneSonarLintGrpc.newBlockingStub(channel);
 
-    AnalysisReq analysisConfig = createAnalysisConfig("sample-javascript");
+      AnalysisReq analysisConfig = createAnalysisConfig("sample-javascript");
 
-    long start = System.currentTimeMillis();
+      long start = System.currentTimeMillis();
 
-    ClientCall<Void, LogEvent> call = getLogs(logs, channel);
+      ClientCall<Void, LogEvent> call = getLogs(logs, channel);
+      try {
+        for (int i = 0; i < 100; i++) {
+          System.out.println("ITERATION: " + i);
+          Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
 
-    for (int i = 0; i < 100; i++) {
-      System.out.println("ITERATION: " + i);
-      Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
+          assertThat(issues).hasSize(1);
+          List<String> logsLines = logs.getLogsAndClear();
+          // To be sure logs are not flooded by low level logs
+          assertThat(logsLines.size()).isLessThan(100);
+          assertThat(logsLines).contains("1 files indexed");
+        }
+      } finally {
+        call.cancel("no more logs needed", null);
+      }
 
-      assertThat(issues).hasSize(1);
-      assertThat(logs.getLogsAndClear()).contains("1 files indexed");
-      call.cancel("no more logs needed", null);
+      System.out.println("TIME " + (System.currentTimeMillis() - start));
+
+    } finally {
+      channel.shutdownNow();
+      channel.awaitTermination(2, TimeUnit.SECONDS);
     }
-
-    System.out.println("TIME " + (System.currentTimeMillis() - start));
-
-    channel.shutdownNow();
-    channel.awaitTermination(2, TimeUnit.SECONDS);
   }
 
   private ClientCall<Void, LogEvent> getLogs(LogCollector collector, Channel channel) {
@@ -140,20 +149,12 @@ public class StandaloneDaemonTest {
       System.out.println("LOGS CLOSED " + status);
     }
 
-    public String getLogsAndClear() {
-      StringBuilder builder = new StringBuilder();
+    public List<String> getLogsAndClear() {
       synchronized (list) {
-        for (LogEvent e : list) {
-          if (e.getIsDebug()) {
-            continue;
-          }
-
-          builder.append(e.getLog()).append("\n");
-        }
-        // list.clear();
+        List<String> result = list.stream().map(LogEvent::getLog).collect(Collectors.toList());
+        list.clear();
+        return result;
       }
-
-      return builder.toString();
     }
 
     public List<LogEvent> get() {
