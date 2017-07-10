@@ -90,6 +90,7 @@ class DefaultClientInputFile implements ClientInputFile {
     switch (clientLanguageId) {
       case "javascript":
       case "javascriptreact":
+      case "vue component":
         return "js";
       case "python":
         return "py";
