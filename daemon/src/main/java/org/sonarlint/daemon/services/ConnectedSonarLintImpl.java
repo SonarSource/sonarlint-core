@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import org.slf4j.LoggerFactory;
+import org.sonarlint.daemon.Daemon;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
 import org.sonarlint.daemon.model.ProxyLogOutput;
@@ -53,11 +54,13 @@ import static org.apache.commons.lang.StringUtils.trimToNull;
 
 public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedSonarLintImpl.class);
-  private ConnectedSonarLintEngine engine;
+  private final Daemon daemon;
   private final ProxyLogOutput logOutput;
+  private ConnectedSonarLintEngine engine;
 
-  public ConnectedSonarLintImpl() {
-    this.logOutput = new ProxyLogOutput();
+  public ConnectedSonarLintImpl(Daemon daemon) {
+    this.daemon = daemon;
+    this.logOutput = new ProxyLogOutput(daemon);
   }
 
   @Override
@@ -209,5 +212,11 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       LOGGER.error("getRuleDetails", e);
       response.onError(e);
     }
+  }
+
+  @Override
+  public void shutdown(Void request, StreamObserver<Void> responseObserver) {
+    LOGGER.info("Shutdown requested");
+    daemon.stop();
   }
 }

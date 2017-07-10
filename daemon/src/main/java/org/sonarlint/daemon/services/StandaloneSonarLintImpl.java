@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import org.slf4j.LoggerFactory;
+import org.sonarlint.daemon.Daemon;
 import org.sonarlint.daemon.Utils;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
@@ -53,11 +55,13 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(StandaloneSonarLintImpl.class);
   private final ProxyLogOutput logOutput;
   private final Collection<URL> analyzers;
+  private final Daemon daemon;
   private StandaloneSonarLintEngine engine;
 
-  public StandaloneSonarLintImpl(Collection<URL> analyzers) {
+  public StandaloneSonarLintImpl(Daemon daemon, Collection<URL> analyzers) {
+    this.daemon = daemon;
     this.analyzers = analyzers;
-    this.logOutput = new ProxyLogOutput();
+    this.logOutput = new ProxyLogOutput(daemon);
     start();
   }
 
@@ -103,6 +107,30 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   }
 
   @Override
+  public StreamObserver<Void> heartBeat(StreamObserver<Void> responseObserver) {
+    return new StreamObserver<SonarlintDaemon.Void>() {
+
+      @Override
+      public void onNext(SonarlintDaemon.Void value) {
+        // Nothing to do
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        LOGGER.error("Received an error during heartbeat, stopping", t);
+        daemon.stop();
+      }
+
+      @Override
+      public void onCompleted() {
+        LOGGER.error("Heartbeat stream completed, stopping");
+        daemon.stop();
+      }
+
+    };
+  }
+
+  @Override
   public void streamLogs(Void request, StreamObserver<LogEvent> response) {
     logOutput.setObserver(response);
   }
@@ -124,6 +152,12 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
       LOGGER.error("getRuleDetails", e);
       response.onError(e);
     }
+  }
+
+  @Override
+  public void shutdown(Void request, StreamObserver<Void> responseObserver) {
+    LOGGER.info("Shutdown requested");
+    daemon.stop();
   }
 
 }

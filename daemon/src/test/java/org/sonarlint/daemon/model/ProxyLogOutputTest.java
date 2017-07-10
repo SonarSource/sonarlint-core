@@ -19,20 +19,22 @@
  */
 package org.sonarlint.daemon.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.sonarlint.daemon.Daemon;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class ProxyLogOutputTest {
   private StreamObserver<LogEvent> observer;
@@ -44,7 +46,7 @@ public class ProxyLogOutputTest {
 
   @Test
   public void testProxyLog() {
-    ProxyLogOutput log = new ProxyLogOutput();
+    ProxyLogOutput log = new ProxyLogOutput(mock(Daemon.class));
     log.log("log msg", Level.INFO);
 
     log.setObserver(observer);
@@ -58,27 +60,25 @@ public class ProxyLogOutputTest {
     assertThat(event.getLevel()).isEqualTo("DEBUG");
     assertThat(event.getLog()).isEqualTo("msg");
   }
-  
+
   @Test
   public void testLogError() {
-    ProxyLogOutput log = new ProxyLogOutput();
+    ProxyLogOutput log = new ProxyLogOutput(mock(Daemon.class));
     log.log("log msg", Level.INFO);
 
     log.setObserver(observer);
     log.log("msg", Level.ERROR);
 
     ArgumentCaptor<LogEvent> argument = ArgumentCaptor.forClass(LogEvent.class);
-    verify(observer).onNext(argument.capture());
-    LogEvent event = argument.getValue();
+    verify(observer, atLeastOnce()).onNext(argument.capture());
 
-    assertThat(event.getIsDebug()).isFalse();
-    assertThat(event.getLevel()).isEqualTo("ERROR");
-    assertThat(event.getLog()).isEqualTo("msg");
+    assertThat(argument.getAllValues()).extracting("isDebug", "level", "log")
+      .contains(tuple(false, "ERROR", "msg"));
   }
-  
+
   @Test
   public void testSetLogTwice() {
-    ProxyLogOutput log = new ProxyLogOutput();
+    ProxyLogOutput log = new ProxyLogOutput(mock(Daemon.class));
     log.setObserver(observer);
     log.setObserver(observer);
     verify(observer).onCompleted();
@@ -86,9 +86,11 @@ public class ProxyLogOutputTest {
 
   @Test
   public void testProxyLogError() {
-    ProxyLogOutput log = new ProxyLogOutput();
+    Daemon daemon = mock(Daemon.class);
+    ProxyLogOutput log = new ProxyLogOutput(daemon);
     doThrow(StatusRuntimeException.class).when(observer).onNext(any(LogEvent.class));
     log.setObserver(observer);
     log.log("msg", Level.DEBUG);
+    verify(daemon).stop();
   }
 }
