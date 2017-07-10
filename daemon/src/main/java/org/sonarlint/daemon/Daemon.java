@@ -38,7 +38,7 @@ public class Daemon {
   private static final int DEFAULT_PORT = 8050;
   private Server server;
 
-  public static void main(String... args) {
+  public static void main(String[] args) {
     setUpNettyLogging();
 
     int port;
@@ -65,6 +65,7 @@ public class Daemon {
   }
 
   public void stop() {
+    LOGGER.info("Asking gRPC server to shutdown...");
     server.shutdown();
   }
 
@@ -74,17 +75,18 @@ public class Daemon {
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
       server = NettyServerBuilder.forAddress(new InetSocketAddress("localhost", port))
-        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(), interceptor))
-        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(Utils.getAnalyzers(sonarlintHome)), interceptor))
+        .addService(ServerInterceptors.intercept(new ConnectedSonarLintImpl(this), interceptor))
+        .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(this, Utils.getAnalyzers(sonarlintHome)), interceptor))
         .build()
         .start();
       LOGGER.info("Server started, listening on {}", port);
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
-          LOGGER.info("Shutting down gRPC server since JVM is shutting down");
-          Daemon.this.stop();
-          LOGGER.info("Server shut down");
+          LOGGER.info("JVM is shutting down");
+          if (!server.isShutdown()) {
+            Daemon.this.stop();
+          }
         }
       });
       server.awaitTermination();

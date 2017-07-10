@@ -22,6 +22,7 @@ package its;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
+import io.grpc.ClientCall.Listener;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -37,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,49 +64,58 @@ public class StandaloneDaemonTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  private ManagedChannel channel;
+
   @Before
   public void setUp() {
     daemon.install();
     daemon.run();
     daemon.waitReady();
+    channel = ManagedChannelBuilder.forAddress("localhost", 8050)
+      .usePlaintext(true)
+      .build();
+  }
+
+  @After
+  public void shutdown() throws Exception {
+    ClientCall<Void, Void> call = channel.newCall(StandaloneSonarLintGrpc.METHOD_SHUTDOWN, CallOptions.DEFAULT);
+    call.start(new Listener<Void>() {
+    }, new Metadata());
+    call.sendMessage(Void.newBuilder().build());
+    call.halfClose();
+    call.request(1);
+
+    channel.shutdownNow();
+    channel.awaitTermination(2, TimeUnit.SECONDS);
   }
 
   @Test
   public void test() throws InterruptedException, IOException {
-    ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8050)
-      .usePlaintext(true)
-      .build();
+
+    LogCollector logs = new LogCollector();
+    StandaloneSonarLintBlockingStub sonarlint = StandaloneSonarLintGrpc.newBlockingStub(channel);
+
+    AnalysisReq analysisConfig = createAnalysisConfig("sample-javascript");
+
+    long start = System.currentTimeMillis();
+
+    ClientCall<Void, LogEvent> call = getLogs(logs, channel);
     try {
+      for (int i = 0; i < 100; i++) {
+        System.out.println("ITERATION: " + i);
+        Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
 
-      LogCollector logs = new LogCollector();
-      StandaloneSonarLintBlockingStub sonarlint = StandaloneSonarLintGrpc.newBlockingStub(channel);
-
-      AnalysisReq analysisConfig = createAnalysisConfig("sample-javascript");
-
-      long start = System.currentTimeMillis();
-
-      ClientCall<Void, LogEvent> call = getLogs(logs, channel);
-      try {
-        for (int i = 0; i < 100; i++) {
-          System.out.println("ITERATION: " + i);
-          Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
-
-          assertThat(issues).hasSize(1);
-          List<String> logsLines = logs.getLogsAndClear();
-          // To be sure logs are not flooded by low level logs
-          assertThat(logsLines.size()).isLessThan(100);
-          assertThat(logsLines).contains("1 files indexed");
-        }
-      } finally {
-        call.cancel("no more logs needed", null);
+        assertThat(issues).hasSize(1);
+        List<String> logsLines = logs.getLogsAndClear();
+        // To be sure logs are not flooded by low level logs
+        assertThat(logsLines.size()).isLessThan(100);
+        assertThat(logsLines).contains("1 files indexed");
       }
-
-      System.out.println("TIME " + (System.currentTimeMillis() - start));
-
     } finally {
-      channel.shutdownNow();
-      channel.awaitTermination(2, TimeUnit.SECONDS);
+      call.cancel("no more logs needed", null);
     }
+
+    System.out.println("TIME " + (System.currentTimeMillis() - start));
   }
 
   private ClientCall<Void, LogEvent> getLogs(LogCollector collector, Channel channel) {
