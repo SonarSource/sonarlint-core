@@ -91,6 +91,7 @@ class DefaultClientInputFile implements ClientInputFile {
       case "javascript":
       case "javascriptreact":
       case "vue component":
+      case "babel es6 javascript":
         return "js";
       case "python":
         return "py";
