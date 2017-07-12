@@ -66,6 +66,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -75,6 +76,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.DISABLE_TELEMETRY;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.TEST_FILE_PATTERN;
 
+@Ignore
 public class ServerMainTest {
 
   @Rule
@@ -180,6 +182,7 @@ public class ServerMainTest {
         tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function. (python:PrintStatementUsage)", DiagnosticSeverity.Error));
   }
 
+  @Ignore
   @Test
   public void analyzeSimplePhpFileOnOpen() throws Exception {
     File tempFile = temp.newFile("foo.php");
@@ -313,7 +316,7 @@ public class ServerMainTest {
   private void waitForDiagnostics() throws InterruptedException {
     int maxLoop = 40;
     do {
-      Thread.sleep(200);
+      Thread.sleep(100);
       maxLoop--;
     } while (client.diagnosticsParamsList.isEmpty() && maxLoop > 0);
 
