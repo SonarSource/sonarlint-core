@@ -313,7 +313,7 @@ public class ServerMainTest {
   private void waitForDiagnostics() throws InterruptedException {
     int maxLoop = 40;
     do {
-      Thread.sleep(100);
+      Thread.sleep(200);
       maxLoop--;
     } while (client.diagnosticsParamsList.isEmpty() && maxLoop > 0);
 
