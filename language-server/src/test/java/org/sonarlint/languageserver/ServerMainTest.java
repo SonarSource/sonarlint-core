@@ -26,13 +26,13 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -71,6 +71,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.DISABLE_TELEMETRY;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.TEST_FILE_PATTERN;
@@ -92,17 +93,14 @@ public class ServerMainTest {
     client = new FakeLanguageClient();
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
-    Callable<LanguageServer> callable = new Callable<LanguageServer>() {
-      @Override
-      public LanguageServer call() throws IOException {
-        Socket socket = serverSocket.accept();
-        Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
-          socket.getInputStream(),
-          socket.getOutputStream(),
-          true, new PrintWriter(System.out));
-        launcher.startListening();
-        return launcher.getRemoteProxy();
-      }
+    Callable<LanguageServer> callable = () -> {
+      Socket socket = serverSocket.accept();
+      Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
+        socket.getInputStream(),
+        socket.getOutputStream(),
+        true, new PrintWriter(System.out));
+      launcher.startListening();
+      return launcher.getRemoteProxy();
     };
     Future<LanguageServer> future = executor.submit(callable);
     executor.shutdown();
@@ -155,26 +153,22 @@ public class ServerMainTest {
 
   @Test
   public void analyzeSimpleJsFileOnOpen() throws Exception {
-    File tempFile = temp.newFile("foo.js");
+    String uri = getUri("foo.js");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n}")));
 
-    waitForDiagnostics();
-
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+    assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
   }
 
   @Test
   public void analyzeSimplePythonFileOnOpen() throws Exception {
-    File tempFile = temp.newFile("foo.py");
+    String uri = getUri("foo.py");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "python", 1, "def foo():\n  print 'toto'\n")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "python", 1, "def foo():\n  print 'toto'\n")));
 
-    waitForDiagnostics();
-
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+    assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
         tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function. (python:PrintStatementUsage)", DiagnosticSeverity.Error));
@@ -182,13 +176,11 @@ public class ServerMainTest {
 
   @Test
   public void analyzeSimplePhpFileOnOpen() throws Exception {
-    File tempFile = temp.newFile("foo.php");
+    String uri = getUri("foo.php");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "php", 1, "<?php\nfunction foo() {\n  echo(\"Hello\");\n}\n?>")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "php", 1, "<?php\nfunction foo() {\n  echo(\"Hello\");\n}\n?>")));
 
-    waitForDiagnostics();
-
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+    assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(2, 2, 2, 6, "php:S2041", "sonarlint", "Remove the parentheses from this \"echo\" call. (php:S2041)", DiagnosticSeverity.Error));
   }
@@ -197,28 +189,24 @@ public class ServerMainTest {
   public void noIssueOnTestJSFiles() throws Exception {
     lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("{**/*Test*}", false));
 
-    File tempFile = temp.newFile("fooTest.js");
+    String fooTestUri = getUri("fooTest.js");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(fooTestUri, "javascript", 1, "function foo() {\n  alert('toto');\n}")));
 
-    waitForDiagnostics();
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).isEmpty();
+    assertThat(waitForDiagnostics(fooTestUri)).isEmpty();
     client.clear();
 
     lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("{**/*MyTest*}", false));
 
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(tempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
-    waitForDiagnostics();
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).hasSize(1);
-    client.clear();
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(fooTestUri, "javascript", 1, "function foo() {\n  alert('toto');\n}")));
+    assertThat(waitForDiagnostics(fooTestUri)).hasSize(1);
 
-    File anotherTempFile = temp.newFile("fooMyTest.js");
+    String fooMyTestUri = getUri("fooMyTest.js");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(anotherTempFile.toURI().toString(), "javascript", 1, "function foo() {\n  alert('toto');\n}")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(fooMyTestUri, "javascript", 1, "function foo() {\n  alert('toto');\n}")));
 
-    waitForDiagnostics();
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).isEmpty();
+    assertThat(waitForDiagnostics(fooMyTestUri)).isEmpty();
   }
 
   private DidChangeConfigurationParams changedConfiguration(@Nullable String testFilePattern, boolean disableTelemetry) {
@@ -230,41 +218,35 @@ public class ServerMainTest {
 
   @Test
   public void analyzeSimpleJsFileOnChange() throws Exception {
-    File tempFile = temp.newFile("foo.js");
+    String uri = getUri("foo.js");
     VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
-    docId.setUri(tempFile.toURI().toString());
+    docId.setUri(uri);
     lsProxy.getTextDocumentService()
-      .didChange(new DidChangeTextDocumentParams(docId, Arrays.asList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
+      .didChange(new DidChangeTextDocumentParams(docId, Collections.singletonList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
 
-    waitForDiagnostics();
-
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+    assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
   }
 
   @Test
   public void analyzeSimpleJsFileOnSave() throws Exception {
-    File tempFile = temp.newFile("foo.js");
+    String uri = getUri("foo.js");
     lsProxy.getTextDocumentService()
-      .didSave(new DidSaveTextDocumentParams(new TextDocumentIdentifier(tempFile.toURI().toString()), "function foo() {\n  alert('toto');\n}"));
+      .didSave(new DidSaveTextDocumentParams(new TextDocumentIdentifier(uri), "function foo() {\n  alert('toto');\n}"));
 
-    waitForDiagnostics();
-
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics())
+    assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
   }
 
   @Test
   public void cleanDiagnosticsOnClose() throws Exception {
-    File tempFile = temp.newFile("foo.js");
+    String uri = getUri("foo.js");
     lsProxy.getTextDocumentService()
-      .didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(tempFile.toURI().toString())));
+      .didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(uri)));
 
-    waitForDiagnostics();
-
-    assertThat(client.diagnosticsParamsList.get(0).getDiagnostics()).isEmpty();
+    assertThat(waitForDiagnostics(uri)).isEmpty();
   }
 
   @Test
@@ -277,19 +259,15 @@ public class ServerMainTest {
 
   @Test
   public void testCodeActionRuleDescription() throws Exception {
-    File tempFile = temp.newFile("foo.js");
+    String uri = getUri("foo.js");
     VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
-    docId.setUri(tempFile.toURI().toString());
+    docId.setUri(uri);
     lsProxy.getTextDocumentService()
-      .didChange(new DidChangeTextDocumentParams(docId, Arrays.asList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
-
-    waitForDiagnostics();
-
-    Diagnostic diagnostic = client.diagnosticsParamsList.get(0).getDiagnostics().get(0);
+      .didChange(new DidChangeTextDocumentParams(docId, Collections.singletonList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
 
     List<? extends Command> codeActions = lsProxy.getTextDocumentService()
-      .codeAction(new CodeActionParams(new TextDocumentIdentifier(tempFile.toURI().toString()), new Range(new Position(1, 4), new Position(1, 4)),
-        new CodeActionContext(Arrays.asList(diagnostic))))
+      .codeAction(new CodeActionParams(new TextDocumentIdentifier(uri), new Range(new Position(1, 4), new Position(1, 4)),
+        new CodeActionContext(waitForDiagnostics(uri))))
       .get();
 
     assertThat(codeActions).hasSize(1);
@@ -310,21 +288,30 @@ public class ServerMainTest {
     assertThat(ruleSev).isEqualTo("MINOR");
   }
 
-  private void waitForDiagnostics() throws InterruptedException {
+  private String getUri(String filename) throws IOException {
+    return temp.newFile(filename).toURI().toString();
+  }
+
+  private List<Diagnostic> waitForDiagnostics(String uri) throws InterruptedException {
     int maxLoop = 40;
     do {
       Thread.sleep(100);
       maxLoop--;
-    } while (client.diagnosticsParamsList.isEmpty() && maxLoop > 0);
+    } while (maxLoop > 0 && !client.containsDiagnostics(uri));
 
+    if (maxLoop == 0) {
+      fail("Did not receive diagnostics soon enough");
+    }
+
+    return client.getDiagnostics(uri);
   }
 
   private static class FakeLanguageClient implements LanguageClient {
 
-    List<PublishDiagnosticsParams> diagnosticsParamsList = new ArrayList<>();
+    Map<String, List<Diagnostic>> diagnostics = new ConcurrentHashMap<>();
 
-    public void clear() {
-      diagnosticsParamsList.clear();
+    void clear() {
+      diagnostics.clear();
     }
 
     @Override
@@ -333,9 +320,17 @@ public class ServerMainTest {
 
     }
 
+    boolean containsDiagnostics(String uri) {
+      return diagnostics.containsKey(uri);
+    }
+
+    List<Diagnostic> getDiagnostics(String uri) {
+      return diagnostics.get(uri);
+    }
+
     @Override
     public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
-      diagnosticsParamsList.add(diagnostics);
+      this.diagnostics.put(diagnostics.getUri(), diagnostics.getDiagnostics());
     }
 
     @Override
