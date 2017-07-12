@@ -295,7 +295,7 @@ public class ServerMainTest {
   private List<Diagnostic> waitForDiagnostics(String uri) throws InterruptedException {
     int maxLoop = 40;
     do {
-      Thread.sleep(100);
+      Thread.sleep(200);
       maxLoop--;
     } while (maxLoop > 0 && !client.containsDiagnostics(uri));
 
