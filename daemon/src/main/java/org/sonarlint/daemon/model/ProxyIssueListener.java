@@ -19,12 +19,13 @@
  */
 package org.sonarlint.daemon.model;
 
+import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
-
-import io.grpc.stub.StreamObserver;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Type;
 
 public class ProxyIssueListener implements IssueListener {
   private final StreamObserver<Issue> observer;
@@ -57,11 +58,28 @@ public class ProxyIssueListener implements IssueListener {
         break;
     }
 
+    Type type = Type.CODE_SMELL;
+    if (issue.getType() != null) {
+      switch (StringUtils.lowerCase(issue.getType())) {
+        case "bug":
+          type = Type.BUG;
+          break;
+        case "vulnerability":
+          type = Type.VULNERABILITY;
+          break;
+        case "code_smell":
+        default:
+          type = Type.CODE_SMELL;
+          break;
+      }
+    }
+
     Issue.Builder builder = Issue.newBuilder();
     builder.setRuleKey(issue.getRuleKey())
       .setRuleName(issue.getRuleName())
       .setMessage(issue.getMessage())
       .setSeverity(severity)
+      .setType(type)
       .setStartLine(issue.getStartLine() != null ? issue.getStartLine() : 0)
       .setStartLineOffset(issue.getStartLineOffset() != null ? issue.getStartLineOffset() : 0)
       .setEndLine(issue.getEndLine() != null ? issue.getEndLine() : 0)
