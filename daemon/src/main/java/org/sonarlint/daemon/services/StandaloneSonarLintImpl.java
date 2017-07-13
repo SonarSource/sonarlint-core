@@ -98,6 +98,10 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         files,
         requestConfig.getPropertiesMap());
 
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Analysis configuration:\n" + config.toString());
+      }
+
       engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();
     } catch (Exception e) {

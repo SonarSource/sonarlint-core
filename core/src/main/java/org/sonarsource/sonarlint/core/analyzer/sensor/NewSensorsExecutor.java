@@ -60,14 +60,14 @@ public class NewSensorsExecutor implements SensorsExecutor {
       DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);
       if (sensorOptimizer.shouldExecute(descriptor)) {
-        executeSensor(context, sensor);
+        executeSensor(context, sensor, descriptor);
       }
     }
   }
 
-  private static void executeSensor(SensorContext context, Sensor sensor) {
+  private static void executeSensor(SensorContext context, Sensor sensor, DefaultSensorDescriptor descriptor) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Execute Sensor: {}", StringUtils.describe(sensor));
+      LOG.debug("Execute Sensor: {}", descriptor.name() != null ? descriptor.name() : StringUtils.describe(sensor));
     }
     sensor.execute(context);
   }
