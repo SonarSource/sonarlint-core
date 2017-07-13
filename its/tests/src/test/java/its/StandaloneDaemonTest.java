@@ -101,11 +101,13 @@ public class StandaloneDaemonTest {
 
     ClientCall<Void, LogEvent> call = getLogs(logs, channel);
     try {
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 10; i++) {
         System.out.println("ITERATION: " + i);
         Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
 
         assertThat(issues).hasSize(1);
+        // Give some time for logs to come
+        Thread.sleep(500);
         List<String> logsLines = logs.getLogsAndClear();
         // To be sure logs are not flooded by low level logs
         assertThat(logsLines.size()).isLessThan(100);
