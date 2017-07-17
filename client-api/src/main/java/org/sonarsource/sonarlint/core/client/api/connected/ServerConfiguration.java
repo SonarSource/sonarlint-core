@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.net.Proxy;
+import java.util.Objects;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSocketFactory;
@@ -56,6 +58,33 @@ public class ServerConfiguration {
     this.readTimeoutMs = builder.readTimeoutMs;
     this.sslSocketFactory = builder.sslSocketFactory;
     this.sslTrustManager = builder.sslTrustManager;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(connectTimeoutMs, login, organizationKey, password, proxy, proxyLogin, proxyPassword, readTimeoutMs, url, userAgent);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    ServerConfiguration other = (ServerConfiguration) obj;
+
+    return Objects.equals(connectTimeoutMs, other.connectTimeoutMs)
+      && Objects.equals(login, other.login)
+      && Objects.equals(organizationKey, other.organizationKey)
+      && Objects.equals(password, other.password)
+      && Objects.equals(url, other.url)
+      && Objects.equals(userAgent, other.userAgent)
+      && Objects.equals(readTimeoutMs, other.readTimeoutMs)
+      && Objects.equals(proxy, other.proxy)
+      && Objects.equals(proxyLogin, other.proxyLogin)
+      && Objects.equals(proxyPassword, other.proxyPassword);
   }
 
   public String getUrl() {
