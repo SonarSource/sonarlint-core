@@ -55,6 +55,39 @@ public class ServerConfigurationTest {
   }
 
   @Test
+  public void equals_hash() {
+    ServerConfiguration config1 = ServerConfiguration.builder()
+      .url("http://foo")
+      .userAgent("agent")
+      .build();
+
+    ServerConfiguration config2 = ServerConfiguration.builder()
+      .url("http://foo")
+      .userAgent("agent2")
+      .build();
+
+    ServerConfiguration config3 = ServerConfiguration.builder()
+      .url("http://foo")
+      .userAgent("agent2")
+      .proxyCredentials("proxyLogin", "proxyPass")
+      .build();
+    
+    ServerConfiguration config4 = ServerConfiguration.builder()
+      .url("http://foo")
+      .userAgent("agent")
+      .build();
+
+    assertThat(config1.equals(config2)).isFalse();
+    assertThat(config1.equals(config3)).isFalse();
+    assertThat(config1.equals(config1)).isTrue();
+    assertThat(config1.equals(config4)).isTrue();
+    assertThat(config1.hashCode()).isEqualTo(config4.hashCode());
+
+
+
+  }
+
+  @Test
   public void minimal_builder() {
     ServerConfiguration config = ServerConfiguration.builder()
       .url("http://foo")

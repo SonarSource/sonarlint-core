@@ -77,14 +77,14 @@ public class NotificationTimerTaskTest {
     verify(notificationChecker).request(Collections.singletonMap("myproject", time));
     verifyZeroInteractions(listener);
   }
-  
+
   @Test
   public void testErrorParsing() {
     when(notificationChecker.request(anyMap())).thenThrow(new IllegalStateException());
     NotificationConfiguration project = createProject("myproject");
     timerTask.setProjects(Collections.singleton(project));
     timerTask.run();
-    
+
     verify(notificationCheckerFactory, times(1)).create(any(ServerConfiguration.class));
     verify(notificationChecker).request(Collections.singletonMap("myproject", time));
     verifyZeroInteractions(listener);
@@ -128,6 +128,33 @@ public class NotificationTimerTaskTest {
 
     // verify checker used once and notification was returned through the listener
     verify(notificationCheckerFactory, times(1)).create(any(ServerConfiguration.class));
+    verify(notificationChecker).request(Collections.singletonMap("myproject", time));
+
+    verify(listener).handle(notif);
+  }
+
+  @Test
+  public void testRepeatedProject() {
+    // return one notification for our project
+    SonarQubeNotification notif = mock(SonarQubeNotification.class);
+    when(notif.projectKey()).thenReturn("myproject");
+    when(notificationChecker.request(Collections.singletonMap("myproject", time))).thenReturn(Collections.singletonList(notif));
+
+    // execute with one project
+    NotificationConfiguration project = createProject("myproject");
+    NotificationConfiguration project2 = createProject("myproject");
+
+    LastNotificationTime notificationTime = mock(LastNotificationTime.class);
+    when(notificationTime.get()).thenReturn(ZonedDateTime.now().minusHours(2));
+    when(project2.lastNotificationTime()).thenReturn(notificationTime);
+
+    timerTask.setProjects(Collections.singleton(project));
+    timerTask.run();
+
+    // verify checker used once and notification was returned through the listener
+    verify(notificationCheckerFactory, times(1)).create(any(ServerConfiguration.class));
+
+    // should use the most recent time
     verify(notificationChecker).request(Collections.singletonMap("myproject", time));
 
     verify(listener).handle(notif);
