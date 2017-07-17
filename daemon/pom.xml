@@ -25,7 +25,7 @@
     
     <!-- embedded analyzers -->
     <sonar.javascript.version>3.0.0.4962</sonar.javascript.version>
-    <sonar.cfamily.version>4.11.0.8388</sonar.cfamily.version>
+    <sonar.cfamily.version>4.11.0.8443</sonar.cfamily.version>
 
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>

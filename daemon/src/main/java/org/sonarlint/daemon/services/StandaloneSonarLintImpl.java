@@ -34,6 +34,7 @@ import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
 import org.sonarlint.daemon.model.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
@@ -98,9 +99,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         files,
         requestConfig.getPropertiesMap());
 
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Analysis configuration:\n" + config.toString());
-      }
+      logOutput.log("Analysis configuration:\n" + config.toString(), Level.DEBUG);
 
       engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();
