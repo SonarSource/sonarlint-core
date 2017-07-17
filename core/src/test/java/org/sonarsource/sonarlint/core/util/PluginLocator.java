@@ -51,7 +51,7 @@ public class PluginLocator {
   }
 
   public static URL getCppPluginUrl() {
-    return getPluginUrl("sonar-cfamily-plugin-4.11.0.8388.jar");
+    return getPluginUrl("sonar-cfamily-plugin-4.11.0.8443.jar");
   }
 
   public static URL getXooPluginUrl() {

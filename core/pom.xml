@@ -312,7 +312,7 @@
                 <artifactItem>
                   <groupId>com.sonarsource.cpp</groupId>
                   <artifactId>sonar-cfamily-plugin</artifactId>
-                  <version>4.11.0.8388</version>
+                  <version>4.11.0.8443</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
