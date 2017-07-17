@@ -73,6 +73,8 @@ public class NotificationCheckerTest {
     assertThat(notifications.get(0).message()).isEqualTo("Quality Gate is Red (was Orange)");
     assertThat(notifications.get(0).link()).isEqualTo("https://sonarcloud.io/dashboard?id=myproject");
     assertThat(notifications.get(0).projectKey()).isEqualTo("myproject");
+    assertThat(notifications.get(0).time()).isEqualTo(ZonedDateTime.of(2017, 7, 17, 9, 55, 26, 0, ZoneOffset.ofHours(2)));
+
   }
 
   @Test

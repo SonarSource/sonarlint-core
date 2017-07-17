@@ -26,10 +26,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
 public class SonarQubeNotifications {
-  private static final int DELAY = 60_000;
+  static final int DELAY = 60_000;
   private static final Object LOCK = new Object();
 
   private static SonarQubeNotifications singleton;
@@ -38,10 +37,12 @@ public class SonarQubeNotifications {
 
   private Timer timer;
   private NotificationTimerTask task;
+  private final NotificationCheckerFactory checkerFactory;
 
-  SonarQubeNotifications(Timer timer, NotificationTimerTask task) {
+  SonarQubeNotifications(Timer timer, NotificationTimerTask task, NotificationCheckerFactory checkerFactory) {
     this.timer = timer;
     this.task = task;
+    this.checkerFactory = checkerFactory;
     this.timer.scheduleAtFixedRate(task, DELAY, DELAY);
   }
   
@@ -50,7 +51,7 @@ public class SonarQubeNotifications {
       if (singleton == null) {
         Timer timer = new Timer("Notifications timer", true);
         NotificationTimerTask timerTask = new NotificationTimerTask();
-        singleton = new SonarQubeNotifications(timer, timerTask);
+        singleton = new SonarQubeNotifications(timer, timerTask, new NotificationCheckerFactory());
       }
       return singleton;
     }
@@ -75,9 +76,8 @@ public class SonarQubeNotifications {
   /**
    * Checks if a server supports notifications
    */
-  public static boolean isSupported(ServerConfiguration serverConfig) {
-    SonarLintWsClient client = new SonarLintWsClient(serverConfig);
-    NotificationChecker checker = new NotificationChecker(client);
+  public boolean isSupported(ServerConfiguration serverConfig) {
+    NotificationChecker checker = checkerFactory.create(serverConfig);
     return checker.isSupported();
   }
 
