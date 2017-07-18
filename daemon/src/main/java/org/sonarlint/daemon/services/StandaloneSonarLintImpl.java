@@ -19,6 +19,8 @@
  */
 package org.sonarlint.daemon.services;
 
+import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -120,6 +122,9 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
 
       @Override
       public void onError(Throwable t) {
+        if (Status.fromThrowable(t).getCode() == Code.CANCELLED) {
+          return;
+        }
         LOGGER.error("Received an error during heartbeat, stopping", t);
         daemon.stop();
       }
