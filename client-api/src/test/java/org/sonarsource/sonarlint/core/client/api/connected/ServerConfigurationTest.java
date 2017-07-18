@@ -79,6 +79,7 @@ public class ServerConfigurationTest {
 
     assertThat(config1.equals(config2)).isFalse();
     assertThat(config1.equals(config3)).isFalse();
+    assertThat(config1.equals(new Object())).isFalse();
     assertThat(config1.equals(config1)).isTrue();
     assertThat(config1.equals(config4)).isTrue();
     assertThat(config1.hashCode()).isEqualTo(config4.hashCode());

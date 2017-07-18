@@ -50,6 +50,12 @@ public class SonarQubeNotificationsTest {
     config = mock(NotificationConfiguration.class);
     timer = mock(Timer.class);
   }
+  
+  @Test
+  public void testSingleton() {
+    assertThat(SonarQubeNotifications.get()).isEqualTo(SonarQubeNotifications.get());
+    SonarQubeNotifications.get().stop();
+  }
 
   @Test
   public void testRegistration() {
