@@ -23,14 +23,21 @@ import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class DefaultRemoteModule implements RemoteModule {
+  private final String projectKey;
   private final String key;
   private final String name;
   private final boolean root;
 
   public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
+    this.projectKey = module.getProjectKey();
     this.key = module.getKey();
     this.name = module.getName();
     this.root = "TRK".equals(module.getQu());
+  }
+
+  @Override
+  public String getProjectKey() {
+    return projectKey;
   }
 
   @Override
