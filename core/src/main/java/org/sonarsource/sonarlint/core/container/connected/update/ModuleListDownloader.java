@@ -66,8 +66,7 @@ public class ModuleListDownloader {
       module -> {
         moduleBuilder.clear();
         moduleListBuilder.putModulesByKey(module.getKey(), moduleBuilder
-          // TODO use getProjectKey when ready in SQ
-          .setProjectKey(module.getKey())
+          .setProjectKey(module.getProjectKey())
           .setKey(module.getKey())
           .setName(module.getName())
           .setQu(module.getQualifier())
