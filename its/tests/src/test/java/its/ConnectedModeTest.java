@@ -119,7 +119,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settingsService().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
+      adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
     }
@@ -587,7 +587,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settingsService().set(SetRequest.builder()
+      adminWsClient.settings().set(SetRequest.builder()
         .setKey(key)
         .setValue(value)
         .setComponent(moduleKey)
@@ -600,7 +600,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private void setMultiValuesSettings(@Nullable String moduleKey, String key, String... values) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settingsService().set(SetRequest.builder()
+      adminWsClient.settings().set(SetRequest.builder()
         .setKey(key)
         .setValues(Arrays.asList(values))
         .setComponent(moduleKey)

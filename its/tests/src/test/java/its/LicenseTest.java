@@ -122,7 +122,7 @@ public class LicenseTest extends AbstractConnectedTest {
 
   private void removeLicense(String pluginKey) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settingsService().reset(ResetRequest.builder().setKeys(licenses.licensePropertyKey(pluginKey)).build());
+      adminWsClient.settings().reset(ResetRequest.builder().setKeys(licenses.licensePropertyKey(pluginKey)).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery(licenses.licensePropertyKey(pluginKey)));
     }
@@ -134,7 +134,7 @@ public class LicenseTest extends AbstractConnectedTest {
       fail("ITs could not get license for " + pluginKey);
     }
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settingsService().set(SetRequest.builder().setKey(licenses.licensePropertyKey(pluginKey)).setValue(license).build());
+      adminWsClient.settings().set(SetRequest.builder().setKey(licenses.licensePropertyKey(pluginKey)).setValue(license).build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().update(new PropertyUpdateQuery(licenses.licensePropertyKey(pluginKey), license));
     }
