@@ -66,7 +66,7 @@ public class ModuleListDownloader {
       module -> {
         moduleBuilder.clear();
         moduleListBuilder.putModulesByKey(module.getKey(), moduleBuilder
-          .setProjectKey(module.getProjectKey())
+          .setProjectKey(module.getProject())
           .setKey(module.getKey())
           .setName(module.getName())
           .setQu(module.getQualifier())
