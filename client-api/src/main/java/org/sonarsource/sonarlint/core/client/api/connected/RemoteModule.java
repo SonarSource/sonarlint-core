@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 public interface RemoteModule {
 
+  String getProjectKey();
+
   String getKey();
 
   String getName();

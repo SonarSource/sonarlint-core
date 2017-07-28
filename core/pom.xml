@@ -259,7 +259,12 @@
             <Import-Package>
               !*
             </Import-Package>
-            <Export-Package>org.sonarsource.sonarlint.core,com.google.protobuf,org.sonarsource.sonarlint.core.telemetry</Export-Package>
+            <Export-Package>
+                org.sonarsource.sonarlint.core,
+                com.google.protobuf,
+                org.sonarsource.sonarlint.core.telemetry,
+                org.sonarsource.sonarlint.core.notifications,
+            </Export-Package>
             <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version-->
             <Require-Bundle>org.sonarsource.sonarlint.core.sonarlint-client-api;bundle-version="${parsedVersion.osgiVersion}"</Require-Bundle>
             <_failok>true</_failok>

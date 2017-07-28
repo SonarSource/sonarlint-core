@@ -125,6 +125,7 @@ message ModuleList {
     string key = 1;
     string name = 2;
     string qu = 3;
+    string project_key = 4;
   }
 }
 

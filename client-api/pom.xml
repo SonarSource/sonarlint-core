@@ -58,7 +58,8 @@
             org.sonarsource.sonarlint.core.client.api.connected.objectstore;version="${project.version}",
             org.sonarsource.sonarlint.core.client.api.exceptions;version="${project.version}",
             org.sonarsource.sonarlint.core.client.api.standalone;version="${project.version}",
-            org.sonarsource.sonarlint.core.client.api.util;version="${project.version}"
+            org.sonarsource.sonarlint.core.client.api.util;version="${project.version}",
+            org.sonarsource.sonarlint.core.client.api.notifications;version="${project.version}",
             </Export-Package>
             <_failok>true</_failok>
             <_nouses>true</_nouses>
