@@ -32,7 +32,7 @@ function FetchAndUnzip
 
 function InstallAppveyorTools
 {
-        $travisUtilsVersion = "33"
+        $travisUtilsVersion = "36"
         $localPath = "$env:USERPROFILE\.local"
         $travisUtilsPath = "$localPath\travis-utils-$travisUtilsVersion"
         if (Test-Path $travisUtilsPath)
@@ -52,7 +52,7 @@ function InstallAppveyorTools
 		mkdir $mavenLocal | Out-Null
 	}
 	echo "Installating Travis Utils public Maven settings.xml into $mavenLocal"
-	Copy-Item "$travisUtilsPath\m2\settings-public.xml" "$mavenLocal\settings.xml"
+	Copy-Item "$travisUtilsPath\m2\settings-private.xml" "$mavenLocal\settings.xml"
 
 }
 
