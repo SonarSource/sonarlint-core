@@ -51,7 +51,7 @@ function InstallAppveyorTools
 	{
 		mkdir $mavenLocal | Out-Null
 	}
-	echo "Installating Travis Utils public Maven settings.xml into $mavenLocal"
+	echo "Installating Travis Utils private Maven settings.xml into $mavenLocal"
 	Copy-Item "$travisUtilsPath\m2\settings-private.xml" "$mavenLocal\settings.xml"
 
 }
@@ -111,6 +111,6 @@ CALLSTACK:$(Get-PSCallStack | Out-String)
 }
 
 InstallAppveyorTools
-set MAVEN_OPTS="-Xmx2g"
+$env:MAVEN_OPTS = "-Xmx2g"
 mvn verify "--batch-mode"
 CheckLastExitCode
