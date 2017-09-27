@@ -50,8 +50,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .setOrchestratorProperty("javaVersion", "4.0")
-    .addPlugin("java")
+    .setOrchestratorProperty("javascriptVersion", "2.13")
+    .addPlugin("javascript")
     .build();
 
   @ClassRule
@@ -101,7 +101,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void checkMinimalPluginVersionDuringGlobalUpdate() throws IOException {
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
   }
 
   @Test
