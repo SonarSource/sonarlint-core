@@ -50,7 +50,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .setOrchestratorProperty("javaVersion", "3.7")
+    .setOrchestratorProperty("javaVersion", "4.0")
     .addPlugin("java")
     .build();
 
