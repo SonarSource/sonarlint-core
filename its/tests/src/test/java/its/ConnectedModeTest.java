@@ -403,7 +403,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // WS quality profile is not available before 5.2 so let's skip this test
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2"));
     SearchWsRequest searchReq = new SearchWsRequest();
-    searchReq.setProfileName("SonarLint IT Java");
+    searchReq.setQualityProfile("SonarLint IT Java");
     searchReq.setProjectKey(PROJECT_KEY_JAVA);
     searchReq.setDefaults(false);
     SearchWsResponse search = adminWsClient.qualityProfiles().search(searchReq);
