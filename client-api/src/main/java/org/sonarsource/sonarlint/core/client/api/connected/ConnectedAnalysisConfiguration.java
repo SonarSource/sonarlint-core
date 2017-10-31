@@ -55,6 +55,7 @@ public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfigurat
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles()) {
       sb.append("    ").append(inputFile.getPath());
+      sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }

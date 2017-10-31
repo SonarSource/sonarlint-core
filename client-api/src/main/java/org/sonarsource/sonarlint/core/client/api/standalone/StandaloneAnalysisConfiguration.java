@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -70,6 +71,7 @@ public class StandaloneAnalysisConfiguration {
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles) {
       sb.append("    ").append(inputFile.getPath());
+      sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
@@ -81,6 +83,11 @@ public class StandaloneAnalysisConfiguration {
     sb.append("  ]\n");
     sb.append("]\n");
     return sb.toString();
+  }
+
+  protected String getCharsetLabel(ClientInputFile inputFile) {
+    Charset charset = inputFile.getCharset();
+    return charset != null ? charset.displayName() : "default";
   }
 
 }

@@ -57,9 +57,9 @@ public class StandaloneAnalysisConfigurationTest {
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  inputFiles: [\n" +
-      "    " + srcFile1.toString() + "\n" +
-      "    " + srcFile2.toString() + " [java]\n" +
-      "    " + srcFile3.toString() + " [test] [php]\n" +
+      "    " + srcFile1.toString() + " (UTF-8)\n" +
+      "    " + srcFile2.toString() + " (UTF-8) [java]\n" +
+      "    " + srcFile3.toString() + " (UTF-8) [test] [php]\n" +
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);

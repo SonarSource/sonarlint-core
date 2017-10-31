@@ -58,8 +58,8 @@ public class ConnectedAnalysisConfigurationTest {
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  inputFiles: [\n" +
-      "    " + srcFile1.toString() + "\n" +
-      "    " + srcFile2.toString() + " [test]\n" +
+      "    " + srcFile1.toString() + " (UTF-8)\n" +
+      "    " + srcFile2.toString() + " (UTF-8) [test]\n" +
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
@@ -74,8 +74,8 @@ public class ConnectedAnalysisConfigurationTest {
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  inputFiles: [\n" +
-      "    " + srcFile1.toString() + "\n" +
-      "    " + srcFile2.toString() + " [test]\n" +
+      "    " + srcFile1.toString() + " (UTF-8)\n" +
+      "    " + srcFile2.toString() + " (UTF-8) [test]\n" +
       "  ]\n" +
       "]\n");
 
