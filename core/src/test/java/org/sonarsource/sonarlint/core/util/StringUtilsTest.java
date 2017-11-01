@@ -34,6 +34,11 @@ public class StringUtilsTest {
   }
 
   @Test
+  public void testUrlEncode() {
+    assertThat(StringUtils.urlEncode("my/string%to encode*")).isEqualTo("my%2Fstring%25to+encode*");
+  }
+
+  @Test
   public void testDescribe() {
     Object withToString = new Object() {
       @Override

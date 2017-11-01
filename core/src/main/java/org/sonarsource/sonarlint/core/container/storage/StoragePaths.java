@@ -68,10 +68,15 @@ public class StoragePaths {
     return moduleStorageRoot.resolve(encodeForFs(moduleKey));
   }
 
+  /**
+   * Encodes a string to be used as a valid filename. 
+   * It should work in all OS and different names should never collide. 
+   * See SLCORE-148.
+   */
   public static String encodeForFs(String name) {
     String encoded;
     try {
-      encoded = URLEncoder.encode(name, StandardCharsets.UTF_8.name());
+      encoded = URLEncoder.encode(name, StandardCharsets.UTF_8.name()).replace("*", "%2A");
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("Unable to encode name: " + name, e);
     }
