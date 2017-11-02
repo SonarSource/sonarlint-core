@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.exceptions;
+package org.sonarsource.sonarlint.core.container.connected.exceptions;
 
-public class NotFoundException extends SonarLintException {
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintException;
 
-  public NotFoundException(String msg) {
+public class ForbiddenException extends SonarLintException {
+
+  public ForbiddenException(@Nullable String msg) {
     super(msg, null);
   }
 }
