@@ -25,6 +25,8 @@ import java.util.List;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarsource.sonarlint.core.client.api.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -39,11 +41,14 @@ public class ModuleQualityProfilesDownloader {
   public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey) {
     SearchWsResponse qpResponse;
     String baseUrl = "/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey);
-    if (wsClient.getOrganizationKey() != null) {
-      baseUrl += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
+    String organizationKey = wsClient.getOrganizationKey();
+    if (organizationKey != null) {
+      baseUrl += "&organization=" + StringUtils.urlEncode(organizationKey);
     }
     try (InputStream contentStream = wsClient.get(baseUrl).contentStream()) {
       qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
+    } catch (NotFoundException e) {
+      throw new ProjectNotFoundException(moduleKey, organizationKey);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load module quality profiles", e);
     }

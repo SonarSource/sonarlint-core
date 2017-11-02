@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
@@ -112,7 +113,7 @@ public class ConnectedContainer extends ComponentContainer {
   public void updateModule(String moduleKey, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
-      throw new IllegalStateException("Please update server first");
+      throw new GlobalUpdateRequiredException("Please update server first");
     }
     getComponentByType(ModuleStorageUpdateExecutor.class).update(moduleKey, progress);
   }
