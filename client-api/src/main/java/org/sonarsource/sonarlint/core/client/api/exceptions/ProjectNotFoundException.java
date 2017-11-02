@@ -29,8 +29,8 @@ public class ProjectNotFoundException extends SonarLintException {
 
   private static String formatMessage(String moduleKey, @Nullable String organizationKey) {
     if (organizationKey != null) {
-      return String.format("Project with key=%s in organization=%s not found on SonarQube server (was it deleted?)", moduleKey, organizationKey);
+      return String.format("Project with key '%s' in organization '%s' not found on SonarQube server (was it deleted?)", moduleKey, organizationKey);
     }
-    return String.format("Project with key=%s not found on SonarQube server (was it deleted?)", moduleKey);
+    return String.format("Project with key '%s' not found on SonarQube server (was it deleted?)", moduleKey);
   }
 }
