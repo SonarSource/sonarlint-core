@@ -22,9 +22,14 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager;
+import org.sonarsource.sonarlint.core.util.SonarLintUtils;
 
 public class TelemetryPathManager {
+
+  private static final Logger LOG = LoggerFactory.getLogger(TelemetryPathManager.class);
 
   private TelemetryPathManager() {
     // utility class, forbidden constructor
@@ -59,7 +64,9 @@ public class TelemetryPathManager {
       }
       Files.copy(oldPath, newPath);
     } catch (IOException e) {
-      // ignore
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.debug("Failed to migrate telemetry storage", e);
+      }
     }
   }
 }

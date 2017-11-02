@@ -21,8 +21,11 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
+import org.sonarsource.sonarlint.core.util.SonarLintUtils;
 import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
@@ -30,6 +33,9 @@ import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TelemetryClient {
+
+  private static final Logger LOG = LoggerFactory.getLogger(TelemetryClient.class);
+
   private static final String TELEMETRY_PATH = "telemetry";
 
   private final TelemetryHttpFactory httpFactory;
@@ -53,7 +59,9 @@ public class TelemetryClient {
     try {
       sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
     } catch (Exception e) {
-      // fail silently
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.debug("Failed to upload telemetry data", e);
+      }
     }
   }
 
@@ -61,7 +69,9 @@ public class TelemetryClient {
     try {
       sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
     } catch (Exception e) {
-      // fail silently
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.debug("Failed to upload telemetry opt-out", e);
+      }
     }
   }
 
