@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
+import org.sonarsource.sonarlint.core.util.SonarLintUtils;
 
 public class SonarLintTelemetry {
   public static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
@@ -83,7 +84,9 @@ public class SonarLintTelemetry {
       this.scheduledFuture = scheduler.scheduleWithFixedDelay(this::upload,
         1, TimeUnit.HOURS.toMinutes(6), TimeUnit.MINUTES);
     } catch (Exception e) {
-      // fail silently
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.debug("Failed during periodic telemetry job", e);
+      }
     }
   }
 
