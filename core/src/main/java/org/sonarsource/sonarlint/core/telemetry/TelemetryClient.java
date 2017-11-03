@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.time.LocalDate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.util.SonarLintUtils;
@@ -34,7 +34,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TelemetryClient {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TelemetryClient.class);
+  private static final Logger LOG = Loggers.get(TelemetryClient.class);
 
   private static final String TELEMETRY_PATH = "telemetry";
 
