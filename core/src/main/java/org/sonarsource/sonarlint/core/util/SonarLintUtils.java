@@ -28,7 +28,6 @@ public class SonarLintUtils {
   }
 
   public static boolean isInternalDebugEnabled() {
-    String value = System.getenv(INTERNAL_DEBUG_ENV);
-    return value != null && !value.isEmpty();
+    return "true".equals(System.getenv(INTERNAL_DEBUG_ENV));
   }
 }

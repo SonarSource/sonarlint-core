@@ -45,8 +45,14 @@ public class SonarLintUtilsTest {
   }
 
   @Test
-  public void isInternalDebugEnabled_should_return_true_when_var_nonempty() {
+  public void isInternalDebugEnabled_should_return_false_when_var_not_true() {
     environmentVariables.set(INTERNAL_DEBUG_ENV, "foo");
+    assertThat(isInternalDebugEnabled()).isFalse();
+  }
+
+  @Test
+  public void isInternalDebugEnabled_should_return_true_when_var_true() {
+    environmentVariables.set(INTERNAL_DEBUG_ENV, "true");
     assertThat(isInternalDebugEnabled()).isTrue();
   }
 }
