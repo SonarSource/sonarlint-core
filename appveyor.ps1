@@ -111,6 +111,6 @@ CALLSTACK:$(Get-PSCallStack | Out-String)
 }
 
 InstallAppveyorTools
-$env:MAVEN_OPTS = "-Xmx750m"
+$env:MAVEN_OPTS = "-Xmx1024m"
 mvn verify "--batch-mode"
 CheckLastExitCode
