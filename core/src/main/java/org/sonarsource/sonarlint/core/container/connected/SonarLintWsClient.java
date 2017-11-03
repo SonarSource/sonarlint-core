@@ -38,9 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.container.connected.exceptions.ForbiddenException;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
-import org.sonarsource.sonarlint.core.container.connected.exceptions.UnauthorizedException;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.ws.GetRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
@@ -124,11 +122,11 @@ public class SonarLintWsClient {
   public static RuntimeException handleError(WsResponse toBeClosed) {
     try (WsResponse failedResponse = toBeClosed) {
       if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-        return new UnauthorizedException();
+        return new IllegalStateException("Not authorized. Please check server credentials.");
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_FORBIDDEN) {
         // Details are in response content
-        return new ForbiddenException(tryParseAsJsonError(failedResponse.content()));
+        return new IllegalStateException(tryParseAsJsonError(failedResponse.content()));
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_NOT_FOUND) {
         return new NotFoundException(formatHttpFailedResponse(failedResponse, null));
