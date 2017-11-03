@@ -121,22 +121,31 @@ public class LicenseTest extends AbstractConnectedTest {
   }
 
   private void removeLicense(String pluginKey) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settings().reset(ResetRequest.builder().setKeys(licenses.licensePropertyKey(pluginKey)).build());
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
+      ORCHESTRATOR.clearLicense();
     } else {
-      ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery(licenses.licensePropertyKey(pluginKey)));
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+        adminWsClient.settings().reset(ResetRequest.builder().setKeys(licenses.licensePropertyKey(pluginKey)).build());
+      } else {
+        ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery(licenses.licensePropertyKey(pluginKey)));
+      }
     }
   }
 
   private void addLicense(String pluginKey) {
-    String license = licenses.get(pluginKey);
-    if (license == null) {
-      fail("ITs could not get license for " + pluginKey);
-    }
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settings().set(SetRequest.builder().setKey(licenses.licensePropertyKey(pluginKey)).setValue(license).build());
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
+      ORCHESTRATOR.activateLicense();
     } else {
-      ORCHESTRATOR.getServer().getAdminWsClient().update(new PropertyUpdateQuery(licenses.licensePropertyKey(pluginKey), license));
+      String license = licenses.get(pluginKey);
+      if (license == null) {
+        fail("ITs could not get license for " + pluginKey);
+      }
+
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+        adminWsClient.settings().set(SetRequest.builder().setKey(licenses.licensePropertyKey(pluginKey)).setValue(license).build());
+      } else {
+        ORCHESTRATOR.getServer().getAdminWsClient().update(new PropertyUpdateQuery(licenses.licensePropertyKey(pluginKey), license));
+      }
     }
   }
 

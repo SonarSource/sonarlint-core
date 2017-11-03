@@ -18,15 +18,25 @@ case "$SQ_VERSION" in
     PYTHON_VERSION=$python
     COBOL_VERSION=$cobol
     ;;
-  DEV|LATEST_RELEASE)
+  LATEST_RELEASE)
     JAVA_VERSION=LATEST_RELEASE
     PHP_VERSION=LATEST_RELEASE
     JAVASCRIPT_VERSION=LATEST_RELEASE
     # There was an API change that requires to build with this version
     JAVASCRIPT_BUILD_VERSION=2.20.0.4207
     PYTHON_VERSION=LATEST_RELEASE
-    COBOL_VERSION=3.3.1
+    COBOL_VERSION=LATEST_RELEASE
     ;;
+  DEV)
+    JAVA_VERSION=LATEST_RELEASE
+    PHP_VERSION=LATEST_RELEASE
+    JAVASCRIPT_VERSION=LATEST_RELEASE
+    # There was an API change that requires to build with this version
+    JAVASCRIPT_BUILD_VERSION=2.20.0.4207
+    PYTHON_VERSION=LATEST_RELEASE
+    # use new license mechanism
+    COBOL_VERSION=4.1.0.2617
+    ;; 
   *)
     echo "fatal: unknown SQ_VERSION value '$SQ_VERSION'"
     exit 1
