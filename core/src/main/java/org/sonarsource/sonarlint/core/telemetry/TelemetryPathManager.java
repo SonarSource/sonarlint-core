@@ -65,7 +65,7 @@ public class TelemetryPathManager {
       Files.copy(oldPath, newPath);
     } catch (IOException e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.debug("Failed to migrate telemetry storage", e);
+        LOG.error("Failed to migrate telemetry storage", e);
       }
     }
   }

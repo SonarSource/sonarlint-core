@@ -85,7 +85,7 @@ public class SonarLintTelemetry {
         1, TimeUnit.HOURS.toMinutes(6), TimeUnit.MINUTES);
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.debug("Failed during periodic telemetry job", e);
+        LOG.error("Failed during periodic telemetry job", e);
       }
     }
   }

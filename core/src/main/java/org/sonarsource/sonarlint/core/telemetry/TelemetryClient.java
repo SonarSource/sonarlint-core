@@ -60,7 +60,7 @@ public class TelemetryClient {
       sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.debug("Failed to upload telemetry data", e);
+        LOG.error("Failed to upload telemetry data", e);
       }
     }
   }
@@ -70,7 +70,7 @@ public class TelemetryClient {
       sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.debug("Failed to upload telemetry opt-out", e);
+        LOG.error("Failed to upload telemetry opt-out", e);
       }
     }
   }
