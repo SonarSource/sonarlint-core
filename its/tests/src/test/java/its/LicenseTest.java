@@ -20,11 +20,15 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.config.Licenses;
 import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -52,11 +56,7 @@ import static org.assertj.core.api.Assertions.fail;
 public class LicenseTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .addPlugin("cobol")
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
-    .build();
+  public static Orchestrator ORCHESTRATOR;
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -72,6 +72,15 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
+    OrchestratorBuilder builder = Orchestrator.builderEnv()
+      .addPlugin("cobol")
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
+
+    if (Version.create(builder.getSonarVersion().get()).isGreaterThanOrEquals("6.7")) {
+      builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.1.0.1132"));
+    }
+    ORCHESTRATOR = builder.build();
+    ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
     sonarUserHome = temp.newFolder().toPath();
@@ -84,6 +93,11 @@ public class LicenseTest extends AbstractConnectedTest {
     // addUserPermission("sonarlint", "dryRunScan");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    ORCHESTRATOR.stop();
   }
 
   @Before

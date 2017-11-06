@@ -74,6 +74,13 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.sonarsource.license</groupId>
+      <artifactId>sonar-dev-license-plugin</artifactId>
+      <!-- Should be the same version than in Orchestrator builder in the test suite -->
+      <version>3.1.0.1132</version>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
 
   <build>
