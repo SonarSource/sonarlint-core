@@ -11,11 +11,11 @@ fi
 set -ex
 SQ_VERSION=$1
 
-cd its
+plugins_min_versions_path=core/src/main/resources/plugins_min_versions.txt
 
 case "$SQ_VERSION" in
   LTS)
-    minVersions=$(sed -ne '/^[a-z]*=[0-9.]*$/s/$/;/p' < "../$plugins_min_versions_path")
+    minVersions=$(sed -ne '/^[a-z]*=[0-9.]*$/s/$/;/p' < "$plugins_min_versions_path")
     eval "$minVersions"
     JAVA_VERSION=$java
     PHP_VERSION=$php
@@ -53,6 +53,7 @@ echo "Running with SQ=$SQ_VERSION JAVA_VERSION=$JAVA_VERSION JAVASCRIPT_VERSION=
 
 export MAVEN_OPTS=-Xmx1024m
 
+cd its
 mvn verify -Pits -Dsonar.runtimeVersion=$SQ_VERSION \
     -DjavaVersion=$JAVA_VERSION \
     -DphpVersion=$PHP_VERSION \
