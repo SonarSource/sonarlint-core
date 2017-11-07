@@ -32,7 +32,7 @@ case "$SQ_VERSION" in
     JAVASCRIPT_BUILD_VERSION=2.20.0.4207
     PYTHON_VERSION=LATEST_RELEASE
     # use old license
-    COBOL_VERSION=4.0.1.2609
+    COBOL_VERSION=4.0.1
     ;;
   DEV)
     JAVA_VERSION=LATEST_RELEASE
@@ -42,7 +42,7 @@ case "$SQ_VERSION" in
     JAVASCRIPT_BUILD_VERSION=2.20.0.4207
     PYTHON_VERSION=LATEST_RELEASE
     # use new license mechanism
-    COBOL_VERSION=4.2.0.2630
+    COBOL_VERSION=4.2.0
     ;;
   *)
     echo "fatal: unknown SQ_VERSION value '$SQ_VERSION'"
