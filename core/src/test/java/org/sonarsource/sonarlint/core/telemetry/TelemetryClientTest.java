@@ -20,8 +20,12 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.mockito.Mockito;
+import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
@@ -38,6 +42,12 @@ import static org.mockito.Mockito.when;
 public class TelemetryClientTest {
   private TelemetryClient client;
   private HttpConnector http;
+
+  @Rule
+  public final EnvironmentVariables env = new EnvironmentVariables();
+
+  @Rule
+  public LogTester logTester = new LogTester();
 
   @Before
   public void setUp() {
@@ -69,5 +79,21 @@ public class TelemetryClientTest {
   public void should_not_crash_when_cannot_opt_out() {
     when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new RuntimeException());
     client.optOut(new TelemetryData());
+  }
+
+  @Test
+  public void failed_upload_should_log_if_debug() {
+    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+    when(http.post(any(PostRequest.class), anyString())).thenThrow(new IllegalStateException("msg"));
+    client.upload(new TelemetryData());
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry data");
+  }
+
+  @Test
+  public void failed_optout_should_log_if_debug() {
+    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+    when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new IllegalStateException("msg"));
+    client.optOut(new TelemetryData());
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry opt-out");
   }
 }

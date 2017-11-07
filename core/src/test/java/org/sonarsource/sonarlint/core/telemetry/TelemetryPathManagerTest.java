@@ -23,9 +23,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +40,8 @@ public class TelemetryPathManagerTest {
   private static final String PRODUCT_KEY = "the-product";
   @Rule
   public final EnvironmentVariables env = new EnvironmentVariables();
-
+  @Rule
+  public LogTester logTester = new LogTester();
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
@@ -86,6 +91,14 @@ public class TelemetryPathManagerTest {
   public void migrate_should_copy() throws IOException {
     doMigrate();
     assertThat(oldEqualsNew()).isTrue();
+  }
+
+  @Test
+  public void log_error_if_migrate_fails_and_debug_enabled() throws IOException {
+    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+    Files.createDirectories(newPath);
+    doMigrate();
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to migrate telemetry storage");
   }
 
   private void doMigrate() {
