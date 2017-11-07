@@ -24,11 +24,15 @@ import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.config.Licenses;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.locator.URLLocation;
 import com.sonar.orchestrator.version.Version;
+import java.net.URL;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -73,11 +77,15 @@ public class LicenseTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     OrchestratorBuilder builder = Orchestrator.builderEnv()
-      .addPlugin("cobol")
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
 
     if (Version.create(builder.getSonarVersion().get()).isGreaterThanOrEquals("6.7")) {
       builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.1.0.1132"));
+      // can be removed once this version appears in the update center
+      builder.addPlugin(URLLocation.create(new URL("https://sonarsource.bintray.com/CommercialDistribution/sonar-cobol-plugin/sonar-cobol-plugin-4.1.0.2626.jar")));
+    } else {
+      builder.addPlugin("cobol");
+
     }
     ORCHESTRATOR = builder.build();
     ORCHESTRATOR.start();
@@ -97,7 +105,9 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @AfterClass
   public static void afterClass() {
-    ORCHESTRATOR.stop();
+    if (ORCHESTRATOR != null) {
+      ORCHESTRATOR.stop();
+    }
   }
 
   @Before
@@ -123,6 +133,7 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @Test
   public void analysisNoLicense() throws Exception {
+    Assume.assumeFalse(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7"));
     removeLicense("cobol");
     updateGlobal();
     updateModule(PROJECT_KEY_COBOL);
@@ -151,7 +162,7 @@ public class LicenseTest extends AbstractConnectedTest {
       ORCHESTRATOR.activateLicense();
     } else {
       String license = licenses.get(pluginKey);
-      if (license == null) {
+      if (StringUtils.isEmpty(license)) {
         fail("ITs could not get license for " + pluginKey);
       }
 
