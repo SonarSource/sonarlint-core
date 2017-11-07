@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager;
-import org.sonarsource.sonarlint.core.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 
 public class TelemetryPathManager {
 

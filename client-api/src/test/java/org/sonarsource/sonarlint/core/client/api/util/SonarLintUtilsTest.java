@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,15 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.util;
+package org.sonarsource.sonarlint.core.client.api.util;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.util.SonarLintUtils.INTERNAL_DEBUG_ENV;
-import static org.sonarsource.sonarlint.core.util.SonarLintUtils.isInternalDebugEnabled;
+import static org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils.INTERNAL_DEBUG_ENV;
+import static org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils.isInternalDebugEnabled;
 
 public class SonarLintUtilsTest {
 

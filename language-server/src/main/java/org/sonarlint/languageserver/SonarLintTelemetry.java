@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
-import org.sonarsource.sonarlint.core.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 
 public class SonarLintTelemetry {
   public static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
