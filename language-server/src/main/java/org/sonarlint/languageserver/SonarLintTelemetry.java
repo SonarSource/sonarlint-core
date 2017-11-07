@@ -25,23 +25,33 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
+import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
-import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 
 public class SonarLintTelemetry {
   public static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
-  private static final Logger LOG = LoggerFactory.getLogger(SonarLintTelemetry.class);
+  private static final Logger LOG = Loggers.get(SonarLintTelemetry.class);
 
+  private final Supplier<ScheduledExecutorService> executorFactory;
   private TelemetryManager telemetry;
 
   @VisibleForTesting
   ScheduledFuture<?> scheduledFuture;
   private ScheduledExecutorService scheduler;
+
+  public SonarLintTelemetry() {
+    this(() -> Executors.newScheduledThreadPool(1));
+  }
+
+  public SonarLintTelemetry(Supplier<ScheduledExecutorService> executorFactory) {
+    this.executorFactory = executorFactory;
+  }
 
   public void optOut(boolean optOut) {
     if (telemetry != null) {
@@ -80,17 +90,16 @@ public class SonarLintTelemetry {
     TelemetryClient client = new TelemetryClient(clientConfig, productName, productVersion);
     this.telemetry = newTelemetryManager(storagePath, client);
     try {
-      scheduler = Executors.newScheduledThreadPool(1);
+      this.scheduler = executorFactory.get();
       this.scheduledFuture = scheduler.scheduleWithFixedDelay(this::upload,
         1, TimeUnit.HOURS.toMinutes(6), TimeUnit.MINUTES);
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.error("Failed during periodic telemetry job", e);
+        LOG.error("Failed scheduling period telemetry job", e);
       }
     }
   }
 
-  @VisibleForTesting
   TelemetryManager newTelemetryManager(Path path, TelemetryClient client) {
     return new TelemetryManager(path, client);
   }

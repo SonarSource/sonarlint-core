@@ -24,7 +24,11 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryClient;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 
@@ -37,6 +41,12 @@ import static org.mockito.Mockito.when;
 public class SonarLintTelemetryTest {
   private SonarLintTelemetry telemetry;
   private TelemetryManager engine = mock(TelemetryManager.class);
+
+  @Rule
+  public final EnvironmentVariables env = new EnvironmentVariables();
+
+  @Rule
+  public LogTester logTester = new LogTester();
 
   @Before
   public void setUp() {
@@ -69,6 +79,17 @@ public class SonarLintTelemetryTest {
   }
 
   @Test
+  public void log_failure_create_task_if_debug_enabled() {
+    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+    telemetry = new SonarLintTelemetry(() -> {
+      throw new IllegalStateException("error");
+    });
+    telemetry.init(Paths.get("dummy"), "product", "version");
+
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed scheduling period telemetry job");
+  }
+
+  @Test
   public void stop_should_trigger_stop_telemetry() {
     when(engine.isEnabled()).thenReturn(true);
     telemetry.stop();
@@ -82,6 +103,11 @@ public class SonarLintTelemetryTest {
     assertThat(telemetry.scheduledFuture.getDelay(TimeUnit.MINUTES)).isBetween(0L, 1L);
     telemetry.stop();
     assertThat(telemetry.scheduledFuture).isNull();
+  }
+
+  @Test
+  public void create_telemetry_manager() {
+    assertThat(telemetry.newTelemetryManager(Paths.get(""), mock(TelemetryClient.class))).isNotNull();
   }
 
   @Test
