@@ -23,6 +23,7 @@ import java.net.HttpURLConnection;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
@@ -108,7 +109,7 @@ public class ServerVersionAndStatusCheckerTest {
       checker.checkVersionAndStatus();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Error 404 on api/system/status");
+      assertThat(e).isExactlyInstanceOf(NotFoundException.class).hasMessage("Error 404 on api/system/status");
     }
   }
 

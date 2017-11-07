@@ -32,11 +32,13 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.ws.GetRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
@@ -126,15 +128,21 @@ public class SonarLintWsClient {
         // Details are in response content
         return new IllegalStateException(tryParseAsJsonError(failedResponse.content()));
       }
+      if (failedResponse.code() == HttpURLConnection.HTTP_NOT_FOUND) {
+        return new NotFoundException(formatHttpFailedResponse(failedResponse, null));
+      }
 
       String errorMsg = null;
       if (failedResponse.hasContent()) {
         errorMsg = tryParseAsJsonError(failedResponse.content());
       }
 
-      return new IllegalStateException(
-        "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (errorMsg != null ? (": " + errorMsg) : ""));
+      return new IllegalStateException(formatHttpFailedResponse(failedResponse, errorMsg));
     }
+  }
+
+  private static String formatHttpFailedResponse(WsResponse failedResponse, @Nullable String errorMsg) {
+    return "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (errorMsg != null ? (": " + errorMsg) : "");
   }
 
   private static String tryParseAsJsonError(String responseContent) {
