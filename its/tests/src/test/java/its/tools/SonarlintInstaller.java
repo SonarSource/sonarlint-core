@@ -20,7 +20,7 @@
 package its.tools;
 
 import net.lingala.zip4j.core.ZipFile;
-import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

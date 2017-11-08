@@ -178,6 +178,11 @@
           </execution>
         </executions>
       </plugin>
+      <!-- jarsigner should run in the end of package, particularly after shading -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jarsigner-plugin</artifactId>
+      </plugin>
       
     </plugins>
   </build>
@@ -231,7 +236,6 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
-            <version>3.0.0</version>
             <executions>
               <execution>
                 <id>unpack-windows</id>

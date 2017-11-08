@@ -217,6 +217,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   @Override
   public void shutdown(Void request, StreamObserver<Void> responseObserver) {
     LOGGER.info("Shutdown requested");
+    responseObserver.onCompleted();
     daemon.stop();
   }
 }

@@ -165,6 +165,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   @Override
   public void shutdown(Void request, StreamObserver<Void> responseObserver) {
     LOGGER.info("Shutdown requested");
+    responseObserver.onCompleted();
     daemon.stop();
   }
 
