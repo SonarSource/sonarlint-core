@@ -3,7 +3,7 @@
 
 SQ_VERSION:
   - DEV
-  - LTS
+  - MIN_SUPPORTED
   - LATEST_RELEASE
 
 exclude:

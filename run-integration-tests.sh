@@ -4,7 +4,7 @@
 #
 
 if [ -z "$1" ]; then
-  echo "syntax: $0 [DEV|LTS|LATEST_RELEASE]"
+  echo "syntax: $0 [DEV|MIN_SUPPORTED|LATEST_RELEASE]"
   exit 1
 fi
 
@@ -14,7 +14,8 @@ SQ_VERSION=$1
 plugins_min_versions_path=core/src/main/resources/plugins_min_versions.txt
 
 case "$SQ_VERSION" in
-  LTS)
+  MIN_SUPPORTED)
+    SQ_VERSION="5.6.7"
     minVersions=$(sed -ne '/^[a-z]*=[0-9.]*$/s/$/;/p' < "$plugins_min_versions_path")
     eval "$minVersions"
     JAVA_VERSION=$java
