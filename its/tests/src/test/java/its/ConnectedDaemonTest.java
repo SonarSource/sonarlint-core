@@ -177,7 +177,7 @@ public class ConnectedDaemonTest {
     // assertThat(logs.getLogsAndClear()).contains("2 files indexed");
     call.cancel(null, null);
 
-    sonarlint.shutdown(null);
+    //sonarlint.shutdown(null);
     channel.shutdownNow();
     channel.awaitTermination(2, TimeUnit.SECONDS);
   }
@@ -193,7 +193,7 @@ public class ConnectedDaemonTest {
 
     ConnectedSonarLintBlockingStub sonarlint = ConnectedSonarLintGrpc.newBlockingStub(channel);
     sonarlint.start(createConnectedConfig());
-    sonarlint.shutdown(null);
+    //sonarlint.shutdown(null);
   }
 
   @Test
