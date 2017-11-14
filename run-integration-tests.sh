@@ -55,7 +55,7 @@ echo "Running with SQ=$SQ_VERSION JAVA_VERSION=$JAVA_VERSION JAVASCRIPT_VERSION=
 export MAVEN_OPTS=-Xmx1024m
 
 cd its
-mvn verify -Pits -Dsonar.runtimeVersion=$SQ_VERSION \
+mvn -B -e verify -Pits -Dsonar.runtimeVersion=$SQ_VERSION \
     -DjavaVersion=$JAVA_VERSION \
     -DphpVersion=$PHP_VERSION \
     -DjavascriptVersion=$JAVASCRIPT_VERSION \
