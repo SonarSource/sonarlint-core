@@ -177,6 +177,7 @@ public class ConnectedDaemonTest {
     // assertThat(logs.getLogsAndClear()).contains("2 files indexed");
     call.cancel(null, null);
 
+    sonarlint.shutdown(null);
     channel.shutdownNow();
     channel.awaitTermination(2, TimeUnit.SECONDS);
   }
@@ -192,6 +193,7 @@ public class ConnectedDaemonTest {
 
     ConnectedSonarLintBlockingStub sonarlint = ConnectedSonarLintGrpc.newBlockingStub(channel);
     sonarlint.start(createConnectedConfig());
+    sonarlint.shutdown(null);
   }
 
   @Test
@@ -211,6 +213,8 @@ public class ConnectedDaemonTest {
     exception.expectMessage("Please update server 'storage'");
     exception.expect(StatusRuntimeException.class);
     analyze.hasNext();
+
+    sonarlint.shutdown(null);
   }
 
   private ClientCall<Void, LogEvent> getLogs(LogCollector collector, Channel channel) {

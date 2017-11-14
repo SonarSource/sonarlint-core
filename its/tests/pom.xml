@@ -16,16 +16,22 @@
       <version>3.16.0.1288</version>
       <scope>test</scope>
     </dependency>
+    <!-- avoid using shaded guava for same reason as above -->
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-core</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>19.0</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-okhttp</artifactId>
       <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-core</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

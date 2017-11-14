@@ -54,6 +54,7 @@ public class CommandExecutor {
   private ByteArrayOutputStream err;
   private OutputStream in;
   private ExecuteWatchdog watchdog;
+  private ExecuteStreamHandler streamHandler;
 
   public CommandExecutor(Path file) {
     this.file = file;
@@ -64,7 +65,17 @@ public class CommandExecutor {
   }
 
   public void destroy() {
+    if (streamHandler != null) {
+      try {
+        LOG.info("Stop streams");
+        streamHandler.stop();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
     if (watchdog != null) {
+      LOG.info("Destroy process");
       watchdog.destroyProcess();
       watchdog = null;
     }
@@ -83,11 +94,13 @@ public class CommandExecutor {
     cmd.addArguments(args);
     DefaultExecutor exec = new DefaultExecutor();
     exec.setWatchdog(watchdog);
+    this.streamHandler = createStreamHandler();
     exec.setStreamHandler(createStreamHandler());
     exec.setExitValues(null);
     if (workingDir != null) {
       exec.setWorkingDirectory(workingDir.toFile());
     }
+
     in.close();
     LOG.info("Executing: {}", cmd.toString());
     exec.execute(cmd, new ResultHander());
