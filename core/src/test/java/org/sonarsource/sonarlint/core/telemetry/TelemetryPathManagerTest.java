@@ -57,7 +57,7 @@ public class TelemetryPathManagerTest {
     env.set(SonarLintPathManager.SONARLINT_USER_HOME_ENV, temp.newFolder().toString());
     newPath = getPath(PRODUCT_KEY);
   }
-  
+
   @AfterClass
   public static void after() {
     // to avoid conflicts with SonarLintLogging
