@@ -76,6 +76,7 @@ public class SonarlintDaemon extends ExternalResource {
   @Override
   protected void after() {
     if (exec != null) {
+      LOG.info("Stopping daemon");
       exec.destroy();
       exec = null;
     }

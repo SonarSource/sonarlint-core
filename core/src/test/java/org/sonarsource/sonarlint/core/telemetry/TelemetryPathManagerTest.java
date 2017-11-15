@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,12 @@ public class TelemetryPathManagerTest {
 
     env.set(SonarLintPathManager.SONARLINT_USER_HOME_ENV, temp.newFolder().toString());
     newPath = getPath(PRODUCT_KEY);
+  }
+
+  @AfterClass
+  public static void after() {
+    // to avoid conflicts with SonarLintLogging
+    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test

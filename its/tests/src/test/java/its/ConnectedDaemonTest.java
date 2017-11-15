@@ -211,6 +211,8 @@ public class ConnectedDaemonTest {
     exception.expectMessage("Please update server 'storage'");
     exception.expect(StatusRuntimeException.class);
     analyze.hasNext();
+
+    sonarlint.shutdown(null);
   }
 
   private ClientCall<Void, LogEvent> getLogs(LogCollector collector, Channel channel) {
