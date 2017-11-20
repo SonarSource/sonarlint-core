@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import javax.annotation.CheckForNull;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile.Type;
@@ -48,7 +47,7 @@ public class InputFileBuilder {
     SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile);
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     if (inputFile.language() != null) {
-      LOG.debug("Language of file '{}' is set to '{}'", inputFile.getPath(), inputFile.language());
+      LOG.debug("Language of file '{}' is set to '{}'", inputFile.uri(), inputFile.language());
       defaultInputFile.setLanguage(inputFile.language());
     } else {
       defaultInputFile.setLanguage(langDetection.language(defaultInputFile));

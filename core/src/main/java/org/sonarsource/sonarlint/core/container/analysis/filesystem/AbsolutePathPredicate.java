@@ -19,16 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import org.sonar.api.batch.fs.FileSystem.Index;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.PathUtils;
 
-/**
- * @since 4.2
- */
 class AbsolutePathPredicate extends AbstractFilePredicate {
 
   private final String path;
@@ -42,14 +35,4 @@ class AbsolutePathPredicate extends AbstractFilePredicate {
     return path.equals(f.absolutePath());
   }
 
-  @Override
-  public Iterable<InputFile> get(Index index) {
-    InputFile f = ((InputPathCache) index).inputFile(Paths.get(path));
-    return f != null ? Arrays.asList(f) : Collections.<InputFile>emptyList();
-  }
-
-  @Override
-  public int priority() {
-    return USE_INDEX;
-  }
 }

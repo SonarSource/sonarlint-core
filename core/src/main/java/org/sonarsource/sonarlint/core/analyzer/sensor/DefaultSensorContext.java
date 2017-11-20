@@ -36,6 +36,7 @@ import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
@@ -59,11 +60,13 @@ public class DefaultSensorContext implements SensorContext {
   private final InputModule module;
   private final SonarRuntime sqRuntime;
   private final ProgressWrapper progress;
+  private final Configuration config;
 
-  public DefaultSensorContext(InputModule module, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
+  public DefaultSensorContext(InputModule module, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
     SonarRuntime sqRuntime, ProgressWrapper progress) {
     this.module = module;
     this.settings = settings;
+    this.config = config;
     this.fs = fs;
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
@@ -74,6 +77,11 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public Settings settings() {
     return settings;
+  }
+
+  @Override
+  public Configuration config() {
+    return config;
   }
 
   @Override

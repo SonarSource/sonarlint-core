@@ -92,9 +92,10 @@ public class LanguageDetectionTest {
       fail();
     } catch (MessageException e) {
       assertThat(e.getMessage())
-        .contains("Language of file 'abc.xhtml' can not be decided as the file matches patterns of both ")
-        .contains("web: file:**/*.xhtml")
-        .contains("xml: file:**/*.xhtml");
+        .contains("Language of file 'file://")
+        .contains("abc.xhtml' can not be decided as the file matches patterns of both ")
+        .contains("web: **/*.xhtml")
+        .contains("xml: **/*.xhtml");
     }
   }
 

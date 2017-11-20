@@ -32,11 +32,11 @@ public class SonarLintFileSystem extends DefaultFileSystem {
   private final InputPathCache moduleInputFileCache;
 
   public SonarLintFileSystem(StandaloneAnalysisConfiguration analysisConfiguration, InputPathCache moduleInputFileCache, FileIndexer indexer) {
-    super(analysisConfiguration.baseDir().toFile(), moduleInputFileCache);
+    super(analysisConfiguration.baseDir(), moduleInputFileCache);
     this.moduleInputFileCache = moduleInputFileCache;
     this.indexer = indexer;
     this.filePredicates = new DefaultFilePredicates();
-    setWorkDir(analysisConfiguration.workDir().toFile());
+    setWorkDir(analysisConfiguration.workDir());
   }
 
   public void index() {

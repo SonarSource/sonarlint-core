@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
 
 /**
@@ -47,7 +49,7 @@ public interface ClientInputFile {
    */
   @CheckForNull
   Charset getCharset();
-  
+
   /**
    * Language key of the file. If not null, language detection based on the file name suffix is skipped. The file will be analyzed by a analyzer that can
    * handle the language.
@@ -61,14 +63,18 @@ public interface ClientInputFile {
    * Allow clients to pass their own object to ease mapping of issues.
    */
   <G> G getClientObject();
-  
+
   /**
    *  Gets a stream of the contents of the file.
    */
   InputStream inputStream() throws IOException;
-  
+
   /**
    *  Gets the contents of the file. 
    */
   String contents() throws IOException;
+
+  default URI uri() {
+    return Paths.get(getPath()).toUri();
+  }
 }

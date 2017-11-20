@@ -22,12 +22,11 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import javax.annotation.CheckForNull;
-
 import org.sonar.api.batch.fs.internal.DefaultIndexedFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.utils.PathUtils;
@@ -41,7 +40,8 @@ public class SonarLintInputFile extends DefaultInputFile {
   private Type type;
 
   public SonarLintInputFile(ClientInputFile clientInputFile) {
-    super(new DefaultIndexedFile("", Paths.get(clientInputFile.getPath()), clientInputFile.getPath()), null);
+    super(new DefaultIndexedFile(SonarLintInputModule.SONARLINT_FAKE_MODULE_KEY, Paths.get(clientInputFile.getPath()), clientInputFile.getPath(), clientInputFile.language()),
+      null);
     this.clientInputFile = clientInputFile;
   }
 
@@ -114,6 +114,11 @@ public class SonarLintInputFile extends DefaultInputFile {
   @Override
   public String moduleKey() {
     throw unsupported();
+  }
+
+  @Override
+  public URI uri() {
+    return clientInputFile.uri();
   }
 
   private static UnsupportedOperationException unsupported() {

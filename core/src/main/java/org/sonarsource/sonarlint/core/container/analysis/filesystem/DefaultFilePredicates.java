@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,9 +28,10 @@ import java.util.List;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputFile.Status;
 import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
 import org.sonar.api.batch.fs.internal.FilenamePredicate;
-import org.sonar.api.batch.fs.internal.PathPattern;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
 
 /**
  * Factory of {@link org.sonar.api.batch.fs.FilePredicate}
@@ -68,8 +70,13 @@ public class DefaultFilePredicates implements FilePredicates {
   }
 
   @Override
+  public FilePredicate hasURI(URI uri) {
+    return new URIPredicate(uri);
+  }
+
+  @Override
   public FilePredicate matchesPathPattern(String inclusionPattern) {
-    return new PathPatternPredicate(PathPattern.create(toAbsolutePattern(inclusionPattern)));
+    return new PathPatternPredicate(new SonarLintPathPattern(inclusionPattern));
   }
 
   @Override
@@ -79,19 +86,9 @@ public class DefaultFilePredicates implements FilePredicates {
     }
     FilePredicate[] predicates = new FilePredicate[inclusionPatterns.length];
     for (int i = 0; i < inclusionPatterns.length; i++) {
-      predicates[i] = new PathPatternPredicate(PathPattern.create(toAbsolutePattern(inclusionPatterns[i])));
+      predicates[i] = new PathPatternPredicate(new SonarLintPathPattern(inclusionPatterns[i]));
     }
     return or(predicates);
-  }
-
-  private static String toAbsolutePattern(String pattern) {
-    if (pattern.startsWith("file:")) {
-      return pattern;
-    }
-    if (pattern.startsWith("**")) {
-      return "file:" + pattern;
-    }
-    return "file:**/" + pattern;
   }
 
   @Override
@@ -195,5 +192,15 @@ public class DefaultFilePredicates implements FilePredicates {
   @Override
   public FilePredicate hasExtension(String s) {
     return new FileExtensionPredicate(s);
+  }
+
+  @Override
+  public FilePredicate hasStatus(Status status) {
+    return new StatusPredicate(status);
+  }
+
+  @Override
+  public FilePredicate hasAnyStatus() {
+    return new StatusPredicate(null);
   }
 }

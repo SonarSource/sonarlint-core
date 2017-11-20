@@ -22,16 +22,15 @@ package org.sonarsource.sonarlint.core.container.analysis;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
+import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
-public class AnalysisSettings extends Settings {
+public class MutableAnalysisSettings extends MapSettings {
   private static final String C_SUFFIXES_KEY = "sonar.c.file.suffixes";
   private static final String CPP_SUFFIXES_KEY = "sonar.cpp.file.suffixes";
   private static final String OBJC_SUFFIXES_KEY = "sonar.objc.file.suffixes";
@@ -39,14 +38,14 @@ public class AnalysisSettings extends Settings {
 
   private final Map<String, String> properties = new HashMap<>();
 
-  public AnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions, new Encryption(null));
+  public MutableAnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    super(propertyDefinitions);
     addDefaultProperties();
     addProperties(config.extraProperties());
   }
 
-  public AnalysisSettings(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions, new Encryption(null));
+  public MutableAnalysisSettings(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    super(propertyDefinitions);
     GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
     if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
@@ -56,7 +55,7 @@ public class AnalysisSettings extends Settings {
     addDefaultProperties();
     addProperties(config.extraProperties());
   }
-  
+
   private void addDefaultProperties() {
     setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
     setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);

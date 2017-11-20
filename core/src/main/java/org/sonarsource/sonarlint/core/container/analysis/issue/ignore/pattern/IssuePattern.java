@@ -21,21 +21,20 @@ package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
-import org.sonar.api.batch.fs.internal.PathPattern;
 import org.sonar.api.utils.WildcardPattern;
-import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
 
 public class IssuePattern {
 
-  private PathPattern pathPattern;
+  private SonarLintPathPattern pathPattern;
   private WildcardPattern rulePattern;
 
   public IssuePattern(String pathPattern, String rulePattern) {
-    this.pathPattern = PathPattern.create(ExclusionFilters.convertToAbs(pathPattern));
+    this.pathPattern = new SonarLintPathPattern(pathPattern);
     this.rulePattern = WildcardPattern.create(rulePattern);
   }
 
-  public PathPattern getPathPattern() {
+  public SonarLintPathPattern getPathPattern() {
     return pathPattern;
   }
 

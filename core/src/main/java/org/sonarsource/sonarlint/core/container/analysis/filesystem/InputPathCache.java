@@ -19,26 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.SetMultimap;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
-import org.sonar.api.batch.fs.internal.FilenamePredicate;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.SetMultimap;
 
 @SonarLintSide
 public class InputPathCache extends DefaultFileSystem.Cache {
 
-  private final Map<Path, InputFile> inputFileCache = new LinkedHashMap<>();
+  private final Set<InputFile> inputFileCache = new LinkedHashSet<>();
   private final Map<Path, InputDir> inputDirCache = new LinkedHashMap<>();
   private final SetMultimap<String, InputFile> filesByNameCache = LinkedHashMultimap.create();
   private final SetMultimap<String, InputFile> filesByExtensionCache = LinkedHashMultimap.create();
@@ -46,7 +45,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   @Override
   public Iterable<InputFile> inputFiles() {
-    return inputFileCache.values();
+    return inputFileCache;
   }
 
   public Iterable<InputDir> allDirs() {
@@ -58,8 +57,8 @@ public class InputPathCache extends DefaultFileSystem.Cache {
     if (inputFile.language() != null) {
       languages.add(inputFile.language());
     }
-    inputFileCache.put(inputFile.path(), inputFile);
-    filesByNameCache.put(FilenamePredicate.getFilename(inputFile), inputFile);
+    inputFileCache.add(inputFile);
+    filesByNameCache.put(inputFile.filename(), inputFile);
     filesByExtensionCache.put(FileExtensionPredicate.getExtension(inputFile), inputFile);
   }
 
@@ -76,10 +75,6 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   @Override
   public InputDir inputDir(String relativePath) {
     return null;
-  }
-
-  public InputFile inputFile(Path path) {
-    return inputFileCache.get(path);
   }
 
   public InputDir inputDir(Path path) {

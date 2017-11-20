@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
@@ -47,6 +46,7 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBui
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputModule;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.EnforceIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
@@ -74,7 +74,7 @@ public class AnalysisContainer extends ComponentContainer {
     add(
       progress,
       new ProjectProvider(),
-      new DefaultInputModule("sonarlint"),
+      new SonarLintInputModule(),
       NoOpFileLinesContextFactory.class,
 
       // temp
@@ -91,7 +91,8 @@ public class AnalysisContainer extends ComponentContainer {
       Languages.class,
       DefaultLanguagesRepository.class,
 
-      AnalysisSettings.class,
+      MutableAnalysisSettings.class,
+      new AnalysisConfigurationProvider(),
       PhaseExecutor.class,
 
       // file system
@@ -103,7 +104,7 @@ public class AnalysisContainer extends ComponentContainer {
       SonarLintFileSystem.class,
 
       // Exclusions in connected mode
-      ServerSettingsProvider.class,
+      ServerConfigurationProvider.class,
       ExclusionFilters.class,
       EnforceIssuesFilter.class,
       IgnoreIssuesFilter.class,

@@ -19,21 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import javax.annotation.Nullable;
+import java.net.URI;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.AbstractFilePredicate;
 
-public class StatusPredicate extends AbstractFilePredicate {
+class URIPredicate extends AbstractFilePredicate {
 
-  private final InputFile.Status status;
+  private final URI uri;
 
-  StatusPredicate(@Nullable InputFile.Status status) {
-    this.status = status;
+  URIPredicate(URI uri) {
+    this.uri = uri;
   }
 
   @Override
   public boolean apply(InputFile f) {
-    return status == null || status == f.status();
+    return uri.equals(f.uri());
   }
-
 }
