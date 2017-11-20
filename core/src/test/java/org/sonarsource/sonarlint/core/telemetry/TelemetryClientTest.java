@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,12 @@ public class TelemetryClientTest {
     TelemetryHttpFactory httpFactory = mock(TelemetryHttpFactory.class, RETURNS_DEEP_STUBS);
     when(httpFactory.buildClient(any(TelemetryClientConfig.class))).thenReturn(http);
     client = new TelemetryClient(mock(TelemetryClientConfig.class), "product", "version", httpFactory);
+  }
+
+  @AfterClass
+  public static void after() {
+    // to avoid conflicts with SonarLintLogging
+    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
