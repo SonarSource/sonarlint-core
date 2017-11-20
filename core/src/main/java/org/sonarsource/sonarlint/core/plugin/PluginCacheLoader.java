@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
@@ -36,6 +35,7 @@ public class PluginCacheLoader {
 
   private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("xoo", "java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift", "rpg", "cpp",
     "pli");
+  private static final String IMPLEMENTED_SQ_API = "6.7";
 
   private static final Logger LOG = Loggers.get(PluginCacheLoader.class);
 
@@ -60,6 +60,10 @@ public class PluginCacheLoader {
       Path jarFilePath = getFromCache(ref);
       PluginInfo info = PluginInfo.create(jarFilePath);
       Boolean sonarLintSupported = info.isSonarLintSupported();
+      if (!info.isCompatibleWith(IMPLEMENTED_SQ_API)) {
+        LOG.debug("Plugin {} need SonarQube plugin API {} while SonarLint supports only up to {}. Skip it.", info.getKey(), info.getMinimalSqVersion(), IMPLEMENTED_SQ_API);
+        break;
+      }
       if ((sonarLintSupported != null && sonarLintSupported.booleanValue()) || isWhitelisted(info.getKey())) {
         infosByKey.put(info.getKey(), info);
       } else {
