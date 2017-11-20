@@ -19,17 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.io.File;
 import java.nio.file.Paths;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class InputPathCacheTest {
   private InputPathCache cache;
@@ -59,19 +57,15 @@ public class InputPathCacheTest {
   @Test
   public void testFiles() {
     InputFile file1 = mock(InputFile.class);
-    when(file1.path()).thenReturn(Paths.get("file1.java"));
-    when(file1.file()).thenReturn(new File("file1.java"));
+    when(file1.filename()).thenReturn("file1.java");
     when(file1.language()).thenReturn("lang1");
     InputFile file2 = mock(InputFile.class);
-    when(file2.path()).thenReturn(Paths.get("file2"));
-    when(file2.file()).thenReturn(new File("file2"));
+    when(file2.filename()).thenReturn("file2");
     when(file2.language()).thenReturn("lang2");
 
     cache.doAdd(file1);
     cache.doAdd(file2);
     assertThat(cache.inputFiles()).containsOnly(file1, file2);
-
-    assertThat(cache.inputFile(Paths.get("file1.java"))).isEqualTo(file1);
 
     // always null
     assertThat(cache.inputFile("file1.java")).isNull();

@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.util.Arrays;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.PathPattern;
 import org.sonar.api.scan.filesystem.FileExclusions;
 
 public class ExclusionFilters {
@@ -33,13 +31,13 @@ public class ExclusionFilters {
 
   private final FileExclusions exclusionSettings;
 
-  private PathPattern[] mainInclusions;
-  private PathPattern[] mainExclusions;
-  private PathPattern[] testInclusions;
-  private PathPattern[] testExclusions;
+  private SonarLintPathPattern[] mainInclusions;
+  private SonarLintPathPattern[] mainExclusions;
+  private SonarLintPathPattern[] testInclusions;
+  private SonarLintPathPattern[] testExclusions;
 
-  public ExclusionFilters(ServerSettingsProvider serverSettingsProvider) {
-    this.exclusionSettings = new FileExclusions(serverSettingsProvider.getServerSettings());
+  public ExclusionFilters(ServerConfigurationProvider serverConfigProvider) {
+    this.exclusionSettings = new FileExclusions(serverConfigProvider.getServerConfig());
   }
 
   public void prepare() {
@@ -53,18 +51,18 @@ public class ExclusionFilters {
     log("Excluded tests: ", testExclusions);
   }
 
-  private static void log(String title, PathPattern[] patterns) {
+  private static void log(String title, SonarLintPathPattern[] patterns) {
     if (patterns.length > 0) {
       LOG.debug(title);
-      for (PathPattern pattern : patterns) {
+      for (SonarLintPathPattern pattern : patterns) {
         LOG.debug("  {}", pattern);
       }
     }
   }
 
   public boolean accept(InputFile inputFile, InputFile.Type type) {
-    PathPattern[] inclusionPatterns;
-    PathPattern[] exclusionPatterns;
+    SonarLintPathPattern[] inclusionPatterns;
+    SonarLintPathPattern[] exclusionPatterns;
     if (InputFile.Type.MAIN == type) {
       inclusionPatterns = mainInclusions;
       exclusionPatterns = mainExclusions;
@@ -77,7 +75,7 @@ public class ExclusionFilters {
 
     if (inclusionPatterns.length > 0) {
       boolean matchInclusion = false;
-      for (PathPattern pattern : inclusionPatterns) {
+      for (SonarLintPathPattern pattern : inclusionPatterns) {
         matchInclusion |= pattern.match(inputFile);
       }
       if (!matchInclusion) {
@@ -85,7 +83,7 @@ public class ExclusionFilters {
       }
     }
     if (exclusionPatterns.length > 0) {
-      for (PathPattern pattern : exclusionPatterns) {
+      for (SonarLintPathPattern pattern : exclusionPatterns) {
         if (pattern.match(inputFile)) {
           return false;
         }
@@ -94,16 +92,16 @@ public class ExclusionFilters {
     return true;
   }
 
-  PathPattern[] prepareMainInclusions() {
+  SonarLintPathPattern[] prepareMainInclusions() {
     if (exclusionSettings.sourceInclusions().length > 0) {
       // User defined params
-      return PathPattern.create(convertToAbs(exclusionSettings.sourceInclusions()));
+      return SonarLintPathPattern.create(exclusionSettings.sourceInclusions());
     }
-    return new PathPattern[0];
+    return new SonarLintPathPattern[0];
   }
 
-  PathPattern[] prepareTestInclusions() {
-    return PathPattern.create(convertToAbs(computeTestInclusions()));
+  SonarLintPathPattern[] prepareTestInclusions() {
+    return SonarLintPathPattern.create(computeTestInclusions());
   }
 
   private String[] computeTestInclusions() {
@@ -114,28 +112,14 @@ public class ExclusionFilters {
     return ArrayUtils.EMPTY_STRING_ARRAY;
   }
 
-  PathPattern[] prepareMainExclusions() {
+  SonarLintPathPattern[] prepareMainExclusions() {
     String[] patterns = (String[]) ArrayUtils.addAll(
       exclusionSettings.sourceExclusions(), computeTestInclusions());
-    return PathPattern.create(convertToAbs(patterns));
+    return SonarLintPathPattern.create(patterns);
   }
 
-  PathPattern[] prepareTestExclusions() {
-    return PathPattern.create(convertToAbs(exclusionSettings.testExclusions()));
-  }
-
-  private static String[] convertToAbs(String[] patterns) {
-    return Arrays.stream(patterns)
-      .map(ExclusionFilters::convertToAbs)
-      .toArray(String[]::new);
-  }
-
-  public static String convertToAbs(String original) {
-    if (original.startsWith("file:") || original.startsWith("**")) {
-      return original;
-    } else {
-      return "file:**/" + original;
-    }
+  SonarLintPathPattern[] prepareTestExclusions() {
+    return SonarLintPathPattern.create(exclusionSettings.testExclusions());
   }
 
 }

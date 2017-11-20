@@ -23,7 +23,6 @@ import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import javax.annotation.CheckForNull;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
@@ -66,12 +65,6 @@ public class DefaultServer extends Server {
 
   @Override
   public File getRootDir() {
-    return null;
-  }
-
-  @Override
-  @CheckForNull
-  public File getDeployDir() {
     return null;
   }
 

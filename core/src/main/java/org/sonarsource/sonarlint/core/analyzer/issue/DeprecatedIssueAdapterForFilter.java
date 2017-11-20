@@ -183,8 +183,12 @@ class DeprecatedIssueAdapterForFilter implements Issue {
 
   @Override
   public Double gap() {
-    // TODO Auto-generated method stub
     return null;
+  }
+
+  @Override
+  public boolean isCopied() {
+    return false;
   }
 
   @Override

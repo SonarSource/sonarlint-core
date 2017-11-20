@@ -20,23 +20,21 @@
 package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang.StringUtils;
-import org.sonar.api.config.Settings;
-import org.sonarsource.sonarlint.core.container.analysis.ServerSettingsProvider;
+import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 
 public abstract class AbstractPatternInitializer {
 
-  private Settings settings;
+  private Configuration serverConfig;
 
   private List<IssuePattern> multicriteriaPatterns;
 
-  protected AbstractPatternInitializer(ServerSettingsProvider settingsProvider) {
-    this.settings = settingsProvider.getServerSettings();
+  protected AbstractPatternInitializer(ServerConfigurationProvider serverConfigProvider) {
+    this.serverConfig = serverConfigProvider.getServerConfig();
     initPatterns();
   }
 
@@ -48,11 +46,10 @@ public abstract class AbstractPatternInitializer {
   protected final void initPatterns() {
     // Patterns Multicriteria
     multicriteriaPatterns = new ArrayList<>();
-    String patternConf = StringUtils.defaultIfBlank(settings.getString(getMulticriteriaConfigurationKey()), "");
-    for (String id : StringUtils.split(patternConf, ',')) {
+    for (String id : serverConfig.getStringArray(getMulticriteriaConfigurationKey())) {
       String propPrefix = getMulticriteriaConfigurationKey() + "." + id + ".";
-      String resourceKeyPattern = settings.getString(propPrefix + "resourceKey");
-      String ruleKeyPattern = settings.getString(propPrefix + "ruleKey");
+      String resourceKeyPattern = serverConfig.get(propPrefix + "resourceKey").orElse(null);
+      String ruleKeyPattern = serverConfig.get(propPrefix + "ruleKey").orElse(null);
       IssuePattern pattern = new IssuePattern(firstNonNull(resourceKeyPattern, "*"), firstNonNull(ruleKeyPattern, "*"));
       multicriteriaPatterns.add(pattern);
     }

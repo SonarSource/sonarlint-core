@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.analysis;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.resources.Project;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputModule;
 
 /**
  * Class that creates a project definition based on a set of properties.
@@ -30,10 +31,10 @@ public class ProjectProvider extends ProviderAdapter {
 
   private Project singleton;
 
-  public Project provide(AnalysisSettings settings) {
+  public Project provide(MutableAnalysisSettings settings) {
     if (singleton == null) {
       singleton = new Project(ProjectDefinition.create()
-        .setKey("sonarlint")
+        .setKey(SonarLintInputModule.SONARLINT_FAKE_MODULE_KEY)
         .setProperties(settings.getProperties())
         .setDescription("")
         .setName("SonarLint"));

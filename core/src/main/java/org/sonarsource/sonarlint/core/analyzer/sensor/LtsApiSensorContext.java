@@ -29,6 +29,7 @@ import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.config.Settings;
 import org.sonar.api.design.Dependency;
 import org.sonar.api.measures.Measure;
@@ -105,9 +106,9 @@ public class LtsApiSensorContext extends DefaultSensorContext implements SensorC
 
   private final Project project;
 
-  public LtsApiSensorContext(Project project, InputModule inputModule, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
+  public LtsApiSensorContext(Project project, InputModule inputModule, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
     SonarRuntime sqRuntime, ProgressWrapper progress) {
-    super(inputModule, settings, fs, activeRules, sensorStorage, sqRuntime, progress);
+    super(inputModule, settings, config, fs, activeRules, sensorStorage, sqRuntime, progress);
     this.project = project;
 
   }

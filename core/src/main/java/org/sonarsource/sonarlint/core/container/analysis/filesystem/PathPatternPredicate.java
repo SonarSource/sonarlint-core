@@ -20,16 +20,16 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.PathPattern;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
 
 /**
  * @since 4.2
  */
 class PathPatternPredicate extends AbstractFilePredicate {
 
-  private final PathPattern pattern;
+  private final SonarLintPathPattern pattern;
 
-  PathPatternPredicate(PathPattern pattern) {
+  PathPatternPredicate(SonarLintPathPattern pattern) {
     this.pattern = pattern;
   }
 

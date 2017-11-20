@@ -17,23 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis.filesystem;
+package org.sonarsource.sonarlint.core.container.analysis;
 
-import javax.annotation.Nullable;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.AbstractFilePredicate;
+import org.picocontainer.injectors.ProviderAdapter;
+import org.sonar.api.config.Configuration;
 
-public class StatusPredicate extends AbstractFilePredicate {
+public class AnalysisConfigurationProvider extends ProviderAdapter {
 
-  private final InputFile.Status status;
+  private Configuration analysisConfig;
 
-  StatusPredicate(@Nullable InputFile.Status status) {
-    this.status = status;
-  }
-
-  @Override
-  public boolean apply(InputFile f) {
-    return status == null || status == f.status();
+  public Configuration provide(MutableAnalysisSettings settings) {
+    if (analysisConfig == null) {
+      this.analysisConfig = settings.asConfig();
+    }
+    return analysisConfig;
   }
 
 }

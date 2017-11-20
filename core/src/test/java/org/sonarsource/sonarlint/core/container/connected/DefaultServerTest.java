@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected;
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
+import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.utils.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,6 @@ public class DefaultServerTest {
     DefaultServer metadata = new DefaultServer(new MapSettings(), runtime);
     assertThat(metadata.getStartedAt()).isNull();
     assertThat(metadata.getRootDir()).isNull();
-    assertThat(metadata.getDeployDir()).isNull();
     assertThat(metadata.getContextPath()).isNull();
     assertThat(metadata.isSecured()).isFalse();
     assertThat(metadata.isDev()).isFalse();

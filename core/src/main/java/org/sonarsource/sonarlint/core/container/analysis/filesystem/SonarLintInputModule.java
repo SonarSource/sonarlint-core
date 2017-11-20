@@ -19,21 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import javax.annotation.Nullable;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.AbstractFilePredicate;
+import org.sonar.api.batch.fs.InputModule;
 
-public class StatusPredicate extends AbstractFilePredicate {
+public class SonarLintInputModule implements InputModule {
 
-  private final InputFile.Status status;
+  public static final String SONARLINT_FAKE_MODULE_KEY = "sonarlint";
 
-  StatusPredicate(@Nullable InputFile.Status status) {
-    this.status = status;
+  @Override
+  public String key() {
+    return SONARLINT_FAKE_MODULE_KEY;
   }
 
   @Override
-  public boolean apply(InputFile f) {
-    return status == null || status == f.status();
+  public boolean isFile() {
+    return false;
   }
-
 }

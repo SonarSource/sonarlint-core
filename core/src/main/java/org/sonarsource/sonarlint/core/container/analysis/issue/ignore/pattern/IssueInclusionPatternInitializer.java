@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 
-import org.sonarsource.sonarlint.core.container.analysis.ServerSettingsProvider;
+import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
 
 public class IssueInclusionPatternInitializer extends AbstractPatternInitializer {
 
   public static final String INCLUSION_KEY_PREFIX = "sonar.issue.enforce";
 
-  public IssueInclusionPatternInitializer(ServerSettingsProvider settingsProvider) {
+  public IssueInclusionPatternInitializer(ServerConfigurationProvider settingsProvider) {
     super(settingsProvider);
   }
 

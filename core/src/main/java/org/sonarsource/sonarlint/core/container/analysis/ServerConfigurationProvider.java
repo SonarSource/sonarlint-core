@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.sonar.api.config.Encryption;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
+import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
@@ -33,27 +33,27 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 /**
- * Can't put ServerSettings directly in pico since it would conflict with {@link AnalysisSettings}.
+ * Can't put {@link ServerConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
  *
  */
-public class ServerSettingsProvider {
+public class ServerConfigurationProvider {
 
-  private ServerSettings settings;
+  private Configuration serverConfig;
 
-  public ServerSettingsProvider(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.settings = new ServerSettings(storage, config, propertyDefinitions);
+  public ServerConfigurationProvider(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    this.serverConfig = new ServerConfiguration(storage, config, propertyDefinitions).asConfig();
   }
 
-  public ServerSettingsProvider(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.settings = new ServerSettings(null, config, propertyDefinitions);
+  public ServerConfigurationProvider(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    this.serverConfig = new ServerConfiguration(null, config, propertyDefinitions).asConfig();
   }
 
-  public static class ServerSettings extends Settings {
+  public static class ServerConfiguration extends MapSettings {
 
     private final Map<String, String> properties = new HashMap<>();
 
-    private ServerSettings(@Nullable StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-      super(propertyDefinitions, new Encryption(null));
+    private ServerConfiguration(@Nullable StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+      super(propertyDefinitions);
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalProperties();
         addProperties(globalProps.getPropertiesMap());
@@ -85,8 +85,8 @@ public class ServerSettingsProvider {
     }
   }
 
-  public ServerSettings getServerSettings() {
-    return settings;
+  public Configuration getServerConfig() {
+    return serverConfig;
   }
 
 }
