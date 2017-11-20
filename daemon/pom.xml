@@ -26,6 +26,7 @@
     <!-- embedded analyzers -->
     <sonar.javascript.version>3.3.0.5702</sonar.javascript.version>
     <sonar.cfamily.version>5.0.0.9359</sonar.cfamily.version>
+    <sonar.license.version>3.3.0.1191</sonar.license.version>
 
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>
@@ -169,6 +170,14 @@
                   <groupId>com.sonarsource.cpp</groupId>
                   <artifactId>sonar-cfamily-plugin</artifactId>
                   <version>${sonar.cfamily.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.license</groupId>
+                  <artifactId>sonar-license-plugin</artifactId>
+                  <version>${sonar.license.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
                   <outputDirectory>${project.build.directory}/plugins</outputDirectory>
