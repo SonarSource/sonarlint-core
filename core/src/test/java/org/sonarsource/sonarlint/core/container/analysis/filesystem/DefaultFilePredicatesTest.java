@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Before;
@@ -30,6 +31,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputFile.Status;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 
@@ -49,7 +51,7 @@ public class DefaultFilePredicatesTest {
     javaFile = new TestInputFileBuilder("foo", "src/main/java/struts/Action.java")
       .setModuleBaseDir(temp.newFolder().toPath())
       .setLanguage("java")
-      .setStatus(InputFile.Status.ADDED)
+      .setStatus(Status.SAME)
       .build();
   }
 
@@ -112,6 +114,14 @@ public class DefaultFilePredicatesTest {
 
     assertThat(predicates.hasAbsolutePath(temp.newFile().getAbsolutePath()).apply(javaFile)).isFalse();
     assertThat(predicates.hasAbsolutePath("src/main/java/struts/Action.java").apply(javaFile)).isFalse();
+  }
+
+  @Test
+  public void has_uri() throws Exception {
+    URI uri = javaFile.uri();
+    assertThat(predicates.hasURI(uri).apply(javaFile)).isTrue();
+
+    assertThat(predicates.hasURI(temp.newFile().toURI()).apply(javaFile)).isFalse();
   }
 
   @Test
@@ -184,6 +194,13 @@ public class DefaultFilePredicatesTest {
   public void has_type() {
     assertThat(predicates.hasType(InputFile.Type.MAIN).apply(javaFile)).isTrue();
     assertThat(predicates.hasType(InputFile.Type.TEST).apply(javaFile)).isFalse();
+  }
+
+  @Test
+  public void has_status() {
+    assertThat(predicates.hasAnyStatus().apply(javaFile)).isTrue();
+    assertThat(predicates.hasStatus(InputFile.Status.SAME).apply(javaFile)).isTrue();
+    assertThat(predicates.hasStatus(InputFile.Status.ADDED).apply(javaFile)).isFalse();
   }
 
   @Test
