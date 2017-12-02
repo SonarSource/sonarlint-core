@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
   <artifactId>sonarlint-core-parent</artifactId>
-  <version>2.18-SNAPSHOT</version>
+  <version>2.18-CODESCAN</version>
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
   <description>Library used by SonarLint clients (CLI, Eclipse, ...)</description>
@@ -25,8 +25,8 @@
   <modules>
     <module>client-api</module>
     <module>core</module>
-    <module>daemon</module>
-    <module>daemon-protocol</module>
+    <!--<module>daemon</module>
+    <module>daemon-protocol</module>-->
     <module>language-server</module>
     <module>rule-extractor</module>
   </modules>

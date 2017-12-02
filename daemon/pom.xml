@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>2.18-SNAPSHOT</version>
+    <version>2.18-CODESCAN</version>
   </parent>
 
   <artifactId>sonarlint-daemon</artifactId>
@@ -25,7 +25,6 @@
     
     <!-- embedded analyzers -->
     <sonar.javascript.version>3.1.1.5128</sonar.javascript.version>
-    <sonar.cfamily.version>4.11.0.8443</sonar.cfamily.version>
 
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>
@@ -144,41 +143,6 @@
           </execution>
         </executions>
       </plugin>
-      
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.sonarsource.javascript</groupId>
-                  <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>${sonar.javascript.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>com.sonarsource.cpp</groupId>
-                  <artifactId>sonar-cfamily-plugin</artifactId>
-                  <version>${sonar.cfamily.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      
     </plugins>
   </build>
   
