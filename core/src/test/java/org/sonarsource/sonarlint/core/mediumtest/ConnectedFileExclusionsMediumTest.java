@@ -182,7 +182,7 @@ public class ConnectedFileExclusionsMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), isTest);
+    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }
 

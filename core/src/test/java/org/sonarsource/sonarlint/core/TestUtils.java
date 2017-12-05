@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -51,12 +50,12 @@ public class TestUtils {
     return new NoOpLogOutput();
   }
 
-  public static ClientInputFile createInputFile(final Path path, final boolean isTest) {
-    return createInputFile(path, isTest, StandardCharsets.UTF_8);
+  public static ClientInputFile createInputFile(final Path path, String relativePath, final boolean isTest) {
+    return createInputFile(path, relativePath, isTest, StandardCharsets.UTF_8);
   }
 
-  public static ClientInputFile createInputFile(final Path path, final boolean isTest, final Charset encoding) {
-    return new TestClientInputFile(path, isTest, encoding);
+  public static ClientInputFile createInputFile(final Path path, String relativePath, final boolean isTest, final Charset encoding) {
+    return new TestClientInputFile(path, relativePath, isTest, encoding);
   }
 
 }

@@ -19,10 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +35,10 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile.Status;
 import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class SonarLintInputFileTest {
   @Rule
@@ -56,7 +55,7 @@ public class SonarLintInputFileTest {
   public void setUp() throws IOException {
     path = temp.newFile().toPath();
     Files.write(path, "test string".getBytes(StandardCharsets.UTF_8));
-    inputFile = new TestClientInputFile(path, false, StandardCharsets.UTF_8);
+    inputFile = new TestClientInputFile(path, "file", false, StandardCharsets.UTF_8);
     file = new SonarLintInputFile(inputFile);
   }
 

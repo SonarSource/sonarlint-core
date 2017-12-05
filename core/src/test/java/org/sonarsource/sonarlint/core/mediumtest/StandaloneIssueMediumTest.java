@@ -207,6 +207,24 @@ public class StandaloneIssueMediumTest {
       tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
   }
 
+  // SLCORE-162
+  @Test
+  public void useRelativePathToEvaluatePathPatterns() throws Exception {
+
+    final File file = new File(baseDir, "foo.tmp"); // Temporary file doesn't have the correct file suffix
+    FileUtils.write(file, "def my_function(name):\n"
+      + "    print \"Hello\"\n"
+      + "    print \"world!\" # NOSONAR\n"
+      + "\n", StandardCharsets.UTF_8);
+    ClientInputFile inputFile = new TestClientInputFile(file.toPath(), "foo.py", false, StandardCharsets.UTF_8, null);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue),
+      null, null);
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
+  }
+
   @Test
   public void simpleJava() throws Exception {
     ClientInputFile inputFile = prepareInputFile("Foo.java",
@@ -272,7 +290,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleJavaWithBytecode() throws Exception {
-    ClientInputFile inputFile = TestUtils.createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), false);
+    ClientInputFile inputFile = TestUtils.createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), "src/Foo.java", false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile),
@@ -375,7 +393,7 @@ public class StandaloneIssueMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
-    ClientInputFile inputFile = new TestClientInputFile(file.toPath(), isTest, encoding, language);
+    ClientInputFile inputFile = new TestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
     return inputFile;
   }
 

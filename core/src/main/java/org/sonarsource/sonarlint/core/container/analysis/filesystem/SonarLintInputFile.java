@@ -51,7 +51,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public String relativePath() {
-    return absolutePath();
+    return PathUtils.sanitize(clientInputFile.relativePath());
   }
 
   public void setLanguage(String language) {
