@@ -19,17 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LoggedErrorHandlerTest {
   private LoggedErrorHandler handler;
@@ -40,8 +39,8 @@ public class LoggedErrorHandlerTest {
 
   @Before
   public void setUp() {
-    file1 = new TestClientInputFile(path1, false, StandardCharsets.UTF_8);
-    file2 = new TestClientInputFile(path2, false, StandardCharsets.UTF_8);
+    file1 = new TestClientInputFile(path1, "my/file1", false, StandardCharsets.UTF_8);
+    file2 = new TestClientInputFile(path2, "my/file2", false, StandardCharsets.UTF_8);
 
     handler = new LoggedErrorHandler(Arrays.asList(file1, file2));
   }
@@ -63,7 +62,7 @@ public class LoggedErrorHandlerTest {
     handler.handleError("Unable to parse source file : " + path1);
     assertThat(handler.getErrorFiles()).containsOnly(file1);
   }
-  
+
   @Test
   public void testParsingErrorJs() {
     handler.handleError("Unable to parse file: " + path1);

@@ -74,6 +74,13 @@ public interface ClientInputFile {
    */
   String contents() throws IOException;
 
+  /**
+   * Logical path with '/' separators. Used to apply SonarLintPathPatterns.
+   */
+  default String relativePath() {
+    return uri().getPath();
+  }
+
   default URI uri() {
     return Paths.get(getPath()).toUri();
   }

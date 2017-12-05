@@ -19,19 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,6 +31,13 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class InputFileBuilderTest {
   @Rule
@@ -55,7 +54,7 @@ public class InputFileBuilderTest {
 
     Path path = temp.getRoot().toPath().resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
-    ClientInputFile file = new TestClientInputFile(path, true, StandardCharsets.ISO_8859_1);
+    ClientInputFile file = new TestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1);
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
     SonarLintInputFile inputFile = builder.create(file);
@@ -74,7 +73,7 @@ public class InputFileBuilderTest {
   public void testCreateWithLanguageSet() throws IOException {
     Path path = temp.getRoot().toPath().resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
-    ClientInputFile file = new TestClientInputFile(path, true, StandardCharsets.ISO_8859_1, "cpp");
+    ClientInputFile file = new TestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, "cpp");
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
     SonarLintInputFile inputFile = builder.create(file);
@@ -86,7 +85,7 @@ public class InputFileBuilderTest {
   @Test
   public void testCreateError() throws IOException {
     when(langDetection.language(any(InputFile.class))).thenReturn("java");
-    ClientInputFile file = new TestClientInputFile(Paths.get("INVALID"), true, StandardCharsets.ISO_8859_1);
+    ClientInputFile file = new TestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
 
