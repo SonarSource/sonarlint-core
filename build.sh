@@ -1,39 +1,21 @@
 #!/bin/bash
-# Regular way to build a SonarSource Maven project on Travis.
-# Requires the environment variables:
-# - SONAR_HOST_URL: URL of SonarQube server
-# - SONAR_TOKEN: access token to send analysis reports to $SONAR_HOST_URL
-# - GITHUB_TOKEN: access token to send analysis of pull requests to GibHub
-# - ARTIFACTORY_URL: URL to Artifactory repository
-# - ARTIFACTORY_DEPLOY_REPO: name of deployment repository
-# - ARTIFACTORY_DEPLOY_USERNAME: login to deploy to $ARTIFACTORY_DEPLOY_REPO
-# - ARTIFACTORY_DEPLOY_PASSWORD: password to deploy to $ARTIFACTORY_DEPLOY_REPO
 
 set -euo pipefail
 
-function configureTravis {
-  mkdir -p .local
-  curl -sSL https://github.com/SonarSource/travis-utils/tarball/v36 | tar zx --strip-components 1 -C .local  
+function maven_expression() {
+  mvn help:evaluate -Dexpression=$1 | grep -v '^\[\|Download\w\+\:'
 }
-configureTravis
 
 export PATH=`pwd`/.local/bin:$PATH
 
 if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
   echo '======= Build, deploy and analyze master'
 
-  # Fetch all commit history so that SonarQube has exact blame information
-  # for issue auto-assignment
-  # This command can fail with "fatal: --unshallow on a complete repository does not make sense" 
-  # if there are not enough commits in the Git repository (even if Travis executed git clone --depth 50).
-  # For this reason errors are ignored with "|| true"
-  git fetch --unshallow || true
-
   # Analyze with SNAPSHOT version as long as SQ does not correctly handle
   # purge of release data
   CURRENT_VERSION=`maven_expression "project.version"`
 
-  . set_maven_build_version $TRAVIS_BUILD_NUMBER
+  ./set_maven_build_version.sh "$TRAVIS_BUILD_NUMBER"
   
   export MAVEN_OPTS="-Xmx1536m -Xms128m"
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
@@ -44,17 +26,14 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
       -Dsonar.host.url=$SONAR_HOST_URL \
       -Dsonar.login=$SONAR_TOKEN \
       -Dsonar.projectVersion=$CURRENT_VERSION \
+      -Dsonar.analysis.buildNumber=$BUILD_ID \
+      -Dsonar.analysis.pipeline=$BUILD_ID \
+      -Dsonar.analysis.sha1=$GIT_SHA1  \
+      -Dsonar.analysis.repository=$GITHUB_REPO \
       -B -e -V $*
 
 elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
   # no dory analysis on release branch
-
-  # Fetch all commit history so that SonarQube has exact blame information
-  # for issue auto-assignment
-  # This command can fail with "fatal: --unshallow on a complete repository does not make sense" 
-  # if there are not enough commits in the Git repository (even if Travis executed git clone --depth 50).
-  # For this reason errors are ignored with "|| true"
-  git fetch --unshallow || true
 
   export MAVEN_OPTS="-Xmx1536m -Xms128m" 
 
@@ -83,7 +62,7 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
   echo '======= Build and analyze pull request'
   
   # Do not deploy a SNAPSHOT version but the release version related to this build and PR
-  . set_maven_build_version $TRAVIS_BUILD_NUMBER
+  ./set_maven_build_version.sh "$TRAVIS_BUILD_NUMBER"
 
   # No need for Maven phase "install" as the generated JAR files do not need to be installed
   # in Maven local repository. Phase "verify" is enough.
@@ -100,6 +79,18 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
       -Dsonar.host.url=$SONAR_HOST_URL \
       -Dsonar.login=$SONAR_TOKEN \
       -B -e -V $*
+
+  mvn sonar:sonar \
+      -Dsonar.host.url=$SONAR_HOST_URL \
+      -Dsonar.login=$SONAR_TOKEN \
+      -Dsonar.analysis.buildNumber=$BUILD_ID \
+      -Dsonar.analysis.pipeline=$BUILD_ID \
+      -Dsonar.analysis.sha1=$GIT_SHA1  \
+      -Dsonar.analysis.repository=$GITHUB_REPO \
+      -Dsonar.analysis.prNumber=$PULL_REQUEST \
+      -Dsonar.branch.name=$GITHUB_BASE_BRANCH \
+      -Dsonar.branch.target=$GITHUB_TARGET_BRANCH \
+      -B -e -V
   
 else
   echo '======= Build, no analysis, no deploy'
