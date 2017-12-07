@@ -6,6 +6,27 @@ function maven_expression() {
   mvn help:evaluate -Dexpression=$1 | grep -v '^\[\|Download\w\+\:'
 }
 
+function set_maven_build_version() {
+  BUILD_ID=$1
+  CURRENT_VERSION=`maven_expression "project.version"`
+  RELEASE_VERSION=`echo $CURRENT_VERSION | sed "s/-.*//g"`
+
+  # In case of 2 digits, we need to add the 3rd digit (0 obviously)
+  # Mandatory in order to compare versions (patch VS non patch)
+  IFS=$'.'
+  DIGIT_COUNT=`echo $RELEASE_VERSION | wc -w`
+  unset IFS
+  if [ $DIGIT_COUNT -lt 3 ]; then
+      RELEASE_VERSION="$RELEASE_VERSION.0"
+  fi
+  NEW_VERSION="$RELEASE_VERSION.$BUILD_ID"
+  
+  echo "Replacing version $CURRENT_VERSION with $NEW_VERSION"
+  mvn org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=$NEW_VERSION -DgenerateBackupPoms=false -B -e
+  # Used later on for the release
+  export PROJECT_VERSION=$NEW_VERSION
+}
+
 export PATH=`pwd`/.local/bin:$PATH
 
 if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
@@ -15,7 +36,7 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
   # purge of release data
   CURRENT_VERSION=`maven_expression "project.version"`
 
-  ./set_maven_build_version.sh "$TRAVIS_BUILD_NUMBER"
+  set_maven_build_version "$TRAVIS_BUILD_NUMBER"
   
   export MAVEN_OPTS="-Xmx1536m -Xms128m"
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
@@ -35,7 +56,7 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
 elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
   # no dory analysis on release branch
 
-  export MAVEN_OPTS="-Xmx1536m -Xms128m" 
+  export MAVEN_OPTS="-Xmx1536m -Xms128m"
 
   # get current version from pom
   CURRENT_VERSION=`maven_expression "project.version"`
@@ -43,7 +64,7 @@ elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "fals
   if [[ $CURRENT_VERSION =~ "-SNAPSHOT" ]]; then
     echo "======= Found SNAPSHOT version ======="
     # Do not deploy a SNAPSHOT version but the release version related to this build
-    . set_maven_build_version $TRAVIS_BUILD_NUMBER
+    set_maven_build_version $TRAVIS_BUILD_NUMBER
     mvn deploy \
       -Pdeploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
@@ -62,7 +83,7 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
   echo '======= Build and analyze pull request'
   
   # Do not deploy a SNAPSHOT version but the release version related to this build and PR
-  ./set_maven_build_version.sh "$TRAVIS_BUILD_NUMBER"
+  set_maven_build_version "$TRAVIS_BUILD_NUMBER"
 
   # No need for Maven phase "install" as the generated JAR files do not need to be installed
   # in Maven local repository. Phase "verify" is enough.
