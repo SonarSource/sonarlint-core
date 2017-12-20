@@ -32,7 +32,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
-class DefaultClientInputFile implements ClientInputFile {
+public class DefaultClientInputFile implements ClientInputFile {
 
   private final URI fileUri;
   private final String content;
@@ -95,6 +95,8 @@ class DefaultClientInputFile implements ClientInputFile {
         return "js";
       case "python":
         return "py";
+      case "typescript":
+        return "ts";
       default:
         return clientLanguageId;
     }

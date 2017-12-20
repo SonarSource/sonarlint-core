@@ -20,6 +20,7 @@
     <sonar.javascript.version>3.1.0.5111</sonar.javascript.version>
     <sonar.php.version>2.10.0.2087</sonar.php.version>
     <sonar.python.version>1.8.0.1496</sonar.python.version>
+    <sonar.typescript.version>1.5.0.2087</sonar.typescript.version>
   </properties>
 
   <dependencies>
@@ -137,6 +138,15 @@
                   <overWrite>false</overWrite>
                   <outputDirectory>${project.build.directory}/plugins</outputDirectory>
                   <destFileName>php.jar</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.typescript</groupId>
+                  <artifactId>sonar-typescript-plugin</artifactId>
+                  <version>${sonar.typescript.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                  <destFileName>typescript.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>

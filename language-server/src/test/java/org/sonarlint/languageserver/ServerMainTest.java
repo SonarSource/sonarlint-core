@@ -24,7 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.SystemUtils;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
@@ -65,18 +67,24 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.api.internal.apachecommons.io.FileUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.fail;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.DISABLE_TELEMETRY;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.TEST_FILE_PATTERN;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.TYPESCRIPT_LOCATION;
 
 public class ServerMainTest {
 
+  @ClassRule
+  public static TemporaryFolder globalTemp = new TemporaryFolder();
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   private static ServerSocket serverSocket;
@@ -104,12 +112,28 @@ public class ServerMainTest {
     Future<LanguageServer> future = executor.submit(callable);
     executor.shutdown();
 
-    URL js = new File("target/plugins/javascript.jar").getAbsoluteFile().toURI().toURL();
-    URL php = new File("target/plugins/php.jar").getAbsoluteFile().toURI().toURL();
-    URL py = new File("target/plugins/python.jar").getAbsoluteFile().toURI().toURL();
+    String js = new File("target/plugins/javascript.jar").getAbsoluteFile().toURI().toURL().toString();
+    String php = new File("target/plugins/php.jar").getAbsoluteFile().toURI().toURL().toString();
+    String py = new File("target/plugins/python.jar").getAbsoluteFile().toURI().toURL().toString();
+    String ts = new File("target/plugins/typescript.jar").getAbsoluteFile().toURI().toURL().toString();
+
+    Path fakeTypeScriptProjectPath = globalTemp.newFolder().toPath();
+    Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
+    FileUtils.write(packagejson.toFile(), "{"
+      + "\"devDependencies\": {\n" +
+      "    \"typescript\": \"2.6.1\"\n" +
+      "  }"
+      + "}", StandardCharsets.UTF_8);
+    ProcessBuilder pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
+      .directory(fakeTypeScriptProjectPath.toFile())
+      .inheritIO();
+    Process process = pb.start();
+    if (process.waitFor() != 0) {
+      fail("Unable to run npm install");
+    }
 
     try {
-      ServerMain.main("" + port, js.toString(), php.toString(), py.toString());
+      ServerMain.main("" + port, js, php, py, ts);
     } catch (Exception e) {
       e.printStackTrace();
       future.get(1, TimeUnit.SECONDS);
@@ -122,12 +146,14 @@ public class ServerMainTest {
     lsProxy = future.get();
 
     InitializeParams initializeParams = new InitializeParams();
-    initializeParams.setInitializationOptions(ImmutableMap.of(
-      TEST_FILE_PATTERN, "{**/test/**,**/*test*,**/*Test*}",
-      "disableTelemetry", true,
-      "telemetryStorage", "not/exists",
-      "productName", "SLCORE tests",
-      "productVersion", "0.1"));
+    initializeParams.setInitializationOptions(ImmutableMap.builder()
+      .put(TEST_FILE_PATTERN, "{**/test/**,**/*test*,**/*Test*}")
+      .put(TYPESCRIPT_LOCATION, fakeTypeScriptProjectPath.resolve("node_modules").toString())
+      .put(DISABLE_TELEMETRY, true)
+      .put("telemetryStorage", "not/exists")
+      .put("productName", "SLCORE tests")
+      .put("productVersion", "0.1")
+      .build());
     lsProxy.initialize(initializeParams).get();
   }
 
@@ -238,6 +264,23 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+  }
+
+  @Test
+  public void analyzeSimpleTsFileOnChange() throws Exception {
+    File tsconfig = temp.newFile("tsconfig.json");
+    FileUtils.write(tsconfig, "{}", StandardCharsets.UTF_8);
+    String uri = getUri("foo.ts");
+    VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
+    docId.setUri(uri);
+    lsProxy.getTextDocumentService()
+      .didChange(new DidChangeTextDocumentParams(docId, Collections.singletonList(new TextDocumentContentChangeEvent("function foo() {\n if(bar() && bar()) { return 42; }\n}"))));
+
+    List<Diagnostic> diagnostics = waitForDiagnostics(uri);
+    assertThat(diagnostics)
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(tuple(1, 4, 1, 18, "typescript:S1764", "sonarlint", "Correct one of the identical sub-expressions on both sides of operator \"&&\" (typescript:S1764)",
+        DiagnosticSeverity.Warning));
   }
 
   @Test

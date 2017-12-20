@@ -58,6 +58,10 @@ public class PluginLocator {
     return getPluginUrl("sonar-license-plugin-3.3.0.1341.jar");
   }
 
+  public static URL getTypeScriptPluginUrl() {
+    return getPluginUrl("sonar-typescript-plugin-1.5.0.2047.jar");
+  }
+
   public static URL getXooPluginUrl() {
     return getPluginUrlUnknownVersion(SONAR_XOO_PLUGIN_NAME);
   }

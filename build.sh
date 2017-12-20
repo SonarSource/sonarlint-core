@@ -27,6 +27,20 @@ function set_maven_build_version() {
   export PROJECT_VERSION=$NEW_VERSION
 }
 
+#install node
+node_home=$(pwd)/node-v9.4.0-linux-x64
+node_archive=node.tar.gz
+if [ ! -d "$node_home" ]; then
+  echo "=== Install Node.js ===";
+  curl --insecure --silent --show-error -o $node_archive https://nodejs.org/dist/v9.4.0/node-v9.4.0-linux-x64.tar.gz;
+  tar xzvf $node_archive;
+  rm $node_archive;
+fi
+
+chmod 755 $node_home/bin;
+
+export PATH=$node_home/bin:$PATH;
+
 export PATH=`pwd`/.local/bin:$PATH
 
 if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
