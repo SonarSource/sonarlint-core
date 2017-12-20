@@ -9,3 +9,4 @@ xml=1.4.2
 rpg=2.1
 pli=1.5
 abap=3.4
+typescript=1.5

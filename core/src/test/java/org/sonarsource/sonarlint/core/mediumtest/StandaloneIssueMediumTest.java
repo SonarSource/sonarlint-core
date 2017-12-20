@@ -27,13 +27,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -53,6 +56,7 @@ import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.Assert.fail;
 
 public class StandaloneIssueMediumTest {
 
@@ -64,6 +68,24 @@ public class StandaloneIssueMediumTest {
   @BeforeClass
   public static void prepare() throws Exception {
     Path sonarlintUserHome = temp.newFolder().toPath();
+
+    Path fakeTypeScriptProjectPath = temp.newFolder().toPath();
+    Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
+    FileUtils.write(packagejson.toFile(), "{"
+      + "\"devDependencies\": {\n" +
+      "    \"typescript\": \"2.6.1\"\n" +
+      "  }"
+      + "}", StandardCharsets.UTF_8);
+    ProcessBuilder pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
+      .directory(fakeTypeScriptProjectPath.toFile())
+      .inheritIO();
+    Process process = pb.start();
+    if (process.waitFor() != 0) {
+      fail("Unable to run npm install");
+    }
+
+    Map<String, String> extraProperties = new HashMap<>();
+    extraProperties.put("sonar.typescript.internal.typescriptLocation", fakeTypeScriptProjectPath.resolve("node_modules").toString());
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
@@ -72,8 +94,10 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getCppPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
       .addPlugin(PluginLocator.getLicensePluginUrl())
+      .addPlugin(PluginLocator.getTypeScriptPluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
+      .setExtraProperties(extraProperties)
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
   }
@@ -117,6 +141,31 @@ public class StandaloneIssueMediumTest {
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), i -> issues.add(i), null,
       null);
     assertThat(issues).isEmpty();
+  }
+
+  @Test
+  public void simpleTypeScript() throws Exception {
+
+    RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764");
+    assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
+    assertThat(ruleDetails.getLanguage()).isEqualTo("ts");
+    assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
+    assertThat(ruleDetails.getTags()).containsOnly("cert");
+    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
+
+    final File tsConfig = new File(baseDir, "tsconfig.json");
+    FileUtils.write(tsConfig, "{}", StandardCharsets.UTF_8);
+
+    ClientInputFile inputFile = prepareInputFile("foo.ts", "function foo() {\n"
+      + "  if(bar() && bar()) { return 42; }\n"
+      + "}", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), i -> issues.add(i), null,
+      null);
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
+      tuple("typescript:S1764", 2, inputFile.getPath()));
+
   }
 
   @Test

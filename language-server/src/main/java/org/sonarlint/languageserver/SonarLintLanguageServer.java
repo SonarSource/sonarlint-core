@@ -107,6 +107,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
   static final String DISABLE_TELEMETRY = "disableTelemetry";
+  static final String TYPESCRIPT_LOCATION = "typeScriptLocation";
   static final String TEST_FILE_PATTERN = "testFilePattern";
   static final String ANALYZER_PROPERTIES = "analyzerProperties";
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
@@ -114,19 +115,21 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
 
   private final LanguageClient client;
-  private final StandaloneSonarLintEngine engine;
   private final Future<?> backgroundProcess;
   private final LanguageClientLogOutput logOutput;
 
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
+  private final Collection<URL> analyzers;
 
   private UserSettings userSettings = new UserSettings();
 
+  private StandaloneSonarLintEngine engine;
   private Path workspaceDir;
 
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
+    this.analyzers = analyzers;
     Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(this,
       inputStream,
       outputStream,
@@ -134,22 +137,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     this.client = launcher.getRemoteProxy();
     this.logOutput = new LanguageClientLogOutput(client);
-
-    info("Starting SonarLint engine...");
-    info("Using " + analyzers.size() + " analyzers");
-
-    try {
-      Builder builder = StandaloneGlobalConfiguration.builder()
-        .setLogOutput(logOutput)
-        .addPlugins(analyzers.toArray(new URL[0]));
-
-      this.engine = new StandaloneSonarLintEngineImpl(builder.build());
-    } catch (Exception e) {
-      error("Error starting SonarLint engine", e);
-      throw new IllegalStateException(e);
-    }
-
-    info("SonarLint engine started");
 
     backgroundProcess = launcher.startListening();
   }
@@ -171,8 +158,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     private UserSettings(Map<String, Object> params) {
       this.testFilePattern = (String) params.get(TEST_FILE_PATTERN);
-      this.analyzerProperties = (Map) params.getOrDefault(ANALYZER_PROPERTIES, Collections.emptyMap());
+      this.analyzerProperties = getAnalyzerProperties(params);
       this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
+    }
+
+    private static Map getAnalyzerProperties(Map<String, Object> params) {
+      Map analyzerProperties = (Map) params.getOrDefault(ANALYZER_PROPERTIES, Collections.emptyMap());
+      if (analyzerProperties == null) {
+        analyzerProperties = Collections.emptyMap();
+      }
+      return analyzerProperties;
     }
   }
 
@@ -218,6 +213,25 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
     telemetry.optOut(userSettings.disableTelemetry);
+
+    info("Starting SonarLint engine...");
+    info("Using " + analyzers.size() + " analyzers");
+
+    try {
+      Map<String, String> extraProperties = new HashMap<>();
+      extraProperties.put("sonar.typescript.internal.typescriptLocation", (String) options.get(TYPESCRIPT_LOCATION));
+      Builder builder = StandaloneGlobalConfiguration.builder()
+        .setLogOutput(logOutput)
+        .setExtraProperties(extraProperties)
+        .addPlugins(analyzers.toArray(new URL[0]));
+
+      this.engine = new StandaloneSonarLintEngineImpl(builder.build());
+    } catch (Exception e) {
+      error("Error starting SonarLint engine", e);
+      throw new IllegalStateException(e);
+    }
+
+    info("SonarLint engine started");
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
@@ -413,6 +427,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     // Ignore files with parsing error
     analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
     files.values().forEach(client::publishDiagnostics);
+
   }
 
   static Optional<Diagnostic> convert(Issue issue) {
