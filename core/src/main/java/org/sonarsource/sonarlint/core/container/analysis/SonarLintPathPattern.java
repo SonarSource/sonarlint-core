@@ -56,11 +56,19 @@ public class SonarLintPathPattern {
   }
 
   public boolean match(InputFile inputFile) {
-    return match(inputFile, true);
+    return match(inputFile.relativePath(), true);
+  }
+
+  public boolean match(String filePath) {
+    return match(filePath, true);
   }
 
   public boolean match(InputFile inputFile, boolean caseSensitiveFileExtension) {
-    String path = PathUtils.sanitize(inputFile.relativePath());
+    return match(inputFile.relativePath(), caseSensitiveFileExtension);
+  }
+
+  public boolean match(String filePath, boolean caseSensitiveFileExtension) {
+    String path = PathUtils.sanitize(filePath);
     if (!caseSensitiveFileExtension) {
       String extension = sanitizeExtension(FilenameUtils.getExtension(path));
       if (StringUtils.isNotBlank(extension)) {

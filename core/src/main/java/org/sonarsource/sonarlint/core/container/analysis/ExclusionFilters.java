@@ -23,6 +23,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.scan.filesystem.FileExclusions;
 
 public class ExclusionFilters {
@@ -36,8 +37,8 @@ public class ExclusionFilters {
   private SonarLintPathPattern[] testInclusions;
   private SonarLintPathPattern[] testExclusions;
 
-  public ExclusionFilters(ServerConfigurationProvider serverConfigProvider) {
-    this.exclusionSettings = new FileExclusions(serverConfigProvider.getServerConfig());
+  public ExclusionFilters(Configuration configuration) {
+    this.exclusionSettings = new FileExclusions(configuration);
   }
 
   public void prepare() {
@@ -45,10 +46,10 @@ public class ExclusionFilters {
     mainExclusions = prepareMainExclusions();
     testInclusions = prepareTestInclusions();
     testExclusions = prepareTestExclusions();
-    log("Included sources: ", mainInclusions);
-    log("Excluded sources: ", mainExclusions);
-    log("Included tests: ", testInclusions);
-    log("Excluded tests: ", testExclusions);
+    log("Server included sources: ", mainInclusions);
+    log("Server excluded sources: ", mainExclusions);
+    log("Server included tests: ", testInclusions);
+    log("Server excluded tests: ", testExclusions);
   }
 
   private static void log(String title, SonarLintPathPattern[] patterns) {
@@ -60,7 +61,7 @@ public class ExclusionFilters {
     }
   }
 
-  public boolean accept(InputFile inputFile, InputFile.Type type) {
+  public boolean accept(String relativePath, InputFile.Type type) {
     SonarLintPathPattern[] inclusionPatterns;
     SonarLintPathPattern[] exclusionPatterns;
     if (InputFile.Type.MAIN == type) {
@@ -76,7 +77,7 @@ public class ExclusionFilters {
     if (inclusionPatterns.length > 0) {
       boolean matchInclusion = false;
       for (SonarLintPathPattern pattern : inclusionPatterns) {
-        matchInclusion |= pattern.match(inputFile);
+        matchInclusion |= pattern.match(relativePath);
       }
       if (!matchInclusion) {
         return false;
@@ -84,7 +85,7 @@ public class ExclusionFilters {
     }
     if (exclusionPatterns.length > 0) {
       for (SonarLintPathPattern pattern : exclusionPatterns) {
-        if (pattern.match(inputFile)) {
+        if (pattern.match(relativePath)) {
           return false;
         }
       }

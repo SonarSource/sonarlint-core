@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -49,10 +51,11 @@ public class StorageContainerHandler {
   private final StoragePaths storagePaths;
   private final TempFolder tempFolder;
   private final StorageReader storageReader;
+  private final StorageFileExclusions storageExclusions;
 
   public StorageContainerHandler(StorageAnalyzer storageAnalyzer, StorageRuleDetailsReader storageRuleDetailsReader, GlobalUpdateStatusReader globalUpdateStatusReader,
     PluginRepository pluginRepository, ModuleStorageStatusReader moduleStorageStatusReader, IssueStoreReader issueStoreReader, AllModulesReader allModulesReader,
-    StoragePaths storagePaths, StorageReader storageReader, TempFolder tempFolder) {
+    StoragePaths storagePaths, StorageReader storageReader, TempFolder tempFolder, StorageFileExclusions storageExclusions) {
     this.storageAnalyzer = storageAnalyzer;
     this.storageRuleDetailsReader = storageRuleDetailsReader;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
@@ -63,6 +66,7 @@ public class StorageContainerHandler {
     this.storagePaths = storagePaths;
     this.storageReader = storageReader;
     this.tempFolder = tempFolder;
+    this.storageExclusions = storageExclusions;
   }
 
   public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
@@ -91,6 +95,10 @@ public class StorageContainerHandler {
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     return issueStoreReader.getServerIssues(moduleKey, filePath);
+  }
+
+  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths,  Predicate<String> testFilePredicate) {
+    return storageExclusions.getExcludedFiles(moduleKey, filePaths, testFilePredicate);
   }
 
   public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {

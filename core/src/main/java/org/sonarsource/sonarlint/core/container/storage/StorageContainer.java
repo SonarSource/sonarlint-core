@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.Plugin;
@@ -39,11 +38,11 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
 public class StorageContainer extends ComponentContainer {
@@ -87,6 +86,7 @@ public class StorageContainer extends ComponentContainer {
 
       // analysis
       StorageAnalyzer.class,
+      StorageFileExclusions.class,
 
       // needed during analysis (immutable)
       UriReader.class,
@@ -103,6 +103,7 @@ public class StorageContainer extends ComponentContainer {
   protected void doAfterStart() {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
     GlobalStorageStatus updateStatus = getComponentByType(StorageContainerHandler.class).getGlobalStorageStatus();
+
     if (updateStatus != null) {
       LOG.info("Using storage for server '{}' (last update {})", config.getServerId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
       installPlugins();

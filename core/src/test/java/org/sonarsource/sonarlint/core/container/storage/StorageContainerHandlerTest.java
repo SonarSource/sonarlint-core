@@ -19,12 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.util.LinkedList;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -32,6 +28,9 @@ import org.mockito.MockitoAnnotations;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 public class StorageContainerHandlerTest {
   @Mock
@@ -56,12 +55,14 @@ public class StorageContainerHandlerTest {
   private TempFolder tempFolder;
   @Mock
   private StorageContainerHandler handler;
+  @Mock
+  private StorageFileExclusions storageExclusions;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     handler = new StorageContainerHandler(storageAnalyzer, storageRuleDetailsReader, globalUpdateStatusReader,
-      pluginRepository, moduleStorageStatusReader, issueStoreReader, allModulesReader, storagePaths, storageReader, tempFolder);
+      pluginRepository, moduleStorageStatusReader, issueStoreReader, allModulesReader, storagePaths, storageReader, tempFolder, storageExclusions);
   }
 
   @Test
