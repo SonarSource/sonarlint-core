@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,11 +38,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -136,32 +135,32 @@ public class ConnectedFileExclusionsMediumTest {
     StorageReader storageReader = sonarlint.getGlobalContainer().getComponentByType(StorageReader.class);
     ModuleConfiguration originalModuleConfig = storageReader.readModuleConfig(MODULE_KEY);
 
-    AnalysisResults result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(4);
+    int result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(4);
 
     updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "src/**"));
-    result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(3);
+    result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(3);
 
     updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
-    result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(3);
+    result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(3);
 
     updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.exclusions", "src/**"));
-    result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(3);
+    result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(3);
 
     updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.test.inclusions", "test/**"));
-    result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(3);
+    result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(3);
 
     updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.test.exclusions", "test/**"));
-    result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(3);
+    result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(3);
 
     updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
-    result = analyze(mainFile1, mainFile2, testFile1, testFile2);
-    assertThat(result.fileCount()).isEqualTo(1);
+    result = count(mainFile1, mainFile2, testFile1, testFile2);
+    assertThat(result).isEqualTo(1);
   }
 
   private void updateModuleConfig(StoragePaths storagePaths, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
@@ -170,13 +169,11 @@ public class ConnectedFileExclusionsMediumTest {
     ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getModuleConfigurationPath(MODULE_KEY));
   }
 
-  private AnalysisResults analyze(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {
-    AnalysisResults result = sonarlint.analyze(
-      new ConnectedAnalysisConfiguration(MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(mainFile1, mainFile2, testFile1, testFile2),
-        ImmutableMap.<String, String>of()),
-      issue -> {
-      }, null, null);
-    return result;
+  private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {
+    List<String> filePaths = Arrays.asList(mainFile1.getPath(), mainFile2.getPath(), testFile1.getPath(), testFile2.getPath());
+
+    Set<String> result = sonarlint.getExcludedFiles(MODULE_KEY, filePaths, f -> f.contains("Test"));
+    return filePaths.size() - result.size();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

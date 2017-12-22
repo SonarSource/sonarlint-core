@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
@@ -163,5 +165,7 @@ public interface ConnectedSonarLintEngine {
    * Should only be called when engine is started.
    */
   Collection<LoadedAnalyzer> getLoadedAnalyzers();
+
+  Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate);
 
 }

@@ -105,7 +105,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       // Exclusions in connected mode
       ServerConfigurationProvider.class,
-      ExclusionFilters.class,
       EnforceIssuesFilter.class,
       IgnoreIssuesFilter.class,
       IssueExclusionPatternInitializer.class,

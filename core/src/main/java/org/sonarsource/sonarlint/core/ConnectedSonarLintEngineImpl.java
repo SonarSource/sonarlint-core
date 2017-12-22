@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
@@ -228,6 +230,11 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   @Override
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
     return withReadLock(() -> getHandler().getServerIssues(moduleKey, filePath));
+  }
+
+  @Override
+  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
+    return withReadLock(() -> getHandler().getExcludedFiles(moduleKey, filePaths, testFilePredicate));
   }
 
   @Override
