@@ -28,19 +28,21 @@ import org.junit.Test;
 public class TelemetryPayloadTest {
   @Test
   public void testGenerationJson() {
-    OffsetDateTime systemTime = OffsetDateTime.of(2017, 11, 10, 12, 13, 14, 984_123_123, ZoneOffset.ofHours(2));
-    TelemetryPayload m = new TelemetryPayload(30, 15, "SLI", "2.4", true, systemTime);
+    OffsetDateTime installTime = OffsetDateTime.of(2017, 11, 10, 12, 1, 14, 984_123_123, ZoneOffset.ofHours(2));
+    OffsetDateTime systemTime = installTime.plusMinutes(1);
+    TelemetryPayload m = new TelemetryPayload(60_000, 15, "SLI", "2.4", true, systemTime, installTime);
     String s = m.toJson();
 
-    assertThat(s).isEqualTo("{\"days_since_installation\":30,"
+    assertThat(s).isEqualTo("{\"millis_since_installation\":60000,"
       + "\"days_of_use\":15,"
       + "\"sonarlint_version\":\"2.4\","
       + "\"sonarlint_product\":\"SLI\","
       + "\"connected_mode_used\":true,"
-      + "\"system_time\":\"2017-11-10T10:13:14.984Z+02:00\"}");
+      + "\"system_time\":\"2017-11-10T10:02:14.984Z+02:00\","
+      + "\"install_time\":\"2017-11-10T10:01:14.984Z+02:00\"}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
-    assertThat(m.daysSinceInstallation()).isEqualTo(30);
+    assertThat(m.millisSinceInstallation()).isEqualTo(60000);
     assertThat(m.product()).isEqualTo("SLI");
     assertThat(m.version()).isEqualTo("2.4");
     assertThat(m.connectedMode()).isTrue();

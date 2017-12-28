@@ -22,10 +22,9 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import org.junit.*;
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
 public class TelemetryUtilsTest {

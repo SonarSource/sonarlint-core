@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
@@ -158,8 +159,8 @@ public class TelemetryManagerTest {
     manager.uploadLazily();
 
     LocalDateTime lastUploadTime = data.lastUploadTime()
-        .minusDays(1)
-        .minusHours(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD);
+      .minusDays(1)
+      .minusHours(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD);
     data.setLastUploadTime(lastUploadTime);
 
     manager.uploadLazily();
@@ -181,7 +182,7 @@ public class TelemetryManagerTest {
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isNotEqualTo(data.enabled());
-    assertThat(reloaded.installDate()).isEqualTo(data.installDate());
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isAfter(data.lastUploadTime());
@@ -202,7 +203,7 @@ public class TelemetryManagerTest {
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isNotEqualTo(data.enabled());
-    assertThat(reloaded.installDate()).isEqualTo(data.installDate());
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
@@ -221,7 +222,7 @@ public class TelemetryManagerTest {
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isTrue();
-    assertThat(reloaded.installDate()).isEqualTo(data.installDate());
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
     assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
@@ -240,7 +241,7 @@ public class TelemetryManagerTest {
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isTrue();
-    assertThat(reloaded.installDate()).isEqualTo(data.installDate());
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
@@ -250,7 +251,7 @@ public class TelemetryManagerTest {
   private TelemetryData createAndSaveSampleData(TelemetryStorage storage) {
     TelemetryData data = new TelemetryData();
     data.setEnabled(false);
-    data.setInstallDate(LocalDate.now().minusDays(10));
+    data.setInstallTime(OffsetDateTime.now().minusDays(10));
     data.setLastUseDate(LocalDate.now().minusDays(3));
     data.setLastUploadTime(LocalDateTime.now().minusDays(2));
     data.setNumUseDays(5);

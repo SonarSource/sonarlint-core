@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,11 +51,16 @@ public class TelemetryStorageTest {
     TelemetryData data = storage.tryLoad();
     assertThat(filePath).doesNotExist();
 
-    assertThat(data.installDate()).isEqualTo(today);
+    assertThat(data.installTime()).is(within3SecOfNow);
     assertThat(data.lastUseDate()).isNull();
     assertThat(data.numUseDays()).isEqualTo(0);
     assertThat(data.enabled()).isTrue();
   }
+
+  private Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
+    OffsetDateTime now = OffsetDateTime.now();
+    return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
+  }, "within3Sec");
 
   @Test
   public void should_update_data() {
@@ -74,15 +82,15 @@ public class TelemetryStorageTest {
   }
 
   @Test
-  public void should_fix_invalid_installDate() {
+  public void should_fix_invalid_installTime() {
     TelemetryStorage storage = new TelemetryStorage(filePath);
     TelemetryData data = storage.tryLoad();
-    data.setInstallDate(null);
+    data.setInstallTime(null);
     data.setNumUseDays(100);
     storage.trySave(data);
 
     TelemetryData data2 = storage.tryLoad();
-    assertThat(data2.installDate()).isEqualTo(today);
+    assertThat(data2.installTime()).is(within3SecOfNow);
     assertThat(data2.lastUseDate()).isNull();
     assertThat(data2.numUseDays()).isEqualTo(0);
   }
@@ -91,14 +99,14 @@ public class TelemetryStorageTest {
   public void should_fix_invalid_numDays() {
     TelemetryStorage storage = new TelemetryStorage(filePath);
     TelemetryData data = storage.tryLoad();
-    LocalDate tenDaysAgo = today.minusDays(10);
-    data.setInstallDate(tenDaysAgo);
+    OffsetDateTime tenDaysAgo = OffsetDateTime.now().minusDays(10);
+    data.setInstallTime(tenDaysAgo);
     data.setLastUseDate(today);
     data.setNumUseDays(100);
     storage.trySave(data);
 
     TelemetryData data2 = storage.tryLoad();
-    assertThat(data2.installDate()).isEqualTo(tenDaysAgo);
+    assertThat(data2.installTime()).isEqualTo(tenDaysAgo);
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(11);
   }
@@ -107,13 +115,13 @@ public class TelemetryStorageTest {
   public void should_fix_dates_in_future() {
     TelemetryStorage storage = new TelemetryStorage(filePath);
     TelemetryData data = storage.tryLoad();
-    data.setInstallDate(today.plusDays(5));
+    data.setInstallTime(OffsetDateTime.now().plusDays(5));
     data.setLastUseDate(today.plusDays(7));
     data.setNumUseDays(100);
     storage.trySave(data);
 
     TelemetryData data2 = storage.tryLoad();
-    assertThat(data2.installDate()).isEqualTo(today);
+    assertThat(data2.installTime()).is(within3SecOfNow);
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(1);
   }
