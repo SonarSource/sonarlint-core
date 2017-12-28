@@ -21,19 +21,23 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.junit.Test;
 
 public class TelemetryPayloadTest {
   @Test
   public void testGenerationJson() {
-    TelemetryPayload m = new TelemetryPayload(30, 15, "SLI", "2.4", true);
+    OffsetDateTime systemTime = OffsetDateTime.of(2017, 11, 10, 12, 13, 14, 984_123_123, ZoneOffset.ofHours(2));
+    TelemetryPayload m = new TelemetryPayload(30, 15, "SLI", "2.4", true, systemTime);
     String s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":30,"
       + "\"days_of_use\":15,"
       + "\"sonarlint_version\":\"2.4\","
       + "\"sonarlint_product\":\"SLI\","
-      + "\"connected_mode_used\":true}");
+      + "\"connected_mode_used\":true,"
+      + "\"system_time\":\"2017-11-10T10:13:14.984Z+02:00\"}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(30);

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.MediaTypes;
@@ -77,7 +78,9 @@ public class TelemetryClient {
 
   private TelemetryPayload createPayload(TelemetryData data) {
     long daysSinceInstallation = data.installDate().until(LocalDate.now(), DAYS);
-    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, data.usedConnectedMode());
+    OffsetDateTime systemTime = OffsetDateTime.now();
+    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
+      data.usedConnectedMode(), systemTime);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
