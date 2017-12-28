@@ -20,33 +20,39 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
+import java.time.OffsetDateTime;
 
 /**
  * Models the usage data uploaded
  */
 class TelemetryPayload {
   @SerializedName("days_since_installation")
-  long daysSinceInstallation;
+  private final long daysSinceInstallation;
 
   @SerializedName("days_of_use")
-  long daysOfUse;
+  private final long daysOfUse;
 
   @SerializedName("sonarlint_version")
-  String version;
+  private final String version;
 
   @SerializedName("sonarlint_product")
-  String product;
+  private final String product;
 
   @SerializedName("connected_mode_used")
-  boolean connectedMode;
+  private final boolean connectedMode;
 
-  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode) {
+  @SerializedName("system_time")
+  private final OffsetDateTime systemTime;
+
+  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode, OffsetDateTime systemTime) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
     this.version = version;
     this.connectedMode = connectedMode;
+    this.systemTime = systemTime;
   }
 
   public long daysSinceInstallation() {
@@ -69,8 +75,14 @@ class TelemetryPayload {
     return connectedMode;
   }
 
+  public OffsetDateTime systemTime() {
+    return systemTime;
+  }
+
   public String toJson() {
-    Gson gson = new Gson();
+    Gson gson = new GsonBuilder()
+      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
+      .create();
     return gson.toJson(this);
   }
 }
