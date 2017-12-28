@@ -21,30 +21,44 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
 class TelemetryData {
+  @Deprecated
   private LocalDate installDate;
   private LocalDate lastUseDate;
   private LocalDateTime lastUploadDateTime;
+  private OffsetDateTime installTime;
   private long numUseDays;
   private boolean enabled;
   private boolean usedConnectedMode;
 
   TelemetryData() {
-    installDate = LocalDate.now();
     enabled = true;
+    installTime = OffsetDateTime.now();
   }
 
+  @Deprecated
   void setInstallDate(LocalDate date) {
     this.installDate = date;
   }
 
+  @Deprecated
   LocalDate installDate() {
     return installDate;
+  }
+
+  OffsetDateTime installTime() {
+    return installTime;
+  }
+
+  public void setInstallTime(OffsetDateTime installTime) {
+    this.installTime = installTime;
   }
 
   void setLastUseDate(@Nullable LocalDate date) {
@@ -118,7 +132,7 @@ class TelemetryData {
 
     if (other.numUseDays > numUseDays) {
       numUseDays = other.numUseDays;
-      installDate = other.installDate;
+      installTime = other.installTime;
     }
 
     if (isOlder(lastUploadDateTime, other.lastUploadDateTime)) {
@@ -134,26 +148,33 @@ class TelemetryData {
     return first == null || (second != null && first.isBefore(second));
   }
 
-  static TelemetryData validate(TelemetryData data) {
+  static TelemetryData validateAndMigrate(TelemetryData data) {
     LocalDate today = LocalDate.now();
 
-    if (data.installDate() == null || data.installDate().isAfter(today)) {
-      data.setInstallDate(today);
+    // migrate deprecated installDate
+    if (data.installDate() != null && data.installTime() == null) {
+      data.setInstallTime(data.installDate.atTime(OffsetTime.now()));
     }
 
+    // fix install time if necessary
+    if (data.installTime() == null || data.installTime().isAfter(OffsetDateTime.now())) {
+      data.setInstallTime(OffsetDateTime.now());
+    }
+
+    // calculate use days
     LocalDate lastUseDate = data.lastUseDate();
     if (lastUseDate == null) {
       data.setNumUseDays(0);
       return data;
     }
 
-    if (lastUseDate.isBefore(data.installDate())) {
-      data.setLastUseDate(data.installDate());
+    if (lastUseDate.isBefore(data.installTime().toLocalDate())) {
+      data.setLastUseDate(data.installTime().toLocalDate());
     } else if (lastUseDate.isAfter(today)) {
       data.setLastUseDate(today);
     }
 
-    long maxUseDays = data.installDate().until(data.lastUseDate(), DAYS) + 1;
+    long maxUseDays = data.installTime().toLocalDate().until(data.lastUseDate(), DAYS) + 1;
     if (data.numUseDays() > maxUseDays) {
       data.setNumUseDays(maxUseDays);
       data.setLastUseDate(data.lastUseDate());

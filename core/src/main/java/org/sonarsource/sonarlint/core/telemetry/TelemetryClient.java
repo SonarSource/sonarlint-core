@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.MediaTypes;
@@ -30,8 +31,6 @@ import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
-
-import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TelemetryClient {
 
@@ -77,10 +76,10 @@ public class TelemetryClient {
   }
 
   private TelemetryPayload createPayload(TelemetryData data) {
-    long daysSinceInstallation = data.installDate().until(LocalDate.now(), DAYS);
     OffsetDateTime systemTime = OffsetDateTime.now();
-    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
-      data.usedConnectedMode(), systemTime);
+    long millisSinceInstallation = data.installTime().until(systemTime, ChronoUnit.MILLIS);
+    return new TelemetryPayload(millisSinceInstallation, data.numUseDays(), product, version,
+      data.usedConnectedMode(), systemTime, data.installTime());
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
