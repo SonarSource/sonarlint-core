@@ -47,6 +47,22 @@ public class PluginListDownloaderTest {
     "groovy,true,sonar-groovy-plugin-1.2.jar|14908dd5f3a9b9d795dbc103f0af546f\n" +
     "java,false,sonar-java-plugin-3.12-SNAPSHOT.jar|de5308f43260d357acc97712ce4c5475";
 
+  private static final String RESPONSE_67 = "{\"plugins\": [\n" +
+    "    {\n" +
+    "      \"key\": \"branch\",\n" +
+    "      \"filename\": \"sonar-branch-plugin-1.1.0.879.jar\",\n" +
+    "      \"sonarLintSupported\": false,\n" +
+    "      \"hash\": \"064d334d27aa14aab6e39315428ee3cf\",\n" +
+    "      \"version\": \"1.1 (build 879)\"\n" +
+    "    },\n" +
+    "    {\n" +
+    "      \"key\": \"javascript\",\n" +
+    "      \"filename\": \"sonar-javascript-plugin-3.4.0.5828.jar\",\n" +
+    "      \"sonarLintSupported\": true,\n" +
+    "      \"hash\": \"d136fdb31fe38c3d780650f7228a49fa\",\n" +
+    "      \"version\": \"3.4 (build 5828)\"\n" +
+    "    } ]}";
+
   private SonarLintWsClient wsClient;
   private PluginVersionChecker pluginVersionChecker;
 
@@ -81,5 +97,14 @@ public class PluginListDownloaderTest {
       tuple("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true),
       // java has flag=false, but is whitelisted
       tuple("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12", true));
+  }
+
+  @Test
+  public void testParsing67() {
+    wsClient = WsClientTestUtils.createMockWithResponse("/api/plugins/installed", RESPONSE_67);
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(wsClient, pluginVersionChecker).downloadPluginList("6.7");
+    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible").containsOnly(
+      tuple("branch", "sonar-branch-plugin-1.1.0.879.jar", "064d334d27aa14aab6e39315428ee3cf", "1.1.0.879", false),
+      tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true));
   }
 }

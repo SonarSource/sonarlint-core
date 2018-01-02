@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import com.google.gson.Gson;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
-
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -46,8 +48,18 @@ public class PluginListDownloader {
   }
 
   public List<SonarAnalyzer> downloadPluginList(String serverVersion) {
+    Version version = Version.create(serverVersion);
+
+    if (version.compareToIgnoreQualifier(Version.create("6.6")) >= 0) {
+      return downloadPluginList66();
+    } else {
+      return downloadPluginListBefore66(version);
+    }
+  }
+
+  public List<SonarAnalyzer> downloadPluginListBefore66(Version serverVersion) {
     List<SonarAnalyzer> analyzers = new LinkedList<>();
-    boolean compatibleFlagPresent = Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.0")) >= 0;
+    boolean compatibleFlagPresent = serverVersion.compareToIgnoreQualifier(Version.create("6.0")) >= 0;
     String responseStr;
     try (WsResponse response = wsClient.get(WS_PATH_LTS)) {
       responseStr = response.content();
@@ -65,12 +77,37 @@ public class PluginListDownloader {
       String version = VersionUtils.getJarVersion(filename);
       String minVersion = pluginVersionChecker.getMinimumVersion(key);
       boolean sonarlintCompatible = PluginCacheLoader.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
-      DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, version, sonarlintCompatible);
-      analyzer.minimumVersion(minVersion);
+      DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, version, sonarlintCompatible, minVersion);
       analyzers.add(analyzer);
     }
 
     scanner.close();
     return analyzers;
+  }
+
+  public List<SonarAnalyzer> downloadPluginList66() {
+    try (WsResponse response = wsClient.get(WS_PATH)) {
+      InstalledPlugins installedPlugins = new Gson().fromJson(response.contentReader(), InstalledPlugins.class);
+      return Arrays.stream(installedPlugins.plugins).map(this::toSonarAnalyzer).collect(Collectors.toList());
+    }
+  }
+
+  private SonarAnalyzer toSonarAnalyzer(InstalledPlugin plugin) {
+    String version = VersionUtils.getJarVersion(plugin.filename);
+    String minVersion = pluginVersionChecker.getMinimumVersion(plugin.key);
+    boolean sonarlintCompatible = PluginCacheLoader.isWhitelisted(plugin.key) || plugin.sonarLintSupported;
+    return new DefaultSonarAnalyzer(plugin.key, plugin.filename, plugin.hash, version, sonarlintCompatible, minVersion);
+  }
+
+  private static class InstalledPlugins {
+    InstalledPlugin[] plugins;
+  }
+
+  static class InstalledPlugin {
+    String key;
+    String hash;
+    String filename;
+    boolean sonarLintSupported;
+    long updatedAt;
   }
 }
