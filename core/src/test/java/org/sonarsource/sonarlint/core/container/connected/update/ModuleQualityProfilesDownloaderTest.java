@@ -38,9 +38,17 @@ public class ModuleQualityProfilesDownloaderTest {
 
   @Test
   public void not_found() {
+    when(wsClient.get("/api/qualityprofiles/search.protobuf?project=key")).thenThrow(NotFoundException.class);
+
+    exception.expect(ProjectNotFoundException.class);
+    underTest.fetchModuleQualityProfiles("key", "6.5");
+  }
+
+  @Test
+  public void not_found_before_65() {
     when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=key")).thenThrow(NotFoundException.class);
 
     exception.expect(ProjectNotFoundException.class);
-    underTest.fetchModuleQualityProfiles("key");
+    underTest.fetchModuleQualityProfiles("key", "6.4");
   }
 }
