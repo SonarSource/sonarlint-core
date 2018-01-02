@@ -32,12 +32,17 @@ public class DefaultSonarAnalyzer implements SonarAnalyzer {
   private boolean sonarlintCompatible;
   private String minimumVersion;
 
-  public DefaultSonarAnalyzer(String key, String filename, String hash, @Nullable String version, boolean sonarlintCompatible) {
+  public DefaultSonarAnalyzer(String key, String filename, String hash, @Nullable String version, boolean sonarlintCompatible, String minimumVersion) {
     this.key = key;
     this.filename = filename;
     this.hash = hash;
     this.version = version;
     this.sonarlintCompatible = sonarlintCompatible;
+    this.minimumVersion = minimumVersion;
+  }
+
+  public DefaultSonarAnalyzer(String key, String filename, String hash, @Nullable String version, boolean sonarlintCompatible) {
+    this(key, filename, hash, version, sonarlintCompatible, null);
   }
 
   public String key() {
