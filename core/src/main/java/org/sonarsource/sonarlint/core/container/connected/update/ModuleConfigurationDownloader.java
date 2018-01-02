@@ -40,7 +40,7 @@ public class ModuleConfigurationDownloader {
 
   public ModuleConfiguration fetchModuleConfiguration(String serverVersion, String moduleKey, GlobalProperties globalProps, ProgressWrapper progress) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
-    fetchProjectQualityProfiles(moduleKey, builder);
+    fetchProjectQualityProfiles(moduleKey, builder, serverVersion);
     progress.setProgressAndCheckCancel("Fetching module settings", 0.1f);
     settingsDownloader.fetchProjectSettings(serverVersion, moduleKey, globalProps, builder);
     progress.setProgressAndCheckCancel("Fetching module hierarchy", 0.2f);
@@ -54,8 +54,8 @@ public class ModuleConfigurationDownloader {
     builder.putAllModulePathByKey(moduleHierarchy);
   }
 
-  private void fetchProjectQualityProfiles(String moduleKey, ModuleConfiguration.Builder builder) {
-    for (QualityProfile qp : moduleQualityProfilesDownloader.fetchModuleQualityProfiles(moduleKey)) {
+  private void fetchProjectQualityProfiles(String moduleKey, ModuleConfiguration.Builder builder, String serverVersion) {
+    for (QualityProfile qp : moduleQualityProfilesDownloader.fetchModuleQualityProfiles(moduleKey, serverVersion)) {
       builder.putQprofilePerLanguage(qp.getLanguage(), qp.getKey());
     }
   }

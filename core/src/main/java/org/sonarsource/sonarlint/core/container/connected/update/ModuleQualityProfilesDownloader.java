@@ -26,6 +26,7 @@ import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -38,9 +39,15 @@ public class ModuleQualityProfilesDownloader {
     this.wsClient = wsClient;
   }
 
-  public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey) {
+  public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey, String serverVersion) {
     SearchWsResponse qpResponse;
-    String baseUrl = "/api/qualityprofiles/search.protobuf?projectKey=" + StringUtils.urlEncode(moduleKey);
+    String param;
+    if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.5")) >= 0) {
+      param = "project";
+    } else {
+      param = "projectKey";
+    }
+    String baseUrl = "/api/qualityprofiles/search.protobuf?" + param + "=" + StringUtils.urlEncode(moduleKey);
     String organizationKey = wsClient.getOrganizationKey();
     if (organizationKey != null) {
       baseUrl += "&organization=" + StringUtils.urlEncode(organizationKey);
