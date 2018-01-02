@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
+import java.util.Collection;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
@@ -26,6 +27,7 @@ import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 
 /**
  * Entry point for SonarLint in standalone mode.
@@ -42,6 +44,12 @@ public interface StandaloneSonarLintEngine {
    * @since 1.2
    */
   RuleDetails getRuleDetails(String ruleKey);
+
+  /**
+   * Get information about the analyzers that are currently loaded.
+   * Should only be called when engine is started.
+   */
+  Collection<LoadedAnalyzer> getLoadedAnalyzers();
 
   /**
    * Trigger an analysis

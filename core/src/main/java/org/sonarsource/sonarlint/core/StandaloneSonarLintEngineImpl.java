@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
@@ -27,6 +28,7 @@ import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
@@ -120,6 +122,17 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     } finally {
       this.globalContainer = null;
       rwl.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+    setLogging(null);
+    rwl.readLock().lock();
+    try {
+      return globalContainer.getLoadedAnalyzers();
+    } finally {
+      rwl.readLock().unlock();
     }
   }
 
