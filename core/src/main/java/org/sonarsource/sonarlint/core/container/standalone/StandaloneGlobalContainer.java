@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.NewSensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -126,6 +127,11 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
     return defaultAnalysisResult;
+  }
+
+  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
+    return pluginRepository.getLoadedAnalyzers();
   }
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {
