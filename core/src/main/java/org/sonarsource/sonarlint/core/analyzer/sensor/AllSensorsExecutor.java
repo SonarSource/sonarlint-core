@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.util.Collection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.resources.Project;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
  */
 public class AllSensorsExecutor implements SensorsExecutor {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AllSensorsExecutor.class);
+  private static final Logger LOG = Loggers.get(AllSensorsExecutor.class);
 
   private final Project module;
   private final ScannerExtensionDictionnary selector;

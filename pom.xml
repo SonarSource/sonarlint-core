@@ -29,6 +29,7 @@
     <module>daemon-protocol</module>
     <module>language-server</module>
     <module>rule-extractor</module>
+    <module>slf4j-sonar-log</module>
   </modules>
 
   <properties>

@@ -29,9 +29,8 @@ import java.util.TimerTask;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
@@ -39,7 +38,7 @@ import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotifica
 class NotificationTimerTask extends TimerTask {
   // merge with most recent time
   private static final BinaryOperator<ZonedDateTime> MERGE_TIMES = (t1, t2) -> t1.toInstant().compareTo(t2.toInstant()) > 0 ? t1 : t2;
-  private static final Logger LOG = LoggerFactory.getLogger(NotificationTimerTask.class);
+  private static final Logger LOG = Loggers.get(NotificationTimerTask.class);
   private final NotificationCheckerFactory checkerFactory;
   private Collection<NotificationConfiguration> configuredProjects = Collections.emptyList();
 

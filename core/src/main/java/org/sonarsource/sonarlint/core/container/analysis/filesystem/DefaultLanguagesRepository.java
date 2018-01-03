@@ -23,9 +23,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import javax.annotation.CheckForNull;
 import org.picocontainer.Startable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.resources.Languages;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 /**
  * Languages repository using {@link Languages}
@@ -33,7 +33,7 @@ import org.sonar.api.resources.Languages;
  */
 public class DefaultLanguagesRepository implements LanguagesRepository, Startable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DefaultLanguagesRepository.class);
+  private static final Logger LOG = Loggers.get(DefaultLanguagesRepository.class);
 
   private Languages languages;
 

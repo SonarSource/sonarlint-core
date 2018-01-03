@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -34,7 +35,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -87,7 +87,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     checkNotNull(issueListener);
     setLogging(logOutput);
     LoggedErrorHandler errorHandler = new LoggedErrorHandler(configuration.inputFiles());
-    SonarLintLogging.setErrorHandler(errorHandler);
+    Loggers.setErrorHandler(errorHandler);
     rwl.readLock().lock();
     try {
       AnalysisResults results = globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
@@ -102,9 +102,9 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   private void setLogging(@Nullable LogOutput logOutput) {
     if (logOutput != null) {
-      SonarLintLogging.set(logOutput);
+      Loggers.setTarget(logOutput);
     } else {
-      SonarLintLogging.set(this.logOutput);
+      Loggers.setTarget(this.logOutput);
     }
   }
 

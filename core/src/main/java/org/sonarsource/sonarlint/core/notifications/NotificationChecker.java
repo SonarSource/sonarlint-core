@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
 
 import javax.annotation.CheckForNull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.DateUtils;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarQubeNotification;
@@ -44,7 +44,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 class NotificationChecker {
-  private static final Logger LOG = LoggerFactory.getLogger(NotificationChecker.class);
+  private static final Logger LOG = Loggers.get(NotificationChecker.class);
   private static final String API_PATH = "api/developers/search_events";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DateUtils.DATETIME_FORMAT);
 

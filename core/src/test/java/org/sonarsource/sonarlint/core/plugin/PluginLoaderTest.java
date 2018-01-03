@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarPlugin;
+import org.sonar.api.utils.internal.JUnitTempFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -42,8 +43,11 @@ public class PluginLoaderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  @Rule
+  public JUnitTempFolder tempFolder = new JUnitTempFolder();
+
   PluginClassloaderFactory classloaderFactory = mock(PluginClassloaderFactory.class);
-  PluginLoader loader = new PluginLoader(new FakePluginExploder(), classloaderFactory);
+  PluginLoader loader = new PluginLoader(new FakePluginExploder(), classloaderFactory, tempFolder);
 
   @Test
   public void instantiate_plugin_entry_point() {
@@ -71,18 +75,19 @@ public class PluginLoaderTest {
   @Test
   public void define_classloader() throws Exception {
     File jarFile = temp.newFile();
+    File slf4jAdapter = temp.newFile();
     PluginInfo info = new PluginInfo("foo")
       .setJarFile(jarFile)
       .setMainClass("org.foo.FooPlugin")
       .setMinimalSqVersion(Version.create("5.2"));
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("foo", info));
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("foo", info), slf4jAdapter);
 
     assertThat(defs).hasSize(1);
     PluginClassLoaderDef def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
     assertThat(def.isSelfFirstStrategy()).isFalse();
-    assertThat(def.getFiles()).containsOnly(jarFile);
+    assertThat(def.getFiles()).containsExactly(slf4jAdapter, jarFile);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(MapEntry.entry("foo", "org.foo.FooPlugin"));
     // TODO test mask - require change in sonar-classloader
   }
@@ -115,14 +120,16 @@ public class PluginLoaderTest {
       .setBasePlugin("foo")
       .setUseChildFirstClassLoader(true);
 
+    File slf4jAdapter = temp.newFile();
+
     Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of(
-      base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2));
+      base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2), slf4jAdapter);
 
     assertThat(defs).hasSize(1);
     PluginClassLoaderDef def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
     assertThat(def.isSelfFirstStrategy()).isFalse();
-    assertThat(def.getFiles()).containsOnly(baseJarFile, extensionJar1, extensionJar2);
+    assertThat(def.getFiles()).containsOnly(baseJarFile, extensionJar1, extensionJar2, slf4jAdapter);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(
       entry("foo", "org.foo.FooPlugin"),
       entry("fooExtension1", "org.foo.Extension1Plugin"),

@@ -28,9 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.sonar.api.utils.internal.DefaultTempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -60,26 +58,18 @@ public class PartialUpdaterTest {
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
-  @Mock
-  private IssueStoreFactory issueStoreFactory;
-  @Mock
-  private IssueDownloader downloader;
-  @Mock
-  private StoragePaths storagePaths;
-  @Mock
-  private StorageReader storageReader;
-  @Mock
-  private IssueStoreReader issueStoreReader;
-  @Mock
-  private IssueStore issueStore;
-  @Mock
-  private ModuleListDownloader moduleListDownloader;
+  private IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
+  private IssueDownloader downloader = mock(IssueDownloader.class);
+  private StoragePaths storagePaths = mock(StoragePaths.class);
+  private StorageReader storageReader = mock(StorageReader.class);
+  private IssueStoreReader issueStoreReader = mock(IssueStoreReader.class);
+  private IssueStore issueStore = mock(IssueStore.class);
+  private ModuleListDownloader moduleListDownloader = mock(ModuleListDownloader.class);
 
   private PartialUpdater updater;
 
   @Before
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
     updater = new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, issueStoreReader, moduleListDownloader);
     when(issueStoreFactory.apply(Mockito.any(Path.class))).thenReturn(issueStore);
     when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
@@ -103,7 +93,7 @@ public class PartialUpdaterTest {
   public void error_downloading_issues() {
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
-    when(downloader.apply("module:file")).thenThrow(IllegalStateException.class);
+    when(downloader.apply("module:file")).thenThrow(IllegalArgumentException.class);
 
     exception.expect(DownloadException.class);
     updater.updateFileIssues("module", "file");
@@ -126,7 +116,7 @@ public class PartialUpdaterTest {
   @Test
   public void error_downloading_modules() {
     when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    doThrow(IllegalStateException.class).when(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
+    doThrow(IllegalArgumentException.class).when(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
     exception.expect(DownloadException.class);
 
     updater.updateModuleList(new ProgressWrapper(null));

@@ -25,8 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.annotation.CheckForNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 /**
  * This class is responsible for managing Sonar batch file cache. You can put file into cache and
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PluginCache {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PluginCache.class);
+  private static final Logger LOG = Loggers.get(PluginCache.class);
 
   private final Path cacheDir;
   private final Path tmpDirInCacheDir;

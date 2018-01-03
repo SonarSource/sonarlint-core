@@ -19,19 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.config.Configuration;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @SonarLintSide
 public class SensorOptimizer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SensorOptimizer.class);
+  private static final Logger LOG = Loggers.get(SensorOptimizer.class);
 
   private final FileSystem fs;
   private final ActiveRules activeRules;

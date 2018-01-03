@@ -20,15 +20,15 @@
 package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.scan.filesystem.FileExclusions;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 public class ExclusionFilters {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ExclusionFilters.class);
+  private static final Logger LOG = Loggers.get(ExclusionFilters.class);
 
   private final FileExclusions exclusionSettings;
 

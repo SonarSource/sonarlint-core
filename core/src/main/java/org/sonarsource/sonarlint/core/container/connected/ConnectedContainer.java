@@ -20,9 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
@@ -62,7 +61,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ConnectedContainer.class);
+  private static final Logger LOG = Loggers.get(ConnectedContainer.class);
 
   private final ServerConfiguration serverConfiguration;
   private final ConnectedGlobalConfiguration globalConfig;

@@ -22,14 +22,17 @@ package org.sonarsource.sonarlint.core.plugin;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import java.io.Closeable;
+import java.io.File;
+import java.io.InputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
+import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.log.Loggers;
-
-import static java.util.Arrays.asList;
 
 /**
  * Loads the plugin JAR files by creating the appropriate classloaders and by instantiating
@@ -48,17 +51,21 @@ import static java.util.Arrays.asList;
 public class PluginLoader {
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
-
+  private static final String SLF4J_ADAPTER_JAR_NAME = "sonarlint-slf4j-sonar-log";
+  
   private final PluginJarExploder jarExploder;
   private final PluginClassloaderFactory classloaderFactory;
+  private final TempFolder tempFolder;
 
-  public PluginLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory) {
+  public PluginLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory, TempFolder tempFolder) {
     this.jarExploder = jarExploder;
     this.classloaderFactory = classloaderFactory;
+    this.tempFolder = tempFolder;
   }
 
   public Map<String, Plugin> load(Map<String, PluginInfo> infoByKeys) {
-    Collection<PluginClassLoaderDef> defs = defineClassloaders(infoByKeys);
+    File slf4jAdapter = extractSlf4jAdapterJar();
+    Collection<PluginClassLoaderDef> defs = defineClassloaders(infoByKeys, slf4jAdapter);
     Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(defs);
     return instantiatePluginClasses(classloaders);
   }
@@ -68,7 +75,7 @@ public class PluginLoader {
    * different than number of plugins.
    */
   @VisibleForTesting
-  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> infoByKeys) {
+  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> infoByKeys, File slf4jAdapter) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
     for (PluginInfo info : infoByKeys.values()) {
@@ -79,7 +86,8 @@ public class PluginLoader {
         classloadersByBasePlugin.put(baseKey, def);
       }
       ExplodedPlugin explodedPlugin = jarExploder.explode(info);
-      def.addFiles(asList(explodedPlugin.getMain()));
+      def.addFiles(Collections.singletonList(slf4jAdapter));
+      def.addFiles(Collections.singletonList(explodedPlugin.getMain()));
       def.addFiles(explodedPlugin.getLibs());
       def.addMainClass(info.getKey(), info.getMainClass());
 
@@ -94,6 +102,17 @@ public class PluginLoader {
       }
     }
     return classloadersByBasePlugin.values();
+  }
+
+  private File extractSlf4jAdapterJar() {
+    InputStream jarInputStream = PluginLoader.class.getResourceAsStream("/" + SLF4J_ADAPTER_JAR_NAME + ".jar");
+    try {
+      File extractedJar = tempFolder.newFile(SLF4J_ADAPTER_JAR_NAME, ".jar");
+      FileUtils.copyInputStreamToFile(jarInputStream, extractedJar);
+      return extractedJar;
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to extract the jar '" + SLF4J_ADAPTER_JAR_NAME + ".jar'");
+    }
   }
 
   /**
