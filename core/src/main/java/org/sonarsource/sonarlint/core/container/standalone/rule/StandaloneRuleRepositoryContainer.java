@@ -52,7 +52,8 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
       XMLProfileParser.class,
       StandaloneActiveRulesProvider.class,
       // for cfamily plugin
-      new MapSettings());
+      new MapSettings(),
+      new StandaloneRuleConfigurationProvider());
   }
 
   private void addPluginExtensions() {
