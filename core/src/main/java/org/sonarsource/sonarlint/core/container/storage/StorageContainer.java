@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.internal.ApiVersion;
@@ -30,6 +28,8 @@ import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
 public class StorageContainer extends ComponentContainer {
-  private static final Logger LOG = LoggerFactory.getLogger(StorageContainer.class);
+  private static final Logger LOG = Loggers.get(StorageContainer.class);
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat();
 
   public static StorageContainer create(ConnectedGlobalConfiguration globalConfig) {

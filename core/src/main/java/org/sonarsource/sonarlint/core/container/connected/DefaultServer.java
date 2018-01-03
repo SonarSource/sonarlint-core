@@ -23,11 +23,11 @@ import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.config.Settings;
 import org.sonar.api.platform.Server;
+import org.sonar.api.utils.log.Loggers;
 
 public class DefaultServer extends Server {
 
@@ -57,7 +57,7 @@ public class DefaultServer extends Server {
         return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").parse(dateString);
 
       } catch (ParseException e) {
-        LoggerFactory.getLogger(getClass()).error("The property " + CoreProperties.SERVER_STARTTIME + " is badly formatted.", e);
+        Loggers.get(getClass()).error("The property " + CoreProperties.SERVER_STARTTIME + " is badly formatted.", e);
       }
     }
     return null;

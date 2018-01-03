@@ -30,8 +30,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -56,7 +56,6 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
-import org.sonarsource.sonarlint.core.log.SonarLintLogging;
 import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -64,7 +63,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ConnectedSonarLintEngineImpl.class);
+  private static final Logger LOG = Loggers.get(ConnectedSonarLintEngineImpl.class);
 
   private final ConnectedGlobalConfiguration globalConfig;
   private StorageContainer storageContainer;
@@ -138,9 +137,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   private void setLogging(@Nullable LogOutput logOutput) {
     if (logOutput != null) {
-      SonarLintLogging.set(logOutput);
+      Loggers.setTarget(logOutput);
     } else {
-      SonarLintLogging.set(this.logOutput);
+      Loggers.setTarget(this.logOutput);
     }
   }
 
@@ -150,7 +149,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     checkNotNull(issueListener);
     setLogging(logOutput);
     LoggedErrorHandler errorHandler = new LoggedErrorHandler(configuration.inputFiles());
-    SonarLintLogging.setErrorHandler(errorHandler);
+    Loggers.setErrorHandler(errorHandler);
     return withReadLock(() -> {
       try {
         AnalysisResults results = getHandler().analyze(storageContainer.getGlobalExtensionContainer(), configuration, issueListener, new ProgressWrapper(monitor));

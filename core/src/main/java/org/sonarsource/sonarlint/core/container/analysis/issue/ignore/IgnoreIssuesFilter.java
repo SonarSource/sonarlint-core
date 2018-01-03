@@ -19,20 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.issue.ignore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFilterableIssue;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssuePattern;
 
 public class IgnoreIssuesFilter implements IssueFilter {
 
-  private static final Logger LOG = LoggerFactory.getLogger(IgnoreIssuesFilter.class);
+  private static final Logger LOG = Loggers.get(IgnoreIssuesFilter.class);
 
   private final IssueExclusionPatternInitializer patternInitializer;
 

@@ -23,13 +23,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import javax.annotation.CheckForNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile.Type;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public class InputFileBuilder {
-  private static final Logger LOG = LoggerFactory.getLogger(InputFileBuilder.class);
+  private static final Logger LOG = Loggers.get(InputFileBuilder.class);
   private final LanguageDetection langDetection;
   private final FileMetadata fileMetadata;
 

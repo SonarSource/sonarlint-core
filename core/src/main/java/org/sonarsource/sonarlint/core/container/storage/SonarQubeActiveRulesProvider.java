@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.picocontainer.injectors.ProviderAdapter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
@@ -31,6 +29,8 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.MessageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 
 public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SonarQubeActiveRulesProvider.class);
+  private static final Logger LOG = Loggers.get(SonarQubeActiveRulesProvider.class);
 
   private ActiveRules activeRules;
 

@@ -127,8 +127,6 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonar/channel/")
       .addInclusion("net/sourceforge/pmd/")
 
-      .addInclusion("org/slf4j/")
-
       // API exclusions
       .addExclusion("org/sonar/api/internal/");
   }

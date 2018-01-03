@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
@@ -22,6 +21,12 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-client-api</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
@@ -66,6 +71,13 @@
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-markdown</artifactId>
       <version>${sonarqube.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- maybe this will be removed from markdown soon -->
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.codehaus.sonar</groupId>
@@ -133,21 +145,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.12</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
     </dependency>
@@ -213,6 +210,35 @@
       </extension>
     </extensions>
     <plugins>
+    
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-slf4j-sonar-log</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+              <version>${project.version}</version>
+              <type>jar</type>
+            </artifactItem>
+          </artifactItems>
+          <outputDirectory>${project.build.outputDirectory}/</outputDirectory>
+          <overWriteReleases>false</overWriteReleases>
+          <overWriteSnapshots>true</overWriteSnapshots>
+          <stripVersion>true</stripVersion>
+        </configuration>
+      </plugin>
+  
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -241,18 +267,6 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>ch.qos.logback:logback-classic</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-                <filter>
-                  <artifact>ch.qos.logback:logback-core</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-                <filter>
                   <artifact>org.sonarsource.sonarlint.core:sonarlint-core</artifact>
                   <includes>
                     <include>**</include>
@@ -269,7 +283,7 @@
           </execution>
         </executions>
       </plugin>
-
+      
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -293,12 +307,16 @@
               !*
             </Import-Package>
             <Export-Package>
-              org.sonarsource.sonarlint.core,
-              com.google.protobuf,
-              org.sonarsource.sonarlint.core.telemetry,
-              org.sonarsource.sonarlint.core.notifications,
+                org.sonarsource.sonarlint.core,
+                com.google.protobuf,
+                org.sonarsource.sonarlint.core.telemetry,
+                org.sonarsource.sonarlint.core.notifications,
             </Export-Package>
-            <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version -->
+            <Include-Resource>
+                 {maven-resources},
+                 ${project.build.outputDirectory}/sonarlint-slf4j-sonar-log.jar
+            </Include-Resource>
+            <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version-->
             <Require-Bundle>org.sonarsource.sonarlint.core.sonarlint-client-api;bundle-version="${parsedVersion.osgiVersion}"</Require-Bundle>
             <_failok>true</_failok>
             <_nouses>true</_nouses>
@@ -310,7 +328,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy</id>
+            <id>copy-sonar-plugins</id>
             <phase>validate</phase>
             <goals>
               <goal>copy</goal>
@@ -369,6 +387,7 @@
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
+              <stripVersion>false</stripVersion>
             </configuration>
           </execution>
         </executions>

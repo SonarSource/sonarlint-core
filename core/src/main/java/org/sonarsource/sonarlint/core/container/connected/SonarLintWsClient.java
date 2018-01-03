@@ -33,9 +33,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
@@ -48,7 +48,7 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class SonarLintWsClient {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
+  private static final Logger LOG = Loggers.get(SonarLintWsClient.class);
 
   public static final int PAGE_SIZE = 500;
   public static final int MAX_PAGES = 20;
