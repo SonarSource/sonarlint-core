@@ -111,6 +111,6 @@ CALLSTACK:$(Get-PSCallStack | Out-String)
 }
 
 InstallAppveyorTools
-$env:MAVEN_OPTS = "-Xmx1024m"
-mvn verify "--batch-mode"
+$env:MAVEN_OPTS = "-Xmx1500m"
+mvn verify "--batch-mode" -DargLine="-Xmx1024m" -D"surefire.useFile"=false
 CheckLastExitCode

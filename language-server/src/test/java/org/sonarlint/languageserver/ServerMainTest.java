@@ -22,7 +22,6 @@ package org.sonarlint.languageserver;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
@@ -99,8 +98,7 @@ public class ServerMainTest {
       Socket socket = serverSocket.accept();
       Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
         socket.getInputStream(),
-        socket.getOutputStream(),
-        true, new PrintWriter(System.out));
+        socket.getOutputStream());
       launcher.startListening();
       return launcher.getRemoteProxy();
     };
