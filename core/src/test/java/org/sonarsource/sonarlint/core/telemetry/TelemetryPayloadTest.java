@@ -30,10 +30,10 @@ public class TelemetryPayloadTest {
   public void testGenerationJson() {
     OffsetDateTime installTime = OffsetDateTime.of(2017, 11, 10, 12, 1, 14, 984_123_123, ZoneOffset.ofHours(2));
     OffsetDateTime systemTime = installTime.plusMinutes(1);
-    TelemetryPayload m = new TelemetryPayload(60_000, 15, "SLI", "2.4", true, systemTime, installTime);
+    TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", true, systemTime, installTime);
     String s = m.toJson();
 
-    assertThat(s).isEqualTo("{\"millis_since_installation\":60000,"
+    assertThat(s).isEqualTo("{\"days_since_installation\":4,"
       + "\"days_of_use\":15,"
       + "\"sonarlint_version\":\"2.4\","
       + "\"sonarlint_product\":\"SLI\","
@@ -42,7 +42,7 @@ public class TelemetryPayloadTest {
       + "\"install_time\":\"2017-11-10T10:01:14.984Z+02:00\"}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
-    assertThat(m.millisSinceInstallation()).isEqualTo(60000);
+    assertThat(m.daysSinceInstallation()).isEqualTo(4);
     assertThat(m.product()).isEqualTo("SLI");
     assertThat(m.version()).isEqualTo("2.4");
     assertThat(m.connectedMode()).isTrue();

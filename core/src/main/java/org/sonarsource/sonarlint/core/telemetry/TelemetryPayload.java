@@ -28,8 +28,8 @@ import java.time.OffsetDateTime;
  * Models the usage data uploaded
  */
 class TelemetryPayload {
-  @SerializedName("millis_since_installation")
-  private final long millisSinceInstallation;
+  @SerializedName("days_since_installation")
+  private final long daysSinceInstallation;
 
   @SerializedName("days_of_use")
   private final long daysOfUse;
@@ -49,9 +49,9 @@ class TelemetryPayload {
   @SerializedName("install_time")
   private final OffsetDateTime installTime;
 
-  TelemetryPayload(long millisSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode,
+  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode,
     OffsetDateTime systemTime, OffsetDateTime installTime) {
-    this.millisSinceInstallation = millisSinceInstallation;
+    this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
     this.version = version;
@@ -60,8 +60,8 @@ class TelemetryPayload {
     this.installTime = installTime;
   }
 
-  public long millisSinceInstallation() {
-    return millisSinceInstallation;
+  public long daysSinceInstallation() {
+    return daysSinceInstallation;
   }
 
   public long daysOfUse() {

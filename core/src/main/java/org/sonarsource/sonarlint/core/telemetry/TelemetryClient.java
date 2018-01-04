@@ -77,8 +77,8 @@ public class TelemetryClient {
 
   private TelemetryPayload createPayload(TelemetryData data) {
     OffsetDateTime systemTime = OffsetDateTime.now();
-    long millisSinceInstallation = data.installTime().until(systemTime, ChronoUnit.MILLIS);
-    return new TelemetryPayload(millisSinceInstallation, data.numUseDays(), product, version,
+    long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
+    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
       data.usedConnectedMode(), systemTime, data.installTime());
   }
 
