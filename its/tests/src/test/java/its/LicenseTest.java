@@ -80,13 +80,9 @@ public class LicenseTest extends AbstractConnectedTest {
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
 
     if (Version.create(builder.getSonarVersion().get()).isGreaterThanOrEquals("6.7")) {
-      builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.1.0.1132"));
-      // can be removed once this version appears in the update center
-      builder.addPlugin(URLLocation.create(new URL("https://sonarsource.bintray.com/CommercialDistribution/sonar-cobol-plugin/sonar-cobol-plugin-4.1.0.2626.jar")));
-    } else {
-      builder.addPlugin("cobol");
-
+      builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.2.0.1163"));
     }
+    builder.addPlugin("cobol");
     ORCHESTRATOR = builder.build();
     ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
