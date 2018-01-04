@@ -73,6 +73,7 @@ import org.junit.rules.TemporaryFolder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.DISABLE_TELEMETRY;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.TEST_FILE_PATTERN;
 
@@ -86,6 +87,7 @@ public class ServerMainTest {
 
   @BeforeClass
   public static void startServer() throws Exception {
+    System.out.println("Max memory: " + Runtime.getRuntime().maxMemory());
     System.setProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY, "true");
     serverSocket = new ServerSocket(0);
     int port = serverSocket.getLocalPort();
@@ -117,6 +119,7 @@ public class ServerMainTest {
       if (!future.isDone()) {
         future.cancel(true);
       }
+      throw e;
     }
 
     lsProxy = future.get();
@@ -139,7 +142,7 @@ public class ServerMainTest {
         lsProxy.shutdown().get();
         lsProxy.exit();
         // Give some time to the server to stop
-        Thread.sleep(100);
+        Thread.sleep(1000);
       }
     } finally {
       serverSocket.close();
@@ -293,16 +296,7 @@ public class ServerMainTest {
   }
 
   private List<Diagnostic> waitForDiagnostics(String uri) throws InterruptedException {
-    int maxLoop = 40;
-    do {
-      Thread.sleep(200);
-      maxLoop--;
-    } while (maxLoop > 0 && !client.containsDiagnostics(uri));
-
-    if (maxLoop == 0) {
-      fail("Did not receive diagnostics soon enough");
-    }
-
+    await().atMost(12, TimeUnit.SECONDS).until(() -> client.containsDiagnostics(uri));
     return client.getDiagnostics(uri);
   }
 
@@ -316,8 +310,6 @@ public class ServerMainTest {
 
     @Override
     public void telemetryEvent(Object object) {
-      // TODO Auto-generated method stub
-
     }
 
     boolean containsDiagnostics(String uri) {
@@ -335,13 +327,11 @@ public class ServerMainTest {
 
     @Override
     public void showMessage(MessageParams messageParams) {
-      // TODO Auto-generated method stub
 
     }
 
     @Override
     public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams requestParams) {
-      // TODO Auto-generated method stub
       return null;
     }
 
@@ -349,7 +339,5 @@ public class ServerMainTest {
     public void logMessage(MessageParams message) {
       System.out.println(message.getMessage());
     }
-
   }
-
 }
