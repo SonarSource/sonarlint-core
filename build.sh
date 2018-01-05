@@ -38,7 +38,6 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
 
   set_maven_build_version "$TRAVIS_BUILD_NUMBER"
   
-  export MAVEN_OPTS="-Xmx1536m -Xms128m"
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
       -Pcoverage-per-test,deploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
@@ -51,13 +50,11 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
       -Dsonar.analysis.pipeline=$BUILD_ID \
       -Dsonar.analysis.sha1=$GIT_SHA1  \
       -Dsonar.analysis.repository=$GITHUB_REPO \
-      -DargLine="-Xmx1536m" \
       -B -e -V $*
 
 elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
   # no dory analysis on release branch
 
-  export MAVEN_OPTS="-Xmx1536m -Xms128m"
 
   # get current version from pom
   CURRENT_VERSION=`maven_expression "project.version"`
@@ -70,7 +67,6 @@ elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "fals
       -Pdeploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
-      -DargLine="-Xmx1536m" \
       -B -e -V $*
   else
     echo "======= Found RELEASE version ======="
@@ -78,7 +74,6 @@ elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "fals
       -Pdeploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
-      -DargLine="-Xmx1536m" \
       -B -e -V $*
   fi
 
@@ -91,7 +86,6 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
   # No need for Maven phase "install" as the generated JAR files do not need to be installed
   # in Maven local repository. Phase "verify" is enough.
 
-  export MAVEN_OPTS="-Xmx1G -Xms128m"
   echo '======= with deploy'
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
       -Pdeploy-sonarsource \
@@ -102,7 +96,6 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
       -Dsonar.github.oauth=$GITHUB_TOKEN \
       -Dsonar.host.url=$SONAR_HOST_URL \
       -Dsonar.login=$SONAR_TOKEN \
-      -DargLine="-Xmx1536m" \
       -B -e -V $*
 
   mvn sonar:sonar \
@@ -115,7 +108,6 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
       -Dsonar.analysis.prNumber=$PULL_REQUEST \
       -Dsonar.branch.name=$GITHUB_BASE_BRANCH \
       -Dsonar.branch.target=$GITHUB_TARGET_BRANCH \
-      -DargLine="-Xmx1536m" \
       -B -e -V
   
 else
@@ -126,7 +118,6 @@ else
 
   mvn verify \
       -Dmaven.test.redirectTestOutputToFile=false \
-      -DargLine="-Xmx1536m" \
       -B -e -V $*
 
   #in order to stop QA from starting, the build.properties file is removed
