@@ -192,6 +192,11 @@ public class TelemetryDataTest {
     return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
   }, "within3Sec");
 
+  private Condition<OffsetDateTime> about5DaysAgo = new Condition<>(p -> {
+    OffsetDateTime fiveDaysAgo = OffsetDateTime.now().minusDays(5);
+    return Math.abs(p.until(fiveDaysAgo, ChronoUnit.SECONDS)) < 3;
+  }, "about5DaysAgo");
+
   @Test
   public void validate_should_reset_lastUseDate_if_in_future() {
     TelemetryData data = new TelemetryData();
@@ -205,9 +210,8 @@ public class TelemetryDataTest {
   public void should_migrate_installDate() {
     TelemetryData data = new TelemetryData();
 
-    data.setInstallTime(null);
-    data.setInstallDate(LocalDate.now());
-    assertThat(data.validateAndMigrate(data).installTime()).is(within3SecOfNow);
+    data.setInstallDate(LocalDate.now().minusDays(5));
+    assertThat(data.validateAndMigrate(data).installTime()).is(about5DaysAgo);
   }
 
   @Test

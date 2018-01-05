@@ -40,7 +40,6 @@ class TelemetryData {
 
   TelemetryData() {
     enabled = true;
-    installTime = OffsetDateTime.now();
   }
 
   @Deprecated
