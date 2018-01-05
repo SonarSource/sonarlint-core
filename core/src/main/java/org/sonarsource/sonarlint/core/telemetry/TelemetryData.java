@@ -40,6 +40,7 @@ class TelemetryData {
 
   TelemetryData() {
     enabled = true;
+    installTime = OffsetDateTime.now();
   }
 
   @Deprecated
@@ -151,7 +152,7 @@ class TelemetryData {
     LocalDate today = LocalDate.now();
 
     // migrate deprecated installDate
-    if (data.installDate() != null && data.installTime() == null) {
+    if (data.installDate() != null && (data.installTime() == null || data.installTime().toLocalDate().isAfter(data.installDate()))) {
       data.setInstallTime(data.installDate.atTime(OffsetTime.now()));
     }
 

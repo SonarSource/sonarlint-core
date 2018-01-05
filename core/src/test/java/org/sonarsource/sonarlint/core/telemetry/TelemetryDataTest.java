@@ -209,7 +209,6 @@ public class TelemetryDataTest {
   @Test
   public void should_migrate_installDate() {
     TelemetryData data = new TelemetryData();
-
     data.setInstallDate(LocalDate.now().minusDays(5));
     assertThat(data.validateAndMigrate(data).installTime()).is(about5DaysAgo);
   }
