@@ -21,11 +21,11 @@ package org.sonarlint.languageserver;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.channels.IllegalSelectorException;
 import java.nio.file.Paths;
 import java.util.Collections;
+import org.apache.commons.io.input.NullInputStream;
+import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.InitializeParams;
 import org.junit.Test;
@@ -106,7 +106,9 @@ public class SonarLintLanguageServerTest {
 
   @Test
   public void initialize_should_not_crash_when_disableTelemetry_param_missing() {
-    SonarLintLanguageServer ls = new SonarLintLanguageServer(mock(InputStream.class), mock(OutputStream.class), Collections.emptyList());
+    NullInputStream input = new NullInputStream(1000);
+    NullOutputStream output = new NullOutputStream();
+    SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
     InitializeParams params = mock(InitializeParams.class);
     when(params.getInitializationOptions()).thenReturn(Collections.emptyMap());
     ls.initialize(params);
