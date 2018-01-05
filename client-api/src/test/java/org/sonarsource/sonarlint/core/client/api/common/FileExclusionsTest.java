@@ -60,6 +60,6 @@ public class FileExclusionsTest {
   @Test
   public void should_exclude_with_dir() {
     assertThat(fileExclusions.test(new File("dir/class2.java").getAbsolutePath())).isFalse();
-    assertThat(fileExclusions.test(new File("src/class.java").getAbsolutePath())).isTrue();
+    assertThat(fileExclusions.test("src/class.java")).isTrue();
   }
 }

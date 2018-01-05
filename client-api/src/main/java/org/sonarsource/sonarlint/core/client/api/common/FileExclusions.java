@@ -74,10 +74,12 @@ public class FileExclusions implements Predicate<String> {
   }
 
   private boolean testDirectoryExclusions(Path path) {
-    for (Path p : path) {
+    Path p = path;
+    while (p != null) {
       if (directoryExclusions.contains(p.toString())) {
         return true;
       }
+      p = p.getParent();
     }
     return false;
   }
