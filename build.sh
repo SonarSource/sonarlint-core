@@ -51,7 +51,7 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
       -Dsonar.analysis.pipeline=$BUILD_ID \
       -Dsonar.analysis.sha1=$GIT_SHA1  \
       -Dsonar.analysis.repository=$GITHUB_REPO \
-      -DargLine="-Xmx1536m"
+      -DargLine="-Xmx1536m" \
       -B -e -V $*
 
 elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
