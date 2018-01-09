@@ -38,8 +38,8 @@ public class TelemetryPayloadTest {
       + "\"sonarlint_version\":\"2.4\","
       + "\"sonarlint_product\":\"SLI\","
       + "\"connected_mode_used\":true,"
-      + "\"system_time\":\"2017-11-10T10:02:14.984Z+02:00\","
-      + "\"install_time\":\"2017-11-10T10:01:14.984Z+02:00\"}");
+      + "\"system_time\":\"2017-11-10T12:02:14.984+02:00\","
+      + "\"install_time\":\"2017-11-10T12:01:14.984+02:00\"}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);

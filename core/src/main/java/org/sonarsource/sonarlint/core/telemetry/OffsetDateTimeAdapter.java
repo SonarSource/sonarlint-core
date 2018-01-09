@@ -28,14 +28,10 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 
 public class OffsetDateTimeAdapter implements JsonSerializer<OffsetDateTime>, JsonDeserializer<OffsetDateTime> {
 
-  private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
-    .appendInstant(3)
-    .appendOffsetId()
-    .toFormatter();
+  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
   @Override
   public JsonElement serialize(OffsetDateTime src, Type typeOfSrc, JsonSerializationContext context) {
