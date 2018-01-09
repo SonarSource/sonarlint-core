@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
@@ -484,7 +485,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(issueListener.getIssues()).hasSize(2);
 
     // Override default file suffixes in global props so that input file is not considered as a Java file
-    setSettings(null, "sonar.java.file.suffixes", ".foo");
+    setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
@@ -495,7 +496,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener, null, null);
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
-    setSettings(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
+    setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
@@ -544,7 +545,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(result.needUpdate()).isFalse();
 
     // Change a global setting that *is* in the whitelist
-    setMultiValuesSettings(null, "sonar.inclusions", "**/*");
+    setSettingsMultiValue(null, "sonar.inclusions", "**/*");
     // Activate a new rule
     SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
@@ -563,7 +564,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that *is* in the whitelist
-    setMultiValuesSettings(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
+    setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
 
     result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
@@ -585,6 +586,19 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     }
   }
 
+  private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+      adminWsClient.settings().set(SetRequest.builder()
+        .setKey(key)
+        .setValues(Collections.singletonList(value))
+        .setComponent(moduleKey)
+        .build());
+    } else {
+      ORCHESTRATOR.getServer().getAdminWsClient()
+        .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
+    }
+  }
+
   private void setSettings(@Nullable String moduleKey, String key, String value) {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
       adminWsClient.settings().set(SetRequest.builder()
@@ -595,19 +609,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient()
         .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
-    }
-  }
-
-  private void setMultiValuesSettings(@Nullable String moduleKey, String key, String... values) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-      adminWsClient.settings().set(SetRequest.builder()
-        .setKey(key)
-        .setValues(Arrays.asList(values))
-        .setComponent(moduleKey)
-        .build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient()
-        .create(new PropertyCreateQuery(key, asList(values).stream().collect(Collectors.joining(","))).setResourceKeyOrId(moduleKey));
     }
   }
 
