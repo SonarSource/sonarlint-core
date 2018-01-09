@@ -27,11 +27,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 
 /**
  * Serialize and deserialize telemetry data to persistent storage.
  */
 class TelemetryStorage {
+  private static final Logger log = Loggers.get(TelemetryStorage.class);
   private final Path path;
 
   TelemetryStorage(Path path) {
@@ -50,7 +54,10 @@ class TelemetryStorage {
     try {
       save(data);
     } catch (Exception e) {
-      // fail silently
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        log.error("Error saving telemetry data", e);
+        throw new IllegalStateException(e);
+      }
     }
   }
 
@@ -70,8 +77,15 @@ class TelemetryStorage {
 
   TelemetryData tryLoad() {
     try {
+      if (!Files.isRegularFile(path)) {
+        return new TelemetryData();
+      }
       return load();
     } catch (Exception e) {
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        log.error("Error loading telemetry data", e);
+        throw new IllegalStateException(e);
+      }
       return new TelemetryData();
     }
   }
