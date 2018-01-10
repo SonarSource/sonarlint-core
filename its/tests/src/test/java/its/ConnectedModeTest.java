@@ -20,7 +20,9 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
+import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
@@ -29,9 +31,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -42,6 +46,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.permissions.PermissionParameters;
 import org.sonar.wsclient.services.PropertyCreateQuery;
@@ -69,7 +74,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -80,6 +84,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
+  private static final String PROJECT_KEY_GLOBAL_EXTENSION = "sample-global-extension";
   private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
@@ -88,22 +93,40 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_PYTHON = "sample-python";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .addPlugin("java")
-    .addPlugin("javascript")
-    .addPlugin("php")
-    .addPlugin("python")
-    .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
-    .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
-    .build();
+  public static ExternalResource resource = new ExternalResource() {
+    @Override
+    protected void before() throws Throwable {
+      OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
+        .addPlugin("java")
+        .addPlugin("javascript")
+        .addPlugin("php")
+        .addPlugin("python")
+        .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+        .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
+
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"));
+      if (!orchestratorBuilder.getOrchestratorProperty(Configuration.SONAR_VERSION_PROPERTY).startsWith("5.6")) {
+        orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+          .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
+      }
+      ORCHESTRATOR = orchestratorBuilder.build();
+      ORCHESTRATOR.start();
+    };
+
+    @Override
+    protected void after() {
+      ORCHESTRATOR.stop();
+    };
+  };
+
+  public static Orchestrator ORCHESTRATOR;
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -115,6 +138,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
+  private List<String> logs;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -145,6 +169,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT_CUSTOM, "Sample Javascript Custom");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -155,6 +180,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
 
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
+    }
+
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
   }
@@ -162,10 +191,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
+    Map<String, String> globalProps = new HashMap<>();
+    globalProps.put("sonar.global.label", "It works");
+    logs = new ArrayList<>();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput((msg, level) -> System.out.println(msg))
+      .setLogOutput((msg, level) -> logs.add(msg))
+      .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
@@ -188,10 +221,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadModules() throws Exception {
     updateGlobal();
-    assertThat(engine.allModulesByKey()).hasSize(8);
+    assertThat(engine.allModulesByKey()).hasSize(9);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allModulesByKey()).hasSize(9).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(10).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allModulesByKey()).hasSize(10).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -386,6 +419,34 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).isEmpty();
+  }
+
+  @Test
+  public void globalExtension() throws Exception {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7"));
+    updateGlobal();
+    updateModule(PROJECT_KEY_GLOBAL_EXTENSION);
+
+    assertThat(logs).contains("Start Global Extension It works");
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
+      "src/foo.glob"),
+      issueListener, null, null);
+
+    assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
+      tuple("global:inc", "Issue number 0"));
+
+    issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
+      "src/foo.glob"),
+      issueListener, null, null);
+
+    assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
+      tuple("global:inc", "Issue number 1"));
+
+    engine.stop(true);
+    assertThat(logs).contains("Stop Global Extension");
   }
 
   @Test

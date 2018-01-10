@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
@@ -65,6 +66,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private Rules rules;
   private ActiveRules activeRules;
   private Context rulesDefinitions;
+  private GlobalExtensionContainer globalExtensionContainer;
 
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
@@ -98,6 +100,20 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   protected void doAfterStart() {
     installPlugins();
     loadRulesAndActiveRulesFromPlugins();
+    globalExtensionContainer = new GlobalExtensionContainer(this);
+    globalExtensionContainer.startComponents();
+  }
+
+  @Override
+  public ComponentContainer stopComponents(boolean swallowException) {
+    try {
+      if (globalExtensionContainer != null) {
+        globalExtensionContainer.stopComponents(swallowException);
+      }
+    } finally {
+      super.stopComponents(swallowException);
+    }
+    return this;
   }
 
   protected void installPlugins() {
@@ -117,7 +133,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(this, progress);
+    AnalysisContainer analysisContainer = new AnalysisContainer(globalExtensionContainer, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);

@@ -83,22 +83,10 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
   # Do not deploy a SNAPSHOT version but the release version related to this build and PR
   set_maven_build_version "$TRAVIS_BUILD_NUMBER"
 
-  # No need for Maven phase "install" as the generated JAR files do not need to be installed
-  # in Maven local repository. Phase "verify" is enough.
-
   echo '======= with deploy'
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
       -Pdeploy-sonarsource \
       -Dmaven.test.redirectTestOutputToFile=false \
-      -Dsonar.analysis.mode=issues \
-      -Dsonar.github.pullRequest=$TRAVIS_PULL_REQUEST \
-      -Dsonar.github.repository=$TRAVIS_REPO_SLUG \
-      -Dsonar.github.oauth=$GITHUB_TOKEN \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.login=$SONAR_TOKEN \
-      -B -e -V $*
-
-  mvn sonar:sonar \
       -Dsonar.host.url=$SONAR_HOST_URL \
       -Dsonar.login=$SONAR_TOKEN \
       -Dsonar.analysis.buildNumber=$BUILD_ID \
@@ -108,6 +96,8 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
       -Dsonar.analysis.prNumber=$PULL_REQUEST \
       -Dsonar.branch.name=$GITHUB_BASE_BRANCH \
       -Dsonar.branch.target=$GITHUB_TARGET_BRANCH \
+      -Dsonar.pullrequest.github.id=$TRAVIS_PULL_REQUEST \
+      -Dsonar.pullrequest.github.repository=$TRAVIS_REPO_SLUG \
       -B -e -V
   
 else

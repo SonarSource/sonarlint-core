@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
@@ -54,6 +55,8 @@ public class StorageContainer extends ComponentContainer {
     container.add(globalConfig);
     return container;
   }
+
+  private GlobalExtensionContainer globalExtensionContainer;
 
   @Override
   protected void doBeforeStart() {
@@ -110,6 +113,21 @@ public class StorageContainer extends ComponentContainer {
     } else {
       LOG.warn("No storage for server '{}'. Please update.", config.getServerId());
     }
+
+    this.globalExtensionContainer = new GlobalExtensionContainer(this);
+    globalExtensionContainer.startComponents();
+  }
+
+  @Override
+  public ComponentContainer stopComponents(boolean swallowException) {
+    try {
+      if (globalExtensionContainer != null) {
+        globalExtensionContainer.stopComponents(swallowException);
+      }
+    } finally {
+      super.stopComponents(swallowException);
+    }
+    return this;
   }
 
   protected void installPlugins() {
@@ -118,6 +136,10 @@ public class StorageContainer extends ComponentContainer {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
+  }
+
+  public GlobalExtensionContainer getGlobalExtensionContainer() {
+    return globalExtensionContainer;
   }
 
   public StorageContainerHandler getHandler() {

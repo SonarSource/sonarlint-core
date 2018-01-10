@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -67,10 +68,12 @@ public class StorageContainerHandler {
     this.storageReader = storageReader;
     this.tempFolder = tempFolder;
     this.storageExclusions = storageExclusions;
+
   }
 
-  public AnalysisResults analyze(StorageContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    return storageAnalyzer.analyze(container, configuration, issueListener, progress);
+  public AnalysisResults analyze(GlobalExtensionContainer globalExtensionContainer, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
+    ProgressWrapper progress) {
+    return storageAnalyzer.analyze(globalExtensionContainer, configuration, issueListener, progress);
   }
 
   public RuleDetails getRuleDetails(String ruleKeyStr) {
@@ -97,7 +100,7 @@ public class StorageContainerHandler {
     return issueStoreReader.getServerIssues(moduleKey, filePath);
   }
 
-  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths,  Predicate<String> testFilePredicate) {
+  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
     return storageExclusions.getExcludedFiles(moduleKey, filePaths, testFilePredicate);
   }
 
@@ -121,4 +124,5 @@ public class StorageContainerHandler {
   public void deleteStorage() {
     FileUtils.deleteRecursively(storagePaths.getServerStorageRoot());
   }
+
 }
