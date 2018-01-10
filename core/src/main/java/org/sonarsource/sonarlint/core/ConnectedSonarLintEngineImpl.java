@@ -153,7 +153,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     SonarLintLogging.setErrorHandler(errorHandler);
     return withReadLock(() -> {
       try {
-        AnalysisResults results = getHandler().analyze(storageContainer, configuration, issueListener, new ProgressWrapper(monitor));
+        AnalysisResults results = getHandler().analyze(storageContainer.getGlobalExtensionContainer(), configuration, issueListener, new ProgressWrapper(monitor));
         errorHandler.getErrorFiles().forEach(results.failedAnalysisFiles()::add);
         return results;
       } catch (RuntimeException e) {

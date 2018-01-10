@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -37,11 +40,17 @@ public abstract class AbstractGlobalConfiguration {
   private final LogOutput logOutput;
   private final Path sonarLintUserHome;
   private final Path workDir;
+  private final Map<String, String> extraProperties;
 
   public AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
     this.logOutput = builder.logOutput;
+    this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
+  }
+
+  public Map<String, String> extraProperties() {
+    return Collections.unmodifiableMap(extraProperties);
   }
 
   public Path getSonarLintUserHome() {
@@ -61,6 +70,7 @@ public abstract class AbstractGlobalConfiguration {
     private LogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
+    private Map<String, String> extraProperties = Collections.emptyMap();
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
@@ -80,6 +90,14 @@ public abstract class AbstractGlobalConfiguration {
      */
     public G setWorkDir(Path workDir) {
       this.workDir = workDir;
+      return (G) this;
+    }
+
+    /**
+     * Properties that will be passed to global extensions
+     */
+    public G setExtraProperties(Map<String, String> extraProperties) {
+      this.extraProperties = extraProperties;
       return (G) this;
     }
 
