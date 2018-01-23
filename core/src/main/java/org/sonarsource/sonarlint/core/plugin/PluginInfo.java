@@ -245,15 +245,16 @@ public class PluginInfo implements Comparable<PluginInfo> {
    * The version of SQ must be greater than or equal to the minimal version
    * needed by the plugin.
    */
-  public boolean isCompatibleWith(String sqVersion) {
+  public boolean isCompatibleWith(String implementedApi) {
     if (null == this.minimalSqVersion) {
       // no constraint defined on the plugin
       return true;
     }
 
-    Version effectiveMin = Version.create(minimalSqVersion.getName()).removeQualifier();
-    Version actualVersion = Version.create(sqVersion).removeQualifier();
-    return actualVersion.compareTo(effectiveMin) >= 0;
+    // Ignore patch and build numbers since this should not change API compatibility
+    Version requestedApi = Version.create(minimalSqVersion.getMajor() + "." + minimalSqVersion.getMinor());
+    Version implementedApiVersion = Version.create(implementedApi);
+    return implementedApiVersion.compareToIgnoreQualifier(requestedApi) >= 0;
   }
 
   @Override

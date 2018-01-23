@@ -115,14 +115,14 @@ public class PluginInfoTest {
     assertThat(withMinSqVersion("3.2").isCompatibleWith("3.1-RC2")).isFalse();
 
     assertThat(withMinSqVersion("1.1").isCompatibleWith("1.0")).isFalse();
-    assertThat(withMinSqVersion("2.0.1").isCompatibleWith("2.0.0")).isFalse();
+    assertThat(withMinSqVersion("2.0.1").isCompatibleWith("2.0.0")).isTrue();
     assertThat(withMinSqVersion("2.10").isCompatibleWith("2.1")).isFalse();
     assertThat(withMinSqVersion("10.10").isCompatibleWith("2.2")).isFalse();
 
     assertThat(withMinSqVersion("1.1-SNAPSHOT").isCompatibleWith("1.0")).isFalse();
     assertThat(withMinSqVersion("1.1-SNAPSHOT").isCompatibleWith("1.1")).isTrue();
     assertThat(withMinSqVersion("1.1-SNAPSHOT").isCompatibleWith("1.2")).isTrue();
-    assertThat(withMinSqVersion("1.0.1-SNAPSHOT").isCompatibleWith("1.0")).isFalse();
+    assertThat(withMinSqVersion("1.0.1-SNAPSHOT").isCompatibleWith("1.0")).isTrue();
 
     assertThat(withMinSqVersion("3.1-RC2").isCompatibleWith("3.2-SNAPSHOT")).isTrue();
     assertThat(withMinSqVersion("3.1-RC1").isCompatibleWith("3.2-RC2")).isTrue();
@@ -130,6 +130,8 @@ public class PluginInfoTest {
 
     assertThat(withMinSqVersion(null).isCompatibleWith("0")).isTrue();
     assertThat(withMinSqVersion(null).isCompatibleWith("3.1")).isTrue();
+
+    assertThat(withMinSqVersion("7.0.0.12345").isCompatibleWith("7.0")).isTrue();
   }
 
   @Test

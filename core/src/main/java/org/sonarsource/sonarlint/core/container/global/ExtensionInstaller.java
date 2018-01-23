@@ -25,10 +25,10 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.utils.AnnotationUtils;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -98,8 +98,8 @@ public class ExtensionInstaller {
    * Experimental. Used by SonarTS
    */
   private static boolean isGlobal(Object extension) {
-    InstantiationStrategy annotation = AnnotationUtils.getAnnotation(extension, InstantiationStrategy.class);
-    return annotation != null && "PER_PROCESS".equals(annotation.value());
+    SonarLintSide annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
+    return annotation != null && SonarLintSide.MULTIPLE_ANALYSES.equals(annotation.lifespan());
   }
 
   private static boolean isNotSensor(Object extension) {
