@@ -18,7 +18,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>6.7</sonar.apiVersion>
+    <sonar.apiVersion>7.0.0.35679</sonar.apiVersion>
     <jdk.min.version>1.8</jdk.min.version>
   </properties>
 
@@ -62,6 +62,7 @@
           <!-- Need to be one part of the whitelist -->
           <pluginKey>xoo</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
+          <sonarQubeMinVersion>6.7</sonarQubeMinVersion>
         </configuration>
       </plugin>
       <plugin>

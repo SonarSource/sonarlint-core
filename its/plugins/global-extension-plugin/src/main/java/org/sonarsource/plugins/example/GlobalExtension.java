@@ -20,14 +20,14 @@
 package org.sonarsource.plugins.example;
 
 import org.sonar.api.Startable;
-import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
-@SonarLintSide
-@InstantiationStrategy("PER_PROCESS")
+import static org.sonarsource.api.sonarlint.SonarLintSide.MULTIPLE_ANALYSES;
+
+@SonarLintSide(lifespan = MULTIPLE_ANALYSES)
 public class GlobalExtension implements Startable {
 
   private static final Logger LOG = Loggers.get(GlobalExtension.class);

@@ -35,7 +35,7 @@ public class PluginCacheLoader {
 
   private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("xoo", "java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift", "rpg", "cpp",
     "pli");
-  private static final String IMPLEMENTED_SQ_API = "6.7";
+  private static final String IMPLEMENTED_SQ_API = "7.0";
 
   private static final Logger LOG = Loggers.get(PluginCacheLoader.class);
 
