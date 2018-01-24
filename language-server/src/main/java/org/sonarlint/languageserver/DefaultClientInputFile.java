@@ -87,6 +87,7 @@ public class DefaultClientInputFile implements ClientInputFile {
     if (clientLanguageId == null) {
       return null;
     }
+    // See https://microsoft.github.io/language-server-protocol/specification#textdocumentitem
     switch (clientLanguageId) {
       case "javascript":
       case "javascriptreact":
@@ -96,6 +97,7 @@ public class DefaultClientInputFile implements ClientInputFile {
       case "python":
         return "py";
       case "typescript":
+      case "typescriptreact":
         return "ts";
       default:
         return clientLanguageId;
