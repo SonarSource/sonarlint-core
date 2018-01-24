@@ -318,7 +318,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.typescript</groupId>
                   <artifactId>sonar-typescript-plugin</artifactId>
-                  <version>1.5.0.2047</version>
+                  <version>1.5.0.2092</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
