@@ -28,8 +28,8 @@ import java.nio.file.Paths;
 
 public class PluginLocator {
 
-  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-4.8.0.9441.jar";
-  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "dc49ad9b282b7881abcd24e84dc26f0c";
+  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-5.0.1.12818.jar";
+  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "9c856240bb2a4d32ca97d416702f2d73";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-4.0.0.5862.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "cc8ad346e85db9d3735898b533d37d34";
   public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";
@@ -43,15 +43,19 @@ public class PluginLocator {
   }
 
   public static URL getPhpPluginUrl() {
-    return getPluginUrl("sonar-php-plugin-2.10.0.2087.jar");
+    return getPluginUrl("sonar-php-plugin-2.12.0.2871.jar");
   }
 
   public static URL getPythonPluginUrl() {
-    return getPluginUrl("sonar-python-plugin-1.7.0.1195.jar");
+    return getPluginUrl("sonar-python-plugin-1.8.0.1496.jar");
   }
 
   public static URL getCppPluginUrl() {
-    return getPluginUrl("sonar-cfamily-plugin-4.11.0.8443.jar");
+    return getPluginUrl("sonar-cfamily-plugin-5.0.0.9359.jar");
+  }
+
+  public static URL getLicensePluginUrl() {
+    return getPluginUrl("sonar-license-plugin-3.3.0.1341.jar");
   }
 
   public static URL getXooPluginUrl() {

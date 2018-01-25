@@ -27,7 +27,6 @@ import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.batch.sensor.Sensor;
-import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -83,17 +82,26 @@ public class ExtensionInstaller {
       if (isExplicitlySonarLintCompatible) {
         // When plugin itself claim to be compatible with SonarLint, only load @SonarLintSide extensions
         // filter out non officially supported Sensors
-        if ((ExtensionUtils.isSonarLintSide(extension) || ExtensionUtils.isType(extension, InputFileFilter.class)) && (isGlobal(extension) == global)
-          && (PluginCacheLoader.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension))) {
+        if (isSonarLintSide(extension) && (isGlobal(extension) == global) && onlySonarSourceSensor(pluginInfo, extension)) {
           container.addExtension(pluginInfo, extension);
         }
-      } else if (!blacklisted(extension) && (ExtensionUtils.isScannerSide(extension) || ExtensionUtils.isType(extension, ProfileDefinition.class))) {
+      } else if (!blacklisted(extension) && ExtensionUtils.isScannerSide(extension)) {
         // Here we have whitelisted extensions of whitelisted plugins
         container.addExtension(pluginInfo, extension);
       } else {
         LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
       }
     }
+  }
+
+  private static boolean onlySonarSourceSensor(PluginInfo pluginInfo, Object extension) {
+    return PluginCacheLoader.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension);
+  }
+
+  private static boolean isSonarLintSide(Object extension) {
+    return ExtensionUtils.isSonarLintSide(extension)
+      // FIXME Waiting for InputFileFilter to be annotated @SonarLintSide
+      || ExtensionUtils.isType(extension, InputFileFilter.class);
   }
 
   /**
