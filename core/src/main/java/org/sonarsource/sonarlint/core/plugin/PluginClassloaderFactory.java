@@ -122,23 +122,12 @@ public class PluginClassloaderFactory {
     return new Mask()
       .addInclusion("org/sonar/api/")
       .addInclusion("org/sonarsource/api/sonarlint/")
-      .addInclusion("org/sonar/channel/")
       .addInclusion("org/sonar/check/")
-      .addInclusion("org/sonar/colorizer/")
-      .addInclusion("org/sonar/duplications/")
-      .addInclusion("org/sonar/graph/")
+      // Used by SonarCobol
+      .addInclusion("org/sonar/channel/")
       .addInclusion("net/sourceforge/pmd/")
 
-      // Imported by Python plugin 1.6
-      .addInclusion("com/ctc/wstx/exc/")
-
       .addInclusion("org/slf4j/")
-      .addInclusion("javax/servlet/")
-
-      // SLF4J bridges. Do not let plugins re-initialize and configure their logging system
-      .addInclusion("org/apache/commons/logging/")
-      .addInclusion("org/apache/log4j/")
-      .addInclusion("ch/qos/logback/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");
