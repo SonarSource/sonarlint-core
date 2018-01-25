@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -43,14 +45,22 @@ public class FileIndexer {
   private final InputFileBuilder inputFileBuilder;
   private final StandaloneAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
+  private final InputFileFilter[] filters;
 
   private ProgressReport progressReport;
 
   public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
-    DefaultAnalysisResult analysisResult) {
+    DefaultAnalysisResult analysisResult,
+    InputFileFilter[] filters) {
     this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
     this.analysisResult = analysisResult;
+    this.filters = filters;
+  }
+
+  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
+    DefaultAnalysisResult analysisResult) {
+    this(inputFileBuilder, analysisConfiguration, analysisResult, new InputFileFilter[0]);
   }
 
   void index(SonarLintFileSystem fileSystem) {
@@ -78,7 +88,9 @@ public class FileIndexer {
 
   private void indexFile(SonarLintFileSystem fileSystem, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
-    indexFile(fileSystem, progress, inputFile);
+    if (accept(inputFile)) {
+      indexFile(fileSystem, progress, inputFile);
+    }
   }
 
   private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {
@@ -90,6 +102,17 @@ public class FileIndexer {
     status.markAsIndexed(inputFile);
     SonarLintInputDir inputDir = new SonarLintInputDir(inputFile.path().getParent());
     fs.add(inputDir);
+  }
+
+  private boolean accept(InputFile indexedFile) {
+    // InputFileFilter extensions. Might trigger generation of metadata
+    for (InputFileFilter filter : filters) {
+      if (!filter.accept(indexedFile)) {
+        LOG.debug("'{}' excluded by {}", indexedFile, filter.getClass().getName());
+        return false;
+      }
+    }
+    return true;
   }
 
   private class Progress {

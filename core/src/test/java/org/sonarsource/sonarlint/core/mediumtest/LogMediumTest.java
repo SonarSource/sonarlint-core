@@ -36,14 +36,12 @@ import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 
 public class LogMediumTest {
@@ -108,22 +106,6 @@ public class LogMediumTest {
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2), null);
     assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
     assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
-  }
-
-  @Test
-  public void convertInternalExceptionToSonarLintException() throws Exception {
-
-    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
-
-    try {
-      sonarlint.analyze(createConfig(inputFile), issue -> {
-        throw new MyCustomException("Fake");
-      }, null, null);
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(SonarLintWrappedException.class)
-        .hasCause(SonarLintWrappedException.wrap(new MyCustomException("Fake")));
-    }
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
