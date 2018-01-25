@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
+import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.utils.AnnotationUtils;
@@ -82,7 +83,8 @@ public class ExtensionInstaller {
       if (isExplicitlySonarLintCompatible) {
         // When plugin itself claim to be compatible with SonarLint, only load @SonarLintSide extensions
         // filter out non officially supported Sensors
-        if (ExtensionUtils.isSonarLintSide(extension) && (isGlobal(extension) == global) && (PluginCacheLoader.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension))) {
+        if ((ExtensionUtils.isSonarLintSide(extension) || ExtensionUtils.isType(extension, InputFileFilter.class)) && (isGlobal(extension) == global)
+          && (PluginCacheLoader.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension))) {
           container.addExtension(pluginInfo, extension);
         }
       } else if (!blacklisted(extension) && (ExtensionUtils.isScannerSide(extension) || ExtensionUtils.isType(extension, ProfileDefinition.class))) {

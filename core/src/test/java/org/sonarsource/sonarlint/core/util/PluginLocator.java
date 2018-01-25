@@ -30,8 +30,8 @@ public class PluginLocator {
 
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-4.8.0.9441.jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "dc49ad9b282b7881abcd24e84dc26f0c";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-2.21.1.4786.jar";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2e0b156659bb6f60e11dfcb5323080ea";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-4.0.0.5862.jar";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "cc8ad346e85db9d3735898b533d37d34";
   public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";
 
   public static URL getJavaPluginUrl() {

@@ -97,10 +97,11 @@ public class StandaloneIssueMediumTest {
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
 
-    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
+    String content = "function foo() {\n"
       + "  var x;\n"
       + "  var y; //NOSONAR\n"
-      + "}", false);
+      + "}";
+    ClientInputFile inputFile = prepareInputFile("foo.js", content, false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), i -> issues.add(i), null,
@@ -108,6 +109,13 @@ public class StandaloneIssueMediumTest {
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
 
+    // SLCORE-160
+    inputFile = prepareInputFile("node_modules/foo.js", content, false);
+
+    issues.clear();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), i -> issues.add(i), null,
+      null);
+    assertThat(issues).isEmpty();
   }
 
   @Test
