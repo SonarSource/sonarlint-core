@@ -24,7 +24,7 @@
     <unpack.dir>${project.build.directory}/unpack</unpack.dir>
     
     <!-- embedded analyzers -->
-    <sonar.javascript.version>3.3.0.5702</sonar.javascript.version>
+    <sonar.javascript.version>4.0.0.5862</sonar.javascript.version>
     <sonar.cfamily.version>5.0.0.9359</sonar.cfamily.version>
     <sonar.license.version>3.3.0.1341</sonar.license.version>
 
