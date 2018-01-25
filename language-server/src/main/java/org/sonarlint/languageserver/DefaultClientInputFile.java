@@ -91,6 +91,7 @@ public class DefaultClientInputFile implements ClientInputFile {
     switch (clientLanguageId) {
       case "javascript":
       case "javascriptreact":
+      case "vue":
       case "vue component":
       case "babel es6 javascript":
         return "js";
