@@ -62,6 +62,7 @@ public class OkHttpClientBuilder {
 
   private String userAgent;
   private Proxy proxy;
+  private String credentials;
   private String proxyLogin;
   private String proxyPassword;
   private long connectTimeoutMs = -1;
@@ -148,6 +149,13 @@ public class OkHttpClientBuilder {
     return this;
   }
 
+  /**
+   * Set credentials that will be passed on every request
+   */
+  public void setCredentials(String credentials) {
+    this.credentials = credentials;
+  }
+
   public OkHttpClient build() {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
     builder.proxy(proxy);
@@ -157,16 +165,16 @@ public class OkHttpClientBuilder {
     if (readTimeoutMs >= 0) {
       builder.readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS);
     }
-    builder.addNetworkInterceptor(this::setUserAgent);
+    builder.addNetworkInterceptor(this::addHeaders);
     if (proxyLogin != null) {
       builder.proxyAuthenticator((route, response) -> {
         if (response.request().header(PROXY_AUTHORIZATION) != null) {
           // Give up, we've already attempted to authenticate.
           return null;
         }
-        String credentials = Credentials.basic(proxyLogin, nullToEmpty(proxyPassword));
+        String proxyCrendentials = Credentials.basic(proxyLogin, nullToEmpty(proxyPassword));
         return response.request().newBuilder()
-          .header(PROXY_AUTHORIZATION, credentials)
+          .header(PROXY_AUTHORIZATION, proxyCrendentials)
           .build();
       });
     }
@@ -185,10 +193,13 @@ public class OkHttpClientBuilder {
     return builder.build();
   }
 
-  private Response setUserAgent(Interceptor.Chain chain) throws IOException {
+  private Response addHeaders(Interceptor.Chain chain) throws IOException {
     Request.Builder newRequest = chain.request().newBuilder();
     if (userAgent != null) {
       newRequest.header("User-Agent", userAgent);
+    }
+    if (credentials != null) {
+      newRequest.header("Authorization", credentials);
     }
     return chain.proceed(newRequest.build());
   }
