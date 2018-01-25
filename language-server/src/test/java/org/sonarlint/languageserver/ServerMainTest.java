@@ -189,6 +189,20 @@ public class ServerMainTest {
   }
 
   @Test
+  public void analyzeSimpleTsFileOnOpen() throws Exception {
+    File tsconfig = temp.newFile("tsconfig.json");
+    FileUtils.write(tsconfig, "{}", StandardCharsets.UTF_8);
+    String uri = getUri("foo.ts");
+    lsProxy.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "typescript", 1, "function foo() {\n if(bar() && bar()) { return 42; }\n}")));
+
+    assertThat(waitForDiagnostics(uri))
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(tuple(1, 4, 1, 18, "typescript:S1764", "sonarlint", "Correct one of the identical sub-expressions on both sides of operator \"&&\" (typescript:S1764)",
+        DiagnosticSeverity.Warning));
+  }
+
+  @Test
   public void analyzeSimplePythonFileOnOpen() throws Exception {
     String uri = getUri("foo.py");
     lsProxy.getTextDocumentService()
@@ -264,23 +278,6 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
-  }
-
-  @Test
-  public void analyzeSimpleTsFileOnChange() throws Exception {
-    File tsconfig = temp.newFile("tsconfig.json");
-    FileUtils.write(tsconfig, "{}", StandardCharsets.UTF_8);
-    String uri = getUri("foo.ts");
-    VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
-    docId.setUri(uri);
-    lsProxy.getTextDocumentService()
-      .didChange(new DidChangeTextDocumentParams(docId, Collections.singletonList(new TextDocumentContentChangeEvent("function foo() {\n if(bar() && bar()) { return 42; }\n}"))));
-
-    List<Diagnostic> diagnostics = waitForDiagnostics(uri);
-    assertThat(diagnostics)
-      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(1, 4, 1, 18, "typescript:S1764", "sonarlint", "Correct one of the identical sub-expressions on both sides of operator \"&&\" (typescript:S1764)",
-        DiagnosticSeverity.Warning));
   }
 
   @Test
