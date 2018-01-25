@@ -3,7 +3,7 @@
 java=4.0
 php=2.9
 javascript=2.14
-python=1.6
+python=1.7
 cobol=3.2
 abap=3.3
 plsql=2.8
