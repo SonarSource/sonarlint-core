@@ -23,10 +23,11 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.config.Configuration;
-import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.util.NetworkUtils;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,7 +40,14 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.MovedContextHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -140,6 +148,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private ConnectedSonarLintEngine engine;
   private List<String> logs;
 
+  private static Server server;
+  private static int redirectPort;
+
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
@@ -186,6 +197,37 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
+
+    prepareRedirectServer();
+  }
+
+  private static void prepareRedirectServer() throws Exception {
+    redirectPort = NetworkUtils.getNextAvailablePort(InetAddress.getLoopbackAddress());
+    QueuedThreadPool threadPool = new QueuedThreadPool();
+    threadPool.setMaxThreads(500);
+
+    server = new Server(threadPool);
+    // HTTP Configuration
+    HttpConfiguration httpConfig = new HttpConfiguration();
+    httpConfig.setSendServerVersion(true);
+    httpConfig.setSendDateHeader(false);
+
+    // Moved handler
+    MovedContextHandler movedContextHandler = new MovedContextHandler();
+    movedContextHandler.setPermanent(true);
+    movedContextHandler.setNewContextURL(ORCHESTRATOR.getServer().getUrl());
+    server.setHandler(movedContextHandler);
+
+    // http connector
+    ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+    http.setPort(redirectPort);
+    server.addConnector(http);
+    server.start();
+  }
+
+  @AfterClass
+  public static void after() throws Exception {
+    server.stop();
   }
 
   @Before
@@ -572,7 +614,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void generateToken() {
     WsHelper ws = new WsHelperImpl();
-    ServerConfiguration serverConfig = getServerConfig();
+    ServerConfiguration serverConfig = getServerConfig(true);
 
     if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.4")) {
       exception.expect(UnsupportedServerException.class);
@@ -590,7 +632,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA);
 
-    ServerConfiguration serverConfig = getServerConfig();
+    ServerConfiguration serverConfig = getServerConfig(true);
 
     StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isFalse();
@@ -686,8 +728,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private ServerConfiguration getServerConfig() {
+    return getServerConfig(false);
+  }
+
+  private ServerConfiguration getServerConfig(boolean redirect) {
     return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
+      .url(redirect ? ("http://localhost:" + redirectPort) : ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)
       .build();
@@ -704,10 +750,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   public static WsClient newAdminWsClient(Orchestrator orchestrator) {
-    Server server = orchestrator.getServer();
+    com.sonar.orchestrator.container.Server server = orchestrator.getServer();
     return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(server.getUrl())
-      .credentials(Server.ADMIN_LOGIN, Server.ADMIN_PASSWORD)
+      .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
       .build());
   }
 }
