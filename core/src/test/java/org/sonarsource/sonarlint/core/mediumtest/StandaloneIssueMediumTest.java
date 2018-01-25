@@ -71,6 +71,7 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getPythonPluginUrl())
       .addPlugin(PluginLocator.getCppPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
+      .addPlugin(PluginLocator.getLicensePluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
       .build();
@@ -153,8 +154,9 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleCpp() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.cpp", "void fun() {\n "
-      + "  if (false) {}\n"
-      + "  if (false) {} // NOSONAR\n"
+      + "  int a = 0; \n"
+      + "  if (a) {fun();}\n"
+      + "  if (a) {fun();} // NOSONAR\n"
       + "}\n", false, StandardCharsets.UTF_8, "cpp");
 
     final List<Issue> issues = new ArrayList<>();
@@ -163,8 +165,7 @@ public class StandaloneIssueMediumTest {
         ImmutableMap.of("sonar.cfamily.build-wrapper-output.bypass", "true")),
       issue -> issues.add(issue), null, null);
     assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
-      tuple("cpp:S2583", 2, 7, inputFile.getPath()),
-      tuple("cpp:EmptyCompoundStatement", 2, 14, inputFile.getPath()));
+      tuple("cpp:S2583", 3, 6, inputFile.getPath()));
   }
 
   @Test
@@ -308,7 +309,7 @@ public class StandaloneIssueMediumTest {
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 5, inputFile.getPath()),
       tuple("squid:S1220", null, inputFile.getPath()),
-      // FIXME bug in Java plugin 4.8.0.9441 tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
+      tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
       tuple("squid:S1186", 8, inputFile.getPath()));
   }
 

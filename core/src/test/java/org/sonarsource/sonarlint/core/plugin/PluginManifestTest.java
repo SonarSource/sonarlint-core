@@ -46,7 +46,6 @@ public class PluginManifestTest {
     assertThat(manifest.getMainClass()).isEqualTo("org.sonar.plugins.java.JavaPlugin");
     assertThat(manifest.getVersion().length()).isGreaterThan(1);
     assertThat(manifest.isUseChildFirstClassLoader()).isFalse();
-    assertThat(manifest.getDependencies()).contains("META-INF/lib/org.jacoco.core-0.7.5.201505241946.jar");
     assertThat(manifest.getImplementationBuild()).isNotEmpty();
   }
 
