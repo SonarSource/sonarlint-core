@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -41,6 +43,17 @@ public class ConnectedGlobalConfigurationTest {
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getStorageRoot()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "storage"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
+    assertThat(config.extraProperties()).isEmpty();
+  }
+
+  @Test
+  public void extraProps() throws Exception {
+    Map<String, String> extraProperties = new HashMap<>();
+    extraProperties.put("foo", "bar");
+    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+      .setExtraProperties(extraProperties)
+      .build();
+    assertThat(config.extraProperties()).containsEntry("foo", "bar");
   }
 
   @Test

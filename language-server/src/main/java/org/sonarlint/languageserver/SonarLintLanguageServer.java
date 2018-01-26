@@ -163,7 +163,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
 
     private static Map getAnalyzerProperties(Map<String, Object> params) {
-      Map analyzerProperties = (Map) params.getOrDefault(ANALYZER_PROPERTIES, Collections.emptyMap());
+      Map analyzerProperties = (Map) params.get(ANALYZER_PROPERTIES);
       if (analyzerProperties == null) {
         analyzerProperties = Collections.emptyMap();
       }

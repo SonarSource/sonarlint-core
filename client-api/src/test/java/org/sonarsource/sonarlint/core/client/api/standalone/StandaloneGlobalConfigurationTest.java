@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -40,6 +42,17 @@ public class StandaloneGlobalConfigurationTest {
     assertThat(config.getPluginUrls()).isEmpty();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
+    assertThat(config.extraProperties()).isEmpty();
+  }
+
+  @Test
+  public void extraProps() throws Exception {
+    Map<String, String> extraProperties = new HashMap<>();
+    extraProperties.put("foo", "bar");
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+      .setExtraProperties(extraProperties)
+      .build();
+    assertThat(config.extraProperties()).containsEntry("foo", "bar");
   }
 
   @Test
