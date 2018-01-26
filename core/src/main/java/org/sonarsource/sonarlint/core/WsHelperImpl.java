@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+// TODO
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
+// TODO
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class WsHelperImpl implements WsHelper {
@@ -50,6 +52,7 @@ public class WsHelperImpl implements WsHelper {
 
   @Override
   public ValidationResult validateConnection(ServerConfiguration serverConfig) {
+      if (true) System.out.println("foo");
     return validateConnection(createClient(serverConfig), serverConfig.getOrganizationKey());
   }
 
