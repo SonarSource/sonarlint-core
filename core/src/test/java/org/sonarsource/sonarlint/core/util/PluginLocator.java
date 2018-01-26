@@ -59,7 +59,7 @@ public class PluginLocator {
   }
 
   public static URL getTypeScriptPluginUrl() {
-    return getPluginUrl("sonar-typescript-plugin-1.5.0.2092.jar");
+    return getPluginUrl("sonar-typescript-plugin-1.5.0.2122.jar");
   }
 
   public static URL getXooPluginUrl() {
