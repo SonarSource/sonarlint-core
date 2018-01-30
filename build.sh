@@ -98,6 +98,7 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
   set_maven_build_version "$TRAVIS_BUILD_NUMBER"
 
   echo '======= with deploy'
+  # TODO remove the sonar.pullrequest.github.* settings after sonar-core-plugins 7.1.0.330 is deployed on Next
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
       -Pdeploy-sonarsource \
       -Dmaven.test.redirectTestOutputToFile=false \
@@ -110,6 +111,7 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
       -Dsonar.analysis.prNumber=$PULL_REQUEST \
       -Dsonar.branch.name=$GITHUB_BASE_BRANCH \
       -Dsonar.branch.target=$GITHUB_TARGET_BRANCH \
+      -Dsonar.pullrequest.id=$TRAVIS_PULL_REQUEST \
       -Dsonar.pullrequest.github.id=$TRAVIS_PULL_REQUEST \
       -Dsonar.pullrequest.github.repository=$TRAVIS_REPO_SLUG \
       -B -e -V
