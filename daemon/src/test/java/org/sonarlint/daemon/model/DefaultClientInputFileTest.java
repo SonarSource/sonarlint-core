@@ -45,7 +45,7 @@ public class DefaultClientInputFileTest {
 
     boolean isTest = true;
     String userObject = new String();
-    DefaultClientInputFile file = new DefaultClientInputFile(path, isTest, charset, userObject, "cpp");
+    DefaultClientInputFile file = new DefaultClientInputFile(path.getParent(), path, isTest, charset, userObject, "cpp");
 
     assertThat(file.getCharset()).isEqualTo(charset);
     assertThat(file.isTest()).isEqualTo(isTest);

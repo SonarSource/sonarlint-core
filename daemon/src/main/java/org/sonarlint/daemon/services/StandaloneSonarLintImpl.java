@@ -24,6 +24,7 @@ import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -91,12 +92,13 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
       List<ClientInputFile> files = new LinkedList<>();
       List<InputFile> requestFiles = requestConfig.getFileList();
 
+      Path baseDir = Paths.get(requestConfig.getBaseDir());
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
+        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
       }
 
       StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(
-        Paths.get(requestConfig.getBaseDir()),
+        baseDir,
         Paths.get(requestConfig.getWorkDir()),
         files,
         requestConfig.getPropertiesMap());

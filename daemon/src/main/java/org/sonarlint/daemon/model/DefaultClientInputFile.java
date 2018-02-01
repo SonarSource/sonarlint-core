@@ -33,8 +33,10 @@ public class DefaultClientInputFile implements ClientInputFile {
   private final Charset charset;
   private final String userObject;
   private final String language;
+  private final Path baseDir;
 
-  public DefaultClientInputFile(Path path, boolean isTest, Charset charset, String userObject, @Nullable String language) {
+  public DefaultClientInputFile(Path baseDir, Path path, boolean isTest, Charset charset, String userObject, @Nullable String language) {
+    this.baseDir = baseDir;
     this.path = path;
     this.isTest = isTest;
     this.charset = charset;
@@ -45,6 +47,11 @@ public class DefaultClientInputFile implements ClientInputFile {
   @Override
   public String getPath() {
     return path.toString();
+  }
+
+  @Override
+  public String relativePath() {
+    return baseDir.relativize(path).toString();
   }
 
   @Override

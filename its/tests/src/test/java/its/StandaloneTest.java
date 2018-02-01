@@ -103,7 +103,7 @@ public class StandaloneTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
-    ClientInputFile inputFile = new TestClientInputFile(file.toPath(), isTest, encoding);
+    ClientInputFile inputFile = new TestClientInputFile(baseDir.toPath(), file.toPath(), isTest, encoding);
     return inputFile;
   }
 
