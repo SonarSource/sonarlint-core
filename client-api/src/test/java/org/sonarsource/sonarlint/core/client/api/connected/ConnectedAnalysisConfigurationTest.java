@@ -46,8 +46,8 @@ public class ConnectedAnalysisConfigurationTest {
     final Path srcFile1 = temp.newFile().toPath();
     final Path srcFile2 = temp.newFile().toPath();
 
-    ClientInputFile inputFile = new TestClientInputFile(srcFile1, false, StandardCharsets.UTF_8, null);
-    ClientInputFile testInputFile = new TestClientInputFile(srcFile2, true, StandardCharsets.UTF_8, null);
+    ClientInputFile inputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile1, false, StandardCharsets.UTF_8, null);
+    ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile2, true, StandardCharsets.UTF_8, null);
 
     Path baseDir = temp.newFolder().toPath();
     Path workDir = temp.newFolder().toPath();

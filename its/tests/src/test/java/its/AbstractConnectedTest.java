@@ -61,11 +61,12 @@ public class AbstractConnectedTest {
   }
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
-    final Path path = Paths.get("projects/" + projectDir + "/" + filePath).toAbsolutePath();
+    final Path baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
+    final Path path = baseDir.resolve(filePath);
     return new ConnectedAnalysisConfiguration(projectKey,
       new File("projects/" + projectDir).toPath().toAbsolutePath(),
       t.newFolder().toPath(),
-      Collections.singletonList(new TestClientInputFile(path, false, StandardCharsets.UTF_8)),
+      Collections.singletonList(new TestClientInputFile(baseDir, path, false, StandardCharsets.UTF_8)),
       toMap(properties));
   }
 
@@ -74,7 +75,7 @@ public class AbstractConnectedTest {
     return new ConnectedAnalysisConfiguration(projectKey,
       path.getParent(),
       t.newFolder().toPath(),
-      Collections.singletonList(new TestClientInputFile(path, false, StandardCharsets.UTF_8)),
+      Collections.singletonList(new TestClientInputFile(path.getParent(), path, false, StandardCharsets.UTF_8)),
       Collections.emptyMap());
   }
 

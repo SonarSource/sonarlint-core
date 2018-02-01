@@ -55,6 +55,11 @@ public class ClientInputFileTests {
       }
 
       @Override
+      public String relativePath() {
+        return path.getParent().toString();
+      }
+
+      @Override
       public <G> G getClientObject() {
         return null;
       }
@@ -73,7 +78,6 @@ public class ClientInputFileTests {
     assertThat(underTest.language()).isNull();
     assertThat(underTest.uri()).hasScheme("file");
     assertThat(underTest.uri().getPath()).endsWith("/Foo.java");
-    assertThat(underTest.relativePath()).endsWith("/Foo.java");
   }
 
 }

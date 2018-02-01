@@ -26,6 +26,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
@@ -38,8 +39,10 @@ public class DefaultClientInputFile implements ClientInputFile {
   private final String content;
   private final PathMatcher testMatcher;
   private final String sqLanguage;
+  private final Path baseDir;
 
-  public DefaultClientInputFile(URI uri, String content, @Nullable String testFilePattern, @Nullable String clientLanguageId) {
+  public DefaultClientInputFile(Path baseDir, URI uri, String content, @Nullable String testFilePattern, @Nullable String clientLanguageId) {
+    this.baseDir = baseDir;
     this.fileUri = uri;
     this.content = content;
     this.sqLanguage = toSqLanguage(clientLanguageId);
@@ -60,6 +63,11 @@ public class DefaultClientInputFile implements ClientInputFile {
   @Override
   public String getPath() {
     return Paths.get(fileUri).toString();
+  }
+
+  @Override
+  public String relativePath() {
+    return baseDir.relativize(Paths.get(fileUri)).toString();
   }
 
   @Override

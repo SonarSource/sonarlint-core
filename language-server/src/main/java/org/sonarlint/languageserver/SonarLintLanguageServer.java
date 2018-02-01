@@ -125,7 +125,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private UserSettings userSettings = new UserSettings();
 
   private StandaloneSonarLintEngine engine;
-  private Path workspaceDir;
+  @Nullable
+  private URI workspaceRoot;
 
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
@@ -193,9 +194,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @Override
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
     String rootUri = params.getRootUri();
+    // rootURI is null when no folder is open (like opening a single file in VSCode)
     if (rootUri != null) {
       try {
-        workspaceDir = Paths.get(new URI(rootUri));
+        workspaceRoot = new URI(rootUri);
       } catch (URISyntaxException e) {
         throw new IllegalStateException(e);
       }
@@ -405,11 +407,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private void analyze(URI uri, String content) {
     Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
     files.put(uri, newPublishDiagnostics(uri));
-    Path baseDir = workspaceDir != null ? workspaceDir : Paths.get(uri).getParent();
+    Path baseDir = workspaceRoot != null ? Paths.get(workspaceRoot) : Paths.get(uri).getParent();
     Objects.requireNonNull(baseDir);
     Objects.requireNonNull(engine);
     StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
-      Arrays.asList(new DefaultClientInputFile(uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
+      Arrays.asList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
       userSettings.analyzerProperties);
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
     telemetry.usedAnalysis();
