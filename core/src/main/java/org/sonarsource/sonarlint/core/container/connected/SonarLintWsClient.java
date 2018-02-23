@@ -51,6 +51,7 @@ public class SonarLintWsClient {
   private static final Logger LOG = LoggerFactory.getLogger(SonarLintWsClient.class);
 
   public static final int PAGE_SIZE = 500;
+  public static final int MAX_PAGES = 20;
 
   private final WsConnector client;
   private final String userAgent;
@@ -194,6 +195,11 @@ public class SonarLintWsClient {
         Paging paging = getPaging.apply(protoBufResponse);
         // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
         stop = isEmpty || (paging.getTotal() > 0 && page * PAGE_SIZE >= paging.getTotal());
+        if (!stop && page >= MAX_PAGES) {
+          stop = true;
+          LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
+        }
+        
         progress.setProgressAndCheckCancel("Page " + page, loaded / (float) paging.getTotal());
       } catch (IOException e) {
         throw new IllegalStateException("Failed to process paginated WS", e);
