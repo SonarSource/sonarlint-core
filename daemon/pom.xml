@@ -29,7 +29,7 @@
     <sonar.license.version>3.3.0.1341</sonar.license.version>
 
     <!-- Release: enable publication to Bintray -->
-    <artifactsToPublish>${project.groupId}:${project.artifactId}:windows:zip</artifactsToPublish>
+    <artifactsToPublish>${project.groupId}:${project.artifactId}:zip:windows</artifactsToPublish>
   </properties>
   
   <dependencies>
