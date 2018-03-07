@@ -43,6 +43,8 @@
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>3.7.0</okhttp.version>
+    <!-- Release: enable publication to Bintray -->
+    <artifactsToPublish>${project.groupId}:sonarlint-daemon:zip:windows,${project.groupId}:sonarlint-language-server:jar</artifactsToPublish>
   </properties>
 
   <dependencyManagement>
