@@ -27,9 +27,6 @@
     <sonar.javascript.version>4.0.0.5862</sonar.javascript.version>
     <sonar.cfamily.version>5.0.0.9359</sonar.cfamily.version>
     <sonar.license.version>3.3.0.1341</sonar.license.version>
-
-    <!-- Release: enable publication to Bintray -->
-    <artifactsToPublish>${project.groupId}:${project.artifactId}:zip:windows</artifactsToPublish>
   </properties>
   
   <dependencies>
