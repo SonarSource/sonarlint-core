@@ -64,6 +64,7 @@ import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
@@ -88,8 +89,6 @@ import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.launch.LSPLauncher;
-import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
@@ -104,6 +103,8 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
+import static java.util.Arrays.asList;
+
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
   static final String DISABLE_TELEMETRY = "disableTelemetry";
@@ -114,7 +115,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
 
-  private final LanguageClient client;
+  private final SonarLintLanguageClient client;
   private final Future<?> backgroundProcess;
   private final LanguageClientLogOutput logOutput;
 
@@ -131,7 +132,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
     this.analyzers = analyzers;
-    Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(this,
+    Launcher<SonarLintLanguageClient> launcher = Launcher.createLauncher(this,
+      SonarLintLanguageClient.class,
       inputStream,
       outputStream,
       true, new PrintWriter(System.out));
@@ -243,6 +245,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     textDocumentSyncOptions.setSave(new SaveOptions(true));
     c.setTextDocumentSync(textDocumentSyncOptions);
     c.setCodeActionProvider(true);
+    c.setExecuteCommandProvider(new ExecuteCommandOptions(asList(SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND)));
     result.setCapabilities(c);
     return CompletableFuture.completedFuture(result);
   }
@@ -320,15 +323,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     List<Command> commands = new ArrayList<>();
     for (Diagnostic d : params.getContext().getDiagnostics()) {
       if (SONARLINT_SOURCE.equals(d.getSource())) {
-        RuleDetails ruleDetails = engine.getRuleDetails(d.getCode());
-        String ruleName = ruleDetails.getName();
-        String htmlDescription = ruleDetails.getHtmlDescription();
-        String type = ruleDetails.getType();
-        String severity = ruleDetails.getSeverity();
         commands.add(
           new Command("Open description of rule " + d.getCode(),
             SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
-            Arrays.asList(d.getCode(), ruleName, htmlDescription, type, severity)));
+            Arrays.asList(d.getCode())));
       }
     }
     return CompletableFuture.completedFuture(commands);
@@ -490,8 +488,25 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
-    // No command
-    return null;
+    switch (params.getCommand()) {
+      case SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND:
+        List<Object> args = params.getArguments();
+        if (args.size() != 1) {
+          warn("Expecting 1 argument");
+        } else {
+          String ruleKey = args.get(0).toString();
+          RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
+          String ruleName = ruleDetails.getName();
+          String htmlDescription = ruleDetails.getHtmlDescription();
+          String type = ruleDetails.getType();
+          String severity = ruleDetails.getSeverity();
+          client.openRuleDescription(RuleDescription.of(ruleKey, ruleName, htmlDescription, type, severity));
+        }
+        break;
+      default:
+        warn("Unimplemented command: " + params.getCommand());
+    }
+    return CompletableFuture.completedFuture(new Object());
   }
 
   @Override

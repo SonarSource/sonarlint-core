@@ -83,7 +83,6 @@ public class SonarLintLanguageServerTest {
     assertThat(server.getTextDocumentService().signatureHelp(null)).isNull();
 
     server.getWorkspaceService().didChangeWatchedFiles(null);
-    assertThat(server.getWorkspaceService().executeCommand(null)).isNull();
     assertThat(server.getWorkspaceService().symbol(null)).isNull();
   }
 
