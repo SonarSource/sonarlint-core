@@ -26,6 +26,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,7 @@ import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
@@ -62,7 +64,6 @@ import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
-import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -315,17 +316,15 @@ public class ServerMainTest {
     String ruleKey = (String) codeActions.get(0).getArguments().get(0);
     assertThat(ruleKey).isEqualTo("javascript:S1442");
 
-    String ruleName = (String) codeActions.get(0).getArguments().get(1);
-    assertThat(ruleName).contains("\"alert(...)\" should not be used");
+    lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams(codeActions.get(0).getCommand(), codeActions.get(0).getArguments())).get();
 
-    String ruleDesc = (String) codeActions.get(0).getArguments().get(2);
-    assertThat(ruleDesc).contains("can be useful for debugging during development");
+    assertThat(client.ruleDescs).hasSize(1);
 
-    String ruleType = (String) codeActions.get(0).getArguments().get(3);
-    assertThat(ruleType).isEqualTo("VULNERABILITY");
-
-    String ruleSev = (String) codeActions.get(0).getArguments().get(4);
-    assertThat(ruleSev).isEqualTo("MINOR");
+    assertThat(client.ruleDescs.get(0).getKey()).isEqualTo("javascript:S1442");
+    assertThat(client.ruleDescs.get(0).getName()).contains("\"alert(...)\" should not be used");
+    assertThat(client.ruleDescs.get(0).getHtmlDescription()).contains("can be useful for debugging during development");
+    assertThat(client.ruleDescs.get(0).getType()).isEqualTo("VULNERABILITY");
+    assertThat(client.ruleDescs.get(0).getSeverity()).isEqualTo("MINOR");
   }
 
   private String getUri(String filename) throws IOException {
@@ -337,12 +336,14 @@ public class ServerMainTest {
     return client.getDiagnostics(uri);
   }
 
-  private static class FakeLanguageClient implements LanguageClient {
+  private static class FakeLanguageClient implements SonarLintLanguageClient {
 
     Map<String, List<Diagnostic>> diagnostics = new ConcurrentHashMap<>();
+    List<RuleDescription> ruleDescs = new ArrayList<>();
 
     void clear() {
       diagnostics.clear();
+      ruleDescs.clear();
     }
 
     @Override
@@ -375,6 +376,11 @@ public class ServerMainTest {
     @Override
     public void logMessage(MessageParams message) {
       System.out.println(message.getMessage());
+    }
+
+    @Override
+    public void openRuleDescription(RuleDescription notification) {
+      ruleDescs.add(notification);
     }
   }
 }
