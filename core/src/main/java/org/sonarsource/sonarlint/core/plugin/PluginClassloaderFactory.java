@@ -59,7 +59,7 @@ public class PluginClassloaderFactory {
     builder.setMask(API_CLASSLOADER_KEY, apiMask());
 
     for (PluginClassLoaderDef def : defs) {
-      builder.newClassloader(def.getBasePluginKey());
+      builder.newClassloader(def.getBasePluginKey(), baseClassLoader);
       builder.setParent(def.getBasePluginKey(), API_CLASSLOADER_KEY, new Mask());
       builder.setLoadingOrder(def.getBasePluginKey(), def.isSelfFirstStrategy() ? SELF_FIRST : PARENT_FIRST);
       for (File jar : def.getFiles()) {
