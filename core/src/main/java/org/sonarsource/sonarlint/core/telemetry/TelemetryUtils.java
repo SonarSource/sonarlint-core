@@ -59,7 +59,7 @@ class TelemetryUtils {
         return "others";
     }
   }
-
+  
   /**
    * Check if "now" is a different day than the reference.
    *

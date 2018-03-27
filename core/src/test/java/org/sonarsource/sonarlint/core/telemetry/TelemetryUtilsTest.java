@@ -28,6 +28,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -40,6 +42,50 @@ public class TelemetryUtilsTest {
   @Test
   public void dayChanged_should_return_true_if_older() {
     assertThat(dayChanged(LocalDate.now().minusDays(1))).isTrue();
+  }
+
+  @Test
+  public void should_get_language_from_extension() {
+    assertThat(TelemetryUtils.getLanguage("js")).isEqualTo("js");
+    assertThat(TelemetryUtils.getLanguage("java")).isEqualTo("java");
+    assertThat(TelemetryUtils.getLanguage("c")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("h")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("cpp")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("ts")).isEqualTo("ts");
+    assertThat(TelemetryUtils.getLanguage("py")).isEqualTo("python");
+    assertThat(TelemetryUtils.getLanguage("php")).isEqualTo("php");
+    assertThat(TelemetryUtils.getLanguage("unknown")).isEqualTo("others");
+  }
+
+  @Test
+  public void language_from_extension_should_be_case_insensitive() {
+    assertThat(TelemetryUtils.getLanguage("JS")).isEqualTo("js");
+  }
+
+  @Test
+  public void language_from_extension_should_be_nullable() {
+    assertThat(TelemetryUtils.getLanguage(null)).isEqualTo("others");
+  }
+
+  @Test
+  public void should_create_telemetry_performance_payload() {
+    Map<String, TelemetryAnalyzerPerformance> analyzers = new HashMap<>();
+    TelemetryAnalyzerPerformance perf = new TelemetryAnalyzerPerformance();
+    perf.registerAnalysis(10);
+    perf.registerAnalysis(500);
+    perf.registerAnalysis(500);
+
+    analyzers.put("java", perf);
+    TelemetryAnalyzerPerformancePayload[] payload = TelemetryUtils.toPayload(analyzers);
+    assertThat(payload).hasSize(1);
+    assertThat(payload[0].language()).isEqualTo("java");
+    assertThat(payload[0].distribution()).containsOnly(
+      entry("0-300", new BigDecimal("33.33")),
+      entry("300-500", new BigDecimal("0.00")),
+      entry("500-1000", new BigDecimal("66.67")),
+      entry("1000-2000", new BigDecimal("0.00")),
+      entry("2000-4000", new BigDecimal("0.00")),
+      entry("4000+", new BigDecimal("0.00")));
   }
 
   @Test
