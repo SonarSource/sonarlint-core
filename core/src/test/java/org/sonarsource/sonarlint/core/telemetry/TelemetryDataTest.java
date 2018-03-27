@@ -19,16 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.isOlder;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.validateAndMigrate;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+
 import org.assertj.core.api.Condition;
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.isOlder;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.validateAndMigrate;
 
 public class TelemetryDataTest {
   @Test
@@ -50,6 +52,40 @@ public class TelemetryDataTest {
 
     data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
+  }
+
+  @Test
+  public void usedAnalysis_with_duration_should_register_analyzer_performance() {
+    TelemetryData data = new TelemetryData();
+    assertThat(data.numUseDays()).isEqualTo(0);
+    assertThat(data.analyzers()).hasSize(0);
+
+    data.setUsedAnalysis("java", 1000);
+    data.setUsedAnalysis("js", 2000);
+
+    assertThat(data.numUseDays()).isEqualTo(1);
+
+    data.setUsedAnalysis();
+    assertThat(data.numUseDays()).isEqualTo(1);
+
+    assertThat(data.analyzers()).hasSize(2);
+    assertThat(data.analyzers().get("java").analysisCount()).isEqualTo(1);
+    assertThat(data.analyzers().get("java").frequencies()).containsOnly(
+      entry("0-300", 0),
+      entry("300-500", 0),
+      entry("500-1000", 0),
+      entry("1000-2000", 1),
+      entry("2000-4000", 0),
+      entry("4000+", 0));
+
+    assertThat(data.analyzers().get("js").analysisCount()).isEqualTo(1);
+    assertThat(data.analyzers().get("js").frequencies()).containsOnly(
+      entry("0-300", 0),
+      entry("300-500", 0),
+      entry("500-1000", 0),
+      entry("1000-2000", 0),
+      entry("2000-4000", 1),
+      entry("4000+", 0));
   }
 
   @Test

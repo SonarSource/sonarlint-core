@@ -111,9 +111,15 @@ public class SonarLintTelemetry {
     }
   }
 
-  public void usedAnalysis() {
+  public void analysisDoneOnMultipleFiles() {
     if (enabled()) {
-      telemetry.usedAnalysis();
+      telemetry.analysisDoneOnMultipleFiles();
+    }
+  }
+  
+  public void analysisDoneOnSingleFile(@Nullable String fileExtension, int analysisTimeMs) {
+    if (enabled()) {
+      telemetry.analysisDoneOnSingleFile(fileExtension, analysisTimeMs);
     }
   }
 

@@ -92,6 +92,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
+import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -412,7 +413,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       Arrays.asList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
       userSettings.analyzerProperties);
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
-    telemetry.usedAnalysis();
+    long start = System.currentTimeMillis();
     AnalysisResults analysisResults = engine.analyze(
       configuration,
       issue -> {
@@ -424,6 +425,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           convert(issue).ifPresent(publish.getDiagnostics()::add);
         }
       }, logOutput, null);
+
+    telemetry.analysisDoneOnSingleFile(StringUtils.substringAfterLast(uri.toString(), "."), (int) (System.currentTimeMillis() - start));
+
     // Ignore files with parsing error
     analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
     files.values().forEach(client::publishDiagnostics);

@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import com.google.common.annotations.VisibleForTesting;
-import java.nio.file.Path;
-import java.time.LocalDate;
-
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
+
+import java.nio.file.Path;
+
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Manage telemetry data, in memory and persistent storage, and stateful telemetry actions.
@@ -38,8 +40,6 @@ public class TelemetryManager {
   private final TelemetryStorage storage;
   private final TelemetryData data;
   private final TelemetryClient client;
-
-  private LocalDate lastSavedDate;
 
   public TelemetryManager(Path path, TelemetryClient client) {
     this.storage = newTelemetryStorage(path);
@@ -101,42 +101,40 @@ public class TelemetryManager {
     data.setLastUploadTime();
     saveNow();
     client.upload(data);
+    data.clearAnalyzers();
+    saveNow();
   }
 
-  public void usedAnalysis() {
+  public void analysisDoneOnSingleFile(@Nullable String fileExtension, int analysisTimeMs) {
+    String language = TelemetryUtils.getLanguage(fileExtension);
+    data.setUsedAnalysis(language, analysisTimeMs);
+    mergeAndSave();
+  }
+
+  public void analysisDoneOnMultipleFiles() {
     data.setUsedAnalysis();
-    saveLazily();
+    mergeAndSave();
   }
 
   public void usedConnectedMode(boolean hasConnectedProject) {
     data.setUsedConnectedMode(hasConnectedProject);
-    saveLazily();
+    mergeAndSave();
   }
 
   /**
-   * Save lazily and upload lazily telemetry data.
+   * Save and upload lazily telemetry data.
    */
   public void stop() {
-    saveLazily();
+    saveNow();
     uploadLazily();
   }
 
-  /**
-   * Save telemetry data if the day has changed since the last save.
-   *
-   * Saving once a day is enough, as it corresponds to the granularity of the collected data.
-   */
-  private void saveLazily() {
-    if (!dayChanged(lastSavedDate)) {
-      return;
-    }
-
+  private void mergeAndSave() {
     tryMerge();
     saveNow();
   }
 
   private void saveNow() {
-    lastSavedDate = LocalDate.now();
     storage.trySave(data);
   }
 }
