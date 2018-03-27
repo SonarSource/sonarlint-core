@@ -49,8 +49,11 @@ class TelemetryPayload {
   @SerializedName("install_time")
   private final OffsetDateTime installTime;
 
+  @SerializedName("analyses")
+  private final TelemetryAnalyzerPerformancePayload[] analyses;
+
   TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode,
-    OffsetDateTime systemTime, OffsetDateTime installTime) {
+    OffsetDateTime systemTime, OffsetDateTime installTime, TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -58,6 +61,7 @@ class TelemetryPayload {
     this.connectedMode = connectedMode;
     this.systemTime = systemTime;
     this.installTime = installTime;
+    this.analyses = analyses;
   }
 
   public long daysSinceInstallation() {
@@ -66,6 +70,10 @@ class TelemetryPayload {
 
   public long daysOfUse() {
     return daysOfUse;
+  }
+
+  public TelemetryAnalyzerPerformancePayload[] analyses() {
+    return analyses;
   }
 
   public String version() {

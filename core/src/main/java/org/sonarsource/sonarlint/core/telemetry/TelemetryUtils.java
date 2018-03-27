@@ -19,15 +19,45 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
+
 import javax.annotation.Nullable;
 
 class TelemetryUtils {
 
   private TelemetryUtils() {
     // utility class, forbidden constructor
+  }
+
+  static String getLanguage(@Nullable String fileExtension) {
+    if (fileExtension == null) {
+      return "others";
+    }
+    String fileExtensionLow = fileExtension.toLowerCase(Locale.US);
+    switch (fileExtensionLow) {
+      case "cpp":
+      case "c":
+      case "h":
+        return "cfamily";
+      case "java":
+      case "js":
+      case "php":
+      case "ts":
+        return fileExtensionLow;
+      case "py":
+        return "python";
+      default:
+        return "others";
+    }
   }
 
   /**
@@ -41,6 +71,33 @@ class TelemetryUtils {
   }
 
   /**
+   * Transforms stored information about analyzers performance to payload to be sent to server.
+   */
+  static TelemetryAnalyzerPerformancePayload[] toPayload(Map<String, TelemetryAnalyzerPerformance> analyzers) {
+    return analyzers.entrySet().stream()
+      .map(TelemetryUtils::toPayload)
+      .toArray(size -> new TelemetryAnalyzerPerformancePayload[size]);
+  }
+
+  private static TelemetryAnalyzerPerformancePayload toPayload(Map.Entry<String, TelemetryAnalyzerPerformance> entry) {
+    TelemetryAnalyzerPerformance analyzerPerformance = entry.getValue();
+    String language = entry.getKey();
+    int analysisCount = analyzerPerformance.analysisCount();
+    Map<String, BigDecimal> distribution = analyzerPerformance
+      .frequencies().entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+        if (analysisCount == 0) {
+          return BigDecimal.ZERO.setScale(2);
+        }
+        return BigDecimal.valueOf(100)
+          .multiply(BigDecimal.valueOf(e.getValue()))
+          .divide(BigDecimal.valueOf(analysisCount), 2, RoundingMode.HALF_EVEN);
+      }, throwingMerger(), LinkedHashMap::new));
+
+    return new TelemetryAnalyzerPerformancePayload(language, distribution);
+  }
+
+  /**
    * Check if "now" is a different day than the reference, and some hours have elapsed.
    *
    * @param dateTime reference date
@@ -51,5 +108,11 @@ class TelemetryUtils {
     return dateTime == null ||
       (!LocalDate.now().equals(dateTime.toLocalDate())
         && (dateTime.until(LocalDateTime.now(), ChronoUnit.HOURS) >= hours));
+  }
+
+  private static <T> BinaryOperator<T> throwingMerger() {
+    return (u, v) -> {
+      throw new IllegalStateException(String.format("Duplicate key %s", u));
+    };
   }
 }

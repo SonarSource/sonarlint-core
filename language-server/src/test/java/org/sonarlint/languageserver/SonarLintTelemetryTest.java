@@ -150,17 +150,33 @@ public class SonarLintTelemetryTest {
   }
 
   @Test
-  public void usedAnalysis_should_trigger_usedAnalysis_when_enabled() {
+  public void analysisDoneOnMultipleFiles_should_trigger_analysisDoneOnMultipleFiles_when_enabled() {
     when(engine.isEnabled()).thenReturn(true);
-    telemetry.usedAnalysis();
+    telemetry.analysisDoneOnMultipleFiles();
     verify(engine).isEnabled();
-    verify(engine).usedAnalysis();
+    verify(engine).analysisDoneOnMultipleFiles();
   }
 
   @Test
-  public void usedAnalysis_should_not_trigger_usedAnalysis_when_disabled() {
+  public void analysisDoneOnMultipleFiles_should_not_trigger_analysisDoneOnMultipleFiles_when_disabled() {
     when(engine.isEnabled()).thenReturn(false);
-    telemetry.usedAnalysis();
+    telemetry.analysisDoneOnMultipleFiles();
+    verify(engine).isEnabled();
+    verifyNoMoreInteractions(engine);
+  }
+
+  @Test
+  public void analysisDoneOnSingleFile_should_trigger_analysisDoneOnSingleFile_when_enabled() {
+    when(engine.isEnabled()).thenReturn(true);
+    telemetry.analysisDoneOnSingleFile("java", 1000);
+    verify(engine).isEnabled();
+    verify(engine).analysisDoneOnSingleFile("java", 1000);
+  }
+
+  @Test
+  public void analysisDoneOnSingleFile_should_not_trigger_analysisDoneOnSingleFile_when_disabled() {
+    when(engine.isEnabled()).thenReturn(false);
+    telemetry.analysisDoneOnSingleFile("java", 1000);
     verify(engine).isEnabled();
     verifyNoMoreInteractions(engine);
   }

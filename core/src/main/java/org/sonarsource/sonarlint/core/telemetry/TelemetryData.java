@@ -19,14 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-
-import static java.time.temporal.ChronoUnit.DAYS;
 
 class TelemetryData {
   @Deprecated
@@ -37,10 +40,12 @@ class TelemetryData {
   private long numUseDays;
   private boolean enabled;
   private boolean usedConnectedMode;
+  private Map<String, TelemetryAnalyzerPerformance> analyzers;
 
   TelemetryData() {
     enabled = true;
     installTime = OffsetDateTime.now();
+    analyzers = new LinkedHashMap<>();
   }
 
   @Deprecated
@@ -70,6 +75,10 @@ class TelemetryData {
     return lastUseDate;
   }
 
+  public Map<String, TelemetryAnalyzerPerformance> analyzers() {
+    return analyzers;
+  }
+
   void setLastUploadTime() {
     setLastUploadTime(LocalDateTime.now());
   }
@@ -85,6 +94,10 @@ class TelemetryData {
 
   void setNumUseDays(long numUseDays) {
     this.numUseDays = numUseDays;
+  }
+
+  void clearAnalyzers() {
+    this.analyzers = new LinkedHashMap<>();
   }
 
   long numUseDays() {
@@ -107,12 +120,27 @@ class TelemetryData {
     return usedConnectedMode;
   }
 
+  /**
+   * Register that an analysis was performed.
+   * This should be used when multiple files are analyzed.
+   * @see #setUsedAnalysis(String, int)
+   */
   void setUsedAnalysis() {
     LocalDate now = LocalDate.now();
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
     }
     lastUseDate = now;
+  }
+
+  /**
+   * Register the analysis of a single file, with information regarding language and duration of the analysis.
+   */
+  void setUsedAnalysis(String language, int analysisTimeMs) {
+    setUsedAnalysis();
+
+    TelemetryAnalyzerPerformance analyzer = analyzers.computeIfAbsent(language, x -> new TelemetryAnalyzerPerformance());
+    analyzer.registerAnalysis(analysisTimeMs);
   }
 
   /**
@@ -165,6 +193,7 @@ class TelemetryData {
     LocalDate lastUseDate = data.lastUseDate();
     if (lastUseDate == null) {
       data.setNumUseDays(0);
+      data.analyzers = new LinkedHashMap<>();
       return data;
     }
 

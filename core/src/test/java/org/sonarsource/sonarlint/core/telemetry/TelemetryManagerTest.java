@@ -63,22 +63,8 @@ public class TelemetryManagerTest {
   public void should_save_on_first_analysis() throws IOException {
     TelemetryStorage storage = mockTelemetryStorage();
     TelemetryManager manager = stubbedTelemetryManager(storage);
-    manager.usedAnalysis();
+    manager.analysisDoneOnMultipleFiles();
     verify(storage).trySave(any(TelemetryData.class));
-  }
-
-  @Test
-  public void should_not_save_twice_on_same_day() throws IOException {
-    TelemetryStorage storage = mockTelemetryStorage();
-    TelemetryManager manager = stubbedTelemetryManager(storage);
-    manager.usedAnalysis();
-    manager.usedAnalysis();
-    manager.usedAnalysis();
-
-    // load once to initialize, and one more time to save
-    verify(storage, times(2)).tryLoad();
-    verify(storage).trySave(any(TelemetryData.class));
-    verifyNoMoreInteractions(storage);
   }
 
   @Test
@@ -87,10 +73,10 @@ public class TelemetryManagerTest {
     TelemetryManager manager = stubbedTelemetryManager(data);
     assertThat(data.numUseDays()).isEqualTo(0);
 
-    manager.usedAnalysis();
+    manager.analysisDoneOnMultipleFiles();
     assertThat(data.numUseDays()).isEqualTo(1);
 
-    manager.usedAnalysis();
+    manager.analysisDoneOnMultipleFiles();
     assertThat(data.numUseDays()).isEqualTo(1);
   }
 
@@ -108,8 +94,8 @@ public class TelemetryManagerTest {
     TelemetryManager manager = stubbedTelemetryManager(storage);
     manager.stop();
 
-    // once during lazy save, once during lazy upload
-    verify(storage, times(2)).trySave(any(TelemetryData.class));
+    // once during lazy save, twice during lazy upload
+    verify(storage, times(3)).trySave(any(TelemetryData.class));
     verify(client).upload(any(TelemetryData.class));
   }
 
@@ -139,8 +125,13 @@ public class TelemetryManagerTest {
     TelemetryData data = new TelemetryData();
     TelemetryManager manager = stubbedTelemetryManager(data);
 
+    data.setUsedAnalysis("java", 1000);
+    assertThat(data.analyzers()).isNotEmpty();
     assertThat(data.lastUploadTime()).isNull();
     manager.uploadLazily();
+
+    // should reset performance after upload
+    assertThat(data.analyzers()).isEmpty();
 
     LocalDateTime lastUploadTime = data.lastUploadTime();
     assertThat(lastUploadTime).isNotNull();
@@ -210,7 +201,7 @@ public class TelemetryManagerTest {
   }
 
   @Test
-  public void usedAnalysis_should_not_wipe_out_more_recent_data() throws IOException {
+  public void reporting_analysis_done_should_not_wipe_out_more_recent_data() throws IOException {
     Path path = temp.newFile().toPath();
     TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
 
@@ -218,7 +209,7 @@ public class TelemetryManagerTest {
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
-    manager.usedAnalysis();
+    manager.analysisDoneOnMultipleFiles();
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isTrue();
@@ -226,6 +217,27 @@ public class TelemetryManagerTest {
     assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
+    assertThat(reloaded.analyzers()).isEmpty();
+  }
+  
+  @Test
+  public void reporting_analysis_on_single_file() throws IOException {
+    Path path = temp.newFile().toPath();
+    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
+
+    TelemetryStorage storage = new TelemetryStorage(path);
+    TelemetryData data = createAndSaveSampleData(storage);
+
+    // note: the manager hasn't seen the saved data
+    manager.analysisDoneOnSingleFile("java", 1000);
+
+    TelemetryData reloaded = storage.tryLoad();
+    assertThat(reloaded.enabled()).isTrue();
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
+    assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
+    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
+    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
+    assertThat(reloaded.analyzers()).containsKey("java");
   }
 
   @Test
