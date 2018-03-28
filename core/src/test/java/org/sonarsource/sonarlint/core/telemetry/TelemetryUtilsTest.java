@@ -46,12 +46,21 @@ public class TelemetryUtilsTest {
 
   @Test
   public void should_get_language_from_extension() {
-    assertThat(TelemetryUtils.getLanguage("js")).isEqualTo("js");
+    assertThat(TelemetryUtils.getLanguage("js")).isEqualTo("javascript");
     assertThat(TelemetryUtils.getLanguage("java")).isEqualTo("java");
     assertThat(TelemetryUtils.getLanguage("c")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("m")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("cpp")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("cxx")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("c++")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("hh")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("hpp")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("hxx")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("h++")).isEqualTo("cfamily");
+    assertThat(TelemetryUtils.getLanguage("ipp")).isEqualTo("cfamily");
     assertThat(TelemetryUtils.getLanguage("h")).isEqualTo("cfamily");
     assertThat(TelemetryUtils.getLanguage("cpp")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("ts")).isEqualTo("ts");
+    assertThat(TelemetryUtils.getLanguage("ts")).isEqualTo("typescript");
     assertThat(TelemetryUtils.getLanguage("py")).isEqualTo("python");
     assertThat(TelemetryUtils.getLanguage("php")).isEqualTo("php");
     assertThat(TelemetryUtils.getLanguage("unknown")).isEqualTo("others");
@@ -59,7 +68,7 @@ public class TelemetryUtilsTest {
 
   @Test
   public void language_from_extension_should_be_case_insensitive() {
-    assertThat(TelemetryUtils.getLanguage("JS")).isEqualTo("js");
+    assertThat(TelemetryUtils.getLanguage("JS")).isEqualTo("javascript");
   }
 
   @Test

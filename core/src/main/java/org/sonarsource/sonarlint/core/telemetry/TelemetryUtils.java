@@ -47,19 +47,30 @@ class TelemetryUtils {
       case "cpp":
       case "c":
       case "h":
+      case "m":
+      case "cc":
+      case "cxx":
+      case "c++":
+      case "hh":
+      case "hpp":
+      case "hxx":
+      case "h++":
+      case "ipp":
         return "cfamily";
       case "java":
-      case "js":
       case "php":
-      case "ts":
         return fileExtensionLow;
+      case "ts":
+        return "typescript";
+      case "js":
+        return "javascript";
       case "py":
         return "python";
       default:
         return "others";
     }
   }
-  
+
   /**
    * Check if "now" is a different day than the reference.
    *
