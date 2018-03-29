@@ -99,6 +99,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_JAVASCRIPT_CUSTOM = "sample-javascript-custom";
   private static final String PROJECT_KEY_PYTHON = "sample-python";
+  private static final String PROJECT_KEY_WEB = "sample-web";
 
   @ClassRule
   public static ExternalResource resource = new ExternalResource() {
@@ -109,6 +110,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .addPlugin("javascript")
         .addPlugin("php")
         .addPlugin("python")
+        .addPlugin("web")
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
 
@@ -119,7 +121,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"));
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
+
       if (!orchestratorBuilder.getOrchestratorProperty(Configuration.SONAR_VERSION_PROPERTY).startsWith("5.6")) {
         orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
           .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
@@ -179,6 +183,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT_CUSTOM, "Sample Javascript Custom");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_WEB, "Sample Web");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
 
@@ -189,6 +194,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT_CUSTOM, "js", "SonarLint IT Javascript Custom");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_WEB, "web", "SonarLint IT Web");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
 
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
@@ -263,10 +269,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadModules() throws Exception {
     updateGlobal();
-    assertThat(engine.allModulesByKey()).hasSize(9);
+    assertThat(engine.allModulesByKey()).hasSize(10);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(10).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allModulesByKey()).hasSize(10).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(11).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allModulesByKey()).hasSize(11).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -416,6 +422,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisWeb() throws IOException {
+    updateGlobal();
+    updateModule(PROJECT_KEY_WEB);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_WEB, PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 

@@ -12,3 +12,4 @@ rpg=2.0
 cpp=4.0
 pli=1.5
 typescript=1.5
+web=2.5
