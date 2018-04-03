@@ -19,7 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -34,10 +37,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -54,9 +60,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.Assert.fail;
+import com.google.common.collect.ImmutableMap;
 
 public class StandaloneIssueMediumTest {
 
@@ -145,6 +149,8 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleTypeScript() throws Exception {
+    // TODO enable it again once https://github.com/SonarSource/SonarTS/issues/598 is fixed
+    Assume.assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764");
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
