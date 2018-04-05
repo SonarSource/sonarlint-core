@@ -22,12 +22,14 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,11 +53,13 @@ public class StandaloneAnalysisConfigurationTest {
     ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile3, true, StandardCharsets.UTF_8, "php");
     Path baseDir = temp.newFolder().toPath();
     Path workDir = temp.newFolder().toPath();
-    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, inputFileWithLanguage, testInputFile), props);
+    Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
+    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, inputFileWithLanguage, testInputFile), props, excludedRules);
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
+      "  excludedRules: [squid:S1135, squid:S1181]\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toString() + " (UTF-8)\n" +
       "    " + srcFile2.toString() + " (UTF-8) [java]\n" +
