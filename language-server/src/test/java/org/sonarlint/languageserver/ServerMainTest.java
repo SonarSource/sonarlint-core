@@ -66,6 +66,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -191,6 +192,9 @@ public class ServerMainTest {
 
   @Test
   public void analyzeSimpleTsFileOnOpen() throws Exception {
+    // TODO enable it again once https://github.com/SonarSource/SonarTS/issues/598 is fixed
+    Assume.assumeFalse(SystemUtils.IS_OS_WINDOWS);
+
     File tsconfig = temp.newFile("tsconfig.json");
     FileUtils.write(tsconfig, "{}", StandardCharsets.UTF_8);
     String uri = getUri("foo.ts");
