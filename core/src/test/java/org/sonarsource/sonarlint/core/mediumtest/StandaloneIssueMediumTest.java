@@ -30,6 +30,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +55,7 @@ import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -369,6 +372,27 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void simpleJavaWithExcludedRules() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("Foo.java",
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S106"));
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules), issue -> issues.add(issue),
+      null, null);
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"));
+  }
+
+  @Test
   public void testJavaSurefireDontCrashAnalysis() throws Exception {
 
     File surefireReport = new File(baseDir, "reports/TEST-FooTest.xml");
@@ -451,7 +475,6 @@ public class StandaloneIssueMediumTest {
         throw e.getCause();
       }
     }
-
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {

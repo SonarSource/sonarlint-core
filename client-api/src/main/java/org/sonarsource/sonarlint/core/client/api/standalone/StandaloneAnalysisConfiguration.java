@@ -21,10 +21,13 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 @Immutable
@@ -34,16 +37,22 @@ public class StandaloneAnalysisConfiguration {
   private final Map<String, String> extraProperties;
   private final Path workDir;
   private final Path baseDir;
+  private final Collection<RuleKey> excludedRules;
 
-  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties, Collection<RuleKey> excludedRules) {
     this.baseDir = baseDir;
     this.workDir = workDir;
     this.inputFiles = inputFiles;
-    this.extraProperties = new LinkedHashMap<>(extraProperties);
+    this.extraProperties = Collections.unmodifiableMap(new HashMap<>(extraProperties));
+    this.excludedRules = Collections.unmodifiableList(new ArrayList<>(excludedRules));
+  }
+
+  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
+    this(baseDir, workDir, inputFiles, extraProperties, Collections.emptyList());
   }
 
   public Map<String, String> extraProperties() {
-    return Collections.unmodifiableMap(extraProperties);
+    return extraProperties;
   }
 
   public Path baseDir() {
@@ -59,6 +68,10 @@ public class StandaloneAnalysisConfiguration {
 
   public Iterable<ClientInputFile> inputFiles() {
     return inputFiles;
+  }
+
+  public Collection<RuleKey> excludedRules() {
+    return excludedRules;
   }
 
   @Override
@@ -89,5 +102,4 @@ public class StandaloneAnalysisConfiguration {
     Charset charset = inputFile.getCharset();
     return charset != null ? charset.displayName() : "default";
   }
-
 }

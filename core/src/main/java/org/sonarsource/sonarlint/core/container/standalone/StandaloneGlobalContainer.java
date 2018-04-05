@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core.container.standalone;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -137,7 +140,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
-    analysisContainer.add(activeRules);
+    analysisContainer.add(new ActiveRulesWithExclusions(activeRules, configuration.excludedRules()));
     analysisContainer.add(NewSensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
@@ -168,6 +171,59 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       result.add(ar.ruleKey().toString());
     }
     return result;
+  }
+
+  static class ActiveRulesWithExclusions implements ActiveRules {
+    private final ActiveRules activeRules;
+    private final Set<RuleKey> exclusions;
+
+    public ActiveRulesWithExclusions(ActiveRules activeRules, Collection<org.sonarsource.sonarlint.core.client.api.common.RuleKey> ruleKeys) {
+      this.activeRules = activeRules;
+      this.exclusions = ruleKeys.stream().map(rk -> RuleKey.of(rk.repository(), rk.rule())).collect(Collectors.toSet());
+    }
+
+    @CheckForNull
+    @Override
+    public ActiveRule find(RuleKey ruleKey) {
+      if (exclusions.contains(ruleKey)) {
+        return null;
+      }
+      return activeRules.find(ruleKey);
+    }
+
+    @Override
+    public Collection<ActiveRule> findAll() {
+      return filterExcluded(activeRules.findAll());
+    }
+
+    @Override
+    public Collection<ActiveRule> findByRepository(String s) {
+      return filterExcluded(activeRules.findByRepository(s));
+    }
+
+    @Override
+    public Collection<ActiveRule> findByLanguage(String s) {
+      return filterExcluded(activeRules.findByLanguage(s));
+    }
+
+    @CheckForNull
+    @Override
+    public ActiveRule findByInternalKey(String repository, String internalKey) {
+      ActiveRule rule = activeRules.findByInternalKey(repository, internalKey);
+      if (rule != null && exclusions.contains(rule.ruleKey())) {
+        return null;
+      }
+      return rule;
+    }
+
+    public Collection<ActiveRule> filterExcluded(Collection<ActiveRule> rules) {
+      return rules.stream().filter(r -> !exclusions.contains(r.ruleKey())).collect(Collectors.toSet());
+    }
+
+    public void setExclusions(Collection<RuleKey> excludedRules) {
+      exclusions.clear();
+      exclusions.addAll(excludedRules);
+    }
   }
 
 }
