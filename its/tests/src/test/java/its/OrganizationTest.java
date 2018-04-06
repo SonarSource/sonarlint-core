@@ -59,6 +59,7 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setServerProperty("sonar.sonarcloud.enabled", "true")
     .addPlugin("java")
     .build();
 

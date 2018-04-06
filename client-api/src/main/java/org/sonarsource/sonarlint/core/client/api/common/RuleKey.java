@@ -39,4 +39,9 @@ public class RuleKey {
   public String rule() {
     return rule;
   }
+
+  @Override
+  public String toString() {
+    return repository + ":" + rule;
+  }
 }
