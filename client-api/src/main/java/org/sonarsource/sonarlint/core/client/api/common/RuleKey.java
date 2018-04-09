@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
@@ -43,5 +44,23 @@ public class RuleKey {
   @Override
   public String toString() {
     return repository + ":" + rule;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RuleKey ruleKey = (RuleKey) o;
+    return Objects.equals(repository, ruleKey.repository) &&
+      Objects.equals(rule, ruleKey.rule);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(repository, rule);
   }
 }
