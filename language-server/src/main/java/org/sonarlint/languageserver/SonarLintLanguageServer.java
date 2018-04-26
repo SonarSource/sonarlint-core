@@ -20,6 +20,9 @@
 package org.sonarlint.languageserver;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,6 +54,7 @@ import org.eclipse.lsp4j.CodeLensParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
@@ -206,7 +210,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       }
     }
 
-    Map<String, Object> options = (Map<String, Object>) params.getInitializationOptions();
+    Map<String, Object> options = parseToMap(params.getInitializationOptions());
     userSettings = new UserSettings(options);
 
     String productKey = (String) options.get("productKey");
@@ -280,7 +284,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   @Override
-  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(TextDocumentPositionParams position) {
+  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
     return null;
   }
 
@@ -498,7 +502,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         if (args.size() != 1) {
           warn("Expecting 1 argument");
         } else {
-          String ruleKey = args.get(0).toString();
+          String ruleKey = ((JsonPrimitive) args.get(0)).getAsString();
           RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
           String ruleName = ruleDetails.getName();
           String htmlDescription = ruleDetails.getHtmlDescription();
@@ -520,7 +524,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
-    Map<String, Object> settings = (Map<String, Object>) params.getSettings();
+    Map<String, Object> settings = parseToMap(params.getSettings());
     Map<String, Object> entries = (Map<String, Object>) settings.get(SONARLINT_CONFIGURATION_NAMESPACE);
     userSettings = new UserSettings(entries);
     telemetry.optOut(userSettings.disableTelemetry);
@@ -535,4 +539,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return engine;
   }
 
+  private static Map<String, Object> parseToMap(Object obj) {
+    return new Gson().fromJson((JsonElement) obj, Map.class);
+  }
 }
