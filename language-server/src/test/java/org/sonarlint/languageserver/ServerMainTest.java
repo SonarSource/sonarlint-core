@@ -20,6 +20,7 @@
 package org.sonarlint.languageserver;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonPrimitive;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -317,7 +318,7 @@ public class ServerMainTest {
 
     assertThat(codeActions).hasSize(1);
 
-    String ruleKey = (String) codeActions.get(0).getArguments().get(0);
+    String ruleKey = ((JsonPrimitive) codeActions.get(0).getArguments().get(0)).getAsString();
     assertThat(ruleKey).isEqualTo("javascript:S1442");
 
     lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams(codeActions.get(0).getCommand(), codeActions.get(0).getArguments())).get();

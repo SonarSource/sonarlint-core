@@ -19,6 +19,7 @@
  */
 package org.sonarlint.languageserver;
 
+import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.channels.IllegalSelectorException;
@@ -109,7 +110,7 @@ public class SonarLintLanguageServerTest {
     NullOutputStream output = new NullOutputStream();
     SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
     InitializeParams params = mock(InitializeParams.class);
-    when(params.getInitializationOptions()).thenReturn(Collections.emptyMap());
+    when(params.getInitializationOptions()).thenReturn(new JsonObject());
     ls.initialize(params);
   }
 }
