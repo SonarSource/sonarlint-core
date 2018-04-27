@@ -23,22 +23,35 @@ import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.channels.IllegalSelectorException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.WorkspaceFolder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
 
 public class SonarLintLanguageServerTest {
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testNotConvertGlobalIssues() {
@@ -112,5 +125,97 @@ public class SonarLintLanguageServerTest {
     InitializeParams params = mock(InitializeParams.class);
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     ls.initialize(params);
+  }
+
+  @Test
+  public void initialize_should_not_crash_when_client_doesnt_support_folders() {
+    NullInputStream input = new NullInputStream(1000);
+    NullOutputStream output = new NullOutputStream();
+    SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
+    InitializeParams params = mock(InitializeParams.class);
+    when(params.getInitializationOptions()).thenReturn(new JsonObject());
+    when(params.getWorkspaceFolders()).thenReturn(null);
+    ls.initialize(params);
+  }
+
+  @Test
+  public void findBaseDir_returns_correct_folder_when_exists() {
+    Path basedir = Paths.get("path/to/base").toAbsolutePath();
+    Path file = basedir.resolve("some/sub/file.java");
+    List<String> folders = Arrays.asList(
+      Paths.get("other/path").toAbsolutePath().toString(),
+      basedir.toString(),
+      Paths.get("other/path2").toString()
+    );
+    assertThat(findBaseDir(folders, file.toUri())).isEqualTo(basedir);
+  }
+
+  @Test
+  public void findBaseDir_returns_parent_dir_when_no_folders() {
+    Path basedir = Paths.get("path/to/base").toAbsolutePath();
+    Path file = basedir.resolve("some/sub/file.java");
+    List<String> folders = Collections.emptyList();
+    assertThat(findBaseDir(folders, file.toUri())).isEqualTo(file.getParent());
+  }
+
+  @Test
+  public void findBaseDir_falls_back_to_parent_dir_when_no_folder_matched() {
+    Path basedir = Paths.get("path/to/base").toAbsolutePath();
+    Path file = basedir.resolve("some/sub/file.java");
+    Path workspaceRoot = Paths.get("other/path");
+    List<String> folders = Arrays.asList(
+      workspaceRoot.toAbsolutePath().toString(),
+      Paths.get("other/path2").toAbsolutePath().toString()
+    );
+    assertThat(findBaseDir(folders, file.toUri())).isEqualTo(file.getParent());
+  }
+
+  @Test
+  public void findBaseDir_finds_longest_match() {
+    NullInputStream input = new NullInputStream(1000);
+    NullOutputStream output = new NullOutputStream();
+    SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
+    InitializeParams params = mock(InitializeParams.class);
+    when(params.getInitializationOptions()).thenReturn(new JsonObject());
+
+    Path basedir = Paths.get("path/to/base").toAbsolutePath();
+    Path subFolder = basedir.resolve("sub");
+    Path file = subFolder.resolve("file.java");
+
+    List<WorkspaceFolder> ordering1 = Stream.of(subFolder.toString(), basedir.toString()).map(this::mockWorkspaceFolder).collect(Collectors.toList());
+    when(params.getWorkspaceFolders()).thenReturn(ordering1);
+    ls.initialize(params);
+    assertThat(ls.findBaseDir(file.toUri())).isEqualTo(subFolder);
+
+    List<WorkspaceFolder> ordering2 = Stream.of(basedir.toString(), subFolder.toString()).map(this::mockWorkspaceFolder).collect(Collectors.toList());
+    when(params.getWorkspaceFolders()).thenReturn(ordering2);
+    ls.initialize(params);
+    assertThat(ls.findBaseDir(file.toUri())).isEqualTo(subFolder);
+  }
+
+  @Test
+  public void parseWorkspaceFolders_ignores_rootUri_when_folders_are_present() {
+    List<String> folderPaths = Arrays.asList("path/to/base", "other/path");
+    List<WorkspaceFolder> folders = folderPaths.stream().map(this::mockWorkspaceFolder).collect(Collectors.toList());
+    assertThat(parseWorkspaceFolders(folders, "foo")).isEqualTo(folderPaths);
+  }
+
+  @Test
+  public void parseWorkspaceFolders_falls_back_to_rootUri_when_folders_is_null_or_empty() {
+    List<String> folders = Collections.singletonList("path/to/base");
+    String rootUri = folders.get(0);
+    assertThat(parseWorkspaceFolders(null, rootUri)).isEqualTo(folders);
+    assertThat(parseWorkspaceFolders(Collections.emptyList(), rootUri)).isEqualTo(folders);
+  }
+
+  @Test
+  public void parseWorkspaceFolders_does_not_crash_when_no_folders() {
+    parseWorkspaceFolders(null, null);
+  }
+
+  private WorkspaceFolder mockWorkspaceFolder(String path) {
+    WorkspaceFolder workspaceFolder = mock(WorkspaceFolder.class);
+    when(workspaceFolder.getUri()).thenReturn(path);
+    return workspaceFolder;
   }
 }
