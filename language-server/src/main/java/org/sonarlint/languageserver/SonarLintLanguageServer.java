@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +47,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -60,6 +62,7 @@ import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
+import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
@@ -90,6 +93,10 @@ import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.WorkspaceFolder;
+import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
+import org.eclipse.lsp4j.WorkspaceFoldersOptions;
+import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -107,8 +114,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
-
-import static java.util.Arrays.asList;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
@@ -131,8 +136,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private UserSettings userSettings = new UserSettings();
 
   private StandaloneSonarLintEngine engine;
-  @Nullable
-  private URI workspaceRoot;
+  private final List<String> workspaceFolders = new ArrayList<>();
 
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
@@ -200,15 +204,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-    String rootUri = params.getRootUri();
-    // rootURI is null when no folder is open (like opening a single file in VSCode)
-    if (rootUri != null) {
-      try {
-        workspaceRoot = new URI(rootUri);
-      } catch (URISyntaxException e) {
-        throw new IllegalStateException(e);
-      }
-    }
+    workspaceFolders.addAll(parseWorkspaceFolders(params.getWorkspaceFolders(), params.getRootUri()));
+    workspaceFolders.sort(Comparator.reverseOrder());
 
     Map<String, Object> options = parseToMap(params.getInitializationOptions());
     userSettings = new UserSettings(options);
@@ -244,15 +241,49 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
+    c.setTextDocumentSync(getTextDocumentSyncOptions());
+    c.setCodeActionProvider(true);
+    c.setExecuteCommandProvider(new ExecuteCommandOptions(Collections.singletonList(SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND)));
+    c.setWorkspace(getWorkspaceServerCapabilities());
+
+    result.setCapabilities(c);
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @VisibleForTesting
+  static List<String> parseWorkspaceFolders(@Nullable List<WorkspaceFolder> workspaceFolders, @Nullable String rootUri) {
+    if (workspaceFolders != null && !workspaceFolders.isEmpty()) {
+      return toList(workspaceFolders);
+    }
+
+    // rootURI is null when no folder is open (like opening a single file in VSCode)
+    if (rootUri != null) {
+      return Collections.singletonList(rootUri);
+    }
+
+    return Collections.emptyList();
+  }
+
+  private static List<String> toList(List<WorkspaceFolder> workspaceFolders) {
+    return workspaceFolders.stream().map(WorkspaceFolder::getUri).collect(Collectors.toList());
+  }
+
+  private static WorkspaceServerCapabilities getWorkspaceServerCapabilities() {
+    WorkspaceFoldersOptions options = new WorkspaceFoldersOptions();
+    options.setSupported(true);
+    options.setChangeNotifications(true);
+
+    WorkspaceServerCapabilities capabilities = new WorkspaceServerCapabilities();
+    capabilities.setWorkspaceFolders(options);
+    return capabilities;
+  }
+
+  private static TextDocumentSyncOptions getTextDocumentSyncOptions() {
     TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
     textDocumentSyncOptions.setOpenClose(true);
     textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
     textDocumentSyncOptions.setSave(new SaveOptions(true));
-    c.setTextDocumentSync(textDocumentSyncOptions);
-    c.setCodeActionProvider(true);
-    c.setExecuteCommandProvider(new ExecuteCommandOptions(asList(SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND)));
-    result.setCapabilities(c);
-    return CompletableFuture.completedFuture(result);
+    return textDocumentSyncOptions;
   }
 
   @VisibleForTesting
@@ -410,11 +441,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private void analyze(URI uri, String content) {
     Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
     files.put(uri, newPublishDiagnostics(uri));
-    Path baseDir = workspaceRoot != null ? Paths.get(workspaceRoot) : Paths.get(uri).getParent();
+    Path baseDir = findBaseDir(uri);
     Objects.requireNonNull(baseDir);
     Objects.requireNonNull(engine);
     StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
-      Arrays.asList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
+      Collections.singletonList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
       userSettings.analyzerProperties);
     debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
     long start = System.currentTimeMillis();
@@ -435,7 +466,26 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     // Ignore files with parsing error
     analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
     files.values().forEach(client::publishDiagnostics);
+  }
 
+  @VisibleForTesting
+  Path findBaseDir(URI uri) {
+    return findBaseDir(workspaceFolders, uri);
+  }
+
+  @VisibleForTesting
+  static Path findBaseDir(List<String> workspaceFolders, URI uri) {
+    Path inputFilePath = Paths.get(uri);
+    if (!workspaceFolders.isEmpty()) {
+      String uriString = inputFilePath.toString();
+      for (String folder : workspaceFolders) {
+        if (uriString.startsWith(folder)) {
+          return Paths.get(folder);
+        }
+      }
+    }
+
+    return inputFilePath.getParent();
   }
 
   static Optional<Diagnostic> convert(Issue issue) {
@@ -502,7 +552,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         if (args.size() != 1) {
           warn("Expecting 1 argument");
         } else {
-          String ruleKey = ((JsonPrimitive) args.get(0)).getAsString();
+          String ruleKey = parseToString(args.get(0));
           RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
           String ruleName = ruleDetails.getName();
           String htmlDescription = ruleDetails.getHtmlDescription();
@@ -535,11 +585,26 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     // No watched files
   }
 
-  public StandaloneSonarLintEngine getEngine() {
-    return engine;
+  // TODO this method never seems to get triggered...
+  // Users must restart language server after adding new workspace folder.
+  @Override
+  public void didChangeWorkspaceFolders(DidChangeWorkspaceFoldersParams params) {
+    WorkspaceFoldersChangeEvent event = params.getEvent();
+    workspaceFolders.removeAll(toList(event.getRemoved()));
+    workspaceFolders.addAll(toList(event.getAdded()));
+    workspaceFolders.sort(Comparator.reverseOrder());
   }
 
+  // See the changelog for any evolutions on how properties are parsed:
+  // https://github.com/eclipse/lsp4j/blob/master/CHANGELOG.md
+  // (currently JsonElement, used to be Map<String, Object>)
   private static Map<String, Object> parseToMap(Object obj) {
     return new Gson().fromJson((JsonElement) obj, Map.class);
+  }
+
+  // See the changelog for any evolutions on how properties are parsed:
+  // https://github.com/eclipse/lsp4j/blob/master/CHANGELOG.md
+  private static String parseToString(Object obj) {
+    return ((JsonPrimitive) obj).getAsString();
   }
 }
