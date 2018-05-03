@@ -439,7 +439,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private void analyze(URI uri, String content) {
-    if (uri.toString().startsWith("file://")) {
+    if (!uri.toString().startsWith("file://")) {
       warn("URI is not a file, analysis not supported");
       return;
     }
