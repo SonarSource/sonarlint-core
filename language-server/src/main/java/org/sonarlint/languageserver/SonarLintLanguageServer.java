@@ -439,10 +439,14 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private void analyze(URI uri, String content) {
+    if (uri.toString().startsWith("file://")) {
+      warn("URI is not a file, analysis not supported");
+      return;
+    }
+
     Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
     files.put(uri, newPublishDiagnostics(uri));
     Path baseDir = findBaseDir(uri);
-    Objects.requireNonNull(baseDir);
     Objects.requireNonNull(engine);
     StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
       Collections.singletonList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
