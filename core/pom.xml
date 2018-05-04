@@ -209,6 +209,18 @@
                   </excludes>
                 </filter>
                 <filter>
+                  <artifact>ch.qos.logback:logback-classic</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <artifact>ch.qos.logback:logback-core</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
                   <artifact>org.sonarsource.sonarlint.core:sonarlint-core</artifact>
                   <includes>
                     <include>**</include>
