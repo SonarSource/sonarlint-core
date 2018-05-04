@@ -22,6 +22,8 @@ package org.sonarlint.languageserver;
 import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.IllegalSelectorException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,12 +40,14 @@ import org.eclipse.lsp4j.WorkspaceFolder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Answers;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
@@ -119,20 +123,16 @@ public class SonarLintLanguageServerTest {
 
   @Test
   public void initialize_should_not_crash_when_disableTelemetry_param_missing() {
-    NullInputStream input = new NullInputStream(1000);
-    NullOutputStream output = new NullOutputStream();
-    SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
-    InitializeParams params = mock(InitializeParams.class);
+    SonarLintLanguageServer ls = newLanguageServer();
+    InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     ls.initialize(params);
   }
 
   @Test
   public void initialize_should_not_crash_when_client_doesnt_support_folders() {
-    NullInputStream input = new NullInputStream(1000);
-    NullOutputStream output = new NullOutputStream();
-    SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
-    InitializeParams params = mock(InitializeParams.class);
+    SonarLintLanguageServer ls = newLanguageServer();
+    InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     when(params.getWorkspaceFolders()).thenReturn(null);
     ls.initialize(params);
@@ -172,10 +172,8 @@ public class SonarLintLanguageServerTest {
 
   @Test
   public void findBaseDir_finds_longest_match() {
-    NullInputStream input = new NullInputStream(1000);
-    NullOutputStream output = new NullOutputStream();
-    SonarLintLanguageServer ls = new SonarLintLanguageServer(input, output, Collections.emptyList());
-    InitializeParams params = mock(InitializeParams.class);
+    SonarLintLanguageServer ls = newLanguageServer();
+    InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
 
     Path basedir = Paths.get("path/to/base").toAbsolutePath();
@@ -211,6 +209,17 @@ public class SonarLintLanguageServerTest {
   @Test
   public void parseWorkspaceFolders_does_not_crash_when_no_folders() {
     parseWorkspaceFolders(null, null);
+  }
+
+  private InitializeParams mockInitializeParams() {
+    return mock(InitializeParams.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+  }
+
+  private SonarLintLanguageServer newLanguageServer() {
+    NullInputStream input = new NullInputStream(1000);
+    NullOutputStream output = new NullOutputStream();
+    SonarLintLanguageServer server = new SonarLintLanguageServer(input, output, Collections.emptyList());
+    return server;
   }
 
   private WorkspaceFolder mockWorkspaceFolder(String path) {
