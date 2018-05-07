@@ -121,6 +121,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   static final String TYPESCRIPT_LOCATION = "typeScriptLocation";
   static final String TEST_FILE_PATTERN = "testFilePattern";
   static final String ANALYZER_PROPERTIES = "analyzerProperties";
+  private static final String INCLUDE_RULE_DETAILS_IN_CODE_ACTION = "includeRuleDetailsInCodeAction";
+
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
@@ -137,6 +139,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private StandaloneSonarLintEngine engine;
   private final List<String> workspaceFolders = new ArrayList<>();
+
+  // note: only used by SonarLint for VSCode, not Atom
+  private boolean shouldIncludeRuleDetailsInCodeAction;
 
   public SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
 
@@ -216,6 +221,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     String productName = (String) options.get("productName");
     String productVersion = (String) options.get("productVersion");
+
+    shouldIncludeRuleDetailsInCodeAction = Boolean.TRUE.equals(options.get(INCLUDE_RULE_DETAILS_IN_CODE_ACTION));
 
     telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
     telemetry.optOut(userSettings.disableTelemetry);
@@ -359,13 +366,26 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     List<Command> commands = new ArrayList<>();
     for (Diagnostic d : params.getContext().getDiagnostics()) {
       if (SONARLINT_SOURCE.equals(d.getSource())) {
+        String ruleKey = d.getCode();
         commands.add(
-          new Command("Open description of rule " + d.getCode(),
+          new Command("Open description of rule " + ruleKey,
             SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
-            Arrays.asList(d.getCode())));
+            getOpenRuleDescriptionParams(ruleKey)));
       }
     }
     return CompletableFuture.completedFuture(commands);
+  }
+
+  private List<Object> getOpenRuleDescriptionParams(String ruleKey) {
+    if (!shouldIncludeRuleDetailsInCodeAction) {
+      return Collections.singletonList(ruleKey);
+    }
+    RuleDetails ruleDetails = engine.getRuleDetails(ruleKey);
+    String ruleName = ruleDetails.getName();
+    String htmlDescription = ruleDetails.getHtmlDescription();
+    String type = ruleDetails.getType();
+    String severity = ruleDetails.getSeverity();
+    return Arrays.asList(ruleKey, ruleName, htmlDescription, type, severity);
   }
 
   @Override
