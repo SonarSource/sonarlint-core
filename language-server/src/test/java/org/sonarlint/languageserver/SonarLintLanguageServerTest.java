@@ -19,22 +19,27 @@
  */
 package org.sonarlint.languageserver;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.IllegalSelectorException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.junit.Rule;
@@ -42,12 +47,19 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Answers;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.*;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
@@ -61,7 +73,7 @@ public class SonarLintLanguageServerTest {
   public void testNotConvertGlobalIssues() {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(null);
-    assertThat(SonarLintLanguageServer.convert(issue)).isEmpty();
+    assertThat(convert(issue)).isEmpty();
   }
 
   @Test
@@ -69,15 +81,15 @@ public class SonarLintLanguageServerTest {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(1);
     when(issue.getSeverity()).thenReturn("BLOCKER");
-    assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("CRITICAL");
-    assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("MAJOR");
-    assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Warning);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Warning);
     when(issue.getSeverity()).thenReturn("MINOR");
-    assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
     when(issue.getSeverity()).thenReturn("INFO");
-    assertThat(SonarLintLanguageServer.convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
   }
 
   @Test
@@ -209,6 +221,148 @@ public class SonarLintLanguageServerTest {
   @Test
   public void parseWorkspaceFolders_does_not_crash_when_no_folders() {
     parseWorkspaceFolders(null, null);
+  }
+
+  @Test
+  public void executeCommand_update_server_storage() throws ExecutionException, InterruptedException {
+    Map<String, String> server1 = new HashMap<>();
+    server1.put("serverId", "local1");
+    server1.put("serverUrl", "http://localhost:9000");
+    server1.put("token", "foo");
+    Map<String, String> server2 = new HashMap<>();
+    server2.put("serverId", "local2");
+    server2.put("serverUrl", "http://localhost:9000");
+    server2.put("token", "foo");
+
+    SonarLintLanguageServer ls = newLanguageServer();
+    SonarLintLanguageServer.EngineCache engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    when(engineCache.getOrCreate(any())).thenReturn(mock(ConnectedSonarLintEngine.class));
+    ls.setEngineCache(engineCache);
+
+    // execute server storage update with 2 servers
+    ExecuteCommandParams params = new ExecuteCommandParams();
+    params.setCommand(SONARLINT_UPDATE_SERVER_STORAGE_COMMAND);
+    params.setArguments(Arrays.asList(toJson(server1), toJson(server2)));
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verify(engineCache, times(2)).getOrCreate(any());
+
+    assertThat(ls.serverInfoCache).hasSize(2);
+
+    // execute server storage update with 1 server
+    engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ls.setEngineCache(engineCache);
+    params.setArguments(Collections.singletonList(toJson(server2)));
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verify(engineCache).getOrCreate(any());
+
+    assertThat(ls.serverInfoCache).hasSize(1);
+
+    // execute server storage update with null
+    engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ls.setEngineCache(engineCache);
+    params.setArguments(null);
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verifyNoMoreInteractions(engineCache);
+
+    assertThat(ls.serverInfoCache).isEmpty();
+
+    // restore 1 server
+    engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ls.setEngineCache(engineCache);
+    params.setArguments(Collections.singletonList(toJson(server2)));
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verify(engineCache).getOrCreate(any());
+
+    assertThat(ls.serverInfoCache).hasSize(1);
+
+    // execute server storage update with empty list
+    engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ls.setEngineCache(engineCache);
+    params.setArguments(Collections.emptyList());
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verifyNoMoreInteractions(engineCache);
+
+    assertThat(ls.serverInfoCache).isEmpty();
+
+    // restore 1 server
+    engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ls.setEngineCache(engineCache);
+    params.setArguments(Collections.singletonList(toJson(server2)));
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verify(engineCache).getOrCreate(any());
+
+    assertThat(ls.serverInfoCache).hasSize(1);
+
+    // execute server storage update with incomplete server configuration
+    engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ls.setEngineCache(engineCache);
+    params.setArguments(Collections.singletonList(new Gson().toJsonTree(Collections.singletonMap("foo", -1))));
+    ls.executeCommand(params).get();
+
+    verify(engineCache).clear();
+    verifyNoMoreInteractions(engineCache);
+
+    assertThat(ls.serverInfoCache).isEmpty();
+  }
+
+  @Test
+  public void executeCommand_update_project_binding() throws ExecutionException, InterruptedException {
+    Map<String, String> server1 = new HashMap<>();
+    server1.put("serverId", "local1");
+    server1.put("serverUrl", "http://localhost:9000");
+    server1.put("token", "foo");
+
+    SonarLintLanguageServer ls = newLanguageServer();
+    SonarLintLanguageServer.EngineCache engineCache = mock(SonarLintLanguageServer.EngineCache.class);
+    ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
+    when(engineCache.getOrCreate(any())).thenReturn(engine);
+    ls.setEngineCache(engineCache);
+
+    // set some servers
+    ExecuteCommandParams updateServerParams = new ExecuteCommandParams();
+    updateServerParams.setCommand(SONARLINT_UPDATE_SERVER_STORAGE_COMMAND);
+    updateServerParams.setArguments(Collections.singletonList(toJson(server1)));
+    ls.executeCommand(updateServerParams).get();
+
+    Map<String, String> binding = new HashMap<>();
+    binding.put("serverId", "local1");
+    binding.put("projectKey", "project1");
+
+    // update binding; happy path
+    ExecuteCommandParams updateBindingParams = new ExecuteCommandParams();
+    updateBindingParams.setCommand(SONARLINT_UPDATE_PROJECT_BINDING_COMMAND);
+    updateBindingParams.setArguments(Collections.singletonList(toJson(binding)));
+    ls.executeCommand(updateBindingParams).get();
+
+    assertThat(ls.binding).isNotNull();
+    verify(engine).updateModule(any(), any(), any());
+
+    // binding to non-existent server clears binding
+    binding.put("serverId", "nonexistent");
+    updateBindingParams.setArguments(null);
+    // TODO
+//    updateBindingParams.setArguments(Collections.singletonList(toJson(binding)));
+    // TODO update binding replaces binding
+    // TODO invalid server or binding falls back to no binding
+    ls.executeCommand(updateBindingParams).get();
+
+    assertThat(ls.binding).isNull();
+  }
+
+  private JsonElement toJson(Map<String, String> map) {
+    return new Gson().toJsonTree(map);
   }
 
   private InitializeParams mockInitializeParams() {
