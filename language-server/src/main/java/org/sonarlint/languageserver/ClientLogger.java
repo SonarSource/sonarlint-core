@@ -19,34 +19,29 @@
  */
 package org.sonarlint.languageserver;
 
-public class Logger {
+interface ClientLogger {
 
-  enum MessageType {
-    ERR_INCOMPLETE_SERVER_CONFIG("Incomplete server configuration. Required parameters must not be blank: serverId, serverUrl, token"),
-    ERR_INCOMPLETE_BINDING("Incomplete binding configuration. Required parameters must not be blank: serverId, projectKey"),
-    ERR_INVALID_BINDING_SERVER("Invalid binding: the specified serverId doesn't exist"),
-    ERR_ANALYSIS_FAILED("Analysis failed")
-    ;
+  enum ErrorType {
+    INCOMPLETE_SERVER_CONFIG("Incomplete server configuration. Required parameters must not be blank: serverId, serverUrl, token"),
+    INCOMPLETE_BINDING("Incomplete binding configuration. Required parameters must not be blank: serverId, projectKey"),
+    INVALID_BINDING_SERVER("Invalid binding: the specified serverId doesn't exist"),
+    ANALYSIS_FAILED("Analysis failed");
 
-    private final String message;
+    final String message;
 
-    MessageType(String message) {
+    ErrorType(String message) {
       this.message = message;
     }
-  }
-
-  public void warn(MessageType messageType) {
-    warn(messageType.message);
-  }
-
-  public void info(String message) {
 
   }
+  void error(ErrorType errorType);
 
-  public void warn(String message) {
+  void error(ErrorType errorType, String message);
 
-  }
+  void error(String message, Throwable t);
 
-  public void error(String message, Exception e) {
-  }
+  void warn(String message);
+
+  void debug(String message);
+
 }

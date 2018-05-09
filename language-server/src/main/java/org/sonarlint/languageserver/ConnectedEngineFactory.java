@@ -33,11 +33,11 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 class ConnectedEngineFactory {
 
   private final LogOutput logOutput;
-  private final Logger logger;
+  private final ClientLogger logger;
 
   private final Map<String, String> extraProperties = new HashMap<>();
 
-  ConnectedEngineFactory(LogOutput logOutput, Logger logger) {
+  ConnectedEngineFactory(LogOutput logOutput, ClientLogger logger) {
     this.logOutput = logOutput;
     this.logger = logger;
   }
@@ -45,7 +45,7 @@ class ConnectedEngineFactory {
   @CheckForNull
   ConnectedSonarLintEngine create(ServerInfo serverInfo) {
     String serverId = serverInfo.serverId;
-    logger.info("Starting connected SonarLint engine for " + serverId + "...");
+    logger.debug("Starting connected SonarLint engine for " + serverId + "...");
 
     try {
       ConnectedGlobalConfiguration configuration = ConnectedGlobalConfiguration.builder()
@@ -56,7 +56,7 @@ class ConnectedEngineFactory {
 
       ConnectedSonarLintEngineImpl engine = new ConnectedSonarLintEngineImpl(configuration);
 
-      logger.info("Connected SonarLint engine started for " + serverId);
+      logger.debug("Connected SonarLint engine started for " + serverId);
 
       return engine;
     } catch (Exception e) {

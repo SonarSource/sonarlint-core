@@ -34,19 +34,19 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 class StandaloneEngineFactory {
   private final Collection<URL> analyzers;
   private final LogOutput logOutput;
-  private final Logger logger;
+  private final ClientLogger logger;
 
   private final Map<String, String> extraProperties = new HashMap<>();
 
-  StandaloneEngineFactory(Collection<URL> analyzers, LogOutput logOutput, Logger logger) {
+  StandaloneEngineFactory(Collection<URL> analyzers, LogOutput logOutput, ClientLogger logger) {
     this.analyzers = analyzers;
     this.logOutput = logOutput;
     this.logger = logger;
   }
 
   StandaloneSonarLintEngine create() {
-    logger.info("Starting standalone SonarLint engine...");
-    logger.info("Using " + analyzers.size() + " analyzers");
+    logger.debug("Starting standalone SonarLint engine...");
+    logger.debug("Using " + analyzers.size() + " analyzers");
 
     try {
       StandaloneGlobalConfiguration configuration = StandaloneGlobalConfiguration.builder()
@@ -56,7 +56,7 @@ class StandaloneEngineFactory {
         .build();
 
       StandaloneSonarLintEngine engine = new StandaloneSonarLintEngineImpl(configuration);
-      logger.info("Standalone SonarLint engine started");
+      logger.debug("Standalone SonarLint engine started");
       return engine;
     } catch (Exception e) {
       logger.error("Error starting standalone SonarLint engine", e);

@@ -28,7 +28,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.IllegalSelectorException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
@@ -111,10 +111,11 @@ public class SonarLintLanguageServerTest {
 
   @Test
   public void makeQualityGateHappy() {
-    BiFunction<LanguageClientLogOutput, Logger, EngineCache> factory = (a, b) -> mock(EngineCache.class);
-    SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(), factory);
-    server.error("Foo", new IllegalSelectorException());
-    server.warn("Foo");
+    BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory = (a, b) -> mock(EngineCache.class);
+    Function<SonarLintLanguageClient, ClientLogger> loggerFactory = client -> new FakeClientLogger();
+    SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(),
+      engineCacheFactory, loggerFactory);
+
     assertThat(server.getTextDocumentService().codeLens(null)).isNull();
     assertThat(server.getTextDocumentService().completion(null)).isNull();
     assertThat(server.getTextDocumentService().definition(null)).isNull();
@@ -380,10 +381,10 @@ public class SonarLintLanguageServerTest {
 
       tester.setInitialServers(serverConfig);
       tester.initialize();
-      assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_INCOMPLETE_SERVER_CONFIG);
+      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
 
       tester.updateServers(serverConfig);
-      assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_INCOMPLETE_SERVER_CONFIG, Logger.MessageType.ERR_INCOMPLETE_SERVER_CONFIG);
+      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG, ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
     }
   }
 
@@ -401,10 +402,10 @@ public class SonarLintLanguageServerTest {
 
       tester.setInitialBinding(binding);
       tester.initialize();
-      assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_INCOMPLETE_BINDING);
+      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_BINDING);
 
       tester.updateBinding(binding);
-      assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_INCOMPLETE_BINDING, Logger.MessageType.ERR_INCOMPLETE_BINDING);
+      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_BINDING, ClientLogger.ErrorType.INCOMPLETE_BINDING);
     }
   }
 
@@ -419,10 +420,10 @@ public class SonarLintLanguageServerTest {
 
     tester.setInitialBinding(binding);
     tester.initialize();
-    assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_INVALID_BINDING_SERVER);
+    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER);
 
     tester.updateBinding(binding);
-    assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_INVALID_BINDING_SERVER, Logger.MessageType.ERR_INVALID_BINDING_SERVER);
+    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER, ClientLogger.ErrorType.INVALID_BINDING_SERVER);
   }
 
   @Test
@@ -536,7 +537,7 @@ public class SonarLintLanguageServerTest {
     tester.setEngine(serverId, engine);
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isFalse();
-    assertThat(tester.logs()).containsExactly(Logger.MessageType.ERR_ANALYSIS_FAILED);
+    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.ANALYSIS_FAILED);
     verify(engine, times(1)).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
   }
@@ -571,12 +572,29 @@ public class SonarLintLanguageServerTest {
   /**
    * Tracks the message types received during processing.
    */
-  static class FakeLogger extends Logger {
-    List<MessageType> logs = new ArrayList<>();
+  static class FakeClientLogger implements ClientLogger {
+    List<ErrorType> logs = new ArrayList<>();
 
     @Override
-    public void warn(MessageType messageType) {
-      logs.add(messageType);
+    public void error(ErrorType errorType) {
+      logs.add(errorType);
+    }
+
+    @Override
+    public void error(ErrorType errorType, String message) {
+      logs.add(errorType);
+    }
+
+    @Override
+    public void error(String message, Throwable t) {
+    }
+
+    @Override
+    public void warn(String message) {
+    }
+
+    @Override
+    public void debug(String message) {
     }
   }
 
@@ -634,7 +652,7 @@ public class SonarLintLanguageServerTest {
     private final TemporaryFolder temporaryFolder;
 
     private final FakeEngineCache fakeEngineCache = new FakeEngineCache();
-    private final FakeLogger fakeLogger = new FakeLogger();
+    private final FakeClientLogger fakeLogger = new FakeClientLogger();
 
     private final SonarLintLanguageServer languageServer;
 
@@ -685,7 +703,7 @@ public class SonarLintLanguageServerTest {
       return success;
     }
 
-    List<Logger.MessageType> logs() {
+    List<ClientLogger.ErrorType> logs() {
       return fakeLogger.logs;
     }
 
@@ -743,7 +761,7 @@ public class SonarLintLanguageServerTest {
       fakeLogger.logs.clear();
     }
 
-    public void setEngine(String serverId, ConnectedSonarLintEngine engine) {
+    void setEngine(String serverId, ConnectedSonarLintEngine engine) {
       fakeEngineCache.setEngine(serverId, engine);
     }
   }
@@ -766,13 +784,13 @@ public class SonarLintLanguageServerTest {
   }
 
   private static SonarLintLanguageServer newLanguageServer() {
-    return newLanguageServer(new FakeEngineCache(), new Logger());
+    return newLanguageServer(new FakeEngineCache(), new FakeClientLogger());
   }
 
-  private static SonarLintLanguageServer newLanguageServer(EngineCache engineCache, Logger logger) {
+  private static SonarLintLanguageServer newLanguageServer(EngineCache engineCache, ClientLogger logger) {
     NullInputStream input = new NullInputStream(1000);
     NullOutputStream output = new NullOutputStream();
-    return new SonarLintLanguageServer(input, output, (a, b) -> engineCache, logger);
+    return new SonarLintLanguageServer(input, output, (a, b) -> engineCache, c -> logger);
   }
 
   private static WorkspaceFolder mockWorkspaceFolder(String path) {

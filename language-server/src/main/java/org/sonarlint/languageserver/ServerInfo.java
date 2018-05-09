@@ -31,10 +31,6 @@ class ServerInfo {
   @Nullable
   final String organizationKey;
 
-  ServerInfo(String serverId, String serverUrl, String token) {
-    this(serverId, serverUrl, token, null);
-  }
-
   ServerInfo(String serverId, String serverUrl, String token, @Nullable String organizationKey) {
     this.serverId = serverId;
     this.serverUrl = serverUrl;

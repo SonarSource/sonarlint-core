@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -47,6 +46,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -77,8 +77,6 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.MessageParams;
-import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -146,7 +144,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private final SonarLintLanguageClient client;
   private final Future<?> backgroundProcess;
   private final LanguageClientLogOutput logOutput;
-  private final Logger logger;
+  private final ClientLogger logger;
 
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
@@ -163,13 +161,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private boolean shouldIncludeRuleDetailsInCodeAction;
 
   SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
-    BiFunction<LanguageClientLogOutput, Logger, EngineCache> engineCacheFactory) {
-    this(inputStream, outputStream, engineCacheFactory, new Logger());
-  }
-
-  SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
-    BiFunction<LanguageClientLogOutput, Logger, EngineCache> engineCacheFactory,
-    Logger logger) {
+    BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory,
+    Function<SonarLintLanguageClient, ClientLogger> loggerFactory) {
     Launcher<SonarLintLanguageClient> launcher = Launcher.createLauncher(this,
       SonarLintLanguageClient.class,
       inputStream,
@@ -181,19 +174,23 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     backgroundProcess = launcher.startListening();
 
-    this.logger = logger;
+    this.logger = loggerFactory.apply(this.client);
     this.engineCache = engineCacheFactory.apply(logOutput, logger);
     this.serverInfoCache = new ServerInfoCache(logger);
   }
 
   static SonarLintLanguageServer bySocket(int port, Collection<URL> analyzers) throws IOException {
     Socket socket = new Socket("localhost", port);
-    BiFunction<LanguageClientLogOutput, Logger, EngineCache> factory = (logOutput, logger) -> {
+
+    BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory = (logOutput, logger) -> {
       StandaloneEngineFactory standaloneEngineFactory = new StandaloneEngineFactory(analyzers, logOutput, logger);
       ConnectedEngineFactory connectedEngineFactory = new ConnectedEngineFactory(logOutput, logger);
       return new DefaultEngineCache(standaloneEngineFactory, connectedEngineFactory);
     };
-    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), factory);
+
+    Function<SonarLintLanguageClient, ClientLogger> loggerFactory = client -> new DefaultClientLogger(client);
+
+    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), engineCacheFactory, loggerFactory);
   }
 
   private class UserSettings {
@@ -219,29 +216,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       }
       return map;
     }
-  }
-
-  private void debug(String message) {
-    client.logMessage(new MessageParams(MessageType.Log, message));
-  }
-
-  private void info(String message) {
-    client.logMessage(new MessageParams(MessageType.Info, message));
-  }
-
-  void warn(String message) {
-    client.logMessage(new MessageParams(MessageType.Warning, message));
-  }
-
-  void error(String message, Throwable t) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    t.printStackTrace(pw);
-    client.logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString()));
-  }
-
-  private void popupError(String message) {
-    client.showMessage(new MessageParams(MessageType.Error, message));
   }
 
   @Override
@@ -310,7 +284,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     serverInfoCache.forEach((serverId, serverInfo) -> {
       ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
       if (engine == null) {
-        popupError("Could not start server: " + serverId);
+        logger.warn("Could not start server: " + serverId);
       } else {
         updateServerStorage(engine, serverInfo);
       }
@@ -319,13 +293,13 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private void updateServerStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
     String serverId = serverInfo.serverId;
-    debug("Updating global storage of server " + serverId + ", may take some time...");
+    logger.debug("Updating global storage of server " + serverId + ", may take some time...");
     ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     engine.update(serverConfig, null);
-    debug("Successfully updated global storage of server " + serverId);
+    logger.debug("Successfully updated global storage of server " + serverId);
   }
 
-  private ServerConfiguration getServerConfiguration(ServerInfo serverInfo) {
+  private static ServerConfiguration getServerConfiguration(ServerInfo serverInfo) {
     return ServerConfiguration.builder()
       .url(serverInfo.serverUrl)
       .token(serverInfo.token)
@@ -344,13 +318,13 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     String serverId = map.get("serverId");
     String projectKey = map.get("projectKey");
     if (isBlank(serverId) || isBlank(projectKey)) {
-      logger.warn(Logger.MessageType.ERR_INCOMPLETE_BINDING);
+      logger.error(ClientLogger.ErrorType.INCOMPLETE_BINDING);
       return;
     }
 
     ServerInfo serverInfo = serverInfoCache.get(serverId);
     if (serverInfo == null) {
-      logger.warn(Logger.MessageType.ERR_INVALID_BINDING_SERVER);
+      logger.error(ClientLogger.ErrorType.INVALID_BINDING_SERVER);
       return;
     }
 
@@ -377,7 +351,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     try {
       engine.updateModule(serverConfig, binding.projectKey, null);
     } catch (Exception e) {
-      popupError(e.getMessage());
+      logger.warn(e.getMessage());
     }
   }
 
@@ -568,7 +542,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @VisibleForTesting
   void analyze(URI uri, String content) {
     if (!uri.toString().startsWith("file:/")) {
-      warn("URI is not a file, analysis not supported");
+      logger.warn("URI is not a file, analysis not supported");
       return;
     }
 
@@ -594,8 +568,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       analysisResults.results.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
       files.values().forEach(client::publishDiagnostics);
     } catch (Exception e) {
-      logger.warn(Logger.MessageType.ERR_ANALYSIS_FAILED);
-      popupError(e.getMessage());
+      logger.error(ClientLogger.ErrorType.ANALYSIS_FAILED, e.getMessage());
     }
   }
 
@@ -634,7 +607,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
         Collections.singletonList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
         userSettings.analyzerProperties);
-      debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
+      logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
       long start = System.currentTimeMillis();
       StandaloneSonarLintEngine engine = engineCache.getOrCreateStandaloneEngine();
@@ -660,7 +633,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       ConnectedAnalysisConfiguration configuration = new ConnectedAnalysisConfiguration(projectKey, baseDir, baseDir.resolve(".sonarlint"),
         Collections.singletonList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
         userSettings.analyzerProperties);
-      debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
+      logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
       long start = System.currentTimeMillis();
       AnalysisResults analysisResults;
@@ -767,7 +740,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           break;
         }
         if (args.size() != 1) {
-          warn("Expecting 1 argument");
+          logger.warn("Expecting 1 argument");
         } else {
           String ruleKey = parseToString(args.get(0));
           RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
@@ -788,7 +761,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         updateBindingStorage();
         break;
       default:
-        warn("Unimplemented command: " + params.getCommand());
+        logger.warn("Unimplemented command: " + params.getCommand());
     }
     return CompletableFuture.completedFuture(new Object());
   }

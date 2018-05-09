@@ -32,11 +32,11 @@ import static org.apache.commons.lang.StringUtils.isBlank;
  */
 class ServerInfoCache {
 
-  private final Logger logger;
+  private final ClientLogger logger;
 
   private Map<String, ServerInfo> cache = new HashMap<>();
 
-  ServerInfoCache(Logger logger) {
+  ServerInfoCache(ClientLogger logger) {
     this.logger = logger;
   }
 
@@ -60,7 +60,7 @@ class ServerInfoCache {
       if (!isBlank(serverId) && !isBlank(url) && !isBlank(token)) {
         cache.put(serverId, new ServerInfo(serverId, url, token, organization));
       } else {
-        logger.warn(Logger.MessageType.ERR_INCOMPLETE_SERVER_CONFIG);
+        logger.error(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
       }
     });
   }
