@@ -19,36 +19,34 @@
  */
 package org.sonarlint.languageserver;
 
-import org.eclipse.lsp4j.MessageParams;
-import org.eclipse.lsp4j.MessageType;
-import org.eclipse.lsp4j.services.LanguageClient;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+public class Logger {
 
-class LanguageClientLogOutput implements LogOutput {
+  enum MessageType {
+    ERR_INCOMPLETE_SERVER_CONFIG("Incomplete server configuration. Required parameters must not be blank: serverId, serverUrl, token"),
+    ERR_INCOMPLETE_BINDING("Incomplete binding configuration. Required parameters must not be blank: serverId, projectKey"),
+    ERR_INVALID_BINDING_SERVER("Invalid binding: the specified serverId doesn't exist"),
+    ERR_ANALYSIS_FAILED("Analysis failed")
+    ;
 
-  private final LanguageClient client;
+    private final String message;
 
-  LanguageClientLogOutput(LanguageClient client) {
-    this.client = client;
-  }
-
-  @Override
-  public void log(String formattedMessage, Level level) {
-    client.logMessage(new MessageParams(messageType(level), formattedMessage));
-  }
-
-  static MessageType messageType(Level level) {
-    switch (level) {
-      case ERROR:
-        return MessageType.Error;
-      case WARN:
-        return MessageType.Warning;
-      case INFO:
-        return MessageType.Info;
-      case DEBUG:
-      case TRACE:
-        return MessageType.Log;
+    MessageType(String message) {
+      this.message = message;
     }
-    throw new IllegalStateException("Unexpected level: " + level);
+  }
+
+  public void warn(MessageType messageType) {
+    warn(messageType.message);
+  }
+
+  public void info(String message) {
+
+  }
+
+  public void warn(String message) {
+
+  }
+
+  public void error(String message, Exception e) {
   }
 }
