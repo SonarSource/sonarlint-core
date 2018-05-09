@@ -188,12 +188,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       return new DefaultEngineCache(standaloneEngineFactory, connectedEngineFactory);
     };
 
-    Function<SonarLintLanguageClient, ClientLogger> loggerFactory = client -> new DefaultClientLogger(client);
+    Function<SonarLintLanguageClient, ClientLogger> loggerFactory = DefaultClientLogger::new;
 
     return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), engineCacheFactory, loggerFactory);
   }
 
-  private class UserSettings {
+  private static class UserSettings {
     @CheckForNull
     final String testFilePattern;
     final Map<String, String> analyzerProperties;
