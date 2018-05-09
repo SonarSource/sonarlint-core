@@ -36,7 +36,7 @@ interface ClientLogger {
   }
   void error(ErrorType errorType);
 
-  void error(ErrorType errorType, String message);
+  void error(ErrorType errorType, Throwable t);
 
   void error(String message, Throwable t);
 

@@ -566,10 +566,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
       // Ignore files with parsing error
       analysisResults.results.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).forEach(files::remove);
-      files.values().forEach(client::publishDiagnostics);
     } catch (Exception e) {
-      logger.error(ClientLogger.ErrorType.ANALYSIS_FAILED, e.getMessage());
+      logger.error(ClientLogger.ErrorType.ANALYSIS_FAILED, e);
     }
+    files.values().forEach(client::publishDiagnostics);
   }
 
   private AnalysisWrapper getAnalysisWrapper() {

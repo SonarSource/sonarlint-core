@@ -581,8 +581,8 @@ public class SonarLintLanguageServerTest {
     }
 
     @Override
-    public void error(ErrorType errorType, String message) {
-      logs.add(errorType);
+    public void error(ErrorType errorType, Throwable t) {
+      this.error(errorType);
     }
 
     @Override

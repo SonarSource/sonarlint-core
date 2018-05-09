@@ -38,8 +38,8 @@ class DefaultClientLogger implements ClientLogger {
   }
 
   @Override
-  public void error(ErrorType errorType, String message) {
-    client.logMessage(new MessageParams(MessageType.Error, errorType.message + " - " + message));
+  public void error(ErrorType errorType, Throwable t) {
+    this.error(errorType.message, t);
   }
 
   @Override
