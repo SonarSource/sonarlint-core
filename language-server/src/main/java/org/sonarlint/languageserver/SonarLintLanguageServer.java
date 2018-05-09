@@ -209,7 +209,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
     }
 
-    private Map<String, String> getAnalyzerProperties(Map<String, Object> params) {
+    private static Map<String, String> getAnalyzerProperties(Map<String, Object> params) {
       Map map = (Map) params.get(ANALYZER_PROPERTIES);
       if (map == null) {
         return Collections.emptyMap();
