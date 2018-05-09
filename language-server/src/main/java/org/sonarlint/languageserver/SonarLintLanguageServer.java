@@ -448,10 +448,13 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     for (Diagnostic d : params.getContext().getDiagnostics()) {
       if (SONARLINT_SOURCE.equals(d.getSource())) {
         String ruleKey = d.getCode();
-        commands.add(
-          new Command("Open description of rule " + ruleKey,
-            SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
-            getOpenRuleDescriptionParams(ruleKey)));
+        List<Object> ruleDescriptionParams = getOpenRuleDescriptionParams(ruleKey);
+        if (!ruleDescriptionParams.isEmpty()) {
+          commands.add(
+            new Command("Open description of rule " + ruleKey,
+              SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
+              ruleDescriptionParams));
+        }
       }
     }
     return CompletableFuture.completedFuture(commands);
@@ -461,7 +464,19 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     if (!shouldIncludeRuleDetailsInCodeAction) {
       return Collections.singletonList(ruleKey);
     }
-    RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
+
+    RuleDetails ruleDetails;
+    if (binding == null) {
+      ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
+    } else {
+      ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
+      ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
+      if (engine != null) {
+        ruleDetails = engine.getRuleDetails(ruleKey);
+      } else {
+        return Collections.emptyList();
+      }
+    }
     String ruleName = ruleDetails.getName();
     String htmlDescription = ruleDetails.getHtmlDescription();
     String type = ruleDetails.getType();
@@ -743,6 +758,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           logger.warn("Expecting 1 argument");
         } else {
           String ruleKey = parseToString(args.get(0));
+          // TODO use the correct engine (currently only Atom reaches this code, and it doesn't have connected mode, yet)
           RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
           String ruleName = ruleDetails.getName();
           String htmlDescription = ruleDetails.getHtmlDescription();
