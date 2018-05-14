@@ -19,36 +19,22 @@
  */
 package org.sonarlint.languageserver;
 
-import org.eclipse.lsp4j.MessageParams;
-import org.eclipse.lsp4j.MessageType;
-import org.eclipse.lsp4j.services.LanguageClient;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
-class LanguageClientLogOutput implements LogOutput {
+@Immutable
+class ServerInfo {
+  final String serverId;
+  final String serverUrl;
+  final String token;
 
-  private final LanguageClient client;
+  @Nullable
+  final String organizationKey;
 
-  LanguageClientLogOutput(LanguageClient client) {
-    this.client = client;
-  }
-
-  @Override
-  public void log(String formattedMessage, Level level) {
-    client.logMessage(new MessageParams(messageType(level), formattedMessage));
-  }
-
-  static MessageType messageType(Level level) {
-    switch (level) {
-      case ERROR:
-        return MessageType.Error;
-      case WARN:
-        return MessageType.Warning;
-      case INFO:
-        return MessageType.Info;
-      case DEBUG:
-      case TRACE:
-        return MessageType.Log;
-    }
-    throw new IllegalStateException("Unexpected level: " + level);
+  ServerInfo(String serverId, String serverUrl, String token, @Nullable String organizationKey) {
+    this.serverId = serverId;
+    this.serverUrl = serverUrl;
+    this.token = token;
+    this.organizationKey = organizationKey;
   }
 }

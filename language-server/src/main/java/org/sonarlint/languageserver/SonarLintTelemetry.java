@@ -116,7 +116,7 @@ public class SonarLintTelemetry {
       telemetry.analysisDoneOnMultipleFiles();
     }
   }
-  
+
   public void analysisDoneOnSingleFile(@Nullable String fileExtension, int analysisTimeMs) {
     if (enabled()) {
       telemetry.analysisDoneOnSingleFile(fileExtension, analysisTimeMs);
