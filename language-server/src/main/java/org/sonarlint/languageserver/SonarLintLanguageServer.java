@@ -652,7 +652,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         userSettings.analyzerProperties);
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
-      IssueCollector collector = new IssueCollector();
+      List<Issue> issues = new LinkedList<>();
+      IssueListener collector = issues::add;
       ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
 
       long start = System.currentTimeMillis();
@@ -669,7 +670,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       }
 
       new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, baseDir, new ServerIssueTrackingLogger())
-        .matchAndTrack(collector.issues)
+        .matchAndTrack(issues)
         .forEach(issueListener::handle);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
@@ -677,17 +678,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       return new AnalysisResultsWrapper(analysisResults, analysisTime);
     }
 
-    private AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueCollector collector) {
-      return engine.analyze(configuration, collector, logOutput, null);
-    }
-  }
-
-  static class IssueCollector implements IssueListener {
-    final List<Issue> issues = new LinkedList<>();
-
-    @Override
-    public void handle(Issue issue) {
-      issues.add(issue);
+    private AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
+      return engine.analyze(configuration, issueListener, logOutput, null);
     }
   }
 
