@@ -49,8 +49,7 @@ class ServerIssueTracker {
   private final Path baseDir;
   private final Logger logger;
 
-  ServerIssueTracker(ConnectedSonarLintEngine engine, ServerConfiguration serverConfiguration,
-    String moduleKey, Path baseDir, org.sonarsource.sonarlint.core.tracking.Logger logger) {
+  ServerIssueTracker(ConnectedSonarLintEngine engine, ServerConfiguration serverConfiguration, String moduleKey, Path baseDir, Logger logger) {
     this.engine = engine;
     this.serverConfiguration = serverConfiguration;
     this.moduleKey = moduleKey;
@@ -66,8 +65,21 @@ class ServerIssueTracker {
     Map<String, List<Trackable>> trackablesPerFile = getTrackablesPerFile(baseDir, issuesWithFile);
     IssueTrackerCache cache = createCurrentIssueTrackerCache(relativePaths, trackablesPerFile);
 
-    return getCurrentTrackables(relativePaths, cache)
-      .stream()
+    return getCurrentIssues(relativePaths, cache);
+  }
+
+  private IssueTrackerCache createCurrentIssueTrackerCache(Collection<String> relativePaths, Map<String, List<Trackable>> trackablesPerFile) {
+    IssueTrackerCache cache = new InMemoryIssueTrackerCache();
+    CachingIssueTracker issueTracker = new CachingIssueTrackerImpl(cache);
+    trackablesPerFile.forEach(issueTracker::matchAndTrackAsNew);
+    org.sonarsource.sonarlint.core.tracking.ServerIssueTracker serverIssueTracker = new org.sonarsource.sonarlint.core.tracking.ServerIssueTracker(logger, issueTracker);
+    serverIssueTracker.update(engine, moduleKey, relativePaths);
+    return cache;
+  }
+
+  private static Collection<Issue> getCurrentIssues(Collection<String> relativePaths, IssueTrackerCache cache) {
+    return relativePaths.stream().flatMap(f -> cache.getCurrentTrackables(f).stream())
+      .filter(trackable -> !trackable.isResolved())
       .map(trackable -> new DelegatingIssue(trackable.getIssue()) {
         @Override
         public String getSeverity() {
@@ -80,21 +92,6 @@ class ServerIssueTracker {
           return trackable.getType();
         }
       }).collect(Collectors.toList());
-  }
-
-  private IssueTrackerCache createCurrentIssueTrackerCache(Collection<String> relativePaths, Map<String, List<Trackable>> trackablesPerFile) {
-    IssueTrackerCache cache = new InMemoryIssueTrackerCache();
-    CachingIssueTracker issueTracker = new CachingIssueTrackerImpl(cache);
-    trackablesPerFile.forEach(issueTracker::matchAndTrackAsNew);
-    org.sonarsource.sonarlint.core.tracking.ServerIssueTracker serverIssueTracker = new org.sonarsource.sonarlint.core.tracking.ServerIssueTracker(logger, issueTracker);
-    serverIssueTracker.update(engine, moduleKey, relativePaths);
-    return cache;
-  }
-
-  private static List<Trackable> getCurrentTrackables(Collection<String> relativePaths, IssueTrackerCache cache) {
-    return relativePaths.stream().flatMap(f -> cache.getCurrentTrackables(f).stream())
-      .filter(trackable -> !trackable.isResolved())
-      .collect(Collectors.toList());
   }
 
   private static Map<String, List<Trackable>> getTrackablesPerFile(Path baseDirPath, Collection<Issue> issues) {
@@ -124,5 +121,4 @@ class ServerIssueTracker {
 
     return toSonarQubePath(baseDirPath.relativize(Paths.get(inputFile.getPath())).toString());
   }
-
 }
