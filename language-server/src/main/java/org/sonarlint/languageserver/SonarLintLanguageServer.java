@@ -712,7 +712,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     IssueTrackerCache cache = new InMemoryIssueTrackerCache();
     CachingIssueTracker issueTracker = new CachingIssueTrackerImpl(cache);
     trackablesPerFile.forEach(issueTracker::matchAndTrackAsNew);
-    ServerIssueTracker serverIssueTracker = new ServerIssueTracker(new MyLogger(), new MyConsole(), issueTracker);
+    ServerIssueTracker serverIssueTracker = new ServerIssueTracker(new MyLogger(), issueTracker);
     serverIssueTracker.update(engine, moduleKey, relativePaths);
     return cache;
   }
@@ -763,16 +763,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     @Override public void debug(String message) {
       logger.debug(message);
-    }
-  }
-
-  private class MyConsole implements Console {
-    @Override public void info(String message) {
-      // logger.debug(message);
-    }
-
-    @Override public void error(String message, Throwable t) {
-      // logger.error(message, t);
     }
   }
 

@@ -31,12 +31,10 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 public class ServerIssueTracker {
 
   private final Logger logger;
-  private final Console console;
   private final CachingIssueTracker issueTracker;
 
-  public ServerIssueTracker(Logger logger, Console console, CachingIssueTracker issueTracker) {
+  public ServerIssueTracker(Logger logger, CachingIssueTracker issueTracker) {
     this.logger = logger;
-    this.console = console;
     this.issueTracker = issueTracker;
   }
 
@@ -57,7 +55,6 @@ public class ServerIssueTracker {
       }
     } catch (Exception e) {
       String message = "error while fetching and matching server issues";
-      console.error(message, e);
       logger.error(message, e);
     }
   }
@@ -68,7 +65,6 @@ public class ServerIssueTracker {
       return engine.downloadServerIssues(serverConfiguration, moduleKey, fileKey);
     } catch (DownloadException e) {
       logger.debug("failed to download server issues", e);
-      console.info(e.getMessage());
       return engine.getServerIssues(moduleKey, fileKey);
     }
   }

@@ -37,7 +37,7 @@ public class ServerIssueTrackerTest {
     String filePath = "dummy file";
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
 
-    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
+    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(CachingIssueTracker.class));
     tracker.update(engine, moduleKey, Collections.singleton(filePath));
     verify(engine).getServerIssues(moduleKey, filePath);
     verifyNoMoreInteractions(engine);
@@ -50,7 +50,7 @@ public class ServerIssueTrackerTest {
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
 
-    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
+    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(CachingIssueTracker.class));
     tracker.update(serverConfiguration, engine, moduleKey, Collections.singleton(filePath));
     verify(engine).downloadServerIssues(serverConfiguration, moduleKey, filePath);
     verifyNoMoreInteractions(engine);
@@ -63,7 +63,7 @@ public class ServerIssueTrackerTest {
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
 
-    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(Console.class), mock(CachingIssueTracker.class));
+    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(CachingIssueTracker.class));
     when(engine.downloadServerIssues(serverConfiguration, moduleKey, filePath)).thenThrow(new DownloadException());
     tracker.update(serverConfiguration, engine, moduleKey, Collections.singleton(filePath));
     verify(engine).downloadServerIssues(serverConfiguration, moduleKey, filePath);
