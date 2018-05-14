@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -47,7 +46,7 @@ public class ServerIssueTrackerTest {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private static AtomicInteger counter = new AtomicInteger();
+  private static int counter = 1;
 
   @Test
   public void get_original_issues_when_there_are_no_server_issues() throws IOException {
@@ -142,11 +141,11 @@ public class ServerIssueTrackerTest {
 
     // basic setup to prevent NPEs
     when(issue.getInputFile()).thenReturn(mock(ClientInputFile.class));
-    when(issue.getMessage()).thenReturn("dummy message " + counter.incrementAndGet());
+    when(issue.getMessage()).thenReturn("dummy message " + (++counter));
 
     // make issue match by rule key + line + text range hash
-    when(issue.getRuleKey()).thenReturn("dummy ruleKey" + counter.incrementAndGet());
-    when(issue.getStartLine()).thenReturn(counter.incrementAndGet());
+    when(issue.getRuleKey()).thenReturn("dummy ruleKey" + (++counter));
+    when(issue.getStartLine()).thenReturn(++counter);
     return issue;
   }
 
@@ -155,9 +154,9 @@ public class ServerIssueTrackerTest {
     ServerIssue serverIssue = mock(ServerIssue.class);
 
     // basic setup to prevent NPEs
-    when(serverIssue.creationDate()).thenReturn(Instant.ofEpochMilli(counter.incrementAndGet()));
+    when(serverIssue.creationDate()).thenReturn(Instant.ofEpochMilli(++counter));
     when(serverIssue.resolution()).thenReturn("");
-    when(serverIssue.checksum()).thenReturn("dummy checksum " + counter.incrementAndGet());
+    when(serverIssue.checksum()).thenReturn("dummy checksum " + (++counter));
 
     // if issue itself is a mock, need to extract value to variable first
     // as Mockito doesn't handle nested mocking inside mocking
