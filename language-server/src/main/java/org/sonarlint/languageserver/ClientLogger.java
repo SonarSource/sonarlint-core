@@ -34,6 +34,7 @@ interface ClientLogger {
     }
 
   }
+
   void error(ErrorType errorType);
 
   void error(ErrorType errorType, Throwable t);

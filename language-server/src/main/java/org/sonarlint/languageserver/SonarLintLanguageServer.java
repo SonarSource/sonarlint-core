@@ -116,17 +116,8 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
-import org.sonarsource.sonarlint.core.tracking.CachingIssueTracker;
-import org.sonarsource.sonarlint.core.tracking.CachingIssueTrackerImpl;
-import org.sonarsource.sonarlint.core.tracking.Console;
-import org.sonarsource.sonarlint.core.tracking.InMemoryIssueTrackerCache;
-import org.sonarsource.sonarlint.core.tracking.IssueTrackable;
-import org.sonarsource.sonarlint.core.tracking.IssueTrackerCache;
-import org.sonarsource.sonarlint.core.tracking.ServerIssueTracker;
-import org.sonarsource.sonarlint.core.tracking.Trackable;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
@@ -677,9 +668,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         analysisResults = analyze(configuration, collector);
       }
 
-      engine.downloadServerIssues(getServerConfiguration(serverInfo), projectKey);
-      Collection<Trackable> trackables = matchAndTrack(engine, projectKey, baseDir, collector.issues);
-      trackables.forEach(trackable -> issueListener.handle(trackable.getIssue()));
+      new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, baseDir, new ServerIssueTrackingLogger())
+        .matchAndTrack(collector.issues)
+        .forEach(issueListener::handle);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
 
@@ -700,68 +691,19 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
   }
 
-  private Collection<Trackable> matchAndTrack(ConnectedSonarLintEngine engine, String moduleKey, Path baseDirPath, Collection<Issue> issues) {
-    Collection<Issue> issuesWithFile = issues.stream().filter(issue -> issue.getInputFile() != null).collect(Collectors.toList());
-    Collection<String> relativePaths = getRelativePaths(baseDirPath, issuesWithFile);
-    Map<String, List<Trackable>> trackablesPerFile = getTrackablesPerFile(baseDirPath, issuesWithFile);
-    IssueTrackerCache cache = createCurrentIssueTrackerCache(engine, moduleKey, relativePaths, trackablesPerFile);
-    return getCurrentTrackables(relativePaths, cache);
-  }
-
-  private IssueTrackerCache createCurrentIssueTrackerCache(ConnectedSonarLintEngine engine, String moduleKey, Collection<String> relativePaths, Map<String, List<Trackable>> trackablesPerFile) {
-    IssueTrackerCache cache = new InMemoryIssueTrackerCache();
-    CachingIssueTracker issueTracker = new CachingIssueTrackerImpl(cache);
-    trackablesPerFile.forEach(issueTracker::matchAndTrackAsNew);
-    ServerIssueTracker serverIssueTracker = new ServerIssueTracker(new MyLogger(), issueTracker);
-    serverIssueTracker.update(engine, moduleKey, relativePaths);
-    return cache;
-  }
-
-  private static List<Trackable> getCurrentTrackables(Collection<String> relativePaths, IssueTrackerCache cache) {
-    return relativePaths.stream().flatMap(f -> cache.getCurrentTrackables(f).stream())
-      .filter(trackable -> !trackable.isResolved())
-      .collect(Collectors.toList());
-  }
-
-  private Map<String, List<Trackable>> getTrackablesPerFile(Path baseDirPath, Collection<Issue> issues) {
-    return issues.stream()
-      .collect(Collectors.groupingBy(issue -> getRelativePath(baseDirPath, issue), Collectors.toList()))
-      .entrySet().stream()
-      .collect(Collectors.toMap(
-        Map.Entry::getKey,
-        entry -> entry.getValue().stream()
-          .map(IssueTrackable::new)
-          .collect(Collectors.toCollection(ArrayList::new))));
-  }
-
-  private Collection<String> getRelativePaths(Path baseDirPath, Collection<Issue> issues) {
-    return issues.stream()
-      .map(issue -> getRelativePath(baseDirPath, issue))
-      .collect(Collectors.toSet());
-  }
-
-  // note: engine.downloadServerIssues correctly figures out correct moduleKey and fileKey
-  @CheckForNull
-  private String getRelativePath(Path baseDirPath, Issue issue) {
-    ClientInputFile inputFile = issue.getInputFile();
-    if (inputFile == null) {
-      return null;
-    }
-
-    return toSonarQubePath(baseDirPath.relativize(Paths.get(inputFile.getPath())).toString());
-  }
-
-
-  private class MyLogger implements org.sonarsource.sonarlint.core.tracking.Logger {
-    @Override public void error(String message, Exception e) {
+  private class ServerIssueTrackingLogger implements org.sonarsource.sonarlint.core.tracking.Logger {
+    @Override
+    public void error(String message, Exception e) {
       logger.error(message, e);
     }
 
-    @Override public void debug(String message, Exception e) {
+    @Override
+    public void debug(String message, Exception e) {
       logger.debug(message);
     }
 
-    @Override public void debug(String message) {
+    @Override
+    public void debug(String message) {
       logger.debug(message);
     }
   }
