@@ -505,6 +505,7 @@ public class SonarLintLanguageServerTest {
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
     verify(engine).analyze(any(), any(), any(), any());
+    verify(engine).downloadServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -518,6 +519,7 @@ public class SonarLintLanguageServerTest {
     verify(engine).update(any(), any());
     verify(engine).updateModule(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
+    verify(engine).downloadServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -530,6 +532,7 @@ public class SonarLintLanguageServerTest {
     assertThat(tester.logs()).isEmpty();
     verify(engine).updateModule(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
+    verify(engine).downloadServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));

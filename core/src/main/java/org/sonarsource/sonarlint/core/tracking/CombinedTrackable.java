@@ -22,14 +22,14 @@ package org.sonarsource.sonarlint.core.tracking;
 /**
  * Combine a new Trackable ("next") with a previous state ("base")
  */
-public class CombinedTrackable extends AbstractTrackable {
+class CombinedTrackable extends AbstractTrackable {
   /**
    * Local issue tracking: base are existing issues, next are raw issues coming from the analysis. We don't want to inherit severity and type
    * so that latest analysis always overrides them.
    * Server issue tracking: base are server issues, next are the existing issue, coming from local issue tracking. We want to inherit severity and type
    * so that the server issues override analyzers.
    */
-  public CombinedTrackable(Trackable base, Trackable next, boolean inheritSeverity) {
+  CombinedTrackable(Trackable base, Trackable next, boolean inheritSeverity) {
     super(next);
 
     // Warning: do not store a reference to base, as it might never get garbage collected

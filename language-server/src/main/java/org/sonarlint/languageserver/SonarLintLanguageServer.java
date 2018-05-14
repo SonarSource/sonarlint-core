@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -584,6 +585,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     } catch (Exception e) {
       logger.error(ClientLogger.ErrorType.ANALYSIS_FAILED, e);
     }
+
     files.values().forEach(client::publishDiagnostics);
   }
 
@@ -650,23 +652,51 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         userSettings.analyzerProperties);
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
+      List<Issue> issues = new LinkedList<>();
+      IssueListener collector = issues::add;
+      ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
+
       long start = System.currentTimeMillis();
       AnalysisResults analysisResults;
       try {
-        analysisResults = engine.analyze(configuration, issueListener, logOutput, null);
+        analysisResults = analyze(configuration, collector);
       } catch (GlobalUpdateRequiredException e) {
-        ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
         updateServerStorage(engine, serverInfo);
         updateModuleStorage(engine, serverInfo);
-        analysisResults = engine.analyze(configuration, issueListener, logOutput, null);
+        analysisResults = analyze(configuration, collector);
       } catch (StorageException e) {
-        ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
         updateModuleStorage(engine, serverInfo);
-        analysisResults = engine.analyze(configuration, issueListener, logOutput, null);
+        analysisResults = analyze(configuration, collector);
       }
+
+      new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, baseDir, new ServerIssueTrackingLogger())
+        .matchAndTrack(issues)
+        .forEach(issueListener::handle);
+
       int analysisTime = (int) (System.currentTimeMillis() - start);
 
       return new AnalysisResultsWrapper(analysisResults, analysisTime);
+    }
+
+    private AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
+      return engine.analyze(configuration, issueListener, logOutput, null);
+    }
+  }
+
+  private class ServerIssueTrackingLogger implements org.sonarsource.sonarlint.core.tracking.Logger {
+    @Override
+    public void error(String message, Exception e) {
+      logger.error(message, e);
+    }
+
+    @Override
+    public void debug(String message, Exception e) {
+      logger.debug(message);
+    }
+
+    @Override
+    public void debug(String message) {
+      logger.debug(message);
     }
   }
 
