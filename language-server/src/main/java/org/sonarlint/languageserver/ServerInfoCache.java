@@ -34,7 +34,7 @@ class ServerInfoCache {
 
   private final ClientLogger logger;
 
-  private Map<String, ServerInfo> cache = new HashMap<>();
+  private final Map<String, ServerInfo> cache = new HashMap<>();
 
   ServerInfoCache(ClientLogger logger) {
     this.logger = logger;
