@@ -19,7 +19,6 @@
  */
 package org.sonarlint.languageserver;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -355,7 +354,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
   }
 
-  @VisibleForTesting
+  // visible for testing
   static List<String> parseWorkspaceFolders(@Nullable List<WorkspaceFolder> workspaceFolders, @Nullable String rootUri) {
     if (workspaceFolders != null && !workspaceFolders.isEmpty()) {
       return toList(workspaceFolders);
@@ -373,7 +372,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return workspaceFolders.stream().map(f -> f.getUri().replaceAll("^file://", "")).collect(Collectors.toList());
   }
 
-  @VisibleForTesting
+  // visible for testing
   static Path getStoragePath(@Nullable String productKey, @Nullable String telemetryStorage) {
     if (productKey != null) {
       if (telemetryStorage != null) {
@@ -554,7 +553,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return uri;
   }
 
-  @VisibleForTesting
+  // visible for testing
   void analyze(URI uri, String content) {
     if (!uri.toString().startsWith("file:/")) {
       logger.warn("URI is not a file, analysis not supported");
@@ -699,12 +698,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
   }
 
-  @VisibleForTesting
+  // visible for testing
   Path findBaseDir(URI uri) {
     return findBaseDir(workspaceFolders, uri);
   }
 
-  @VisibleForTesting
+  // visible for testing
   static Path findBaseDir(List<String> workspaceFolders, URI uri) {
     Path inputFilePath = Paths.get(uri);
     if (!workspaceFolders.isEmpty()) {
