@@ -138,7 +138,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   static final String SONARLINT_UPDATE_SERVER_STORAGE_COMMAND = "SonarLint.UpdateServerStorage";
   static final String SONARLINT_UPDATE_PROJECT_BINDING_COMMAND = "SonarLint.UpdateProjectBinding";
   private static final List<String> SONARLINT_COMMANDS = Arrays.asList(
-    SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
     SONARLINT_UPDATE_SERVER_STORAGE_COMMAND,
     SONARLINT_UPDATE_PROJECT_BINDING_COMMAND);
 
