@@ -19,7 +19,6 @@
  */
 package org.sonarlint.languageserver;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
@@ -70,7 +69,7 @@ class ConnectedEngineFactory {
     extraProperties.put(name, value);
   }
 
-  @VisibleForTesting
+  // visible for testing
   ConnectedSonarLintEngine createEngine(ConnectedGlobalConfiguration configuration) {
     return new ConnectedSonarLintEngineImpl(configuration);
   }
