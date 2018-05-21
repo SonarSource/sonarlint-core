@@ -19,18 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +37,14 @@ import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class PluginReferencesDownloaderTest {
   private PluginCache pluginCache;
@@ -73,7 +73,7 @@ public class PluginReferencesDownloaderTest {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    pluginUpdate.fetchPluginsTo(dest, pluginList);
+    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(
@@ -104,7 +104,7 @@ public class PluginReferencesDownloaderTest {
     java.minimumVersion("3.13");
     pluginList.add(java);
 
-    pluginUpdate.fetchPluginsTo(dest, pluginList);
+    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(
@@ -123,7 +123,7 @@ public class PluginReferencesDownloaderTest {
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
     PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
-    pluginUpdate.fetchPluginsTo(dest, pluginList);
+    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
