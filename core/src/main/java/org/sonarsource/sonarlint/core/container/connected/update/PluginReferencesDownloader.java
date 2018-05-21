@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
-
 import javax.annotation.Nullable;
-
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +36,10 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
+
+import static java.lang.String.format;
 
 public class PluginReferencesDownloader {
 
@@ -82,9 +81,12 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public PluginReferences fetchPluginsTo(Path dest, List<SonarAnalyzer> analyzers) {
+  public PluginReferences fetchPluginsTo(Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = fetchPlugins(analyzers);
+    int i = 0;
+    float refCount = (float) refs.getReferenceList().size();
     for (PluginReference ref : refs.getReferenceList()) {
+      progress.setProgressAndCheckCancel("Loading plugin " + ref.getKey(), i / refCount);
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
     }
     ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
