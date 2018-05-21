@@ -28,10 +28,10 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 
 public class DefaultAnalysisResult implements AnalysisResults {
   private Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
-  private int fileCount;
+  private int indexedFileCount;
 
-  public DefaultAnalysisResult setFileCount(int fileCount) {
-    this.fileCount = fileCount;
+  public DefaultAnalysisResult setIndexedFileCount(int indexedFileCount) {
+    this.indexedFileCount = indexedFileCount;
     return this;
   }
 
@@ -40,8 +40,8 @@ public class DefaultAnalysisResult implements AnalysisResults {
   }
 
   @Override
-  public int fileCount() {
-    return fileCount;
+  public int indexedFileCount() {
+    return indexedFileCount;
   }
 
   @Override
