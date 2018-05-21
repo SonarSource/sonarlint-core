@@ -32,8 +32,6 @@ public class GlobalExtensionContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    add(GlobalSettings.class);
-    add(new GlobalConfigurationProvider());
     getComponentByType(ExtensionInstaller.class).install(this, true);
   }
 
