@@ -47,7 +47,9 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvider;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
+import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
@@ -86,6 +88,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       PluginLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
+      GlobalSettings.class,
+      new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
       new SonarQubeVersion(version),
       SonarRuntimeImpl.forSonarLint(version),

@@ -27,6 +27,8 @@ import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.batch.sensor.Sensor;
+import org.sonar.api.config.Configuration;
+import org.sonar.api.internal.PluginContextImpl;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -38,12 +40,14 @@ public class ExtensionInstaller {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExtensionInstaller.class);
 
-  private final SonarRuntime sqRuntime;
+  private final SonarRuntime sonarRuntime;
   private final PluginRepository pluginRepository;
+  private final Configuration bootConfiguration;
 
-  public ExtensionInstaller(SonarRuntime sqRuntime, PluginRepository pluginRepository) {
-    this.sqRuntime = sqRuntime;
+  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration) {
+    this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;
+    this.bootConfiguration = bootConfiguration;
   }
 
   public ExtensionInstaller install(ComponentContainer container, boolean global) {
@@ -51,7 +55,10 @@ public class ExtensionInstaller {
     // plugin extensions
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      Plugin.Context context = new Plugin.Context(sqRuntime);
+      Plugin.Context context = new PluginContextImpl.Builder()
+        .setSonarRuntime(sonarRuntime)
+        .setBootConfiguration(bootConfiguration)
+        .build();
       plugin.define(context);
       loadExtensions(container, pluginInfo, context, global);
     }
