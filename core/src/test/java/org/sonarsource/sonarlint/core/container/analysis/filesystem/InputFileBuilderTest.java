@@ -83,14 +83,18 @@ public class InputFileBuilderTest {
   }
 
   @Test
-  public void testCreateError() throws IOException {
+  public void testCreate_lazy_error() throws IOException {
     when(langDetection.language(any(InputFile.class))).thenReturn("java");
     ClientInputFile file = new TestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
+    SonarLintInputFile slFile = builder.create(file);
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to open a stream on file");
-    builder.create(file);
+
+    // Call any method that will trigger metadata initialization
+    slFile.selectLine(1);
+
   }
 }

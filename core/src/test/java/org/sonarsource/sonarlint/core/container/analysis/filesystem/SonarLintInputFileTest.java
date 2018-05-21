@@ -56,7 +56,8 @@ public class SonarLintInputFileTest {
     path = temp.newFile().toPath();
     Files.write(path, "test string".getBytes(StandardCharsets.UTF_8));
     inputFile = new TestClientInputFile(path, "file", false, StandardCharsets.UTF_8);
-    file = new SonarLintInputFile(inputFile);
+    file = new SonarLintInputFile(inputFile, f -> {
+    });
   }
 
   @Test

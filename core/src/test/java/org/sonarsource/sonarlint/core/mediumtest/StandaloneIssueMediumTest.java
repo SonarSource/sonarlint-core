@@ -19,10 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.Assert.fail;
-
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -39,9 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import javax.annotation.Nullable;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.junit.AfterClass;
@@ -63,7 +58,9 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
-import com.google.common.collect.ImmutableMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.Assert.fail;
 
 public class StandaloneIssueMediumTest {
 
@@ -384,7 +381,8 @@ public class StandaloneIssueMediumTest {
 
     final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S106"));
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules), issue -> issues.add(issue),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules),
+      issue -> issues.add(issue),
       null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -424,7 +422,7 @@ public class StandaloneIssueMediumTest {
         ImmutableMap.of("sonar.junit.reportsPath", "reports/")),
       issue -> issues.add(issue), null, null);
 
-    assertThat(results.fileCount()).isEqualTo(2);
+    assertThat(results.indexedFileCount()).isEqualTo(2);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple("squid:S106", 4, inputFile.getPath()),
@@ -475,6 +473,33 @@ public class StandaloneIssueMediumTest {
         throw e.getCause();
       }
     }
+  }
+
+  @Test
+  public void lazy_init_file_metadata() throws Exception {
+    final ClientInputFile inputFile1 = prepareInputFile("Foo.java",
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "    System.out.println(\"Foo\"); //NOSONAR\n"
+        + "  }\n"
+        + "}",
+      false);
+    File unexistingPath = new File(baseDir, "missing.bin");
+    assertThat(unexistingPath).doesNotExist();
+    ClientInputFile inputFile2 = new TestClientInputFile(unexistingPath.toPath(), "missing.bin", false, StandardCharsets.UTF_8, null);
+
+    final List<Issue> issues = new ArrayList<>();
+    final List<String> logs = new ArrayList<>();
+    AnalysisResults analysisResults = sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile1, inputFile2), ImmutableMap.of()), issue -> issues.add(issue),
+      (m, l) -> logs.add(m), null);
+
+    assertThat(analysisResults.failedAnalysisFiles()).isEmpty();
+    assertThat(analysisResults.indexedFileCount()).isEqualTo(2);
+    assertThat(logs).contains("Initializing metadata of file " + inputFile1.uri());
+    assertThat(logs).doesNotContain("Initializing metadata of file " + inputFile2.uri());
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {

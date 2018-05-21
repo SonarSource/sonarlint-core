@@ -26,6 +26,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.fs.internal.DefaultIndexedFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
@@ -39,9 +40,9 @@ public class SonarLintInputFile extends DefaultInputFile {
   private String language;
   private Type type;
 
-  public SonarLintInputFile(ClientInputFile clientInputFile) {
+  public SonarLintInputFile(ClientInputFile clientInputFile, Consumer<DefaultInputFile> metadataGenerator) {
     super(new DefaultIndexedFile(SonarLintInputModule.SONARLINT_FAKE_MODULE_KEY, Paths.get(clientInputFile.getPath()), clientInputFile.getPath(), clientInputFile.language()),
-      null);
+      metadataGenerator);
     this.clientInputFile = clientInputFile;
   }
 

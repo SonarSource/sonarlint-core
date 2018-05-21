@@ -24,11 +24,11 @@ import java.util.Collection;
 public interface AnalysisResults {
 
   /**
-   * Number of file analyzed. This number can be different than number of provided {@link ClientInputFile} since
-   * file with no matching language are excluded.
+   * Number of file indexed. This number can be different than number of provided {@link ClientInputFile} since
+   * {@link InputFileFilter} can exclude some files.
    */
-  int fileCount();
-  
+  int indexedFileCount();
+
   /**
    * Input files for which there were analysis errors. The analyzers failed to correctly handle these files, and therefore there might be issues
    * missing or no issues at all for these files.

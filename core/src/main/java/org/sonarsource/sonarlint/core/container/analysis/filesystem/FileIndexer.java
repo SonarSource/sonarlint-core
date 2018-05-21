@@ -76,8 +76,7 @@ public class FileIndexer {
       throw e;
     }
     progressReport.stop(progress.count() + " files indexed");
-    analysisResult.setFileCount(progress.count());
-
+    analysisResult.setIndexedFileCount(progress.count());
   }
 
   private void indexFiles(SonarLintFileSystem fileSystem, Progress progress, Iterable<ClientInputFile> inputFiles) {

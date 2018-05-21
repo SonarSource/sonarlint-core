@@ -75,7 +75,7 @@ public class StandaloneNoPluginMediumTest {
       i -> {
       }, null, null);
 
-    assertThat(results.fileCount()).isEqualTo(1);
+    assertThat(results.indexedFileCount()).isEqualTo(1);
     assertThat(logs.get(Level.WARN)).contains("No analyzers installed");
   }
 
