@@ -58,7 +58,7 @@ public class ServerIssueTrackerTest {
     Collection<Issue> issues = Collections.singletonList(issue);
     ServerIssueTracker tracker = newTracker(baseDir);
 
-    Collection<Issue> result = tracker.matchAndTrack(issues);
+    Collection<Issue> result = tracker.matchAndTrack("dummy", issues);
     assertThat(result).extracting("issue").isEqualTo(issues);
   }
 
@@ -80,11 +80,11 @@ public class ServerIssueTrackerTest {
     when(engine.getServerIssues(any(), any())).thenReturn(serverIssues);
 
     ServerIssueTracker tracker = newTracker(baseDir, engine);
-    Collection<Issue> trackedIssues = tracker.matchAndTrack(issues);
+    Collection<Issue> trackedIssues = tracker.matchAndTrack("dummy", issues);
     assertThat(trackedIssues).extracting("issue").containsOnlyElementsOf(issues);
 
     when(resolvedServerIssue.resolution()).thenReturn("CLOSED");
-    Collection<Issue> trackedIssues2 = tracker.matchAndTrack(issues);
+    Collection<Issue> trackedIssues2 = tracker.matchAndTrack("dummy", issues);
     assertThat(trackedIssues2).extracting("issue").isEqualTo(Collections.singletonList(unresolved));
   }
 
@@ -110,7 +110,7 @@ public class ServerIssueTrackerTest {
     when(engine.getServerIssues(any(), any())).thenReturn(serverIssues);
 
     ServerIssueTracker tracker = newTracker(baseDir, engine);
-    Collection<Issue> trackedIssues = tracker.matchAndTrack(issues);
+    Collection<Issue> trackedIssues = tracker.matchAndTrack("dummy", issues);
 
     assertThat(trackedIssues).extracting("ruleKey")
       .containsOnly(unmatched.getRuleKey(), matched.getRuleKey());

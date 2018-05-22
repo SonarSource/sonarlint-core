@@ -57,8 +57,8 @@ class ServerIssueTracker {
     this.logger = logger;
   }
 
-  Collection<Issue> matchAndTrack(Collection<Issue> issues) {
-    engine.downloadServerIssues(serverConfiguration, moduleKey);
+  Collection<Issue> matchAndTrack(String filePath, Collection<Issue> issues) {
+    engine.downloadServerIssues(serverConfiguration, moduleKey, toSonarQubePath(filePath));
 
     Collection<Issue> issuesWithFile = issues.stream().filter(issue -> issue.getInputFile() != null).collect(Collectors.toList());
     Collection<String> relativePaths = getRelativePaths(baseDir, issuesWithFile);

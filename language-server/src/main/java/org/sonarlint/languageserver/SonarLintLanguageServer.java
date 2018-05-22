@@ -667,8 +667,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         analysisResults = analyze(configuration, collector);
       }
 
+      String filePath = baseDir.toUri().relativize(uri).toString();
       new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, baseDir, new ServerIssueTrackingLogger())
-        .matchAndTrack(issues)
+        .matchAndTrack(filePath, issues)
         .forEach(issueListener::handle);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
