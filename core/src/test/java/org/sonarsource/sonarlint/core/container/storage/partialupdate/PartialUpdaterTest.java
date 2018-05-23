@@ -103,7 +103,7 @@ public class PartialUpdaterTest {
   public void error_downloading_issues() {
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(issueStoreReader.getFileKey("module", "file")).thenReturn("module:file");
-    when(downloader.apply("module:file")).thenThrow(IOException.class);
+    when(downloader.apply("module:file")).thenThrow(IllegalStateException.class);
 
     exception.expect(DownloadException.class);
     updater.updateFileIssues("module", "file");
@@ -126,7 +126,7 @@ public class PartialUpdaterTest {
   @Test
   public void error_downloading_modules() {
     when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    doThrow(IOException.class).when(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
+    doThrow(IllegalStateException.class).when(moduleListDownloader).fetchModulesListTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
     exception.expect(DownloadException.class);
 
     updater.updateModuleList(new ProgressWrapper(null));
