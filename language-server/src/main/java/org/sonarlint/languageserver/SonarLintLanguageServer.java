@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
@@ -112,10 +111,10 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -362,6 +361,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     try {
       engine.updateModule(serverConfig, binding.projectKey, null);
+    } catch (ProjectNotFoundException e) {
+      logger.error(ClientLogger.ErrorType.PROJECT_NOT_FOUND);
     } catch (Exception e) {
       logger.warn(e.getMessage());
     }
@@ -735,7 +736,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return findBaseDir(workspaceFolders, uri);
   }
 
-  private String getFilePath(Path baseDir, URI uri) {
+  private static String getFilePath(Path baseDir, URI uri) {
     return baseDir.toUri().relativize(uri).toString();
   }
 
