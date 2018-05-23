@@ -63,6 +63,7 @@ public class ModuleHierarchyDownloader {
       WsComponents.TreeWsResponse::getPaging,
       WsComponents.TreeWsResponse::getComponentsList,
       modules::add,
+      true,
       progress);
 
     // doesn't include root

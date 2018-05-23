@@ -19,19 +19,20 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
+import com.google.common.io.Resources;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sonarqube.ws.Common.Paging;
+import org.sonarqube.ws.Organizations;
+import org.sonarqube.ws.Organizations.Organization;
+import org.sonarqube.ws.Organizations.SearchWsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
@@ -43,7 +44,11 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import com.google.common.io.Resources;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class WsHelperImplTest {
   private static final String RESPONSE_FILE_LTS = "/validate/plugins_index.txt";
@@ -162,6 +167,33 @@ public class WsHelperImplTest {
     ValidationResult validation = WsHelperImpl.validateConnection(client, null);
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
+  }
+
+  @Test
+  public void testListOrganizationWithMoreThan20Pages() throws IOException {
+    for (int i = 0; i < 21; i++) {
+      mockOrganizationsPage(i + 1, 10500);
+    }
+
+    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, new ProgressWrapper(null));
+    assertThat(orgs).hasSize(10500);
+  }
+
+  private void mockOrganizationsPage(int page, int total) throws IOException {
+    List<Organization> orgs = IntStream.rangeClosed(1, 500)
+      .mapToObj(i -> Organization.newBuilder().setKey("org_page" + page + "number" + i).build())
+      .collect(Collectors.toList());
+
+    Paging paging = Paging.newBuilder()
+      .setPageSize(500)
+      .setTotal(total)
+      .setPageIndex(page)
+      .build();
+    SearchWsResponse response = Organizations.SearchWsResponse.newBuilder()
+      .setPaging(paging)
+      .addAllOrganizations(orgs)
+      .build();
+    WsClientTestUtils.addResponse(client, "api/organizations/search.protobuf?ps=500&p=" + page, response);
   }
 
   @Test
