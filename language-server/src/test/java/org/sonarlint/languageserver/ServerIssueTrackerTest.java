@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,7 +59,7 @@ public class ServerIssueTrackerTest {
     Collection<Issue> issues = Collections.singletonList(issue);
     ServerIssueTracker tracker = newTracker(baseDir);
 
-    Collection<Issue> result = tracker.matchAndTrack("dummy", issues);
+    Collection<Issue> result = matchAndTrack(tracker, "dummy", issues);
     assertThat(result).extracting("issue").isEqualTo(issues);
   }
 
@@ -80,11 +81,11 @@ public class ServerIssueTrackerTest {
     when(engine.getServerIssues(any(), any())).thenReturn(serverIssues);
 
     ServerIssueTracker tracker = newTracker(baseDir, engine);
-    Collection<Issue> trackedIssues = tracker.matchAndTrack("dummy", issues);
+    Collection<Issue> trackedIssues = matchAndTrack(tracker, "dummy", issues);
     assertThat(trackedIssues).extracting("issue").containsOnlyElementsOf(issues);
 
     when(resolvedServerIssue.resolution()).thenReturn("CLOSED");
-    Collection<Issue> trackedIssues2 = tracker.matchAndTrack("dummy", issues);
+    Collection<Issue> trackedIssues2 = matchAndTrack(tracker, "dummy", issues);
     assertThat(trackedIssues2).extracting("issue").isEqualTo(Collections.singletonList(unresolved));
   }
 
@@ -110,7 +111,7 @@ public class ServerIssueTrackerTest {
     when(engine.getServerIssues(any(), any())).thenReturn(serverIssues);
 
     ServerIssueTracker tracker = newTracker(baseDir, engine);
-    Collection<Issue> trackedIssues = tracker.matchAndTrack("dummy", issues);
+    Collection<Issue> trackedIssues = matchAndTrack(tracker, "dummy", issues);
 
     assertThat(trackedIssues).extracting("ruleKey")
       .containsOnly(unmatched.getRuleKey(), matched.getRuleKey());
@@ -123,11 +124,17 @@ public class ServerIssueTrackerTest {
     assertThat(combined.getType()).isEqualTo(serverIssueType);
   }
 
+  private Collection<Issue> matchAndTrack(ServerIssueTracker tracker, String filePath, Collection<Issue> issues) {
+    List<Issue> recorded = new LinkedList<>();
+    tracker.matchAndTrack(filePath, issues, recorded::add, false);
+    return recorded;
+  }
+
   private ServerIssueTracker newTracker(Path baseDir, ConnectedSonarLintEngine engine) {
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
     String moduleKey = "project1";
     Logger logger = mock(Logger.class);
-    return new ServerIssueTracker(engine, serverConfiguration, moduleKey, baseDir, logger);
+    return new ServerIssueTracker(engine, serverConfiguration, moduleKey, logger);
   }
 
   private ServerIssueTracker newTracker(Path baseDir) {
@@ -174,4 +181,5 @@ public class ServerIssueTrackerTest {
 
     return serverIssue;
   }
+
 }

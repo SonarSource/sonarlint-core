@@ -36,16 +36,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
+import org.eclipse.lsp4j.TextDocumentItem;
+import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,6 +62,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Answers;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
@@ -63,6 +72,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -410,7 +420,7 @@ public class SonarLintLanguageServerTest {
   }
 
   @Test
-  public void warn_when_binding_references_non_existent_server_on_startup_or_update() {
+  public void warn_when_binding_references_nonexistent_server_on_startup_or_update() {
     LanguageServerTester tester = newLanguageServerTester();
 
     Map<String, String> binding = ImmutableMap.<String, String>builder()
@@ -424,6 +434,31 @@ public class SonarLintLanguageServerTest {
 
     tester.updateBinding(binding);
     assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER, ClientLogger.ErrorType.INVALID_BINDING_SERVER);
+  }
+
+  @Test
+  public void warn_when_cannot_start_connected_engine_on_startup_or_update() {
+    LanguageServerTester tester = newLanguageServerTester();
+
+    Map<String, String> serverConfig = ImmutableMap.<String, String>builder()
+      .put("serverId", "foo")
+      .put("serverUrl", "bar")
+      .put("token", "baz")
+      .build();
+
+    Map<String, String> binding = ImmutableMap.<String, String>builder()
+      .put("serverId", "foo")
+      .put("projectKey", "bar")
+      .build();
+
+    tester.setInitialServers(serverConfig);
+    tester.setInitialBinding(binding);
+    tester.setEngine("foo", null);
+    tester.initialize();
+    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED);
+
+    tester.updateBinding(binding);
+    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED, ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED);
   }
 
   @Test
@@ -498,14 +533,12 @@ public class SonarLintLanguageServerTest {
     tester.setInitialBinding(serverId, "project1");
     tester.initialize();
 
-    assertThat(tester.engine(serverId)).isNull();
-
     ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
     tester.setEngine(serverId, engine);
-    tester.analyze();
+    tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
+    verify(engine).getExcludedFiles(any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
-    verify(engine).downloadServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -513,13 +546,13 @@ public class SonarLintLanguageServerTest {
       .thenThrow(new GlobalUpdateRequiredException("foo"))
       .thenReturn(mock(AnalysisResults.class));
     tester.setEngine(serverId, engine);
-    tester.analyze();
+    tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
     assertThat(tester.logs()).isEmpty();
+    verify(engine).getExcludedFiles(any(), any(), any());
     verify(engine).update(any(), any());
     verify(engine).updateModule(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
-    verify(engine).downloadServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -527,12 +560,12 @@ public class SonarLintLanguageServerTest {
       .thenThrow(new StorageException("foo", false))
       .thenReturn(mock(AnalysisResults.class));
     tester.setEngine(serverId, engine);
-    tester.analyze();
+    tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
     assertThat(tester.logs()).isEmpty();
+    verify(engine).getExcludedFiles(any(), any(), any());
     verify(engine).updateModule(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
-    verify(engine).downloadServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -541,7 +574,77 @@ public class SonarLintLanguageServerTest {
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isFalse();
     assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.ANALYSIS_FAILED);
+    verify(engine).getExcludedFiles(any(), any(), any());
     verify(engine, times(1)).analyze(any(), any(), any(), any());
+    verifyNoMoreInteractions(engine);
+  }
+
+  @Test
+  public void fetch_server_issues_on_file_open_only() {
+    LanguageServerTester tester = newLanguageServerTester();
+    String serverId = "local1";
+    tester.setInitialServers("foo", "bar", serverId, "baz");
+    tester.setInitialBinding("local1", "project1");
+    tester.initialize();
+
+    Map<String, String> binding = ImmutableMap.<String, String>builder()
+      .put("serverId", serverId)
+      .put("projectKey", "bar")
+      .build();
+
+    Supplier<ConnectedSonarLintEngine> resetEngineWithIssue = () -> {
+      ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+      doAnswer(invocation -> {
+        Object[] args = invocation.getArguments();
+        IssueListener issueListener = (IssueListener) args[1];
+        issueListener.handle(mock(Issue.class));
+        return null;
+      }).when(engine).analyze(any(), any(), any(), any());
+      tester.setEngine(serverId, engine);
+      tester.updateBinding(binding);
+      verify(engine).updateModule(any(), any(), any());
+      return engine;
+    };
+
+    // didChange -> do not fetch server issues
+    ConnectedSonarLintEngine engine = resetEngineWithIssue.get();
+    tester.analyze((ls, uri) -> {
+      VersionedTextDocumentIdentifier textDocument = new VersionedTextDocumentIdentifier();
+      textDocument.setUri(uri.toString());
+      TextDocumentContentChangeEvent change = new TextDocumentContentChangeEvent("dummy content");
+      List<TextDocumentContentChangeEvent> contentChanges = Collections.singletonList(change);
+      DidChangeTextDocumentParams params = new DidChangeTextDocumentParams(textDocument, contentChanges);
+      ls.didChange(params);
+    });
+    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).analyze(any(), any(), any(), any());
+    verify(engine).getServerIssues(any(), any());
+    verifyNoMoreInteractions(engine);
+
+    // didSave -> do not fetch server issues
+    engine = resetEngineWithIssue.get();
+    tester.analyze((ls, uri) -> {
+      VersionedTextDocumentIdentifier textDocument = new VersionedTextDocumentIdentifier();
+      textDocument.setUri(uri.toString());
+      DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(textDocument, "dummy content");
+      ls.didSave(params);
+    });
+    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).analyze(any(), any(), any(), any());
+    verify(engine).getServerIssues(any(), any());
+    verifyNoMoreInteractions(engine);
+
+    // didOpen -> fetch server issues
+    engine = resetEngineWithIssue.get();
+    tester.analyze((ls, uri) -> {
+      TextDocumentItem textDocumentItem = new TextDocumentItem();
+      textDocumentItem.setUri(uri.toString());
+      DidOpenTextDocumentParams params = new DidOpenTextDocumentParams(textDocumentItem);
+      ls.didOpen(params);
+    });
+    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).analyze(any(), any(), any(), any());
+    verify(engine).downloadServerIssues(any(), any(), any());
     verifyNoMoreInteractions(engine);
   }
 
@@ -553,9 +656,6 @@ public class SonarLintLanguageServerTest {
     tester.setInitialServers(serverId);
     tester.setInitialBinding(serverId, projectKey);
     tester.initialize();
-
-    // do not update module storage on startup
-    assertThat(tester.engine(serverId)).isNull();
 
     Map<String, String> binding = ImmutableMap.<String, String>builder()
       .put("serverId", serverId)
@@ -684,6 +784,14 @@ public class SonarLintLanguageServerTest {
     }
 
     void analyze() {
+      analyze(false);
+    }
+
+    void analyze(boolean shouldFetchServerIssues) {
+      analyze((ls, uri) -> ls.analyze(uri, "dummy content", shouldFetchServerIssues));
+    }
+
+    void analyze(BiConsumer<SonarLintLanguageServer, URI> consumer) {
       if (!initialized) {
         throw new IllegalStateException("Must call .initialize() before .analyze()");
       }
@@ -697,7 +805,7 @@ public class SonarLintLanguageServerTest {
       } catch (IOException e) {
         throw new IllegalStateException(e);
       }
-      languageServer.analyze(uri, "dummy content");
+      consumer.accept(languageServer, uri);
 
       success = fakeLogger.logs.isEmpty();
     }
