@@ -175,7 +175,7 @@ public class WsHelperImplTest {
       mockOrganizationsPage(i + 1, 10500);
     }
 
-    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, new ProgressWrapper(null));
+    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
     assertThat(orgs).hasSize(10500);
   }
 
@@ -197,18 +197,37 @@ public class WsHelperImplTest {
   }
 
   @Test
-  public void testListOrganizations() {
-    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=1", "/orgs/orgsp1.pb");
-    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=2", "/orgs/orgsp2.pb");
-    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=3", "/orgs/orgsp3.pb");
-    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, new ProgressWrapper(null));
+  public void testListUserOrganizations() {
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?member=true&ps=500&p=1", "/orgs/orgsp1.pb");
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?member=true&ps=500&p=2", "/orgs/orgsp2.pb");
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?member=true&ps=500&p=3", "/orgs/orgsp3.pb");
+    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, true, new ProgressWrapper(null));
     assertThat(orgs).hasSize(4);
 
     verify(serverChecker).checkVersionAndStatus("6.3");
 
     when(serverChecker.checkVersionAndStatus("6.3")).thenThrow(UnsupportedServerException.class);
     try {
-      WsHelperImpl.listOrganizations(client, serverChecker, new ProgressWrapper(null));
+      WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
+      fail("Expected exception");
+    } catch (UnsupportedServerException e) {
+      // Success
+    }
+  }
+
+  @Test
+  public void testListOrganizations() {
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=1", "/orgs/orgsp1.pb");
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=2", "/orgs/orgsp2.pb");
+    WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?ps=500&p=3", "/orgs/orgsp3.pb");
+    List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
+    assertThat(orgs).hasSize(4);
+
+    verify(serverChecker).checkVersionAndStatus("6.3");
+
+    when(serverChecker.checkVersionAndStatus("6.3")).thenThrow(UnsupportedServerException.class);
+    try {
+      WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
       fail("Expected exception");
     } catch (UnsupportedServerException e) {
       // Success
