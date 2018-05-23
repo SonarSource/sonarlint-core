@@ -26,7 +26,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerExc
 
 public interface WsHelper {
   /**
-   * Check if it is possible to reach server with provided configuration
+   * Checks if it is possible to reach server with provided configuration
    * @since 2.1
    */
   ValidationResult validateConnection(ServerConfiguration serverConfig);
@@ -42,9 +42,13 @@ public interface WsHelper {
   String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force);
 
   /**
-   * Return the list of remote organizations
-   * @param serverConfig
-   * @return
+   * Returns the list of remote organizations
    */
   List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+
+  /**
+   * Returns the list of remote organizations where the user is a member.
+   * @since 3.5
+   */
+  List<RemoteOrganization> listUserOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 }

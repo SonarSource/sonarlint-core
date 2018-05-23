@@ -64,7 +64,7 @@ public class WsHelperImpl implements WsHelper {
         if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_VERSION_FOR_ORGANIZATIONS)) < 0) {
           return new DefaultValidationResult(false, "No organization support for this server version: " + serverStatus.getVersion());
         }
-        if (fetchOrganizations(client, organizationKey, new ProgressWrapper(null)).isEmpty()) {
+        if (fetchOrganization(client, organizationKey, new ProgressWrapper(null)).isEmpty()) {
           return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey);
         }
       }
@@ -111,27 +111,43 @@ public class WsHelperImpl implements WsHelper {
   public List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     SonarLintWsClient client = createClient(serverConfig);
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-    return listOrganizations(client, serverChecker, new ProgressWrapper(monitor));
+    return listOrganizations(client, serverChecker, false, new ProgressWrapper(monitor));
   }
 
-  static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, ProgressWrapper progress) {
+  @Override
+  public List<RemoteOrganization> listUserOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
+    SonarLintWsClient client = createClient(serverConfig);
+    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
+    return listOrganizations(client, serverChecker, true, new ProgressWrapper(monitor));
+  }
+
+  static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, boolean memberOnly, ProgressWrapper progress) {
     try {
       progress.setProgressAndCheckCancel("Check server version", 0.1f);
       serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);
       progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
-      return fetchOrganizations(client, null, progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
+      return fetchOrganizations(client, memberOnly, progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
   }
 
-  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, @Nullable String organizationKey, ProgressWrapper progress) {
-    List<RemoteOrganization> result = new ArrayList<>();
+  private static List<RemoteOrganization> fetchOrganization(SonarLintWsClient client, String organizationKey, ProgressWrapper progress) {
+    String url = "api/organizations/search.protobuf?organizations=" + StringUtils.urlEncode(organizationKey);
+    return getPaginatedOrganizations(client, url, progress);
+  }
 
+  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, boolean memberOnly, ProgressWrapper progress) {
     String url = "api/organizations/search.protobuf";
-    if (organizationKey != null) {
-      url += "?organizations=" + StringUtils.urlEncode(organizationKey);
+    if (memberOnly) {
+      url += "?member=true";
     }
+
+    return getPaginatedOrganizations(client, url, progress);
+  }
+
+  private static List<RemoteOrganization> getPaginatedOrganizations(SonarLintWsClient client, String url, ProgressWrapper progress) {
+    List<RemoteOrganization> result = new ArrayList<>();
 
     SonarLintWsClient.getPaginated(client, url,
       Organizations.SearchWsResponse::parseFrom,
