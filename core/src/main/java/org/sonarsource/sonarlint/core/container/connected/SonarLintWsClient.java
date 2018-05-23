@@ -177,13 +177,14 @@ public class SonarLintWsClient {
    * @param responseConsummer consume the protobuf message and return <code>true</code> if some elements where present (or <code>false</code> is response is empty)
    */
   public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, ProgressWrapper progress) {
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress) {
     int page = 0;
     boolean stop = false;
     int loaded = 0;
     do {
       page++;
-      WsResponse response = client.get(baseUrl + (baseUrl.contains("?") ? "&" : "?") + "ps=" + PAGE_SIZE + "&p=" + page);
+      String url = baseUrl + (baseUrl.contains("?") ? "&" : "?") + "ps=" + PAGE_SIZE + "&p=" + page;
+      WsResponse response = client.get(url);
       try (InputStream stream = response.contentStream()) {
         G protoBufResponse = responseParser.apply(stream);
         List<F> items = itemExtractor.apply(protoBufResponse);
@@ -195,7 +196,7 @@ public class SonarLintWsClient {
         Paging paging = getPaging.apply(protoBufResponse);
         // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
         stop = isEmpty || (paging.getTotal() > 0 && page * PAGE_SIZE >= paging.getTotal());
-        if (!stop && page >= MAX_PAGES) {
+        if (!stop && limitToTwentyPages && page >= MAX_PAGES) {
           stop = true;
           LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
         }

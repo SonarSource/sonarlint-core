@@ -72,6 +72,7 @@ public class ModuleListDownloader {
           .setQu(module.getQualifier())
           .build());
       },
+      true,
       progress);
 
     ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StoragePaths.MODULE_LIST_PB));
