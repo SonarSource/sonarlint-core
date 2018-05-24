@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.List;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
@@ -51,4 +52,12 @@ public interface WsHelper {
    * @since 3.5
    */
   List<RemoteOrganization> listUserOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+
+  /**
+   * Get an organization.
+   * @returns null if the organization is not found
+   * @since 3.5
+   */
+  @CheckForNull
+  RemoteOrganization getOrganization(ServerConfiguration serverConfig, String organizationKey, ProgressMonitor monitor);
 }
