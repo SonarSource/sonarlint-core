@@ -22,10 +22,13 @@ package org.sonarlint.languageserver;
 interface ClientLogger {
 
   enum ErrorType {
-    INCOMPLETE_SERVER_CONFIG("Incomplete server configuration. Required parameters must not be blank: serverId, serverUrl, token"),
-    INCOMPLETE_BINDING("Incomplete binding configuration. Required parameters must not be blank: serverId, projectKey"),
-    INVALID_BINDING_SERVER("Invalid binding: the specified serverId doesn't exist"),
-    ANALYSIS_FAILED("Analysis failed");
+    INCOMPLETE_SERVER_CONFIG("Incomplete server configuration. Required parameters must not be blank: serverId, serverUrl, token."),
+    INCOMPLETE_BINDING("Incomplete binding configuration. Required parameters must not be blank: serverId, projectKey."),
+    INVALID_BINDING_SERVER("Invalid binding: the specified serverId doesn't exist."),
+    ANALYSIS_FAILED("Analysis failed."),
+    START_CONNECTED_ENGINE_FAILED("Failed to start connected engine."),
+    PROJECT_NOT_FOUND("Project was not found on SonarQube server (was it deleted?)"),
+    ;
 
     final String message;
 

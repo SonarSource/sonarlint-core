@@ -38,27 +38,27 @@ public class Tracker<R extends Trackable, B extends Trackable> {
   public Tracking<R, B> track(TrackableSupplier<R> rawTrackableSupplier, TrackableSupplier<B> baseTrackableSupplier) {
     Tracking<R, B> tracking = new Tracking<>(rawTrackableSupplier, baseTrackableSupplier);
 
-    // 1. match issues with same rule, same line and same text range hash, but not necessarily with same message
+    // 1. match issues with same server issue key
+    match(tracking, ServerIssueSearchKeyFactory.INSTANCE);
+
+    // 2. match issues with same rule, same line and same text range hash, but not necessarily with same message
     match(tracking, LineAndTextRangeHashKeyFactory.INSTANCE);
 
-    // 2. match issues with same rule, same message and same text range hash
+    // 3. match issues with same rule, same message and same text range hash
     match(tracking, TextRangeHashAndMessageKeyFactory.INSTANCE);
 
-    // 3. match issues with same rule, same line and same message
+    // 4. match issues with same rule, same line and same message
     match(tracking, LineAndMessageKeyFactory.INSTANCE);
 
-    // 4. match issues with same rule and same text range hash but different line and different message.
+    // 5. match issues with same rule and same text range hash but different line and different message.
     // See SONAR-2812
     match(tracking, TextRangeHashKeyFactory.INSTANCE);
 
-    // 5. match issues with same rule, same line and same line hash
+    // 6. match issues with same rule, same line and same line hash
     match(tracking, LineAndLineHashKeyFactory.INSTANCE);
 
-    // 6. match issues with same rule and same same line hash
+    // 7. match issues with same rule and same same line hash
     match(tracking, LineHashKeyFactory.INSTANCE);
-
-    // 7. match issues with same server issue key
-    match(tracking, ServerIssueSearchKeyFactory.INSTANCE);
 
     return tracking;
   }
