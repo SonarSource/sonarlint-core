@@ -337,35 +337,26 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       return;
     }
 
-    serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, serverIssueTrackingLogger);
-
     binding = new ServerProjectBinding(serverId, projectKey);
+
+    if (updateModuleStorage(engine, serverInfo)) {
+      serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, serverIssueTrackingLogger);
+    } else {
+      binding = null;
+    }
   }
 
-  private void updateBindingStorage() {
-    if (binding == null) {
-      return;
-    }
-
-    ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
-
-    ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
-    if (engine == null) {
-      return;
-    }
-
-    updateModuleStorage(engine, serverInfo);
-  }
-
-  private void updateModuleStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
+  private boolean updateModuleStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
     ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     try {
       engine.updateModule(serverConfig, binding.projectKey, null);
+      return true;
     } catch (ProjectNotFoundException e) {
       logger.error(ClientLogger.ErrorType.PROJECT_NOT_FOUND);
     } catch (Exception e) {
       logger.warn(e.getMessage());
     }
+    return false;
   }
 
   // visible for testing
@@ -839,7 +830,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       case SONARLINT_UPDATE_PROJECT_BINDING_COMMAND:
         Map<String, Object> map = args == null || args.isEmpty() ? null : parseToMap(args.get(0));
         updateBinding(map);
-        updateBindingStorage();
         break;
       default:
         logger.warn("Unimplemented command: " + params.getCommand());
