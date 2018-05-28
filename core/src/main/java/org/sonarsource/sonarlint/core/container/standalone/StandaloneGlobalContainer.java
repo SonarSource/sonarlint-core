@@ -19,13 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
-import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.batch.rule.internal.DefaultRule;
 import org.sonar.api.internal.ApiVersion;
@@ -53,6 +50,9 @@ import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
+import org.sonarsource.sonarlint.core.container.standalone.rule.CombinedActiveRules;
+import org.sonarsource.sonarlint.core.container.standalone.rule.FilteredActiveRules;
+import org.sonarsource.sonarlint.core.container.standalone.rule.RuleFilter;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
@@ -66,7 +66,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 public class StandaloneGlobalContainer extends ComponentContainer {
 
   private Rules rules;
-  private ActiveRules activeRules;
+  private CombinedActiveRules combinedActiveRules;
   private Context rulesDefinitions;
   private GlobalExtensionContainer globalExtensionContainer;
 
@@ -132,7 +132,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
     rules = container.getRules();
-    activeRules = container.getActiveRules();
+    combinedActiveRules = new CombinedActiveRules(container.getRulesDefinitions(), container.getRules(), container.getActiveRules());
     rulesDefinitions = container.getRulesDefinitions();
   }
 
@@ -141,7 +141,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
-    analysisContainer.add(new ActiveRulesWithExclusions(activeRules, configuration.excludedRules()));
+    RuleFilter ruleFilter = new RuleFilter(combinedActiveRules, configuration.excludedRules(), configuration.includedRules());
+    analysisContainer.add(new FilteredActiveRules(combinedActiveRules, ruleFilter));
     analysisContainer.add(NewSensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
@@ -164,15 +165,13 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
     return new DefaultRuleDetails(ruleKeyStr, rule.name(), rule.description(), rule.severity(), rule.type(),
       repo.language(), repo.rule(rule.key().rule()).tags(), "",
-      false);
+      combinedActiveRules.isActiveByDefault(rule.key()));
   }
 
   public Collection<String> getActiveRuleKeys() {
-    List<String> result = new ArrayList<>();
-    for (ActiveRule ar : activeRules.findAll()) {
-      result.add(ar.ruleKey().toString());
-    }
-    return result;
+    return combinedActiveRules.findAll().stream()
+      .filter(rule -> combinedActiveRules.isActiveByDefault(rule.ruleKey()))
+      .map(rule -> rule.ruleKey().toString())
+      .collect(Collectors.toList());
   }
-
 }
