@@ -38,17 +38,20 @@ public class StandaloneAnalysisConfiguration {
   private final Path workDir;
   private final Path baseDir;
   private final Collection<RuleKey> excludedRules;
+  private final Collection<RuleKey> includedRules;
 
-  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties, Collection<RuleKey> excludedRules) {
+  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties,
+    Collection<RuleKey> excludedRules, Collection<RuleKey> includedRules) {
     this.baseDir = baseDir;
     this.workDir = workDir;
     this.inputFiles = inputFiles;
     this.extraProperties = Collections.unmodifiableMap(new HashMap<>(extraProperties));
     this.excludedRules = Collections.unmodifiableList(new ArrayList<>(excludedRules));
+    this.includedRules = Collections.unmodifiableList(new ArrayList<>(includedRules));
   }
 
   public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
-    this(baseDir, workDir, inputFiles, extraProperties, Collections.emptyList());
+    this(baseDir, workDir, inputFiles, extraProperties, Collections.emptyList(), Collections.emptyList());
   }
 
   public Map<String, String> extraProperties() {
@@ -74,6 +77,10 @@ public class StandaloneAnalysisConfiguration {
     return excludedRules;
   }
 
+  public Collection<RuleKey> includedRules() {
+    return includedRules;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -82,6 +89,7 @@ public class StandaloneAnalysisConfiguration {
     sb.append("  workDir: ").append(workDir).append("\n");
     sb.append("  extraProperties: ").append(extraProperties).append("\n");
     sb.append("  excludedRules: ").append(excludedRules).append("\n");
+    sb.append("  includedRules: ").append(includedRules).append("\n");
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles) {
       sb.append("    ").append(inputFile.getPath());

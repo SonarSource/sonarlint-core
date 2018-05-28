@@ -380,8 +380,9 @@ public class StandaloneIssueMediumTest {
       false);
 
     final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S106"));
+    final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("javascript", "S2424"));
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules),
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
       issue -> issues.add(issue),
       null, null);
 
