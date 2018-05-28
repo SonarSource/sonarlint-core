@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
@@ -173,5 +174,17 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       .filter(rule -> combinedActiveRules.isActiveByDefault(rule.ruleKey()))
       .map(rule -> rule.ruleKey().toString())
       .collect(Collectors.toList());
+  }
+
+  public Collection<RuleDetails> getAllRuleDetails() {
+    return combinedActiveRules.findAllStandalone().stream()
+      .map(this::toRuleDetails)
+      .collect(Collectors.toList());
+  }
+
+  private RuleDetails toRuleDetails(CombinedActiveRules.StandaloneActiveRule rule) {
+    return new DefaultRuleDetails(rule.ruleKey().rule(), rule.name(), rule.description(),
+      rule.severity(), null, rule.language(), Collections.emptySet(), "",
+      combinedActiveRules.isActiveByDefault(rule.ruleKey()));
   }
 }
