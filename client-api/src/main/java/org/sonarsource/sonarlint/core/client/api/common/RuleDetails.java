@@ -43,4 +43,6 @@ public interface RuleDetails {
 
   String getExtendedDescription();
 
+  boolean isActiveByDefault();
+
 }

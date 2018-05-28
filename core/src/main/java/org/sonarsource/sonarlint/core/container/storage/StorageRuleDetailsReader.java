@@ -46,6 +46,6 @@ public class StorageRuleDetailsReader implements Function<String, RuleDetails> {
 
     String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
 
-    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), type, rule.getLang(), Collections.<String>emptySet(), rule.getHtmlNote());
+    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), rule.getSeverity(), type, rule.getLang(), Collections.emptySet(), rule.getHtmlNote(), false);
   }
 }
