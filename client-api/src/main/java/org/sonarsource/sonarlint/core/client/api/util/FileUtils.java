@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
@@ -33,9 +34,18 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class FileUtils {
-
+  /**
+   * A simple representation of an IO operation.
+   * An internal interface necessary for the implementation of {@link #retry()}.
+   */
+  private interface IORunnable {
+	  void run() throws IOException;
+  }
+  
   private static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
 
+  private static Boolean windows;
+  
   private FileUtils() {
     // utility class, forbidden constructor
   }
@@ -50,7 +60,7 @@ public class FileUtils {
 
   private static void moveDirPreferAtomic(Path src, Path dest) throws IOException {
     try {
-      Files.move(src, dest, StandardCopyOption.ATOMIC_MOVE);
+      retry(() -> Files.move(src, dest, StandardCopyOption.ATOMIC_MOVE));
     } catch (AtomicMoveNotSupportedException e) {
       // Fallback to non atomic move
       Files.walkFileTree(src, new CopyRecursivelyVisitor(src, dest));
@@ -98,13 +108,13 @@ public class FileUtils {
       Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          Files.delete(file);
+          retry(() -> Files.delete(file));
           return FileVisitResult.CONTINUE;
         }
 
         @Override
         public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-          Files.delete(dir);
+          retry(() -> Files.delete(dir));
           return FileVisitResult.CONTINUE;
         }
       });
@@ -151,5 +161,48 @@ public class FileUtils {
     FileUtils.deleteRecursively(target);
     FileUtils.mkdirs(target.getParent());
     FileUtils.moveDir(work, target);
+  }
+  
+  /**
+   * On Windows, retries the provided IO operation a number of times, in an effort to make the operation succeed.
+   * 
+   * Operations that might fail on Windows are file & directory move, as well as file deletion. These failures 
+   * are typically caused by the virus scanner and/or the Windows Indexing Service. These services tend to open a file handle 
+   * on newly created files in an effort to scan their content.
+   * 
+   * @param runnable the runnable whose execution should be retried
+   */
+  private static void retry(IORunnable runnable) throws IOException {
+    for (int retries = isWindows()? 30: 1; retries > 0; retries--) {
+      if (retries > 1) {    	  
+	    try {
+	      runnable.run();
+	      break;
+	    } catch(AccessDeniedException e) {
+	      // Sleep a bit to give a chance to the virus scanner / Windows Indexing Service to release the opened file handle
+	      try {
+	        Thread.sleep(100);
+	      } catch (InterruptedException ie) {
+	    	// Nothing meaningful to be done here
+	      }
+	    }
+      } else {
+    	// Give it a one last chance, and this time do not swallow the exception
+        runnable.run();
+      }
+    }
+  }
+  
+  /**
+   * A simple check whether the underlying operating system is Windows. 
+   * @return true if the OS is Windows
+   */
+  private static boolean isWindows() {
+	  synchronized (FileUtils.class) {
+		if (windows == null)
+		  windows = System.getProperty("os.name").startsWith("Windows");
+	  }
+	  
+	  return windows;
   }
 }
