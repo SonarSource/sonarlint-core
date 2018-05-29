@@ -482,7 +482,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       }
     }
     String ruleName = ruleDetails.getName();
-    String htmlDescription = ruleDetails.getHtmlDescription();
+    String htmlDescription = getHtmlDescription(ruleDetails);
     String type = ruleDetails.getType();
     String severity = ruleDetails.getSeverity();
     return Arrays.asList(ruleKey, ruleName, htmlDescription, type, severity);
@@ -817,7 +817,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           // TODO use the correct engine (currently only Atom reaches this code, and it doesn't have connected mode, yet)
           RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
           String ruleName = ruleDetails.getName();
-          String htmlDescription = ruleDetails.getHtmlDescription();
+          String htmlDescription = getHtmlDescription(ruleDetails);
           String type = ruleDetails.getType();
           String severity = ruleDetails.getSeverity();
           client.openRuleDescription(RuleDescription.of(ruleKey, ruleName, htmlDescription, type, severity));
@@ -835,6 +835,15 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         logger.warn("Unimplemented command: " + params.getCommand());
     }
     return CompletableFuture.completedFuture(new Object());
+  }
+
+  private static String getHtmlDescription(RuleDetails ruleDetails) {
+    String htmlDescription = ruleDetails.getHtmlDescription();
+    String extendedDescription = ruleDetails.getExtendedDescription();
+    if (!extendedDescription.isEmpty()) {
+      htmlDescription += "<div>" + extendedDescription + "</div>";
+    }
+    return htmlDescription;
   }
 
   @Override
