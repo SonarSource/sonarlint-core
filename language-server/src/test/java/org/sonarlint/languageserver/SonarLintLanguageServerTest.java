@@ -60,6 +60,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Answers;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -67,6 +68,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,6 +87,7 @@ import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPD
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_SERVER_STORAGE_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.convert;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.getHtmlDescription;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
 
@@ -143,6 +146,21 @@ public class SonarLintLanguageServerTest {
 
     server.getWorkspaceService().didChangeWatchedFiles(null);
     assertThat(server.getWorkspaceService().symbol(null)).isNull();
+  }
+
+  @Test
+  public void getHtmlDescription_appends_extended_description_when_non_empty() {
+    String htmlDescription = "foo";
+    String extendedDescription = "bar";
+
+    RuleDetails ruleDetails = mock(RuleDetails.class);
+    when(ruleDetails.getHtmlDescription()).thenReturn(htmlDescription);
+    when(ruleDetails.getExtendedDescription()).thenReturn("");
+
+    assertThat(getHtmlDescription(ruleDetails)).isEqualTo(htmlDescription);
+
+    when(ruleDetails.getExtendedDescription()).thenReturn(extendedDescription);
+    assertThat(getHtmlDescription(ruleDetails)).isEqualTo(htmlDescription + "<div>" + extendedDescription + "</div>");
   }
 
   @Test

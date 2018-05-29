@@ -837,7 +837,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return CompletableFuture.completedFuture(new Object());
   }
 
-  private static String getHtmlDescription(RuleDetails ruleDetails) {
+  // visible for testing
+  static String getHtmlDescription(RuleDetails ruleDetails) {
     String htmlDescription = ruleDetails.getHtmlDescription();
     String extendedDescription = ruleDetails.getExtendedDescription();
     if (!extendedDescription.isEmpty()) {
