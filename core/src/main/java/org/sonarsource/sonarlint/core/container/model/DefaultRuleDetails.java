@@ -23,8 +23,10 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 
+@Immutable
 public class DefaultRuleDetails implements RuleDetails {
 
   private final String key;
@@ -35,9 +37,10 @@ public class DefaultRuleDetails implements RuleDetails {
   private final String severity;
   private final String type;
   private final String extendedDescription;
+  private final boolean activeByDefault;
 
   public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, @Nullable String type, String language, Set<String> tags,
-    String extendedDescription) {
+    String extendedDescription, boolean activeByDefault) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
@@ -46,6 +49,7 @@ public class DefaultRuleDetails implements RuleDetails {
     this.language = language;
     this.tags = tags;
     this.extendedDescription = extendedDescription;
+    this.activeByDefault = activeByDefault;
   }
 
   @Override
@@ -86,5 +90,10 @@ public class DefaultRuleDetails implements RuleDetails {
   @Override
   public String getExtendedDescription() {
     return extendedDescription;
+  }
+
+  @Override
+  public boolean isActiveByDefault() {
+    return activeByDefault;
   }
 }

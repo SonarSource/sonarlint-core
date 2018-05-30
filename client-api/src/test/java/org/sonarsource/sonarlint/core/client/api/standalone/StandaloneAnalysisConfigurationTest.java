@@ -54,12 +54,15 @@ public class StandaloneAnalysisConfigurationTest {
     Path baseDir = temp.newFolder().toPath();
     Path workDir = temp.newFolder().toPath();
     Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
-    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, inputFileWithLanguage, testInputFile), props, excludedRules);
+    Collection<RuleKey> includedRules = Arrays.asList(new RuleKey("javascript", "S2424"), new RuleKey("javascript", "S1442"));
+    StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, Arrays.asList(inputFile, inputFileWithLanguage,
+      testInputFile), props, excludedRules, includedRules);
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  excludedRules: [squid:S1135, squid:S1181]\n" +
+      "  includedRules: [javascript:S2424, javascript:S1442]\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toString() + " (UTF-8)\n" +
       "    " + srcFile2.toString() + " (UTF-8) [java]\n" +

@@ -46,6 +46,11 @@ public interface StandaloneSonarLintEngine {
   RuleDetails getRuleDetails(String ruleKey);
 
   /**
+   * Return rule details of all available rules.
+   */
+  Collection<RuleDetails> getAllRuleDetails();
+
+  /**
    * Get information about the analyzers that are currently loaded.
    * Should only be called when engine is started.
    */

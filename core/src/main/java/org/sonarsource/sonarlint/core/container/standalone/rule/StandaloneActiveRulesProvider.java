@@ -23,10 +23,10 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
-import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.profiles.ProfileDefinition;
@@ -38,13 +38,15 @@ import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.server.rule.RulesDefinition.Rule;
 import org.sonar.api.utils.ValidationMessages;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 
 /**
  * Loads the rules that are activated on the Quality profiles
  * used by the current project and builds {@link org.sonar.api.batch.rule.ActiveRules}.
  */
 public class StandaloneActiveRulesProvider {
-  private ActiveRules singleton = null;
+  private StandaloneActiveRules singleton = null;
   private final StandaloneRuleDefinitionsLoader ruleDefsLoader;
   private final ProfileDefinition[] profileDefinitions;
 
@@ -57,39 +59,47 @@ public class StandaloneActiveRulesProvider {
     this(ruleDefsLoader, new ProfileDefinition[0]);
   }
 
-  public ActiveRules provide() {
+  public StandaloneActiveRules provide() {
     if (singleton == null) {
       singleton = createActiveRules();
     }
     return singleton;
   }
 
-  private ActiveRules createActiveRules() {
-    ActiveRulesBuilder builder = new ActiveRulesBuilder();
+  private StandaloneActiveRules createActiveRules() {
+    ActiveRulesBuilder activeBuilder = new ActiveRulesBuilder();
+    ActiveRulesBuilder inactiveBuilder = new ActiveRulesBuilder();
 
     ListMultimap<String, RulesProfile> profilesByLanguage = profilesByLanguage(profileDefinitions);
     for (String language : profilesByLanguage.keySet()) {
       List<RulesProfile> defs = profilesByLanguage.get(language);
-      registerProfilesForLanguage(builder, language, defs);
+      registerProfilesForLanguage(activeBuilder, language, defs);
     }
+
+    Map<String, RuleDetails> ruleDetailsMap = new HashMap<>();
 
     for (Repository repo : ruleDefsLoader.getContext().repositories()) {
       for (Rule rule : repo.rules()) {
-        if (rule.activatedByDefault()) {
-          NewActiveRule newAr = builder.create(RuleKey.of(repo.key(), rule.key()))
-            .setLanguage(repo.language())
-            .setName(rule.name())
-            .setSeverity(rule.severity())
-            .setInternalKey(rule.internalKey());
-          for (Param param : rule.params()) {
-            newAr.setParam(param.key(), param.defaultValue());
-          }
-          newAr.activate();
+        ActiveRulesBuilder builder = rule.activatedByDefault() ? activeBuilder : inactiveBuilder;
+        RuleKey ruleKey = RuleKey.of(repo.key(), rule.key());
+        NewActiveRule newAr = builder.create(ruleKey)
+          .setLanguage(repo.language())
+          .setName(rule.name())
+          .setSeverity(rule.severity())
+          .setInternalKey(rule.internalKey());
+        for (Param param : rule.params()) {
+          newAr.setParam(param.key(), param.defaultValue());
         }
+        newAr.activate();
+
+        DefaultRuleDetails ruleDetails = new DefaultRuleDetails(ruleKey.toString(), rule.name(), rule.htmlDescription(),
+          rule.severity(), rule.type().name(), repo.language(), rule.tags(), "",
+          rule.activatedByDefault());
+        ruleDetailsMap.put(ruleKey.toString(), ruleDetails);
       }
     }
 
-    return builder.build();
+    return new StandaloneActiveRules(activeBuilder.build(), inactiveBuilder.build(), ruleDetailsMap);
   }
 
   private static void registerProfilesForLanguage(ActiveRulesBuilder builder, String language, List<RulesProfile> defs) {

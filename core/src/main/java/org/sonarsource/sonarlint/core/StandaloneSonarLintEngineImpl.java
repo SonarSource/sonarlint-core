@@ -45,7 +45,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-  private LogOutput logOutput = null;
+  private LogOutput logOutput;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -72,13 +72,12 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   @Override
   public RuleDetails getRuleDetails(String ruleKey) {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getRuleDetails(ruleKey);
-    } finally {
-      rwl.readLock().unlock();
-    }
+    return globalContainer.getRuleDetails(ruleKey);
+  }
+
+  @Override
+  public Collection<RuleDetails> getAllRuleDetails() {
+    return globalContainer.getAllRuleDetails();
   }
 
   @Override
