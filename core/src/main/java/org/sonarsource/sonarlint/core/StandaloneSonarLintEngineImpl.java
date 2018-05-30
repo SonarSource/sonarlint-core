@@ -72,13 +72,12 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   @Override
   public RuleDetails getRuleDetails(String ruleKey) {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getRuleDetails(ruleKey);
-    } finally {
-      rwl.readLock().unlock();
-    }
+    return globalContainer.getRuleDetails(ruleKey);
+  }
+
+  @Override
+  public Collection<RuleDetails> getAllRuleDetails() {
+    return globalContainer.getAllRuleDetails();
   }
 
   @Override
@@ -95,17 +94,6 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
       return results;
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.readLock().unlock();
-    }
-  }
-
-  @Override
-  public Collection<RuleDetails> getAllRuleDetails() {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getAllRuleDetails();
     } finally {
       rwl.readLock().unlock();
     }

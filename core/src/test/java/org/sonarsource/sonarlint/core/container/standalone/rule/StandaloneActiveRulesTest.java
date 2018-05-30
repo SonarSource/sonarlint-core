@@ -23,22 +23,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.junit.Test;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
-import org.sonar.api.batch.rule.Rule;
-import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class FilteredActiveRulesTest {
+public class StandaloneActiveRulesTest {
 
   private static final String REPOSITORY = "squid";
   private static final String LANGUAGE = "java";
@@ -48,26 +43,16 @@ public class FilteredActiveRulesTest {
   private static final String ACTIVE_RULE = "ACTIVE_RULE";
   private static final String ACTIVE_EXCLUDED_RULE = "ACTIVE_EXCLUDED_RULE";
 
-  private final Rules rules = new FakeRules(INACTIVE_RULE, INACTIVE_INCLUDED_RULE, ACTIVE_RULE, ACTIVE_EXCLUDED_RULE);
-  private final ActiveRules activeRules = new FakeActiveRules(ACTIVE_RULE, ACTIVE_EXCLUDED_RULE);
-  private final CombinedActiveRules combinedActiveRules;
+  private final ActiveRules underTest;
 
-  private final FilteredActiveRules underTest;
+  public StandaloneActiveRulesTest() {
+    ActiveRules activeRules = new FakeActiveRules(ACTIVE_RULE, ACTIVE_EXCLUDED_RULE);
+    ActiveRules inactiveRules = new FakeActiveRules(INACTIVE_RULE, INACTIVE_INCLUDED_RULE);
+    StandaloneActiveRules standaloneActiveRules = new StandaloneActiveRules(activeRules, inactiveRules, Collections.emptyMap());
 
-  public FilteredActiveRulesTest() {
-    RulesDefinition.Repository repository = mock(RulesDefinition.Repository.class);
-    when(repository.language()).thenReturn(LANGUAGE);
-
-    RulesDefinition.Context rulesDefinition = mock(RulesDefinition.Context.class);
-    when(rulesDefinition.repository(any())).thenReturn(repository);
-
-    combinedActiveRules = new CombinedActiveRules(rulesDefinition, rules, activeRules);
-
-    RuleFilter ruleFilter = new RuleFilter(combinedActiveRules,
-      Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE)),
-      Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE)));
-
-    underTest = new FilteredActiveRules(combinedActiveRules, ruleFilter);
+    Collection<RuleKey> excluded = Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE));
+    Collection<RuleKey> included = Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE));
+    underTest = standaloneActiveRules.filtered(excluded, included);
   }
 
   @Test
@@ -83,19 +68,16 @@ public class FilteredActiveRulesTest {
 
   @Test
   public void findAll_omits_excluded_rule_and_includes_included_rule() {
-    assertThat(activeRules.findAll().stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_EXCLUDED_RULE, ACTIVE_RULE);
     assertThat(underTest.findAll().stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_RULE, INACTIVE_INCLUDED_RULE);
   }
 
   @Test
   public void findByRepository_omits_excluded_rule_and_includes_included_rule() {
-    assertThat(activeRules.findByRepository(REPOSITORY).stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_EXCLUDED_RULE, ACTIVE_RULE);
     assertThat(underTest.findByRepository(REPOSITORY).stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_RULE, INACTIVE_INCLUDED_RULE);
   }
 
   @Test
   public void findByLanguage_omits_excluded_rule_and_includes_included_rule() {
-    assertThat(activeRules.findByLanguage(LANGUAGE).stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_EXCLUDED_RULE, ACTIVE_RULE);
     assertThat(underTest.findByLanguage(LANGUAGE).stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_RULE, INACTIVE_INCLUDED_RULE);
   }
 
@@ -108,41 +90,6 @@ public class FilteredActiveRulesTest {
     // should find
     assertThat(underTest.findByInternalKey(REPOSITORY, ACTIVE_RULE)).isNotNull();
     assertThat(underTest.findByInternalKey(REPOSITORY, INACTIVE_INCLUDED_RULE)).isNotNull();
-  }
-
-  private static class FakeRules implements Rules {
-    private final Map<org.sonar.api.rule.RuleKey, Rule> map = new HashMap<>();
-
-    FakeRules(String... ruleKeys) {
-      for (String ruleKey : ruleKeys) {
-        Rule rule = mock(Rule.class);
-        org.sonar.api.rule.RuleKey key = org.sonar.api.rule.RuleKey.of(REPOSITORY, ruleKey);
-        when(rule.key()).thenReturn(key);
-        when(rule.internalKey()).thenReturn(ruleKey);
-        map.put(key, rule);
-      }
-    }
-
-    @CheckForNull
-    @Override
-    public Rule find(org.sonar.api.rule.RuleKey key) {
-      return map.get(key);
-    }
-
-    @Override
-    public Collection<Rule> findAll() {
-      return map.values();
-    }
-
-    @Override
-    public Collection<Rule> findByRepository(String repository) {
-      return map.values();
-    }
-
-    @Override
-    public Collection<Rule> findByInternalKey(String repository, String internalKey) {
-      return map.values().stream().filter(rule -> rule.internalKey().equals(internalKey)).collect(Collectors.toSet());
-    }
   }
 
   private static class FakeActiveRules implements ActiveRules {

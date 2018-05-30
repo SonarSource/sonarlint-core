@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.profiles.XMLProfileParser;
@@ -31,7 +30,7 @@ import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   private Rules rules;
-  private ActiveRules activeRules;
+  private StandaloneActiveRules standaloneActiveRules;
   private Context ruleDefinitions;
 
   public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
@@ -63,7 +62,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   @Override
   public void doAfterStart() {
     rules = getComponentByType(Rules.class);
-    activeRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
+    standaloneActiveRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
     StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
   }
@@ -72,8 +71,8 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
     return rules;
   }
 
-  public ActiveRules getActiveRules() {
-    return activeRules;
+  public StandaloneActiveRules getStandaloneActiveRules() {
+    return standaloneActiveRules;
   }
 
   public Context getRulesDefinitions() {

@@ -380,15 +380,39 @@ public class StandaloneIssueMediumTest {
       false);
 
     final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S106"));
-    final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("javascript", "S2424"));
+    final Collection<RuleKey> includedRules = Collections.emptyList();
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
-      issue -> issues.add(issue),
-      null, null);
+      issues::add, null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"));
+  }
+
+  @Test
+  public void simpleJavaWithIncludedRules() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("Foo.java",
+      "import java.util.Optional;\n"
+        + "public class Foo {\n"
+        + "  public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\" + name.isPresent());\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final Collection<RuleKey> excludedRules = Collections.emptyList();
+    final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("squid", "S3553"));
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
+      issues::add, null, null);
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S3553", 3, inputFile.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("squid:S1481", 4, inputFile.getPath(), "MINOR"));
   }
 
   @Test
