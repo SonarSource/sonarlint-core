@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.container.standalone.rule.SanitizedActiveRulesFilter;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
@@ -112,7 +113,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return this;
   }
 
-  protected void installPlugins() {
+  private void installPlugins() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
@@ -132,7 +133,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
-    analysisContainer.add(standaloneActiveRules.filtered(configuration.excludedRules(), configuration.includedRules()));
+    SanitizedActiveRulesFilter filter = new SanitizedActiveRulesFilter(standaloneActiveRules, configuration.excludedRules(), configuration.includedRules());
+    analysisContainer.add(standaloneActiveRules.filtered(filter));
     analysisContainer.add(NewSensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
@@ -156,6 +158,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   public Collection<RuleDetails> getAllRuleDetails() {
-    return standaloneActiveRules.getAllRuleDetails();
+    return standaloneActiveRules.allRuleDetails();
   }
 }

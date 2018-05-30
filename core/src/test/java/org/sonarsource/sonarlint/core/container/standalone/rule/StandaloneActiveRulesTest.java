@@ -52,7 +52,7 @@ public class StandaloneActiveRulesTest {
 
     Collection<RuleKey> excluded = Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE));
     Collection<RuleKey> included = Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE));
-    underTest = standaloneActiveRules.filtered(excluded, included);
+    underTest = standaloneActiveRules.filtered(new SanitizedActiveRulesFilter(standaloneActiveRules, excluded, included));
   }
 
   @Test
@@ -132,5 +132,5 @@ public class StandaloneActiveRulesTest {
     public ActiveRule findByInternalKey(String repository, String internalKey) {
       return map.get(org.sonar.api.rule.RuleKey.of(repository, internalKey));
     }
-  };
+  }
 }
