@@ -52,4 +52,19 @@ public class RuleKeyTest {
     assertThat(ruleKey1).isNotEqualTo(new RuleKey(repository, rule + "x"));
     assertThat(ruleKey1).isNotEqualTo(new RuleKey(repository + "x", rule));
   }
+
+  @Test
+  public void ruleKey_equals_to_its_parsed_from_toString() {
+    String repository = "squid";
+    String rule = "1181";
+
+    RuleKey ruleKey1 = new RuleKey(repository, rule);
+    RuleKey ruleKey2 = RuleKey.parse(ruleKey1.toString());
+    assertThat(ruleKey2).isEqualTo(ruleKey1);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void parse_throws_for_illegal_format() {
+    RuleKey.parse("foo");
+  }
 }
