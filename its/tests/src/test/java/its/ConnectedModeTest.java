@@ -341,12 +341,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
-
-    if (supportHtmlDesc()) {
-      assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
-    } else {
-      assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("Rule descriptions are only available in SonarLint with SonarQube 5.1+");
-    }
+    assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
@@ -362,7 +357,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() throws Exception {
-    assumeTrue(supportHtmlDesc());
     updateGlobal();
 
     String ruleKey = "squid:S106";
@@ -394,7 +388,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascriptWithCustomRules() throws Exception {
-
     updateGlobal();
     updateModule(PROJECT_KEY_JAVASCRIPT_CUSTOM);
 
@@ -577,8 +570,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2"));
-
     updateGlobal();
     updateModule(PROJECT_KEY_JAVA_EMPTY);
 
@@ -631,10 +622,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void generateToken() {
     WsHelper ws = new WsHelperImpl();
     ServerConfiguration serverConfig = getServerConfig(true);
-
-    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.4")) {
-      exception.expect(UnsupportedServerException.class);
-    }
 
     String token = ws.generateAuthenticationToken(serverConfig, "name", false);
     assertThat(token).isNotNull();
@@ -731,10 +718,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     }
   }
 
-  private boolean supportHtmlDesc() {
-    return ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.1");
-  }
-
   private void updateModule(String projectKey) {
     engine.updateModule(getServerConfig(), projectKey, null);
   }
@@ -756,13 +739,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2")) {
-      adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
-        .setGroupName(groupName)
-        .setPermission(permission));
-    } else {
-      ORCHESTRATOR.getServer().adminWsClient().permissionClient().removePermission(PermissionParameters.create().group(groupName).permission(permission));
-    }
+    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
+      .setGroupName(groupName)
+      .setPermission(permission));
   }
 
   public static WsClient newAdminWsClient(Orchestrator orchestrator) {

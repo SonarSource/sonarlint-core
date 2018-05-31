@@ -23,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -52,6 +53,10 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .setOrchestratorProperty("javascriptVersion", "2.13")
     .addPlugin("javascript")
+    .setOrchestratorProperty("javaVersion", "LATEST_RELEASE")
+    .addPlugin("java")
+    .setOrchestratorProperty("phpVersion", "LATEST_RELEASE")
+    .addPlugin("php")
     .build();
 
   @ClassRule
@@ -63,6 +68,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
+  private List<String> logs = new ArrayList<>();
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -82,7 +88,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput((msg, level) -> System.out.println(msg))
+      .setLogOutput((msg, level) -> logs.add(msg))
+      .addExcludedCodeAnalyzer("java")
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
@@ -102,6 +109,13 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
+  }
+  
+  @Test
+  public void dontLoadExcludedPlugin() {
+    engine.update(config(), null);
+    assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip it.");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
   }
 
   @Test

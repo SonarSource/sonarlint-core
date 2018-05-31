@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
@@ -36,10 +38,12 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final String serverId;
   private final Path storageRoot;
+  private final Set<String> excludedCodeAnalyzers;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
     this.serverId = builder.serverId;
+    this.excludedCodeAnalyzers = builder.excludedCodeAnalyzers;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
   }
 
@@ -55,9 +59,14 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return serverId;
   }
 
+  public Set<String> getExcludedCodeAnalyzers() {
+    return excludedCodeAnalyzers;
+  }
+
   public static final class Builder extends AbstractBuilder<Builder> {
     private String serverId;
     private Path storageRoot;
+    private Set<String> excludedCodeAnalyzers = new HashSet<>();
 
     private Builder() {
     }
@@ -75,6 +84,11 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
       if (serverId == null || serverId.isEmpty()) {
         throw new IllegalArgumentException("'" + serverId + "' is not a valid server ID");
       }
+    }
+
+    public Builder addExcludedCodeAnalyzer(String key) {
+      excludedCodeAnalyzers.add(key);
+      return this;
     }
 
     /**

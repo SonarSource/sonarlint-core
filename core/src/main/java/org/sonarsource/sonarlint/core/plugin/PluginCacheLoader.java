@@ -24,9 +24,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -41,10 +43,12 @@ public class PluginCacheLoader {
 
   private final PluginCache fileCache;
   private final PluginIndex pluginIndex;
+  private final Set<String> excludedPlugins;
 
-  public PluginCacheLoader(PluginCache fileCache, PluginIndex pluginIndex) {
+  public PluginCacheLoader(PluginCache fileCache, PluginIndex pluginIndex, ConnectedGlobalConfiguration globalConfiguration) {
     this.fileCache = fileCache;
     this.pluginIndex = pluginIndex;
+    this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
   }
 
   public Map<String, PluginInfo> load() {
@@ -61,19 +65,21 @@ public class PluginCacheLoader {
       PluginInfo info = PluginInfo.create(jarFilePath);
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if (!info.isCompatibleWith(IMPLEMENTED_SQ_API)) {
-        LOG.debug("Plugin {} need SonarQube plugin API {} while SonarLint supports only up to {}. Skip it.", info.getKey(), info.getMinimalSqVersion(), IMPLEMENTED_SQ_API);
-        break;
+        LOG.info("Code analyzer '{}' needs SonarQube plugin API {} while SonarLint supports only up to {}. Skip loading it.", info.getName(), info.getMinimalSqVersion(), IMPLEMENTED_SQ_API);
+        continue;
+      } else if (excludedPlugins.contains(info.getKey())) {
+        LOG.info("Code analyzer '{}' is excluded in this version of SonarLint. Skip loading it.", info.getName());
+        continue;
       }
       if ((sonarLintSupported != null && sonarLintSupported.booleanValue()) || isWhitelisted(info.getKey())) {
         infosByKey.put(info.getKey(), info);
       } else {
-        LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", info.getKey());
+        LOG.info("Code analyzer '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
       }
     }
 
     profiler.stopDebug();
     return infosByKey;
-
   }
 
   public static boolean isWhitelisted(String pluginKey) {
