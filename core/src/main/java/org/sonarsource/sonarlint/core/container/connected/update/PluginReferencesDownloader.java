@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -47,36 +49,46 @@ public class PluginReferencesDownloader {
 
   private final PluginCache pluginCache;
   private final SonarLintWsClient wsClient;
+  private final Set<String> excludedPlugins;
 
-  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache) {
+  public PluginReferencesDownloader(ConnectedGlobalConfiguration globalConfiguration, SonarLintWsClient wsClient, PluginCache pluginCache) {
     this.wsClient = wsClient;
     this.pluginCache = pluginCache;
+    this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
   }
 
   public PluginReferences fetchPlugins(List<SonarAnalyzer> analyzers) {
     Builder builder = PluginReferences.newBuilder();
     for (SonarAnalyzer analyzer : analyzers) {
       if (!analyzer.sonarlintCompatible()) {
-        LOG.debug("Plugin {} is not compatible with SonarLint. Skip it.", analyzer.key());
+        LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip downloading it.", analyzer.key());
+        continue;
+      } else if (excludedPlugins.contains(analyzer.key())) {
+        LOG.debug("Code analyzer '{}' is excluded in this version of SonarLint. Skip downloading it.", analyzer.key());
+        continue;
+      } else if (!checkVersion(analyzer.key(), analyzer.version(), analyzer.minimumVersion())) {
         continue;
       }
-      if (checkVersion(analyzer.version(), analyzer.minimumVersion())) {
-        builder.addReference(PluginReference.newBuilder()
-          .setKey(analyzer.key())
-          .setHash(analyzer.hash())
-          .setFilename(analyzer.filename())
-          .build());
-      }
+      builder.addReference(PluginReference.newBuilder()
+        .setKey(analyzer.key())
+        .setHash(analyzer.hash())
+        .setFilename(analyzer.filename())
+        .build());
     }
     return builder.build();
   }
 
-  private static boolean checkVersion(@Nullable String version, @Nullable String minVersion) {
+  private static boolean checkVersion(String key, @Nullable String version, @Nullable String minVersion) {
     if (version != null && minVersion != null) {
       Version v = Version.create(version);
       Version minimalVersion = Version.create(minVersion);
+      boolean supported = v.compareTo(minimalVersion) >= 0;
 
-      return v.compareTo(minimalVersion) >= 0;
+      if (!supported) {
+        LOG.debug("Code analyzer '{}' version '{}' is not support (minimal version is '{}'). Skip downloading it.",
+          key, v, minimalVersion);
+      }
+      return supported;
     }
     return true;
   }

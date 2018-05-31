@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.Before;
@@ -29,6 +30,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
@@ -45,6 +47,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PluginReferencesDownloaderTest {
   private PluginCache pluginCache;
@@ -52,6 +55,7 @@ public class PluginReferencesDownloaderTest {
   private SonarLintWsClient wsClient;
   private List<SonarAnalyzer> pluginList;
   private PluginReferencesDownloader pluginUpdate;
+  private ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -62,7 +66,8 @@ public class PluginReferencesDownloaderTest {
     pluginCache = mock(PluginCache.class);
     dest = temp.newFolder().toPath();
     pluginList = new LinkedList<>();
-    pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
+    when(globalConfig.getExcludedCodeAnalyzers()).thenReturn(Collections.emptySet());
+    pluginUpdate = new PluginReferencesDownloader(globalConfig, wsClient, pluginCache);
   }
 
   @Test
@@ -122,13 +127,32 @@ public class PluginReferencesDownloaderTest {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
+    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(globalConfig, wsClient, pluginCache);
     pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
+        tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
+
+    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
+  }
+
+  @Test
+  public void filter_excluded() throws Exception {
+    when(globalConfig.getExcludedCodeAnalyzers()).thenReturn(Collections.singleton("groovy"));
+
+    pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
+    pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
+    pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
+
+    PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(globalConfig, wsClient, pluginCache);
+    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
+      .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
         tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
 
     verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
