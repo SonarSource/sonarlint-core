@@ -25,6 +25,8 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class RuleKey {
 
+  private static final char SEPARATOR = ':';
+
   private final String repository;
   private final String rule;
 
@@ -41,9 +43,20 @@ public class RuleKey {
     return rule;
   }
 
+  public static RuleKey parse(String s) {
+    int separatorIndex = s.indexOf(SEPARATOR);
+    if (separatorIndex < 0) {
+      throw new IllegalArgumentException("Invalid rule key: " + s);
+    }
+
+    String key = s.substring(0, separatorIndex);
+    String repo = s.substring(separatorIndex + 1);
+    return new RuleKey(key, repo);
+  }
+
   @Override
   public String toString() {
-    return repository + ":" + rule;
+    return repository + SEPARATOR + rule;
   }
 
   @Override
