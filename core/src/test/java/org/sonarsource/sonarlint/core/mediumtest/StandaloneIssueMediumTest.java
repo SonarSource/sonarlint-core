@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -62,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 public class StandaloneIssueMediumTest {
 
@@ -69,6 +71,7 @@ public class StandaloneIssueMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
   private File baseDir;
+  private static boolean commercialEnabled;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -91,20 +94,26 @@ public class StandaloneIssueMediumTest {
 
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("sonar.typescript.internal.typescriptLocation", fakeTypeScriptProjectPath.resolve("node_modules").toString());
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
       .addPlugin(PluginLocator.getPythonPluginUrl())
-      .addPlugin(PluginLocator.getCppPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
-      .addPlugin(PluginLocator.getLicensePluginUrl())
       .addPlugin(PluginLocator.getTypeScriptPluginUrl())
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
-      .setExtraProperties(extraProperties)
-      .build();
-    sonarlint = new StandaloneSonarLintEngineImpl(config);
+      .setExtraProperties(extraProperties);
+
+    // commercial plugins might not be available (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
+    if (System.getProperty("commercial") != null) {
+      commercialEnabled = true;
+      configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
+      configBuilder.addPlugin(PluginLocator.getLicensePluginUrl());
+    } else {
+      commercialEnabled = false;
+    }
+    sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
   }
 
   @AfterClass
@@ -209,6 +218,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleCpp() throws Exception {
+    assumeTrue(commercialEnabled);
     ClientInputFile inputFile = prepareInputFile("foo.cpp", "void fun() {\n "
       + "  int a = 0; \n"
       + "  if (a) {fun();}\n"
@@ -239,7 +249,7 @@ public class StandaloneIssueMediumTest {
     assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
       tuple("xoo:HasTag", 2, 6, inputFile.getPath()));
   }
-  
+
   @Test
   public void returnLanguagePerFile() throws IOException {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
@@ -396,7 +406,8 @@ public class StandaloneIssueMediumTest {
     final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S106"));
     final Collection<RuleKey> includedRules = Collections.emptyList();
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
       issues::add, null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -419,7 +430,8 @@ public class StandaloneIssueMediumTest {
     final Collection<RuleKey> excludedRules = Collections.emptyList();
     final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("squid", "S3553"));
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
       issues::add, null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -445,7 +457,8 @@ public class StandaloneIssueMediumTest {
     final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S3553"));
     final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("squid", "S3553"));
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
       issues::add, null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
