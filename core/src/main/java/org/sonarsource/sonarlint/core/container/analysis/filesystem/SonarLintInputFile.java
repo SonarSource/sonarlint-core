@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.internal.DefaultIndexedFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.utils.PathUtils;
@@ -55,7 +56,7 @@ public class SonarLintInputFile extends DefaultInputFile {
     return PathUtils.sanitize(clientInputFile.relativePath());
   }
 
-  public void setLanguage(String language) {
+  public void setLanguage(@Nullable String language) {
     this.language = language;
   }
 

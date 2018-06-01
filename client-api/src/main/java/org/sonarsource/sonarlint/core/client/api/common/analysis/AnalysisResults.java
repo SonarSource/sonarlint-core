@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.Collection;
+import java.util.Map;
 
 public interface AnalysisResults {
 
@@ -34,5 +35,11 @@ public interface AnalysisResults {
    * missing or no issues at all for these files.
    */
   Collection<ClientInputFile> failedAnalysisFiles();
+
+  /**
+   * Detected languages for each file.
+   * The values in the map can be null if no language was detected for some files.
+   */
+  Map<ClientInputFile, String> languagePerFile();
 
 }
