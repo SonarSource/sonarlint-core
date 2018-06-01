@@ -53,6 +53,7 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
   set_maven_build_version "$TRAVIS_BUILD_NUMBER"
   
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
+      -Dcommercial \
       -Pcoverage-per-test,deploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
@@ -78,6 +79,7 @@ elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "fals
     # Do not deploy a SNAPSHOT version but the release version related to this build
     set_maven_build_version $TRAVIS_BUILD_NUMBER
     mvn deploy \
+      -Dcommercial \
       -Pdeploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
@@ -85,6 +87,7 @@ elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "fals
   else
     echo "======= Found RELEASE version ======="
     mvn deploy \
+      -Dcommercial \
       -Pdeploy-sonarsource,release,sign \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
@@ -99,6 +102,7 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
 
   echo '======= with deploy'
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
+      -Dcommercial \
       -Pdeploy-sonarsource \
       -Dmaven.test.redirectTestOutputToFile=false \
       -Dsonar.host.url=$SONAR_HOST_URL \
@@ -122,6 +126,7 @@ else
   # in Maven local repository. Phase "verify" is enough.
 
   mvn verify \
+      -Dcommercial \
       -Dmaven.test.redirectTestOutputToFile=false \
       -B -e -V $*
 
