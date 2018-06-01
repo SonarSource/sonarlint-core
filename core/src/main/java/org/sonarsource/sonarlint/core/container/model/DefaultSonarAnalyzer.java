@@ -31,34 +31,36 @@ public class DefaultSonarAnalyzer implements SonarAnalyzer {
   private String hash;
   private boolean sonarlintCompatible;
   private String minimumVersion;
+  private boolean versionSupported = true;
 
-  public DefaultSonarAnalyzer(String key, String filename, String hash, @Nullable String version, boolean sonarlintCompatible, String minimumVersion) {
+  public DefaultSonarAnalyzer(String key, String filename, String hash, String version, boolean sonarlintCompatible) {
+    this(key, filename, hash, sonarlintCompatible);
+    this.version = version;
+  }
+
+  public DefaultSonarAnalyzer(String key, String filename, String hash, boolean sonarlintCompatible) {
     this.key = key;
     this.filename = filename;
     this.hash = hash;
-    this.version = version;
     this.sonarlintCompatible = sonarlintCompatible;
-    this.minimumVersion = minimumVersion;
-  }
-
-  public DefaultSonarAnalyzer(String key, String filename, String hash, @Nullable String version, boolean sonarlintCompatible) {
-    this(key, filename, hash, version, sonarlintCompatible, null);
   }
 
   public String key() {
     return key;
   }
 
-  public void key(String key) {
+  public DefaultSonarAnalyzer key(String key) {
     this.key = key;
+    return this;
   }
 
   public String filename() {
     return filename;
   }
 
-  public void filename(String filename) {
+  public DefaultSonarAnalyzer filename(String filename) {
     this.filename = filename;
+    return this;
   }
 
   @CheckForNull
@@ -66,24 +68,27 @@ public class DefaultSonarAnalyzer implements SonarAnalyzer {
     return version;
   }
 
-  public void version(@Nullable String version) {
+  public DefaultSonarAnalyzer version(@Nullable String version) {
     this.version = version;
+    return this;
   }
 
   public String hash() {
     return hash;
   }
 
-  public void hash(String hash) {
+  public DefaultSonarAnalyzer hash(String hash) {
     this.hash = hash;
+    return this;
   }
 
   public boolean sonarlintCompatible() {
     return sonarlintCompatible;
   }
 
-  public void sonarlintCompatible(boolean sonarlintCompatible) {
+  public DefaultSonarAnalyzer sonarlintCompatible(boolean sonarlintCompatible) {
     this.sonarlintCompatible = sonarlintCompatible;
+    return this;
   }
 
   @CheckForNull
@@ -91,8 +96,19 @@ public class DefaultSonarAnalyzer implements SonarAnalyzer {
     return minimumVersion;
   }
 
-  public void minimumVersion(@Nullable String minimumVersion) {
+  public DefaultSonarAnalyzer minimumVersion(@Nullable String minimumVersion) {
     this.minimumVersion = minimumVersion;
+    return this;
+  }
+
+  @Override
+  public boolean versionSupported() {
+    return versionSupported;
+  }
+
+  public DefaultSonarAnalyzer versionSupported(boolean b) {
+    this.versionSupported = b;
+    return this;
   }
 
 }

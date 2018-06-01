@@ -46,7 +46,7 @@ public class PluginsUpdateCheckerTest {
     pluginReferenceDownloader = mock(PluginReferencesDownloader.class);
 
     when(storageReader.readPluginReferences()).thenReturn(PluginReferences.newBuilder().build());
-    when(pluginReferenceDownloader.fetchPlugins(anyList())).thenReturn(PluginReferences.newBuilder().build());
+    when(pluginReferenceDownloader.toReferences(anyList())).thenReturn(PluginReferences.newBuilder().build());
 
     checker = new PluginsUpdateChecker(storageReader, pluginReferenceDownloader);
   }
@@ -62,7 +62,7 @@ public class PluginsUpdateCheckerTest {
 
   @Test
   public void addedPlugin() {
-    when(pluginReferenceDownloader.fetchPlugins(anyList()))
+    when(pluginReferenceDownloader.toReferences(anyList()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
@@ -86,7 +86,7 @@ public class PluginsUpdateCheckerTest {
 
   @Test
   public void updatedPlugin() {
-    when(pluginReferenceDownloader.fetchPlugins(anyList()))
+    when(pluginReferenceDownloader.toReferences(anyList()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
     when(storageReader.readPluginReferences())
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
