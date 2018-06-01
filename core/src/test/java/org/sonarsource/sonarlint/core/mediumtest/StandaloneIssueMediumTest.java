@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
 
@@ -237,6 +238,19 @@ public class StandaloneIssueMediumTest {
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
     assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
       tuple("xoo:HasTag", 2, 6, inputFile.getPath()));
+  }
+  
+  @Test
+  public void returnLanguagePerFile() throws IOException {
+    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
+      + "  var xoo;\n"
+      + "  var y; //NOSONAR\n"
+      + "}", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    AnalysisResults results = sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of()), issues::add, null, null);
+    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, "xoo"));
   }
 
   @Test

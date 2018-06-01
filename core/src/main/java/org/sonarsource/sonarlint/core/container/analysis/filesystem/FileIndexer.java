@@ -87,6 +87,7 @@ public class FileIndexer {
 
   private void indexFile(SonarLintFileSystem fileSystem, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
+    analysisResult.setLanguageForFile(file, inputFile.language());
     if (accept(inputFile)) {
       indexFile(fileSystem, progress, inputFile);
     }
