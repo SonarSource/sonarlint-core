@@ -32,6 +32,8 @@ public interface SonarAnalyzer {
   String hash();
 
   boolean sonarlintCompatible();
+  
+  boolean versionSupported();
 
   @CheckForNull
   String minimumVersion();

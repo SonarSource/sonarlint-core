@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -85,14 +86,20 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+  }
+
+  private ConnectedSonarLintEngine createEngine() {
+    return createEngine(b -> {
+    });
+  }
+
+  private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
+    ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput((msg, level) -> logs.add(msg))
-      .addExcludedCodeAnalyzer("java")
-      .build());
-    assertThat(engine.getGlobalStorageStatus()).isNull();
-    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
+      .setLogOutput((msg, level) -> logs.add(msg));
+    configurator.accept(builder);
+    return new ConnectedSonarLintEngineImpl(builder.build());
   }
 
   @After
@@ -105,21 +112,40 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void checkMinimalPluginVersionDuringGlobalUpdate() throws IOException {
+  public void dontDownloadPluginWithUnsupportedVersion() throws IOException {
+    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
+    assertThat(engine.getGlobalStorageStatus()).isNull();
+    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
+
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
+    assertThat(logs).contains("Code analyzer 'javascript' version '2.13' is not supported (minimal version is '2.14'). Skip downloading it.");
   }
   
   @Test
-  public void dontLoadExcludedPlugin() {
+  public void dontDownloadExcludedPlugin() {
+    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
     engine.update(config(), null);
-    assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip it.");
+    assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
+  }
+
+  @Test
+  public void donLoadExcludedPlugin() {
+    engine = createEngine();
+    engine.update(config(), null);
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains("java");
+    engine.stop(false);
+
+    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
+    assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
   }
 
   @Test
   public void dontCheckMinimalPluginVersionWhenValidatingConnection() throws IOException {
+    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
     ValidationResult result = new WsHelperImpl().validateConnection(config());
     assertThat(result.success()).isTrue();
   }

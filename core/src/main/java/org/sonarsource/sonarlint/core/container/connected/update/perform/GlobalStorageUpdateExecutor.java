@@ -75,7 +75,7 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
 
-      progress.setProgressAndCheckCancel("Fetching list of analyzers", 0.12f);
+      progress.setProgressAndCheckCancel("Fetching list of code analyzers", 0.12f);
       List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList(serverStatus.getVersion());
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StoragePaths.SERVER_INFO_PB));
 
@@ -83,7 +83,7 @@ public class GlobalStorageUpdateExecutor {
       globalSettingsDownloader.fetchGlobalSettingsTo(serverStatus.getVersion(), temp);
 
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
-      pluginReferenceDownloader.fetchPluginsTo(temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching analyzers"));
+      pluginReferenceDownloader.fetchPluginsTo(temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f, "Fetching rules"));

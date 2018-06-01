@@ -24,8 +24,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -41,10 +43,12 @@ public class PluginListDownloader {
 
   private final SonarLintWsClient wsClient;
   private final PluginVersionChecker pluginVersionChecker;
+  private final Set<String> excludedPlugins;
 
-  public PluginListDownloader(SonarLintWsClient wsClient, PluginVersionChecker pluginVersionChecker) {
+  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, SonarLintWsClient wsClient, PluginVersionChecker pluginVersionChecker) {
     this.wsClient = wsClient;
     this.pluginVersionChecker = pluginVersionChecker;
+    this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
   }
 
   public List<SonarAnalyzer> downloadPluginList(String serverVersion) {
@@ -65,24 +69,31 @@ public class PluginListDownloader {
       responseStr = response.content();
     }
 
-    Scanner scanner = new Scanner(responseStr);
-    while (scanner.hasNextLine()) {
-      String line = scanner.nextLine();
-      String[] fields = StringUtils.split(line, ",");
-      String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
+    try (Scanner scanner = new Scanner(responseStr)) {
+      while (scanner.hasNextLine()) {
+        String line = scanner.nextLine();
+        String[] fields = StringUtils.split(line, ",");
+        String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
 
-      String key = fields[0];
-      String filename = nameAndHash[0];
-      String hash = nameAndHash[1];
-      String version = VersionUtils.getJarVersion(filename);
-      String minVersion = pluginVersionChecker.getMinimumVersion(key);
-      boolean sonarlintCompatible = PluginCacheLoader.isWhitelisted(key) || !compatibleFlagPresent || "true".equals(fields[1]);
-      DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, version, sonarlintCompatible, minVersion);
-      analyzers.add(analyzer);
+        String key = fields[0];
+        String filename = nameAndHash[0];
+        String hash = nameAndHash[1];
+
+        boolean sonarlintCompatible = !excludedPlugins.contains(key) && (PluginCacheLoader.isWhitelisted(key)
+          || !compatibleFlagPresent || "true".equals(fields[1]));
+        DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, sonarlintCompatible);
+        checkMinVersion(analyzer);
+        analyzers.add(analyzer);
+      }
     }
-
-    scanner.close();
     return analyzers;
+  }
+
+  private void checkMinVersion(DefaultSonarAnalyzer analyzer) {
+    String minVersion = pluginVersionChecker.getMinimumVersion(analyzer.key());
+    analyzer.minimumVersion(minVersion);
+    analyzer.version(VersionUtils.getJarVersion(analyzer.filename()));
+    analyzer.versionSupported(pluginVersionChecker.isVersionSupported(analyzer.key(), analyzer.version()));
   }
 
   public List<SonarAnalyzer> downloadPluginList66() {
@@ -93,10 +104,10 @@ public class PluginListDownloader {
   }
 
   private SonarAnalyzer toSonarAnalyzer(InstalledPlugin plugin) {
-    String version = VersionUtils.getJarVersion(plugin.filename);
-    String minVersion = pluginVersionChecker.getMinimumVersion(plugin.key);
-    boolean sonarlintCompatible = PluginCacheLoader.isWhitelisted(plugin.key) || plugin.sonarLintSupported;
-    return new DefaultSonarAnalyzer(plugin.key, plugin.filename, plugin.hash, version, sonarlintCompatible, minVersion);
+    boolean sonarlintCompatible = !excludedPlugins.contains(plugin.key) && (PluginCacheLoader.isWhitelisted(plugin.key) || plugin.sonarLintSupported);
+    DefaultSonarAnalyzer sonarAnalyzer = new DefaultSonarAnalyzer(plugin.key, plugin.filename, plugin.hash, sonarlintCompatible);
+    checkMinVersion(sonarAnalyzer);
+    return sonarAnalyzer;
   }
 
   private static class InstalledPlugins {

@@ -21,8 +21,9 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import java.io.IOException;
 import java.util.Properties;
-
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.plugin.Version;
 
 public class PluginVersionChecker {
   public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
@@ -55,5 +56,22 @@ public class PluginVersionChecker {
   @CheckForNull
   public String getMinimumStreamSupportVersion(String key) {
     return streamSupportVersions.getProperty(key);
+  }
+
+  public boolean isVersionSupported(String key, @Nullable String version) {
+    if (version != null) {
+      Version v = Version.create(version);
+      return isVersionSupported(key, v);
+    }
+    return true;
+  }
+
+  public boolean isVersionSupported(String key, @Nullable Version version) {
+    String minVersion = getMinimumVersion(key);
+    if (version != null && minVersion != null) {
+      Version minimalVersion = Version.create(minVersion);
+      return version.compareTo(minimalVersion) >= 0;
+    }
+    return true;
   }
 }

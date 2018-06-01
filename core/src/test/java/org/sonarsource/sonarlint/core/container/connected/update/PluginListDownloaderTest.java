@@ -22,14 +22,17 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -64,47 +67,50 @@ public class PluginListDownloaderTest {
     "    } ]}";
 
   private SonarLintWsClient wsClient;
-  private PluginVersionChecker pluginVersionChecker;
+  private PluginVersionChecker pluginVersionChecker = mock(PluginVersionChecker.class);
+  private ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
 
   @Before
   public void setUp() {
-    pluginVersionChecker = mock(PluginVersionChecker.class);
-    when(pluginVersionChecker.getMinimumVersion(anyString())).thenReturn("0.0");
+    when(pluginVersionChecker.getMinimumVersion(anyString())).thenReturn("1.0");
+    when(pluginVersionChecker.isVersionSupported(anyString(), anyString())).thenReturn(true);
+    when(pluginVersionChecker.isVersionSupported(eq("javascript"), anyString())).thenReturn(false);
+    when(globalConfig.getExcludedCodeAnalyzers()).thenReturn(Collections.singleton("groovy"));
   }
 
   @Test
   public void testParsing() {
     wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt", PLUGIN_INDEX);
 
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(wsClient, pluginVersionChecker).downloadPluginList("5.0");
-    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible").containsOnly(
-      tuple("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3", true),
-      tuple("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true),
-      tuple("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true),
-      tuple("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true),
-      tuple("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12", true));
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList("5.0");
+    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible", "versionSupported").containsOnly(
+      tuple("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3", true, true),
+      tuple("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true, false),
+      tuple("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true, true),
+      tuple("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", false, true),
+      tuple("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12", true, true));
   }
 
   @Test
   public void testParsing60() {
     wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt", PLUGIN_INDEX60);
 
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(wsClient, pluginVersionChecker).downloadPluginList("6.0");
-    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible").containsOnly(
-      tuple("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3", true),
-      tuple("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true),
-      tuple("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true),
-      tuple("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true),
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList("6.0");
+    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible", "versionSupported").containsOnly(
+      tuple("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3", true, true),
+      tuple("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true, false),
+      tuple("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true, true),
+      tuple("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", false, true),
       // java has flag=false, but is whitelisted
-      tuple("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12", true));
+      tuple("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12", true, true));
   }
 
   @Test
   public void testParsing67() {
     wsClient = WsClientTestUtils.createMockWithResponse("/api/plugins/installed", RESPONSE_67);
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(wsClient, pluginVersionChecker).downloadPluginList("6.7");
-    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible").containsOnly(
-      tuple("branch", "sonar-branch-plugin-1.1.0.879.jar", "064d334d27aa14aab6e39315428ee3cf", "1.1.0.879", false),
-      tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true));
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList("6.7");
+    assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible", "versionSupported").containsOnly(
+      tuple("branch", "sonar-branch-plugin-1.1.0.879.jar", "064d334d27aa14aab6e39315428ee3cf", "1.1.0.879", false, true),
+      tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true, false));
   }
 }
