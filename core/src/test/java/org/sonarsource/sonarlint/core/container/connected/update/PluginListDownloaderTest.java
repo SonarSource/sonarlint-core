@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
+import org.sonarsource.sonarlint.core.plugin.Version;
 
 public class PluginListDownloaderTest {
   private static final String PLUGIN_INDEX = "scmsvn,sonar-scm-svn-plugin-1.3-SNAPSHOT.jar|d0a68d150314d96d3469e0f2246f3537\n" +
@@ -82,7 +83,7 @@ public class PluginListDownloaderTest {
   public void testParsing() {
     wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt", PLUGIN_INDEX);
 
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList("5.0");
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList(Version.create("5.0"));
     assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible", "versionSupported").containsOnly(
       tuple("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3", true, true),
       tuple("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true, false),
@@ -95,7 +96,7 @@ public class PluginListDownloaderTest {
   public void testParsing60() {
     wsClient = WsClientTestUtils.createMockWithResponse("/deploy/plugins/index.txt", PLUGIN_INDEX60);
 
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList("6.0");
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList(Version.create("6.0"));
     assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible", "versionSupported").containsOnly(
       tuple("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3", true, true),
       tuple("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true, false),
@@ -108,7 +109,7 @@ public class PluginListDownloaderTest {
   @Test
   public void testParsing67() {
     wsClient = WsClientTestUtils.createMockWithResponse("/api/plugins/installed", RESPONSE_67);
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList("6.7");
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList(Version.create("6.7"));
     assertThat(pluginList).extracting("key", "filename", "hash", "version", "sonarlintCompatible", "versionSupported").containsOnly(
       tuple("branch", "sonar-branch-plugin-1.1.0.879.jar", "064d334d27aa14aab6e39315428ee3cf", "1.1.0.879", false, true),
       tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true, false));

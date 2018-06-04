@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Map;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -38,7 +39,7 @@ public class ModuleConfigurationDownloader {
     this.settingsDownloader = settingsDownloader;
   }
 
-  public ModuleConfiguration fetchModuleConfiguration(String serverVersion, String moduleKey, GlobalProperties globalProps, ProgressWrapper progress) {
+  public ModuleConfiguration fetchModuleConfiguration(Version serverVersion, String moduleKey, GlobalProperties globalProps, ProgressWrapper progress) {
     ModuleConfiguration.Builder builder = ModuleConfiguration.newBuilder();
     fetchProjectQualityProfiles(moduleKey, builder, serverVersion);
     progress.setProgressAndCheckCancel("Fetching module settings", 0.1f);
@@ -54,7 +55,7 @@ public class ModuleConfigurationDownloader {
     builder.putAllModulePathByKey(moduleHierarchy);
   }
 
-  private void fetchProjectQualityProfiles(String moduleKey, ModuleConfiguration.Builder builder, String serverVersion) {
+  private void fetchProjectQualityProfiles(String moduleKey, ModuleConfiguration.Builder builder, Version serverVersion) {
     for (QualityProfile qp : moduleQualityProfilesDownloader.fetchModuleQualityProfiles(moduleKey, serverVersion)) {
       builder.putQprofilePerLanguage(qp.getLanguage(), qp.getKey());
     }

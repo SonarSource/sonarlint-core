@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.verify;
 public class PluginReferencesDownloaderTest {
   private PluginCache pluginCache = mock(PluginCache.class);
   private Path dest;
-  private SonarLintWsClient wsClient = WsClientTestUtils.createMock();;
+  private SonarLintWsClient wsClient = WsClientTestUtils.createMock();
   private List<SonarAnalyzer> pluginList = new LinkedList<>();
   private PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
 
@@ -62,14 +63,14 @@ public class PluginReferencesDownloaderTest {
   }
 
   @Test
-  public void update_all_plugins_before_6_0() throws Exception {
+  public void update_all_plugins_before_7_2() throws Exception {
     pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", true));
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
     pluginList.add(new DefaultSonarAnalyzer("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true));
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    pluginUpdate.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(
@@ -91,6 +92,35 @@ public class PluginReferencesDownloaderTest {
   }
 
   @Test
+  public void update_all_plugins_from_7_2() throws Exception {
+    pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", true));
+    pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
+    pluginList.add(new DefaultSonarAnalyzer("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true));
+    pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
+    pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
+
+    pluginUpdate.fetchPluginsTo(Version.create("7.2"), dest, pluginList, new ProgressWrapper(null));
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
+      .containsOnly(
+        tuple("scmsvn", "d0a68d150314d96d3469e0f2246f3537", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar"),
+        tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"),
+        tuple("csharp", "e78bc8ac2e376c4a7a2a2cae914bdc52", "sonar-csharp-plugin-4.4.jar"),
+        tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
+        tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"));
+
+    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
+
+    ArgumentCaptor<Copier> downloaderCaptor = ArgumentCaptor.forClass(Copier.class);
+    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), downloaderCaptor.capture());
+    Copier downloader = downloaderCaptor.getValue();
+    WsClientTestUtils.addResponse(wsClient, "api/plugins/download?plugin=java", "content");
+    Path testFile = temp.newFile().toPath();
+    downloader.copy("test.jar", testFile);
+    assertThat(testFile).hasContent("content");
+  }
+
+  @Test
   public void filter_not_compatible() throws Exception {
     pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", false));
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
@@ -99,7 +129,7 @@ public class PluginReferencesDownloaderTest {
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
     PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
-    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    pluginUpdate.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
@@ -120,7 +150,7 @@ public class PluginReferencesDownloaderTest {
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
     PluginReferencesDownloader pluginUpdate = new PluginReferencesDownloader(wsClient, pluginCache);
-    pluginUpdate.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    pluginUpdate.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")

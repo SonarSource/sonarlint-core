@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigura
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -68,7 +69,8 @@ public class ModuleStorageUpdateExecutor {
   }
 
   private void updateModuleConfiguration(String moduleKey, GlobalProperties globalProps, Path temp, ProgressWrapper progress) {
-    ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(storageReader.readServerInfos().getVersion(), moduleKey,
+    Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
+    ModuleConfiguration moduleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey,
       globalProps, progress);
     final Set<String> qProfileKeys = storageReader.readQProfiles().getQprofilesByKeyMap().keySet();
     for (String qpKey : moduleConfiguration.getQprofilePerLanguageMap().values()) {

@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
@@ -78,28 +79,37 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public PluginReferences fetchPluginsTo(Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+  public PluginReferences fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
     float refCount = (float) refs.getReferenceList().size();
     for (PluginReference ref : refs.getReferenceList()) {
       progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
-      pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
+      pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(serverVersion, ref.getKey()));
     }
     ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
     return refs;
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Copier {
-    private String key;
+    private final String key;
+    private final Version serverVersion;
 
-    SonarQubeServerPluginDownloader(String key) {
+    SonarQubeServerPluginDownloader(Version serverVersion, String key) {
+      this.serverVersion = serverVersion;
       this.key = key;
     }
 
     @Override
     public void copy(String filename, Path toFile) throws IOException {
-      String url = format("/deploy/plugins/%s/%s", key, filename);
+      String url;
+
+      if (serverVersion.compareTo(Version.create("7.2")) >= 0) {
+        url = "api/plugins/download?plugin=" + key;
+      } else {
+        url = format("/deploy/plugins/%s/%s", key, filename);
+      }
+
       if (LOG.isDebugEnabled()) {
         LOG.debug("Download plugin '{}' to '{}'", filename, toFile);
       } else {
@@ -112,5 +122,4 @@ public class PluginReferencesDownloader {
       }
     }
   }
-
 }

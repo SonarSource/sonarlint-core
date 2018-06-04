@@ -51,22 +51,22 @@ public class SettingsDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchGlobalSettingsTo(String serverVersion, Path dest) {
+  public void fetchGlobalSettingsTo(Version serverVersion, Path dest) {
     ProtobufUtil.writeToFile(fetchGlobalSettings(serverVersion), dest.resolve(StoragePaths.PROPERTIES_PB));
   }
 
-  public GlobalProperties fetchGlobalSettings(String serverVersion) {
+  public GlobalProperties fetchGlobalSettings(Version serverVersion) {
     GlobalProperties.Builder builder = GlobalProperties.newBuilder();
     fetchSettings(serverVersion, null, (k, v) -> true, builder::putProperties);
     return builder.build();
   }
 
-  public void fetchProjectSettings(String serverVersion, String moduleKey, GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder) {
+  public void fetchProjectSettings(Version serverVersion, String moduleKey, GlobalProperties globalProps, ModuleConfiguration.Builder projectConfigurationBuilder) {
     fetchSettings(serverVersion, moduleKey, (k, v) -> !v.equals(globalProps.getPropertiesMap().get(k)), projectConfigurationBuilder::putProperties);
   }
 
-  private void fetchSettings(String serverVersion, @Nullable String moduleKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
-    if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
+  private void fetchSettings(Version serverVersion, @Nullable String moduleKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
+    if (serverVersion.compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
       fetchUsingSettingsWS(moduleKey, consumer);
     } else {
       fetchUsingPropertiesWS(moduleKey, filter, consumer);
