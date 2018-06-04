@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
 import org.sonarsource.sonarlint.core.log.SonarLintLoggerFactory;
-import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 
 /**
  * Overrides the behavior of loggers in the sonar API.
@@ -57,9 +56,4 @@ public abstract class Loggers {
   public static void setTarget(@Nullable LogOutput output) {
     logOutputDelegator.setTarget(output);
   }
-
-  public static void setErrorHandler(LoggedErrorHandler errorHandler) {
-    logOutputDelegator.setErrorHandler(errorHandler);
-  }
-
 }
