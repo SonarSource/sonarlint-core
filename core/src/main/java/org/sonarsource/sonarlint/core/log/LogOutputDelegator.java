@@ -24,33 +24,18 @@ import java.io.StringWriter;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
-import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 
 public class LogOutputDelegator {
   private InheritableThreadLocal<LogOutput> target = new InheritableThreadLocal<>();
-  private InheritableThreadLocal<LoggedErrorHandler> errorHandler = new InheritableThreadLocal<>();
 
   public void log(String formattedMessage, Level level) {
     LogOutput output = target.get();
     if (output != null) {
       output.log(formattedMessage, level);
     }
-
-    if (level == Level.ERROR) {
-      LoggedErrorHandler h = errorHandler.get();
-      if (h != null) {
-        h.handleError(formattedMessage);
-      }
-    }
   }
 
   public void logError(String msg, Throwable t) {
-    LoggedErrorHandler h = errorHandler.get();
-    if (h != null) {
-      h.handleException(t.getClass().getName());
-      h.handleError(msg);
-    }
-
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
@@ -58,15 +43,11 @@ public class LogOutputDelegator {
     LogOutput output = target.get();
     if (output != null) {
       output.log(msg, Level.ERROR);
+      output.log(sw.toString(), Level.ERROR);
     }
   }
 
   public void setTarget(@Nullable LogOutput target) {
     this.target.set(target);
   }
-
-  public void setErrorHandler(@Nullable LoggedErrorHandler errorHandler) {
-    this.errorHandler.set(errorHandler);
-  }
-
 }

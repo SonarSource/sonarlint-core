@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.log;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
-import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class LogOutputDelegatorTest {
   private LogOutputDelegator delegator = new LogOutputDelegator();
+  private LogOutput output = mock(LogOutput.class);
 
   @Test
   public void should_not_throw_exception_when_not_set() {
@@ -39,7 +40,6 @@ public class LogOutputDelegatorTest {
 
   @Test
   public void should_delegate() {
-    LogOutput output = mock(LogOutput.class);
     delegator.setTarget(output);
     delegator.log("asd", Level.DEBUG);
     verify(output).log("asd", Level.DEBUG);
@@ -47,7 +47,6 @@ public class LogOutputDelegatorTest {
 
   @Test
   public void should_remove_delegate() {
-    LogOutput output = mock(LogOutput.class);
     delegator.setTarget(output);
     delegator.setTarget(null);
     delegator.log("asd", Level.DEBUG);
@@ -55,24 +54,11 @@ public class LogOutputDelegatorTest {
   }
 
   @Test
-  public void should_report_error_message() {
-    LoggedErrorHandler handler = mock(LoggedErrorHandler.class);
-    delegator.setErrorHandler(handler);
-
-    delegator.log("msg1", Level.INFO);
-    delegator.log("msg2", Level.ERROR);
-    verify(handler).handleError("msg2");
-    verifyNoMoreInteractions(handler);
-  }
-
-  @Test
   public void should_report_throwables() {
-    LoggedErrorHandler handler = mock(LoggedErrorHandler.class);
-    delegator.setErrorHandler(handler);
-
-    delegator.logError("msg", new NullPointerException());
-    verify(handler).handleError("msg");
-    verify(handler).handleException("java.lang.NullPointerException");
-    verifyNoMoreInteractions(handler);
+    delegator.setTarget(output);
+    delegator.logError("msg", new NullPointerException("error"));
+    verify(output).log("msg", Level.ERROR);
+    verify(output).log(Mockito.startsWith("java.lang.NullPointerException: error"), Mockito.eq(Level.ERROR));
+    verifyNoMoreInteractions(output);
   }
 }

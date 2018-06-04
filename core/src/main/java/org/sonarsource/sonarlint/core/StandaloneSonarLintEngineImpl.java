@@ -35,7 +35,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.util.LoggedErrorHandler;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -85,13 +84,9 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     checkNotNull(configuration);
     checkNotNull(issueListener);
     setLogging(logOutput);
-    LoggedErrorHandler errorHandler = new LoggedErrorHandler(configuration.inputFiles());
-    Loggers.setErrorHandler(errorHandler);
     rwl.readLock().lock();
     try {
-      AnalysisResults results = globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
-      errorHandler.getErrorFiles().forEach(results.failedAnalysisFiles()::add);
-      return results;
+      return globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
