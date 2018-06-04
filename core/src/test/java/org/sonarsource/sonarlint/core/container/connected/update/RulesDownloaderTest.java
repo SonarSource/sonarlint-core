@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.server.rule.RulesDefinition.Context;
+import org.sonarqube.ws.Rules.SearchResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -49,8 +50,11 @@ public class RulesDownloaderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  private File tempDir;
+
   @Before
-  public void prepare() {
+  public void prepare() throws IOException {
+    tempDir = temp.newFolder();
     Context context = new Context();
     context.createRepository("javascript", "js").done();
     context.createRepository("squid", "java").done();
@@ -66,13 +70,27 @@ public class RulesDownloaderTest {
       "/update/rulesp2.pb");
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
-    File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
     ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
+  }
+
+  @Test
+  public void throw_exception_if_server_contains_more_than_10k_rules() throws IOException {
+    SearchResponse response = SearchResponse.newBuilder()
+      .setTotal(10001)
+      .build();
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    WsClientTestUtils.addResponse(wsClient, RULES_SEARCH_URL + "&p=1&ps=500", response);
+
+    exception.expect(IllegalStateException.class);
+    exception.expectMessage("Found more than 10000 rules in the SonarQube server, which is not supported by SonarLint.");
+
+    RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
+    rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
   }
 
   @Test
@@ -86,7 +104,6 @@ public class RulesDownloaderTest {
     when(wsClient.getOrganizationKey()).thenReturn("myOrg");
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
-    File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -104,7 +121,6 @@ public class RulesDownloaderTest {
     WsClientTestUtils.addResponse(wsClient, RULES_SEARCH_URL + "&p=1&ps=500", response);
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
-    File tempDir = temp.newFolder();
     rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));
 
     Rules saved = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -119,7 +135,7 @@ public class RulesDownloaderTest {
     WsClientTestUtils.addResponse(wsClient, RULES_SEARCH_URL + "&p=1&ps=500", stream);
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
-    File tempDir = temp.newFolder();
+
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to load rules");
     rulesUpdate.fetchRulesTo(tempDir.toPath(), new ProgressWrapper(null));

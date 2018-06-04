@@ -74,6 +74,9 @@ public class RulesDownloader {
     while (true) {
       page++;
       SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)));
+      if (response.getTotal() > 10_000) {
+        throw new IllegalStateException("Found more than 10000 rules in the SonarQube server, which is not supported by SonarLint.");
+      }
       readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
 
