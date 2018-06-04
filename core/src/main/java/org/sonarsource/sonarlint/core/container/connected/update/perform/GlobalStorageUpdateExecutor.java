@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloa
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -74,16 +75,17 @@ public class GlobalStorageUpdateExecutor {
     try {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
-
+      Version serverVersion = Version.create(serverStatus.getVersion());
+      
       progress.setProgressAndCheckCancel("Fetching list of code analyzers", 0.12f);
-      List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList(serverStatus.getVersion());
+      List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList(serverVersion);
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StoragePaths.SERVER_INFO_PB));
 
       progress.setProgressAndCheckCancel("Fetching global properties", 0.15f);
-      globalSettingsDownloader.fetchGlobalSettingsTo(serverStatus.getVersion(), temp);
+      globalSettingsDownloader.fetchGlobalSettingsTo(serverVersion, temp);
 
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
-      pluginReferenceDownloader.fetchPluginsTo(temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
+      pluginReferenceDownloader.fetchPluginsTo(serverVersion, temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f, "Fetching rules"));

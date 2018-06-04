@@ -51,9 +51,7 @@ public class PluginListDownloader {
     this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
   }
 
-  public List<SonarAnalyzer> downloadPluginList(String serverVersion) {
-    Version version = Version.create(serverVersion);
-
+  public List<SonarAnalyzer> downloadPluginList(Version version) {
     if (version.compareToIgnoreQualifier(Version.create("6.6")) >= 0) {
       return downloadPluginList66();
     } else {

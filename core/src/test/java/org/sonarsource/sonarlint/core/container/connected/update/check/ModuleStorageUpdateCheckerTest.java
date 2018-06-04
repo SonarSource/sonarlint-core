@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class ModuleStorageUpdateCheckerTest {
 
-  private static final String SERVER_VERSION = "6.0";
+  private static final Version SERVER_VERSION = Version.create("6.0");
 
   @Rule
   public LogTester logTester = new LogTester();
@@ -58,7 +59,7 @@ public class ModuleStorageUpdateCheckerTest {
     moduleConfigurationDownloader = mock(ModuleConfigurationDownloader.class);
 
     when(storageReader.readModuleConfig(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().build());
-    when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
+    when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION.toString()).build());
     when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
       .thenReturn(ModuleConfiguration.newBuilder().build());
 

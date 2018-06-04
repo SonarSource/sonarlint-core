@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
@@ -79,7 +80,7 @@ public class SettingsDownloaderTest {
     out.close();
     WsClientTestUtils.addResponse(wsClient, "/api/settings/values.protobuf", in);
 
-    new SettingsDownloader(wsClient).fetchGlobalSettingsTo("6.3", destDir);
+    new SettingsDownloader(wsClient).fetchGlobalSettingsTo(Version.create("6.3"), destDir);
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StoragePaths.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(
@@ -118,7 +119,7 @@ public class SettingsDownloaderTest {
     WsClientTestUtils.addResponse(wsClient, "/api/settings/values.protobuf?component=foo", in);
 
     Builder builder = ModuleConfiguration.newBuilder();
-    new SettingsDownloader(wsClient).fetchProjectSettings("6.3", "foo", null, builder);
+    new SettingsDownloader(wsClient).fetchProjectSettings(Version.create("6.3"), "foo", null, builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(
       entry("sonar.inclusions", "**/*.java"),
@@ -135,7 +136,7 @@ public class SettingsDownloaderTest {
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
     WsClientTestUtils.addResponse(wsClient, "/api/settings/values.protobuf", new ByteArrayInputStream("foo bar".getBytes()));
 
-    new SettingsDownloader(wsClient).fetchGlobalSettingsTo("6.3", destDir);
+    new SettingsDownloader(wsClient).fetchGlobalSettingsTo(Version.create("6.3"), destDir);
   }
 
   @Test
@@ -145,7 +146,7 @@ public class SettingsDownloaderTest {
         + "{\"key\": \"sonar.core.treemap.sizemetric\",\"value\": \"ncloc\"},"
         + "{\"key\": \"views.servers\",\"value\": \"135817900907501\",\"values\": [\"135817900907501\"]}]"));
 
-    new SettingsDownloader(wsClient).fetchGlobalSettingsTo("6.2", destDir);
+    new SettingsDownloader(wsClient).fetchGlobalSettingsTo(Version.create("6.2"), destDir);
 
     GlobalProperties properties = ProtobufUtil.readFile(destDir.resolve(StoragePaths.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(entry("sonar.core.treemap.colormetric", "violations_density"),
@@ -160,7 +161,7 @@ public class SettingsDownloaderTest {
         + "{\"key\": \"sonar.java.fileSuffixes\",\"value\": \"*.java\"}]"));
 
     Builder builder = ModuleConfiguration.newBuilder();
-    new SettingsDownloader(wsClient).fetchProjectSettings("6.2", "foo", GlobalProperties.newBuilder().build(), builder);
+    new SettingsDownloader(wsClient).fetchProjectSettings(Version.create("6.2"), "foo", GlobalProperties.newBuilder().build(), builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(entry("sonar.inclusions", "**/*.java"),
       entry("sonar.java.fileSuffixes", "*.java"));
@@ -173,7 +174,7 @@ public class SettingsDownloaderTest {
         + "{\"key\": \"sonar.java.fileSuffixes\",\"value\": \"*.java\"}]"));
 
     Builder builder = ModuleConfiguration.newBuilder();
-    new SettingsDownloader(wsClient).fetchProjectSettings("6.2", "foo", GlobalProperties.newBuilder().putProperties("sonar.inclusions", "**/*.java").build(), builder);
+    new SettingsDownloader(wsClient).fetchProjectSettings(Version.create("6.2"), "foo", GlobalProperties.newBuilder().putProperties("sonar.inclusions", "**/*.java").build(), builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(entry("sonar.java.fileSuffixes", "*.java"));
   }
@@ -182,7 +183,7 @@ public class SettingsDownloaderTest {
   public void invalidResponseProperties() throws Exception {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithReaderResponse("/api/properties?format=json", new StringReader("foo bar"));
 
-    new SettingsDownloader(wsClient).fetchGlobalSettingsTo("6.2", destDir);
+    new SettingsDownloader(wsClient).fetchGlobalSettingsTo(Version.create("6.2"), destDir);
   }
 
 }

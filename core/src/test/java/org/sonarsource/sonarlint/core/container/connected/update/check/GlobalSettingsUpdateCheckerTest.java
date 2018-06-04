@@ -28,16 +28,18 @@ import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GlobalSettingsUpdateCheckerTest {
 
-  private static final String SQ_VERSION = "6.3";
+  private static final Version SQ_VERSION = Version.create("6.3");
   private GlobalSettingsUpdateChecker checker;
   private StorageReader storageReader;
   private SettingsDownloader globalPropertiesDownloader;
@@ -51,7 +53,7 @@ public class GlobalSettingsUpdateCheckerTest {
     globalPropertiesDownloader = mock(SettingsDownloader.class);
 
     when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
-    when(globalPropertiesDownloader.fetchGlobalSettings(anyString())).thenReturn(GlobalProperties.newBuilder().build());
+    when(globalPropertiesDownloader.fetchGlobalSettings(any(Version.class))).thenReturn(GlobalProperties.newBuilder().build());
 
     checker = new GlobalSettingsUpdateChecker(storageReader, globalPropertiesDownloader);
   }

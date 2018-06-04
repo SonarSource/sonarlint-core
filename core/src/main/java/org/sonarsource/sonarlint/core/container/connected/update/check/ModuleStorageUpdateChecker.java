@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -49,7 +50,7 @@ public class ModuleStorageUpdateChecker {
 
   public StorageUpdateCheckResult checkForUpdates(String moduleKey, ProgressWrapper progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    String serverVersion = storageReader.readServerInfos().getVersion();
+    Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
     GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
 
     ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey, globalProps, progress);

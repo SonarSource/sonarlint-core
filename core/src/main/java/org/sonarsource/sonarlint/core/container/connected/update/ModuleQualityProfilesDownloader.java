@@ -39,10 +39,10 @@ public class ModuleQualityProfilesDownloader {
     this.wsClient = wsClient;
   }
 
-  public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey, String serverVersion) {
+  public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey, Version serverVersion) {
     SearchWsResponse qpResponse;
     String param;
-    if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.5")) >= 0) {
+    if (serverVersion.compareToIgnoreQualifier(Version.create("6.5")) >= 0) {
       param = "project";
     } else {
       param = "projectKey";

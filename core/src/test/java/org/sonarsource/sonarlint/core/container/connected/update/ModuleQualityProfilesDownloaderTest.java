@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.plugin.Version;
 
 import static org.mockito.Mockito.when;
 
@@ -41,7 +42,7 @@ public class ModuleQualityProfilesDownloaderTest {
     when(wsClient.get("/api/qualityprofiles/search.protobuf?project=key")).thenThrow(NotFoundException.class);
 
     exception.expect(ProjectNotFoundException.class);
-    underTest.fetchModuleQualityProfiles("key", "6.5");
+    underTest.fetchModuleQualityProfiles("key",  Version.create("6.5"));
   }
 
   @Test
@@ -49,6 +50,6 @@ public class ModuleQualityProfilesDownloaderTest {
     when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=key")).thenThrow(NotFoundException.class);
 
     exception.expect(ProjectNotFoundException.class);
-    underTest.fetchModuleQualityProfiles("key", "6.4");
+    underTest.fetchModuleQualityProfiles("key", Version.create("6.4"));
   }
 }
