@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import javax.annotation.CheckForNull;
 import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -42,7 +41,6 @@ public class InputFileBuilder {
     return langDetection;
   }
 
-  @CheckForNull
   SonarLintInputFile create(ClientInputFile inputFile) {
     SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile, f -> {
       LOG.debug("Initializing metadata of file {}", inputFile.uri());

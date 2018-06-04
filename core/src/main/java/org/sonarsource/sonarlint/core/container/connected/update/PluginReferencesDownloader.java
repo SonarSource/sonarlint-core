@@ -55,7 +55,7 @@ public class PluginReferencesDownloader {
     Builder builder = PluginReferences.newBuilder();
 
     analyzers.stream()
-      .filter(this::analyzerFilter)
+      .filter(PluginReferencesDownloader::analyzerFilter)
       .map(analyzer -> PluginReference.newBuilder()
         .setKey(analyzer.key())
         .setHash(analyzer.hash())
@@ -66,7 +66,7 @@ public class PluginReferencesDownloader {
     return builder.build();
   }
 
-  private boolean analyzerFilter(SonarAnalyzer analyzer) {
+  private static boolean analyzerFilter(SonarAnalyzer analyzer) {
     if (!analyzer.sonarlintCompatible()) {
       LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip downloading it.", analyzer.key());
       return false;
