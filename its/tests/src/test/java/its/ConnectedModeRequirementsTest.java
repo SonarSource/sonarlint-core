@@ -19,14 +19,15 @@
  */
 package its;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.updatecenter.common.Version;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
@@ -46,19 +48,36 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
-import com.sonar.orchestrator.Orchestrator;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .setOrchestratorProperty("javascriptVersion", "2.13")
-    .addPlugin("javascript")
-    .setOrchestratorProperty("javaVersion", "LATEST_RELEASE")
-    .addPlugin("java")
-    .setOrchestratorProperty("phpVersion", "LATEST_RELEASE")
-    .addPlugin("php")
-    .build();
+  public static Orchestrator ORCHESTRATOR = buildOrchestrator();
+
+  private static Orchestrator buildOrchestrator() {
+    OrchestratorBuilder builder = Orchestrator.builderEnv()
+      .setOrchestratorProperty("javascriptVersion", "2.13")
+      .addPlugin("javascript");
+    after70 = !builder.getSonarVersion().isPresent() || Version.create(builder.getSonarVersion().get()).compareTo(Version.create("7.0")) > 0;
+
+    if (after70) {
+      builder
+        .setOrchestratorProperty("javaVersion", "LATEST_RELEASE")
+        .setOrchestratorProperty("phpVersion", "LATEST_RELEASE");
+    } else {
+      builder
+        .setOrchestratorProperty("javaVersion", "4.0")
+        .setOrchestratorProperty("phpVersion", "2.9");
+
+    }
+    builder
+      .addPlugin("java")
+      .addPlugin("php");
+    ;
+
+    return builder.build();
+  }
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -67,6 +86,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public ExpectedException exception = ExpectedException.none();
 
   private static Path sonarUserHome;
+  private static boolean after70;
 
   private ConnectedSonarLintEngine engine;
   private List<String> logs = new ArrayList<>();
@@ -122,7 +142,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
     assertThat(logs).contains("Code analyzer 'javascript' version '2.13' is not supported (minimal version is '2.14'). Skip downloading it.");
   }
-  
+
   @Test
   public void dontDownloadExcludedPlugin() {
     engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
@@ -139,7 +159,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.stop(false);
 
     engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
-    assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
+    if (after70) {
+      assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
+    } else {
+      assertThat(logs).contains("Code analyzer 'Java' is excluded in this version of SonarLint. Skip loading it.");
+    }
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
   }
 
