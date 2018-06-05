@@ -290,6 +290,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJava() throws IOException {
+    // older versions of plugins don't report errors
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.0"));
+
     String fileContent = "pac kage its; public class MyTest { }";
     Path testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -305,6 +308,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJavascript() throws IOException {
+    // older versions of plugins don't report errors
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.0"));
+    
     String fileContent = "asd asd";
     Path testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -320,6 +326,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void semanticErrorJava() throws IOException {
+    // older versions of plugins don't report errors
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.0"));
+    
     String fileContent = "package its;public class MyTest {int a;int a;}";
     Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -513,8 +522,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisTemplateRule() throws Exception {
-    // WS quality profile is not available before 5.2 so let's skip this test
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2"));
     SearchWsRequest searchReq = new SearchWsRequest();
     searchReq.setQualityProfile("SonarLint IT Java");
     searchReq.setProjectKey(PROJECT_KEY_JAVA);
