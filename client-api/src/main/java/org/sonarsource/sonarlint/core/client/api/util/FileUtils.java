@@ -38,13 +38,24 @@ public class FileUtils {
    * A simple representation of an IO operation.
    * An internal interface necessary for the implementation of {@link #retry()}.
    */
+  @FunctionalInterface
   private interface IORunnable {
-	  void run() throws IOException;
+    void run() throws IOException;
   }
   
   private static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
 
-  private static Boolean windows;
+  private static final String OS_NAME_PROPERTY = "os.name";
+  
+  /**
+   * A simple check whether the underlying operating system is Windows. 
+   */
+  private static final boolean WINDOWS = System.getProperty(OS_NAME_PROPERTY) != null && System.getProperty(OS_NAME_PROPERTY).startsWith("Windows");
+
+  /**
+   * How many times to retry a failing IO operation.
+   */
+  private static final int MAX_RETRIES = WINDOWS? 20: 0;
   
   private FileUtils() {
     // utility class, forbidden constructor
@@ -173,36 +184,22 @@ public class FileUtils {
    * @param runnable the runnable whose execution should be retried
    */
   private static void retry(IORunnable runnable) throws IOException {
-    for (int retries = isWindows()? 30: 1; retries > 0; retries--) {
-      if (retries > 1) {    	  
+    for (int retry = 0; retry < MAX_RETRIES; retry++) {
+	  try {
+	    runnable.run();
+	    return;
+	  } catch (AccessDeniedException e) {
+	    // Sleep a bit to give a chance to the virus scanner / Windows Indexing Service to release the opened file handle
 	    try {
-	      runnable.run();
-	      break;
-	    } catch(AccessDeniedException e) {
-	      // Sleep a bit to give a chance to the virus scanner / Windows Indexing Service to release the opened file handle
-	      try {
-	        Thread.sleep(100);
-	      } catch (InterruptedException ie) {
-	    	// Nothing meaningful to be done here
-	      }
+	      Thread.sleep(100);
+	    } catch (InterruptedException ie) {
+	  	  // Nothing else that meaningfully can be done here
+	      Thread.currentThread().interrupt();
 	    }
-      } else {
-    	// Give it a one last chance, and this time do not swallow the exception
-        runnable.run();
-      }
-    }
-  }
-  
-  /**
-   * A simple check whether the underlying operating system is Windows. 
-   * @return true if the OS is Windows
-   */
-  private static boolean isWindows() {
-	  synchronized (FileUtils.class) {
-		if (windows == null)
-		  windows = System.getProperty("os.name").startsWith("Windows");
 	  }
-	  
-	  return windows;
+	    
+   	  // Give it a one last chance, and this time do not swallow the exception
+      runnable.run();
+    }
   }
 }
