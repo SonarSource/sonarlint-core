@@ -318,6 +318,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
 
     Map<String, String> map = (Map<String, String>) connectedModeProject;
+    if (map.isEmpty()) {
+      return;
+    }
+
     String serverId = map.get("serverId");
     String projectKey = map.get("projectKey");
     if (isBlank(serverId) || isBlank(projectKey)) {
