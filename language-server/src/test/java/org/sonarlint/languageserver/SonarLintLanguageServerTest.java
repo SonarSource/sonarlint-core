@@ -438,6 +438,18 @@ public class SonarLintLanguageServerTest {
   }
 
   @Test
+  public void do_not_warn_when_binding_is_empty_on_startup_or_update() {
+    LanguageServerTester tester = newLanguageServerTester();
+
+    tester.setInitialBinding(Collections.emptyMap());
+    tester.initialize();
+    assertThat(tester.logs()).isEmpty();
+
+    tester.updateBinding(Collections.emptyMap());
+    assertThat(tester.logs()).isEmpty();
+  }
+
+  @Test
   public void warn_when_binding_references_nonexistent_server_on_startup_or_update() {
     LanguageServerTester tester = newLanguageServerTester();
 
