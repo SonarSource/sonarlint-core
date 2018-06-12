@@ -42,11 +42,11 @@ public class FileUtils {
   private interface IORunnable {
     void run() throws IOException;
   }
-  
+
   private static final String PATH_SEPARATOR_PATTERN = Pattern.quote(File.separator);
 
   private static final String OS_NAME_PROPERTY = "os.name";
-  
+
   /**
    * A simple check whether the underlying operating system is Windows. 
    */
@@ -55,8 +55,8 @@ public class FileUtils {
   /**
    * How many times to retry a failing IO operation.
    */
-  private static final int MAX_RETRIES = WINDOWS? 20: 0;
-  
+  private static final int MAX_RETRIES = WINDOWS ? 20 : 0;
+
   private FileUtils() {
     // utility class, forbidden constructor
   }
@@ -173,7 +173,7 @@ public class FileUtils {
     FileUtils.mkdirs(target.getParent());
     FileUtils.moveDir(work, target);
   }
-  
+
   /**
    * On Windows, retries the provided IO operation a number of times, in an effort to make the operation succeed.
    * 
@@ -185,20 +185,20 @@ public class FileUtils {
    */
   private static void retry(IORunnable runnable) throws IOException {
     for (int retry = 0; retry < MAX_RETRIES; retry++) {
-	  try {
-	    runnable.run();
-	    return;
-	  } catch (AccessDeniedException e) {
-	    // Sleep a bit to give a chance to the virus scanner / Windows Indexing Service to release the opened file handle
-	    try {
-	      Thread.sleep(100);
-	    } catch (InterruptedException ie) {
-	  	  // Nothing else that meaningfully can be done here
-	      Thread.currentThread().interrupt();
-	    }
-	  }
-	    
-   	  // Give it a one last chance, and this time do not swallow the exception
+      try {
+        runnable.run();
+        return;
+      } catch (AccessDeniedException e) {
+        // Sleep a bit to give a chance to the virus scanner / Windows Indexing Service to release the opened file handle
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException ie) {
+          // Nothing else that meaningfully can be done here
+          Thread.currentThread().interrupt();
+        }
+      }
+
+      // Give it a one last chance, and this time do not swallow the exception
       runnable.run();
     }
   }
