@@ -197,9 +197,9 @@ public class FileUtils {
           Thread.currentThread().interrupt();
         }
       }
-
-      // Give it a one last chance, and this time do not swallow the exception
-      runnable.run();
     }
+
+    // Give it a one last chance, and this time do not swallow the exception
+    runnable.run();
   }
 }
