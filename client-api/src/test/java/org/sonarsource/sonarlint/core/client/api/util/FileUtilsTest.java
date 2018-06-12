@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +36,9 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class FileUtilsTest {
@@ -173,6 +177,26 @@ public class FileUtilsTest {
 
     assertThat(oldFileInDir.isFile()).isFalse();
     assertThat(newFileInDir.isFile()).isTrue();
+  }
+
+  @Test
+  public void always_retry_at_least_once() throws IOException {
+    FileUtils.IORunnable runnable = mock(FileUtils.IORunnable.class);
+    FileUtils.retry(runnable, 0);
+    verify(runnable, times(1)).run();
+  }
+
+  @Test
+  public void retry_on_failure() throws IOException {
+    int[] count = {0};
+    FileUtils.IORunnable throwOnce = () -> {
+      count[0]++;
+      if (count[0] == 1) {
+        throw new AccessDeniedException("foo");
+      }
+    };
+    FileUtils.retry(throwOnce, 10);
+    assertThat(count[0]).isEqualTo(2);
   }
 
   private File createNewFile(File basedir, String filename) {

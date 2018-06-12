@@ -39,7 +39,7 @@ public class FileUtils {
    * An internal interface necessary for the implementation of {@link #retry()}.
    */
   @FunctionalInterface
-  private interface IORunnable {
+  interface IORunnable {
     void run() throws IOException;
   }
 
@@ -183,8 +183,8 @@ public class FileUtils {
    * 
    * @param runnable the runnable whose execution should be retried
    */
-  private static void retry(IORunnable runnable) throws IOException {
-    for (int retry = 0; retry < MAX_RETRIES; retry++) {
+  static void retry(IORunnable runnable, int maxRetries) throws IOException {
+    for (int retry = 0; retry < maxRetries; retry++) {
       try {
         runnable.run();
         return;
@@ -201,5 +201,9 @@ public class FileUtils {
 
     // Give it a one last chance, and this time do not swallow the exception
     runnable.run();
+  }
+
+  static void retry(IORunnable runnable) throws IOException {
+    retry(runnable, MAX_RETRIES);
   }
 }
