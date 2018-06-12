@@ -89,6 +89,7 @@ import static org.sonarlint.languageserver.SonarLintLanguageServer.convert;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getHtmlDescription;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.normalizeUriString;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
 
 public class SonarLintLanguageServerTest {
@@ -233,27 +234,31 @@ public class SonarLintLanguageServerTest {
     InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
 
-    Path basedir = Paths.get("path/to/base").toAbsolutePath();
-    Path subFolder = basedir.resolve("sub");
-    Path file = subFolder.resolve("file.java");
+    String basedir = "file:///path/to/base";
+    String subFolder = basedir + "/sub";
+    URI file = URI.create(subFolder + "/file.java");
 
-    List<WorkspaceFolder> ordering1 = Stream.of(subFolder.toString(), basedir.toString()).map(SonarLintLanguageServerTest::mockWorkspaceFolder)
+    List<WorkspaceFolder> ordering1 = Stream.of(subFolder, basedir)
+      .map(SonarLintLanguageServerTest::mockWorkspaceFolder)
       .collect(Collectors.toList());
     when(params.getWorkspaceFolders()).thenReturn(ordering1);
     ls.initialize(params);
-    assertThat(ls.findBaseDir(file.toUri())).isEqualTo(subFolder);
+    assertThat(ls.findBaseDir(file).toString()).isEqualTo(normalizeUriString(subFolder));
 
-    List<WorkspaceFolder> ordering2 = Stream.of(basedir.toString(), subFolder.toString()).map(SonarLintLanguageServerTest::mockWorkspaceFolder).collect(Collectors.toList());
+    List<WorkspaceFolder> ordering2 = Stream.of(basedir, subFolder)
+      .map(SonarLintLanguageServerTest::mockWorkspaceFolder)
+      .collect(Collectors.toList());
     when(params.getWorkspaceFolders()).thenReturn(ordering2);
     ls.initialize(params);
-    assertThat(ls.findBaseDir(file.toUri())).isEqualTo(subFolder);
+    assertThat(ls.findBaseDir(file).toString()).isEqualTo(normalizeUriString(subFolder));
   }
 
   @Test
   public void parseWorkspaceFolders_ignores_rootUri_when_folders_are_present() {
-    List<String> folderPaths = Arrays.asList("path/to/base", "other/path");
+    List<String> folderPaths = Arrays.asList("file:///path/to/base", "file:///other/path");
+    List<String> normalizedFolderPaths = folderPaths.stream().map(SonarLintLanguageServer::normalizeUriString).collect(Collectors.toList());
     List<WorkspaceFolder> folders = folderPaths.stream().map(SonarLintLanguageServerTest::mockWorkspaceFolder).collect(Collectors.toList());
-    assertThat(parseWorkspaceFolders(folders, "foo")).isEqualTo(folderPaths);
+    assertThat(parseWorkspaceFolders(folders, "foo")).isEqualTo(normalizedFolderPaths);
   }
 
   @Test
@@ -801,6 +806,9 @@ public class SonarLintLanguageServerTest {
 
     void initialize() {
       InitializeParams params = mockInitializeParams();
+      WorkspaceFolder workspaceFolder = mockWorkspaceFolder(temporaryFolder.getRoot().toURI().toString());
+      when(params.getWorkspaceFolders()).thenReturn(Collections.singletonList(workspaceFolder));
+
       JsonObject options = new JsonObject();
       options.add(CONNECTED_MODE_SERVERS_PROP, toJson(servers));
       if (binding != null) {

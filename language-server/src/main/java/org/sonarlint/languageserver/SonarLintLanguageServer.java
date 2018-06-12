@@ -115,6 +115,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundExcep
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -378,7 +379,14 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private static List<String> toList(List<WorkspaceFolder> workspaceFolders) {
-    return workspaceFolders.stream().map(f -> f.getUri().replaceAll("^file://", "")).collect(Collectors.toList());
+    return workspaceFolders.stream()
+      .filter(f -> f.getUri().startsWith("file:///"))
+      .map(f -> normalizeUriString(f.getUri()))
+      .collect(Collectors.toList());
+  }
+
+  static String normalizeUriString(String uriString) {
+    return Paths.get(URI.create(uriString)).toFile().toString();
   }
 
   // visible for testing
@@ -696,7 +704,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         analysisResults = analyze(configuration, collector);
       }
 
-      String filePath = getFilePath(baseDir, uri);
+      String filePath = FileUtils.toSonarQubePath(getFilePath(baseDir, uri));
       serverIssueTracker.matchAndTrack(filePath, issues, issueListener, shouldFetchServerIssues);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
@@ -732,7 +740,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private static String getFilePath(Path baseDir, URI uri) {
-    return baseDir.toUri().relativize(uri).toString();
+    return baseDir.relativize(Paths.get(uri)).toString();
   }
 
   // visible for testing
