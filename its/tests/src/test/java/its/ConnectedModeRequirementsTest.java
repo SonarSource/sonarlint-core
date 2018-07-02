@@ -21,13 +21,14 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
+import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,7 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.updatecenter.common.Version;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
@@ -55,26 +55,28 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @ClassRule
   public static Orchestrator ORCHESTRATOR = buildOrchestrator();
 
+  private static String getSonarVersion() {
+    String versionProperty = System.getProperty("sonar.runtimeVersion");
+    return versionProperty != null ? versionProperty : "LATEST_RELEASE";
+  }
+
   private static Orchestrator buildOrchestrator() {
+    String sonarVersion = getSonarVersion();
+
     OrchestratorBuilder builder = Orchestrator.builderEnv()
-      .setOrchestratorProperty("javascriptVersion", "2.13")
-      .addPlugin("javascript");
-    after70 = !builder.getSonarVersion().isPresent() || Version.create(builder.getSonarVersion().get()).compareTo(Version.create("7.0")) > 0;
+      .setSonarVersion(sonarVersion)
+      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
+    after70 = "LATEST_RELEASE".equals(sonarVersion) || Version.create(sonarVersion).compareTo(Version.create("7.0")) > 0;
 
     if (after70) {
       builder
-        .setOrchestratorProperty("javaVersion", "LATEST_RELEASE")
-        .setOrchestratorProperty("phpVersion", "LATEST_RELEASE");
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
+        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
     } else {
       builder
-        .setOrchestratorProperty("javaVersion", "4.0")
-        .setOrchestratorProperty("phpVersion", "2.9");
-
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.0"))
+        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.9"));
     }
-    builder
-      .addPlugin("java")
-      .addPlugin("php");
-    ;
 
     return builder.build();
   }
