@@ -22,7 +22,6 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
-import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
@@ -57,7 +56,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.permissions.PermissionParameters;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
@@ -83,6 +81,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
+import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -102,17 +101,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_PYTHON = "sample-python";
   private static final String PROJECT_KEY_WEB = "sample-web";
 
-  private static String getSonarVersion() {
-    String versionProperty = System.getProperty("sonar.runtimeVersion");
-    return versionProperty != null ? versionProperty : "LATEST_RELEASE";
-  }
-
   @ClassRule
   public static ExternalResource resource = new ExternalResource() {
     @Override
     protected void before() {
       OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-        .setSonarVersion(getSonarVersion())
+        .setSonarVersion(SONAR_VERSION)
         .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
@@ -131,7 +125,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
 
-      if (!getSonarVersion().startsWith("5.6")) {
+      if (!SONAR_VERSION.startsWith("5.6")) {
         orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
           .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       }

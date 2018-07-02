@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
+import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
@@ -55,18 +56,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @ClassRule
   public static Orchestrator ORCHESTRATOR = buildOrchestrator();
 
-  private static String getSonarVersion() {
-    String versionProperty = System.getProperty("sonar.runtimeVersion");
-    return versionProperty != null ? versionProperty : "LATEST_RELEASE";
-  }
-
   private static Orchestrator buildOrchestrator() {
-    String sonarVersion = getSonarVersion();
-
     OrchestratorBuilder builder = Orchestrator.builderEnv()
-      .setSonarVersion(sonarVersion)
+      .setSonarVersion(SONAR_VERSION)
       .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
-    after70 = "LATEST_RELEASE".equals(sonarVersion) || Version.create(sonarVersion).compareTo(Version.create("7.0")) > 0;
+    after70 = "LATEST_RELEASE".equals(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
 
     if (after70) {
       builder
