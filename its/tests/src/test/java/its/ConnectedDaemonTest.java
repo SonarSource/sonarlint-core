@@ -22,6 +22,7 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.locator.MavenLocation;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -70,6 +71,7 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
+import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedDaemonTest {
@@ -80,7 +82,8 @@ public class ConnectedDaemonTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .addPlugin("java")
+    .setSonarVersion(SONAR_VERSION)
+    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .build();
 
@@ -288,7 +291,7 @@ public class ConnectedDaemonTest {
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2")) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(5, 2)) {
       adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
         .setGroupName(groupName)
         .setPermission(permission));
