@@ -21,12 +21,10 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
-import com.sonar.orchestrator.config.Licenses;
+import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.locator.URLLocation;
 import com.sonar.orchestrator.version.Version;
-import java.net.URL;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -40,27 +38,22 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
-import org.sonar.wsclient.services.PropertyDeleteQuery;
-import org.sonar.wsclient.services.PropertyUpdateQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarqube.ws.client.setting.ResetRequest;
-import org.sonarqube.ws.client.setting.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
+import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public class LicenseTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
 
-  public static Orchestrator ORCHESTRATOR;
+  private static Orchestrator ORCHESTRATOR;
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -72,17 +65,21 @@ public class LicenseTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private Licenses licenses;
 
   @BeforeClass
   public static void prepare() throws Exception {
     OrchestratorBuilder builder = Orchestrator.builderEnv()
+      .setSonarVersion(SONAR_VERSION)
+      .setEdition(Edition.ENTERPRISE)
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
 
-    if (Version.create(builder.getSonarVersion().get()).isGreaterThanOrEquals("6.7")) {
+    if (!"LATEST_RELEASE".equals(SONAR_VERSION)
+      && !"DEV".equals(SONAR_VERSION)
+      && Version.create(SONAR_VERSION).compareTo(Version.create("7.2")) < 0
+      && Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7)) {
       builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.2.0.1163"));
     }
-    builder.addPlugin("cobol");
+    builder.addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "4.3.0.3019"));
     ORCHESTRATOR = builder.build();
     ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
@@ -94,7 +91,6 @@ public class LicenseTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().adminWsClient().userClient()
       .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
 
-    // addUserPermission("sonarlint", "dryRunScan");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
   }
@@ -114,8 +110,6 @@ public class LicenseTest extends AbstractConnectedTest {
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
       .build());
-
-    licenses = new Licenses();
   }
 
   @After
@@ -129,8 +123,8 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @Test
   public void analysisNoLicense() throws Exception {
-    Assume.assumeFalse(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7"));
-    removeLicense("cobol");
+    Assume.assumeFalse(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
+    removeLicense();
     updateGlobal();
     updateModule(PROJECT_KEY_COBOL);
 
@@ -141,38 +135,17 @@ public class LicenseTest extends AbstractConnectedTest {
       "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
   }
 
-  private void removeLicense(String pluginKey) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
-      ORCHESTRATOR.clearLicense();
-    } else {
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-        adminWsClient.settings().reset(ResetRequest.builder().setKeys(licenses.licensePropertyKey(pluginKey)).build());
-      } else {
-        ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery(licenses.licensePropertyKey(pluginKey)));
-      }
-    }
+  private void removeLicense() {
+    ORCHESTRATOR.clearLicense();
   }
 
-  private void addLicense(String pluginKey) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
-      ORCHESTRATOR.activateLicense();
-    } else {
-      String license = licenses.get(pluginKey);
-      if (StringUtils.isEmpty(license)) {
-        fail("ITs could not get license for " + pluginKey);
-      }
-
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
-        adminWsClient.settings().set(SetRequest.builder().setKey(licenses.licensePropertyKey(pluginKey)).setValue(license).build());
-      } else {
-        ORCHESTRATOR.getServer().getAdminWsClient().update(new PropertyUpdateQuery(licenses.licensePropertyKey(pluginKey), license));
-      }
-    }
+  private void addLicense() {
+    ORCHESTRATOR.activateLicense();
   }
 
   @Test
   public void analysisCobol() throws Exception {
-    addLicense("cobol");
+    addLicense();
     updateGlobal();
     updateModule(PROJECT_KEY_COBOL);
     SaveIssueListener issueListener = new SaveIssueListener();
@@ -198,12 +171,8 @@ public class LicenseTest extends AbstractConnectedTest {
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("5.2")) {
-      adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
-        .setGroupName(groupName)
-        .setPermission(permission));
-    } else {
-      // TODO
-    }
+    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
+      .setGroupName(groupName)
+      .setPermission(permission));
   }
 }

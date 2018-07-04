@@ -60,7 +60,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     OrchestratorBuilder builder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
-    after70 = "LATEST_RELEASE".equals(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
+    after70 = "LATEST_RELEASE".equals(SONAR_VERSION) || "DEV".equals(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
 
     if (after70) {
       builder
