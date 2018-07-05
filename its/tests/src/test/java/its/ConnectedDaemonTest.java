@@ -20,9 +20,11 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -31,6 +33,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import its.tools.ItUtils;
 import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.File;
@@ -81,11 +84,24 @@ public class ConnectedDaemonTest {
   private static final String STORAGE_ID = "storage";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .setSonarVersion(SONAR_VERSION)
-    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
-    .build();
+  public static Orchestrator ORCHESTRATOR;
+
+  static {
+    OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
+      .setSonarVersion(SONAR_VERSION);
+
+    boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
+    if (atLeast67) {
+      orchestratorBuilder
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
+    } else {
+      orchestratorBuilder
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
+    }
+    ORCHESTRATOR = orchestratorBuilder
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+      .build();
+  }
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();

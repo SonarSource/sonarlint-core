@@ -75,8 +75,8 @@ public class LicenseTest extends AbstractConnectedTest {
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
 
     if (!ItUtils.isLatestOrDev(SONAR_VERSION)
-      && Version.create(SONAR_VERSION).compareTo(Version.create("7.2")) < 0
-      && Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7)) {
+      && Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7)
+      && !Version.create(SONAR_VERSION).isGreaterThanOrEquals(7, 2)) {
       builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.2.0.1163"));
     }
     builder.addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "4.3.0.3019"));
