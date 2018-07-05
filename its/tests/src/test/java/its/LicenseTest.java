@@ -124,7 +124,7 @@ public class LicenseTest extends AbstractConnectedTest {
   @Test
   public void analysisNoLicense() throws Exception {
     Assume.assumeFalse(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
-    removeLicense();
+    ORCHESTRATOR.clearLicense();
     updateGlobal();
     updateModule(PROJECT_KEY_COBOL);
 
@@ -135,17 +135,9 @@ public class LicenseTest extends AbstractConnectedTest {
       "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
   }
 
-  private void removeLicense() {
-    ORCHESTRATOR.clearLicense();
-  }
-
-  private void addLicense() {
-    ORCHESTRATOR.activateLicense();
-  }
-
   @Test
   public void analysisCobol() throws Exception {
-    addLicense();
+    ORCHESTRATOR.activateLicense();
     updateGlobal();
     updateModule(PROJECT_KEY_COBOL);
     SaveIssueListener issueListener = new SaveIssueListener();
