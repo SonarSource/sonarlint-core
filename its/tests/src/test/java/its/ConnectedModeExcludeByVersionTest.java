@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,25 +38,36 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeTrue;
 
-public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
+/**
+ * This test verifies that SonarJS 2.13 gets excluded because it's below minimum supported version.
+ * SonarJS 2.13 doesn't work in SQ >= 7.3
+ */
+public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = buildOrchestrator();
+  @Rule
+  public Orchestrator ORCHESTRATOR = buildOrchestrator();
 
-  private static Orchestrator buildOrchestrator() {
-    OrchestratorBuilder builder = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION);
+  private Orchestrator buildOrchestrator() {
+    boolean atMost72 = !ItUtils.isLatestOrDev(SONAR_VERSION) && !Version.create(SONAR_VERSION).isGreaterThanOrEquals(7, 3);
+    assumeTrue(atMost72);
 
-    after70 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
+    boolean after70 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
+
+    OrchestratorBuilder builder = Orchestrator.builderEnv()
+      .setSonarVersion(SONAR_VERSION)
+      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
+
     if (after70) {
       builder
         .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
@@ -78,13 +88,12 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public ExpectedException exception = ExpectedException.none();
 
   private static Path sonarUserHome;
-  private static boolean after70;
 
   private ConnectedSonarLintEngine engine;
   private List<String> logs = new ArrayList<>();
 
-  @BeforeClass
-  public static void prepare() throws Exception {
+  @Before
+  public void prepare() throws Exception {
     sonarUserHome = temp.newFolder().toPath();
 
     ORCHESTRATOR.getServer().adminWsClient().userClient()
@@ -98,11 +107,6 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
-  }
-
-  private ConnectedSonarLintEngine createEngine() {
-    return createEngine(b -> {
-    });
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
@@ -124,34 +128,15 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontDownloadExcludedPlugin() {
+  public void dontDownloadPluginWithUnsupportedVersion() {
     engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
-    engine.update(config(), null);
-    assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
-  }
+    assertThat(engine.getGlobalStorageStatus()).isNull();
+    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
-  @Test
-  public void donLoadExcludedPlugin() {
-    engine = createEngine();
-    engine.update(config(), null);
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains("java");
-    engine.stop(false);
-
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
-    if (after70) {
-      assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
-    } else {
-      assertThat(logs).contains("Code analyzer 'Java' is excluded in this version of SonarLint. Skip loading it.");
-    }
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
-  }
-
-  @Test
-  public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
-    ValidationResult result = new WsHelperImpl().validateConnection(config());
-    assertThat(result.success()).isTrue();
+    UpdateResult update = engine.update(config(), null);
+    assertThat(update.status().getLastUpdateDate()).isNotNull();
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
+    assertThat(logs).contains("Code analyzer 'javascript' version '2.13' is not supported (minimal version is '2.14'). Skip downloading it.");
   }
 
   private ServerConfiguration config() {
