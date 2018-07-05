@@ -25,6 +25,8 @@ import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
+import com.sonar.orchestrator.version.Version;
+import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -106,15 +108,25 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     @Override
     protected void before() {
       OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-        .setSonarVersion(SONAR_VERSION)
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
+        .setSonarVersion(SONAR_VERSION);
+
+      boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
+
+      if (atLeast67) {
+        orchestratorBuilder
+          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
+      } else {
+        orchestratorBuilder
+          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
+      }
+
+      orchestratorBuilder
         .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
-
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
