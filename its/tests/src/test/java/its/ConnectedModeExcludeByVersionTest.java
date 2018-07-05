@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 /**
- * This test verifies that SonarJS 2.13 gets excluded because it's below minimum supported version.
+ * This test verifies that SonarJS 2.13 gets excluded due to being below minimum supported version.
  * SonarJS 2.13 doesn't work in SQ >= 7.3
  */
 public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
@@ -102,11 +102,6 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
         .password(SONARLINT_PWD)
         .passwordConfirmation(SONARLINT_PWD)
         .name("SonarLint"));
-  }
-
-  @Before
-  public void start() {
-    FileUtils.deleteQuietly(sonarUserHome.toFile());
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
