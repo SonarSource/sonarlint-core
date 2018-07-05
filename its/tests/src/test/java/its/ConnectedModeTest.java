@@ -341,7 +341,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void semanticErrorJava() throws IOException {
     // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
 
     String fileContent = "package its;public class MyTest {int a;int a;}";
     Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
@@ -411,6 +411,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascriptWithCustomRules() throws Exception {
+    // SonarJS that runs on older versions does not report this correctly
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
+
     updateGlobal();
     updateModule(PROJECT_KEY_JAVASCRIPT_CUSTOM);
 
