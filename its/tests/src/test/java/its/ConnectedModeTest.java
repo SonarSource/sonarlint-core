@@ -117,17 +117,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
           .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
           .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
           .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
+          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
           .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
           .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       } else {
         orchestratorBuilder
           .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"))
           .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.8.0.1496"))
-          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.11.0.2485"));
+          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.11.0.2485"))
+          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "3.3.0.5702"));
       }
 
       orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
