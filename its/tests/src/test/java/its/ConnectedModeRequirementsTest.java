@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.version.Version;
+import its.tools.ItUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     OrchestratorBuilder builder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
-    after70 = "LATEST_RELEASE".equals(SONAR_VERSION) || "DEV".equals(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
+    after70 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
 
     if (after70) {
       builder

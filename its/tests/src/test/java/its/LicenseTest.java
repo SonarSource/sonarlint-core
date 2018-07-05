@@ -25,6 +25,7 @@ import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.version.Version;
+import its.tools.ItUtils;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -73,8 +74,7 @@ public class LicenseTest extends AbstractConnectedTest {
       .setEdition(Edition.ENTERPRISE)
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
 
-    if (!"LATEST_RELEASE".equals(SONAR_VERSION)
-      && !"DEV".equals(SONAR_VERSION)
+    if (!ItUtils.isLatestOrDev(SONAR_VERSION)
       && Version.create(SONAR_VERSION).compareTo(Version.create("7.2")) < 0
       && Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7)) {
       builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.2.0.1163"));

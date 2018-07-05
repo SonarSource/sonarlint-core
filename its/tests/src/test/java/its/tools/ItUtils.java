@@ -31,4 +31,8 @@ public class ItUtils {
     String versionProperty = System.getProperty("sonar.runtimeVersion");
     return versionProperty != null ? versionProperty : "LATEST_RELEASE";
   }
+
+  public static boolean isLatestOrDev(String version) {
+    return "LATEST_RELEASE".equals(version) || "DEV".equals(version);
+  }
 }

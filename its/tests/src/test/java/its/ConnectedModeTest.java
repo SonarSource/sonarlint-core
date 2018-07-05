@@ -125,13 +125,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
 
-      if (!SONAR_VERSION.startsWith("5.6")) {
-        orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-          .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
-      }
+      orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       ORCHESTRATOR = orchestratorBuilder.build();
       ORCHESTRATOR.start();
-    };
+    }
 
     @Override
     protected void after() {
