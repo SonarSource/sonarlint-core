@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
@@ -31,6 +32,7 @@ import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.NewSensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
@@ -45,7 +47,6 @@ import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
-import org.sonarsource.sonarlint.core.container.standalone.rule.SanitizedActiveRulesFilter;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
@@ -133,8 +134,13 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
-    SanitizedActiveRulesFilter filter = new SanitizedActiveRulesFilter(standaloneActiveRules, configuration.excludedRules(), configuration.includedRules());
-    analysisContainer.add(standaloneActiveRules.filtered(filter));
+    // TODO configuration should be set directly with Strings
+    Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(Collectors.toSet());
+    Set<String> includedRules = configuration.includedRules().stream()
+      .map(RuleKey::toString)
+      .filter(r -> !excludedRules.contains(r))
+      .collect(Collectors.toSet());
+    analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules));
     analysisContainer.add(NewSensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);

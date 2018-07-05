@@ -30,6 +30,7 @@ public interface RuleDetails {
 
   String getName();
 
+  @CheckForNull
   String getHtmlDescription();
 
   String getLanguage();

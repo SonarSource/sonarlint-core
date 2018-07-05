@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import org.junit.Test;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -50,9 +51,9 @@ public class StandaloneActiveRulesTest {
     ActiveRules inactiveRules = new FakeActiveRules(INACTIVE_RULE, INACTIVE_INCLUDED_RULE);
     StandaloneActiveRules standaloneActiveRules = new StandaloneActiveRules(activeRules, inactiveRules, Collections.emptyMap());
 
-    Collection<RuleKey> excluded = Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE));
-    Collection<RuleKey> included = Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE));
-    underTest = standaloneActiveRules.filtered(new SanitizedActiveRulesFilter(standaloneActiveRules, excluded, included));
+    Set<String> excluded = Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE).toString());
+    Set<String> included = Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE).toString());
+    underTest = standaloneActiveRules.filtered(excluded, included);
   }
 
   @Test
