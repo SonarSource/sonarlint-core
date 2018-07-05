@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedExce
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 public class LicenseTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
@@ -69,16 +70,15 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
+    // orchestrator automatically adds dev license plugin when older than SQ 7.2,
+    // and dev license plugin requires at least SQ 6.7
+    assumeTrue(ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7));
+
     OrchestratorBuilder builder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .setEdition(Edition.ENTERPRISE)
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
 
-    if (!ItUtils.isLatestOrDev(SONAR_VERSION)
-      && Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7)
-      && !Version.create(SONAR_VERSION).isGreaterThanOrEquals(7, 2)) {
-      builder.addPlugin(MavenLocation.of("com.sonarsource.license", "sonar-dev-license-plugin", "3.2.0.1163"));
-    }
     builder.addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "4.3.0.3019"));
     ORCHESTRATOR = builder.build();
     ORCHESTRATOR.start();
