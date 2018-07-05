@@ -28,9 +28,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,13 +55,16 @@ import static org.junit.Assume.assumeTrue;
  */
 public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
+  @BeforeClass
+  public static void beforeClass() {
+    boolean atMost72 = !ItUtils.isLatestOrDev(SONAR_VERSION) && !Version.create(SONAR_VERSION).isGreaterThanOrEquals(7, 3);
+    assumeTrue(atMost72);
+  }
+
   @Rule
   public Orchestrator ORCHESTRATOR = buildOrchestrator();
 
-  private Orchestrator buildOrchestrator() {
-    boolean atMost72 = !ItUtils.isLatestOrDev(SONAR_VERSION) && !Version.create(SONAR_VERSION).isGreaterThanOrEquals(7, 3);
-    assumeTrue(atMost72);
-
+  private static Orchestrator buildOrchestrator() {
     boolean after70 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
 
     OrchestratorBuilder builder = Orchestrator.builderEnv()

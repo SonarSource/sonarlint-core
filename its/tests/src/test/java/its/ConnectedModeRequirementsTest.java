@@ -132,7 +132,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void donLoadExcludedPlugin() {
+  public void dontLoadExcludedPlugin() {
     engine = createEngine();
     engine.update(config(), null);
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains("java");
