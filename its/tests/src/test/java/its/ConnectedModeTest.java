@@ -116,7 +116,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         orchestratorBuilder
           .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
           .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
-          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
+          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
+          .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+          .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       } else {
         orchestratorBuilder
           .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"))
@@ -139,8 +141,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
 
-      orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       ORCHESTRATOR = orchestratorBuilder.build();
       ORCHESTRATOR.start();
     }
