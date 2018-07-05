@@ -21,10 +21,9 @@ package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
-import javax.annotation.CheckForNull;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
@@ -41,15 +40,17 @@ public class StandaloneActiveRules {
     this.ruleDetails = ruleDetails;
   }
 
-  public ActiveRules filtered(SanitizedActiveRulesFilter filter) {
-    Collection<RuleKey> excluded = filter.excluded();
-    Collection<RuleKey> included = filter.included();
+  public ActiveRules filtered(Set<String> excludedRules, Set<String> includedRules) {
+    Collection<ActiveRule> filteredActiveRules = new ArrayList<>();
 
-    if (included.isEmpty() && excluded.isEmpty()) {
-      return activeRules;
-    }
+    filteredActiveRules.addAll(activeRules.findAll().stream()
+      .filter(r -> !excludedRules.contains(r.ruleKey().toString()))
+      .collect(Collectors.toList()));
+    filteredActiveRules.addAll(inactiveRules.findAll().stream()
+      .filter(r -> includedRules.contains(r.ruleKey().toString()))
+      .collect(Collectors.toList()));
 
-    return new FilteredActiveRules(excluded, included);
+    return new DefaultActiveRules(filteredActiveRules);
   }
 
   boolean isActiveByDefault(RuleKey ruleKey) {
@@ -60,13 +61,6 @@ public class StandaloneActiveRules {
     return activeRules.findAll();
   }
 
-  public List<ActiveRule> all() {
-    List<ActiveRule> all = new ArrayList<>();
-    all.addAll(activeRules.findAll());
-    all.addAll(inactiveRules.findAll());
-    return all;
-  }
-
   public RuleDetails ruleDetails(String ruleKeyStr) {
     return ruleDetails.get(ruleKeyStr);
   }
@@ -74,82 +68,4 @@ public class StandaloneActiveRules {
   public Collection<RuleDetails> allRuleDetails() {
     return ruleDetails.values();
   }
-
-  class FilteredActiveRules implements ActiveRules {
-
-    final Collection<RuleKey> excluded;
-    final Collection<RuleKey> included;
-
-    // accept from active those that are not explicitly excluded
-    final Predicate<ActiveRule> filterActive;
-
-    // accept from inactive those that are explicitly included
-    final Predicate<ActiveRule> filterInactive;
-
-    FilteredActiveRules(Collection<RuleKey> excluded, Collection<RuleKey> included) {
-      this.excluded = excluded;
-      this.included = included;
-      this.filterActive = ar -> !excluded.contains(ar.ruleKey());
-      this.filterInactive = ar -> included.contains(ar.ruleKey());
-    }
-
-    @CheckForNull
-    @Override
-    public ActiveRule find(RuleKey ruleKey) {
-      if (excluded.contains(ruleKey)) {
-        return null;
-      }
-      ActiveRule activeRule = activeRules.find(ruleKey);
-      if (activeRule != null) {
-        return activeRule;
-      }
-      if (included.contains(ruleKey)) {
-        return inactiveRules.find(ruleKey);
-      }
-      return null;
-    }
-
-    @Override
-    public Collection<ActiveRule> findAll() {
-      Collection<ActiveRule> result = new ArrayList<>();
-      activeRules.findAll().stream().filter(filterActive).forEach(result::add);
-      inactiveRules.findAll().stream().filter(filterInactive).forEach(result::add);
-      return result;
-    }
-
-    @Override
-    public Collection<ActiveRule> findByRepository(String repository) {
-      Collection<ActiveRule> result = new ArrayList<>();
-      activeRules.findByRepository(repository).stream().filter(filterActive).forEach(result::add);
-      inactiveRules.findByRepository(repository).stream().filter(filterInactive).forEach(result::add);
-      return result;
-    }
-
-    @Override
-    public Collection<ActiveRule> findByLanguage(String language) {
-      Collection<ActiveRule> result = new ArrayList<>();
-      activeRules.findByLanguage(language).stream().filter(filterActive).forEach(result::add);
-      inactiveRules.findByLanguage(language).stream().filter(filterInactive).forEach(result::add);
-      return result;
-    }
-
-    @CheckForNull
-    @Override
-    public ActiveRule findByInternalKey(String repository, String internalKey) {
-      ActiveRule activeRule = activeRules.findByInternalKey(repository, internalKey);
-      if (activeRule != null && excluded.contains(activeRule.ruleKey())) {
-        return null;
-      }
-      if (activeRule != null) {
-        return activeRule;
-      }
-      ActiveRule inactiveRule = inactiveRules.findByInternalKey(repository, internalKey);
-      if (inactiveRule != null && (excluded.contains(inactiveRule.ruleKey()) || !included.contains(inactiveRule.ruleKey()))) {
-        return null;
-      }
-      return inactiveRule;
-    }
-  }
 }
-
-

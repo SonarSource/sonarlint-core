@@ -39,7 +39,7 @@ public class DefaultRuleDetails implements RuleDetails {
   private final String extendedDescription;
   private final boolean activeByDefault;
 
-  public DefaultRuleDetails(String key, String name, String htmlDescription, String severity, @Nullable String type, String language, Set<String> tags,
+  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, String language, Set<String> tags,
     String extendedDescription, boolean activeByDefault) {
     this.key = key;
     this.name = name;
