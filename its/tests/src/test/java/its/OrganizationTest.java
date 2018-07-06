@@ -20,6 +20,11 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorBuilder;
+import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
+import its.tools.ItUtils;
 import java.nio.file.Path;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -47,6 +52,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 
+import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
@@ -58,10 +64,25 @@ public class OrganizationTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVA = "sample-java";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .setServerProperty("sonar.sonarcloud.enabled", "true")
-    .addPlugin("java")
-    .build();
+  public static Orchestrator ORCHESTRATOR;
+
+  static {
+    OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
+      .setSonarVersion(SONAR_VERSION)
+      .setServerProperty("sonar.sonarcloud.enabled", "true");
+
+    boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
+    if (atLeast67) {
+      orchestratorBuilder
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
+    } else {
+      orchestratorBuilder
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
+    }
+    ORCHESTRATOR = orchestratorBuilder
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+      .build();
+  }
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -76,7 +97,7 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3"));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3));
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     sonarUserHome = temp.newFolder().toPath();
 
@@ -156,7 +177,7 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.4"));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     updateGlobal();
 
     String ruleKey = "squid:S106";
@@ -181,7 +202,7 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @Test
   public void updateModuleInOrga() {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.4"));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
     engineOnTestOrg.updateModule(getServerConfigForOrg(ORGANIZATION), PROJECT_KEY_JAVA, null);
   }

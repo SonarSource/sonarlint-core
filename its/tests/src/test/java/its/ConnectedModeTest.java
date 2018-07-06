@@ -22,9 +22,11 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
-import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
+import com.sonar.orchestrator.version.Version;
+import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -56,7 +58,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.permissions.PermissionParameters;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
@@ -82,6 +83,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
+import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -104,16 +106,32 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @ClassRule
   public static ExternalResource resource = new ExternalResource() {
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
       OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-        .addPlugin("java")
-        .addPlugin("javascript")
-        .addPlugin("php")
-        .addPlugin("python")
-        .addPlugin("web")
+        .setSonarVersion(SONAR_VERSION);
+
+      boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
+
+      if (atLeast67) {
+        orchestratorBuilder
+          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
+          .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
+          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
+          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+          .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+          .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
+      } else {
+        orchestratorBuilder
+          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"))
+          .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.8.0.1496"))
+          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.11.0.2485"))
+          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "3.3.0.5702"));
+      }
+
+      orchestratorBuilder
+        .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
-
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
@@ -124,13 +142,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
 
-      if (!orchestratorBuilder.getOrchestratorProperty(Configuration.SONAR_VERSION_PROPERTY).startsWith("5.6")) {
-        orchestratorBuilder.addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-          .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
-      }
       ORCHESTRATOR = orchestratorBuilder.build();
       ORCHESTRATOR.start();
-    };
+    }
 
     @Override
     protected void after() {
@@ -158,7 +172,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
       adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
     } else {
       ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
@@ -197,7 +211,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_WEB, "web", "SonarLint IT Web");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
 
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7")) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7)) {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
     }
 
@@ -291,7 +305,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void parsingErrorJava() throws IOException {
     // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.0"));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
 
     String fileContent = "pac kage its; public class MyTest { }";
     Path testFile = temp.newFile("MyTestParseError.java").toPath();
@@ -309,8 +323,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void parsingErrorJavascript() throws IOException {
     // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.0"));
-    
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
+
     String fileContent = "asd asd";
     Path testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -327,8 +341,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void semanticErrorJava() throws IOException {
     // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.0"));
-    
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
+
     String fileContent = "package its;public class MyTest {int a;int a;}";
     Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -397,6 +411,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascriptWithCustomRules() throws Exception {
+    // SonarJS that runs on older versions does not report this correctly
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
+
     updateGlobal();
     updateModule(PROJECT_KEY_JAVASCRIPT_CUSTOM);
 
@@ -483,7 +500,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void globalExtension() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.7"));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
     updateGlobal();
     updateModule(PROJECT_KEY_GLOBAL_EXTENSION);
 
@@ -687,7 +704,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadOrganizations() throws Exception {
     WsHelper helper = new WsHelperImpl();
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
       assertThat(helper.listOrganizations(getServerConfig(), null)).hasSize(1);
     } else {
       try {
@@ -700,7 +717,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
       adminWsClient.settings().set(SetRequest.builder()
         .setKey(key)
         .setValues(Collections.singletonList(value))
@@ -713,7 +730,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals("6.3")) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
       adminWsClient.settings().set(SetRequest.builder()
         .setKey(key)
         .setValue(value)
