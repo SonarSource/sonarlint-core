@@ -110,6 +110,15 @@ public class TelemetryManager {
     data.setUsedAnalysis(language, analysisTimeMs);
     mergeAndSave();
   }
+  
+  public void analysisDoneOnSingleLanguage(@Nullable String language, int analysisTimeMs) {
+    if (language == null) {
+      data.setUsedAnalysis("others", analysisTimeMs);
+    } else {
+      data.setUsedAnalysis(language, analysisTimeMs);
+    }
+    mergeAndSave();
+  }
 
   public void analysisDoneOnMultipleFiles() {
     data.setUsedAnalysis();
