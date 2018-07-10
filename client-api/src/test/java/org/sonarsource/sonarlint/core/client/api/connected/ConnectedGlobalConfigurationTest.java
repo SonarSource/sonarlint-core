@@ -70,6 +70,15 @@ public class ConnectedGlobalConfigurationTest {
     assertThat(config.getStorageRoot()).isEqualTo(storage);
     assertThat(config.getWorkDir()).isEqualTo(work);
   }
+  
+  @Test
+  public void excludeAnalyzers() {
+    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+      .addExcludedCodeAnalyzers("k1", "k2")
+      .addExcludedCodeAnalyzer("k3")
+      .build();
+    assertThat(config.getExcludedCodeAnalyzers()).containsOnly("k1", "k2", "k3");
+  }
 
   @Test
   public void configureServerId() throws Exception {

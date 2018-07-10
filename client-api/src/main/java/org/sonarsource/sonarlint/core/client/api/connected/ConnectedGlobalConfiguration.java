@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -88,6 +89,11 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
     public Builder addExcludedCodeAnalyzer(String key) {
       excludedCodeAnalyzers.add(key);
+      return this;
+    }
+
+    public Builder addExcludedCodeAnalyzers(String... keys) {
+      excludedCodeAnalyzers.addAll(Arrays.asList(keys));
       return this;
     }
 
