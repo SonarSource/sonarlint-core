@@ -54,17 +54,12 @@ public class DefaultPluginJarExploder extends PluginJarExploder {
     if (!destDir.exists()) {
       File lockFile = new File(cachedFile.getParentFile(), filename + "_unzip.lock");
       FileOutputStream out = new FileOutputStream(lockFile);
-      try {
-        FileLock lock = out.getChannel().lock();
-        try {
-          // Recheck in case of concurrent processes
-          if (!destDir.exists()) {
-            Path tempDir = fileCache.createTempDir();
-            ZipUtils.unzip(cachedFile, tempDir.toFile(), newLibFilter());
-            FileUtils.moveDirectory(tempDir.toFile(), destDir);
-          }
-        } finally {
-          lock.release();
+      try (FileLock lock = out.getChannel().lock()) {
+        // Recheck in case of concurrent processes
+        if (!destDir.exists()) {
+          Path tempDir = fileCache.createTempDir();
+          ZipUtils.unzip(cachedFile, tempDir.toFile(), newLibFilter());
+          FileUtils.moveDirectory(tempDir.toFile(), destDir);
         }
       } finally {
         out.close();
