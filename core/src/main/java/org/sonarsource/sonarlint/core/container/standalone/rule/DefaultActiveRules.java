@@ -61,12 +61,12 @@ public class DefaultActiveRules implements ActiveRules {
 
   @Override
   public Collection<ActiveRule> findByRepository(String repository) {
-    return activeRulesByRepository.get(repository);
+    return activeRulesByRepository.getOrDefault(repository, Collections.emptyList());
   }
 
   @Override
   public Collection<ActiveRule> findByLanguage(String language) {
-    return activeRulesByLanguage.get(language);
+    return activeRulesByLanguage.getOrDefault(language, Collections.emptyList());
   }
 
   @Override
