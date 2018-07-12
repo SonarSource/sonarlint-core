@@ -40,6 +40,7 @@ class TelemetryData {
   private long numUseDays;
   private boolean enabled;
   private boolean usedConnectedMode;
+  private boolean usedSonarcloud;
   private Map<String, TelemetryAnalyzerPerformance> analyzers;
 
   TelemetryData() {
@@ -119,6 +120,14 @@ class TelemetryData {
   boolean usedConnectedMode() {
     return usedConnectedMode;
   }
+  
+  void setUsedSonarcloud(boolean value) {
+    usedSonarcloud = value;
+  }
+  
+  boolean usedSonarcloud() {
+    return usedSonarcloud;
+  }
 
   /**
    * Register that an analysis was performed.
@@ -152,6 +161,10 @@ class TelemetryData {
   void mergeFrom(TelemetryData other) {
     if (other.usedConnectedMode) {
       usedConnectedMode = true;
+    }
+    
+    if (other.usedSonarcloud) {
+      usedSonarcloud = true;
     }
 
     if (isOlder(lastUseDate, other.lastUseDate)) {
