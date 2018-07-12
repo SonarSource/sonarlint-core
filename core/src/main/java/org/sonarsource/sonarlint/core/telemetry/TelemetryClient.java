@@ -81,7 +81,7 @@ public class TelemetryClient {
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
-      data.usedConnectedMode(), systemTime, data.installTime(), analyzers);
+      data.usedConnectedMode(), data.usedSonarcloud(), systemTime, data.installTime(), analyzers);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {

@@ -85,7 +85,7 @@ public class TelemetryManagerTest {
   public void usedConnectedMode_should_trigger_save_once_per_day() throws IOException {
     TelemetryStorage storage = mockTelemetryStorage();
     TelemetryManager manager = stubbedTelemetryManager(storage);
-    manager.usedConnectedMode(true);
+    manager.usedConnectedMode(true, true);
     verify(storage).trySave(any(TelemetryData.class));
   }
 
@@ -250,7 +250,7 @@ public class TelemetryManagerTest {
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
-    manager.usedConnectedMode(true);
+    manager.usedConnectedMode(true, true);
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isTrue();
@@ -259,6 +259,8 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.usedConnectedMode()).isNotEqualTo(data.usedConnectedMode());
+    assertThat(reloaded.usedSonarcloud()).isNotEqualTo(data.usedSonarcloud());
+
   }
 
   private TelemetryData createAndSaveSampleData(TelemetryStorage storage) {

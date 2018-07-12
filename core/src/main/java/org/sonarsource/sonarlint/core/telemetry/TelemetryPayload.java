@@ -43,6 +43,9 @@ class TelemetryPayload {
   @SerializedName("connected_mode_used")
   private final boolean connectedMode;
 
+  @SerializedName("connected_mode_sonarcloud")
+  private final boolean connectedModeSonarcloud;
+  
   @SerializedName("system_time")
   private final OffsetDateTime systemTime;
 
@@ -52,13 +55,14 @@ class TelemetryPayload {
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
-  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode,
+  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode, boolean connectedModeSonarcloud,
     OffsetDateTime systemTime, OffsetDateTime installTime, TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
     this.version = version;
     this.connectedMode = connectedMode;
+    this.connectedModeSonarcloud = connectedModeSonarcloud;
     this.systemTime = systemTime;
     this.installTime = installTime;
     this.analyses = analyses;
@@ -86,6 +90,10 @@ class TelemetryPayload {
 
   public boolean connectedMode() {
     return connectedMode;
+  }
+  
+  public boolean connectedModeSonarcloud() {
+    return connectedModeSonarcloud;
   }
 
   public OffsetDateTime systemTime() {

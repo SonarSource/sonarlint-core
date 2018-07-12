@@ -125,8 +125,9 @@ public class TelemetryManager {
     mergeAndSave();
   }
 
-  public void usedConnectedMode(boolean hasConnectedProject) {
+  public void usedConnectedMode(boolean hasConnectedProject, boolean isSonarCloud) {
     data.setUsedConnectedMode(hasConnectedProject);
+    data.setUsedSonarcloud(hasConnectedProject && isSonarCloud);
     mergeAndSave();
   }
 

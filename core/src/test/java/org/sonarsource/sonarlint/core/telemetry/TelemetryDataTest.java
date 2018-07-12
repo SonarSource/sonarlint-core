@@ -118,6 +118,21 @@ public class TelemetryDataTest {
     data1.mergeFrom(data2);
     assertThat(data1.usedConnectedMode()).isTrue();
   }
+  
+  @Test
+  public void mergeFrom_should_overwrite_usedSonarcloud_if_set() {
+    TelemetryData data1 = new TelemetryData();
+    TelemetryData data2 = new TelemetryData();
+
+    data1.setUsedSonarcloud(true);
+    data1.mergeFrom(data2);
+    assertThat(data1.usedSonarcloud()).isTrue();
+
+    data1.setUsedSonarcloud(false);
+    data2.setUsedSonarcloud(true);
+    data1.mergeFrom(data2);
+    assertThat(data1.usedSonarcloud()).isTrue();
+  }
 
   @Test
   public void test_isOlder_LocalDate() {
