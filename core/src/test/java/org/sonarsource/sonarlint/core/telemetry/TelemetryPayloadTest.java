@@ -58,5 +58,7 @@ public class TelemetryPayloadTest {
     assertThat(m.version()).isEqualTo("2.4");
     assertThat(m.connectedMode()).isTrue();
     assertThat(m.analyses()).hasSize(1);
+    assertThat(m.connectedModeSonarcloud()).isTrue();
+    assertThat(m.systemTime()).isEqualTo(systemTime);
   }
 }

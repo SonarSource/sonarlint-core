@@ -21,12 +21,9 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.protobuf.Parser;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -60,13 +57,6 @@ public class IssueDownloaderImpl implements IssueDownloader {
       Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
       return ProtobufUtil.readMessages(input, parser);
     }
-  }
-
-  private List<Issues.Issue> getIssuesSQ72(String key) {
-    List<Issues.Issue> issues = new ArrayList<>();
-    SonarLintWsClient.getPaginated(wsClient, "issues/search", Issues.SearchWsResponse::parseFrom, Issues.SearchWsResponse::getPaging,
-      Issues.SearchWsResponse::getIssuesList, issues::add, true, null);
-    return issues;
   }
 
   private static String getIssuesUrl(String key) {

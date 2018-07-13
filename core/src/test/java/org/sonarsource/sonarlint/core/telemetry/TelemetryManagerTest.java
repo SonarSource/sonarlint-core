@@ -240,6 +240,26 @@ public class TelemetryManagerTest {
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).containsKey("java");
   }
+  
+  @Test
+  public void reporting_analysis_on_language() throws IOException {
+    Path path = temp.newFile().toPath();
+    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
+
+    TelemetryStorage storage = new TelemetryStorage(path);
+    TelemetryData data = createAndSaveSampleData(storage);
+
+    // note: the manager hasn't seen the saved data
+    manager.analysisDoneOnSingleLanguage("java", 1000);
+
+    TelemetryData reloaded = storage.tryLoad();
+    assertThat(reloaded.enabled()).isTrue();
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
+    assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
+    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
+    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
+    assertThat(reloaded.analyzers()).containsKey("java");
+  }
 
   @Test
   public void usedConnectedMode_should_not_wipe_out_more_recent_data() throws IOException {
