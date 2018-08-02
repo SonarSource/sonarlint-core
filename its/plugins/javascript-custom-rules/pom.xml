@@ -18,14 +18,14 @@
   <description>JavaScript Custom Rules</description>
 
   <properties>
-    <javascript.buildVersion>2.14</javascript.buildVersion>
+    <javascript.buildVersion>4.2.0.6476</javascript.buildVersion>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
-      <version>5.6</version>
+      <version>6.7</version>
       <scope>provided</scope>
     </dependency>
 
@@ -55,7 +55,7 @@
         <configuration>
           <pluginClass>org.sonar.samples.javascript.JavaScriptCustomRulesPlugin</pluginClass>
           <basePlugin>javascript</basePlugin>
-          <sonarQubeMinVersion>5.6</sonarQubeMinVersion>
+          <sonarQubeMinVersion>6.7</sonarQubeMinVersion>
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
         </configuration>
