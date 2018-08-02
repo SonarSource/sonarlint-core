@@ -23,10 +23,12 @@ package org.sonar.samples.javascript;
 import org.sonar.plugins.javascript.api.CustomJavaScriptRulesDefinition;
 import org.sonar.samples.javascript.checks.ForbiddenFunctionUseCheck;
 import org.sonar.samples.javascript.checks.OtherForbiddenFunctionUseCheck;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * Extension point to define a javascript JavaScript rule repository.
  */
+@SonarLintSide
 public class JavascriptCustomRulesDefinition extends CustomJavaScriptRulesDefinition {
 
   /**

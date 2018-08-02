@@ -19,9 +19,8 @@
  */
 package org.sonar.samples.javascript.checks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.List;
+import java.util.Collections;
 import java.util.Set;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
@@ -34,6 +33,7 @@ import org.sonar.plugins.javascript.api.tree.expression.IdentifierTree;
 import org.sonar.plugins.javascript.api.visitors.SubscriptionVisitorCheck;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * Example of a check extending {@link SubscriptionVisitorCheck}.
@@ -51,13 +51,14 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
   )
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_RELIABILITY)
 @SqaleConstantRemediation("5min")
+@SonarLintSide
 public class OtherForbiddenFunctionUseCheck extends SubscriptionVisitorCheck {
 
   private static final Set<String> FORBIDDEN_FUNCTIONS = ImmutableSet.of("baz");
 
   @Override
-  public List<Kind> nodesToVisit() {
-    return ImmutableList.of(Kind.CALL_EXPRESSION);
+  public Set<Kind> nodesToVisit() {
+    return Collections.singleton(Kind.CALL_EXPRESSION);
   }
 
   @Override

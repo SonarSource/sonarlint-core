@@ -31,6 +31,7 @@ import org.sonar.plugins.javascript.api.tree.expression.IdentifierTree;
 import org.sonar.plugins.javascript.api.visitors.DoubleDispatchVisitorCheck;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * Example of implementation of a check by extending {@link DoubleDispatchVisitorCheck}.
@@ -50,6 +51,7 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
   )
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_RELIABILITY)
 @SqaleConstantRemediation("5min")
+@SonarLintSide
 public class ForbiddenFunctionUseCheck extends DoubleDispatchVisitorCheck {
 
   private static final Set<String> FORBIDDEN_FUNCTIONS = ImmutableSet.of("foo", "bar");
