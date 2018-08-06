@@ -217,7 +217,7 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
-        tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function. (python:PrintStatementUsage)", DiagnosticSeverity.Error));
+        tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function. (python:PrintStatementUsage)", DiagnosticSeverity.Warning));
   }
 
   @Test
@@ -284,6 +284,25 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+  }
+
+  @Test
+  public void diagnosticRelatedInfos() throws Exception {
+    String uri = getUri("foo.js");
+    lsProxy.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {  \n" +
+        "}\n" +
+        "foo((1 && 2) && (3 && 4));\n")));
+
+    List<Diagnostic> diagnostics = waitForDiagnostics(uri);
+    assertThat(diagnostics)
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(
+        tuple(2, 3, 2, 25, "javascript:S930", "sonarlint", "\"foo\" declared at line 1 expects 0 arguments, but 1 was provided. (javascript:S930)", DiagnosticSeverity.Error));
+
+    assertThat(diagnostics.get(0).getRelatedInformation())
+      .extracting("location.range.start.line", "location.range.start.character", "location.range.end.line", "location.range.end.character", "location.uri", "message")
+      .containsExactly(tuple(0, 12, 0, 14, uri, "Formal parameters"));
   }
 
   @Test

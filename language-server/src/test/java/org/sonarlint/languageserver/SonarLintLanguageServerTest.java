@@ -68,7 +68,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -104,7 +103,7 @@ public class SonarLintLanguageServerTest {
   public void testNotConvertGlobalIssues() {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(null);
-    assertThat(convert(issue)).isEmpty();
+    assertThat(convert(issue, null)).isEmpty();
   }
 
   @Test
@@ -112,15 +111,15 @@ public class SonarLintLanguageServerTest {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(1);
     when(issue.getSeverity()).thenReturn("BLOCKER");
-    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
+    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("CRITICAL");
-    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
+    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("MAJOR");
-    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Warning);
+    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Warning);
     when(issue.getSeverity()).thenReturn("MINOR");
-    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
+    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
     when(issue.getSeverity()).thenReturn("INFO");
-    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
+    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
   }
 
   @Test

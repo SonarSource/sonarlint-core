@@ -19,25 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
 import java.util.Collections;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.DefaultTextPointer;
 import org.sonar.api.batch.fs.internal.DefaultTextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
-import org.sonar.api.batch.sensor.issue.Issue.Flow;
-import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DefaultClientIssueTest {
   @Mock
@@ -58,25 +55,17 @@ public class DefaultClientIssueTest {
 
   @Test
   public void transformIssue() {
+    InputComponent currentFile = mock(InputComponent.class);
+    String currentFileKey = "currentFileKey";
+    when(currentFile.key()).thenReturn(currentFileKey);
+    InputComponent anotherFile = mock(InputComponent.class);
+    when(anotherFile.key()).thenReturn("anotherFileKey");
+
     textRange = new DefaultTextRange(new DefaultTextPointer(1, 2), new DefaultTextPointer(2, 3));
-    IssueLocation location1 = mock(IssueLocation.class);
-
-    when(location1.textRange()).thenReturn(new DefaultTextRange(new DefaultTextPointer(4, 4), new DefaultTextPointer(5, 5)));
-    when(location1.message()).thenReturn("location1");
-    IssueLocation location2 = mock(IssueLocation.class);
-
-    when(location2.textRange()).thenReturn(new DefaultTextRange(new DefaultTextPointer(6, 6), new DefaultTextPointer(7, 7)));
-    when(location2.message()).thenReturn("location2");
 
     when(rule.name()).thenReturn("name");
 
-    Flow flow1 = mock(Flow.class);
-    when(flow1.locations()).thenReturn(Collections.singletonList(location1));
-
-    Flow flow2 = mock(Flow.class);
-    when(flow2.locations()).thenReturn(Arrays.asList(location1, location2));
-
-    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", textRange, clientInputFile, Arrays.asList(flow1, flow2));
+    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", textRange, clientInputFile, Collections.emptyList());
 
     assertThat(issue.getStartLine()).isEqualTo(1);
     assertThat(issue.getStartLineOffset()).isEqualTo(2);
@@ -88,17 +77,6 @@ public class DefaultClientIssueTest {
     assertThat(issue.getInputFile()).isEqualTo(clientInputFile);
 
     assertThat(issue.getRuleName()).isEqualTo("name");
-
-    assertThat(issue.flows()).hasSize(2);
-    assertThat(issue.flows().get(0).locations()).hasSize(1);
-    assertThat(issue.flows().get(0).locations().get(0)).extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "message")
-      .containsExactly(4, 4, 5, 5, "location1");
-
-    assertThat(issue.flows().get(1).locations()).hasSize(2);
-    assertThat(issue.flows().get(1).locations().get(0)).extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "message")
-      .containsExactly(4, 4, 5, 5, "location1");
-    assertThat(issue.flows().get(1).locations().get(1)).extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "message")
-      .containsExactly(6, 6, 7, 7, "location2");
   }
 
   @Test
