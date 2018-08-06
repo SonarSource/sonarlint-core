@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sonar.api.batch.fs.InputComponent;
@@ -36,17 +38,21 @@ import org.sonar.api.batch.sensor.error.AnalysisError;
 import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.Issue;
+import org.sonar.api.batch.sensor.issue.Issue.Flow;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
+import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFlow;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
+
+import static java.util.stream.Collectors.toList;
 
 public class DefaultSensorStorage implements SensorStorage {
 
@@ -85,11 +91,25 @@ public class DefaultSensorStorage implements SensorStorage {
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type();
 
+    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows(), inputComponent);
+
     DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
-      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, issue.flows());
+      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows);
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }
+  }
+
+  @VisibleForTesting
+  static List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> mapFlows(List<Flow> flows, InputComponent inputComponent) {
+    return flows.stream()
+      .map(f -> new DefaultFlow(f.locations()
+        .stream()
+        // Only keep flows on the same file
+        .filter(l -> l.inputComponent().equals(inputComponent))
+        .collect(toList())))
+      .filter(f -> !f.locations().isEmpty())
+      .collect(toList());
   }
 
   private DefaultRule validateRule(Issue issue) {

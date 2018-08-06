@@ -58,6 +58,7 @@ import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticRelatedInformation;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -107,6 +108,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -118,6 +120,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
+import static java.util.Objects.nonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
@@ -595,7 +598,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         URI uri1 = inputFile.getClientObject();
         PublishDiagnosticsParams publish = files.computeIfAbsent(uri1, SonarLintLanguageServer::newPublishDiagnostics);
 
-        convert(issue).ifPresent(publish.getDiagnostics()::add);
+        convert(issue, uri).ifPresent(publish.getDiagnostics()::add);
       }
     };
 
@@ -758,7 +761,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return inputFilePath.getParent();
   }
 
-  static Optional<Diagnostic> convert(Issue issue) {
+  static Optional<Diagnostic> convert(Issue issue, URI documentUri) {
     if (issue.getStartLine() != null) {
       Range range = position(issue);
       Diagnostic diagnostic = new Diagnostic();
@@ -769,6 +772,18 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       diagnostic.setCode(issue.getRuleKey());
       diagnostic.setMessage(issue.getMessage() + " (" + issue.getRuleKey() + ")");
       diagnostic.setSource(SONARLINT_SOURCE);
+
+      diagnostic.setRelatedInformation(issue.flows()
+        .stream()
+        .flatMap(f -> f.locations().stream())
+        // Message is mandatory in lsp
+        .filter(l -> nonNull(l.getMessage()))
+        .map(l -> {
+          DiagnosticRelatedInformation rel = new DiagnosticRelatedInformation();
+          rel.setMessage(l.getMessage());
+          rel.setLocation(new Location(documentUri.toString(), position(l)));
+          return rel;
+        }).collect(Collectors.toList()));
 
       return Optional.of(diagnostic);
     }
@@ -798,6 +813,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       new Position(
         issue.getEndLine() - 1,
         issue.getEndLineOffset()));
+  }
+
+  private static Range position(IssueLocation location) {
+    return new Range(
+      new Position(
+        location.getStartLine() - 1,
+        location.getStartLineOffset()),
+      new Position(
+        location.getEndLine() - 1,
+        location.getEndLineOffset()));
   }
 
   private static PublishDiagnosticsParams newPublishDiagnostics(URI newUri) {

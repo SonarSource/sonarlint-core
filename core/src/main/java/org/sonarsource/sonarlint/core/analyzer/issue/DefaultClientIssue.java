@@ -20,14 +20,11 @@
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
-import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public final class DefaultClientIssue extends TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
@@ -40,7 +37,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   private final List<Flow> flows;
 
   public DefaultClientIssue(String severity, @Nullable String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
-    @Nullable ClientInputFile clientInputFile, List<org.sonar.api.batch.sensor.issue.Issue.Flow> flows) {
+    @Nullable ClientInputFile clientInputFile, List<Flow> flows) {
     super(textRange);
     this.severity = severity;
     this.type = type;
@@ -48,7 +45,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     this.rule = rule;
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
-    this.flows = flows.stream().map(f -> new DefaultFlow(f.locations())).collect(Collectors.toList());
+    this.flows = flows;
   }
 
   @Override
@@ -102,34 +99,5 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     }
     sb.append("]");
     return sb.toString();
-  }
-
-  private static class DefaultLocation extends TextRangeLocation {
-    private final String message;
-
-    private DefaultLocation(@Nullable TextRange textRange, @Nullable String message) {
-      super(textRange);
-      this.message = message;
-    }
-
-    @Override
-    public String getMessage() {
-      return message;
-    }
-  }
-
-  private static class DefaultFlow implements Flow {
-    private List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations;
-
-    private DefaultFlow(List<IssueLocation> issueLocations) {
-      this.locations = issueLocations.stream()
-        .map(i -> new DefaultLocation(i.textRange(), i.message()))
-        .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations() {
-      return locations;
-    }
   }
 }
