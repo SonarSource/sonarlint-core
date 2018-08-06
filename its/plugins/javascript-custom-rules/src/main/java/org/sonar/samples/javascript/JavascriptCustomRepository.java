@@ -19,16 +19,20 @@
  */
 package org.sonar.samples.javascript;
 
-import org.sonar.api.Plugin;
+import java.util.Arrays;
+import java.util.List;
+import org.sonar.plugins.javascript.api.CustomRuleRepository;
+import org.sonar.samples.javascript.checks.ForbiddenFunctionUseCheck;
+import org.sonar.samples.javascript.checks.OtherForbiddenFunctionUseCheck;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-/**
- * Extension point to define a SonarQube Plugin.
- */
-public class JavaScriptCustomRulesPlugin implements Plugin {
-
-  @Override
-  public void define(Context context) {
-    context.addExtensions(JavascriptCustomRulesDefinition.class, JavascriptCustomRepository.class);
+@SonarLintSide
+public class JavascriptCustomRepository implements CustomRuleRepository {
+  @Override public String repositoryKey() {
+    return "custom";
   }
 
+  @Override public List<Class> checkClasses() {
+    return Arrays.<Class>asList(ForbiddenFunctionUseCheck.class, OtherForbiddenFunctionUseCheck.class);
+  }
 }

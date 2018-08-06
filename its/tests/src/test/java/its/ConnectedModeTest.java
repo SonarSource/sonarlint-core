@@ -130,7 +130,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       orchestratorBuilder
         .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))
-        .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
@@ -142,6 +141,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
 
+      if (ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 3)) {
+        orchestratorBuilder.addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"));
+      }
+
       ORCHESTRATOR = orchestratorBuilder.build();
       ORCHESTRATOR.start();
     }
@@ -149,7 +152,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     @Override
     protected void after() {
       ORCHESTRATOR.stop();
-    };
+    }
+
   };
 
   public static Orchestrator ORCHESTRATOR;
