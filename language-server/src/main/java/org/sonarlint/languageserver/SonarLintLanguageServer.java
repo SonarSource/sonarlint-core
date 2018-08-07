@@ -107,6 +107,7 @@ import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -773,7 +774,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       diagnostic.setMessage(issue.getMessage() + " (" + issue.getRuleKey() + ")");
       diagnostic.setSource(SONARLINT_SOURCE);
 
-      diagnostic.setRelatedInformation(issue.flows()
+      List<Flow> flows = issue.flows();
+      // If multiple flows with more than 1 location, keep only the first flow
+      if (flows.size() > 1 && flows.stream().anyMatch(f -> f.locations().size() > 1)) {
+        flows = Collections.singletonList(flows.get(0));
+      }
+      diagnostic.setRelatedInformation(flows
         .stream()
         .flatMap(f -> f.locations().stream())
         // Message is mandatory in lsp
