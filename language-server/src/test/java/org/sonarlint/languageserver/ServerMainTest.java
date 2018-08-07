@@ -352,7 +352,7 @@ public class ServerMainTest {
   }
 
   private String getUri(String filename) throws IOException {
-    return temp.newFile(filename).toURI().toString();
+    return temp.newFile(filename).toPath().toUri().toString();
   }
 
   private List<Diagnostic> waitForDiagnostics(String uri) throws InterruptedException {

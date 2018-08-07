@@ -103,7 +103,7 @@ public class SonarLintLanguageServerTest {
   public void testNotConvertGlobalIssues() {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(null);
-    assertThat(convert(issue, null)).isEmpty();
+    assertThat(convert(issue)).isEmpty();
   }
 
   @Test
@@ -111,15 +111,15 @@ public class SonarLintLanguageServerTest {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(1);
     when(issue.getSeverity()).thenReturn("BLOCKER");
-    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("CRITICAL");
-    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("MAJOR");
-    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Warning);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Warning);
     when(issue.getSeverity()).thenReturn("MINOR");
-    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Information);
     when(issue.getSeverity()).thenReturn("INFO");
-    assertThat(convert(issue, null).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
+    assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Hint);
   }
 
   @Test

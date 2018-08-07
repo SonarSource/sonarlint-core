@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class DefaultSensorStorage implements SensorStorage {
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type();
 
-    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows(), inputComponent);
+    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows());
 
     DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows);
@@ -100,13 +99,10 @@ public class DefaultSensorStorage implements SensorStorage {
     }
   }
 
-  @VisibleForTesting
-  static List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> mapFlows(List<Flow> flows, InputComponent inputComponent) {
+  private static List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> mapFlows(List<Flow> flows) {
     return flows.stream()
       .map(f -> new DefaultFlow(f.locations()
         .stream()
-        // Only keep flows on the same file
-        .filter(l -> l.inputComponent().equals(inputComponent))
         .collect(toList())))
       .filter(f -> !f.locations().isEmpty())
       .collect(toList());

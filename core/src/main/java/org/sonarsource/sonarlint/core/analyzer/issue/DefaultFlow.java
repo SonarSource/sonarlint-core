@@ -23,13 +23,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class DefaultFlow implements Flow {
   private List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations;
 
   public DefaultFlow(List<IssueLocation> issueLocations) {
     this.locations = issueLocations.stream()
-      .map(i -> new DefaultLocation(i.textRange(), i.message()))
+      .map(i -> new DefaultLocation(
+        i.inputComponent().isFile() ? ((SonarLintInputFile) i.inputComponent()).getClientInputFile() : null,
+        i.textRange(),
+        i.message()))
       .collect(Collectors.toList());
   }
 

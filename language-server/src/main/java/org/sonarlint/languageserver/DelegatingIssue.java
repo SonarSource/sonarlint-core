@@ -92,4 +92,5 @@ public class DelegatingIssue implements Issue {
   public ClientInputFile getInputFile() {
     return issue.getInputFile();
   }
+
 }
