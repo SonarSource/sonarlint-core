@@ -748,6 +748,13 @@ public class SonarLintLanguageServerTest {
       return lastEngine.standaloneEngine;
     }
 
+    @Override
+    public void stopStandaloneEngine() {
+      if (lastEngine != null) {
+        lastEngine.standaloneEngine.stop();
+      }
+    }
+
     @CheckForNull
     @Override
     public ConnectedSonarLintEngine getOrCreateConnectedEngine(ServerInfo serverInfo) {
@@ -761,7 +768,7 @@ public class SonarLintLanguageServerTest {
 
     @Override
     public void clearConnectedEngines() {
-      if (!lastEngine.standalone) {
+      if (lastEngine != null && !lastEngine.standalone) {
         lastEngine = null;
       }
     }

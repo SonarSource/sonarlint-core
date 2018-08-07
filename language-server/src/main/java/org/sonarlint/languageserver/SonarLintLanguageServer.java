@@ -249,9 +249,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
     engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
 
-    // start standalone engine
-    engineCache.getOrCreateStandaloneEngine();
-
     serverInfoCache.replace(options.get(CONNECTED_MODE_SERVERS_PROP));
     updateBinding((Map<?, ?>) options.get(CONNECTED_MODE_PROJECT_PROP));
 
@@ -406,7 +403,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<Object> shutdown() {
-    engineCache.getOrCreateStandaloneEngine().stop();
+    engineCache.stopStandaloneEngine();
     engineCache.clearConnectedEngines();
     telemetry.stop();
     return CompletableFuture.completedFuture("Stopped");
