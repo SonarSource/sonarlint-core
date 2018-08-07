@@ -31,10 +31,12 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfiguration {
 
   private final String moduleKey;
+  private final String toString;
 
   public ConnectedAnalysisConfiguration(@Nullable String moduleKey, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
     super(baseDir, workDir, inputFiles, extraProperties);
     this.moduleKey = moduleKey;
+    this.toString = generateString();
   }
 
   @CheckForNull
@@ -44,6 +46,10 @@ public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfigurat
 
   @Override
   public String toString() {
+    return toString;
+  }
+  
+  private String generateString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
     if (moduleKey != null) {

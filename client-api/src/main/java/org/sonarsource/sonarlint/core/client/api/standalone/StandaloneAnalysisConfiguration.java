@@ -39,6 +39,7 @@ public class StandaloneAnalysisConfiguration {
   private final Path baseDir;
   private final Collection<RuleKey> excludedRules;
   private final Collection<RuleKey> includedRules;
+  private final String toString;
 
   public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties,
     Collection<RuleKey> excludedRules, Collection<RuleKey> includedRules) {
@@ -48,6 +49,7 @@ public class StandaloneAnalysisConfiguration {
     this.extraProperties = Collections.unmodifiableMap(new HashMap<>(extraProperties));
     this.excludedRules = Collections.unmodifiableList(new ArrayList<>(excludedRules));
     this.includedRules = Collections.unmodifiableList(new ArrayList<>(includedRules));
+    this.toString = generateToString();
   }
 
   public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
@@ -83,6 +85,10 @@ public class StandaloneAnalysisConfiguration {
 
   @Override
   public String toString() {
+    return toString;
+  }
+  
+  private String generateToString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
     sb.append("  baseDir: ").append(baseDir).append("\n");
