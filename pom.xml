@@ -12,7 +12,7 @@
   <version>3.9-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
-  <description>Library used by SonarLint clients (CLI, Eclipse, ...)</description>
+  <description>Library used by SonarLint flavors (Eclipse, IntelliJ, VSCode...)</description>
   <organization>
     <name>SonarSource</name>
     <url>http://www.sonarsource.com/</url>
@@ -33,17 +33,18 @@
   </modules>
 
   <properties>
-    <sonarqube.version>7.1</sonarqube.version>
+    <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
+    <sonarqube.version>7.2</sonarqube.version>
+    
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
-    <logback.version>1.1.3</logback.version>
-    <slf4j.version>1.7.21</slf4j.version>
-    <log4j.version>2.5</log4j.version>
+    <logback.version>1.2.3</logback.version>
+    <slf4j.version>1.7.25</slf4j.version>
     <grpc.version>1.4.0</grpc.version>
-    <protobuf.version>3.5.1</protobuf.version>
+    <protobuf.version>3.6.1</protobuf.version>
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>3.10.0</okhttp.version>
+    <okhttp.version>3.11.0</okhttp.version>
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:sonarlint-daemon:zip:windows,${project.groupId}:sonarlint-language-server:jar</artifactsToPublish>
   </properties>
@@ -91,12 +92,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.7</version>
+          <version>1.8</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.9.1</version>
+          <version>3.0.0</version>
         </plugin>
       </plugins>
     </pluginManagement>

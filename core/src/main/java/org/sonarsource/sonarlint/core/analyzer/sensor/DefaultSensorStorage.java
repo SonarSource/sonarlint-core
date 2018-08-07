@@ -31,11 +31,13 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.batch.rule.internal.DefaultRule;
+import org.sonar.api.batch.sensor.code.internal.DefaultSignificantCode;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
 import org.sonar.api.batch.sensor.error.AnalysisError;
 import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
+import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.Issue.Flow;
 import org.sonar.api.batch.sensor.measure.Measure;
@@ -152,6 +154,16 @@ public class DefaultSensorStorage implements SensorStorage {
 
   @Override
   public void storeProperty(String key, String value) {
+    // NO-OP
+  }
+
+  @Override
+  public void store(ExternalIssue issue) {
+    // NO-OP
+  }
+
+  @Override
+  public void store(DefaultSignificantCode significantCode) {
     // NO-OP
   }
 

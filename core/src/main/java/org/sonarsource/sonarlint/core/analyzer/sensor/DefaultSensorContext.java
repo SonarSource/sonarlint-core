@@ -26,12 +26,14 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.code.NewSignificantCode;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.error.NewAnalysisError;
 import org.sonar.api.batch.sensor.error.internal.DefaultAnalysisError;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
+import org.sonar.api.batch.sensor.issue.NewExternalIssue;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
@@ -41,8 +43,10 @@ import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewExternalIssue;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -52,6 +56,8 @@ public class DefaultSensorContext implements SensorContext {
   private static final NoOpNewSymbolTable NO_OP_NEW_SYMBOL_TABLE = new NoOpNewSymbolTable();
   private static final NoOpNewCpdTokens NO_OP_NEW_CPD_TOKENS = new NoOpNewCpdTokens();
   private static final NoOpNewCoverage NO_OP_NEW_COVERAGE = new NoOpNewCoverage();
+  private static final NoOpNewExternalIssue NO_OP_NEW_EXTERNAL_ISSUE = new NoOpNewExternalIssue();
+  private static final NoOpNewSignificantCode NO_OP_NEW_SIGNIFICANT_CODE = new NoOpNewSignificantCode();
 
   private final Settings settings;
   private final FileSystem fs;
@@ -157,6 +163,16 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public void markForPublishing(InputFile inputFile) {
     // NO OP
+  }
+
+  @Override
+  public NewExternalIssue newExternalIssue() {
+    return NO_OP_NEW_EXTERNAL_ISSUE;
+  }
+
+  @Override
+  public NewSignificantCode newSignificantCode() {
+    return NO_OP_NEW_SIGNIFICANT_CODE;
   }
 
 }
