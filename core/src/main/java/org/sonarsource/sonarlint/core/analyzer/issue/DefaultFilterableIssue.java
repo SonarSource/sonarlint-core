@@ -23,6 +23,7 @@ import java.util.Date;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
@@ -95,6 +96,11 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   public InputComponent getInputComponent() {
     return inputComponent;
+  }
+
+  @Override
+  public TextRange textRange() {
+    return rawIssue.textRange;
   }
 
 }

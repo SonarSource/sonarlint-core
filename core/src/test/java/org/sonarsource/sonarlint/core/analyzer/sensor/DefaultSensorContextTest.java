@@ -33,8 +33,10 @@ import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewExternalIssue;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
+import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -87,6 +89,8 @@ public class DefaultSensorContextTest {
     assertThat(ctx.newHighlighting()).isInstanceOf(NoOpNewHighlighting.class);
     assertThat(ctx.newMeasure()).isInstanceOf(NoOpNewMeasure.class);
     assertThat(ctx.newCoverage()).isInstanceOf(NoOpNewCoverage.class);
+    assertThat(ctx.newSignificantCode()).isInstanceOf(NoOpNewSignificantCode.class);
+    assertThat(ctx.newExternalIssue()).isInstanceOf(NoOpNewExternalIssue.class);
     assertThat(ctx.isCancelled()).isFalse();
     ctx.addContextProperty(null, null);
     ctx.markForPublishing(null);
