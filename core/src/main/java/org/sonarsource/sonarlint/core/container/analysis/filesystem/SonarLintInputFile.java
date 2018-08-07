@@ -38,6 +38,9 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata
 public class SonarLintInputFile extends DefaultInputFile {
 
   private final ClientInputFile clientInputFile;
+  private final String absolutePath;
+  private final Path path;
+  private final String relativePath;
   private String language;
   private Type type;
 
@@ -45,6 +48,9 @@ public class SonarLintInputFile extends DefaultInputFile {
     super(new DefaultIndexedFile(SonarLintInputModule.SONARLINT_FAKE_MODULE_KEY, Paths.get(clientInputFile.getPath()), clientInputFile.getPath(), clientInputFile.language()),
       metadataGenerator);
     this.clientInputFile = clientInputFile;
+    this.path = Paths.get(clientInputFile.getPath());
+    this.relativePath = PathUtils.sanitize(clientInputFile.relativePath());
+    this.absolutePath = PathUtils.sanitize(path.toString());
   }
 
   public ClientInputFile getClientInputFile() {
@@ -53,7 +59,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public String relativePath() {
-    return PathUtils.sanitize(clientInputFile.relativePath());
+    return relativePath;
   }
 
   public void setLanguage(@Nullable String language) {
@@ -77,7 +83,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public String absolutePath() {
-    return PathUtils.sanitize(path().toString());
+    return absolutePath;
   }
 
   @Override
@@ -87,7 +93,7 @@ public class SonarLintInputFile extends DefaultInputFile {
 
   @Override
   public Path path() {
-    return Paths.get(clientInputFile.getPath());
+    return path;
   }
 
   @Override
