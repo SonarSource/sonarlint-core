@@ -75,7 +75,7 @@ public class ProgressReportTest {
   @Test
   public void do_log() {
     progressReport.start("start");
-    progressReport.message("Some message");
+    progressReport.message(() -> "Some message");
     try {
       Thread.sleep(200);
     } catch (InterruptedException e) {

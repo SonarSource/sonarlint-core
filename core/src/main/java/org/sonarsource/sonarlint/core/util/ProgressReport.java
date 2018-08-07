@@ -21,21 +21,20 @@ package org.sonarsource.sonarlint.core.util;
 
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 public class ProgressReport implements Runnable {
 
   private static final Logger LOG = Loggers.get(ProgressReport.class);
   private final long period;
-  private String message = "";
+  private Supplier<String> messageSupplier = () -> "";
   private final Thread thread;
   private String stopMessage = null;
 
   public ProgressReport(String threadName, long period) {
     this.period = period;
-    thread = new Thread(this);
-    thread.setName(threadName);
+    thread = new Thread(this, threadName);
     thread.setDaemon(true);
   }
 
@@ -44,7 +43,7 @@ public class ProgressReport implements Runnable {
     while (!Thread.interrupted()) {
       try {
         Thread.sleep(period);
-        log(message);
+        log(messageSupplier.get());
       } catch (InterruptedException e) {
         break;
       }
@@ -59,8 +58,8 @@ public class ProgressReport implements Runnable {
     thread.start();
   }
 
-  public void message(String message) {
-    this.message = message;
+  public void message(Supplier<String> messageSupplier) {
+    this.messageSupplier = messageSupplier;
   }
 
   public void stop(@Nullable String stopMessage) {

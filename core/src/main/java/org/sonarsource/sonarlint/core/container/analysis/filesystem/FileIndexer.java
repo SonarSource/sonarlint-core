@@ -118,12 +118,13 @@ public class FileIndexer {
   private class Progress {
     private final Set<Path> indexed = new HashSet<>();
 
-    synchronized void markAsIndexed(SonarLintInputFile inputFile) {
+    void markAsIndexed(SonarLintInputFile inputFile) {
       if (indexed.contains(inputFile.path())) {
         throw MessageException.of("File " + inputFile + " can't be indexed twice.");
       }
       indexed.add(inputFile.path());
-      progressReport.message(indexed.size() + " files indexed...  (last one was " + inputFile.absolutePath() + ")");
+      int size = indexed.size();
+      progressReport.message(() -> size + " files indexed...  (last one was " + inputFile.absolutePath() + ")");
     }
 
     int count() {
