@@ -50,6 +50,13 @@ public class DefaultEngineCache implements EngineCache {
     return standaloneEngine;
   }
 
+  @Override
+  public void stopStandaloneEngine() {
+    if (standaloneEngine != null) {
+      standaloneEngine.stop();
+    }
+  }
+
   @CheckForNull
   @Override
   public ConnectedSonarLintEngine getOrCreateConnectedEngine(ServerInfo serverInfo) {

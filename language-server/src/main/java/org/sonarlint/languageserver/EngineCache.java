@@ -33,6 +33,8 @@ public interface EngineCache {
    */
   StandaloneSonarLintEngine getOrCreateStandaloneEngine();
 
+  void stopStandaloneEngine();
+
   /**
    * Get or create and start a connected engine to the specified server.
    *
@@ -50,4 +52,5 @@ public interface EngineCache {
    * Clear the cache of connected engines, stopping them.
    */
   void clearConnectedEngines();
+
 }
