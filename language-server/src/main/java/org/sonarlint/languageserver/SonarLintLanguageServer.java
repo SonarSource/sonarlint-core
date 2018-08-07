@@ -598,7 +598,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         URI uri1 = inputFile.getClientObject();
         PublishDiagnosticsParams publish = files.computeIfAbsent(uri1, SonarLintLanguageServer::newPublishDiagnostics);
 
-        convert(issue, uri).ifPresent(publish.getDiagnostics()::add);
+        convert(issue).ifPresent(publish.getDiagnostics()::add);
       }
     };
 
@@ -761,7 +761,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return inputFilePath.getParent();
   }
 
-  static Optional<Diagnostic> convert(Issue issue, URI documentUri) {
+  static Optional<Diagnostic> convert(Issue issue) {
     if (issue.getStartLine() != null) {
       Range range = position(issue);
       Diagnostic diagnostic = new Diagnostic();
@@ -778,10 +778,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         .flatMap(f -> f.locations().stream())
         // Message is mandatory in lsp
         .filter(l -> nonNull(l.getMessage()))
+        // Ignore global issue locations
+        .filter(l -> nonNull(l.getInputFile()))
         .map(l -> {
           DiagnosticRelatedInformation rel = new DiagnosticRelatedInformation();
           rel.setMessage(l.getMessage());
-          rel.setLocation(new Location(documentUri.toString(), position(l)));
+          rel.setLocation(new Location(l.getInputFile().uri().toString(), position(l)));
           return rel;
         }).collect(Collectors.toList()));
 

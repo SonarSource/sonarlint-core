@@ -22,6 +22,13 @@ package org.sonarsource.sonarlint.core.client.api.common.analysis;
 import javax.annotation.CheckForNull;
 
 public interface IssueLocation {
+
+  /**
+   * @return null for global issues
+   */
+  @CheckForNull
+  ClientInputFile getInputFile();
+
   @CheckForNull
   Integer getStartLine();
 
@@ -33,7 +40,7 @@ public interface IssueLocation {
 
   @CheckForNull
   Integer getEndLineOffset();
-  
+
   @CheckForNull
   String getMessage();
 }

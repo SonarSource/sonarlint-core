@@ -21,13 +21,21 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public class DefaultLocation extends TextRangeLocation {
   private final String message;
+  private final ClientInputFile inputFile;
 
-  public DefaultLocation(@Nullable TextRange textRange, @Nullable String message) {
+  public DefaultLocation(@Nullable ClientInputFile inputFile, @Nullable TextRange textRange, @Nullable String message) {
     super(textRange);
+    this.inputFile = inputFile;
     this.message = message;
+  }
+
+  @Override
+  public ClientInputFile getInputFile() {
+    return inputFile;
   }
 
   @Override
