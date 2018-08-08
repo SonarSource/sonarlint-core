@@ -106,7 +106,8 @@ public class TelemetryStorageTest {
     storage.trySave(data);
 
     TelemetryData data2 = storage.tryLoad();
-    assertThat(data2.installTime()).isEqualTo(tenDaysAgo);
+    // Truncate because nano precision is lost during JSON serialization
+    assertThat(data2.installTime()).isEqualTo(tenDaysAgo.truncatedTo(ChronoUnit.MILLIS));
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(11);
   }

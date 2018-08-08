@@ -33,6 +33,9 @@
   </modules>
 
   <properties>
+    <!-- Support Java 10 -->
+    <version.surefire.plugin>2.22.0</version.surefire.plugin>
+    
     <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
     <sonarqube.version>7.2</sonarqube.version>
     
