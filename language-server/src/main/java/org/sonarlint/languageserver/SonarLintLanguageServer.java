@@ -347,6 +347,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     if (updateModuleStorage(engine, serverInfo)) {
       serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, serverIssueTrackingLogger);
+      telemetry.usedConnectedMode(serverInfo.serverUrl);
     } else {
       binding = null;
     }
