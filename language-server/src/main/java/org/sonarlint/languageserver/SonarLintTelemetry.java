@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 public class SonarLintTelemetry {
   public static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
   private static final Logger LOG = Loggers.get(SonarLintTelemetry.class);
-  private static final String[] SONARCLOUD_ALIAS = {"https://sonarqube.com", "https://www.sonarqube.com",
+  static final String[] SONARCLOUD_ALIAS = {"https://sonarqube.com", "https://www.sonarqube.com",
     "https://www.sonarcloud.io", "https://sonarcloud.io"};
 
   private final Supplier<ScheduledExecutorService> executorFactory;

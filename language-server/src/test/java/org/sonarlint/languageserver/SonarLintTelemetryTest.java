@@ -34,9 +34,11 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sonarlint.languageserver.SonarLintTelemetry.SONARCLOUD_ALIAS;
 
 public class SonarLintTelemetryTest {
   private SonarLintTelemetry telemetry;
@@ -192,5 +194,23 @@ public class SonarLintTelemetryTest {
     };
     telemetry.init(null, "product", "version");
     assertThat(telemetry.enabled()).isFalse();
+  }
+
+  @Test
+  public void usedConnectedMode_should_trigger_usedConnectedMode_when_enabled_with_non_sonarcloud() {
+    when(engine.isEnabled()).thenReturn(true);
+    telemetry.usedConnectedMode("dummy url");
+    verify(engine).isEnabled();
+    verify(engine).usedConnectedMode(true, false);
+  }
+
+  @Test
+  public void usedConnectedMode_should_trigger_usedConnectedMode_when_enabled_with_sonarcloud() {
+    when(engine.isEnabled()).thenReturn(true);
+    for (String alias : SONARCLOUD_ALIAS) {
+      telemetry.usedConnectedMode(alias);
+    }
+    verify(engine, times(SONARCLOUD_ALIAS.length)).isEnabled();
+    verify(engine, times(SONARCLOUD_ALIAS.length)).usedConnectedMode(true, true);
   }
 }
