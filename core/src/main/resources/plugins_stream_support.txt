@@ -10,3 +10,5 @@ rpg=2.1
 pli=1.5
 abap=3.4
 typescript=1.5
+kotlin=1.1
+ruby=1.1
