@@ -102,6 +102,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVASCRIPT_CUSTOM = "sample-javascript-custom";
   private static final String PROJECT_KEY_PYTHON = "sample-python";
   private static final String PROJECT_KEY_WEB = "sample-web";
+  private static final String PROJECT_KEY_KOTLIN = "sample-kotlin";
+  private static final String PROJECT_KEY_RUBY = "sample-ruby";
 
   @ClassRule
   public static ExternalResource resource = new ExternalResource() {
@@ -111,6 +113,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .setSonarVersion(SONAR_VERSION);
 
       boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
+      rubyAndKotlinSupported = atLeast67;
 
       if (atLeast67) {
         orchestratorBuilder
@@ -118,6 +121,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
           .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
           .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
           .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+          // TODO update kotlin and ruby version once they are released
+          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.1.0.1505"))
+          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.1.0.1505"))
           .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
           .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       } else {
@@ -140,6 +147,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
+
+      if (rubyAndKotlinSupported) {
+        orchestratorBuilder.restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
+          .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"));
+      }
 
       if (ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 3)) {
         orchestratorBuilder.addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"));
@@ -172,6 +184,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static Server server;
   private static int redirectPort;
+  private static boolean rubyAndKotlinSupported;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -204,6 +217,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_WEB, "Sample Web");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_RUBY, "Sample Ruby");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -214,6 +229,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_WEB, "web", "SonarLint IT Web");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
+    if (rubyAndKotlinSupported) {
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_RUBY, "ruby", "SonarLint IT Ruby");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
+    }
+
 
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7)) {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
@@ -287,10 +307,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadModules() throws Exception {
     updateGlobal();
-    assertThat(engine.allModulesByKey()).hasSize(10);
+    assertThat(engine.allModulesByKey()).hasSize(12);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(11).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allModulesByKey()).hasSize(11).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allModulesByKey()).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -718,6 +738,28 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         assertThat(e).isInstanceOf(UnsupportedServerException.class);
       }
     }
+  }
+
+  @Test
+  public void analysisRuby() throws Exception {
+    assumeTrue(rubyAndKotlinSupported);
+    updateGlobal();
+    updateModule(PROJECT_KEY_RUBY);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_RUBY, PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisKotlin() throws Exception {
+    assumeTrue(rubyAndKotlinSupported);
+    updateGlobal();
+    updateModule(PROJECT_KEY_KOTLIN);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_KOTLIN, PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
