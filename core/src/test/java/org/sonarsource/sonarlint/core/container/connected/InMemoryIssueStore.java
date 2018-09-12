@@ -23,26 +23,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 
 public class InMemoryIssueStore implements IssueStore {
-  private Map<String, List<ScannerInput.ServerIssue>> issuesMap;
+  private Map<String, List<ServerIssue>> issuesMap;
 
   @Override
   public void save(List<ServerIssue> issues) {
-    issuesMap = issues.stream().collect(Collectors.groupingBy(IssueUtils::createFileKey));
+    issuesMap = issues.stream().collect(Collectors.groupingBy(ServerIssue::getPath));
   }
 
   @Override
-  public List<ServerIssue> load(String fileKey) {
-    List<ServerIssue> list = issuesMap.get(fileKey);
+  public List<ServerIssue> load(String sqFilePath) {
+    List<ServerIssue> list = issuesMap.get(sqFilePath);
     return list == null ? Collections.emptyList() : list;
   }
 
   @Override
-  public void delete(String fileKey) {
-    issuesMap.remove(fileKey);
+  public void delete(String sqFilePath) {
+    issuesMap.remove(sqFilePath);
   }
 }

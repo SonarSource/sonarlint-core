@@ -95,22 +95,22 @@ public interface ConnectedSonarLintEngine {
    * @since 2.6
    */
   @CheckForNull
-  ModuleStorageStatus getModuleStorageStatus(String moduleKey);
+  ProjectStorageStatus getProjectStorageStatus(String moduleKey);
 
   /**
-   * Return all modules by key
+   * Return all projects by key
    * @since 2.0
    */
-  Map<String, RemoteModule> allModulesByKey();
+  Map<String, RemoteProject> allProjectsByKey();
 
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
-   * Attempts to download and store the list of modules and to return all modules by key
+   * Attempts to download and store the list of projects and to return all projects by key
    * @since 2.5
    * @throws DownloadException if it fails to download
    */
-  Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  Map<String, RemoteProject> downloadAllProjects(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
    * Update current server.
@@ -124,7 +124,7 @@ public interface ConnectedSonarLintEngine {
    * Update given module.
    * @since 2.0
    */
-  void updateModule(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
+  void updateProject(ServerConfiguration serverConfig, String moduleKey, Collection<String> localFilePaths, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -137,10 +137,10 @@ public interface ConnectedSonarLintEngine {
   /**
    * Check server to see if module storage need updates.
    * @since 2.6
-   * @throws StorageException if module storage is not initialized or stale (see {@link #getModuleStorageStatus(String)})
+   * @throws StorageException if module storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
    * @throws DownloadException if it fails to download
    */
-  StorageUpdateCheckResult checkIfModuleStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file. 

@@ -25,7 +25,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
@@ -34,10 +34,10 @@ import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageAnalyzer {
-  private final ModuleStorageStatusReader moduleUpdateStatusReader;
+  private final ProjectStorageStatusReader moduleUpdateStatusReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
 
-  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ModuleStorageStatusReader moduleUpdateStatusReader) {
+  public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ProjectStorageStatusReader moduleUpdateStatusReader) {
     this.globalUpdateStatusReader = globalUpdateStatusReader;
     this.moduleUpdateStatusReader = moduleUpdateStatusReader;
   }
@@ -48,7 +48,7 @@ public class StorageAnalyzer {
       throw new StorageException("Missing global data. Please update server.", false);
     }
     if (moduleKey != null) {
-      ModuleStorageStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
+      ProjectStorageStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
       if (moduleUpdateStatus == null) {
         throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", moduleKey), false);
       } else if (moduleUpdateStatus.isStale()) {

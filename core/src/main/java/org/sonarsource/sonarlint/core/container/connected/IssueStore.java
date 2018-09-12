@@ -20,34 +20,31 @@
 package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.List;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 
 public interface IssueStore {
 
   /**
-   * Store issues per file keys.
-   *
+   * Store issues per file.
    * For filesystem-based implementations, watch out for:
    * - Too long paths
    * - Directories with too many files
    * - (Too deep paths?)
-   *
-   * @param issues mapping of file keys to issues
    */
-  void save(List<ScannerInput.ServerIssue> issues);
+  void save(List<ServerIssue> issues);
 
   /**
    * Load issues stored for specified file.
    *
-   * @param fileKey the file key
+   * @param sqFilePath the relative path to the project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ScannerInput.ServerIssue> load(String fileKey);
+  List<ServerIssue> load(String sqFilePath);
 
   /**
    * Deletes issues stored for specified file, if they exist.
    *
-   * @param fileKey the file key
+   * @param sqFilePath the relative path to the project, in SonarQube
    */
-  void delete(String fileKey);
+  void delete(String sqFilePath);
 }

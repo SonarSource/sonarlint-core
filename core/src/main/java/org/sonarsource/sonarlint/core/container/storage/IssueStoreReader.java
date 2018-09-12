@@ -20,88 +20,47 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.file.Path;
-import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
-import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class IssueStoreReader {
   private final IssueStoreFactory issueStoreFactory;
-  private final StorageReader storageReader;
   private final StoragePaths storagePaths;
+  private final StorageReader storageReader;
 
-  public IssueStoreReader(IssueStoreFactory issueStoreFactory, StorageReader storageReader, StoragePaths storagePaths) {
+  public IssueStoreReader(IssueStoreFactory issueStoreFactory, StoragePaths storagePaths, StorageReader storageReader) {
     this.issueStoreFactory = issueStoreFactory;
     this.storageReader = storageReader;
     this.storagePaths = storagePaths;
   }
 
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    String fileKey = getFileKey(moduleKey, filePath);
+  public List<ServerIssue> getServerIssues(String projectKey, String localFilePath) {
+    Sonarlint.ProjectPathPrefixes projectPathPrefixes = storageReader.readProjectPathPrefixes(projectKey);
+    Sonarlint.ProjectConfiguration projectConfiguration = storageReader.readProjectConfig(projectKey);
 
-    Path serverIssuesPath = storagePaths.getServerIssuesPath(moduleKey);
+    if (projectPathPrefixes == null || projectConfiguration == null) {
+      throw new IllegalStateException("project not in storage: " + projectKey);
+    }
+
+    IssueStoreUtils issueStoreUtils = new IssueStoreUtils(projectConfiguration, projectPathPrefixes);
+
+    String sqPath = issueStoreUtils.localPathToSqPath(localFilePath);
+    if (sqPath == null) {
+      return Collections.emptyList();
+    }
+    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
-    List<ScannerInput.ServerIssue> loadedIssues = issueStore.load(fileKey);
+    List<Sonarlint.ServerIssue> loadedIssues = issueStore.load(sqPath);
 
     return loadedIssues.stream()
-      .map(pbIssue -> transformIssue(pbIssue, moduleKey, filePath))
+      .map(pbIssue -> IssueStoreUtils.toApiIssue(pbIssue, sqPath))
       .collect(Collectors.toList());
-  }
-
-  public String getFileKey(String moduleKey, String filePath) {
-    ModuleConfiguration moduleConfig = storageReader.readModuleConfig(moduleKey);
-
-    if (moduleConfig == null) {
-      // unknown module
-      throw new IllegalStateException("module not in storage: " + moduleKey);
-    }
-
-    Map<String, String> modulePaths = moduleConfig.getModulePathByKeyMap();
-
-    // find longest prefix match
-    String subModuleKey = moduleKey;
-    int prefixLen = 0;
-
-    for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
-      String entryModuleKey = entry.getKey();
-      String entryPath = entry.getValue();
-      if (!entryPath.isEmpty() && filePath.startsWith(entryPath) && prefixLen <= entryPath.length()) {
-        subModuleKey = entryModuleKey;
-        prefixLen = entryPath.length() + 1;
-      }
-    }
-
-    String relativeFilePath = filePath.substring(prefixLen);
-    return subModuleKey + ":" + relativeFilePath;
-  }
-
-  private static ServerIssue transformIssue(ScannerInput.ServerIssue pbIssue, String moduleKey, String filePath) {
-    DefaultServerIssue issue = new DefaultServerIssue();
-    issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
-    issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
-    issue.setChecksum(pbIssue.getChecksum());
-    issue.setLine(pbIssue.getLine());
-    issue.setFilePath(filePath);
-    issue.setModuleKey(moduleKey);
-    issue.setManualSeverity(pbIssue.getManualSeverity());
-    issue.setMessage(pbIssue.getMsg());
-    issue.setSeverity(pbIssue.getSeverity().name());
-    if (pbIssue.hasType()) {
-      // type was added recently
-      issue.setType(pbIssue.getType());
-    }
-    issue.setCreationDate(Instant.ofEpochMilli(pbIssue.getCreationDate()));
-    issue.setResolution(pbIssue.getResolution());
-    issue.setKey(pbIssue.getKey());
-    issue.setRuleKey(pbIssue.getRuleRepository() + ":" + pbIssue.getRuleKey());
-    return issue;
   }
 }

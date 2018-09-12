@@ -202,8 +202,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private static class UserSettings {
-    @CheckForNull
-    final String testFilePattern;
+    @CheckForNull final String testFilePattern;
     final Map<String, String> analyzerProperties;
     final boolean disableTelemetry;
 
@@ -345,6 +344,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     binding = new ServerProjectBinding(serverId, projectKey);
 
+    // TODO
     if (updateModuleStorage(engine, serverInfo)) {
       serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, serverIssueTrackingLogger);
       telemetry.usedConnectedMode(serverInfo.serverUrl);
@@ -356,7 +356,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private boolean updateModuleStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
     ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     try {
-      engine.updateModule(serverConfig, binding.projectKey, null);
+      // TODO
+      engine.updateProject(serverConfig, binding.projectKey, Collections.emptyList(), null);
       return true;
     } catch (ProjectNotFoundException e) {
       logger.error(ClientLogger.ErrorType.PROJECT_NOT_FOUND);

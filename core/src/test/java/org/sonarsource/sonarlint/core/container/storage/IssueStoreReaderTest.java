@@ -30,14 +30,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -46,9 +46,9 @@ import static org.mockito.Mockito.when;
 public class IssueStoreReaderTest {
   private static final String MODULE_KEY = "root";
   private IssueStoreReader issueStoreReader;
-  private IssueStore issueStore;
-  private StorageReader storage;
-  private StoragePaths storagePaths;
+  private IssueStore issueStore = new InMemoryIssueStore();
+  private StoragePaths storagePaths = mock(StoragePaths.class);
+  private StorageReader storageReader = mock(StorageReader.class);
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -56,13 +56,18 @@ public class IssueStoreReaderTest {
   @Before
   public void setUp() {
     IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
-    issueStore = new InMemoryIssueStore();
-    storage = mock(StorageReader.class);
-    storagePaths = mock(StoragePaths.class);
     Path storagePath = mock(Path.class);
     when(storagePaths.getServerIssuesPath(MODULE_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
-    issueStoreReader = new IssueStoreReader(issueStoreFactory, storage, storagePaths);
+    issueStoreReader = new IssueStoreReader(issueStoreFactory, storagePaths, storageReader);
+    when(storageReader.readProjectPathPrefixes(MODULE_KEY)).thenReturn(Sonarlint.ProjectPathPrefixes.newBuilder().build());
+  }
+
+  private void setModulePaths(Map<String, String> modulePaths) {
+    Builder moduleConfigBuilder = ProjectConfiguration.newBuilder();
+    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
+
+    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
   }
 
   @Test
@@ -72,18 +77,14 @@ public class IssueStoreReaderTest {
     modulePaths.put(MODULE_KEY, "");
     modulePaths.put("root:module1", "module1/src");
     modulePaths.put("root:module2", "module2");
-
-    Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
-    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
-
-    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    setModulePaths(modulePaths);
 
     // setup issues
     issueStore.save(Arrays.asList(
-      createServerIssue("root:module1", "path1"),
-      createServerIssue("root:module1", "path2"),
-      createServerIssue("root:module2", "path1"),
-      createServerIssue("root:module2", "path2")));
+      createServerIssue(MODULE_KEY, "module1/src/path1"),
+      createServerIssue(MODULE_KEY, "module1/src/path2"),
+      createServerIssue(MODULE_KEY, "module2/path1"),
+      createServerIssue(MODULE_KEY, "module2/path2")));
 
     // test
 
@@ -103,7 +104,7 @@ public class IssueStoreReaderTest {
 
     // module not in storage
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("module not in storage");
+    exception.expectMessage("project not in storage");
     assertThat(issueStoreReader.getServerIssues("root:module1", "path2"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue("module1", "path2"));
@@ -116,16 +117,12 @@ public class IssueStoreReaderTest {
     modulePaths.put(MODULE_KEY, "");
     modulePaths.put("root:module1", "module1");
     modulePaths.put("root:module12", "module12");
-
-    Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
-    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
-
-    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    setModulePaths(modulePaths);
 
     // setup issues
     issueStore.save(Arrays.asList(
-      createServerIssue("root:module1", "path1"),
-      createServerIssue("root:module12", "path12")));
+      createServerIssue(MODULE_KEY, "module12/path1"),
+      createServerIssue(MODULE_KEY, "module12/path12")));
 
     // test
 
@@ -137,17 +134,9 @@ public class IssueStoreReaderTest {
 
   @Test
   public void testDontSetTypeIfDoesntExist() {
-    // setup module hierarchy
-    Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put(MODULE_KEY, "");
+    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
 
-    Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
-    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
-
-    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
-
-    ScannerInput.ServerIssue serverIssue = ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey(MODULE_KEY)
+    Sonarlint.ServerIssue serverIssue = Sonarlint.ServerIssue.newBuilder()
       .setPath("path")
       .build();
 
@@ -159,17 +148,10 @@ public class IssueStoreReaderTest {
 
   @Test
   public void testSingleModule() {
-    // setup module hierarchy
-    Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put(MODULE_KEY, "");
-
-    Builder moduleConfigBuilder = ModuleConfiguration.newBuilder();
-    moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
-
-    when(storage.readModuleConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
 
     // setup issues
-    issueStore.save(Arrays.asList(createServerIssue(MODULE_KEY, "src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "src/path1")));
 
     // test
 
@@ -184,20 +166,15 @@ public class IssueStoreReaderTest {
 
     // module not in storage
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("module not in storage");
-    assertThat(issueStoreReader.getServerIssues("root:module1", "path2"))
-      .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("module1", "path2"));
+    exception.expectMessage("project not in storage");
+    issueStoreReader.getServerIssues("root:module1", "path2");
   }
 
-  private Comparator<ServerIssue> simpleComparator = new Comparator<ServerIssue>() {
-    @Override
-    public int compare(ServerIssue o1, ServerIssue o2) {
-      if (Objects.equal(o1.moduleKey(), o2.moduleKey()) && Objects.equal(o1.filePath(), o2.filePath())) {
-        return 0;
-      }
-      return 1;
+  private Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
+    if (Objects.equal(o1.moduleKey(), o2.moduleKey()) && Objects.equal(o1.filePath(), o2.filePath())) {
+      return 0;
     }
+    return 1;
   };
 
   private ServerIssue createApiIssue(String moduleKey, String filePath) {
@@ -207,10 +184,10 @@ public class IssueStoreReaderTest {
     return issue;
   }
 
-  private ScannerInput.ServerIssue createServerIssue(String moduleKey, String filePath) {
-    return ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey(moduleKey)
+  private Sonarlint.ServerIssue createServerIssue(String moduleKey, String filePath) {
+    return Sonarlint.ServerIssue.newBuilder()
       .setPath(filePath)
+      .setModuleKey(moduleKey)
       .build();
   }
 }

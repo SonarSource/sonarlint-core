@@ -19,12 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import java.util.Collection;
 import java.util.List;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
@@ -33,10 +34,10 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequired
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleQualityProfilesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectHierarchyDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -44,15 +45,15 @@ import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalSettingsUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalStorageUpdateChecker;
-import org.sonarsource.sonarlint.core.container.connected.update.check.ModuleStorageUpdateChecker;
+import org.sonarsource.sonarlint.core.container.connected.update.check.ProjectStorageUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.PluginsUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.QualityProfilesUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
-import org.sonarsource.sonarlint.core.container.connected.update.perform.ModuleStorageUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.storage.ModuleStorageStatusReader;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
@@ -82,18 +83,18 @@ public class ConnectedContainer extends ComponentContainer {
       SonarLintWsClient.class,
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,
-      ModuleStorageUpdateChecker.class,
+      ProjectStorageUpdateChecker.class,
       PluginsUpdateChecker.class,
       GlobalSettingsUpdateChecker.class,
-      ModuleConfigurationDownloader.class,
+      ProjectConfigurationDownloader.class,
       QualityProfilesUpdateChecker.class,
-      ModuleStorageUpdateExecutor.class,
+      ProjectStorageUpdateExecutor.class,
       PluginReferencesDownloader.class,
       SettingsDownloader.class,
-      ModuleQualityProfilesDownloader.class,
-      ModuleListDownloader.class,
+      ProjectQualityProfilesDownloader.class,
+      ProjectListDownloader.class,
       PluginListDownloader.class,
-      ModuleHierarchyDownloader.class,
+      ProjectHierarchyDownloader.class,
       RulesDownloader.class,
       QualityProfilesDownloader.class,
       IssueDownloaderImpl.class,
@@ -102,19 +103,19 @@ public class ConnectedContainer extends ComponentContainer {
       PluginHashes.class,
       StoragePaths.class,
       StorageReader.class,
-      ModuleStorageStatusReader.class);
+      ProjectStorageStatusReader.class);
   }
 
   public List<SonarAnalyzer> update(ProgressWrapper progress) {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateModule(String moduleKey, ProgressWrapper progress) {
+  public void updateProject(String projectKey, Collection<String> localFilePaths, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
       throw new GlobalUpdateRequiredException("Please update server first");
     }
-    getComponentByType(ModuleStorageUpdateExecutor.class).update(moduleKey, progress);
+    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, localFilePaths, progress);
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
@@ -128,15 +129,15 @@ public class ConnectedContainer extends ComponentContainer {
     }
   }
 
-  public StorageUpdateCheckResult checkForUpdate(String moduleKey, ProgressWrapper progress) {
-    ModuleStorageStatus moduleUpdateStatus = getComponentByType(ModuleStorageStatusReader.class).apply(moduleKey);
+  public StorageUpdateCheckResult checkForUpdate(String projectKey, ProgressWrapper progress) {
+    ProjectStorageStatus moduleUpdateStatus = getComponentByType(ProjectStorageStatusReader.class).apply(projectKey);
     if (moduleUpdateStatus == null || moduleUpdateStatus.isStale()) {
-      throw new StorageException(String.format("No data stored for module '%s' or invalid format. Please update the binding.", moduleKey), false);
+      throw new StorageException(String.format("No data stored for project '%s' or invalid format. Please update the binding.", projectKey), false);
     }
     try {
-      return getComponentByType(ModuleStorageUpdateChecker.class).checkForUpdates(moduleKey, progress);
+      return getComponentByType(ProjectStorageUpdateChecker.class).checkForUpdates(projectKey, progress);
     } catch (Exception e) {
-      String msg = "Error when checking for configuration update of module '" + moduleKey + "'";
+      String msg = "Error when checking for configuration update of project '" + projectKey + "'";
       LOG.debug(msg, e);
       // null as cause so that it doesn't get wrapped
       throw new DownloadException(msg + ": " + e.getMessage(), null);

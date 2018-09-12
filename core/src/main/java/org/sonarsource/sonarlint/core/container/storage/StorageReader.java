@@ -22,9 +22,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
-
 import javax.annotation.CheckForNull;
-
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -37,7 +35,7 @@ public class StorageReader {
     this.storagePaths = storagePaths;
     this.storageStatus = initStorageStatus();
   }
-  
+
   @CheckForNull
   public GlobalStorageStatus getGlobalStorageStatus() {
     return storageStatus;
@@ -65,14 +63,10 @@ public class StorageReader {
     return ProtobufUtil.readFile(storagePaths.getServerInfosPath(), Sonarlint.ServerInfos.parser());
   }
 
-  public Sonarlint.ServerIssues readServerIsses(String moduleKey) {
-    return ProtobufUtil.readFile(storagePaths.getServerIssuesPath(moduleKey), Sonarlint.ServerIssues.parser());
-  }
-
   public Sonarlint.Rules readRules() {
     return ProtobufUtil.readFile(storagePaths.getRulesPath(), Sonarlint.Rules.parser());
   }
-  
+
   public Sonarlint.ActiveRules readActiveRules(String qProfileKey) {
     return ProtobufUtil.readFile(storagePaths.getActiveRulesPath(qProfileKey), Sonarlint.ActiveRules.parser());
   }
@@ -89,11 +83,15 @@ public class StorageReader {
     return ProtobufUtil.readFile(storagePaths.getPluginReferencesPath(), Sonarlint.PluginReferences.parser());
   }
 
-  public Sonarlint.ModuleConfiguration readModuleConfig(String moduleKey) {
-    return ProtobufUtil.readFile(storagePaths.getModuleConfigurationPath(moduleKey), Sonarlint.ModuleConfiguration.parser());
+  public Sonarlint.ProjectConfiguration readProjectConfig(String projectKey) {
+    return ProtobufUtil.readFile(storagePaths.getProjectConfigurationPath(projectKey), Sonarlint.ProjectConfiguration.parser());
   }
 
-  public Sonarlint.ModuleList readModuleList() {
-    return ProtobufUtil.readFile(storagePaths.getModuleListPath(), Sonarlint.ModuleList.parser());
+  public Sonarlint.ProjectPathPrefixes readProjectPathPrefixes(String moduleKey) {
+    return ProtobufUtil.readFile(storagePaths.getProjectPathPrefixesPath(moduleKey), Sonarlint.ProjectPathPrefixes.parser());
+  }
+
+  public Sonarlint.ProjectList readProjectList() {
+    return ProtobufUtil.readFile(storagePaths.getProjectListPath(), Sonarlint.ProjectList.parser());
   }
 }

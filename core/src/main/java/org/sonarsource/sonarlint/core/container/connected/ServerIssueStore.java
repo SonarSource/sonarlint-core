@@ -26,15 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.HashingPathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.objectstore.SimpleObjectStore;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueUtils;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 
 public class ServerIssueStore implements IssueStore {
   private final ObjectStore<String, List<ServerIssue>> store;
@@ -52,7 +51,7 @@ public class ServerIssueStore implements IssueStore {
   @Override
   public synchronized void save(List<ServerIssue> issues) {
     // organize everything in memory to avoid making an IO access per issue
-    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(IssueUtils::createFileKey));
+    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getPath));
 
     for (Map.Entry<String, List<ServerIssue>> entry : issuesPerFile.entrySet()) {
       try {
@@ -76,12 +75,9 @@ public class ServerIssueStore implements IssueStore {
   public synchronized List<ServerIssue> load(String fileKey) {
     try {
       Optional<List<ServerIssue>> issues = store.read(fileKey);
-      if (issues.isPresent()) {
-        return issues.get();
-      }
+      return issues.orElse(Collections.emptyList());
     } catch (IOException e) {
       throw new StorageException("failed to load issues for fileKey = " + fileKey, e);
     }
-    return Collections.emptyList();
   }
 }

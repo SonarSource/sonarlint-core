@@ -72,10 +72,10 @@ public class ConnectedEmptyStorageMediumTest {
 
     assertThat(sonarlint.getState()).isEqualTo(State.NEVER_UPDATED);
     assertThat(sonarlint.getGlobalStorageStatus()).isNull();
-    assertThat(sonarlint.getModuleStorageStatus("foo")).isNull();
+    assertThat(sonarlint.getProjectStorageStatus("foo")).isNull();
 
     try {
-      sonarlint.allModulesByKey();
+      sonarlint.allProjectsByKey();
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");

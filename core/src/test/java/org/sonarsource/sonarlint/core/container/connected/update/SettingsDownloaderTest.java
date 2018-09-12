@@ -41,8 +41,8 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -118,7 +118,7 @@ public class SettingsDownloaderTest {
     out.close();
     WsClientTestUtils.addResponse(wsClient, "/api/settings/values.protobuf?component=foo", in);
 
-    Builder builder = ModuleConfiguration.newBuilder();
+    Builder builder = ProjectConfiguration.newBuilder();
     new SettingsDownloader(wsClient).fetchProjectSettings(Version.create("6.3"), "foo", null, builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(
@@ -160,7 +160,7 @@ public class SettingsDownloaderTest {
       new StringReader("[{\"key\": \"sonar.inclusions\",\"value\": \"**/*.java\"},"
         + "{\"key\": \"sonar.java.fileSuffixes\",\"value\": \"*.java\"}]"));
 
-    Builder builder = ModuleConfiguration.newBuilder();
+    Builder builder = ProjectConfiguration.newBuilder();
     new SettingsDownloader(wsClient).fetchProjectSettings(Version.create("6.2"), "foo", GlobalProperties.newBuilder().build(), builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(entry("sonar.inclusions", "**/*.java"),
@@ -173,7 +173,7 @@ public class SettingsDownloaderTest {
       new StringReader("[{\"key\": \"sonar.inclusions\",\"value\": \"**/*.java\"},"
         + "{\"key\": \"sonar.java.fileSuffixes\",\"value\": \"*.java\"}]"));
 
-    Builder builder = ModuleConfiguration.newBuilder();
+    Builder builder = ProjectConfiguration.newBuilder();
     new SettingsDownloader(wsClient).fetchProjectSettings(Version.create("6.2"), "foo", GlobalProperties.newBuilder().putProperties("sonar.inclusions", "**/*.java").build(), builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(entry("sonar.java.fileSuffixes", "*.java"));

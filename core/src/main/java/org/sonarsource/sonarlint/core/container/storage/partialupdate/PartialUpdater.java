@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -30,44 +32,46 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
-import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PartialUpdater {
   private final IssueStoreFactory issueStoreFactory;
   private final IssueDownloader downloader;
   private final StorageReader storageReader;
-  private final IssueStoreReader issueStoreReader;
-  private final ModuleListDownloader moduleListDownloader;
+  private final ProjectListDownloader projectListDownloader;
+  private final Function<String, IssueStoreUtils> issueStoreUtilsFactory;
   private final StoragePaths storagePaths;
 
   public PartialUpdater(IssueStoreFactory issueStoreFactory, IssueDownloader downloader, StorageReader storageReader,
-    StoragePaths storagePaths, IssueStoreReader issueStoreReader, ModuleListDownloader moduleListDownloader) {
+    StoragePaths storagePaths, ProjectListDownloader projectListDownloader, Function<String, IssueStoreUtils> issueStoreUtilsFactory) {
     this.issueStoreFactory = issueStoreFactory;
     this.downloader = downloader;
     this.storageReader = storageReader;
     this.storagePaths = storagePaths;
-    this.issueStoreReader = issueStoreReader;
-    this.moduleListDownloader = moduleListDownloader;
+    this.projectListDownloader = projectListDownloader;
+    this.issueStoreUtilsFactory = issueStoreUtilsFactory;
   }
 
-  public static PartialUpdater create(StorageReader storageReader, StoragePaths storagePaths, ServerConfiguration serverConfig, IssueStoreReader issueStoreReader) {
+  public static PartialUpdater create(StorageReader storageReader, StoragePaths storagePaths, ServerConfiguration serverConfig,
+    Function<String, IssueStoreUtils> issueStoreUtilsFactory) {
     SonarLintWsClient client = new SonarLintWsClient(serverConfig);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
     IssueDownloader downloader = new IssueDownloaderImpl(client);
-    ModuleListDownloader moduleListDownloader = new ModuleListDownloader(client);
-
-    return new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, issueStoreReader, moduleListDownloader);
+    ProjectListDownloader projectListDownloader = new ProjectListDownloader(client);
+    return new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, projectListDownloader, issueStoreUtilsFactory);
   }
 
-  public void updateFileIssues(String moduleKey, String filePath) {
-    Path serverIssuesPath = storagePaths.getServerIssuesPath(moduleKey);
+  public void updateFileIssues(String projectKey, String localFilePath) {
+    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectKey);
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
-    String fileKey = issueStoreReader.getFileKey(moduleKey, filePath);
+    IssueStoreUtils issueStoreUtils = issueStoreUtilsFactory.apply(projectKey);
+    String fileKey = issueStoreUtils.localPathToFileKey(projectKey, localFilePath);
     List<ServerIssue> issues;
     try {
       issues = downloader.apply(fileKey);
@@ -75,16 +79,20 @@ public class PartialUpdater {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
-    issueStore.save(issues);
+    List<Sonarlint.ServerIssue> storageIssues = issues.stream()
+      .map(issueStoreUtils::toStorageIssue)
+      .collect(Collectors.toList());
+    issueStore.save(storageIssues);
   }
 
-  public void updateFileIssues(String moduleKey, TempFolder tempFolder) {
-    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder).update(moduleKey);
+  public void updateFileIssues(String projectKey, TempFolder tempFolder) {
+    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder, issueStoreUtilsFactory.apply(projectKey))
+      .update(projectKey);
   }
 
   public void updateModuleList(ProgressWrapper progress) {
     try {
-      moduleListDownloader.fetchModulesListTo(storagePaths.getGlobalStorageRoot(), storageReader.readServerInfos().getVersion(), progress);
+      projectListDownloader.fetchModulesListTo(storagePaths.getGlobalStorageRoot(), storageReader.readServerInfos().getVersion(), progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update module list: " + e.getMessage(), null);

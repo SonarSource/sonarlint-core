@@ -40,25 +40,26 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
-public class ModuleHierarchyDownloader {
+public class ProjectHierarchyDownloader {
   static final int PAGE_SIZE = 500;
   private final SonarLintWsClient wsClient;
 
-  public ModuleHierarchyDownloader(SonarLintWsClient wsClient) {
+  public ProjectHierarchyDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
   /**
    * Downloads the module hierarchy information starting from a given module key.
-   * It returns the relative paths to the given root module for all its sub modules.
-   * 
-   * @param moduleKey moduleKey for which the hierarchy will be returned.
+   * It returns the relative paths to the given root module for all its sub projects.
+   *
+   * @param projectKey project for which the hierarchy will be returned.
    * @return Mapping of moduleKey -> relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(String moduleKey, ProgressWrapper progress) {
+  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" + StringUtils.urlEncode(moduleKey),
+    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" +
+        StringUtils.urlEncode(projectKey),
       WsComponents.TreeWsResponse::parseFrom,
       WsComponents.TreeWsResponse::getPaging,
       WsComponents.TreeWsResponse::getComponentsList,
@@ -77,7 +78,7 @@ public class ModuleHierarchyDownloader {
 
     // module key -> path from root project base directory
     Map<String, String> modulesWithPath = new HashMap<>();
-    modulesWithPath.put(moduleKey, "");
+    modulesWithPath.put(projectKey, "");
     modules.forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
 
     return modulesWithPath;

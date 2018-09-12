@@ -113,7 +113,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
       qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
     } else {
       LOG.debug("Quality profiles:");
-      qProfilesByLanguage = storageReader.readModuleConfig(analysisConfiguration.moduleKey()).getQprofilePerLanguageMap();
+      qProfilesByLanguage = storageReader.readProjectConfig(analysisConfiguration.moduleKey()).getQprofilePerLanguageMap();
     }
     return qProfilesByLanguage;
   }

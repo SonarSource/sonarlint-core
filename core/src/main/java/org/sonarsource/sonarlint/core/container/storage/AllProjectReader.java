@@ -22,26 +22,25 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
+import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
 
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
-import org.sonarsource.sonarlint.core.container.model.DefaultRemoteModule;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
-
-public class AllModulesReader implements Supplier<Map<String, RemoteModule>> {
+public class AllProjectReader implements Supplier<Map<String, RemoteProject>> {
   private final StorageReader storageReader;
 
-  public AllModulesReader(StorageReader storageReader) {
+  public AllProjectReader(StorageReader storageReader) {
     this.storageReader = storageReader;
   }
 
   @Override
-  public Map<String, RemoteModule> get() {
-    Map<String, RemoteModule> results = new HashMap<>();
-    ModuleList readModuleListFromStorage = storageReader.readModuleList();
-    Map<String, Module> modulesByKey = readModuleListFromStorage.getModulesByKeyMap();
-    for (Map.Entry<String, Module> entry : modulesByKey.entrySet()) {
-      results.put(entry.getKey(), new DefaultRemoteModule(entry.getValue()));
+  public Map<String, RemoteProject> get() {
+    Map<String, RemoteProject> results = new HashMap<>();
+    ProjectList projectList = storageReader.readProjectList();
+    Map<String, Project> projectsByKey = projectList.getProjectsByKeyMap();
+    for (Map.Entry<String, Project> entry : projectsByKey.entrySet()) {
+      results.put(entry.getKey(), new DefaultRemoteProject(entry.getValue()));
     }
     return results;
   }

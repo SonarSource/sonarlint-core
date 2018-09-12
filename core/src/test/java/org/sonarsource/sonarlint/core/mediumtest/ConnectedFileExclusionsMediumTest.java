@@ -45,8 +45,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
@@ -56,7 +56,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class ConnectedFileExclusionsMediumTest {
 
-  private static final String MODULE_KEY = "test-project-2";
+  private static final String PROJECT_KEY = "test-project-2";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
@@ -66,7 +66,7 @@ public class ConnectedFileExclusionsMediumTest {
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
     /*
-     * This storage contains one server id "local" and two modules: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default QP)
      */
     Path storage = Paths.get(ConnectedFileExclusionsMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
@@ -76,7 +76,7 @@ public class ConnectedFileExclusionsMediumTest {
 
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
-    writeModuleStatus(tmpStorage, MODULE_KEY, VersionUtils.getLibraryVersion());
+    writeProjectStatus(tmpStorage, PROJECT_KEY, VersionUtils.getLibraryVersion());
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -90,8 +90,8 @@ public class ConnectedFileExclusionsMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("modules").resolve(name);
+  private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
+    Path module = storage.resolve("local").resolve("projects").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
@@ -133,46 +133,46 @@ public class ConnectedFileExclusionsMediumTest {
 
     StoragePaths storagePaths = sonarlint.getGlobalContainer().getComponentByType(StoragePaths.class);
     StorageReader storageReader = sonarlint.getGlobalContainer().getComponentByType(StorageReader.class);
-    ModuleConfiguration originalModuleConfig = storageReader.readModuleConfig(MODULE_KEY);
+    Sonarlint.ProjectConfiguration originalProjectConfig = storageReader.readProjectConfig(PROJECT_KEY);
 
     int result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(4);
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "src/**"));
+    updateProjectConfig(storagePaths, originalProjectConfig, ImmutableMap.of("sonar.inclusions", "src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
+    updateProjectConfig(storagePaths, originalProjectConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.exclusions", "src/**"));
+    updateProjectConfig(storagePaths, originalProjectConfig, ImmutableMap.of("sonar.exclusions", "src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.test.inclusions", "test/**"));
+    updateProjectConfig(storagePaths, originalProjectConfig, ImmutableMap.of("sonar.test.inclusions", "test/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.test.exclusions", "test/**"));
+    updateProjectConfig(storagePaths, originalProjectConfig, ImmutableMap.of("sonar.test.exclusions", "test/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
+    updateProjectConfig(storagePaths, originalProjectConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(1);
   }
 
-  private void updateModuleConfig(StoragePaths storagePaths, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
-    Builder newBuilder = ModuleConfiguration.newBuilder(originalModuleConfig);
+  private void updateProjectConfig(StoragePaths storagePaths, Sonarlint.ProjectConfiguration originalProjectConfig, Map<String, String> props) {
+    Builder newBuilder = Sonarlint.ProjectConfiguration.newBuilder(originalProjectConfig);
     newBuilder.putAllProperties(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getModuleConfigurationPath(MODULE_KEY));
+    ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getProjectConfigurationPath(PROJECT_KEY));
   }
 
   private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {
     List<String> filePaths = Arrays.asList(mainFile1.getPath(), mainFile2.getPath(), testFile1.getPath(), testFile2.getPath());
 
-    Set<String> result = sonarlint.getExcludedFiles(MODULE_KEY, filePaths, f -> f.contains("Test"));
+    Set<String> result = sonarlint.getExcludedFiles(PROJECT_KEY, filePaths, f -> f.contains("Test"));
     return filePaths.size() - result.size();
   }
 
@@ -182,18 +182,4 @@ public class ConnectedFileExclusionsMediumTest {
     ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }
-
-  static class StoreIssueListener implements IssueListener {
-    private List<Issue> issues;
-
-    StoreIssueListener(List<Issue> issues) {
-      this.issues = issues;
-    }
-
-    @Override
-    public void handle(Issue issue) {
-      issues.add(issue);
-    }
-  }
-
 }

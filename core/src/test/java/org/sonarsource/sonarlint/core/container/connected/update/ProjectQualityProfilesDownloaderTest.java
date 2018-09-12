@@ -30,12 +30,12 @@ import org.sonarsource.sonarlint.core.plugin.Version;
 
 import static org.mockito.Mockito.when;
 
-public class ModuleQualityProfilesDownloaderTest {
+public class ProjectQualityProfilesDownloaderTest {
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
   private SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-  private ModuleQualityProfilesDownloader underTest = new ModuleQualityProfilesDownloader(wsClient);
+  private ProjectQualityProfilesDownloader underTest = new ProjectQualityProfilesDownloader(wsClient);
 
   @Test
   public void not_found() {

@@ -28,7 +28,7 @@ import org.sonar.api.config.internal.ConfigurationBridge;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
 public class StorageFileExclusions {
   private final StorageReader storageReader;
@@ -39,7 +39,7 @@ public class StorageFileExclusions {
 
   public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
-    ModuleConfiguration moduleConfig = storageReader.readModuleConfig(moduleKey);
+    ProjectConfiguration moduleConfig = storageReader.readProjectConfig(moduleKey);
     MapSettings settings = new MapSettings();
     settings.addProperties(globalProps.getProperties());
     settings.addProperties(moduleConfig.getProperties());

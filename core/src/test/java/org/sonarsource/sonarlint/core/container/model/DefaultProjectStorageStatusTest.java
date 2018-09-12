@@ -19,39 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class DefaultRemoteModule implements RemoteModule {
-  private final String projectKey;
-  private final String key;
-  private final String name;
-  private final boolean root;
+import java.util.Date;
 
-  public DefaultRemoteModule(Sonarlint.ModuleList.Module module) {
-    this.projectKey = module.getProjectKey();
-    this.key = module.getKey();
-    this.name = module.getName();
-    this.root = "TRK".equals(module.getQu());
-  }
+import org.junit.Test;
 
-  @Override
-  public String getProjectKey() {
-    return projectKey;
-  }
+public class DefaultProjectStorageStatusTest {
+  private DefaultProjectStorageStatus status;
 
-  @Override
-  public String getKey() {
-    return key;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public boolean isRoot() {
-    return root;
+  @Test
+  public void testGetters() {
+    Date date = new Date(1000_000);
+    status = new DefaultProjectStorageStatus(date, true);
+    assertThat(status.getLastUpdateDate()).isEqualTo(date);
+    assertThat(status.isStale()).isTrue();
   }
 }

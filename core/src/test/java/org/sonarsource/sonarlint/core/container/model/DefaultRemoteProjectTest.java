@@ -17,17 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.container.model;
 
-import org.sonar.scanner.protocol.input.ScannerInput;
+import org.junit.Before;
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
 
-public class IssueUtils {
-  private IssueUtils() {
-    // utility class, forbidden constructor
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class DefaultRemoteProjectTest {
+  private DefaultRemoteProject remoteModule;
+  private Project project;
+
+  @Before
+  public void setUp() {
+    project = Project.newBuilder()
+      .setKey("key")
+      .setName("name")
+      .build();
+    remoteModule = new DefaultRemoteProject(project);
   }
 
-  public static String createFileKey(ScannerInput.ServerIssue issue) {
-    return issue.getModuleKey() + ":" + issue.getPath();
+  @Test
+  public void testGetters() {
+    assertThat(remoteModule.getKey()).isEqualTo("key");
+    assertThat(remoteModule.getName()).isEqualTo("name");
   }
 
 }

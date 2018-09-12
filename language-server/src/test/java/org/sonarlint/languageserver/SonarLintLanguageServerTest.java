@@ -585,7 +585,7 @@ public class SonarLintLanguageServerTest {
     assertThat(tester.logs()).isEmpty();
     verify(engine).getExcludedFiles(any(), any(), any());
     verify(engine).update(any(), any());
-    verify(engine).updateModule(any(), any(), any());
+    verify(engine).updateProject(any(), any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
 
@@ -598,7 +598,7 @@ public class SonarLintLanguageServerTest {
     assertThat(tester.lastWasSuccess()).isTrue();
     assertThat(tester.logs()).isEmpty();
     verify(engine).getExcludedFiles(any(), any(), any());
-    verify(engine).updateModule(any(), any(), any());
+    verify(engine).updateProject(any(), any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
 
@@ -636,7 +636,7 @@ public class SonarLintLanguageServerTest {
       }).when(engine).analyze(any(), any(), any(), any());
       tester.setEngine(serverId, engine);
       tester.updateBinding(binding);
-      verify(engine).updateModule(any(), any(), any());
+      verify(engine).updateProject(any(), any(), any(), any());
       return engine;
     };
 
@@ -696,10 +696,10 @@ public class SonarLintLanguageServerTest {
       .put("projectKey", projectKey)
       .build();
     tester.updateBinding(binding);
-    verify(tester.lastEngine().connectedEngine, times(1)).updateModule(any(), eq(projectKey), any());
+    verify(tester.lastEngine().connectedEngine, times(1)).updateProject(any(), eq(projectKey), any(), any());
 
     tester.updateBinding(binding);
-    verify(tester.lastEngine().connectedEngine, times(2)).updateModule(any(), eq(projectKey), any());
+    verify(tester.lastEngine().connectedEngine, times(2)).updateProject(any(), eq(projectKey), any(), any());
   }
 
   private LanguageServerTester newLanguageServerTester() {
