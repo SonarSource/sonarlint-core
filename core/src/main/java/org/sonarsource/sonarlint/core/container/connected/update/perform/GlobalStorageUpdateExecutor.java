@@ -26,7 +26,7 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -48,7 +48,7 @@ public class GlobalStorageUpdateExecutor {
   private final SettingsDownloader globalSettingsDownloader;
   private final RulesDownloader rulesDownloader;
   private final TempFolder tempFolder;
-  private final ModuleListDownloader moduleListDownloader;
+  private final ProjectListDownloader projectListDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
   private final SonarLintWsClient wsClient;
   private final QualityProfilesDownloader qualityProfilesDownloader;
@@ -56,14 +56,14 @@ public class GlobalStorageUpdateExecutor {
 
   public GlobalStorageUpdateExecutor(StoragePaths storageManager, SonarLintWsClient wsClient, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
-    ModuleListDownloader moduleListDownloader, QualityProfilesDownloader qualityProfilesDownloader, PluginListDownloader pluginListDownloader, TempFolder tempFolder) {
+    ProjectListDownloader projectListDownloader, QualityProfilesDownloader qualityProfilesDownloader, PluginListDownloader pluginListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
     this.wsClient = wsClient;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalSettingsDownloader = globalPropertiesDownloader;
     this.rulesDownloader = rulesDownloader;
-    this.moduleListDownloader = moduleListDownloader;
+    this.projectListDownloader = projectListDownloader;
     this.qualityProfilesDownloader = qualityProfilesDownloader;
     this.pluginListDownloader = pluginListDownloader;
     this.tempFolder = tempFolder;
@@ -93,8 +93,8 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.6f);
       qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
-      progress.setProgressAndCheckCancel("Fetching list of modules", 0.8f);
-      moduleListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f, "Fetching list of modules"));
+      progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
+      projectListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

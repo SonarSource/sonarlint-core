@@ -42,8 +42,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
@@ -196,22 +196,22 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfModuleStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor) {
+  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
-    checkNotNull(moduleKey);
-    return withReadLock(() -> runInConnectedContainer(serverConfig, container -> container.checkForUpdate(moduleKey, new ProgressWrapper(monitor))));
+    checkNotNull(projectKey);
+    return withReadLock(() -> runInConnectedContainer(serverConfig, container -> container.checkForUpdate(projectKey, new ProgressWrapper(monitor))));
   }
 
   @Override
-  public Map<String, RemoteModule> allModulesByKey() {
-    return withReadLock(() -> getHandler().allModulesByKey());
+  public Map<String, RemoteProject> allProjectsByKey() {
+    return withReadLock(() -> getHandler().allProjectsByKey());
   }
 
   @Override
-  public Map<String, RemoteModule> downloadAllModules(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
+  public Map<String, RemoteProject> downloadAllProjects(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadModuleList(serverConfig, new ProgressWrapper(monitor));
+      return getHandler().downloadProjectList(serverConfig, new ProgressWrapper(monitor));
     });
   }
 
@@ -222,35 +222,35 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    return withReadLock(() -> getHandler().getServerIssues(moduleKey, filePath));
+  public List<ServerIssue> getServerIssues(String projectKey, String filePath) {
+    return withReadLock(() -> getHandler().getServerIssues(projectKey, filePath));
   }
 
   @Override
-  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
-    return withReadLock(() -> getHandler().getExcludedFiles(moduleKey, filePaths, testFilePredicate));
+  public Set<String> getExcludedFiles(String projectKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
+    return withReadLock(() -> getHandler().getExcludedFiles(projectKey, filePaths, testFilePredicate));
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String projectKey, String filePath) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(serverConfig, moduleKey, filePath);
+      return getHandler().downloadServerIssues(serverConfig, projectKey, filePath);
     });
   }
 
   @Override
-  public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
+  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
     withRwLock(() -> {
-      getHandler().downloadServerIssues(serverConfig, moduleKey);
+      getHandler().downloadServerIssues(serverConfig, projectKey);
       return null;
     });
   }
 
   @Override
-  public void updateModule(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor) {
+  public void updateProject(ServerConfiguration serverConfig, String projectKey, Collection<String> localFilePaths, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
-    checkNotNull(moduleKey);
+    checkNotNull(projectKey);
     setLogging(null);
     rwl.writeLock().lock();
     checkUpdateStatus();
@@ -258,7 +258,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.updateModule(moduleKey, new ProgressWrapper(monitor));
+      connectedContainer.updateProject(projectKey, localFilePaths, new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -273,9 +273,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {
-    checkNotNull(moduleKey);
-    return withReadLock(() -> getHandler().getModuleStorageStatus(moduleKey), false);
+  public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
+    checkNotNull(projectKey);
+    return withReadLock(() -> getHandler().getProjectStorageStatus(projectKey), false);
   }
 
   @Override

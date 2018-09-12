@@ -32,8 +32,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 
 public class ServerIssueStoreTest {
   @Rule
@@ -58,8 +58,8 @@ public class ServerIssueStoreTest {
 
     store.save(issueList);
 
-    assertThat(store.load("module1:path1")).containsExactly(issueList.get(0));
-    assertThat(store.load("module1:path2")).containsExactly(issueList.get(1));
+    assertThat(store.load("path1")).containsExactly(issueList.get(0));
+    assertThat(store.load("path2")).containsExactly(issueList.get(1));
     assertThat(store.load("nonexistent")).isEmpty();
   }
 
@@ -74,10 +74,10 @@ public class ServerIssueStoreTest {
     ServerIssue issue2 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(22).build();
 
     store.save(Collections.singletonList(issue1));
-    assertThat(store.load("module:myfile")).containsOnly(issue1);
+    assertThat(store.load("myfile")).containsOnly(issue1);
 
     store.save(Collections.singletonList(issue2));
-    assertThat(store.load("module:myfile")).containsOnly(issue2);
+    assertThat(store.load("myfile")).containsOnly(issue2);
   }
 
   @Test
@@ -86,12 +86,12 @@ public class ServerIssueStoreTest {
 
     String moduleKey = "module1";
     String path = "path1";
-    // the sha1sum of moduleKey:path
-    String sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
+    // the sha1sum of path
+    String sha1sum = "074aeb9c5551d3b52d26cf3d6568599adbff99f1";
 
     // Create a directory at the path where ServerIssueStore would want to create a file,
     // in order to obstruct the file creation
-    Path wouldBeFile = root.resolve("1").resolve("8").resolve(sha1sum);
+    Path wouldBeFile = root.resolve("0").resolve("7").resolve(sha1sum);
     if (!wouldBeFile.toFile().mkdirs()) {
       fail("could not create dummy directory");
     }
@@ -99,7 +99,7 @@ public class ServerIssueStoreTest {
     ServerIssueStore store = new ServerIssueStore(root);
 
     exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).build()));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(path).build()));
   }
 
   @Test
@@ -122,7 +122,7 @@ public class ServerIssueStoreTest {
   }
 
   @Test
-  public void should_delete_entries() throws IOException {
+  public void should_delete_entries() {
     ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
 
     ServerIssue.Builder builder = ServerIssue.newBuilder();
@@ -132,15 +132,15 @@ public class ServerIssueStoreTest {
     String key1 = "path1";
     String key2 = "path2";
 
-    issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
-    issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
+    issueList.add(builder.setPath(key1).setModuleKey(moduleKey).build());
+    issueList.add(builder.setPath(key2).setModuleKey(moduleKey).build());
 
     store.save(issueList);
-    store.delete("module1:path1");
-    store.delete("module1:path2");
-    store.delete("module1:non_existing");
+    store.delete("path1");
+    store.delete("path2");
+    store.delete("non_existing");
 
-    assertThat(store.load("module1:path1")).isEmpty();
-    assertThat(store.load("module1:path2")).isEmpty();
+    assertThat(store.load("path1")).isEmpty();
+    assertThat(store.load("path2")).isEmpty();
   }
 }

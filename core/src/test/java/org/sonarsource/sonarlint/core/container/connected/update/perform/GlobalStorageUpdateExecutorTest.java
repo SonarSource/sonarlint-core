@@ -30,7 +30,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -79,7 +79,7 @@ public class GlobalStorageUpdateExecutorTest {
     storageManager = mock(StoragePaths.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir.toPath());
     globalUpdate = new GlobalStorageUpdateExecutor(storageManager, wsClient, new ServerVersionAndStatusChecker(wsClient),
-      mock(PluginReferencesDownloader.class), mock(SettingsDownloader.class), rulesDownloader, mock(ModuleListDownloader.class),
+      mock(PluginReferencesDownloader.class), mock(SettingsDownloader.class), rulesDownloader, mock(ProjectListDownloader.class),
       mock(QualityProfilesDownloader.class), mock(PluginListDownloader.class), tempFolder);
   }
 

@@ -31,11 +31,11 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundExcep
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-public class ModuleQualityProfilesDownloader {
+public class ProjectQualityProfilesDownloader {
 
   private final SonarLintWsClient wsClient;
 
-  public ModuleQualityProfilesDownloader(SonarLintWsClient wsClient) {
+  public ProjectQualityProfilesDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 

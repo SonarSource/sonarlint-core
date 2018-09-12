@@ -28,7 +28,7 @@ import org.mockito.MockitoAnnotations;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -42,7 +42,7 @@ public class StorageAnalyzerTest {
   @Mock
   private GlobalUpdateStatusReader globalReader;
   @Mock
-  private ModuleStorageStatusReader moduleReader;
+  private ProjectStorageStatusReader moduleReader;
   @Mock
   private ConnectedAnalysisConfiguration config;
 
@@ -77,7 +77,7 @@ public class StorageAnalyzerTest {
   @Test
   public void testStaleModuleStorage() {
     when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
-    ModuleStorageStatus moduleStatus = mock(ModuleStorageStatus.class);
+    ProjectStorageStatus moduleStatus = mock(ProjectStorageStatus.class);
     when(moduleStatus.isStale()).thenReturn(true);
     when(moduleReader.apply("module1")).thenReturn(moduleStatus);
 

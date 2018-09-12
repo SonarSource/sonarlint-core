@@ -26,46 +26,49 @@ import java.util.Map;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-public class ModuleStorageUpdateChecker {
+public class ProjectStorageUpdateChecker {
 
-  private static final Logger LOG = Loggers.get(ModuleStorageUpdateChecker.class);
+  private static final Logger LOG = Loggers.get(ProjectStorageUpdateChecker.class);
 
-  private final StorageReader storageReader;;
-  private final ModuleConfigurationDownloader moduleConfigurationDownloader;
+  private final StorageReader storageReader;
+  ;
+  private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final SettingsDownloader settingsDownloader;
 
-  public ModuleStorageUpdateChecker(StorageReader storageReader, ModuleConfigurationDownloader moduleConfigurationDownloader, SettingsDownloader settingsDownloader) {
+  public ProjectStorageUpdateChecker(StorageReader storageReader, ProjectConfigurationDownloader projectConfigurationDownloader, SettingsDownloader settingsDownloader) {
     this.storageReader = storageReader;
-    this.moduleConfigurationDownloader = moduleConfigurationDownloader;
+    this.projectConfigurationDownloader = projectConfigurationDownloader;
     this.settingsDownloader = settingsDownloader;
   }
 
-  public StorageUpdateCheckResult checkForUpdates(String moduleKey, ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdates(String projectKey, ProgressWrapper progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
     GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
 
-    ModuleConfiguration serverModuleConfiguration = moduleConfigurationDownloader.fetchModuleConfiguration(serverVersion, moduleKey, globalProps, progress);
-    ModuleConfiguration storageModuleConfiguration = storageReader.readModuleConfig(moduleKey);
+    Sonarlint.ProjectConfiguration serverProjectConfiguration = projectConfigurationDownloader
+      .fetchModuleConfiguration(serverVersion, projectKey, globalProps, progress);
+    Sonarlint.ProjectConfiguration storageProjectConfiguration = storageReader.readProjectConfig(projectKey);
 
-    checkForSettingsUpdates(result, serverModuleConfiguration, storageModuleConfiguration);
+    checkForSettingsUpdates(result, serverProjectConfiguration, storageProjectConfiguration);
 
-    checkForQualityProfilesUpdates(result, serverModuleConfiguration, storageModuleConfiguration);
+    checkForQualityProfilesUpdates(result, serverProjectConfiguration, storageProjectConfiguration);
 
     return result;
   }
 
-  private static void checkForQualityProfilesUpdates(DefaultStorageUpdateCheckResult result, ModuleConfiguration serverModuleConfiguration,
-    ModuleConfiguration storageModuleConfiguration) {
-    MapDifference<String, String> qProfileDiff = Maps.difference(storageModuleConfiguration.getQprofilePerLanguageMap(), serverModuleConfiguration.getQprofilePerLanguageMap());
+  private static void checkForQualityProfilesUpdates(DefaultStorageUpdateCheckResult result, Sonarlint.ProjectConfiguration serverProjectConfiguration,
+    Sonarlint.ProjectConfiguration storageProjectConfiguration) {
+    MapDifference<String, String> qProfileDiff = Maps.difference(storageProjectConfiguration.getQprofilePerLanguageMap(), serverProjectConfiguration.getQprofilePerLanguageMap());
     if (!qProfileDiff.areEqual()) {
       for (Map.Entry<String, String> entry : qProfileDiff.entriesOnlyOnLeft().entrySet()) {
         LOG.debug("Quality profile for language '{}' removed", entry.getKey());
@@ -84,10 +87,10 @@ public class ModuleStorageUpdateChecker {
     }
   }
 
-  private static void checkForSettingsUpdates(DefaultStorageUpdateCheckResult result, ModuleConfiguration serverModuleConfiguration,
-    ModuleConfiguration storageModuleConfiguration) {
-    MapDifference<String, String> propDiff = Maps.difference(GlobalSettingsUpdateChecker.filter(storageModuleConfiguration.getPropertiesMap()),
-      GlobalSettingsUpdateChecker.filter(serverModuleConfiguration.getPropertiesMap()));
+  private static void checkForSettingsUpdates(DefaultStorageUpdateCheckResult result, Sonarlint.ProjectConfiguration serverProjectConfiguration,
+    ProjectConfiguration storageProjectConfiguration) {
+    MapDifference<String, String> propDiff = Maps.difference(GlobalSettingsUpdateChecker.filter(storageProjectConfiguration.getPropertiesMap()),
+      GlobalSettingsUpdateChecker.filter(serverProjectConfiguration.getPropertiesMap()));
     if (!propDiff.areEqual()) {
       result.appendToChangelog("Project settings updated");
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {

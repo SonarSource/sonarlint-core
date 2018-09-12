@@ -31,14 +31,16 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.connected.ModuleStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteModule;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainerHandler {
@@ -46,29 +48,29 @@ public class StorageContainerHandler {
   private final StorageRuleDetailsReader storageRuleDetailsReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
   private final PluginRepository pluginRepository;
-  private final ModuleStorageStatusReader moduleStorageStatusReader;
-  private final IssueStoreReader issueStoreReader;
-  private final AllModulesReader allModulesReader;
+  private final ProjectStorageStatusReader projectStorageStatusReader;
+  private final AllProjectReader allProjectReader;
   private final StoragePaths storagePaths;
   private final TempFolder tempFolder;
   private final StorageReader storageReader;
   private final StorageFileExclusions storageExclusions;
+  private final IssueStoreReader issueStoreReader;
 
   public StorageContainerHandler(StorageAnalyzer storageAnalyzer, StorageRuleDetailsReader storageRuleDetailsReader, GlobalUpdateStatusReader globalUpdateStatusReader,
-    PluginRepository pluginRepository, ModuleStorageStatusReader moduleStorageStatusReader, IssueStoreReader issueStoreReader, AllModulesReader allModulesReader,
-    StoragePaths storagePaths, StorageReader storageReader, TempFolder tempFolder, StorageFileExclusions storageExclusions) {
+    PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader, AllProjectReader allProjectReader,
+    StoragePaths storagePaths, StorageReader storageReader, TempFolder tempFolder, StorageFileExclusions storageExclusions,
+    IssueStoreReader issueStoreReader) {
     this.storageAnalyzer = storageAnalyzer;
     this.storageRuleDetailsReader = storageRuleDetailsReader;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
     this.pluginRepository = pluginRepository;
-    this.moduleStorageStatusReader = moduleStorageStatusReader;
-    this.issueStoreReader = issueStoreReader;
-    this.allModulesReader = allModulesReader;
+    this.projectStorageStatusReader = projectStorageStatusReader;
+    this.allProjectReader = allProjectReader;
     this.storagePaths = storagePaths;
     this.storageReader = storageReader;
     this.tempFolder = tempFolder;
     this.storageExclusions = storageExclusions;
-
+    this.issueStoreReader = issueStoreReader;
   }
 
   public AnalysisResults analyze(GlobalExtensionContainer globalExtensionContainer, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
@@ -88,12 +90,12 @@ public class StorageContainerHandler {
     return pluginRepository.getLoadedAnalyzers();
   }
 
-  public ModuleStorageStatus getModuleStorageStatus(String moduleKey) {
-    return moduleStorageStatusReader.apply(moduleKey);
+  public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
+    return projectStorageStatusReader.apply(projectKey);
   }
 
-  public Map<String, RemoteModule> allModulesByKey() {
-    return allModulesReader.get();
+  public Map<String, RemoteProject> allProjectsByKey() {
+    return allProjectReader.get();
   }
 
   public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
@@ -105,20 +107,28 @@ public class StorageContainerHandler {
   }
 
   public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
-    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, issueStoreReader);
+    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, this::createIsseStoreUtils);
     updater.updateFileIssues(moduleKey, filePath);
     return getServerIssues(moduleKey, filePath);
   }
 
   public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
-    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, issueStoreReader);
+    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, this::createIsseStoreUtils);
     updater.updateFileIssues(moduleKey, tempFolder);
   }
 
-  public Map<String, RemoteModule> downloadModuleList(ServerConfiguration serverConfig, ProgressWrapper progress) {
-    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, issueStoreReader);
+  public Map<String, RemoteProject> downloadProjectList(ServerConfiguration serverConfig, ProgressWrapper progress) {
+
+    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, this::createIsseStoreUtils);
     updater.updateModuleList(progress);
-    return allModulesByKey();
+    return allProjectsByKey();
+  }
+
+  private IssueStoreUtils createIsseStoreUtils(String projectKey) {
+    Sonarlint.ProjectPathPrefixes pathPrefixes = storageReader.readProjectPathPrefixes(projectKey);
+    Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
+    IssueStoreUtils issueStoreUtils = new IssueStoreUtils(configuration, pathPrefixes);
+    return issueStoreUtils;
   }
 
   public void deleteStorage() {

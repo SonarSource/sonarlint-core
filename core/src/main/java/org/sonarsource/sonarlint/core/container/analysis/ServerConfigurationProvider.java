@@ -29,8 +29,8 @@ import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 /**
  * Can't put {@link ServerConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
@@ -58,7 +58,7 @@ public class ServerConfigurationProvider {
         GlobalProperties globalProps = storage.readGlobalProperties();
         addProperties(globalProps.getPropertiesMap());
         if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
-          ModuleConfiguration projectConfig = storage.readModuleConfig(((ConnectedAnalysisConfiguration) config).moduleKey());
+          Sonarlint.ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).moduleKey());
           addProperties(projectConfig.getPropertiesMap());
         }
       }

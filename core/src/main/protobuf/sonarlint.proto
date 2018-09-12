@@ -97,42 +97,42 @@ message ActiveRules {
   }
 }
 
-message ServerIssues {
-  repeated ServerIssue issue = 1;
-  
-  message ServerIssue {
-    string key = 1;
-    string module_key = 2;
-    string path = 3;
-    string rule_repository = 4;
-    string rule_key = 5;
-    int32 line = 6;
-    string msg = 7;
-    string severity = 8;
-    bool manual_severity = 9;
-    string resolution = 10;
-    string status = 11;
-    string checksum = 12;
-    string assignee_login = 13;
-    int64 creation_date = 14;
-  }
+message ServerIssue {
+  string path = 1;
+  string module_key = 2;
+  string rule_repository = 3;
+  string rule_key = 4;
+  int32 line = 5;
+  string msg = 6;
+  string severity = 7;
+  bool manual_severity = 8;
+  string resolution = 9;
+  string status = 10;
+  string checksum = 11;
+  string assignee_login = 12;
+  int64 creation_date = 13;
+  string type = 14;
+  string key = 15;
 }
-
-message ModuleList {
-  map<string,Module> modules_by_key = 1;
+message ProjectList {
+  map<string,Project> projects_by_key = 1;
   
-  message Module {
+  message Project {
     string key = 1;
     string name = 2;
-    string qu = 3;
-    string project_key = 4;
+    string project_key = 3;
   }
 }
 
-message ModuleConfiguration {
+message ProjectConfiguration {
   map<string, string> qprofile_per_language = 1;
   map<string, string> properties = 2;
   map<string, string> module_path_by_key = 3;
+}
+
+message ProjectPathPrefixes {
+  string localPathPrefix = 1;
+  string sqPathPrefix = 2;
 }
 
 message Issues {

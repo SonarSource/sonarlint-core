@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2009-2018 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,14 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.util.Date;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public interface ModuleStorageStatus {
+public class DefaultRemoteProject implements RemoteProject {
+  private final String projectKey;
+  private final String key;
+  private final String name;
 
-  Date getLastUpdateDate();
-  
-  boolean isStale();
+  public DefaultRemoteProject(Sonarlint.ProjectList.Project project) {
+    this.projectKey = project.getProjectKey();
+    this.key = project.getKey();
+    this.name = project.getName();
+  }
 
+  @Override
+  public String getProjectKey() {
+    return projectKey;
+  }
+
+  @Override
+  public String getKey() {
+    return key;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
 }

@@ -19,14 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-public interface RemoteModule {
+public interface RemoteProject {
 
   String getProjectKey();
 
   String getKey();
 
   String getName();
-
-  boolean isRoot();
 
 }

@@ -35,11 +35,11 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader.PAGE_SIZE;
+import static org.sonarsource.sonarlint.core.container.connected.update.ProjectHierarchyDownloader.PAGE_SIZE;
 
-public class ModuleHierarchyDownloaderTest {
+public class ProjectHierarchyDownloaderTest {
   private SonarLintWsClient wsClient;
-  private ModuleHierarchyDownloader downloader;
+  private ProjectHierarchyDownloader downloader;
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -48,7 +48,7 @@ public class ModuleHierarchyDownloaderTest {
   public void setUp() {
     wsClient = mock(SonarLintWsClient.class);
 
-    downloader = new ModuleHierarchyDownloader(wsClient);
+    downloader = new ProjectHierarchyDownloader(wsClient);
   }
 
   @Test
@@ -124,7 +124,7 @@ public class ModuleHierarchyDownloaderTest {
   public void testIOException() {
     wsClient = mock(SonarLintWsClient.class);
     WsClientTestUtils.addFailedResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=testRoot&ps=500&p=1", 503, "error");
-    downloader = new ModuleHierarchyDownloader(wsClient);
+    downloader = new ProjectHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Error 503");
     downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));
@@ -135,7 +135,7 @@ public class ModuleHierarchyDownloaderTest {
     wsClient = mock(SonarLintWsClient.class);
     WsClientTestUtils
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=testRoot&ps=500&p=1", "invalid response stream");
-    downloader = new ModuleHierarchyDownloader(wsClient);
+    downloader = new ProjectHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Failed to process paginated WS");
     downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));

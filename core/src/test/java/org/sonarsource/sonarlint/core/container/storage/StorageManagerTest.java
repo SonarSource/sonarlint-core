@@ -43,8 +43,8 @@ public class StorageManagerTest {
       .setServerId("server_id")
       .build());
 
-    Path moduleStorageRoot = manager.getModuleStorageRoot("module.:key/with_branch%");
-    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("modules").resolve("module.%3Akey%2Fwith_branch%25"));
+    Path moduleStorageRoot = manager.getProjectStorageRoot("module.:key/with_branch%");
+    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("projects").resolve("module.%3Akey%2Fwith_branch%25"));
   }
 
   @Test
@@ -86,15 +86,15 @@ public class StorageManagerTest {
     assertThat(manager.getServerIssuesPath("module")).isEqualTo(sonarUserHome
       .resolve("storage")
       .resolve("server")
-      .resolve("modules")
+      .resolve("projects")
       .resolve("module")
       .resolve("server_issues"));
 
-    assertThat(manager.getModuleListPath()).isEqualTo(sonarUserHome
+    assertThat(manager.getProjectListPath()).isEqualTo(sonarUserHome
       .resolve("storage")
       .resolve("server")
       .resolve("global")
-      .resolve("module_list.pb"));
+      .resolve("project_list.pb"));
   }
 
   @Test

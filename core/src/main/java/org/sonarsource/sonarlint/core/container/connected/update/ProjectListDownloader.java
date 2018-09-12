@@ -28,18 +28,16 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
-public class ModuleListDownloader {
-  static final int PAGE_SIZE = 500;
-
+public class ProjectListDownloader {
   private final SonarLintWsClient wsClient;
 
-  public ModuleListDownloader(SonarLintWsClient wsClient) {
+  public ProjectListDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -52,10 +50,10 @@ public class ModuleListDownloader {
   }
 
   private void fetchModulesListAfter6dot3(Path dest, ProgressWrapper progress) {
-    ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
-    Builder moduleBuilder = ModuleList.Module.newBuilder();
+    ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
+    Builder projectBuilder = ProjectList.Project.newBuilder();
 
-    String baseUrl = "api/components/search.protobuf?qualifiers=TRK,BRC";
+    String baseUrl = "api/components/search.protobuf?qualifiers=TRK";
     if (wsClient.getOrganizationKey() != null) {
       baseUrl += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
     }
@@ -63,37 +61,35 @@ public class ModuleListDownloader {
       WsComponents.SearchWsResponse::parseFrom,
       WsComponents.SearchWsResponse::getPaging,
       WsComponents.SearchWsResponse::getComponentsList,
-      module -> {
-        moduleBuilder.clear();
-        moduleListBuilder.putModulesByKey(module.getKey(), moduleBuilder
-          .setProjectKey(module.getProject())
-          .setKey(module.getKey())
-          .setName(module.getName())
-          .setQu(module.getQualifier())
+      project -> {
+        projectBuilder.clear();
+        projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
+          .setProjectKey(project.getProject())
+          .setKey(project.getKey())
+          .setName(project.getName())
           .build());
       },
       true,
       progress);
 
-    ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StoragePaths.MODULE_LIST_PB));
+    ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
   }
 
   private void fetchModulesListBefore6dot3(Path dest) {
-    try (WsResponse response = wsClient.get("api/projects/index?format=json&subprojects=true")) {
+    try (WsResponse response = wsClient.get("api/projects/index?format=json")) {
       try (Reader contentReader = response.contentReader()) {
         DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
 
-        ModuleList.Builder moduleListBuilder = ModuleList.newBuilder();
-        Builder moduleBuilder = ModuleList.Module.newBuilder();
-        for (DefaultModule module : results) {
-          moduleBuilder.clear();
-          moduleListBuilder.putModulesByKey(module.k, moduleBuilder
-            .setKey(module.k)
-            .setName(module.nm)
-            .setQu(module.qu)
+        ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
+        Builder projectBuilder = ProjectList.Project.newBuilder();
+        for (DefaultModule project : results) {
+          projectBuilder.clear();
+          projectListBuilder.putProjectsByKey(project.k, projectBuilder
+            .setKey(project.k)
+            .setName(project.nm)
             .build());
         }
-        ProtobufUtil.writeToFile(moduleListBuilder.build(), dest.resolve(StoragePaths.MODULE_LIST_PB));
+        ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
       } catch (IOException e) {
         throw new IllegalStateException("Failed to load module list", e);
       }

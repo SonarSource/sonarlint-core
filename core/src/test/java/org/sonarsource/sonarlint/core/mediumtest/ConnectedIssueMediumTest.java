@@ -49,7 +49,6 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -77,7 +76,7 @@ public class ConnectedIssueMediumTest {
     Path pluginCache = slHome.resolve("plugins");
 
     /*
-     * This storage contains one server id "local" and two modules: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default QP)
      */
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
@@ -91,26 +90,16 @@ public class ConnectedIssueMediumTest {
       .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
       .setKey("javascript")
       .build());
-    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Copier() {
-
-      @Override
-      public void copy(String filename, Path toFile) throws IOException {
-        FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile());
-      }
-    });
+    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH,
+      (filename, toFile) -> FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile()));
 
     builder.addReference(PluginReference.newBuilder()
       .setFilename(PluginLocator.SONAR_JAVA_PLUGIN_JAR)
       .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
       .setKey("java")
       .build());
-    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Copier() {
-
-      @Override
-      public void copy(String filename, Path toFile) throws IOException {
-        FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile());
-      }
-    });
+    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH,
+      (filename, toFile) -> FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile()));
 
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
@@ -132,7 +121,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("modules").resolve(name);
+    Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
@@ -140,8 +129,8 @@ public class ConnectedIssueMediumTest {
       .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();
-    Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
+    Files.createDirectories(project);
+    ProtobufUtil.writeToFile(storageStatus, project.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
@@ -168,12 +157,12 @@ public class ConnectedIssueMediumTest {
   @Test
   public void testContainerInfo() {
     assertThat(sonarlint.getLoadedAnalyzers()).extracting("key").containsOnly("java", "javascript");
-    assertThat(sonarlint.allModulesByKey().keySet()).containsOnly("test-project", "test-project-2");
+    assertThat(sonarlint.allProjectsByKey().keySet()).containsOnly("test-project", "test-project-2");
   }
 
   @Test
-  public void testStaleModule() throws IOException {
-    assertThat(sonarlint.getModuleStorageStatus("stale_module").isStale()).isTrue();
+  public void testStaleProject() throws IOException {
+    assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
     ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",
       baseDir.toPath(),
       temp.newFolder().toPath(),

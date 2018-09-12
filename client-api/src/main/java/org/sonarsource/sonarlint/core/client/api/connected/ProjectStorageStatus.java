@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2018 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Date;
 
-import org.junit.Test;
+public interface ProjectStorageStatus {
 
-public class DefaultModuleStorageStatusTest {
-  private DefaultModuleStorageStatus status;
+  Date getLastUpdateDate();
+  
+  boolean isStale();
 
-  @Test
-  public void testGetters() {
-    Date date = new Date(1000_000);
-    status = new DefaultModuleStorageStatus(date, true);
-    assertThat(status.getLastUpdateDate()).isEqualTo(date);
-    assertThat(status.isStale()).isTrue();
-  }
 }

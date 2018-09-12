@@ -37,23 +37,24 @@ public class StoragePaths {
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
-  public static final String MODULE_CONFIGURATION_PB = "configuration.pb";
+  public static final String PROJECT_CONFIGURATION_PB = "configuration.pb";
+  public static final String PROJECT_PATH_PREFIXES_PB = "path_prefixes.pb";
   public static final String RULES_PB = "rules.pb";
   public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
   public static final String STORAGE_STATUS_PB = "storage_status.pb";
   public static final String SERVER_INFO_PB = "server_info.pb";
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
-  public static final String MODULE_LIST_PB = "module_list.pb";
+  public static final String PROJECT_LIST_PB = "project_list.pb";
   public static final String SERVER_ISSUES_DIR = "server_issues";
 
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
-  private final Path moduleStorageRoot;
+  private final Path projectStorageRoot;
 
   public StoragePaths(ConnectedGlobalConfiguration configuration) {
     serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getServerId()));
     globalStorageRoot = serverStorageRoot.resolve("global");
-    moduleStorageRoot = serverStorageRoot.resolve("modules");
+    projectStorageRoot = serverStorageRoot.resolve("projects");
   }
 
   public Path getServerStorageRoot() {
@@ -64,13 +65,13 @@ public class StoragePaths {
     return globalStorageRoot;
   }
 
-  public Path getModuleStorageRoot(String moduleKey) {
-    return moduleStorageRoot.resolve(encodeForFs(moduleKey));
+  public Path getProjectStorageRoot(String projectKey) {
+    return projectStorageRoot.resolve(encodeForFs(projectKey));
   }
 
   /**
-   * Encodes a string to be used as a valid filename. 
-   * It should work in all OS and different names should never collide. 
+   * Encodes a string to be used as a valid filename.
+   * It should work in all OS and different names should never collide.
    * See SLCORE-148.
    */
   public static String encodeForFs(String name) {
@@ -88,12 +89,16 @@ public class StoragePaths {
     return encoded;
   }
 
-  public Path getModuleConfigurationPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(MODULE_CONFIGURATION_PB);
+  public Path getProjectConfigurationPath(String projectKey) {
+    return getProjectStorageRoot(projectKey).resolve(PROJECT_CONFIGURATION_PB);
   }
 
-  public Path getModuleUpdateStatusPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(STORAGE_STATUS_PB);
+  public Path getProjectPathPrefixesPath(String projectKey) {
+    return getProjectStorageRoot(projectKey).resolve(PROJECT_PATH_PREFIXES_PB);
+  }
+
+  public Path getProjectUpdateStatusPath(String projectKey) {
+    return getProjectStorageRoot(projectKey).resolve(STORAGE_STATUS_PB);
   }
 
   public Path getPluginReferencesPath() {
@@ -104,8 +109,8 @@ public class StoragePaths {
     return getGlobalStorageRoot().resolve(PROPERTIES_PB);
   }
 
-  public Path getModuleListPath() {
-    return getGlobalStorageRoot().resolve(MODULE_LIST_PB);
+  public Path getProjectListPath() {
+    return getGlobalStorageRoot().resolve(PROJECT_LIST_PB);
   }
 
   public Path getRulesPath() {
@@ -129,6 +134,6 @@ public class StoragePaths {
   }
 
   public Path getServerIssuesPath(String moduleKey) {
-    return getModuleStorageRoot(moduleKey).resolve(SERVER_ISSUES_DIR);
+    return getProjectStorageRoot(moduleKey).resolve(SERVER_ISSUES_DIR);
   }
 }

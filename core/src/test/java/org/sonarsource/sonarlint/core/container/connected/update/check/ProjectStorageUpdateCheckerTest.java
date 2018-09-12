@@ -26,12 +26,13 @@ import org.junit.Test;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -41,7 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ModuleStorageUpdateCheckerTest {
+public class ProjectStorageUpdateCheckerTest {
 
   private static final Version SERVER_VERSION = Version.create("6.0");
 
@@ -49,23 +50,23 @@ public class ModuleStorageUpdateCheckerTest {
   public LogTester logTester = new LogTester();
 
   private static final String MODULE_KEY = "foo";
-  private ModuleStorageUpdateChecker checker;
+  private ProjectStorageUpdateChecker checker;
   private StorageReader storageReader;
-  private ModuleConfigurationDownloader moduleConfigurationDownloader;
+  private ProjectConfigurationDownloader projectConfigurationDownloader;
 
   @Before
   public void prepare() {
     storageReader = mock(StorageReader.class);
-    moduleConfigurationDownloader = mock(ModuleConfigurationDownloader.class);
+    projectConfigurationDownloader = mock(ProjectConfigurationDownloader.class);
 
-    when(storageReader.readModuleConfig(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().build());
+    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(Sonarlint.ProjectConfiguration.newBuilder().build());
     when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION.toString()).build());
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().build());
+    when(projectConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+      .thenReturn(ProjectConfiguration.newBuilder().build());
 
     SettingsDownloader settingsDownloader = mock(SettingsDownloader.class);
     when(settingsDownloader.fetchGlobalSettings(SERVER_VERSION)).thenReturn(GlobalProperties.newBuilder().build());
-    checker = new ModuleStorageUpdateChecker(storageReader, moduleConfigurationDownloader, settingsDownloader);
+    checker = new ProjectStorageUpdateChecker(storageReader, projectConfigurationDownloader, settingsDownloader);
   }
 
   @AfterClass
@@ -84,8 +85,8 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void addedProp() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
+    when(projectConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+      .thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
@@ -96,7 +97,7 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void removedProp() {
-    when(storageReader.readModuleConfig(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.cobol.license.secured", "value").build());
+    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(Sonarlint.ProjectConfiguration.newBuilder().putProperties("sonar.cobol.license.secured", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
@@ -107,9 +108,9 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void changedProp() {
-    when(storageReader.readModuleConfig(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
+    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
+    when(projectConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+      .thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
@@ -120,8 +121,8 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void addedProfile() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
+    when(projectConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+      .thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
@@ -132,7 +133,7 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void ignoreRemovedProfile() {
-    when(storageReader.readModuleConfig(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
+    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(Sonarlint.ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
@@ -142,9 +143,9 @@ public class ModuleStorageUpdateCheckerTest {
 
   @Test
   public void changedQualityProfile() {
-    when(moduleConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
-      .thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-456").build());
-    when(storageReader.readModuleConfig(MODULE_KEY)).thenReturn(ModuleConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
+    when(projectConfigurationDownloader.fetchModuleConfiguration(eq(SERVER_VERSION), eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+      .thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-456").build());
+    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 

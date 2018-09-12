@@ -17,33 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package org.sonarsource.sonarlint.core.container.storage;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleList.Module;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
 
-public class DefaultRemoteModuleTest {
-  private DefaultRemoteModule remoteModule;
-  private Module module;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class AllProjectReaderTest {
+  private StorageReader storageReader;
 
   @Before
   public void setUp() {
-    module = Module.newBuilder()
-      .setKey("key")
-      .setName("name")
-      .setQu("TRK")
-      .build();
-    remoteModule = new DefaultRemoteModule(module);
+    storageReader = mock(StorageReader.class);
   }
 
   @Test
-  public void testGetters() {
-    assertThat(remoteModule.getKey()).isEqualTo("key");
-    assertThat(remoteModule.getName()).isEqualTo("name");
-    assertThat(remoteModule.isRoot()).isTrue();
-  }
+  public void should_get_modules() {
+    ProjectList.Builder list = ProjectList.newBuilder();
+    Project m1 = Project.newBuilder().setKey("module1").build();
+    list.getMutableProjectsByKey().put("module1", m1);
 
+    when(storageReader.readProjectList()).thenReturn(list.build());
+
+    AllProjectReader modulesReader = new AllProjectReader(storageReader);
+    assertThat(modulesReader.get()).containsOnlyKeys("module1");
+  }
 }

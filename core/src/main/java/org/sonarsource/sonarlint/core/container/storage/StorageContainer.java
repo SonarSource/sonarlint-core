@@ -82,10 +82,10 @@ public class StorageContainer extends ComponentContainer {
       new PluginCacheProvider(),
 
       // storage readers
-      AllModulesReader.class,
+      AllProjectReader.class,
       IssueStoreReader.class,
       GlobalUpdateStatusReader.class,
-      ModuleStorageStatusReader.class,
+      ProjectStorageStatusReader.class,
       StorageRuleDetailsReader.class,
       IssueStoreFactory.class,
 

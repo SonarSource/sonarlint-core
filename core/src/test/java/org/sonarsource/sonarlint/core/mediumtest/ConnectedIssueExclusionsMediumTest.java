@@ -48,8 +48,9 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -69,7 +70,7 @@ public class ConnectedIssueExclusionsMediumTest {
   private static File baseDir;
   private static StoragePaths storagePaths;
   private static StorageReader storageReader;
-  private static ModuleConfiguration originalModuleConfig;
+  private static ProjectConfiguration originalModuleConfig;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -77,7 +78,7 @@ public class ConnectedIssueExclusionsMediumTest {
     Path pluginCache = slHome.resolve("plugins");
 
     /*
-     * This storage contains one server id "local" and two modules: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default QP)
      */
     Path storage = Paths.get(ConnectedIssueExclusionsMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
@@ -110,13 +111,13 @@ public class ConnectedIssueExclusionsMediumTest {
     sonarlint = new ConnectedSonarLintEngineImpl(config);
     storagePaths = sonarlint.getGlobalContainer().getComponentByType(StoragePaths.class);
     storageReader = sonarlint.getGlobalContainer().getComponentByType(StorageReader.class);
-    originalModuleConfig = storageReader.readModuleConfig(JAVA_MODULE_KEY);
+    originalModuleConfig = storageReader.readProjectConfig(JAVA_MODULE_KEY);
 
     baseDir = temp.newFolder();
   }
 
   private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("modules").resolve(name);
+    Path module = storage.resolve("local").resolve("projects").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
@@ -255,10 +256,10 @@ public class ConnectedIssueExclusionsMediumTest {
     return issues;
   }
 
-  private void updateModuleConfig(StoragePaths storagePaths, ModuleConfiguration originalModuleConfig, Map<String, String> props) {
-    Builder newBuilder = ModuleConfiguration.newBuilder(originalModuleConfig);
+  private void updateModuleConfig(StoragePaths storagePaths, ProjectConfiguration originalModuleConfig, Map<String, String> props) {
+    Builder newBuilder = Sonarlint.ProjectConfiguration.newBuilder(originalModuleConfig);
     newBuilder.getMutableProperties().putAll(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getModuleConfigurationPath(JAVA_MODULE_KEY));
+    ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getProjectConfigurationPath(JAVA_MODULE_KEY));
   }
 
   private ClientInputFile prepareJavaInputFile1() throws IOException {
