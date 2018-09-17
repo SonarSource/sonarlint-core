@@ -33,7 +33,7 @@ public class StoragePaths {
   /**
    * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
    */
-  public static final String STORAGE_VERSION = "1";
+  public static final String STORAGE_VERSION = "2";
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
