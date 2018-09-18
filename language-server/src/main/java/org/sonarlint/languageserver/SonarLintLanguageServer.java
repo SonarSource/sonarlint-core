@@ -112,6 +112,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
@@ -346,7 +347,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     // TODO
     if (updateModuleStorage(engine, serverInfo)) {
-      serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectKey, serverIssueTrackingLogger);
+      ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
+      serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger);
       telemetry.usedConnectedMode(serverInfo.serverUrl);
     } else {
       binding = null;
@@ -357,7 +359,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     try {
       // TODO
-      engine.updateProject(serverConfig, binding.projectKey, Collections.emptyList(), null);
+      engine.updateProject(serverConfig, binding.projectKey, null);
       return true;
     } catch (ProjectNotFoundException e) {
       logger.error(ClientLogger.ErrorType.PROJECT_NOT_FOUND);

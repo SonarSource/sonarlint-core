@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.util.Collections;
 import java.util.Map;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.plugin.Version;
@@ -41,18 +40,13 @@ public class ProjectConfigurationDownloader {
     this.settingsDownloader = settingsDownloader;
   }
 
-  public Sonarlint.ProjectConfiguration fetchModuleConfiguration(Version serverVersion, String projectKey, GlobalProperties globalProps, ProgressWrapper progress) {
+  public Sonarlint.ProjectConfiguration fetch(Version serverVersion, String projectKey, GlobalProperties globalProps, ProgressWrapper progress) {
     ProjectConfiguration.Builder builder = Sonarlint.ProjectConfiguration.newBuilder();
     fetchQualityProfiles(projectKey, builder, serverVersion);
     progress.setProgressAndCheckCancel("Fetching project settings", 0.1f);
     settingsDownloader.fetchProjectSettings(serverVersion, projectKey, globalProps, builder);
-
-    if (serverVersion.compareTo(Version.create("7.5")) < 0) {
-      progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
-      fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
-    } else {
-      builder.putAllModulePathByKey(Collections.singletonMap(projectKey, ""));
-    }
+    progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
+    fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
 
     return builder.build();
   }
@@ -67,5 +61,4 @@ public class ProjectConfigurationDownloader {
       builder.putQprofilePerLanguage(qp.getLanguage(), qp.getKey());
     }
   }
-
 }

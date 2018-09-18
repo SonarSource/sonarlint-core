@@ -53,7 +53,7 @@ public class ConnectedAnalysisConfigurationTest {
     Path workDir = temp.newFolder().toPath();
     ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("foo", baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
     assertThat(config.toString()).isEqualTo("[\n" +
-      "  moduleKey: foo\n" +
+      "  projectKey: foo\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
@@ -65,7 +65,7 @@ public class ConnectedAnalysisConfigurationTest {
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.workDir()).isEqualTo(workDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, testInputFile);
-    assertThat(config.moduleKey()).isEqualTo("foo");
+    assertThat(config.projectKey()).isEqualTo("foo");
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
 
     config = new ConnectedAnalysisConfiguration(null, baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);

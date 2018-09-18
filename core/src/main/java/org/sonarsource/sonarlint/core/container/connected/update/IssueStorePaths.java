@@ -23,33 +23,14 @@ import java.time.Instant;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectPathPrefixes;
 
-public class IssueStoreUtils {
-  private final Sonarlint.ProjectConfiguration projectConfiguration;
-  private final ProjectPathPrefixes pathPrefixes;
+public class IssueStorePaths {
 
-  public IssueStoreUtils(Sonarlint.ProjectConfiguration projectConfiguration, ProjectPathPrefixes pathPrefixes) {
-    this.projectConfiguration = projectConfiguration;
-    this.pathPrefixes = pathPrefixes;
-  }
-
-  public String fileKeyToSqPath(String fileModuleKey, String filePath) {
-    Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
-
-    // normally this should not be null, but the ModuleConfiguration could be out dated
-    String modulePath = modulePaths.get(fileModuleKey);
-    if (modulePath == null) {
-      modulePath = "";
-    }
-
-    return modulePath + filePath;
-  }
-
-  public String sqPathToFileKey(String projectKey, String sqFilePath) {
+  public String sqPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, String projectKey, String sqFilePath) {
     Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
 
     // find longest prefix match
@@ -70,34 +51,34 @@ public class IssueStoreUtils {
   }
 
   @CheckForNull
-  public String localPathToFileKey(String projectKey, String localFilePath) {
-    String sqFilePath = sqPathToLocalPath(localFilePath);
+  public String localPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, ProjectBinding projectBinding, String localFilePath) {
+    String sqFilePath = sqPathToLocalPath(projectBinding, localFilePath);
 
     if (sqFilePath == null) {
       return null;
     }
-    return sqPathToFileKey(projectKey, sqFilePath);
+    return sqPathToFileKey(projectConfiguration, projectBinding.projectKey(), sqFilePath);
   }
 
   @CheckForNull
-  public String localPathToSqPath(String localFilePath) {
-    if (!localFilePath.startsWith(pathPrefixes.getLocalPathPrefix())) {
+  public String localPathToSqPath(ProjectBinding projectBinding, String localFilePath) {
+    if (!localFilePath.startsWith(projectBinding.localPathPrefix())) {
       return null;
     }
-    int localPrefixLen = pathPrefixes.getLocalPathPrefix().length();
-    return pathPrefixes.getSqPathPrefix() + localFilePath.substring(localPrefixLen, localFilePath.length() - localPrefixLen);
+    int localPrefixLen = projectBinding.localPathPrefix().length();
+    return projectBinding.sqPathPrefix() + localFilePath.substring(localPrefixLen);
   }
 
   @CheckForNull
-  public String sqPathToLocalPath(String sqFilePath) {
-    if (!sqFilePath.startsWith(pathPrefixes.getSqPathPrefix())) {
+  public String sqPathToLocalPath(ProjectBinding projectBinding, String sqFilePath) {
+    if (!sqFilePath.startsWith(projectBinding.sqPathPrefix())) {
       return null;
     }
-    return pathPrefixes.getLocalPathPrefix() + sqFilePath.substring(0, pathPrefixes.getSqPathPrefix().length());
+    return projectBinding.localPathPrefix() + sqFilePath.substring(0, projectBinding.sqPathPrefix().length());
   }
 
-  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue) {
-    String sqPath = fileKeyToSqPath(issue.getModuleKey(), issue.getPath());
+  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue, Sonarlint.ProjectConfiguration projectConfiguration) {
+    String sqPath = fileKeyToSqPath(projectConfiguration, issue.getModuleKey(), issue.getPath());
 
     Sonarlint.ServerIssue.Builder builder = Sonarlint.ServerIssue.newBuilder()
       .setAssigneeLogin(issue.getAssigneeLogin())
@@ -119,13 +100,25 @@ public class IssueStoreUtils {
     return builder.build();
   }
 
-  public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String sqPath) {
+  public String fileKeyToSqPath(Sonarlint.ProjectConfiguration projectConfiguration, String fileModuleKey, String filePath) {
+    Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
+
+    // normally this should not be null, but the ModuleConfiguration could be out dated
+    String modulePath = modulePaths.get(fileModuleKey);
+    if (modulePath == null) {
+      modulePath = "";
+    }
+
+    return modulePath + filePath;
+  }
+
+  public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String localPath) {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setChecksum(pbIssue.getChecksum());
     issue.setModuleKey(pbIssue.getModuleKey());
     issue.setLine(pbIssue.getLine());
-    issue.setFilePath(sqPath);
+    issue.setFilePath(localPath);
     issue.setManualSeverity(pbIssue.getManualSeverity());
     issue.setMessage(pbIssue.getMsg());
     issue.setSeverity(pbIssue.getSeverity());

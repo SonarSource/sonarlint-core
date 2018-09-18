@@ -19,29 +19,34 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.sonar.api.utils.TempFolder;
+import java.util.stream.Collectors;
+import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
+import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
@@ -51,15 +56,14 @@ public class StorageContainerHandler {
   private final ProjectStorageStatusReader projectStorageStatusReader;
   private final AllProjectReader allProjectReader;
   private final StoragePaths storagePaths;
-  private final TempFolder tempFolder;
   private final StorageReader storageReader;
   private final StorageFileExclusions storageExclusions;
   private final IssueStoreReader issueStoreReader;
+  private final PartialUpdaterFactory partialUpdaterFactory;
 
   public StorageContainerHandler(StorageAnalyzer storageAnalyzer, StorageRuleDetailsReader storageRuleDetailsReader, GlobalUpdateStatusReader globalUpdateStatusReader,
-    PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader, AllProjectReader allProjectReader,
-    StoragePaths storagePaths, StorageReader storageReader, TempFolder tempFolder, StorageFileExclusions storageExclusions,
-    IssueStoreReader issueStoreReader) {
+    PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader, AllProjectReader allProjectReader, StoragePaths storagePaths,
+    StorageReader storageReader, StorageFileExclusions storageExclusions, IssueStoreReader issueStoreReader, PartialUpdaterFactory partialUpdaterFactory) {
     this.storageAnalyzer = storageAnalyzer;
     this.storageRuleDetailsReader = storageRuleDetailsReader;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
@@ -68,9 +72,9 @@ public class StorageContainerHandler {
     this.allProjectReader = allProjectReader;
     this.storagePaths = storagePaths;
     this.storageReader = storageReader;
-    this.tempFolder = tempFolder;
     this.storageExclusions = storageExclusions;
     this.issueStoreReader = issueStoreReader;
+    this.partialUpdaterFactory = partialUpdaterFactory;
   }
 
   public AnalysisResults analyze(GlobalExtensionContainer globalExtensionContainer, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
@@ -98,37 +102,47 @@ public class StorageContainerHandler {
     return allProjectReader.get();
   }
 
-  public List<ServerIssue> getServerIssues(String moduleKey, String filePath) {
-    return issueStoreReader.getServerIssues(moduleKey, filePath);
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath) {
+    return issueStoreReader.getServerIssues(projectBinding, filePath);
   }
 
-  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
-    return storageExclusions.getExcludedFiles(moduleKey, filePaths, testFilePredicate);
+  public Set<String> getExcludedFiles(String projectKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
+    return storageExclusions.getExcludedFiles(projectKey, filePaths, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath) {
-    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, this::createIsseStoreUtils);
-    updater.updateFileIssues(moduleKey, filePath);
-    return getServerIssues(moduleKey, filePath);
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
+    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+    Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
+    updater.updateFileIssues(projectBinding, configuration, filePath);
+    return getServerIssues(projectBinding, filePath);
   }
 
-  public void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey) {
-    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, this::createIsseStoreUtils);
-    updater.updateFileIssues(moduleKey, tempFolder);
+  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
+    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+    Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
+    updater.updateFileIssues(projectKey, configuration);
+  }
+
+  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths) {
+    List<Path> localPathList = localFilePaths.stream()
+      .map(Paths::get)
+      .collect(Collectors.toList());
+    List<Path> sqPathList = storageReader.readProjectComponents(projectKey)
+      .getComponentList().stream()
+      .map(Paths::get)
+      .collect(Collectors.toList());
+
+    FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
+    FileMatcher.Result match = fileMatcher.match(sqPathList, localPathList);
+    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.mostCommonSqPrefix().toString()),
+      FilenameUtils.separatorsToUnix(match.mostCommonLocalPrefix().toString()));
+
   }
 
   public Map<String, RemoteProject> downloadProjectList(ServerConfiguration serverConfig, ProgressWrapper progress) {
-
-    PartialUpdater updater = PartialUpdater.create(storageReader, storagePaths, serverConfig, this::createIsseStoreUtils);
-    updater.updateModuleList(progress);
+    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+    updater.updateProjectList(progress);
     return allProjectsByKey();
-  }
-
-  private IssueStoreUtils createIsseStoreUtils(String projectKey) {
-    Sonarlint.ProjectPathPrefixes pathPrefixes = storageReader.readProjectPathPrefixes(projectKey);
-    Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
-    IssueStoreUtils issueStoreUtils = new IssueStoreUtils(configuration, pathPrefixes);
-    return issueStoreUtils;
   }
 
   public void deleteStorage() {

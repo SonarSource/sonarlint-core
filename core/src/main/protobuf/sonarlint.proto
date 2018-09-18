@@ -130,9 +130,8 @@ message ProjectConfiguration {
   map<string, string> module_path_by_key = 3;
 }
 
-message ProjectPathPrefixes {
-  string localPathPrefix = 1;
-  string sqPathPrefix = 2;
+message ProjectComponents {
+  repeated string component = 1;
 }
 
 message Issues {

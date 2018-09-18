@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.slf4j.LoggerFactory;
@@ -189,8 +188,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
   public void updateModule(ModuleUpdateReq request, StreamObserver<Void> response) {
     try {
       ServerConfiguration serverConfig = transformServerConfig(request.getServerConfig());
-      // TODO
-      engine.updateProject(serverConfig, request.getModuleKey(), Collections.emptyList(), null);
+      engine.updateProject(serverConfig, request.getModuleKey(), null);
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {

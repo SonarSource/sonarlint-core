@@ -26,6 +26,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
@@ -34,6 +35,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequired
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
@@ -50,6 +52,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.check.PluginsUp
 import org.sonarsource.sonarlint.core.container.connected.update.check.QualityProfilesUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
@@ -89,6 +92,8 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectConfigurationDownloader.class,
       QualityProfilesUpdateChecker.class,
       ProjectStorageUpdateExecutor.class,
+      ServerIssueUpdater.class,
+      IssueStorePaths.class,
       PluginReferencesDownloader.class,
       SettingsDownloader.class,
       ProjectQualityProfilesDownloader.class,
@@ -110,12 +115,12 @@ public class ConnectedContainer extends ComponentContainer {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateProject(String projectKey, Collection<String> localFilePaths, ProgressWrapper progress) {
+  public void updateProject(String projectKey, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
       throw new GlobalUpdateRequiredException("Please update server first");
     }
-    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, localFilePaths, progress);
+    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, progress);
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {

@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -45,9 +44,9 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -65,6 +64,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtilTest.newEmptyStream;
 
@@ -87,13 +87,14 @@ public class ProjectStorageUpdateExecutorTest {
 
   private final String organizationKey;
   private SonarLintWsClient wsClient;
-  private ProjectStorageUpdateExecutor moduleUpdate;
-  private StoragePaths storagePaths;
-  private StorageReader storageReader;
-  private TempFolder tempFolder;
-  private ProjectHierarchyDownloader moduleHierarchy;
-  private IssueStore issueStore;
-  private IssueStoreFactory issueStoreFactory;
+  private ProjectStorageUpdateExecutor projectUpdate;
+  private StoragePaths storagePaths = mock(StoragePaths.class);
+  private StorageReader storageReader = mock(StorageReader.class);
+  private TempFolder tempFolder = mock(TempFolder.class);
+  private ProjectHierarchyDownloader moduleHierarchy = mock(ProjectHierarchyDownloader.class);
+  private IssueStore issueStore = new InMemoryIssueStore();
+  private IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
+  private ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
   private ProjectConfigurationDownloader projectConfigurationDownloader;
   private ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
 
@@ -116,34 +117,31 @@ public class ProjectStorageUpdateExecutorTest {
 
     File tempDir = temp.newFolder();
 
-    tempFolder = mock(TempFolder.class);
     when(tempFolder.newDir()).thenReturn(tempDir);
-    storagePaths = mock(StoragePaths.class);
-    storageReader = mock(StorageReader.class);
     org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties.Builder propBuilder = GlobalProperties.newBuilder();
     propBuilder.putProperties("sonar.qualitygate", "2");
     propBuilder.putProperties("sonar.core.version", "5.5-SNAPSHOT");
     when(storageReader.readGlobalProperties()).thenReturn(propBuilder.build());
     when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().build());
 
-    moduleHierarchy = mock(ProjectHierarchyDownloader.class);
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
     when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class))).thenReturn(modulesPath);
 
-    issueStoreFactory = mock(IssueStoreFactory.class);
-    issueStore = new InMemoryIssueStore();
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
     projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(wsClient), mock(SettingsDownloader.class));
+
+    projectUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, tempFolder,
+      projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);
   }
 
   @Test
   public void exception_ws_load_qps() throws IOException {
     // return trash from WS
     WsResponse response = mock(WsResponse.class);
-    when(response.contentStream()).thenReturn(new ByteArrayInputStream(new byte[] { 0, 1, 2}));
+    when(response.contentStream()).thenReturn(new ByteArrayInputStream(new byte[] {0, 1, 2}));
     when(wsClient.get(getQualityProfileUrl())).thenReturn(response);
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
@@ -153,17 +151,13 @@ public class ProjectStorageUpdateExecutorTest {
     when(storageReader.readQProfiles()).thenReturn(builder.build());
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient,
-      (key) -> Collections.emptyList(), issueStoreFactory, tempFolder,
-      projectConfigurationDownloader, projectFileListDownloader);
-
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("Failed to load module quality profiles");
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, Collections.emptyList(), new ProgressWrapper(null));
+    exception.expectMessage("Failed to load project quality profiles");
+    projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
   }
 
   @Test
-  public void module_update() throws Exception {
+  public void project_update() throws Exception {
     File destDir = temp.newFolder();
     QProfiles.Builder builder = QProfiles.newBuilder();
 
@@ -175,10 +169,7 @@ public class ProjectStorageUpdateExecutorTest {
     when(storageReader.readQProfiles()).thenReturn(builder.build());
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder,
-      projectConfigurationDownloader, projectFileListDownloader);
-
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, Collections.emptyList(), new ProgressWrapper(null));
+    projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
     ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(destDir.toPath().resolve(StoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
     assertThat(projectConfiguration.getQprofilePerLanguageMap()).containsOnly(
@@ -203,12 +194,9 @@ public class ProjectStorageUpdateExecutorTest {
     when(storageReader.readQProfiles()).thenReturn(builder.build());
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
-    moduleUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, (key) -> Collections.emptyList(), issueStoreFactory, tempFolder,
-      projectConfigurationDownloader, projectFileListDownloader);
-
     exception.expect(IllegalStateException.class);
     exception.expectMessage("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, Collections.emptyList(), new ProgressWrapper(null));
+    projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
   }
 
   @Test
@@ -237,16 +225,16 @@ public class ProjectStorageUpdateExecutorTest {
       .setPath("yet/another/path")
       .build();
 
-    IssueDownloader issueDownloader = moduleKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
+    IssueDownloader issueDownloader = projectKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
 
-    moduleUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, issueDownloader,
-      issueStoreFactory, tempFolder, projectConfigurationDownloader, projectFileListDownloader);
-    moduleUpdate.update(MODULE_KEY_WITH_BRANCH, Collections.emptyList(), new ProgressWrapper(null));
+    projectUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, tempFolder, projectConfigurationDownloader,
+      projectFileListDownloader, serverIssueUpdater);
+    projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
     //TODO
-   // assertThat(issueStore.load("TODO")).containsOnly(fileIssue1, fileIssue2);
-   // assertThat(issueStore.load("TODO")).containsOnly(anotherFileIssue);
-    assertThat(issueStore.load("TODO")).isEmpty();
+    // assertThat(issueStore.load("TODO")).containsOnly(fileIssue1, fileIssue2);
+    // assertThat(issueStore.load("TODO")).containsOnly(anotherFileIssue);
+    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class));
   }
 
   private String getQualityProfileUrl() {

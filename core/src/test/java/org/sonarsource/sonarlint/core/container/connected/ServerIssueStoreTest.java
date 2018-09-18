@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -42,50 +43,48 @@ public class ServerIssueStoreTest {
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
+  private final String moduleKey = "module1";
+  private final String path1 = "path1";
+  private final String path2 = "path2";
+
+  private Path root;
+  private ServerIssueStore store;
+
+  @Before
+  public void start() throws IOException {
+    root = temporaryFolder.newFolder().toPath();
+    store = new ServerIssueStore(root);
+  }
+
   @Test
   public void should_read_object_written() {
-    ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
-
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
-    String moduleKey = "module1";
-    String key1 = "path1";
-    String key2 = "path2";
-
-    issueList.add(builder.setModuleKey(moduleKey).setPath(key1).build());
-    issueList.add(builder.setModuleKey(moduleKey).setPath(key2).build());
+    issueList.add(builder.setModuleKey(moduleKey).setPath(path1).build());
+    issueList.add(builder.setModuleKey(moduleKey).setPath(path2).build());
 
     store.save(issueList);
 
-    assertThat(store.load("path1")).containsExactly(issueList.get(0));
-    assertThat(store.load("path2")).containsExactly(issueList.get(1));
+    assertThat(store.load(path1)).containsExactly(issueList.get(0));
+    assertThat(store.load(path2)).containsExactly(issueList.get(1));
     assertThat(store.load("nonexistent")).isEmpty();
   }
 
   @Test
-  public void should_read_object_replaced() throws IOException {
-    ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
-
-    String path = "myfile";
-    String moduleKey = "module";
-
-    ServerIssue issue1 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(11).build();
-    ServerIssue issue2 = ServerIssue.newBuilder().setPath(path).setModuleKey(moduleKey).setLine(22).build();
+  public void should_read_object_replaced() {
+    ServerIssue issue1 = ServerIssue.newBuilder().setPath(path1).setModuleKey(moduleKey).setLine(11).build();
+    ServerIssue issue2 = ServerIssue.newBuilder().setPath(path1).setModuleKey(moduleKey).setLine(22).build();
 
     store.save(Collections.singletonList(issue1));
-    assertThat(store.load("myfile")).containsOnly(issue1);
+    assertThat(store.load(path1)).containsOnly(issue1);
 
     store.save(Collections.singletonList(issue2));
-    assertThat(store.load("myfile")).containsOnly(issue2);
+    assertThat(store.load(path1)).containsOnly(issue2);
   }
 
   @Test
   public void should_fail_to_save_object_if_cannot_write_to_filesystem() throws IOException {
-    Path root = temporaryFolder.newFolder().toPath();
-
-    String moduleKey = "module1";
-    String path = "path1";
     // the sha1sum of path
     String sha1sum = "074aeb9c5551d3b52d26cf3d6568599adbff99f1";
 
@@ -96,17 +95,12 @@ public class ServerIssueStoreTest {
       fail("could not create dummy directory");
     }
 
-    ServerIssueStore store = new ServerIssueStore(root);
-
     exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(path).build()));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(path1).build()));
   }
 
   @Test
-  public void should_fail_to_delete_object() throws IOException {
-    Path root = temporaryFolder.newFolder().toPath();
-    ServerIssueStore store = new ServerIssueStore(root);
-
+  public void should_fail_to_delete_object() {
     String fileKey = "module1:path1";
     // the sha1sum of fileKey
     String sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
@@ -123,24 +117,18 @@ public class ServerIssueStoreTest {
 
   @Test
   public void should_delete_entries() {
-    ServerIssueStore store = new ServerIssueStore(temporaryFolder.getRoot().toPath());
-
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
-    String moduleKey = "module1";
-    String key1 = "path1";
-    String key2 = "path2";
-
-    issueList.add(builder.setPath(key1).setModuleKey(moduleKey).build());
-    issueList.add(builder.setPath(key2).setModuleKey(moduleKey).build());
+    issueList.add(builder.setPath(path1).setModuleKey(moduleKey).build());
+    issueList.add(builder.setPath(path2).setModuleKey(moduleKey).build());
 
     store.save(issueList);
-    store.delete("path1");
-    store.delete("path2");
+    store.delete(path1);
+    store.delete(path2);
     store.delete("non_existing");
 
-    assertThat(store.load("path1")).isEmpty();
-    assertThat(store.load("path2")).isEmpty();
+    assertThat(store.load(path1)).isEmpty();
+    assertThat(store.load(path2)).isEmpty();
   }
 }

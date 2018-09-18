@@ -38,7 +38,6 @@ public class StoragePaths {
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
   public static final String PROJECT_CONFIGURATION_PB = "configuration.pb";
-  public static final String PROJECT_PATH_PREFIXES_PB = "path_prefixes.pb";
   public static final String RULES_PB = "rules.pb";
   public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
   public static final String STORAGE_STATUS_PB = "storage_status.pb";
@@ -46,6 +45,7 @@ public class StoragePaths {
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
   public static final String PROJECT_LIST_PB = "project_list.pb";
   public static final String SERVER_ISSUES_DIR = "server_issues";
+  public static final String COMPONENT_LIST_PB = "component_list.pb";
 
   private final Path serverStorageRoot;
   private final Path globalStorageRoot;
@@ -93,10 +93,6 @@ public class StoragePaths {
     return getProjectStorageRoot(projectKey).resolve(PROJECT_CONFIGURATION_PB);
   }
 
-  public Path getProjectPathPrefixesPath(String projectKey) {
-    return getProjectStorageRoot(projectKey).resolve(PROJECT_PATH_PREFIXES_PB);
-  }
-
   public Path getProjectUpdateStatusPath(String projectKey) {
     return getProjectStorageRoot(projectKey).resolve(STORAGE_STATUS_PB);
   }
@@ -133,7 +129,11 @@ public class StoragePaths {
     return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
   }
 
-  public Path getServerIssuesPath(String moduleKey) {
-    return getProjectStorageRoot(moduleKey).resolve(SERVER_ISSUES_DIR);
+  public Path getServerIssuesPath(String projectKey) {
+    return getProjectStorageRoot(projectKey).resolve(SERVER_ISSUES_DIR);
+  }
+
+  public Path getComponentListPath(String projectKey) {
+    return getProjectStorageRoot(projectKey).resolve(COMPONENT_LIST_PB);
   }
 }

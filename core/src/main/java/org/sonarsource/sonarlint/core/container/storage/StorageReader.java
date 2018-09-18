@@ -87,11 +87,11 @@ public class StorageReader {
     return ProtobufUtil.readFile(storagePaths.getProjectConfigurationPath(projectKey), Sonarlint.ProjectConfiguration.parser());
   }
 
-  public Sonarlint.ProjectPathPrefixes readProjectPathPrefixes(String moduleKey) {
-    return ProtobufUtil.readFile(storagePaths.getProjectPathPrefixesPath(moduleKey), Sonarlint.ProjectPathPrefixes.parser());
-  }
-
   public Sonarlint.ProjectList readProjectList() {
     return ProtobufUtil.readFile(storagePaths.getProjectListPath(), Sonarlint.ProjectList.parser());
+  }
+
+  public Sonarlint.ProjectComponents readProjectComponents(String projectKey) {
+    return ProtobufUtil.readFile(storagePaths.getComponentListPath(projectKey), Sonarlint.ProjectComponents.parser());
   }
 }

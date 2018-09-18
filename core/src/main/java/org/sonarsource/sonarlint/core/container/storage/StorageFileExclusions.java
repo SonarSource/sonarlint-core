@@ -37,12 +37,12 @@ public class StorageFileExclusions {
     this.storageReader = storageReader;
   }
 
-  public Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
+  public Set<String> getExcludedFiles(String projectKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
-    ProjectConfiguration moduleConfig = storageReader.readProjectConfig(moduleKey);
+    ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectKey);
     MapSettings settings = new MapSettings();
     settings.addProperties(globalProps.getProperties());
-    settings.addProperties(moduleConfig.getProperties());
+    settings.addProperties(projectConfig.getProperties());
     ExclusionFilters exclusionFilters = new ExclusionFilters(new ConfigurationBridge(settings));
     exclusionFilters.prepare();
 

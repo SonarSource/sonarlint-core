@@ -42,12 +42,12 @@ public class IssueStoreTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private final AtomicInteger counter = new AtomicInteger();
+  private final  String key = "filePath";
 
   @Test
   public void contains_should_find_issues_after_added() throws IOException {
     IssueStore issueStore = newIssueStore();
 
-    String key = "filePath";
     assertThat(issueStore.contains(key)).isFalse();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
@@ -59,7 +59,6 @@ public class IssueStoreTest {
   public void contains_should_find_issues_even_if_empty_list() throws IOException {
     IssueStore issueStore = newIssueStore();
 
-    String key = "filePath";
     assertThat(issueStore.contains(key)).isFalse();
 
     issueStore.save(key, Collections.emptyList());
@@ -70,7 +69,6 @@ public class IssueStoreTest {
   public void save_should_update() throws IOException {
     IssueStore issueStore = newIssueStore();
 
-    String key = "filePath";
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
     issueStore.save(key, issues);
     assertThat(issueStore.read(key).size()).isEqualTo(issues.size());
@@ -83,7 +81,6 @@ public class IssueStoreTest {
   public void read_should_return_issues_with_matching_rule_keys() throws IOException {
     IssueStore issueStore = newIssueStore();
 
-    String key = "filePath";
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
     issueStore.save(key, issues);
 
@@ -101,7 +98,6 @@ public class IssueStoreTest {
   public void clear_should_empty_the_store() throws IOException {
     IssueStore issueStore = newIssueStore();
 
-    String key = "filePath";
     issueStore.save(key, Collections.emptyList());
     assertThat(issueStore.contains(key)).isTrue();
 
@@ -151,7 +147,7 @@ public class IssueStoreTest {
     Files.delete(storePath);
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
-    issueStore.save("filePath", Collections.emptyList());
+    issueStore.save(key, Collections.emptyList());
   }
 
   private Trackable newMockTrackable() {

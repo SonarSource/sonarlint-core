@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -98,8 +97,8 @@ public class ConnectedIssueExclusionsMediumTest {
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
-    writeModuleStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
-    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, VersionUtils.getLibraryVersion());
+    writeProjectStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
+    writeProjectStatus(tmpStorage, JAVA_MODULE_KEY, VersionUtils.getLibraryVersion());
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -116,7 +115,7 @@ public class ConnectedIssueExclusionsMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
+  private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
     Path module = storage.resolve("local").resolve("projects").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
@@ -152,7 +151,7 @@ public class ConnectedIssueExclusionsMediumTest {
 
   @Before
   public void restoreConfig() {
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of());
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of());
   }
 
   @Test
@@ -168,12 +167,12 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).isEmpty();
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -182,7 +181,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"));
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -190,7 +189,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"));
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1,2",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1,2",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "squid:S1481",
       "sonar.issue.ignore.multicriteria.2.resourceKey", "Foo.java",
@@ -207,7 +206,7 @@ public class ConnectedIssueExclusionsMediumTest {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -218,7 +217,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -228,7 +227,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -236,7 +235,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
 
-    updateModuleConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1,2",
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1,2",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "squid:S1481",
       "sonar.issue.enforce.multicriteria.2.resourceKey", "Foo.java",
@@ -256,8 +255,8 @@ public class ConnectedIssueExclusionsMediumTest {
     return issues;
   }
 
-  private void updateModuleConfig(StoragePaths storagePaths, ProjectConfiguration originalModuleConfig, Map<String, String> props) {
-    Builder newBuilder = Sonarlint.ProjectConfiguration.newBuilder(originalModuleConfig);
+  private void updateProjectConfig(StoragePaths storagePaths, ProjectConfiguration originalProjectConfig, Map<String, String> props) {
+    Builder newBuilder = ProjectConfiguration.newBuilder(originalProjectConfig);
     newBuilder.getMutableProperties().putAll(props);
     ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getProjectConfigurationPath(JAVA_MODULE_KEY));
   }
@@ -287,8 +286,7 @@ public class ConnectedIssueExclusionsMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
-    return inputFile;
+    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 
   static class StoreIssueListener implements IssueListener {

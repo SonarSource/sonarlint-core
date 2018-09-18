@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -222,8 +223,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(String projectKey, String filePath) {
-    return withReadLock(() -> getHandler().getServerIssues(projectKey, filePath));
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath) {
+    return withReadLock(() -> getHandler().getServerIssues(projectBinding, filePath));
   }
 
   @Override
@@ -232,10 +233,10 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String projectKey, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(serverConfig, projectKey, filePath);
+      return getHandler().downloadServerIssues(serverConfig, projectBinding, filePath);
     });
   }
 
@@ -248,7 +249,12 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void updateProject(ServerConfiguration serverConfig, String projectKey, Collection<String> localFilePaths, @Nullable ProgressMonitor monitor) {
+  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths) {
+    return withReadLock(() -> getHandler().calculatePathPrefixes(projectKey, localFilePaths));
+  }
+
+  @Override
+  public void updateProject(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
     checkNotNull(serverConfig);
     checkNotNull(projectKey);
     setLogging(null);
@@ -258,7 +264,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.updateProject(projectKey, localFilePaths, new ProgressWrapper(monitor));
+      connectedContainer.updateProject(projectKey, new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {

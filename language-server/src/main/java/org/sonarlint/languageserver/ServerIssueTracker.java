@@ -26,6 +26,7 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.tracking.CachingIssueTracker;
 import org.sonarsource.sonarlint.core.tracking.CachingIssueTrackerImpl;
@@ -39,16 +40,16 @@ class ServerIssueTracker {
 
   private final ConnectedSonarLintEngine engine;
   private final ServerConfiguration serverConfiguration;
-  private final String moduleKey;
+  private final ProjectBinding projectBinding;
 
   private final IssueTrackerCache issueTrackerCache;
   private final CachingIssueTracker cachingIssueTracker;
   private final org.sonarsource.sonarlint.core.tracking.ServerIssueTracker tracker;
 
-  ServerIssueTracker(ConnectedSonarLintEngine engine, ServerConfiguration serverConfiguration, String moduleKey, Logger logger) {
+  ServerIssueTracker(ConnectedSonarLintEngine engine, ServerConfiguration serverConfiguration, ProjectBinding projectBinding, Logger logger) {
     this.engine = engine;
     this.serverConfiguration = serverConfiguration;
-    this.moduleKey = moduleKey;
+    this.projectBinding = projectBinding;
 
     this.issueTrackerCache = new InMemoryIssueTrackerCache();
     this.cachingIssueTracker = new CachingIssueTrackerImpl(issueTrackerCache);
@@ -63,9 +64,9 @@ class ServerIssueTracker {
 
     cachingIssueTracker.matchAndTrackAsNew(filePath, toTrackables(issues));
     if (shouldFetchServerIssues) {
-      tracker.update(serverConfiguration, engine, moduleKey, Collections.singleton(filePath));
+      tracker.update(serverConfiguration, engine, projectBinding, Collections.singleton(filePath));
     } else {
-      tracker.update(engine, moduleKey, Collections.singleton(filePath));
+      tracker.update(engine, projectBinding, Collections.singleton(filePath));
     }
 
     issueTrackerCache.getLiveOrFail(filePath).stream()
