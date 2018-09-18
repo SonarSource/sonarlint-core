@@ -33,6 +33,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.tracking.Logger;
@@ -174,9 +175,10 @@ public class ServerIssueTrackerTest {
 
   private ServerIssueTracker newTracker(Path baseDir, ConnectedSonarLintEngine engine) {
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-    String moduleKey = "project1";
+    String projectKey = "project1";
     Logger logger = mock(Logger.class);
-    return new ServerIssueTracker(engine, serverConfiguration, moduleKey, logger);
+    ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
+    return new ServerIssueTracker(engine, serverConfiguration, projectBinding, logger);
   }
 
   private ServerIssueTracker newTracker(Path baseDir) {

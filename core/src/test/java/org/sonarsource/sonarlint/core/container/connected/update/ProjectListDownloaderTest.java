@@ -46,7 +46,7 @@ public class ProjectListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.2", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), "6.2", new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(1559);
@@ -61,7 +61,7 @@ public class ProjectListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
@@ -77,7 +77,7 @@ public class ProjectListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchModulesListTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);

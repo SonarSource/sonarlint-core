@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2018 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,31 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DefaultRemoteProjectTest {
-  private DefaultRemoteProject remoteProject;
-  private Project project;
-
-  @Before
-  public void setUp() {
-    project = Project.newBuilder()
-      .setKey("key")
-      .setName("name")
-      .build();
-    remoteProject = new DefaultRemoteProject(project);
-  }
-
+public class ProjectBindingTest {
   @Test
-  public void testGetters() {
-    assertThat(remoteProject.getKey()).isEqualTo("key");
-    assertThat(remoteProject.getName()).isEqualTo("name");
+  public void should_assign_all_parameters_in_constructor() {
+    ProjectBinding projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    assertThat(projectBinding.projectKey()).isEqualTo("key");
+    assertThat(projectBinding.sqPathPrefix()).isEqualTo("sqPrefix");
+    assertThat(projectBinding.localPathPrefix()).isEqualTo("localPrefix");
   }
-
 }

@@ -23,44 +23,44 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class IssueStoreReader {
   private final IssueStoreFactory issueStoreFactory;
   private final StoragePaths storagePaths;
+  private final IssueStorePaths issueStorePaths;
   private final StorageReader storageReader;
 
-  public IssueStoreReader(IssueStoreFactory issueStoreFactory, StoragePaths storagePaths, StorageReader storageReader) {
+  public IssueStoreReader(IssueStoreFactory issueStoreFactory, IssueStorePaths issueStorePaths, StoragePaths storagePaths, StorageReader storageReader) {
     this.issueStoreFactory = issueStoreFactory;
+    this.issueStorePaths = issueStorePaths;
     this.storageReader = storageReader;
     this.storagePaths = storagePaths;
   }
 
-  public List<ServerIssue> getServerIssues(String projectKey, String localFilePath) {
-    Sonarlint.ProjectPathPrefixes projectPathPrefixes = storageReader.readProjectPathPrefixes(projectKey);
-    Sonarlint.ProjectConfiguration projectConfiguration = storageReader.readProjectConfig(projectKey);
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String localFilePath) {
+    Sonarlint.ProjectConfiguration projectConfiguration = storageReader.readProjectConfig(projectBinding.projectKey());
 
-    if (projectPathPrefixes == null || projectConfiguration == null) {
-      throw new IllegalStateException("project not in storage: " + projectKey);
+    if (projectConfiguration == null) {
+      throw new IllegalStateException("project not in storage: " + projectBinding.projectKey());
     }
 
-    IssueStoreUtils issueStoreUtils = new IssueStoreUtils(projectConfiguration, projectPathPrefixes);
-
-    String sqPath = issueStoreUtils.localPathToSqPath(localFilePath);
+    String sqPath = issueStorePaths.localPathToSqPath(projectBinding, localFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectKey);
+    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
     List<Sonarlint.ServerIssue> loadedIssues = issueStore.load(sqPath);
 
     return loadedIssues.stream()
-      .map(pbIssue -> IssueStoreUtils.toApiIssue(pbIssue, sqPath))
+      .map(pbIssue -> IssueStorePaths.toApiIssue(pbIssue, localFilePath))
       .collect(Collectors.toList());
   }
 }

@@ -22,22 +22,19 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class FileMatcherTest {
-  private ReversePathTree reversePathTree = mock(ReversePathTree.class);
   private FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
 
   @Test
   public void simple_case_without_prefixes() {
-    List<Path> paths = Arrays.asList(
-      Paths.get("project1/src/main/java/File.java")
-    );
+    List<Path> paths = Collections.singletonList(Paths.get("project1/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(paths, paths);
     assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get(""));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
@@ -45,12 +42,8 @@ public class FileMatcherTest {
 
   @Test
   public void simple_case_with_prefixes() {
-    List<Path> localPaths = Arrays.asList(
-      Paths.get("local/src/main/java/File.java")
-    );
-    List<Path> sqPaths = Arrays.asList(
-      Paths.get("sq/src/main/java/File.java")
-    );
+    List<Path> localPaths = Collections.singletonList(Paths.get("local/src/main/java/File.java"));
+    List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, localPaths);
     assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get("local"));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq"));

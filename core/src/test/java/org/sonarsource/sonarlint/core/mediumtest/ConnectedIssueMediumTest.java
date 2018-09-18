@@ -103,10 +103,10 @@ public class ConnectedIssueMediumTest {
 
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
-    // update versions in test storage and create an empty stale module storage
-    writeModuleStatus(tmpStorage, "test-project", StoragePaths.STORAGE_VERSION);
-    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, StoragePaths.STORAGE_VERSION);
-    writeModuleStatus(tmpStorage, "stale_module", "0");
+    // update versions in test storage and create an empty stale project storage
+    writeProjectStatus(tmpStorage, "test-project", StoragePaths.STORAGE_VERSION);
+    writeProjectStatus(tmpStorage, JAVA_MODULE_KEY, StoragePaths.STORAGE_VERSION);
+    writeProjectStatus(tmpStorage, "stale_module", "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -120,7 +120,7 @@ public class ConnectedIssueMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
+  private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
     Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
@@ -174,7 +174,7 @@ public class ConnectedIssueMediumTest {
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isInstanceOf(StorageException.class)
-        .hasMessage("Stored data for module 'stale_module' is stale because it was created with a different version of SonarLint. Please update the binding.");
+        .hasMessage("Stored data for project 'stale_module' is stale because it was created with a different version of SonarLint. Please update the binding.");
     }
   }
 

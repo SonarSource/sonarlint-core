@@ -94,7 +94,7 @@ public class GlobalStorageUpdateExecutor {
       qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
-      projectListDownloader.fetchModulesListTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
+      projectListDownloader.fetchTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

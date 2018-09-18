@@ -74,12 +74,12 @@ public interface ConnectedSonarLintEngine {
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
 
   /**
-   * Gets locally stored server issues for a given file. 
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   * @param filePath relative to the module to which the moduleKey refers.
+   * Gets locally stored server issues for a given file.
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
+   * @param filePath relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
-  List<ServerIssue> getServerIssues(String moduleKey, String filePath);
+  List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath);
 
   /**
    * Get information about current global storage state
@@ -90,12 +90,12 @@ public interface ConnectedSonarLintEngine {
   GlobalStorageStatus getGlobalStorageStatus();
 
   /**
-   * Get information about module storage state
+   * Get information about project storage state
    * @return null if module was never updated
    * @since 2.6
    */
   @CheckForNull
-  ProjectStorageStatus getProjectStorageStatus(String moduleKey);
+  ProjectStorageStatus getProjectStorageStatus(String projectKey);
 
   /**
    * Return all projects by key
@@ -121,10 +121,19 @@ public interface ConnectedSonarLintEngine {
   UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
-   * Update given module.
+   * Tries to find the best way to match files in a local project with files in the sonarqube project identified
+   * with {@code projectKey}, by finding file path prefixes to be used later in other interactions with the project storage.
+   * Requires the storage of the project to be up to date.
+   *
+   * @param localFilePaths List of relative paths of all file belonging to the project in the IDE
+   */
+  ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths);
+
+  /**
+   * Update given project.
    * @since 2.0
    */
-  void updateProject(ServerConfiguration serverConfig, String moduleKey, Collection<String> localFilePaths, @Nullable ProgressMonitor monitor);
+  void updateProject(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -135,30 +144,30 @@ public interface ConnectedSonarLintEngine {
   StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
-   * Check server to see if module storage need updates.
+   * Check server to see if project storage need updates.
    * @since 2.6
-   * @throws StorageException if module storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
+   * @throws StorageException if project storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
    * @throws DownloadException if it fails to download
    */
-  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String moduleKey, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
-   * Downloads, stores and returns server issues for a given file. 
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
-   * @param filePath relative to the module to which the moduleKey refers.
+   * Downloads, stores and returns server issues for a given file.
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
+   * @param filePath relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @since 2.5
    * @throws DownloadException if it fails to download
    */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, String moduleKey, String filePath);
+  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath);
 
   /**
-   * Downloads and stores server issues for a given module.
+   * Downloads and stores server issues for a given project.
    * @param serverConfig form which to download issues
-   * @param moduleKey to which the project is bound (must have been previously updated with {@link #updateModule(ServerConfiguration,String)})
+   * @param projectKey key of the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(ServerConfiguration serverConfig, String moduleKey);
+  void downloadServerIssues(ServerConfiguration serverConfig, String projectKey);
 
   /**
    * Get information about the analyzers that are currently loaded.
@@ -166,6 +175,6 @@ public interface ConnectedSonarLintEngine {
    */
   Collection<LoadedAnalyzer> getLoadedAnalyzers();
 
-  Set<String> getExcludedFiles(String moduleKey, Collection<String> filePaths, Predicate<String> testFilePredicate);
+  Set<String> getExcludedFiles(String projectKey, Collection<String> filePaths, Predicate<String> testFilePredicate);
 
 }

@@ -27,37 +27,36 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class ServerIssueUpdater {
-
   private final StoragePaths storagePaths;
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
+  private final IssueStorePaths issueStorePaths;
   private final TempFolder tempFolder;
-  private final IssueStoreUtils issueStoreUtils;
 
-  public ServerIssueUpdater(StoragePaths storagePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder,
-    IssueStoreUtils issueStoreUtils) {
+  public ServerIssueUpdater(StoragePaths storagePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory,
+    IssueStorePaths issueStorePaths, TempFolder tempFolder) {
     this.storagePaths = storagePaths;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
+    this.issueStorePaths = issueStorePaths;
     this.tempFolder = tempFolder;
-    this.issueStoreUtils = issueStoreUtils;
   }
 
-  public void update(String projectKey) {
+  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration) {
     Path work = tempFolder.newDir().toPath();
     Path target = storagePaths.getServerIssuesPath(projectKey);
-    FileUtils.replaceDir(path -> updateServerIssues(projectKey, path), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path), target, work);
   }
 
-  public void updateServerIssues(String projectKey, Path path) {
+  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path) {
     List<ScannerInput.ServerIssue> issues = issueDownloader.apply(projectKey);
     List<Sonarlint.ServerIssue> storageIssues = issues.stream()
-      .map(issueStoreUtils::toStorageIssue)
+      .map(issue -> issueStorePaths.toStorageIssue(issue, projectConfiguration))
       .collect(Collectors.toList());
 
     issueStoreFactory.apply(path).save(storageIssues);

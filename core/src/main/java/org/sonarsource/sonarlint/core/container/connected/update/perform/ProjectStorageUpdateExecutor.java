@@ -20,72 +20,61 @@
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FilenameUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
-import org.sonarsource.sonarlint.core.container.storage.FileMatcher;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectPathPrefixes;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.ReversePathTree;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ProjectStorageUpdateExecutor {
 
   private final StorageReader storageReader;
   private final SonarLintWsClient wsClient;
-  private final IssueDownloader issueDownloader;
-  private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
   private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader;
+  private final ServerIssueUpdater serverIssueUpdater;
   private final StoragePaths storagePaths;
 
-  public ProjectStorageUpdateExecutor(StorageReader storageReader, StoragePaths storagePaths, SonarLintWsClient wsClient,
-    IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder,
-    ProjectConfigurationDownloader projectConfigurationDownloader, ProjectFileListDownloader projectFileListDownloader) {
+  public ProjectStorageUpdateExecutor(StorageReader storageReader, StoragePaths storagePaths, SonarLintWsClient wsClient, TempFolder tempFolder,
+    ProjectConfigurationDownloader projectConfigurationDownloader, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
     this.storageReader = storageReader;
     this.storagePaths = storagePaths;
     this.wsClient = wsClient;
-    this.issueDownloader = issueDownloader;
-    this.issueStoreFactory = issueStoreFactory;
     this.tempFolder = tempFolder;
     this.projectConfigurationDownloader = projectConfigurationDownloader;
     this.projectFileListDownloader = projectFileListDownloader;
+    this.serverIssueUpdater = serverIssueUpdater;
   }
 
-  public void update(String projectKey, Collection<String> localFilePaths, ProgressWrapper progress) {
+  public void update(String projectKey, ProgressWrapper progress) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
+
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
-      ProjectPathPrefixes pathPrefixes = updatePathPrefixes(projectKey, localFilePaths, progress);
-      updateServerIssues(projectKey, temp, projectConfiguration, pathPrefixes);
+      updateServerIssues(projectKey, temp, projectConfiguration);
+      updatePathPrefixes(projectKey, temp, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
 
   private ProjectConfiguration updateConfiguration(String projectKey, GlobalProperties globalProps, Path temp, ProgressWrapper progress) {
     Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
-    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetchModuleConfiguration(serverVersion, projectKey,
-      globalProps, progress);
+    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(serverVersion, projectKey, globalProps, progress);
     final Set<String> qProfileKeys = storageReader.readQProfiles().getQprofilesByKeyMap().keySet();
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
@@ -98,29 +87,22 @@ public class ProjectStorageUpdateExecutor {
     return projectConfiguration;
   }
 
-  private ProjectPathPrefixes updatePathPrefixes(String projectKey, Collection<String> localPaths, ProgressWrapper progress) {
+  private void updatePathPrefixes(String projectKey, Path temp, ProgressWrapper progress) {
     List<ProjectFileListDownloader.File> sqFiles = projectFileListDownloader.get(projectKey, progress);
-    List<Path> sqPaths = sqFiles.stream()
-      .map(f -> Paths.get(f.path()))
+    List<String> sqPaths = sqFiles.stream()
+      .map(ProjectFileListDownloader.File::path)
       .collect(Collectors.toList());
 
-    List<Path> localPathList = localPaths.stream()
-      .map(Paths::get)
-      .collect(Collectors.toList());
-
-    FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
-    FileMatcher.Result match = fileMatcher.match(sqPaths, localPathList);
-    return ProjectPathPrefixes.newBuilder()
-      .setLocalPathPrefix(FilenameUtils.separatorsToUnix(match.mostCommonLocalPrefix().toString()))
-      .setSqPathPrefix(FilenameUtils.separatorsToUnix(match.mostCommonSqPrefix().toString()))
+    Sonarlint.ProjectComponents components = Sonarlint.ProjectComponents.newBuilder()
+      .addAllComponent(sqPaths)
       .build();
+
+    ProtobufUtil.writeToFile(components, temp.resolve(StoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(String moduleKey, Path temp, ProjectConfiguration projectConfiguration, ProjectPathPrefixes pathPrefixes) {
+  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration) {
     Path basedir = temp.resolve(StoragePaths.SERVER_ISSUES_DIR);
-    IssueStoreUtils issueStoreUtils = new IssueStoreUtils(projectConfiguration, pathPrefixes);
-    new ServerIssueUpdater(storagePaths, issueDownloader, issueStoreFactory, tempFolder, issueStoreUtils)
-      .updateServerIssues(moduleKey, basedir);
+    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir);
   }
 
   private void updateStatus(Path temp) {

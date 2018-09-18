@@ -21,18 +21,15 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStoreUtils;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -45,33 +42,25 @@ public class PartialUpdater {
   private final IssueDownloader downloader;
   private final StorageReader storageReader;
   private final ProjectListDownloader projectListDownloader;
-  private final Function<String, IssueStoreUtils> issueStoreUtilsFactory;
+  private final IssueStorePaths issueStorePaths;
+  private final TempFolder tempFolder;
   private final StoragePaths storagePaths;
 
   public PartialUpdater(IssueStoreFactory issueStoreFactory, IssueDownloader downloader, StorageReader storageReader,
-    StoragePaths storagePaths, ProjectListDownloader projectListDownloader, Function<String, IssueStoreUtils> issueStoreUtilsFactory) {
+    StoragePaths storagePaths, ProjectListDownloader projectListDownloader, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
     this.issueStoreFactory = issueStoreFactory;
     this.downloader = downloader;
     this.storageReader = storageReader;
     this.storagePaths = storagePaths;
     this.projectListDownloader = projectListDownloader;
-    this.issueStoreUtilsFactory = issueStoreUtilsFactory;
+    this.issueStorePaths = issueStorePaths;
+    this.tempFolder = tempFolder;
   }
 
-  public static PartialUpdater create(StorageReader storageReader, StoragePaths storagePaths, ServerConfiguration serverConfig,
-    Function<String, IssueStoreUtils> issueStoreUtilsFactory) {
-    SonarLintWsClient client = new SonarLintWsClient(serverConfig);
-    IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloaderImpl(client);
-    ProjectListDownloader projectListDownloader = new ProjectListDownloader(client);
-    return new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, projectListDownloader, issueStoreUtilsFactory);
-  }
-
-  public void updateFileIssues(String projectKey, String localFilePath) {
-    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectKey);
+  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String localFilePath) {
+    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
-    IssueStoreUtils issueStoreUtils = issueStoreUtilsFactory.apply(projectKey);
-    String fileKey = issueStoreUtils.localPathToFileKey(projectKey, localFilePath);
+    String fileKey = issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, localFilePath);
     List<ServerIssue> issues;
     try {
       issues = downloader.apply(fileKey);
@@ -80,19 +69,18 @@ public class PartialUpdater {
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
     List<Sonarlint.ServerIssue> storageIssues = issues.stream()
-      .map(issueStoreUtils::toStorageIssue)
+      .map(issue -> issueStorePaths.toStorageIssue(issue, projectConfiguration))
       .collect(Collectors.toList());
     issueStore.save(storageIssues);
   }
 
-  public void updateFileIssues(String projectKey, TempFolder tempFolder) {
-    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder, issueStoreUtilsFactory.apply(projectKey))
-      .update(projectKey);
+  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration) {
+    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, issueStorePaths, tempFolder).update(projectKey, projectConfiguration);
   }
 
-  public void updateModuleList(ProgressWrapper progress) {
+  public void updateProjectList(ProgressWrapper progress) {
     try {
-      projectListDownloader.fetchModulesListTo(storagePaths.getGlobalStorageRoot(), storageReader.readServerInfos().getVersion(), progress);
+      projectListDownloader.fetchTo(storagePaths.getGlobalStorageRoot(), storageReader.readServerInfos().getVersion(), progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update module list: " + e.getMessage(), null);

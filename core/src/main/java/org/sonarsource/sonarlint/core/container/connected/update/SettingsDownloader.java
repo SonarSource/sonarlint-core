@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -61,22 +61,22 @@ public class SettingsDownloader {
     return builder.build();
   }
 
-  public void fetchProjectSettings(Version serverVersion, String moduleKey, GlobalProperties globalProps, Sonarlint.ProjectConfiguration.Builder projectConfigurationBuilder) {
-    fetchSettings(serverVersion, moduleKey, (k, v) -> !v.equals(globalProps.getPropertiesMap().get(k)), projectConfigurationBuilder::putProperties);
+  public void fetchProjectSettings(Version serverVersion, String projectKey, GlobalProperties globalProps, ProjectConfiguration.Builder projectConfigurationBuilder) {
+    fetchSettings(serverVersion, projectKey, (k, v) -> !v.equals(globalProps.getPropertiesMap().get(k)), projectConfigurationBuilder::putProperties);
   }
 
-  private void fetchSettings(Version serverVersion, @Nullable String moduleKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
+  private void fetchSettings(Version serverVersion, @Nullable String projectKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
     if (serverVersion.compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchUsingSettingsWS(moduleKey, consumer);
+      fetchUsingSettingsWS(projectKey, consumer);
     } else {
-      fetchUsingPropertiesWS(moduleKey, filter, consumer);
+      fetchUsingPropertiesWS(projectKey, filter, consumer);
     }
   }
 
-  private void fetchUsingSettingsWS(@Nullable String moduleKey, BiConsumer<String, String> consumer) {
+  private void fetchUsingSettingsWS(@Nullable String projectKey, BiConsumer<String, String> consumer) {
     String url = API_SETTINGS_PATH;
-    if (moduleKey != null) {
-      url += "?component=" + StringUtils.urlEncode(moduleKey);
+    if (projectKey != null) {
+      url += "?component=" + StringUtils.urlEncode(projectKey);
     }
     WsResponse response = wsClient.get(url);
     try (InputStream is = response.contentStream()) {
@@ -121,10 +121,10 @@ public class SettingsDownloader {
     consumer.accept(s.getKey(), Joiner.on(',').join(ids));
   }
 
-  private void fetchUsingPropertiesWS(@Nullable String moduleKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
+  private void fetchUsingPropertiesWS(@Nullable String projectKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
     String url = API_PROPERTIES_PATH;
-    if (moduleKey != null) {
-      url += "&resource=" + StringUtils.urlEncode(moduleKey);
+    if (projectKey != null) {
+      url += "&resource=" + StringUtils.urlEncode(projectKey);
     }
     try (WsResponse response = wsClient.get(url)) {
       try (JsonReader reader = new JsonReader(response.contentReader())) {

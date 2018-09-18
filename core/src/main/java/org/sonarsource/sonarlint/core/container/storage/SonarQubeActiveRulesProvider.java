@@ -108,12 +108,12 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
   private static Map<String, String> loadQualityProfilesFromStorage(Sonarlint.QProfiles qProfiles, StorageReader storageReader,
     ConnectedAnalysisConfiguration analysisConfiguration) {
     Map<String, String> qProfilesByLanguage;
-    if (analysisConfiguration.moduleKey() == null) {
+    if (analysisConfiguration.projectKey() == null) {
       LOG.debug("Use default quality profiles:");
       qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
     } else {
       LOG.debug("Quality profiles:");
-      qProfilesByLanguage = storageReader.readProjectConfig(analysisConfiguration.moduleKey()).getQprofilePerLanguageMap();
+      qProfilesByLanguage = storageReader.readProjectConfig(analysisConfiguration.projectKey()).getQprofilePerLanguageMap();
     }
     return qProfilesByLanguage;
   }

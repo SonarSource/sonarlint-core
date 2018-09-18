@@ -51,7 +51,7 @@ public class StorageAnalyzerTest {
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    when(config.moduleKey()).thenReturn("module1");
+    when(config.projectKey()).thenReturn("module1");
     analyzer = new StorageAnalyzer(globalReader, moduleReader);
   }
 
@@ -70,7 +70,7 @@ public class StorageAnalyzerTest {
     when(moduleReader.apply("module1")).thenReturn(null);
 
     exception.expect(StorageException.class);
-    exception.expectMessage("No data stored for module");
+    exception.expectMessage("No data stored for project");
     analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
   }
 
@@ -82,7 +82,7 @@ public class StorageAnalyzerTest {
     when(moduleReader.apply("module1")).thenReturn(moduleStatus);
 
     exception.expect(StorageException.class);
-    exception.expectMessage("Stored data for module 'module1' is stale");
+    exception.expectMessage("Stored data for project 'module1' is stale");
     analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
   }
 

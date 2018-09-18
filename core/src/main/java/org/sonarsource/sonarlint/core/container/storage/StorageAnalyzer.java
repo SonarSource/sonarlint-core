@@ -42,24 +42,24 @@ public class StorageAnalyzer {
     this.moduleUpdateStatusReader = moduleUpdateStatusReader;
   }
 
-  private void checkStatus(@Nullable String moduleKey) {
+  private void checkStatus(@Nullable String projectKey) {
     GlobalStorageStatus updateStatus = globalUpdateStatusReader.get();
     if (updateStatus == null) {
       throw new StorageException("Missing global data. Please update server.", false);
     }
-    if (moduleKey != null) {
-      ProjectStorageStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(moduleKey);
+    if (projectKey != null) {
+      ProjectStorageStatus moduleUpdateStatus = moduleUpdateStatusReader.apply(projectKey);
       if (moduleUpdateStatus == null) {
-        throw new StorageException(String.format("No data stored for module '%s'. Please update the binding.", moduleKey), false);
+        throw new StorageException(String.format("No data stored for project '%s'. Please update the binding.", projectKey), false);
       } else if (moduleUpdateStatus.isStale()) {
-        throw new StorageException(String.format("Stored data for module '%s' is stale because "
-          + "it was created with a different version of SonarLint. Please update the binding.", moduleKey), false);
+        throw new StorageException(String.format("Stored data for project '%s' is stale because "
+          + "it was created with a different version of SonarLint. Please update the binding.", projectKey), false);
       }
     }
   }
 
   public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    checkStatus(configuration.moduleKey());
+    checkStatus(configuration.projectKey());
 
     AnalysisContainer analysisContainer = new AnalysisContainer(parent, progress);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();

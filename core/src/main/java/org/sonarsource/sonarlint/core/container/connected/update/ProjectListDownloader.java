@@ -41,7 +41,7 @@ public class ProjectListDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchModulesListTo(Path dest, String serverVersion, ProgressWrapper progress) {
+  public void fetchTo(Path dest, String serverVersion, ProgressWrapper progress) {
     if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
       fetchModulesListAfter6dot3(dest, progress);
     } else {

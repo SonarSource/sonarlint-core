@@ -55,9 +55,9 @@ public class ProjectStorageUpdateChecker {
     Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
     GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
 
-    Sonarlint.ProjectConfiguration serverProjectConfiguration = projectConfigurationDownloader
-      .fetchModuleConfiguration(serverVersion, projectKey, globalProps, progress);
-    Sonarlint.ProjectConfiguration storageProjectConfiguration = storageReader.readProjectConfig(projectKey);
+    ProjectConfiguration serverProjectConfiguration = projectConfigurationDownloader
+      .fetch(serverVersion, projectKey, globalProps, progress);
+    ProjectConfiguration storageProjectConfiguration = storageReader.readProjectConfig(projectKey);
 
     checkForSettingsUpdates(result, serverProjectConfiguration, storageProjectConfiguration);
 
@@ -66,8 +66,8 @@ public class ProjectStorageUpdateChecker {
     return result;
   }
 
-  private static void checkForQualityProfilesUpdates(DefaultStorageUpdateCheckResult result, Sonarlint.ProjectConfiguration serverProjectConfiguration,
-    Sonarlint.ProjectConfiguration storageProjectConfiguration) {
+  private static void checkForQualityProfilesUpdates(DefaultStorageUpdateCheckResult result, ProjectConfiguration serverProjectConfiguration,
+    ProjectConfiguration storageProjectConfiguration) {
     MapDifference<String, String> qProfileDiff = Maps.difference(storageProjectConfiguration.getQprofilePerLanguageMap(), serverProjectConfiguration.getQprofilePerLanguageMap());
     if (!qProfileDiff.areEqual()) {
       for (Map.Entry<String, String> entry : qProfileDiff.entriesOnlyOnLeft().entrySet()) {
@@ -87,7 +87,7 @@ public class ProjectStorageUpdateChecker {
     }
   }
 
-  private static void checkForSettingsUpdates(DefaultStorageUpdateCheckResult result, Sonarlint.ProjectConfiguration serverProjectConfiguration,
+  private static void checkForSettingsUpdates(DefaultStorageUpdateCheckResult result, ProjectConfiguration serverProjectConfiguration,
     ProjectConfiguration storageProjectConfiguration) {
     MapDifference<String, String> propDiff = Maps.difference(GlobalSettingsUpdateChecker.filter(storageProjectConfiguration.getPropertiesMap()),
       GlobalSettingsUpdateChecker.filter(serverProjectConfiguration.getPropertiesMap()));

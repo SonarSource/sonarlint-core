@@ -30,10 +30,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
@@ -45,11 +47,13 @@ import static org.mockito.Mockito.when;
 
 public class IssueStoreReaderTest {
   private static final String MODULE_KEY = "root";
+
   private IssueStoreReader issueStoreReader;
   private IssueStore issueStore = new InMemoryIssueStore();
   private StoragePaths storagePaths = mock(StoragePaths.class);
   private StorageReader storageReader = mock(StorageReader.class);
-
+  private IssueStorePaths issueStorePaths = new IssueStorePaths();
+  private ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "", "");
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
@@ -59,8 +63,8 @@ public class IssueStoreReaderTest {
     Path storagePath = mock(Path.class);
     when(storagePaths.getServerIssuesPath(MODULE_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
-    issueStoreReader = new IssueStoreReader(issueStoreFactory, storagePaths, storageReader);
-    when(storageReader.readProjectPathPrefixes(MODULE_KEY)).thenReturn(Sonarlint.ProjectPathPrefixes.newBuilder().build());
+
+    issueStoreReader = new IssueStoreReader(issueStoreFactory, issueStorePaths, storagePaths, storageReader);
   }
 
   private void setModulePaths(Map<String, String> modulePaths) {
@@ -89,23 +93,23 @@ public class IssueStoreReaderTest {
     // test
 
     // matches module1 path
-    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module1/src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue(MODULE_KEY, "module1/src/path1"));
 
     // matches module2
-    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module2/path2"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "module2/path2"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue(MODULE_KEY, "module2/path2"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module1/src/path3"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path3"))
       .isEmpty();
 
     // module not in storage
     exception.expect(IllegalStateException.class);
     exception.expectMessage("project not in storage");
-    assertThat(issueStoreReader.getServerIssues("root:module1", "path2"))
+    assertThat(issueStoreReader.getServerIssues(new ProjectBinding("root:module1", "", ""), "path2"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue("module1", "path2"));
   }
@@ -127,7 +131,7 @@ public class IssueStoreReaderTest {
     // test
 
     // matches module12 path
-    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "module12/path12"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "module12/path12"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue(MODULE_KEY, "module12/path12"));
   }
@@ -142,7 +146,7 @@ public class IssueStoreReaderTest {
 
     issueStore.save(Collections.singletonList(serverIssue));
 
-    ServerIssue issue = issueStoreReader.getServerIssues(MODULE_KEY, "path").iterator().next();
+    ServerIssue issue = issueStoreReader.getServerIssues(projectBinding, "path").iterator().next();
     assertThat(issue.type()).isNull();
   }
 
@@ -156,18 +160,34 @@ public class IssueStoreReaderTest {
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue(MODULE_KEY, "src/path1"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues(MODULE_KEY, "src/path3"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path3"))
       .isEmpty();
 
     // module not in storage
     exception.expect(IllegalStateException.class);
     exception.expectMessage("project not in storage");
-    issueStoreReader.getServerIssues("root:module1", "path2");
+    issueStoreReader.getServerIssues(new ProjectBinding("unknown", "", ""), "path2");
+  }
+
+  @Test
+  public void testSingleModuleWithPrefixes() {
+    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "sq", "local");
+
+    // setup issues
+    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "sq/src/path1")));
+
+    // test
+
+    // matches path
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
+      .usingElementComparator(simpleComparator)
+      .containsOnly(createApiIssue(MODULE_KEY, "local/src/path1"));
   }
 
   private Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
@@ -178,10 +198,9 @@ public class IssueStoreReaderTest {
   };
 
   private ServerIssue createApiIssue(String moduleKey, String filePath) {
-    DefaultServerIssue issue = new DefaultServerIssue();
-    issue.setFilePath(filePath);
-    issue.setModuleKey(moduleKey);
-    return issue;
+    return new DefaultServerIssue()
+      .setFilePath(filePath)
+      .setModuleKey(moduleKey);
   }
 
   private Sonarlint.ServerIssue createServerIssue(String moduleKey, String filePath) {

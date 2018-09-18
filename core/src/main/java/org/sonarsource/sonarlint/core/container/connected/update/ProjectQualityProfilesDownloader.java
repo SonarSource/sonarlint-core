@@ -39,7 +39,7 @@ public class ProjectQualityProfilesDownloader {
     this.wsClient = wsClient;
   }
 
-  public List<QualityProfile> fetchModuleQualityProfiles(String moduleKey, Version serverVersion) {
+  public List<QualityProfile> fetchModuleQualityProfiles(String projectKey, Version serverVersion) {
     SearchWsResponse qpResponse;
     String param;
     if (serverVersion.compareToIgnoreQualifier(Version.create("6.5")) >= 0) {
@@ -47,7 +47,7 @@ public class ProjectQualityProfilesDownloader {
     } else {
       param = "projectKey";
     }
-    String baseUrl = "/api/qualityprofiles/search.protobuf?" + param + "=" + StringUtils.urlEncode(moduleKey);
+    String baseUrl = "/api/qualityprofiles/search.protobuf?" + param + "=" + StringUtils.urlEncode(projectKey);
     String organizationKey = wsClient.getOrganizationKey();
     if (organizationKey != null) {
       baseUrl += "&organization=" + StringUtils.urlEncode(organizationKey);
@@ -55,9 +55,9 @@ public class ProjectQualityProfilesDownloader {
     try (InputStream contentStream = wsClient.get(baseUrl).contentStream()) {
       qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
     } catch (NotFoundException e) {
-      throw new ProjectNotFoundException(moduleKey, organizationKey);
+      throw new ProjectNotFoundException(projectKey, organizationKey);
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to load module quality profiles", e);
+      throw new IllegalStateException("Failed to load project quality profiles", e);
     }
     return qpResponse.getProfilesList();
   }
