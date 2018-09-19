@@ -29,6 +29,6 @@ public class ProjectBindingTest {
     ProjectBinding projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
     assertThat(projectBinding.projectKey()).isEqualTo("key");
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("sqPrefix");
-    assertThat(projectBinding.localPathPrefix()).isEqualTo("localPrefix");
+    assertThat(projectBinding.idePathPrefix()).isEqualTo("localPrefix");
   }
 }
