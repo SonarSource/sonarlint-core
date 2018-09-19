@@ -123,8 +123,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
           .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
           .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
           // TODO update kotlin and ruby version once they are released
-          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.1.0.1505"))
-          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.1.0.1505"))
+          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.2.0.1568"))
+          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.2.0.1568"))
           .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
           .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       } else {
@@ -234,7 +234,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     }
 
-
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7)) {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
     }
@@ -305,16 +304,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadModules() throws Exception {
+  public void downloadModules() {
     updateGlobal();
-    assertThat(engine.allModulesByKey()).hasSize(12);
+    assertThat(engine.allProjectsByKey()).hasSize(12);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllModules(getServerConfig(), null)).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allModulesByKey()).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
-  public void updateNoAuth() throws Exception {
+  public void updateNoAuth() {
     try {
       engine.update(ServerConfiguration.builder()
         .url(ORCHESTRATOR.getServer().getUrl())
@@ -336,7 +335,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
@@ -354,7 +353,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVASCRIPT);
+    updateProject(PROJECT_KEY_JAVASCRIPT);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener, null, null);
@@ -372,7 +371,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
@@ -381,7 +380,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void globalUpdate() throws Exception {
+  public void globalUpdate() {
     updateGlobal();
 
     assertThat(engine.getState()).isEqualTo(State.UPDATED);
@@ -390,20 +389,20 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
     assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
 
-    assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNull();
+    assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
 
   @Test
-  public void updateProject() throws Exception {
+  public void updateProject() {
     updateGlobal();
 
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
-    assertThat(engine.getModuleStorageStatus(PROJECT_KEY_JAVA)).isNotNull();
+    assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNotNull();
   }
 
   @Test
-  public void verifyExtendedDescription() throws Exception {
+  public void verifyExtendedDescription() {
     updateGlobal();
 
     String ruleKey = "squid:S106";
@@ -426,7 +425,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisJavascript() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVASCRIPT);
+    updateProject(PROJECT_KEY_JAVASCRIPT);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
@@ -439,7 +438,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
 
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVASCRIPT_CUSTOM);
+    updateProject(PROJECT_KEY_JAVASCRIPT_CUSTOM);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT_CUSTOM, PROJECT_KEY_JAVASCRIPT_CUSTOM, "src/Person.js"), issueListener, null, null);
@@ -451,7 +450,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisPHP() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_PHP);
+    updateProject(PROJECT_KEY_PHP);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
@@ -461,7 +460,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisPython() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_PYTHON);
+    updateProject(PROJECT_KEY_PYTHON);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
@@ -471,7 +470,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisWeb() throws IOException {
     updateGlobal();
-    updateModule(PROJECT_KEY_WEB);
+    updateProject(PROJECT_KEY_WEB);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_WEB, PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
@@ -481,7 +480,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisUseQualityProfile() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
@@ -495,7 +494,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisIssueOnDirectory() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA_PACKAGE);
+    updateProject(PROJECT_KEY_JAVA_PACKAGE);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
@@ -511,7 +510,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void customSensorsNotExecuted() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
+    updateProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM_SENSOR, PROJECT_KEY_JAVA,
@@ -526,7 +525,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void globalExtension() throws Exception {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
     updateGlobal();
-    updateModule(PROJECT_KEY_GLOBAL_EXTENSION);
+    updateProject(PROJECT_KEY_GLOBAL_EXTENSION);
 
     assertThat(logs).contains("Start Global Extension It works");
 
@@ -553,7 +552,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisJavaPomXml() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "pom.xml"), issueListener, null, null);
@@ -595,7 +594,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     try {
 
       updateGlobal();
-      updateModule(PROJECT_KEY_JAVA);
+      updateProject(PROJECT_KEY_JAVA);
 
       SaveIssueListener issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
@@ -619,7 +618,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA_EMPTY);
+    updateProject(PROJECT_KEY_JAVA_EMPTY);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_EMPTY, PROJECT_KEY_JAVA,
@@ -633,7 +632,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void analysisUseConfiguration() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
@@ -645,7 +644,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Override default file suffixes in global props so that input file is not considered as a Java file
     setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     issueListener.clear();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
@@ -656,7 +655,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Override default file suffixes in project props so that input file is considered as a Java file again
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -681,7 +680,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void checkForUpdate() throws Exception {
     updateGlobal();
-    updateModule(PROJECT_KEY_JAVA);
+    updateProject(PROJECT_KEY_JAVA);
 
     ServerConfiguration serverConfig = getServerConfig(true);
 
@@ -709,18 +708,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
-    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that is not in the whitelist
     setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
-    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that *is* in the whitelist
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
 
-    result = engine.checkIfModuleStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
   }
@@ -744,7 +743,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void analysisRuby() throws Exception {
     assumeTrue(rubyAndKotlinSupported);
     updateGlobal();
-    updateModule(PROJECT_KEY_RUBY);
+    updateProject(PROJECT_KEY_RUBY);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_RUBY, PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
@@ -755,7 +754,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void analysisKotlin() throws Exception {
     assumeTrue(rubyAndKotlinSupported);
     updateGlobal();
-    updateModule(PROJECT_KEY_KOTLIN);
+    updateProject(PROJECT_KEY_KOTLIN);
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_KOTLIN, PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
@@ -788,8 +787,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     }
   }
 
-  private void updateModule(String projectKey) {
-    engine.updateModule(getServerConfig(), projectKey, null);
+  private void updateProject(String projectKey) {
+    engine.updateProject(getServerConfig(), projectKey, null);
   }
 
   private void updateGlobal() {

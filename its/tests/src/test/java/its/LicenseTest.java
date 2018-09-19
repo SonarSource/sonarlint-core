@@ -147,7 +147,7 @@ public class LicenseTest extends AbstractConnectedTest {
   }
 
   private void updateModule(String projectKey) {
-    engine.updateModule(ServerConfiguration.builder()
+    engine.updateProject(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
       .credentials(SONARLINT_USER, SONARLINT_PWD)

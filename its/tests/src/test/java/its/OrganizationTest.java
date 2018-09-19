@@ -149,34 +149,34 @@ public class OrganizationTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void testConnection() throws Exception {
+  public void testConnection() {
     assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(ORGANIZATION)).success()).isTrue();
     assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(null)).success()).isTrue();
     assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg("not-exists")).success()).isFalse();
   }
 
   @Test
-  public void downloadModules() throws Exception {
+  public void downloadModules() {
     updateGlobal();
-    assertThat(engineOnTestOrg.allModulesByKey()).hasSize(1);
+    assertThat(engineOnTestOrg.allProjectsByKey()).hasSize(1);
     ORCHESTRATOR.getServer().adminWsClient().post("/api/projects/create",
       "key", "foo-bar",
       "name", "Foo",
       "organization", ORGANIZATION);
     // Project in default org is not visible
     ORCHESTRATOR.getServer().provisionProject("foo-bar2", "Foo");
-    assertThat(engineOnTestOrg.downloadAllModules(getServerConfigForOrg(ORGANIZATION), null)).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
+    assertThat(engineOnTestOrg.downloadAllProjects(getServerConfigForOrg(ORGANIZATION), null)).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
   }
 
   @Test
-  public void downloadOrganizations() throws Exception {
+  public void downloadOrganizations() {
     WsHelper helper = new WsHelperImpl();
     List<RemoteOrganization> organizations = helper.listOrganizations(getServerConfigForOrg(null), null);
     assertThat(organizations).hasSize(2);
   }
 
   @Test
-  public void verifyExtendedDescription() throws Exception {
+  public void verifyExtendedDescription() {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     updateGlobal();
 
@@ -204,7 +204,7 @@ public class OrganizationTest extends AbstractConnectedTest {
   public void updateModuleInOrga() {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
-    engineOnTestOrg.updateModule(getServerConfigForOrg(ORGANIZATION), PROJECT_KEY_JAVA, null);
+    engineOnTestOrg.updateProject(getServerConfigForOrg(ORGANIZATION), PROJECT_KEY_JAVA, null);
   }
 
   private void updateGlobal() {
