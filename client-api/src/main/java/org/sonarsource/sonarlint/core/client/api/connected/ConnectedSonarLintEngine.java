@@ -61,6 +61,7 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Return rule details.
+   *
    * @param ruleKey See {@link Issue#getRuleKey()}
    * @return Rule details
    * @throws IllegalArgumentException if ruleKey is unknown
@@ -75,14 +76,16 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Gets locally stored server issues for a given file.
+   *
    * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
-   * @param filePath relative to the project.
+   * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
   List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath);
 
   /**
    * Get information about current global storage state
+   *
    * @return null if storage was never updated
    * @since 2.6
    */
@@ -91,6 +94,7 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Get information about project storage state
+   *
    * @return null if module was never updated
    * @since 2.6
    */
@@ -99,72 +103,81 @@ public interface ConnectedSonarLintEngine {
 
   /**
    * Return all projects by key
+   *
    * @since 2.0
    */
   Map<String, RemoteProject> allProjectsByKey();
+
+  /**
+   * Tries to find the best way to match files in a IDE project with files in the sonarqube project identified
+   * with {@code projectKey}, by finding file path prefixes to be used later in other interactions with the project storage.
+   * Requires the storage of the project to be up to date.
+   *
+   * @param ideFilePaths List of relative paths of all file belonging to the project in the IDE
+   * @since 3.10
+   */
+  ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths);
 
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
    * Attempts to download and store the list of projects and to return all projects by key
-   * @since 2.5
+   *
    * @throws DownloadException if it fails to download
+   * @since 2.5
    */
   Map<String, RemoteProject> downloadAllProjects(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
    * Update current server.
-   * @since 2.0
+   *
    * @throws UnsupportedServerException if server version is too low
-   * @throws CanceledException if the update task was cancelled
+   * @throws CanceledException          if the update task was cancelled
+   * @since 2.0
    */
   UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
-   * Tries to find the best way to match files in a local project with files in the sonarqube project identified
-   * with {@code projectKey}, by finding file path prefixes to be used later in other interactions with the project storage.
-   * Requires the storage of the project to be up to date.
-   *
-   * @param localFilePaths List of relative paths of all file belonging to the project in the IDE
-   */
-  ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths);
-
-  /**
    * Update given project.
+   *
    * @since 2.0
    */
   void updateProject(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
-   * @since 2.6
+   *
    * @throws GlobalUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
-   * @throws DownloadException if it fails to download
+   * @throws DownloadException             if it fails to download
+   * @since 2.6
    */
   StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if project storage need updates.
-   * @since 2.6
-   * @throws StorageException if project storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
+   *
+   * @throws StorageException  if project storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
    * @throws DownloadException if it fails to download
+   * @since 2.6
    */
   StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file.
+   *
    * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
-   * @param filePath relative to the project.
+   * @param ideFilePath    relative to the project in the IDE.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
-   * @since 2.5
    * @throws DownloadException if it fails to download
+   * @since 2.5
    */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath);
+  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath);
 
   /**
    * Downloads and stores server issues for a given project.
+   *
    * @param serverConfig form which to download issues
-   * @param projectKey key of the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
+   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
    * @since 2.9
    */
   void downloadServerIssues(ServerConfiguration serverConfig, String projectKey);

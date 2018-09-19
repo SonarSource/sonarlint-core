@@ -62,10 +62,10 @@ public class IssueStorePaths {
 
   @CheckForNull
   public String localPathToSqPath(ProjectBinding projectBinding, String localFilePath) {
-    if (!localFilePath.startsWith(projectBinding.localPathPrefix())) {
+    if (!localFilePath.startsWith(projectBinding.idePathPrefix())) {
       return null;
     }
-    int localPrefixLen = projectBinding.localPathPrefix().length();
+    int localPrefixLen = projectBinding.idePathPrefix().length();
     return projectBinding.sqPathPrefix() + localFilePath.substring(localPrefixLen);
   }
 
@@ -74,7 +74,7 @@ public class IssueStorePaths {
     if (!sqFilePath.startsWith(projectBinding.sqPathPrefix())) {
       return null;
     }
-    return projectBinding.localPathPrefix() + sqFilePath.substring(0, projectBinding.sqPathPrefix().length());
+    return projectBinding.idePathPrefix() + sqFilePath.substring(0, projectBinding.sqPathPrefix().length());
   }
 
   public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue, Sonarlint.ProjectConfiguration projectConfiguration) {

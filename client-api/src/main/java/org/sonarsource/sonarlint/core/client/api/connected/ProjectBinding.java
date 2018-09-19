@@ -19,15 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+/**
+ * Describes the link between a project in the IDE and a project in SonarQube.
+ *
+ * @since 3.10
+ */
 public class ProjectBinding {
   private final String projectKey;
   private final String sqPathPrefix;
-  private final String localPathPrefix;
+  private final String idePathPrefix;
 
-  public ProjectBinding(String projectKey, String sqPathPrefix, String localPathPrefix) {
+  public ProjectBinding(String projectKey, String sqPathPrefix, String idePathPrefix) {
     this.projectKey = projectKey;
     this.sqPathPrefix = sqPathPrefix;
-    this.localPathPrefix = localPathPrefix;
+    this.idePathPrefix = idePathPrefix;
   }
 
   public String projectKey() {
@@ -38,7 +43,7 @@ public class ProjectBinding {
     return sqPathPrefix;
   }
 
-  public String localPathPrefix() {
-    return localPathPrefix;
+  public String idePathPrefix() {
+    return idePathPrefix;
   }
 }
