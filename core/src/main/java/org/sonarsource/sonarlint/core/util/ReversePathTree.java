@@ -54,7 +54,7 @@ public class ReversePathTree {
     return collectAllPrefixes(currentNode, matchLen);
   }
 
-  private Match collectAllPrefixes(Node node, int matchLen) {
+  private static Match collectAllPrefixes(Node node, int matchLen) {
     List<Path> paths = new ArrayList<>();
     if (matchLen > 0) {
       collectPrefixes(node, Paths.get(""), paths);
@@ -62,7 +62,7 @@ public class ReversePathTree {
     return new Match(paths, matchLen);
   }
 
-  private void collectPrefixes(Node node, Path currentPath, List<Path> paths) {
+  private static void collectPrefixes(Node node, Path currentPath, List<Path> paths) {
     if (node.children.isEmpty()) {
       paths.add(currentPath);
     }

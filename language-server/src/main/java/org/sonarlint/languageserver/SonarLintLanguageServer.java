@@ -346,7 +346,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     binding = new ServerProjectBinding(serverId, projectKey);
 
     // TODO
-    if (updateModuleStorage(engine, serverInfo)) {
+    if (updateProjectStorage(engine, serverInfo)) {
       ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
       serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger);
       telemetry.usedConnectedMode(serverInfo.serverUrl);
@@ -355,10 +355,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
   }
 
-  private boolean updateModuleStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
+  private boolean updateProjectStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
     ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     try {
-      // TODO
       engine.updateProject(serverConfig, binding.projectKey, null);
       return true;
     } catch (ProjectNotFoundException e) {
@@ -702,10 +701,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         analysisResults = analyze(configuration, collector);
       } catch (GlobalUpdateRequiredException e) {
         updateServerStorage(engine, serverInfo);
-        updateModuleStorage(engine, serverInfo);
+        updateProjectStorage(engine, serverInfo);
         analysisResults = analyze(configuration, collector);
       } catch (StorageException e) {
-        updateModuleStorage(engine, serverInfo);
+        updateProjectStorage(engine, serverInfo);
         analysisResults = analyze(configuration, collector);
       }
 
