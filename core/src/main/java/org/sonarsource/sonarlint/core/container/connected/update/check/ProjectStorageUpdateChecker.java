@@ -30,7 +30,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigur
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -40,7 +39,6 @@ public class ProjectStorageUpdateChecker {
   private static final Logger LOG = Loggers.get(ProjectStorageUpdateChecker.class);
 
   private final StorageReader storageReader;
-  ;
   private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final SettingsDownloader settingsDownloader;
 

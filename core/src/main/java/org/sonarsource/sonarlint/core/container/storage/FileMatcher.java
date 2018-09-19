@@ -38,7 +38,7 @@ public class FileMatcher {
   public Result match(List<Path> sqRelativePaths, List<Path> localRelativePaths) {
     Map<Path, Integer> localPrefixes = new HashMap<>();
     Map<Path, Integer> sqPrefixes = new HashMap<>();
-    BiFunction<Path, Integer, Integer> incrementer = (p, i) -> i != null ? i + 1 : 1;
+    BiFunction<Path, Integer, Integer> incrementer = (p, i) -> i != null ? (i + 1) : 1;
 
     sqRelativePaths.forEach(reversePathTree::index);
 
@@ -57,7 +57,7 @@ public class FileMatcher {
     return new Result(mostCommonPrefix(localPrefixes), mostCommonPrefix(sqPrefixes));
   }
 
-  private Path getLocalPrefix(Path localPath, ReversePathTree.Match match) {
+  private static Path getLocalPrefix(Path localPath, ReversePathTree.Match match) {
     int prefixLen = localPath.getNameCount() - match.matchLen();
     if (prefixLen > 0) {
       return localPath.subpath(0, localPath.getNameCount() - match.matchLen());
@@ -83,7 +83,7 @@ public class FileMatcher {
     }
   }
 
-  private Path mostCommonPrefix(Map<Path, Integer> prefixes) {
+  private static Path mostCommonPrefix(Map<Path, Integer> prefixes) {
     return prefixes.entrySet().stream()
       .max(Comparator.comparing(Map.Entry::getValue))
       .map(Map.Entry::getKey)
