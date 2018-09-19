@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
@@ -92,6 +93,7 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectConfigurationDownloader.class,
       QualityProfilesUpdateChecker.class,
       ProjectStorageUpdateExecutor.class,
+      ProjectFileListDownloader.class,
       ServerIssueUpdater.class,
       IssueStorePaths.class,
       PluginReferencesDownloader.class,

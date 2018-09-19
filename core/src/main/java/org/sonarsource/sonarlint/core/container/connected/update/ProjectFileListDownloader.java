@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectFileListDownloader {
-  private static final String BASE_PATH = "api/components/tree?qualifiers=FIL&";
+  private static final String BASE_PATH = "api/components/tree.protobuf?qualifiers=FIL&";
   private final SonarLintWsClient wsClient;
 
   public ProjectFileListDownloader(SonarLintWsClient wsClient) {

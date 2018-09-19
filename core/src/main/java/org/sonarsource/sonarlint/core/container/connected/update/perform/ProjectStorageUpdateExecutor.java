@@ -67,7 +67,7 @@ public class ProjectStorageUpdateExecutor {
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration);
-      updatePathPrefixes(projectKey, temp, progress);
+      updateComponents(projectKey, temp, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
@@ -87,7 +87,7 @@ public class ProjectStorageUpdateExecutor {
     return projectConfiguration;
   }
 
-  private void updatePathPrefixes(String projectKey, Path temp, ProgressWrapper progress) {
+  private void updateComponents(String projectKey, Path temp, ProgressWrapper progress) {
     List<ProjectFileListDownloader.File> sqFiles = projectFileListDownloader.get(projectKey, progress);
     List<String> sqPaths = sqFiles.stream()
       .map(ProjectFileListDownloader.File::path)

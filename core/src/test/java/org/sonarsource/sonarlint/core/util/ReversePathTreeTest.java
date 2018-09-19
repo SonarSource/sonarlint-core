@@ -25,9 +25,10 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReversePathTreeTest {
+  private ReversePathTree tree = new ReversePathTree();
+
   @Test
   public void should_return_matching_prefixes() {
-    ReversePathTree tree = new ReversePathTree();
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
@@ -40,7 +41,6 @@ public class ReversePathTreeTest {
 
   @Test
   public void should_return_empty_prefix_if_full_match() {
-    ReversePathTree tree = new ReversePathTree();
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
@@ -53,7 +53,6 @@ public class ReversePathTreeTest {
 
   @Test
   public void should_return_empty_if_no_match() {
-    ReversePathTree tree = new ReversePathTree();
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
