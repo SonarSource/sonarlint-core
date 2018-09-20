@@ -30,7 +30,9 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +50,6 @@ import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -122,6 +123,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
@@ -203,16 +205,17 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private static class UserSettings {
-    @CheckForNull final String testFilePattern;
     final Map<String, String> analyzerProperties;
     final boolean disableTelemetry;
+    final PathMatcher testMatcher;
 
     private UserSettings() {
       this(Collections.emptyMap());
     }
 
     private UserSettings(Map<String, Object> params) {
-      this.testFilePattern = (String) params.get(TEST_FILE_PATTERN);
+      String testFilePattern = (String) params.get(TEST_FILE_PATTERN);
+      testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : p -> false;
       this.analyzerProperties = getAnalyzerProperties(params);
       this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
     }
@@ -345,7 +348,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     binding = new ServerProjectBinding(serverId, projectKey);
 
-    // TODO
     if (updateProjectStorage(engine, serverInfo)) {
       ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
       serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger);
@@ -581,14 +583,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       return;
     }
 
-    Path baseDir = findBaseDir(uri);
-    String filePath = getFilePath(baseDir, uri);
-
     Map<URI, PublishDiagnosticsParams> files = new HashMap<>();
     files.put(uri, newPublishDiagnostics(uri));
 
     AnalysisWrapper analysisWrapper = getAnalysisWrapper();
-    if (analysisWrapper.isExcluded(filePath)) {
+    if (analysisWrapper.isExcludedByServerSideExclusions(uri)) {
       logger.debug("Skip analysis of excluded file: " + uri);
       return;
     }
@@ -604,6 +603,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     };
 
     try {
+      Path baseDir = findBaseDir(uri);
       AnalysisResultsWrapper analysisResults = analysisWrapper.analyze(baseDir, uri, content, issueListener, shouldFetchServerIssues);
       telemetry.analysisDoneOnSingleFile(StringUtils.substringAfterLast(uri.toString(), "."), analysisResults.analysisTime);
 
@@ -645,19 +645,19 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   interface AnalysisWrapper {
     AnalysisResultsWrapper analyze(Path baseDir, URI uri, String content, IssueListener issueListener, boolean shouldFetchServerIssues);
 
-    boolean isExcluded(String filePath);
+    boolean isExcludedByServerSideExclusions(URI fileUri);
   }
 
   class StandaloneAnalysisWrapper implements AnalysisWrapper {
     @Override
-    public boolean isExcluded(String filePath) {
+    public boolean isExcludedByServerSideExclusions(URI fileUri) {
       return false;
     }
 
     @Override
     public AnalysisResultsWrapper analyze(Path baseDir, URI uri, String content, IssueListener issueListener, boolean shouldFetchServerIssues) {
       StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
-        Collections.singletonList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
+        Collections.singletonList(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri))),
         userSettings.analyzerProperties);
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
@@ -680,14 +680,20 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
 
     @Override
-    public boolean isExcluded(String filePath) {
-      return !engine.getExcludedFiles(projectKey, Collections.singleton(filePath), s -> false).isEmpty();
+    public boolean isExcludedByServerSideExclusions(URI fileUri) {
+      Path baseDir = findBaseDir(fileUri);
+
+      return !engine.getExcludedFiles(projectKey,
+        singleton(fileUri),
+        uri -> getFileRelativePath(baseDir, uri),
+        uri -> isTest(uri))
+        .isEmpty();
     }
 
     @Override
     public AnalysisResultsWrapper analyze(Path baseDir, URI uri, String content, IssueListener issueListener, boolean shouldFetchServerIssues) {
       ConnectedAnalysisConfiguration configuration = new ConnectedAnalysisConfiguration(projectKey, baseDir, baseDir.resolve(".sonarlint"),
-        Collections.singletonList(new DefaultClientInputFile(baseDir, uri, content, userSettings.testFilePattern, languageIdPerFileURI.get(uri))),
+        Collections.singletonList(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri))),
         userSettings.analyzerProperties);
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
@@ -708,7 +714,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         analysisResults = analyze(configuration, collector);
       }
 
-      String filePath = FileUtils.toSonarQubePath(getFilePath(baseDir, uri));
+      String filePath = FileUtils.toSonarQubePath(getFileRelativePath(baseDir, uri));
       serverIssueTracker.matchAndTrack(filePath, issues, issueListener, shouldFetchServerIssues);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
@@ -719,6 +725,10 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     private AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener) {
       return engine.analyze(configuration, issueListener, logOutput, null);
     }
+  }
+
+  private boolean isTest(URI uri) {
+    return userSettings.testMatcher.matches(Paths.get(uri));
   }
 
   private class ServerIssueTrackingLogger implements org.sonarsource.sonarlint.core.tracking.Logger {
@@ -743,7 +753,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return findBaseDir(workspaceFolders, uri);
   }
 
-  private static String getFilePath(Path baseDir, URI uri) {
+  private static String getFileRelativePath(Path baseDir, URI uri) {
     return baseDir.relativize(Paths.get(uri)).toString();
   }
 

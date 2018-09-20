@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,15 +39,13 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -66,7 +64,8 @@ public class ConnectedFileExclusionsMediumTest {
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
     /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
+     * QP)
      */
     Path storage = Paths.get(ConnectedFileExclusionsMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
@@ -172,7 +171,7 @@ public class ConnectedFileExclusionsMediumTest {
   private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {
     List<String> filePaths = Arrays.asList(mainFile1.getPath(), mainFile2.getPath(), testFile1.getPath(), testFile2.getPath());
 
-    Set<String> result = sonarlint.getExcludedFiles(PROJECT_KEY, filePaths, f -> f.contains("Test"));
+    List<String> result = sonarlint.getExcludedFiles(PROJECT_KEY, filePaths, Function.identity(), f -> f.contains("Test"));
     return filePaths.size() - result.size();
   }
 

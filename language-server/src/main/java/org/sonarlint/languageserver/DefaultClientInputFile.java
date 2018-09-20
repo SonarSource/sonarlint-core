@@ -25,9 +25,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -37,17 +34,16 @@ public class DefaultClientInputFile implements ClientInputFile {
 
   private final URI fileUri;
   private final String content;
-  private final PathMatcher testMatcher;
   private final String sqLanguage;
-  private final Path baseDir;
+  private final String relativePath;
+  private final boolean isTest;
 
-  public DefaultClientInputFile(Path baseDir, URI uri, String content, @Nullable String testFilePattern, @Nullable String clientLanguageId) {
-    this.baseDir = baseDir;
+  public DefaultClientInputFile(URI uri, String relativePath, String content, boolean isTest, @Nullable String clientLanguageId) {
+    this.relativePath = relativePath;
     this.fileUri = uri;
     this.content = content;
+    this.isTest = isTest;
     this.sqLanguage = toSqLanguage(clientLanguageId);
-    testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : null;
-
   }
 
   @Override
@@ -56,8 +52,8 @@ public class DefaultClientInputFile implements ClientInputFile {
   }
 
   @Override
-  public <G> G getClientObject() {
-    return (G) fileUri;
+  public URI getClientObject() {
+    return fileUri;
   }
 
   @Override
@@ -67,12 +63,12 @@ public class DefaultClientInputFile implements ClientInputFile {
 
   @Override
   public String relativePath() {
-    return baseDir.relativize(Paths.get(fileUri)).toString();
+    return relativePath;
   }
 
   @Override
   public boolean isTest() {
-    return testMatcher != null && testMatcher.matches(Paths.get(fileUri));
+    return isTest;
   }
 
   @Override
