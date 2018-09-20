@@ -571,7 +571,7 @@ public class SonarLintLanguageServerTest {
     tester.setEngine(serverId, engine);
     tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
 
@@ -583,7 +583,7 @@ public class SonarLintLanguageServerTest {
     tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
     assertThat(tester.logs()).isEmpty();
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).update(any(), any());
     verify(engine).updateProject(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
@@ -597,7 +597,7 @@ public class SonarLintLanguageServerTest {
     tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
     assertThat(tester.logs()).isEmpty();
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).updateProject(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
@@ -608,7 +608,7 @@ public class SonarLintLanguageServerTest {
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isFalse();
     assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.ANALYSIS_FAILED);
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine, times(1)).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
   }
@@ -650,7 +650,7 @@ public class SonarLintLanguageServerTest {
       DidChangeTextDocumentParams params = new DidChangeTextDocumentParams(textDocument, contentChanges);
       ls.didChange(params);
     });
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verify(engine).getServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
@@ -663,7 +663,7 @@ public class SonarLintLanguageServerTest {
       DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(textDocument, "dummy content");
       ls.didSave(params);
     });
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verify(engine).getServerIssues(any(), any());
     verifyNoMoreInteractions(engine);
@@ -676,7 +676,7 @@ public class SonarLintLanguageServerTest {
       DidOpenTextDocumentParams params = new DidOpenTextDocumentParams(textDocumentItem);
       ls.didOpen(params);
     });
-    verify(engine).getExcludedFiles(any(), any(), any());
+    verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verify(engine).downloadServerIssues(any(), any(), any());
     verifyNoMoreInteractions(engine);

@@ -20,15 +20,17 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Collection;
-import java.util.Set;
+import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.config.internal.ConfigurationBridge;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+
+import static java.util.stream.Collectors.toList;
 
 public class StorageFileExclusions {
   private final StorageReader storageReader;
@@ -37,7 +39,7 @@ public class StorageFileExclusions {
     this.storageReader = storageReader;
   }
 
-  public Set<String> getExcludedFiles(String projectKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
+  public <G> List<G> getExcludedFiles(String projectKey, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
     ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectKey);
     MapSettings settings = new MapSettings();
@@ -46,8 +48,8 @@ public class StorageFileExclusions {
     ExclusionFilters exclusionFilters = new ExclusionFilters(new ConfigurationBridge(settings));
     exclusionFilters.prepare();
 
-    return filePaths.stream()
-      .filter(filePath -> !exclusionFilters.accept(filePath, testFilePredicate.test(filePath) ? Type.TEST : Type.MAIN))
-      .collect(Collectors.toSet());
+    return files.stream()
+      .filter(file -> !exclusionFilters.accept(filePathExtractor.apply(file), testFilePredicate.test(file) ? Type.TEST : Type.MAIN))
+      .collect(toList());
   }
 }

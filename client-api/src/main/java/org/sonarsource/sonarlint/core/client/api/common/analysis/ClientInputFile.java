@@ -60,7 +60,7 @@ public interface ClientInputFile {
   }
 
   /**
-   * Allow clients to pass their own object to ease mapping of issues.
+   * Allow clients to pass their own object to ease mapping back to IDE file.
    */
   <G> G getClientObject();
 

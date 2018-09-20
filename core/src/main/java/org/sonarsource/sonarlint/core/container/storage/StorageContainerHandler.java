@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
@@ -106,8 +106,8 @@ public class StorageContainerHandler {
     return issueStoreReader.getServerIssues(projectBinding, filePath);
   }
 
-  public Set<String> getExcludedFiles(String projectKey, Collection<String> filePaths, Predicate<String> testFilePredicate) {
-    return storageExclusions.getExcludedFiles(projectKey, filePaths, testFilePredicate);
+  public <G> List<G> getExcludedFiles(String projectKey, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
+    return storageExclusions.getExcludedFiles(projectKey, files, filePathExtractor, testFilePredicate);
   }
 
   public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
