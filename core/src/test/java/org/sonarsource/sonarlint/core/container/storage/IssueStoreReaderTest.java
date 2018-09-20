@@ -175,7 +175,7 @@ public class IssueStoreReaderTest {
   }
 
   @Test
-  public void testSingleModuleWithPrefixes() {
+  public void testSingleModuleWithBothPrefixes() {
     setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
     ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "sq", "local");
 
@@ -188,6 +188,38 @@ public class IssueStoreReaderTest {
     assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue(MODULE_KEY, "local/src/path1"));
+  }
+
+  @Test
+  public void testSingleModuleWithLocalPrefix() {
+    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "", "local");
+
+    // setup issues
+    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "src/path1")));
+
+    // test
+
+    // matches path
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
+      .usingElementComparator(simpleComparator)
+      .containsOnly(createApiIssue(MODULE_KEY, "local/src/path1"));
+  }
+
+  @Test
+  public void testSingleModuleWithSQPrefix() {
+    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "sq", "");
+
+    // setup issues
+    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "sq/src/path1")));
+
+    // test
+
+    // matches path
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
+      .usingElementComparator(simpleComparator)
+      .containsOnly(createApiIssue(MODULE_KEY, "src/path1"));
   }
 
   private Comparator<ServerIssue> simpleComparator = (o1, o2) -> {

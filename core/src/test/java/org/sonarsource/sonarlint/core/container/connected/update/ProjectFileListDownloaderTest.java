@@ -25,6 +25,7 @@ import java.util.List;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,23 +39,34 @@ public class ProjectFileListDownloaderTest {
 
   @Test
   public void should_get_files() throws IOException {
-    try(InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
+    try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
       WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
-      List<ProjectFileListDownloader.File> files = underTest.get(PROJECT_KEY, progressWrapper);
+      List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(187);
 
-      assertThat(files.get(0).path()).isEqualTo("src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
-      assertThat(files.get(0).key()).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
+      assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
+    }
+  }
+
+  @Test
+  public void should_get_files_before_v64() throws IOException {
+    try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
+      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&baseComponentKey=project1&ps=500&p=1", in);
+      ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
+      List<String> files = underTest.get(Version.create("6.2"), PROJECT_KEY, progressWrapper);
+      assertThat(files.size()).isEqualTo(187);
+
+      assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
     }
   }
 
   @Test
   public void should_get_empty_files_if_tree_is_empty() throws IOException {
-    try(InputStream in = this.getClass().getResourceAsStream("/update/empty_component_tree.pb")) {
+    try (InputStream in = this.getClass().getResourceAsStream("/update/empty_component_tree.pb")) {
       WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
-      List<ProjectFileListDownloader.File> files = underTest.get(PROJECT_KEY, progressWrapper);
+      List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(0);
     }
   }

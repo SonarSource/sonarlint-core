@@ -188,6 +188,6 @@ public interface ConnectedSonarLintEngine {
    */
   Collection<LoadedAnalyzer> getLoadedAnalyzers();
 
-  <G> List<G> getExcludedFiles(String projectKey, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate);
+  <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate);
 
 }

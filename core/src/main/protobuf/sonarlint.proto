@@ -120,7 +120,6 @@ message ProjectList {
   message Project {
     string key = 1;
     string name = 2;
-    string project_key = 3;
   }
 }
 

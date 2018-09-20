@@ -227,8 +227,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public <G> List<G> getExcludedFiles(String projectKey, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
-    return withReadLock(() -> getHandler().getExcludedFiles(projectKey, files, filePathExtractor, testFilePredicate));
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
+    return withReadLock(() -> getHandler().getExcludedFiles(projectBinding, files, filePathExtractor, testFilePredicate));
   }
 
   @Override

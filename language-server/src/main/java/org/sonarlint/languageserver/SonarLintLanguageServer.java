@@ -215,7 +215,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     private UserSettings(Map<String, Object> params) {
       String testFilePattern = (String) params.get(TEST_FILE_PATTERN);
-      testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : p -> false;
+      testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : (p -> false);
       this.analyzerProperties = getAnalyzerProperties(params);
       this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
     }
@@ -682,11 +682,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     @Override
     public boolean isExcludedByServerSideExclusions(URI fileUri) {
       Path baseDir = findBaseDir(fileUri);
-
-      return !engine.getExcludedFiles(projectKey,
+      // TODO
+      ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
+      return !engine.getExcludedFiles(projectBinding,
         singleton(fileUri),
         uri -> getFileRelativePath(baseDir, uri),
-        uri -> isTest(uri))
+        SonarLintLanguageServer.this::isTest)
         .isEmpty();
     }
 

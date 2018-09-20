@@ -50,6 +50,20 @@ public class FileMatcherTest {
   }
 
   @Test
+  public void should_return_shortest_prefix_if_there_are_ties() {
+    List<Path> localPaths = Arrays.asList(
+      Paths.get("local1/pom.xml")
+    );
+
+    List<Path> sqPaths = Arrays.asList(
+      Paths.get("sq1/pom.xml"),
+      Paths.get("sq1/module1/pom.xml")
+    );
+    FileMatcher.Result match = fileMatcher.match(sqPaths, localPaths);
+    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get("local1"));
+    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq1"));
+  }
+  @Test
   public void should_return_most_common_prefixes() {
     List<Path> localPaths = Arrays.asList(
       Paths.get("local1/src/main/java/A.java"),
