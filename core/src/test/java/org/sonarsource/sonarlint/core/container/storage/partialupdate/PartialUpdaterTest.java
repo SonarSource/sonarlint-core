@@ -53,6 +53,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class PartialUpdaterTest {
@@ -94,6 +95,14 @@ public class PartialUpdaterTest {
     updater.updateFileIssues(projectBinding, projectConfiguration, "file");
 
     verify(issueStore).save(anyListOf(Sonarlint.ServerIssue.class));
+  }
+
+  @Test
+  public void update_file_issues_for_unknown_file() {
+    when(issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
+    updater.updateFileIssues(projectBinding, projectConfiguration, "file");
+    verifyZeroInteractions(downloader);
+    verifyZeroInteractions(issueStore);
   }
 
   @Test

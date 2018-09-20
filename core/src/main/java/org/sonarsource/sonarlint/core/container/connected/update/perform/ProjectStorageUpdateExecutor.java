@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -63,11 +64,12 @@ public class ProjectStorageUpdateExecutor {
 
   public void update(String projectKey, ProgressWrapper progress) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
+    Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
 
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration);
-      updateComponents(projectKey, temp, progress);
+      updateComponents(serverVersion, projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
@@ -87,17 +89,22 @@ public class ProjectStorageUpdateExecutor {
     return projectConfiguration;
   }
 
-  private void updateComponents(String projectKey, Path temp, ProgressWrapper progress) {
-    List<ProjectFileListDownloader.File> sqFiles = projectFileListDownloader.get(projectKey, progress);
-    List<String> sqPaths = sqFiles.stream()
-      .map(ProjectFileListDownloader.File::path)
-      .collect(Collectors.toList());
+  void updateComponents(Version serverVersion, String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
+    List<String> sqFiles = projectFileListDownloader.get(serverVersion, projectKey, progress);
+    Sonarlint.ProjectComponents.Builder componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
-    Sonarlint.ProjectComponents components = Sonarlint.ProjectComponents.newBuilder()
-      .addAllComponent(sqPaths)
-      .build();
-
-    ProtobufUtil.writeToFile(components, temp.resolve(StoragePaths.COMPONENT_LIST_PB));
+    Map<String, String> modulePathByKey = projectConfiguration.getModulePathByKeyMap();
+    for (String fileKey : sqFiles) {
+      int idx = StringUtils.lastIndexOf(fileKey, ":");
+      String moduleKey = fileKey.substring(0, idx);
+      String relativePath = fileKey.substring(idx+1);
+      String prefix = modulePathByKey.getOrDefault(moduleKey, "");
+      if (!prefix.isEmpty()) {
+        prefix = prefix + "/";
+      }
+      componentsBuilder.addComponent(prefix + relativePath);
+    }
+    ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(StoragePaths.COMPONENT_LIST_PB));
   }
 
   private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration) {

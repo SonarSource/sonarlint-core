@@ -29,13 +29,13 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ProjectConfigurationDownloader {
 
-  private final ProjectHierarchyDownloader projectHierarchyDownloader;
+  private final ModuleHierarchyDownloader moduleHierarchyDownloader;
   private final ProjectQualityProfilesDownloader projectQualityProfilesDownloader;
   private final SettingsDownloader settingsDownloader;
 
-  public ProjectConfigurationDownloader(ProjectHierarchyDownloader projectHierarchyDownloader,
+  public ProjectConfigurationDownloader(ModuleHierarchyDownloader moduleHierarchyDownloader,
     ProjectQualityProfilesDownloader projectQualityProfilesDownloader, SettingsDownloader settingsDownloader) {
-    this.projectHierarchyDownloader = projectHierarchyDownloader;
+    this.moduleHierarchyDownloader = moduleHierarchyDownloader;
     this.projectQualityProfilesDownloader = projectQualityProfilesDownloader;
     this.settingsDownloader = settingsDownloader;
   }
@@ -46,13 +46,13 @@ public class ProjectConfigurationDownloader {
     progress.setProgressAndCheckCancel("Fetching project settings", 0.1f);
     settingsDownloader.fetchProjectSettings(serverVersion, projectKey, globalProps, builder);
     progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
-    fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
+    fetchHierarchy(serverVersion, projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
 
     return builder.build();
   }
 
-  private void fetchHierarchy(String projectKey, Sonarlint.ProjectConfiguration.Builder builder, ProgressWrapper progress) {
-    Map<String, String> moduleHierarchy = projectHierarchyDownloader.fetchModuleHierarchy(projectKey, progress);
+  private void fetchHierarchy(Version serverVersion, String projectKey, Sonarlint.ProjectConfiguration.Builder builder, ProgressWrapper progress) {
+    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(serverVersion, projectKey, progress);
     builder.putAllModulePathByKey(moduleHierarchy);
   }
 

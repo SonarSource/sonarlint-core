@@ -43,13 +43,13 @@ public class ProjectListDownloader {
 
   public void fetchTo(Path dest, String serverVersion, ProgressWrapper progress) {
     if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchModulesListAfter6dot3(dest, progress);
+      fetchProjectListAfter6dot3(dest, progress);
     } else {
-      fetchModulesListBefore6dot3(dest);
+      fetchProjectListBefore6dot3(dest);
     }
   }
 
-  private void fetchModulesListAfter6dot3(Path dest, ProgressWrapper progress) {
+  private void fetchProjectListAfter6dot3(Path dest, ProgressWrapper progress) {
     ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
     Builder projectBuilder = ProjectList.Project.newBuilder();
 
@@ -64,7 +64,6 @@ public class ProjectListDownloader {
       project -> {
         projectBuilder.clear();
         projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
-          .setProjectKey(project.getProject())
           .setKey(project.getKey())
           .setName(project.getName())
           .build());
@@ -75,7 +74,7 @@ public class ProjectListDownloader {
     ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
   }
 
-  private void fetchModulesListBefore6dot3(Path dest) {
+  private void fetchProjectListBefore6dot3(Path dest) {
     try (WsResponse response = wsClient.get("api/projects/index?format=json")) {
       try (Reader contentReader = response.contentReader()) {
         DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);

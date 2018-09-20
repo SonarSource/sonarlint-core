@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
@@ -168,10 +169,10 @@ public class ConnectedFileExclusionsMediumTest {
     ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getProjectConfigurationPath(PROJECT_KEY));
   }
 
-  private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) throws IOException {
+  private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) {
     List<String> filePaths = Arrays.asList(mainFile1.getPath(), mainFile2.getPath(), testFile1.getPath(), testFile2.getPath());
-
-    List<String> result = sonarlint.getExcludedFiles(PROJECT_KEY, filePaths, Function.identity(), f -> f.contains("Test"));
+    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
+    List<String> result = sonarlint.getExcludedFiles(projectBinding, filePaths, Function.identity(), f -> f.contains("Test"));
     return filePaths.size() - result.size();
   }
 

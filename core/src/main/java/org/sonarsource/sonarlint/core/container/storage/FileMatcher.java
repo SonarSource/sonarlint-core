@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
+import static java.util.Collections.reverseOrder;
+
 public class FileMatcher {
   private ReversePathTree reversePathTree;
 
@@ -84,8 +86,11 @@ public class FileMatcher {
   }
 
   private static Path mostCommonPrefix(Map<Path, Integer> prefixes) {
+    Comparator<Map.Entry<Path, Integer>> c = Comparator.comparing(Map.Entry::getValue);
+    c = c.thenComparing(x -> x.getKey().getNameCount(), reverseOrder());
+
     return prefixes.entrySet().stream()
-      .max(Comparator.comparing(Map.Entry::getValue))
+      .max(c)
       .map(Map.Entry::getKey)
       .orElse(Paths.get(""));
   }

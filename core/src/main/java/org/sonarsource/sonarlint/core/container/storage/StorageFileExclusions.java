@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
@@ -26,30 +27,44 @@ import java.util.function.Predicate;
 import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.config.internal.ConfigurationBridge;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
-import static java.util.stream.Collectors.toList;
-
 public class StorageFileExclusions {
   private final StorageReader storageReader;
+  private final IssueStorePaths issueStorePaths;
 
-  public StorageFileExclusions(StorageReader storageReader) {
+  public StorageFileExclusions(StorageReader storageReader, IssueStorePaths issueStorePaths) {
     this.storageReader = storageReader;
+    this.issueStorePaths = issueStorePaths;
   }
 
-  public <G> List<G> getExcludedFiles(String projectKey, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
-    ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectKey);
+    ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectBinding.projectKey());
     MapSettings settings = new MapSettings();
     settings.addProperties(globalProps.getProperties());
     settings.addProperties(projectConfig.getProperties());
     ExclusionFilters exclusionFilters = new ExclusionFilters(new ConfigurationBridge(settings));
     exclusionFilters.prepare();
 
-    return files.stream()
-      .filter(file -> !exclusionFilters.accept(filePathExtractor.apply(file), testFilePredicate.test(file) ? Type.TEST : Type.MAIN))
-      .collect(toList());
+    List<G> excluded = new ArrayList<>();
+
+    for (G file : files) {
+      String idePath = fileIdePathExtractor.apply(file);
+      String sqPath = issueStorePaths.localPathToSqPath(projectBinding, idePath);
+      if (sqPath == null) {
+        // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
+        sqPath = idePath;
+      }
+      Type type = testFilePredicate.test(file) ? Type.TEST : Type.MAIN;
+      if (!exclusionFilters.accept(sqPath, type)) {
+        excluded.add(file);
+      }
+    }
+    return excluded;
   }
 }

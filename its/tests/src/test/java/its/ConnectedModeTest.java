@@ -678,7 +678,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void checkForUpdate() throws Exception {
+  public void checkForUpdate() {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 

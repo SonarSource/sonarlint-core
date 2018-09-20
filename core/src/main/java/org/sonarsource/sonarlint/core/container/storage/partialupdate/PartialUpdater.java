@@ -61,6 +61,9 @@ public class PartialUpdater {
     Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, localFilePath);
+    if (fileKey == null) {
+      return;
+    }
     List<ServerIssue> issues;
     try {
       issues = downloader.apply(fileKey);

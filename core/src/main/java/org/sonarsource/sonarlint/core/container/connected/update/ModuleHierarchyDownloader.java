@@ -34,17 +34,18 @@ import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
-public class ProjectHierarchyDownloader {
+public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
   private final SonarLintWsClient wsClient;
 
-  public ProjectHierarchyDownloader(SonarLintWsClient wsClient) {
+  public ModuleHierarchyDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -55,11 +56,12 @@ public class ProjectHierarchyDownloader {
    * @param projectKey project for which the hierarchy will be returned.
    * @return Mapping of moduleKey -> relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
+  public Map<String, String> fetchModuleHierarchy(Version serverVersion, String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&baseComponentKey=" +
-        StringUtils.urlEncode(projectKey),
+    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&" +
+        getComponentKeyParam(serverVersion)
+        + "=" + StringUtils.urlEncode(projectKey),
       WsComponents.TreeWsResponse::parseFrom,
       WsComponents.TreeWsResponse::getPaging,
       WsComponents.TreeWsResponse::getComponentsList,
@@ -82,7 +84,13 @@ public class ProjectHierarchyDownloader {
     modules.forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
 
     return modulesWithPath;
+  }
 
+  private static String getComponentKeyParam(Version serverVersion) {
+    if (serverVersion.compareTo(Version.create("6.4")) > 0) {
+      return "component";
+    }
+    return "baseComponentKey";
   }
 
   private static String findPathFromRoot(Component component, Map<Component, Component> ancestors) {

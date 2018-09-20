@@ -23,19 +23,12 @@ import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 
 public class DefaultRemoteProject implements RemoteProject {
-  private final String projectKey;
   private final String key;
   private final String name;
 
   public DefaultRemoteProject(ProjectList.Project project) {
-    this.projectKey = project.getProjectKey();
     this.key = project.getKey();
     this.name = project.getName();
-  }
-
-  @Override
-  public String getProjectKey() {
-    return projectKey;
   }
 
   @Override

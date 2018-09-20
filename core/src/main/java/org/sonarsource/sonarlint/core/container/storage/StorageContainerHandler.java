@@ -106,8 +106,8 @@ public class StorageContainerHandler {
     return issueStoreReader.getServerIssues(projectBinding, filePath);
   }
 
-  public <G> List<G> getExcludedFiles(String projectKey, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
-    return storageExclusions.getExcludedFiles(projectKey, files, filePathExtractor, testFilePredicate);
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
+    return storageExclusions.getExcludedFiles(projectBinding, files, filePathExtractor, testFilePredicate);
   }
 
   public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {

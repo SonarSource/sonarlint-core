@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.Objects;
+
 /**
  * Describes the link between a project in the IDE and a project in SonarQube.
  *
@@ -45,5 +47,24 @@ public class ProjectBinding {
 
   public String idePathPrefix() {
     return idePathPrefix;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ProjectBinding that = (ProjectBinding) o;
+    return Objects.equals(projectKey, that.projectKey) &&
+      Objects.equals(sqPathPrefix, that.sqPathPrefix) &&
+      Objects.equals(idePathPrefix, that.idePathPrefix);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(projectKey, sqPathPrefix, idePathPrefix);
   }
 }

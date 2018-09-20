@@ -52,7 +52,7 @@ public class IssueStorePaths {
 
   @CheckForNull
   public String localPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, ProjectBinding projectBinding, String localFilePath) {
-    String sqFilePath = sqPathToLocalPath(projectBinding, localFilePath);
+    String sqFilePath = localPathToSqPath(projectBinding, localFilePath);
 
     if (sqFilePath == null) {
       return null;
@@ -66,15 +66,14 @@ public class IssueStorePaths {
       return null;
     }
     int localPrefixLen = projectBinding.idePathPrefix().length();
-    return projectBinding.sqPathPrefix() + localFilePath.substring(localPrefixLen);
-  }
-
-  @CheckForNull
-  public String sqPathToLocalPath(ProjectBinding projectBinding, String sqFilePath) {
-    if (!sqFilePath.startsWith(projectBinding.sqPathPrefix())) {
-      return null;
+    if (localPrefixLen > 0) {
+      localPrefixLen++;
     }
-    return projectBinding.idePathPrefix() + sqFilePath.substring(0, projectBinding.sqPathPrefix().length());
+    String sqPathPrefix = projectBinding.sqPathPrefix();
+    if (!sqPathPrefix.isEmpty()) {
+      sqPathPrefix = sqPathPrefix + "/";
+    }
+    return sqPathPrefix + localFilePath.substring(localPrefixLen);
   }
 
   public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue, Sonarlint.ProjectConfiguration projectConfiguration) {
@@ -104,11 +103,10 @@ public class IssueStorePaths {
     Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
 
     // normally this should not be null, but the ModuleConfiguration could be out dated
-    String modulePath = modulePaths.get(fileModuleKey);
-    if (modulePath == null) {
-      modulePath = "";
+    String modulePath = modulePaths.getOrDefault(fileModuleKey, "");
+    if (!modulePath.isEmpty()) {
+      modulePath = modulePath + "/";
     }
-
     return modulePath + filePath;
   }
 

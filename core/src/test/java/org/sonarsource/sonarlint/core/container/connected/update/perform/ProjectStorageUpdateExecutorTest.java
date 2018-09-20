@@ -23,8 +23,10 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.junit.Before;
@@ -43,14 +45,16 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
@@ -91,7 +95,7 @@ public class ProjectStorageUpdateExecutorTest {
   private StoragePaths storagePaths = mock(StoragePaths.class);
   private StorageReader storageReader = mock(StorageReader.class);
   private TempFolder tempFolder = mock(TempFolder.class);
-  private ProjectHierarchyDownloader moduleHierarchy = mock(ProjectHierarchyDownloader.class);
+  private ModuleHierarchyDownloader moduleHierarchy = mock(ModuleHierarchyDownloader.class);
   private IssueStore issueStore = new InMemoryIssueStore();
   private IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
   private ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
@@ -127,7 +131,8 @@ public class ProjectStorageUpdateExecutorTest {
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
-    when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class))).thenReturn(modulesPath);
+    when(moduleHierarchy.fetchModuleHierarchy(any(Version.class), eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class)))
+      .thenReturn(modulesPath);
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
@@ -235,6 +240,31 @@ public class ProjectStorageUpdateExecutorTest {
     // assertThat(issueStore.load("TODO")).containsOnly(fileIssue1, fileIssue2);
     // assertThat(issueStore.load("TODO")).containsOnly(anotherFileIssue);
     verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class));
+  }
+
+  @Test
+  public void test_update_components() {
+    Path temp = tempFolder.newDir().toPath();
+    projectUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, tempFolder, projectConfigurationDownloader,
+      projectFileListDownloader, serverIssueUpdater);
+    ProjectConfiguration.Builder projectConfigurationBuilder = ProjectConfiguration.newBuilder();
+    projectConfigurationBuilder.getMutableModulePathByKey().put("rootModule", "");
+    projectConfigurationBuilder.getMutableModulePathByKey().put("moduleA", "A");
+    projectConfigurationBuilder.getMutableModulePathByKey().put("moduleB", "B");
+
+    List<String> fileList = new ArrayList<>();
+    fileList.add("rootModule:pom.xml");
+    fileList.add("unknownModule:unknownFile");
+    fileList.add("moduleA:a.java");
+    fileList.add("moduleB:b.java");
+
+    when(projectFileListDownloader.get(any(Version.class), eq("rootModule"), any(ProgressWrapper.class))).thenReturn(fileList);
+    projectUpdate.updateComponents(Version.create("7.0"), "rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressWrapper.class));
+
+    Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(StoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    assertThat(components.getComponentList()).containsOnly(
+      "pom.xml", "unknownFile", "A/a.java", "B/b.java"
+    );
   }
 
   private String getQualityProfileUrl() {
