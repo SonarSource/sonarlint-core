@@ -121,6 +121,7 @@ public class IssueStorePathsTest {
       .setResolution("resolution")
       .setType("BUG")
       .setStatus("OPEN")
+      .setRuleRepository("repo")
       .setCreationDate(1000L)
       .build();
 
@@ -134,6 +135,7 @@ public class IssueStorePathsTest {
     assertThat(serverIssue.getPath()).isEqualTo("project/A/path");
     assertThat(serverIssue.getType()).isEqualTo("BUG");
     assertThat(serverIssue.getAssigneeLogin()).isEqualTo("login");
+    assertThat(serverIssue.getModuleKey()).isEqualTo("moduleA");
     assertThat(serverIssue.getChecksum()).isEqualTo("checksum");
     assertThat(serverIssue.getCreationDate()).isEqualTo(1000L);
     assertThat(serverIssue.getKey()).isEqualTo("key");
@@ -141,6 +143,7 @@ public class IssueStorePathsTest {
     assertThat(serverIssue.getResolution()).isEqualTo("resolution");
     assertThat(serverIssue.getStatus()).isEqualTo("OPEN");
     assertThat(serverIssue.getRuleKey()).isEqualTo("ruleKey");
+    assertThat(serverIssue.getRuleRepository()).isEqualTo("repo");
     assertThat(serverIssue.getSeverity()).isEqualTo("BLOCKER");
   }
 }

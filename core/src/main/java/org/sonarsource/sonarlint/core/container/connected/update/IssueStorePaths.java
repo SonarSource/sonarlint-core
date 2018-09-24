@@ -82,21 +82,23 @@ public class IssueStorePaths {
     Sonarlint.ServerIssue.Builder builder = Sonarlint.ServerIssue.newBuilder()
       .setAssigneeLogin(issue.getAssigneeLogin())
       .setChecksum(issue.getChecksum())
+      .setCreationDate(issue.getCreationDate())
+      .setKey(issue.getKey())
       .setLine(issue.getLine())
-      .setPath(sqPath)
-      .setRuleKey(issue.getRuleKey())
       .setManualSeverity(issue.getManualSeverity())
+      .setModuleKey(issue.getModuleKey())
       .setMsg(issue.getMsg())
-      .setStatus(issue.getStatus())
-      .setSeverity(issue.getSeverity().name());
+      .setPath(sqPath)
+      .setResolution(issue.getResolution())
+      .setRuleKey(issue.getRuleKey())
+      .setRuleRepository(issue.getRuleRepository())
+      .setSeverity(issue.getSeverity().name())
+      .setStatus(issue.getStatus());
 
     if (issue.hasType()) {
       // type was added recently
       builder.setType(issue.getType());
     }
-    builder.setCreationDate(issue.getCreationDate())
-      .setResolution(issue.getResolution())
-      .setKey(issue.getKey());
 
     return builder.build();
   }
