@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ProjectFileListDownloaderTest {
   private SonarLintWsClient wsClient = WsClientTestUtils.createMock();
@@ -41,6 +42,19 @@ public class ProjectFileListDownloaderTest {
   public void should_get_files() throws IOException {
     try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
       WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&ps=500&p=1", in);
+      ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
+      List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
+      assertThat(files.size()).isEqualTo(187);
+
+      assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
+    }
+  }
+
+  @Test
+  public void should_get_files_with_organization() throws IOException {
+    try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
+      when(wsClient.getOrganizationKey()).thenReturn("myorg");
+      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&organization=myorg&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
       List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(187);

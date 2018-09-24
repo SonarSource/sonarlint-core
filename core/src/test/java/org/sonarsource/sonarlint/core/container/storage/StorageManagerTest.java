@@ -83,11 +83,11 @@ public class StorageManagerTest {
       .setServerId("server")
       .build());
 
-    assertThat(manager.getServerIssuesPath("module")).isEqualTo(sonarUserHome
+    assertThat(manager.getServerIssuesPath("project")).isEqualTo(sonarUserHome
       .resolve("storage")
       .resolve("server")
       .resolve("projects")
-      .resolve("module")
+      .resolve("project")
       .resolve("server_issues"));
 
     assertThat(manager.getProjectListPath()).isEqualTo(sonarUserHome
@@ -95,6 +95,13 @@ public class StorageManagerTest {
       .resolve("server")
       .resolve("global")
       .resolve("project_list.pb"));
+
+    assertThat(manager.getComponentListPath("project")).isEqualTo(sonarUserHome
+      .resolve("storage")
+      .resolve("server")
+      .resolve("projects")
+      .resolve("project")
+      .resolve("component_list.pb"));
   }
 
   @Test

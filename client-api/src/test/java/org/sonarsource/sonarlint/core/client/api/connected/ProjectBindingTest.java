@@ -31,4 +31,23 @@ public class ProjectBindingTest {
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("sqPrefix");
     assertThat(projectBinding.idePathPrefix()).isEqualTo("localPrefix");
   }
+
+  @Test
+  public void equals_and_hashCode_should_use_all_fields() {
+    ProjectBinding projectBinding1 = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    ProjectBinding projectBinding2 = new ProjectBinding("key1", "sqPrefix", "localPrefix");
+    ProjectBinding projectBinding3 = new ProjectBinding("key", "sqPrefix1", "localPrefix");
+    ProjectBinding projectBinding4 = new ProjectBinding("key", "sqPrefix", "localPrefix1");
+    ProjectBinding projectBinding5 = new ProjectBinding("key", "sqPrefix", "localPrefix");
+
+    assertThat(projectBinding1.equals(projectBinding2)).isFalse();
+    assertThat(projectBinding1.equals(projectBinding3)).isFalse();
+    assertThat(projectBinding1.equals(projectBinding4)).isFalse();
+    assertThat(projectBinding1.equals(projectBinding5)).isTrue();
+
+    assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding2.hashCode());
+    assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding3.hashCode());
+    assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding4.hashCode());
+    assertThat(projectBinding1.hashCode()).isEqualTo(projectBinding5.hashCode());
+  }
 }

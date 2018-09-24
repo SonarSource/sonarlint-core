@@ -46,14 +46,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class IssueStoreReaderTest {
-  private static final String MODULE_KEY = "root";
+  private static final String PROJECT_KEY = "root";
 
   private IssueStoreReader issueStoreReader;
   private IssueStore issueStore = new InMemoryIssueStore();
   private StoragePaths storagePaths = mock(StoragePaths.class);
   private StorageReader storageReader = mock(StorageReader.class);
   private IssueStorePaths issueStorePaths = new IssueStorePaths();
-  private ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "", "");
+  private ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
@@ -61,7 +61,7 @@ public class IssueStoreReaderTest {
   public void setUp() {
     IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
     Path storagePath = mock(Path.class);
-    when(storagePaths.getServerIssuesPath(MODULE_KEY)).thenReturn(storagePath);
+    when(storagePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
 
     issueStoreReader = new IssueStoreReader(issueStoreFactory, issueStorePaths, storagePaths, storageReader);
@@ -71,36 +71,36 @@ public class IssueStoreReaderTest {
     Builder moduleConfigBuilder = ProjectConfiguration.newBuilder();
     moduleConfigBuilder.getMutableModulePathByKey().putAll(modulePaths);
 
-    when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(moduleConfigBuilder.build());
+    when(storageReader.readProjectConfig(PROJECT_KEY)).thenReturn(moduleConfigBuilder.build());
   }
 
   @Test
   public void testMultiModule() {
     // setup module hierarchy
     Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put(MODULE_KEY, "");
+    modulePaths.put(PROJECT_KEY, "");
     modulePaths.put("root:module1", "module1/src");
     modulePaths.put("root:module2", "module2");
     setModulePaths(modulePaths);
 
     // setup issues
     issueStore.save(Arrays.asList(
-      createServerIssue(MODULE_KEY, "module1/src/path1"),
-      createServerIssue(MODULE_KEY, "module1/src/path2"),
-      createServerIssue(MODULE_KEY, "module2/path1"),
-      createServerIssue(MODULE_KEY, "module2/path2")));
+      createServerIssue(PROJECT_KEY, "module1/src/path1"),
+      createServerIssue(PROJECT_KEY, "module1/src/path2"),
+      createServerIssue(PROJECT_KEY, "module2/path1"),
+      createServerIssue(PROJECT_KEY, "module2/path2")));
 
     // test
 
     // matches module1 path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "module1/src/path1"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "module1/src/path1"));
 
     // matches module2
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module2/path2"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "module2/path2"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "module2/path2"));
 
     // no file found
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path3"))
@@ -118,27 +118,27 @@ public class IssueStoreReaderTest {
   public void testMultiModule2() {
     // setup module hierarchy
     Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put(MODULE_KEY, "");
+    modulePaths.put(PROJECT_KEY, "");
     modulePaths.put("root:module1", "module1");
     modulePaths.put("root:module12", "module12");
     setModulePaths(modulePaths);
 
     // setup issues
     issueStore.save(Arrays.asList(
-      createServerIssue(MODULE_KEY, "module12/path1"),
-      createServerIssue(MODULE_KEY, "module12/path12")));
+      createServerIssue(PROJECT_KEY, "module12/path1"),
+      createServerIssue(PROJECT_KEY, "module12/path12")));
 
     // test
 
     // matches module12 path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module12/path12"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "module12/path12"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "module12/path12"));
   }
 
   @Test
   public void testDontSetTypeIfDoesntExist() {
-    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
 
     Sonarlint.ServerIssue serverIssue = Sonarlint.ServerIssue.newBuilder()
       .setPath("path")
@@ -152,17 +152,17 @@ public class IssueStoreReaderTest {
 
   @Test
   public void testSingleModule() {
-    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "src/path1"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "src/path1"));
 
     // no file found
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path3"))
@@ -175,51 +175,60 @@ public class IssueStoreReaderTest {
   }
 
   @Test
+  public void return_empty_list_if_local_path_is_invalid() {
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
+    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "src/path1")));
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
+      .isEmpty();
+  }
+
+  @Test
   public void testSingleModuleWithBothPrefixes() {
-    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "sq", "local");
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "sq/src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "sq/src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "local/src/path1"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "local/src/path1"));
   }
 
   @Test
   public void testSingleModuleWithLocalPrefix() {
-    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "", "local");
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "local/src/path1"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "local/src/path1"));
   }
 
   @Test
   public void testSingleModuleWithSQPrefix() {
-    setModulePaths(Collections.singletonMap(MODULE_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(MODULE_KEY, "sq", "");
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
+    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(MODULE_KEY, "sq/src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "sq/src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(MODULE_KEY, "src/path1"));
+      .containsOnly(createApiIssue(PROJECT_KEY, "src/path1"));
   }
 
   private Comparator<ServerIssue> simpleComparator = (o1, o2) -> {

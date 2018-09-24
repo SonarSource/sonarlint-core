@@ -84,8 +84,10 @@ public class IssueStorePaths {
       .setChecksum(issue.getChecksum())
       .setLine(issue.getLine())
       .setPath(sqPath)
+      .setRuleKey(issue.getRuleKey())
       .setManualSeverity(issue.getManualSeverity())
       .setMsg(issue.getMsg())
+      .setStatus(issue.getStatus())
       .setSeverity(issue.getSeverity().name());
 
     if (issue.hasType()) {
