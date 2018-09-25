@@ -52,16 +52,17 @@ public class FileMatcherTest {
   @Test
   public void should_return_shortest_prefix_if_there_are_ties() {
     List<Path> localPaths = Arrays.asList(
-      Paths.get("local1/pom.xml")
+      Paths.get("pom.xml")
     );
 
     List<Path> sqPaths = Arrays.asList(
-      Paths.get("sq1/pom.xml"),
+      Paths.get("sq1/module2/pom.xml"),
+      Paths.get("pom.xml"),
       Paths.get("sq1/module1/pom.xml")
     );
     FileMatcher.Result match = fileMatcher.match(sqPaths, localPaths);
-    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get("local1"));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq1"));
+    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
   }
   @Test
   public void should_return_most_common_prefixes() {
