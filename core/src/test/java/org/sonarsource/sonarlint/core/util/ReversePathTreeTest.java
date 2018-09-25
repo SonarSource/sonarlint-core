@@ -63,4 +63,15 @@ public class ReversePathTreeTest {
     assertThat(match.matchPrefixes()).isEmpty();
   }
 
+  @Test
+  public void should_return_matches_that_are_part_of_other_matches() {
+    tree.index(Paths.get("project1/A/pom.xml"));
+    tree.index(Paths.get("project1/pom.xml"));
+    tree.index(Paths.get("pom.xml"));
+    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("pom.xml"));
+    assertThat(match.matchLen()).isEqualTo(1);
+    assertThat(match.matchPrefixes()).containsOnly(Paths.get(""), Paths.get("project1"), Paths.get("project1/A"));
+
+  }
+
 }

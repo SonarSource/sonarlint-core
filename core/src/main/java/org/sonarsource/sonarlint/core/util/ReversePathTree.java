@@ -35,6 +35,7 @@ public class ReversePathTree {
     for (int i = path.getNameCount() - 1; i >= 0; i--) {
       currentNode = currentNode.children.computeIfAbsent(path.getName(i).toString(), e -> new Node());
     }
+    currentNode.terminal = true;
   }
 
   public Match findLongestSuffixMatches(Path path) {
@@ -63,7 +64,7 @@ public class ReversePathTree {
   }
 
   private static void collectPrefixes(Node node, Path currentPath, List<Path> paths) {
-    if (node.children.isEmpty()) {
+    if (node.children.isEmpty() || node.terminal) {
       paths.add(currentPath);
     }
 
@@ -74,6 +75,7 @@ public class ReversePathTree {
   }
 
   private static class Node {
+    boolean terminal = false;
     Map<String, Node> children = new LinkedHashMap<>();
   }
 
