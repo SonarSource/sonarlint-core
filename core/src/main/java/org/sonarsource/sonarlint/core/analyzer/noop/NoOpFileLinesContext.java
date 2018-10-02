@@ -28,17 +28,7 @@ public class NoOpFileLinesContext implements FileLinesContext {
   }
 
   @Override
-  public Integer getIntValue(String metricKey, int line) {
-    return null;
-  }
-
-  @Override
   public void setStringValue(String metricKey, int line, String value) {
-  }
-
-  @Override
-  public String getStringValue(String metricKey, int line) {
-    return null;
   }
 
   @Override

@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 import org.junit.Test;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.resources.Project;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +33,7 @@ public class DefaultFilterableIssueTest {
   public void delegate_textRange_to_rawIssue() {
     TextRange textRange = mock(TextRange.class);
     DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, null, null, null, textRange, null, null);
-    FilterableIssue underTest = new DefaultFilterableIssue(mock(Project.class), rawIssue, mock(InputComponent.class));
+    FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
     assertThat(underTest.textRange()).isSameAs(textRange);
   }
 }

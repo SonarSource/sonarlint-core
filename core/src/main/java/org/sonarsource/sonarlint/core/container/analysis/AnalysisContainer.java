@@ -24,19 +24,14 @@ import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.analyzer.issue.IssuableFactory;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpFileLinesContextFactory;
-import org.sonarsource.sonarlint.core.analyzer.noop.NoOpHighlightableBuilder;
-import org.sonarsource.sonarlint.core.analyzer.noop.NoOpSymbolizableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestPlanBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorStorage;
-import org.sonarsource.sonarlint.core.analyzer.sensor.LtsApiSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.PhaseExecutor;
-import org.sonarsource.sonarlint.core.analyzer.sensor.ScannerExtensionDictionnary;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
@@ -73,7 +68,6 @@ public class AnalysisContainer extends ComponentContainer {
   private void addCoreComponents() {
     add(
       progress,
-      new ProjectProvider(),
       new SonarLintInputModule(),
       NoOpFileLinesContextFactory.class,
 
@@ -114,21 +108,16 @@ public class AnalysisContainer extends ComponentContainer {
 
       DefaultSensorContext.class,
       DefaultSensorStorage.class,
-      LtsApiSensorContext.class,
-      ScannerExtensionDictionnary.class,
       IssueFilters.class,
 
       // rules
       CheckFactory.class,
 
       // issues
-      IssuableFactory.class,
       org.sonar.api.issue.NoSonarFilter.class,
 
       // Perspectives
-      BatchPerspectives.class,
-      NoOpHighlightableBuilder.class,
-      NoOpSymbolizableBuilder.class);
+      BatchPerspectives.class);
   }
 
   private void addPluginExtensions() {

@@ -120,7 +120,7 @@ public class ExtensionInstaller {
   }
 
   private static boolean isNotSensor(Object extension) {
-    return !ExtensionUtils.isType(extension, Sensor.class) && !ExtensionUtils.isType(extension, org.sonar.api.batch.Sensor.class);
+    return !ExtensionUtils.isType(extension, Sensor.class);
   }
 
   private static boolean blacklisted(Object extension) {

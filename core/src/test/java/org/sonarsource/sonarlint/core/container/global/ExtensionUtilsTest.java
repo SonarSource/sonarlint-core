@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.global;
 
 import org.junit.Test;
 import org.sonar.api.BatchComponent;
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.ce.ComputeEngineSide;
@@ -34,12 +33,6 @@ public class ExtensionUtilsTest {
 
   @Test
   public void shouldBeBatchInstantiationStrategy() {
-    assertThat(ExtensionUtils.isInstantiationStrategy(BatchService.class, InstantiationStrategy.PER_BATCH)).isTrue();
-    assertThat(ExtensionUtils.isInstantiationStrategy(new BatchService(), InstantiationStrategy.PER_BATCH)).isTrue();
-    assertThat(ExtensionUtils.isInstantiationStrategy(ProjectService.class, InstantiationStrategy.PER_BATCH)).isFalse();
-    assertThat(ExtensionUtils.isInstantiationStrategy(new ProjectService(), InstantiationStrategy.PER_BATCH)).isFalse();
-    assertThat(ExtensionUtils.isInstantiationStrategy(DefaultService.class, InstantiationStrategy.PER_BATCH)).isFalse();
-    assertThat(ExtensionUtils.isInstantiationStrategy(new DefaultService(), InstantiationStrategy.PER_BATCH)).isFalse();
     assertThat(ExtensionUtils.isInstantiationStrategy(DefaultScannerService.class, InstantiationStrategy.PER_BATCH)).isFalse();
     assertThat(ExtensionUtils.isInstantiationStrategy(new DefaultScannerService(), InstantiationStrategy.PER_BATCH)).isFalse();
 
@@ -47,12 +40,6 @@ public class ExtensionUtilsTest {
 
   @Test
   public void shouldBeProjectInstantiationStrategy() {
-    assertThat(ExtensionUtils.isInstantiationStrategy(BatchService.class, InstantiationStrategy.PER_PROJECT)).isFalse();
-    assertThat(ExtensionUtils.isInstantiationStrategy(new BatchService(), InstantiationStrategy.PER_PROJECT)).isFalse();
-    assertThat(ExtensionUtils.isInstantiationStrategy(ProjectService.class, InstantiationStrategy.PER_PROJECT)).isTrue();
-    assertThat(ExtensionUtils.isInstantiationStrategy(new ProjectService(), InstantiationStrategy.PER_PROJECT)).isTrue();
-    assertThat(ExtensionUtils.isInstantiationStrategy(DefaultService.class, InstantiationStrategy.PER_PROJECT)).isTrue();
-    assertThat(ExtensionUtils.isInstantiationStrategy(new DefaultService(), InstantiationStrategy.PER_PROJECT)).isTrue();
     assertThat(ExtensionUtils.isInstantiationStrategy(DefaultScannerService.class, InstantiationStrategy.PER_PROJECT)).isTrue();
     assertThat(ExtensionUtils.isInstantiationStrategy(new DefaultScannerService(), InstantiationStrategy.PER_PROJECT)).isTrue();
 
@@ -60,9 +47,7 @@ public class ExtensionUtilsTest {
 
   @Test
   public void testIsSonarLintSide() {
-    assertThat(ExtensionUtils.isSonarLintSide(BatchService.class)).isFalse();
     assertThat(ExtensionUtils.isSonarLintSide(ScannerService.class)).isFalse();
-    assertThat(ExtensionUtils.isSonarLintSide(new BatchService())).isFalse();
     assertThat(ExtensionUtils.isSonarLintSide(DeprecatedBatchService.class)).isFalse();
 
     assertThat(ExtensionUtils.isSonarLintSide(ServerService.class)).isFalse();
@@ -72,12 +57,6 @@ public class ExtensionUtilsTest {
     assertThat(ExtensionUtils.isSonarLintSide(new DefaultSonarLintService())).isTrue();
   }
 
-  @BatchSide
-  @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
-  public static class BatchService {
-
-  }
-
   @ScannerSide
   @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
   public static class ScannerService {
@@ -85,17 +64,6 @@ public class ExtensionUtilsTest {
   }
 
   public static class DeprecatedBatchService implements BatchComponent {
-
-  }
-
-  @BatchSide
-  @InstantiationStrategy(InstantiationStrategy.PER_PROJECT)
-  public static class ProjectService {
-
-  }
-
-  @BatchSide
-  public static class DefaultService {
 
   }
 
