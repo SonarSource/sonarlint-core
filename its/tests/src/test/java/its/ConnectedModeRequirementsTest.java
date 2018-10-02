@@ -22,8 +22,6 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
-import its.tools.ItUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,16 +55,9 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   private static Orchestrator buildOrchestrator() {
     OrchestratorBuilder builder = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION);
 
-    after70 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
-    if (after70) {
-      builder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
-    } else {
-      builder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.0"))
-        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.9.0.1664"));
-    }
+    builder
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
+      .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
 
     return builder.build();
   }
@@ -78,7 +69,6 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public ExpectedException exception = ExpectedException.none();
 
   private static Path sonarUserHome;
-  private static boolean after70;
 
   private ConnectedSonarLintEngine engine;
   private List<String> logs = new ArrayList<>();
@@ -139,11 +129,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.stop(false);
 
     engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
-    if (after70) {
-      assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
-    } else {
-      assertThat(logs).contains("Code analyzer 'Java' is excluded in this version of SonarLint. Skip loading it.");
-    }
+    assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
   }
 

@@ -129,10 +129,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
           .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
       } else {
         orchestratorBuilder
-          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"))
-          .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.8.0.1496"))
-          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.11.0.2485"))
-          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "3.3.0.5702"));
+          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "5.1.0.13090"))
+          .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.1.2080"))
+          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.12.0.2871"))
+          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "4.0.0.5862"));
       }
 
       orchestratorBuilder
