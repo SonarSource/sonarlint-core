@@ -35,10 +35,9 @@
   <properties>
     <!-- Support Java 10 -->
     <version.surefire.plugin>2.22.0</version.surefire.plugin>
-    
+
     <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
     <sonarqube.version>7.2</sonarqube.version>
-    
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
     <logback.version>1.2.3</logback.version>
@@ -50,6 +49,7 @@
     <okhttp.version>3.11.0</okhttp.version>
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:sonarlint-daemon:zip:windows,${project.groupId}:sonarlint-language-server:jar</artifactsToPublish>
+    <jarsigner.skip>true</jarsigner.skip>
   </properties>
 
   <dependencyManagement>
@@ -73,6 +73,11 @@
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
         <version>2.6</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>3.0.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -102,36 +107,24 @@
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jarsigner-plugin</artifactId>
+          <version>1.4</version>
+          <configuration>
+            <alias>sonarsource-codesign-2017-2019</alias>
+            <keystore>${sonarsource.keystore.path}</keystore>
+            <storepass>${sonarsource.keystore.password}</storepass>
+            <tsa>http://sha256timestamp.ws.symantec.com/sha256/timestamp</tsa>
+            <!-- Force resign of shaded dependencies -->
+            <removeExistingSignatures>true</removeExistingSignatures>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
 
   <profiles>
-    <profile>
-      <id>sign</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jarsigner-plugin</artifactId>
-            <version>1.4</version>
-            <executions>
-              <execution>
-                <id>sign</id>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <alias>sonarsource-codesign-2017-2019</alias>
-              <keystore>${sonarsource.keystore.path}</keystore>
-              <storepass>${sonarsource.keystore.password}</storepass>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <profile>
       <id>its</id>
       <modules>

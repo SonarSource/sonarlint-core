@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
@@ -14,7 +15,6 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <version>3.0.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -210,7 +210,7 @@
       </extension>
     </extensions>
     <plugins>
-    
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -238,7 +238,7 @@
           <stripVersion>true</stripVersion>
         </configuration>
       </plugin>
-  
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -256,6 +256,20 @@
                   <exclude>${project.groupId}:sonarlint-client-api</exclude>
                 </excludes>
               </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern></pattern>
+                  <shadedPattern>hidden.</shadedPattern>
+                  <includes>
+                    <include>org.apache.**</include>
+                    <include>com.google.**</include>
+                    <include>org.picocontainer.**</include>
+                    <include>okhttp3.**</include>
+                    <include>okio.**</include>
+                    <include>org.sonarqube.ws.**</include>
+                  </includes>
+                </relocation>
+              </relocations>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -283,7 +297,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -307,16 +321,16 @@
               !*
             </Import-Package>
             <Export-Package>
-                org.sonarsource.sonarlint.core,
-                com.google.protobuf,
-                org.sonarsource.sonarlint.core.telemetry,
-                org.sonarsource.sonarlint.core.notifications,
+              org.sonarsource.sonarlint.core,
+              com.google.protobuf,
+              org.sonarsource.sonarlint.core.telemetry,
+              org.sonarsource.sonarlint.core.notifications,
             </Export-Package>
             <Include-Resource>
-                 {maven-resources},
-                 ${project.build.outputDirectory}/sonarlint-slf4j-sonar-log.jar
+              {maven-resources},
+              ${project.build.outputDirectory}/sonarlint-slf4j-sonar-log.jar
             </Include-Resource>
-            <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version-->
+            <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version -->
             <Require-Bundle>org.sonarsource.sonarlint.core.sonarlint-client-api;bundle-version="${parsedVersion.osgiVersion}"</Require-Bundle>
             <_failok>true</_failok>
             <_nouses>true</_nouses>
@@ -380,6 +394,25 @@
           </execution>
         </executions>
       </plugin>
+      <!-- SLE-223 Sign after shading -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jarsigner-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>sign</id>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -390,7 +423,7 @@
         <property>
           <name>commercial</name>
         </property>
-      </activation>    
+      </activation>
       <build>
         <plugins>
           <plugin>

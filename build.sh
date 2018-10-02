@@ -54,7 +54,8 @@ if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; 
   
   mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
       -Dcommercial \
-      -Pcoverage-per-test,deploy-sonarsource,release,sign \
+      -Djarsigner.skip=false \
+      -Pcoverage-per-test,deploy-sonarsource,release \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
       -Dmaven.test.redirectTestOutputToFile=false \
@@ -79,16 +80,18 @@ elif [[ "${TRAVIS_BRANCH}" == "branch-"* ]] && [ "$TRAVIS_PULL_REQUEST" == "fals
     # Do not deploy a SNAPSHOT version but the release version related to this build
     set_maven_build_version $TRAVIS_BUILD_NUMBER
     mvn deploy \
+      -Djarsigner.skip=false \
       -Dcommercial \
-      -Pdeploy-sonarsource,release,sign \
+      -Pdeploy-sonarsource,release \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
       -B -e -V $*
   else
     echo "======= Found RELEASE version ======="
     mvn deploy \
+      -Djarsigner.skip=false \
       -Dcommercial \
-      -Pdeploy-sonarsource,release,sign \
+      -Pdeploy-sonarsource,release \
       -Dsonarsource.keystore.path=$SONARSOURCE_KEYSTORE_PATH \
       -Dsonarsource.keystore.password=$SONARSOURCE_KEYSTORE_PASS \
       -B -e -V $*
