@@ -23,11 +23,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import javax.annotation.CheckForNull;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class StorageReader {
+
+  private static final Logger LOG = Loggers.get(StorageReader.class);
+
   private final StoragePaths storagePaths;
   private final GlobalStorageStatus storageStatus;
 
@@ -68,7 +73,13 @@ public class StorageReader {
   }
 
   public Sonarlint.ActiveRules readActiveRules(String qProfileKey) {
-    return ProtobufUtil.readFile(storagePaths.getActiveRulesPath(qProfileKey), Sonarlint.ActiveRules.parser());
+    Path activeRulesPath = storagePaths.getActiveRulesPath(qProfileKey);
+    if (Files.exists(activeRulesPath)) {
+      return ProtobufUtil.readFile(activeRulesPath, Sonarlint.ActiveRules.parser());
+    } else {
+      LOG.info("Unable to find the quality profile {} in the SonarLint storage. You should update the storage, or ignore this message if the profile is empty.", qProfileKey);
+      return Sonarlint.ActiveRules.newBuilder().build();
+    }
   }
 
   public Sonarlint.QProfiles readQProfiles() {
