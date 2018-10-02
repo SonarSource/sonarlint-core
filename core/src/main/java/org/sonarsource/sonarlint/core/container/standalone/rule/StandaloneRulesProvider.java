@@ -24,6 +24,7 @@ import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.batch.rule.internal.NewRule;
 import org.sonar.api.batch.rule.internal.RulesBuilder;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
@@ -42,7 +43,10 @@ public class StandaloneRulesProvider extends ProviderAdapter {
     RulesBuilder builder = new RulesBuilder();
 
     for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
-      for (org.sonar.api.server.rule.RulesDefinition.Rule ruleDef : repoDef.rules()) {
+      for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
+        if (ruleDef.type() == RuleType.SECURITY_HOTSPOT) {
+          continue;
+        }
         NewRule newRule = builder.add(RuleKey.of(ruleDef.repository().key(), ruleDef.key()))
           .setInternalKey(ruleDef.internalKey())
           .setDescription(ruleDef.htmlDescription() != null ? ruleDef.htmlDescription() : Markdown.convertToHtml(ruleDef.markdownDescription()))
