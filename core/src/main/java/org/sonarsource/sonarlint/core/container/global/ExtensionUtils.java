@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.utils.AnnotationUtils;
@@ -44,8 +43,7 @@ public class ExtensionUtils {
   }
 
   public static boolean isScannerSide(Object extension) {
-    return AnnotationUtils.getAnnotation(extension, BatchSide.class) != null ||
-      AnnotationUtils.getAnnotation(extension, ScannerSide.class) != null ||
+    return AnnotationUtils.getAnnotation(extension, ScannerSide.class) != null ||
       AnnotationUtils.getAnnotation(extension, SonarLintSide.class) != null;
   }
 

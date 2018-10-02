@@ -21,11 +21,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import com.google.common.base.Strings;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
@@ -43,7 +39,6 @@ import org.sonar.api.batch.sensor.issue.Issue.Flow;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.source.Symbol;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFlow;
@@ -124,10 +119,6 @@ public class DefaultSensorStorage implements SensorStorage {
 
   @Override
   public void store(DefaultHighlighting highlighting) {
-    // NO-OP
-  }
-
-  public void store(DefaultInputFile inputFile, Map<Symbol, Set<TextRange>> referencesBySymbol) {
     // NO-OP
   }
 

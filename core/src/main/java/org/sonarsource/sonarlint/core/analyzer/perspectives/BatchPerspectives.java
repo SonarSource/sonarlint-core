@@ -21,11 +21,9 @@ package org.sonarsource.sonarlint.core.analyzer.perspectives;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.CheckForNull;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.component.Perspective;
 import org.sonar.api.component.ResourcePerspectives;
-import org.sonar.api.resources.Resource;
 
 public class BatchPerspectives implements ResourcePerspectives {
 
@@ -35,12 +33,6 @@ public class BatchPerspectives implements ResourcePerspectives {
     for (PerspectiveBuilder builder : builders) {
       this.builders.put(builder.getPerspectiveClass(), builder);
     }
-  }
-
-  @Override
-  @CheckForNull
-  public <P extends Perspective> P as(Class<P> perspectiveClass, Resource resource) {
-    return null;
   }
 
   @Override

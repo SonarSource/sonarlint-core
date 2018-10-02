@@ -19,11 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import java.util.Map;
-import java.util.Set;
 import org.junit.Test;
-import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.sensor.code.internal.DefaultSignificantCode;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
@@ -31,7 +27,6 @@ import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
-import org.sonar.api.source.Symbol;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -66,15 +61,6 @@ public class DefaultSensorStorageTest {
     DefaultHighlighting highlighting = mock(DefaultHighlighting.class);
     underTest.store(highlighting);
     verifyZeroInteractions(highlighting);
-  }
-
-  @Test
-  public void store_DefaultInputFile_with_symbols_doesnt_interact_with_its_params() {
-    DefaultInputFile defaultInputFile = mock(DefaultInputFile.class);
-    Map<Symbol, Set<TextRange>> referencesBySymbol = mock(Map.class);
-    underTest.store(defaultInputFile, referencesBySymbol);
-    verifyZeroInteractions(defaultInputFile);
-    verifyZeroInteractions(referencesBySymbol);
   }
 
   @Test

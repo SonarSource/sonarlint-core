@@ -47,7 +47,7 @@ public class PluginLocator {
   }
 
   public static URL getPythonPluginUrl() {
-    return getPluginUrl("sonar-python-plugin-1.8.0.1496.jar");
+    return getPluginUrl("sonar-python-plugin-1.9.1.2080.jar");
   }
 
   public static URL getCppPluginUrl() {

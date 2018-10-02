@@ -24,17 +24,14 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 
 public class DefaultFilterableIssue implements FilterableIssue {
   private final DefaultClientIssue rawIssue;
-  private final Project project;
   private final InputComponent inputComponent;
 
-  public DefaultFilterableIssue(Project project, DefaultClientIssue rawIssue, InputComponent inputComponent) {
-    this.project = project;
+  public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent inputComponent) {
     this.rawIssue = rawIssue;
     this.inputComponent = inputComponent;
 
@@ -66,18 +63,13 @@ public class DefaultFilterableIssue implements FilterableIssue {
   }
 
   @Override
-  public Double effortToFix() {
-    throw unsupported();
-  }
-
-  @Override
   public Date creationDate() {
     return new Date();
   }
 
   @Override
   public String projectKey() {
-    return project.getEffectiveKey();
+    throw unsupported();
   }
 
   @Override
