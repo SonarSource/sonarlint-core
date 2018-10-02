@@ -65,21 +65,13 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   public Orchestrator ORCHESTRATOR = buildOrchestrator();
 
   private static Orchestrator buildOrchestrator() {
-    boolean after70 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).compareTo(Version.create("7.0")) > 0;
-
     OrchestratorBuilder builder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
 
-    if (after70) {
-      builder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
-    } else {
-      builder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.0"))
-        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.9.0.1664"));
-    }
+    builder
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
+      .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
 
     return builder.build();
   }
@@ -134,7 +126,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
-    assertThat(logs).contains("Code analyzer 'javascript' version '2.13' is not supported (minimal version is '2.14'). Skip downloading it.");
+    assertThat(logs).contains("Code analyzer 'javascript' version '2.13' is not supported (minimal version is '4.0'). Skip downloading it.");
   }
 
   private ServerConfiguration config() {

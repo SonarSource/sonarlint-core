@@ -20,12 +20,19 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.io.File;
+import java.nio.charset.Charset;
+import java.util.stream.StreamSupport;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputDir;
+import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 
 public class SonarLintFileSystem extends DefaultFileSystem {
+
+  private static final Logger LOG = Loggers.get(SonarLintFileSystem.class);
 
   private FileIndexer indexer;
   private final DefaultFilePredicates filePredicates;
@@ -51,5 +58,22 @@ public class SonarLintFileSystem extends DefaultFileSystem {
   @Override
   public FilePredicates predicates() {
     return filePredicates;
+  }
+
+  @Override
+  public DefaultFileSystem setEncoding(Charset c) {
+    LOG.debug("Setting filesystem encoding: " + c);
+    return super.setEncoding(c);
+  }
+
+  @Override
+  public Charset encoding() {
+    if (super.encoding() == null) {
+      setEncoding(StreamSupport.stream(inputFiles().spliterator(), false)
+        .map(InputFile::charset)
+        .findFirst()
+        .orElse(Charset.defaultCharset()));
+    }
+    return super.encoding();
   }
 }

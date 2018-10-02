@@ -31,8 +31,8 @@ import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorStorage;
-import org.sonarsource.sonarlint.core.analyzer.sensor.PhaseExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
+import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
@@ -87,7 +87,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       MutableAnalysisSettings.class,
       new AnalysisConfigurationProvider(),
-      PhaseExecutor.class,
 
       // file system
       InputPathCache.class,
@@ -127,7 +126,9 @@ public class AnalysisContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     LOG.debug("Start analysis");
-    getComponentByType(PhaseExecutor.class).execute();
+    // Don't initialize Sensors before the FS is indexed
+    getComponentByType(SonarLintFileSystem.class).index();
+    getComponentByType(SensorsExecutor.class).execute();
   }
 
 }

@@ -19,14 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PluginVersionCheckerTest {
   private PluginVersionChecker checker;
@@ -41,7 +40,7 @@ public class PluginVersionCheckerTest {
 
   @Test
   public void test() throws IOException {
-    assertThat(checker.getMinimumVersion("java")).isEqualTo("4.0");
+    assertThat(checker.getMinimumVersion("java")).isEqualTo("5.1");
     assertThat(checker.getMinimumVersion("unknown")).isNull();
   }
 
@@ -53,7 +52,7 @@ public class PluginVersionCheckerTest {
 
   @Test
   public void isVersionSupported() {
-    assertThat(checker.isVersionSupported("java", "4.0")).isTrue();
+    assertThat(checker.isVersionSupported("java", "5.1")).isTrue();
     assertThat(checker.isVersionSupported("java", "3.9")).isFalse();
     assertThat(checker.isVersionSupported("unknown", "4.0")).isTrue();
   }
