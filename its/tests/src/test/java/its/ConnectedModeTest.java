@@ -112,28 +112,17 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
         .setSonarVersion(SONAR_VERSION);
 
-      boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
-      rubyAndKotlinSupported = atLeast67;
-
-      if (atLeast67) {
-        orchestratorBuilder
-          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-          .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
-          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
-          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
-          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
-          // TODO update kotlin and ruby version once they are released
-          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.2.0.1568"))
-          .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.2.0.1568"))
-          .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-          .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
-      } else {
-        orchestratorBuilder
-          .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "5.1.0.13090"))
-          .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.1.2080"))
-          .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "2.12.0.2871"))
-          .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "4.0.0.5862"));
-      }
+      orchestratorBuilder
+        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
+        .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
+        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
+        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+        // TODO update kotlin and ruby version once they are released
+        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.2.0.1568"))
+        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.2.0.1568"))
+        .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
 
       orchestratorBuilder
         .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))

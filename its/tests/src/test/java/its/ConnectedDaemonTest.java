@@ -24,7 +24,6 @@ import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -33,7 +32,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import its.tools.ItUtils;
 import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.File;
@@ -90,14 +88,8 @@ public class ConnectedDaemonTest {
     OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION);
 
-    boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
-    if (atLeast67) {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
-    } else {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
-    }
+    orchestratorBuilder
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
     ORCHESTRATOR = orchestratorBuilder
       .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
       .build();
