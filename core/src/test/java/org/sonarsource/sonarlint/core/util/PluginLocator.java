@@ -28,8 +28,8 @@ import java.nio.file.Paths;
 
 public class PluginLocator {
 
-  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-5.6.0.15032.jar";
-  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "9d01ee578a5f2f437b3927554bbc3380";
+  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-5.7.0.15470.jar";
+  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "5a2bd8a7984aacdca7622b1bf970ada2";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-4.0.0.5862.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "cc8ad346e85db9d3735898b533d37d34";
   public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";

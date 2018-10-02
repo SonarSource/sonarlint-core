@@ -58,6 +58,9 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -104,7 +107,8 @@ public class StandaloneIssueMediumTest {
       .setLogOutput((msg, level) -> System.out.println(msg))
       .setExtraProperties(extraProperties);
 
-    // commercial plugins might not be available (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
+    // commercial plugins might not be available (if you pass -Dcommercial to maven, a profile will be activated that downloads the
+    // commercial plugins)
     if (System.getProperty("commercial") != null) {
       commercialEnabled = true;
       configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
@@ -328,9 +332,31 @@ public class StandaloneIssueMediumTest {
       null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"));
+      tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"),
+      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"));
+  }
+
+  @Test
+  public void simpleJavaNoHotspots() throws Exception {
+    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
+    assertThat(sonarlint.getRuleDetails("squid:S1313")).isNull();
+
+    ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
+      "package foo;\n"
+        + "public class Foo {\n"
+        + "  String ip = \"192.168.12.42\"; // Hotspots should not be reported in SonarLint\n"
+        + "}",
+      false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), singletonList(inputFile), ImmutableMap.of(), emptyList(),
+        singleton(new RuleKey("squid", "S1313"))),
+      issues::add,
+      null, null);
+
+    assertThat(issues).isEmpty();
   }
 
   @Test
@@ -402,8 +428,8 @@ public class StandaloneIssueMediumTest {
         + "}",
       false);
 
-    final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S106"));
-    final Collection<RuleKey> includedRules = Collections.emptyList();
+    final Collection<RuleKey> excludedRules = singleton(new RuleKey("squid", "S106"));
+    final Collection<RuleKey> includedRules = emptyList();
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
@@ -426,11 +452,11 @@ public class StandaloneIssueMediumTest {
         + "}",
       false);
 
-    final Collection<RuleKey> excludedRules = Collections.emptyList();
-    final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("squid", "S3553"));
+    final Collection<RuleKey> excludedRules = emptyList();
+    final Collection<RuleKey> includedRules = singleton(new RuleKey("squid", "S3553"));
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Collections.singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
       issues::add, null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(

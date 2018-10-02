@@ -34,6 +34,7 @@ import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rules.ActiveRule;
 import org.sonar.api.rules.ActiveRuleParam;
+import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.api.server.rule.RulesDefinition.Rule;
@@ -80,6 +81,9 @@ public class StandaloneActiveRulesProvider {
 
     for (Repository repo : ruleDefsLoader.getContext().repositories()) {
       for (Rule rule : repo.rules()) {
+        if (rule.type() == RuleType.SECURITY_HOTSPOT) {
+          continue;
+        }
         ActiveRulesBuilder builder = rule.activatedByDefault() ? activeBuilder : inactiveBuilder;
         RuleKey ruleKey = RuleKey.of(repo.key(), rule.key());
         NewActiveRule newAr = builder.create(ruleKey)
