@@ -25,8 +25,6 @@ import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
-import com.sonar.orchestrator.version.Version;
-import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -96,6 +94,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
   private static final String PROJECT_KEY_GLOBAL_EXTENSION = "sample-global-extension";
   private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
+  private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
@@ -121,30 +120,23 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         // TODO update kotlin and ruby version once they are released
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.2.0.1568"))
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.2.0.1568"))
-        .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"));
-
-      orchestratorBuilder
         .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))
+        .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
+        .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"));
-
-      if (rubyAndKotlinSupported) {
-        orchestratorBuilder.restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
-          .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"));
-      }
-
-      if (ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 3)) {
-        orchestratorBuilder.addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"));
-      }
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"));
 
       ORCHESTRATOR = orchestratorBuilder.build();
       ORCHESTRATOR.start();
@@ -173,16 +165,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static Server server;
   private static int redirectPort;
-  private static boolean rubyAndKotlinSupported;
 
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
-    }
+    adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
     sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
@@ -194,10 +181,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .passwordConfirmation(SONARLINT_PWD)
         .name("SonarLint"));
 
-    // addUserPermission("sonarlint", "dryRunScan");
-
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
@@ -211,6 +197,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
@@ -218,14 +205,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_WEB, "web", "SonarLint IT Web");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
-    if (rubyAndKotlinSupported) {
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_RUBY, "ruby", "SonarLint IT Ruby");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
-    }
-
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7)) {
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
-    }
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_RUBY, "ruby", "SonarLint IT Ruby");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
@@ -293,12 +275,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadModules() {
+  public void downloadProjects() {
     updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(12);
+    assertThat(engine.allProjectsByKey()).hasSize(13);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(14).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allProjectsByKey()).hasSize(14).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -478,6 +460,26 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).hasSize(2);
+  }
+
+  @Test
+  public void dontReportHotspots() throws Exception {
+    updateGlobal();
+    updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
+      "src/main/java/foo/Foo.java",
+      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      issueListener, null, null);
+
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(7, 3)) {
+      assertThat(issueListener.getIssues()).isEmpty();
+    } else {
+      // Hotspots are reported as vulnerability
+      assertThat(issueListener.getIssues()).hasSize(1);
+      assertThat(issueListener.getIssues().get(0).getType()).isEqualTo("VULNERABILITY");
+    }
   }
 
   @Test
@@ -730,7 +732,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisRuby() throws Exception {
-    assumeTrue(rubyAndKotlinSupported);
     updateGlobal();
     updateProject(PROJECT_KEY_RUBY);
 
@@ -741,7 +742,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisKotlin() throws Exception {
-    assumeTrue(rubyAndKotlinSupported);
     updateGlobal();
     updateProject(PROJECT_KEY_KOTLIN);
 
