@@ -322,7 +322,6 @@
             </Import-Package>
             <Export-Package>
               org.sonarsource.sonarlint.core,
-              com.google.protobuf,
               org.sonarsource.sonarlint.core.telemetry,
               org.sonarsource.sonarlint.core.notifications,
             </Export-Package>
