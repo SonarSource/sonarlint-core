@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>46</version>
+    <version>48</version>
     <relativePath />
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
@@ -33,9 +33,6 @@
   </modules>
 
   <properties>
-    <!-- Support Java 10 -->
-    <version.surefire.plugin>2.22.0</version.surefire.plugin>
-
     <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
     <sonarqube.version>7.3</sonarqube.version>
     <sonar-ws.version>6.7</sonar-ws.version>
