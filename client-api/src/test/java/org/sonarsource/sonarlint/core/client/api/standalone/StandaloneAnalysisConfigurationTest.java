@@ -64,9 +64,9 @@ public class StandaloneAnalysisConfigurationTest {
       "  excludedRules: [squid:S1135, squid:S1181]\n" +
       "  includedRules: [javascript:S2424, javascript:S1442]\n" +
       "  inputFiles: [\n" +
-      "    " + srcFile1.toString() + " (UTF-8)\n" +
-      "    " + srcFile2.toString() + " (UTF-8) [java]\n" +
-      "    " + srcFile3.toString() + " (UTF-8) [test] [php]\n" +
+      "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
+      "    " + srcFile2.toUri().toString() + " (UTF-8) [java]\n" +
+      "    " + srcFile3.toUri().toString() + " (UTF-8) [test] [php]\n" +
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);

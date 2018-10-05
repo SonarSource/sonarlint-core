@@ -19,10 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import java.nio.file.Paths;
 import org.junit.Before;
 import org.junit.Test;
-import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,23 +33,6 @@ public class InputPathCacheTest {
   @Before
   public void setUp() {
     cache = new InputPathCache();
-  }
-
-  @Test
-  public void testDirs() {
-    InputDir dir1 = mock(InputDir.class);
-    when(dir1.path()).thenReturn(Paths.get("dir1"));
-    InputDir dir2 = mock(InputDir.class);
-    when(dir2.path()).thenReturn(Paths.get("dir2"));
-
-    cache.doAdd(dir1);
-    cache.add(dir2);
-    assertThat(cache.allDirs()).containsOnly(dir1, dir2);
-
-    assertThat(cache.inputDir(Paths.get("dir1"))).isEqualTo(dir1);
-
-    // always null
-    assertThat(cache.inputDir("dir1")).isNull();
   }
 
   @Test

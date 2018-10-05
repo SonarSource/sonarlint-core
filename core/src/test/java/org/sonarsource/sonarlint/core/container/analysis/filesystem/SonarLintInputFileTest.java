@@ -56,8 +56,7 @@ public class SonarLintInputFileTest {
     path = temp.newFile().toPath();
     Files.write(path, "test string".getBytes(StandardCharsets.UTF_8));
     inputFile = new TestClientInputFile(path, "file", false, StandardCharsets.UTF_8);
-    file = new SonarLintInputFile(inputFile, f -> {
-    });
+    file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(path.toFile(), StandardCharsets.UTF_8));
   }
 
   @Test
@@ -77,7 +76,5 @@ public class SonarLintInputFileTest {
       assertThat(reader.lines().collect(Collectors.joining())).isEqualTo("test string");
     }
 
-    exception.expect(UnsupportedOperationException.class);
-    file.moduleKey();
   }
 }

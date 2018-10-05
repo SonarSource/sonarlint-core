@@ -24,6 +24,9 @@ import java.nio.file.Path;
 import org.sonar.api.batch.fs.internal.DefaultInputDir;
 import org.sonar.api.utils.PathUtils;
 
+/**
+ * This is a simple placeholder. Issues on directories will be reported as project level issues.
+ */
 public class SonarLintInputDir extends DefaultInputDir {
 
   private final Path path;

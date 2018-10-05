@@ -86,6 +86,11 @@ public class DefaultClientInputFile implements ClientInputFile {
     return this.sqLanguage;
   }
 
+  @Override
+  public URI uri() {
+    return this.fileUri;
+  }
+
   @CheckForNull
   private static String toSqLanguage(@Nullable String clientLanguageId) {
     if (clientLanguageId == null) {

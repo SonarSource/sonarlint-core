@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,11 +68,11 @@ public class FileMetadata {
   private static class LineCounter extends CharHandler {
     private int lines = 1;
     boolean alreadyLoggedInvalidCharacter = false;
-    private final String filePath;
+    private final URI fileUri;
     private final Charset encoding;
 
-    LineCounter(String filePath, Charset encoding) {
-      this.filePath = filePath;
+    LineCounter(URI fileUri, Charset encoding) {
+      this.fileUri = fileUri;
       this.encoding = encoding;
     }
 
@@ -79,7 +80,7 @@ public class FileMetadata {
     protected void handleAll(char c) {
       if (!alreadyLoggedInvalidCharacter && c == '\ufffd') {
         LOG.warn("Invalid character encountered in file '{}' at line {} for encoding {}. Please fix file content or configure the encoding to be used using property '{}'.",
-          filePath,
+          fileUri,
           lines, encoding, CoreProperties.ENCODING_PROPERTY);
         alreadyLoggedInvalidCharacter = true;
       }
@@ -131,25 +132,24 @@ public class FileMetadata {
   }
 
   /**
-   * Compute hash of a file ignoring line ends differences.
-   * Maximum performance is needed.
+   * For testing
    */
-  public Metadata readMetadata(File file, Charset encoding) {
+  Metadata readMetadata(File file, Charset encoding) {
     InputStream stream = streamFile(file);
-    return readMetadata(stream, encoding, file.getAbsolutePath());
+    return readMetadata(stream, encoding, file.toURI());
   }
 
   /**
    * Compute hash of an inputStream ignoring line ends differences.
    * Maximum performance is needed.
    */
-  public Metadata readMetadata(InputStream stream, Charset encoding, String filePath) {
-    LineCounter lineCounter = new LineCounter(filePath, encoding);
+  public Metadata readMetadata(InputStream stream, Charset encoding, URI fileUri) {
+    LineCounter lineCounter = new LineCounter(fileUri, encoding);
     LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
     try (Reader reader = new BufferedReader(new InputStreamReader(stream, encoding))) {
       read(reader, lineCounter, lineOffsetCounter);
     } catch (IOException e) {
-      throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", filePath, encoding), e);
+      throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", fileUri, encoding), e);
     }
     return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
   }

@@ -48,7 +48,7 @@ public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfigurat
   public String toString() {
     return toString;
   }
-  
+
   private String generateString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
@@ -60,7 +60,7 @@ public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfigurat
     sb.append("  extraProperties: ").append(extraProperties()).append("\n");
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles()) {
-      sb.append("    ").append(inputFile.getPath());
+      sb.append("    ").append(inputFile.uri());
       sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
       if (inputFile.isTest()) {
         sb.append(" [test]");

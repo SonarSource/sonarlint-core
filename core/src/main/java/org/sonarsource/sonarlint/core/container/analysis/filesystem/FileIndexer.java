@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -96,8 +96,6 @@ public class FileIndexer {
   private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {
     fs.add(inputFile);
     status.markAsIndexed(inputFile);
-    SonarLintInputDir inputDir = new SonarLintInputDir(inputFile.path().getParent());
-    fs.add(inputDir);
   }
 
   private boolean accept(InputFile indexedFile) {
@@ -112,15 +110,15 @@ public class FileIndexer {
   }
 
   private class Progress {
-    private final Set<Path> indexed = new HashSet<>();
+    private final Set<URI> indexed = new HashSet<>();
 
     void markAsIndexed(SonarLintInputFile inputFile) {
-      if (indexed.contains(inputFile.path())) {
+      if (indexed.contains(inputFile.uri())) {
         throw MessageException.of("File " + inputFile + " can't be indexed twice.");
       }
-      indexed.add(inputFile.path());
+      indexed.add(inputFile.uri());
       int size = indexed.size();
-      progressReport.message(() -> size + " files indexed...  (last one was " + inputFile.absolutePath() + ")");
+      progressReport.message(() -> size + " files indexed...  (last one was " + inputFile.uri() + ")");
     }
 
     int count() {

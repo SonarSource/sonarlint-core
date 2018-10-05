@@ -87,7 +87,7 @@ public class StandaloneAnalysisConfiguration {
   public String toString() {
     return toString;
   }
-  
+
   private String generateToString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
@@ -98,7 +98,7 @@ public class StandaloneAnalysisConfiguration {
     sb.append("  includedRules: ").append(includedRules).append("\n");
     sb.append("  inputFiles: [\n");
     for (ClientInputFile inputFile : inputFiles) {
-      sb.append("    ").append(inputFile.getPath());
+      sb.append("    ").append(inputFile.uri());
       sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
       if (inputFile.isTest()) {
         sb.append(" [test]");

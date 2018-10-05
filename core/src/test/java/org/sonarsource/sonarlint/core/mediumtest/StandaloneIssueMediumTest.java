@@ -467,6 +467,26 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
+  public void simpleJavaWithIssueOnDir() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
+      "package foo;\n"
+        + "public class Foo {\n"
+        + "}",
+      false);
+
+    final Collection<RuleKey> excludedRules = emptyList();
+    final Collection<RuleKey> includedRules = singleton(new RuleKey("squid", "S1228"));
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), singletonList(inputFile), ImmutableMap.of(), excludedRules, includedRules),
+      issues::add, null, null);
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S2094", 2, inputFile.getPath(), "MINOR"),
+      tuple("squid:S1228", null, null, "MINOR"));
+  }
+
+  @Test
   public void simpleJavaWithIncludedAndExcludedRules() throws Exception {
     ClientInputFile inputFile = prepareInputFile("Foo.java",
       "import java.util.Optional;\n"

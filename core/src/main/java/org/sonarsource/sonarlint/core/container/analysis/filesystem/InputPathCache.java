@@ -21,10 +21,7 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.SetMultimap;
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -38,7 +35,6 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 public class InputPathCache extends DefaultFileSystem.Cache {
 
   private final Set<InputFile> inputFileCache = new LinkedHashSet<>();
-  private final Map<Path, InputDir> inputDirCache = new LinkedHashMap<>();
   private final SetMultimap<String, InputFile> filesByNameCache = LinkedHashMultimap.create();
   private final SetMultimap<String, InputFile> filesByExtensionCache = LinkedHashMultimap.create();
   private final SortedSet<String> languages = new TreeSet<>();
@@ -46,10 +42,6 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   @Override
   public Iterable<InputFile> inputFiles() {
     return inputFileCache;
-  }
-
-  public Iterable<InputDir> allDirs() {
-    return inputDirCache.values();
   }
 
   @Override
@@ -64,7 +56,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   @Override
   public void doAdd(InputDir inputDir) {
-    inputDirCache.put(inputDir.path(), inputDir);
+    // SonarLint doesn't handle directories
   }
 
   @Override
@@ -75,10 +67,6 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   @Override
   public InputDir inputDir(String relativePath) {
     return null;
-  }
-
-  public InputDir inputDir(Path path) {
-    return inputDirCache.get(path);
   }
 
   @Override

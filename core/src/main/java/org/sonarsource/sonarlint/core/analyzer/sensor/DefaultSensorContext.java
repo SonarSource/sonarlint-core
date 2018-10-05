@@ -35,7 +35,6 @@ import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewExternalIssue;
 import org.sonar.api.batch.sensor.issue.NewIssue;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.config.Configuration;
@@ -107,7 +106,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewIssue newIssue() {
-    return new DefaultIssue(sensorStorage);
+    return new DefaultSonarLintIssue(sensorStorage);
   }
 
   @Override

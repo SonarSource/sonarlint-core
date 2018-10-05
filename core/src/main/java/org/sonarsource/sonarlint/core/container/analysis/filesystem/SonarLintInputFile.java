@@ -26,31 +26,37 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.api.batch.fs.internal.DefaultIndexedFile;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.TextPointer;
+import org.sonar.api.batch.fs.TextRange;
+import org.sonar.api.batch.fs.internal.DefaultTextPointer;
+import org.sonar.api.batch.fs.internal.DefaultTextRange;
 import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 
-public class SonarLintInputFile extends DefaultInputFile {
+public class SonarLintInputFile implements InputFile {
 
   private final ClientInputFile clientInputFile;
-  private final String absolutePath;
-  private final Path path;
   private final String relativePath;
   private String language;
   private Type type;
+  private Metadata metadata;
+  private final Function<SonarLintInputFile, Metadata> metadataGenerator;
 
-  public SonarLintInputFile(ClientInputFile clientInputFile, Consumer<DefaultInputFile> metadataGenerator) {
-    super(new DefaultIndexedFile(SonarLintInputModule.SONARLINT_FAKE_MODULE_KEY, Paths.get(clientInputFile.getPath()), clientInputFile.getPath(), clientInputFile.language()),
-      metadataGenerator);
+  public SonarLintInputFile(ClientInputFile clientInputFile, Function<SonarLintInputFile, Metadata> metadataGenerator) {
     this.clientInputFile = clientInputFile;
-    this.path = Paths.get(clientInputFile.getPath());
+    this.metadataGenerator = metadataGenerator;
     this.relativePath = PathUtils.sanitize(clientInputFile.relativePath());
-    this.absolutePath = PathUtils.sanitize(path.toString());
+  }
+
+  public void checkMetadata() {
+    if (metadata == null) {
+      this.metadata = metadataGenerator.apply(this);
+    }
   }
 
   public ClientInputFile getClientInputFile() {
@@ -81,19 +87,31 @@ public class SonarLintInputFile extends DefaultInputFile {
     return type;
   }
 
+  /**
+   * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
+   */
+  @Deprecated
   @Override
   public String absolutePath() {
-    return absolutePath;
+    return PathUtils.sanitize(clientInputFile.getPath());
   }
 
+  /**
+   * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
+   */
+  @Deprecated
   @Override
   public File file() {
     return path().toFile();
   }
 
+  /**
+   * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
+   */
+  @Deprecated
   @Override
   public Path path() {
-    return path;
+    return Paths.get(clientInputFile.getPath());
   }
 
   @Override
@@ -116,21 +134,12 @@ public class SonarLintInputFile extends DefaultInputFile {
    */
   @Override
   public String key() {
-    return absolutePath();
-  }
-
-  @Override
-  public String moduleKey() {
-    throw unsupported();
+    return uri().toString();
   }
 
   @Override
   public URI uri() {
     return clientInputFile.uri();
-  }
-
-  private static UnsupportedOperationException unsupported() {
-    return new UnsupportedOperationException("Unsupported in SonarLint");
   }
 
   @Override
@@ -139,40 +148,90 @@ public class SonarLintInputFile extends DefaultInputFile {
     return charset != null ? charset : Charset.defaultCharset();
   }
 
-  public SonarLintInputFile init(Metadata metadata) {
-    this.setMetadata(new org.sonar.api.batch.fs.internal.Metadata(
-      metadata.lines, metadata.lines, "", metadata.originalLineOffsets, metadata.lastValidOffset));
-    return this;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
 
-    // Use instanceof to support DeprecatedDefaultInputFile
     if (!(o instanceof SonarLintInputFile)) {
       return false;
     }
 
     SonarLintInputFile that = (SonarLintInputFile) o;
-    return path().equals(that.path());
+    return uri().equals(that.uri());
   }
 
   @Override
   public int hashCode() {
-    return path().hashCode();
+    return uri().hashCode();
   }
 
   @Override
   public String toString() {
-    return "[path=" + path() + "]";
+    return "[uri=" + uri() + "]";
   }
 
   @Override
   public boolean isFile() {
     return true;
+  }
+
+  @Override
+  public String filename() {
+    return Paths.get(relativePath).getFileName().toString();
+  }
+
+  @Override
+  public int lines() {
+    checkMetadata();
+    return metadata.lines;
+  }
+
+  @Override
+  public boolean isEmpty() {
+    checkMetadata();
+    return metadata.lastValidOffset == 0;
+  }
+
+  @Override
+  public TextPointer newPointer(int line, int lineOffset) {
+    checkMetadata();
+    return new DefaultTextPointer(line, lineOffset);
+  }
+
+  @Override
+  public TextRange newRange(TextPointer start, TextPointer end) {
+    checkMetadata();
+    return newRangeValidPointers(start, end);
+  }
+
+  @Override
+  public TextRange newRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
+    checkMetadata();
+    TextPointer start = newPointer(startLine, startLineOffset);
+    TextPointer end = newPointer(endLine, endLineOffset);
+    return newRangeValidPointers(start, end);
+  }
+
+  @Override
+  public TextRange selectLine(int line) {
+    checkMetadata();
+    TextPointer startPointer = newPointer(line, 0);
+    TextPointer endPointer = newPointer(line, lineLength(line));
+    return newRangeValidPointers(startPointer, endPointer);
+  }
+
+  private static TextRange newRangeValidPointers(TextPointer start, TextPointer end) {
+    return new DefaultTextRange(start, end);
+  }
+
+  private int lineLength(int line) {
+    return lastValidGlobalOffsetForLine(line) - metadata.originalLineOffsets[line - 1];
+  }
+
+  private int lastValidGlobalOffsetForLine(int line) {
+    return line < this.metadata.lines ? (metadata.originalLineOffsets[line] - 1) : metadata.lastValidOffset;
   }
 
 }
