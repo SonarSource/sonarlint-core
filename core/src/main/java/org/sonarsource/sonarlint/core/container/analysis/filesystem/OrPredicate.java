@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.sonar.api.batch.fs.FilePredicate;
@@ -64,7 +63,6 @@ class OrPredicate extends AbstractFilePredicate {
     return false;
   }
 
-  @VisibleForTesting
   Collection<FilePredicate> predicates() {
     return predicates;
   }

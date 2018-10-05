@@ -34,6 +34,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 abstract class BaseRequest<SELF extends BaseRequest> implements WsRequest {
 
@@ -87,7 +88,7 @@ abstract class BaseRequest<SELF extends BaseRequest> implements WsRequest {
   }
 
   private SELF setSingleValueParam(String key, @Nullable Object value) {
-    checkArgument(!isNullOrEmpty(key), "a WS parameter key cannot be null");
+    checkArgument(isNotEmpty(key), "a WS parameter key cannot be null");
     if (value == null) {
       return (SELF) this;
     }
@@ -97,7 +98,7 @@ abstract class BaseRequest<SELF extends BaseRequest> implements WsRequest {
   }
 
   public SELF setParam(String key, @Nullable Collection<? extends Object> values) {
-    checkArgument(!isNullOrEmpty(key), "a WS parameter key cannot be null");
+    checkArgument(isNotEmpty(key), "a WS parameter key cannot be null");
     if (values == null || values.isEmpty()) {
       return (SELF) this;
     }
@@ -145,7 +146,7 @@ abstract class BaseRequest<SELF extends BaseRequest> implements WsRequest {
     }
 
     private DefaultParameters setValues(String key, Collection<String> values) {
-      checkArgument(!isNullOrEmpty(key));
+      checkArgument(isNotEmpty(key));
       checkArgument(values != null && !values.isEmpty());
 
       this.keyValues.putAll(key, values.stream().map(Object::toString).filter(Objects::nonNull).collect(Collectors.toList()));

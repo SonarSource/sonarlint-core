@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class WsHelperImpl implements WsHelper {
   private static final String MIN_VERSION_FOR_ORGANIZATIONS = "6.3";
@@ -78,7 +78,7 @@ public class WsHelperImpl implements WsHelper {
   }
 
   private static SonarLintWsClient createClient(ServerConfiguration serverConfig) {
-    checkNotNull(serverConfig);
+    requireNonNull(serverConfig);
     return new SonarLintWsClient(serverConfig);
   }
 
@@ -148,7 +148,7 @@ public class WsHelperImpl implements WsHelper {
       throw SonarLintWrappedException.wrap(e);
     }
   }
-  
+
   private static void checkServer(ServerVersionAndStatusChecker serverChecker, ProgressWrapper progress) {
     progress.setProgressAndCheckCancel("Check server version", 0.1f);
     serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);

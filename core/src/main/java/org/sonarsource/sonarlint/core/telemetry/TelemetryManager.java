@@ -19,13 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
-
 import java.nio.file.Path;
-
 import javax.annotation.Nullable;
 
-import com.google.common.annotations.VisibleForTesting;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
 /**
  * Manage telemetry data, in memory and persistent storage, and stateful telemetry actions.
@@ -47,7 +44,6 @@ public class TelemetryManager {
     this.client = client;
   }
 
-  @VisibleForTesting
   TelemetryStorage newTelemetryStorage(Path path) {
     return new TelemetryStorage(path);
   }
@@ -110,7 +106,7 @@ public class TelemetryManager {
     data.setUsedAnalysis(language, analysisTimeMs);
     mergeAndSave();
   }
-  
+
   public void analysisDoneOnSingleLanguage(@Nullable String language, int analysisTimeMs) {
     if (language == null) {
       data.setUsedAnalysis("others", analysisTimeMs);

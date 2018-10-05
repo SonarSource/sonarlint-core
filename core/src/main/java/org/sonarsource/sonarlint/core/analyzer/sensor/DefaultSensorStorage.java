@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
-import com.google.common.base.Strings;
 import java.util.List;
+import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInp
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.StringUtils.isEmpty;
 
 public class DefaultSensorStorage implements SensorStorage {
 
@@ -82,7 +83,7 @@ public class DefaultSensorStorage implements SensorStorage {
       return;
     }
 
-    String primaryMessage = Strings.isNullOrEmpty(issue.primaryLocation().message()) ? rule.name() : issue.primaryLocation().message();
+    String primaryMessage = StringUtils.isEmpty(issue.primaryLocation().message()) ? rule.name() : issue.primaryLocation().message();
     org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type();
@@ -111,7 +112,7 @@ public class DefaultSensorStorage implements SensorStorage {
     if (rule == null) {
       throw MessageException.of(String.format("The rule '%s' does not exist.", ruleKey));
     }
-    if (Strings.isNullOrEmpty(rule.name()) && Strings.isNullOrEmpty(issue.primaryLocation().message())) {
+    if (isEmpty(rule.name()) && isEmpty(issue.primaryLocation().message())) {
       throw MessageException.of(String.format("The rule '%s' has no name and the related issue has no message.", ruleKey));
     }
     return (DefaultRule) rule;

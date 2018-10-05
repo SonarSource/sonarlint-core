@@ -19,13 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import org.sonar.api.config.Configuration;
 import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static org.apache.commons.lang.StringUtils.defaultIfBlank;
 
 public abstract class AbstractPatternInitializer {
 
@@ -42,7 +41,6 @@ public abstract class AbstractPatternInitializer {
     return multicriteriaPatterns;
   }
 
-  @VisibleForTesting
   protected final void initPatterns() {
     // Patterns Multicriteria
     multicriteriaPatterns = new ArrayList<>();
@@ -50,7 +48,7 @@ public abstract class AbstractPatternInitializer {
       String propPrefix = getMulticriteriaConfigurationKey() + "." + id + ".";
       String resourceKeyPattern = serverConfig.get(propPrefix + "resourceKey").orElse(null);
       String ruleKeyPattern = serverConfig.get(propPrefix + "ruleKey").orElse(null);
-      IssuePattern pattern = new IssuePattern(firstNonNull(resourceKeyPattern, "*"), firstNonNull(ruleKeyPattern, "*"));
+      IssuePattern pattern = new IssuePattern(defaultIfBlank(resourceKeyPattern, "*"), defaultIfBlank(ruleKeyPattern, "*"));
       multicriteriaPatterns.add(pattern);
     }
   }

@@ -19,14 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
+import org.apache.commons.io.IOUtils;
 
 public class VersionUtils {
   private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
@@ -46,13 +45,12 @@ public class VersionUtils {
     return version;
   }
 
-  @VisibleForTesting
   static String getLibraryVersionFallback() {
     String version = "unknown";
     URL resource = VersionUtils.class.getResource("/sl_core_version.txt");
     if (resource != null) {
       try {
-        version = Resources.toString(resource, StandardCharsets.UTF_8);
+        version = IOUtils.toString(resource, StandardCharsets.UTF_8);
       } catch (IOException e) {
         return version;
       }

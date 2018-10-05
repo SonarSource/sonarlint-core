@@ -19,14 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import com.google.common.base.Preconditions;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
-
 import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Logger;
@@ -34,6 +31,8 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Orchestrates the installation and loading of plugins
@@ -111,13 +110,13 @@ public class PluginRepository implements Startable {
 
   public PluginInfo getPluginInfo(String key) {
     PluginInfo info = infosByKeys.get(key);
-    Preconditions.checkState(info != null, "Plugin [%s] does not exist", key);
+    requireNonNull(info, () -> "Plugin [" + key + "] does not exist");
     return info;
   }
 
   public Plugin getPluginInstance(String key) {
     Plugin instance = pluginInstancesByKeys.get(key);
-    Preconditions.checkState(instance != null, "Plugin [%s] does not exist", key);
+    requireNonNull(instance, () -> "Plugin [" + key + "] does not exist");
     return instance;
   }
 
