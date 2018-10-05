@@ -21,6 +21,7 @@ package its;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -72,5 +73,10 @@ public class TestClientInputFile implements ClientInputFile {
   @Override
   public String contents() throws IOException {
     return new String(Files.readAllBytes(path), encoding);
+  }
+
+  @Override
+  public URI uri() {
+    return path.toUri();
   }
 }

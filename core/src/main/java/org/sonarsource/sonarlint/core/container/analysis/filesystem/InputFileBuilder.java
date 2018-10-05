@@ -43,15 +43,15 @@ public class InputFileBuilder {
 
   SonarLintInputFile create(ClientInputFile inputFile) {
     SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile, f -> {
-      LOG.debug("Initializing metadata of file {}", inputFile.uri());
-      Charset charset = inputFile.getCharset();
+      LOG.debug("Initializing metadata of file {}", f.uri());
+      Charset charset = f.charset();
       InputStream stream;
       try {
-        stream = inputFile.inputStream();
+        stream = f.inputStream();
       } catch (IOException e) {
-        throw new IllegalStateException("Failed to open a stream on file: " + inputFile.getPath(), e);
+        throw new IllegalStateException("Failed to open a stream on file: " + f.uri(), e);
       }
-      ((SonarLintInputFile) f).init(fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), inputFile.getPath()));
+      return fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), f.uri());
     });
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     if (inputFile.language() != null) {

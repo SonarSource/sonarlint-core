@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
 
 /**
@@ -35,7 +34,9 @@ public interface ClientInputFile {
   /**
    * The absolute file path. It needs to correspond to a file in the filesystem because some plugins don't use {@link #contents} 
    * or {@link inputStream} yet, and will attempt to access the file directly.
+   * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
    */
+  @Deprecated
   String getPath();
 
   /**
@@ -80,7 +81,9 @@ public interface ClientInputFile {
    */
   String relativePath();
 
-  default URI uri() {
-    return Paths.get(getPath()).toUri();
-  }
+  /**
+   * URI to uniquely identify this file.
+   */
+  URI uri();
+
 }

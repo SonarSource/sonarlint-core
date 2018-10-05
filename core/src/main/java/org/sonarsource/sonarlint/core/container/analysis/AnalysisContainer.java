@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFil
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputModule;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.EnforceIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.SonarLintNoSonarFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
@@ -113,7 +114,7 @@ public class AnalysisContainer extends ComponentContainer {
       CheckFactory.class,
 
       // issues
-      org.sonar.api.issue.NoSonarFilter.class,
+      SonarLintNoSonarFilter.class,
 
       // Perspectives
       BatchPerspectives.class);

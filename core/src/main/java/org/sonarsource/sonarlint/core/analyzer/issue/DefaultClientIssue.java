@@ -95,7 +95,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
       sb.append(", line=").append(textRange.start().line());
     }
     if (clientInputFile != null) {
-      sb.append(", file=").append(clientInputFile.getPath());
+      sb.append(", file=").append(clientInputFile.uri());
     }
     sb.append("]");
     return sb.toString();

@@ -76,7 +76,8 @@ public class ConnectedIssueMediumTest {
     Path pluginCache = slHome.resolve("plugins");
 
     /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
+     * QP)
      */
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
