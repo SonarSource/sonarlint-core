@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonar.classloader.Mask;
+
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 /**
  * Temporary information about the classLoader to be created for a plugin (or a group of plugins).
@@ -42,7 +43,7 @@ class PluginClassLoaderDef {
   private boolean selfFirstStrategy = false;
 
   PluginClassLoaderDef(String basePluginKey) {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(basePluginKey));
+    Preconditions.checkArgument(isNotEmpty(basePluginKey));
     this.basePluginKey = basePluginKey;
   }
 
@@ -75,7 +76,7 @@ class PluginClassLoaderDef {
   }
 
   void addMainClass(String pluginKey, @Nullable String mainClass) {
-    if (!Strings.isNullOrEmpty(mainClass)) {
+    if (isNotEmpty(mainClass)) {
       mainClassesByPluginKey.put(pluginKey, mainClass);
     }
   }

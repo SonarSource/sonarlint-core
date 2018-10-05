@@ -19,7 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
@@ -29,11 +30,11 @@ public class DefaultIssueFilterChain implements IssueFilterChain {
   private final List<IssueFilter> filters;
 
   public DefaultIssueFilterChain(IssueFilter... filters) {
-    this.filters = ImmutableList.copyOf(filters);
+    this.filters = Arrays.asList(filters);
   }
 
   public DefaultIssueFilterChain() {
-    this.filters = ImmutableList.of();
+    this.filters = Collections.emptyList();
   }
 
   private DefaultIssueFilterChain(List<IssueFilter> filters) {

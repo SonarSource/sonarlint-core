@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import java.io.Closeable;
 import java.io.File;
@@ -33,6 +32,8 @@ import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.log.Loggers;
+
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 /**
  * Loads the plugin JAR files by creating the appropriate classloaders and by instantiating
@@ -52,7 +53,7 @@ public class PluginLoader {
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
   private static final String SLF4J_ADAPTER_JAR_NAME = "sonarlint-slf4j-sonar-log";
-  
+
   private final PluginJarExploder jarExploder;
   private final PluginClassloaderFactory classloaderFactory;
   private final TempFolder tempFolder;
@@ -74,7 +75,6 @@ public class PluginLoader {
    * Defines the different classloaders to be created. Number of classloaders can be
    * different than number of plugins.
    */
-  @VisibleForTesting
   Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> infoByKeys, File slf4jAdapter) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
@@ -121,7 +121,6 @@ public class PluginLoader {
    * @return the instances grouped by plugin key
    * @throws IllegalStateException if at least one plugin can't be correctly loaded
    */
-  @VisibleForTesting
   Map<String, Plugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
     // instantiate plugins
     Map<String, Plugin> instancesByPluginKey = new HashMap<>();
@@ -167,7 +166,7 @@ public class PluginLoader {
   static String basePluginKey(PluginInfo plugin, Map<String, PluginInfo> allPluginsPerKey) {
     String base = plugin.getKey();
     String parentKey = plugin.getBasePlugin();
-    while (!Strings.isNullOrEmpty(parentKey)) {
+    while (isNotEmpty(parentKey)) {
       PluginInfo parentPlugin = allPluginsPerKey.get(parentKey);
       base = parentPlugin.getKey();
       parentKey = parentPlugin.getBasePlugin();

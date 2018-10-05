@@ -58,7 +58,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
 
@@ -144,8 +144,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
-    checkNotNull(configuration);
-    checkNotNull(issueListener);
+    requireNonNull(configuration);
+    requireNonNull(issueListener);
     setLogging(logOutput);
     return withReadLock(() -> {
       try {
@@ -164,7 +164,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
-    checkNotNull(serverConfig);
+    requireNonNull(serverConfig);
     setLogging(null);
     return withRwLock(() -> {
       stop(false);
@@ -191,14 +191,14 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
-    checkNotNull(serverConfig);
+    requireNonNull(serverConfig);
     return withReadLock(() -> runInConnectedContainer(serverConfig, container -> container.checkForUpdate(new ProgressWrapper(monitor))));
   }
 
   @Override
   public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
-    checkNotNull(serverConfig);
-    checkNotNull(projectKey);
+    requireNonNull(serverConfig);
+    requireNonNull(projectKey);
     return withReadLock(() -> runInConnectedContainer(serverConfig, container -> container.checkForUpdate(projectKey, new ProgressWrapper(monitor))));
   }
 
@@ -254,8 +254,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public void updateProject(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
-    checkNotNull(serverConfig);
-    checkNotNull(projectKey);
+    requireNonNull(serverConfig);
+    requireNonNull(projectKey);
     setLogging(null);
     rwl.writeLock().lock();
     checkUpdateStatus();
@@ -279,7 +279,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
-    checkNotNull(projectKey);
+    requireNonNull(projectKey);
     return withReadLock(() -> getHandler().getProjectStorageStatus(projectKey), false);
   }
 

@@ -46,8 +46,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import static com.google.common.base.Strings.nullToEmpty;
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang.StringUtils.defaultString;
 
 /**
  * Helper to build an instance of {@link okhttp3.OkHttpClient} that
@@ -172,7 +172,7 @@ public class OkHttpClientBuilder {
           // Give up, we've already attempted to authenticate.
           return null;
         }
-        String proxyCrendentials = Credentials.basic(proxyLogin, nullToEmpty(proxyPassword));
+        String proxyCrendentials = Credentials.basic(proxyLogin, defaultString(proxyPassword, ""));
         return response.request().newBuilder()
           .header(PROXY_AUTHORIZATION, proxyCrendentials)
           .build();

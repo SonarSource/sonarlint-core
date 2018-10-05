@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import com.google.common.base.Joiner;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -45,6 +44,8 @@ import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 import org.sonarsource.sonarlint.core.util.ws.WsConnector;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
+
+import static java.util.stream.Collectors.joining;
 
 public class SonarLintWsClient {
 
@@ -155,7 +156,7 @@ public class SonarLintWsClient {
       for (JsonElement e : errors) {
         errorMessages.add(e.getAsJsonObject().get("msg").getAsString());
       }
-      return Joiner.on(", ").join(errorMessages);
+      return errorMessages.stream().collect(joining(", "));
     } catch (Exception e) {
       return null;
     }
@@ -200,7 +201,7 @@ public class SonarLintWsClient {
           stop = true;
           LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
         }
-        
+
         progress.setProgressAndCheckCancel("Page " + page, loaded / (float) paging.getTotal());
       } catch (IOException e) {
         throw new IllegalStateException("Failed to process paginated WS", e);

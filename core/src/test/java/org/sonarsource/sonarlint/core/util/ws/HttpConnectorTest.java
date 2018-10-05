@@ -271,7 +271,7 @@ public class HttpConnectorTest {
 
   @Test
   public void fail_if_malformed_URL() {
-    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expect(NullPointerException.class);
     expectedException.expectMessage("Malformed URL: 'wrong URL'");
 
     underTest = HttpConnector.newBuilder().url("wrong URL").build();

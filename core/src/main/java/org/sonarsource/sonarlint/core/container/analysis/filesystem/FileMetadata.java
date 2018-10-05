@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.primitives.Ints;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -219,7 +217,7 @@ public class FileMetadata {
 
     private Metadata(int lines, List<Integer> originalLineOffsets, int lastValidOffset) {
       this.lines = lines;
-      this.originalLineOffsets = Ints.toArray(originalLineOffsets);
+      this.originalLineOffsets = originalLineOffsets.stream().mapToInt(i -> i).toArray();
       this.lastValidOffset = lastValidOffset;
     }
   }

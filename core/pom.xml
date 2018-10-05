@@ -58,6 +58,33 @@
       <version>2.8.4</version>
     </dependency>
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>26.0-jre</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>animal-sniffer-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.j2objc</groupId>
+          <artifactId>j2objc-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>checker-qual</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.errorprone</groupId>
+          <artifactId>error_prone_annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
       <version>${okhttp.version}</version>
@@ -259,10 +286,11 @@
               <relocations>
                 <relocation>
                   <pattern></pattern>
-                  <shadedPattern>hidden.</shadedPattern>
+                  <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
                   <includes>
                     <include>org.apache.**</include>
-                    <include>com.google.**</include>
+                    <include>com.google.common.**</include>
+                    <include>com.google.gson.**</include>
                     <include>org.picocontainer.**</include>
                     <include>okhttp3.**</include>
                     <include>okio.**</include>
@@ -324,6 +352,7 @@
               org.sonarsource.sonarlint.core,
               org.sonarsource.sonarlint.core.telemetry,
               org.sonarsource.sonarlint.core.notifications,
+              com.google.protobuf,
             </Export-Package>
             <Include-Resource>
               {maven-resources},

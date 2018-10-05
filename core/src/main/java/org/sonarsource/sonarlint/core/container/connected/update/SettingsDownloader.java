@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.common.base.Joiner;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarqube.ws.Settings.FieldValues.Value;
 import org.sonarqube.ws.Settings.Setting;
@@ -37,10 +37,12 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
+
+import static java.util.stream.Collectors.joining;
 
 public class SettingsDownloader {
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
@@ -92,13 +94,13 @@ public class SettingsDownloader {
     }
   }
 
-  private void processSetting(BiConsumer<String, String> consumer, Setting s) {
+  private static void processSetting(BiConsumer<String, String> consumer, Setting s) {
     switch (s.getValueOneOfCase()) {
       case VALUE:
         consumer.accept(s.getKey(), s.getValue());
         break;
       case VALUES:
-        consumer.accept(s.getKey(), Joiner.on(',').join(s.getValues().getValuesList()));
+        consumer.accept(s.getKey(), s.getValues().getValuesList().stream().collect(joining(",")));
         break;
       case FIELDVALUES:
         processPropertySet(s, consumer);
@@ -118,7 +120,7 @@ public class SettingsDownloader {
       ids.add(String.valueOf(id));
       id++;
     }
-    consumer.accept(s.getKey(), Joiner.on(',').join(ids));
+    consumer.accept(s.getKey(), ids.stream().collect(Collectors.joining(",")));
   }
 
   private void fetchUsingPropertiesWS(@Nullable String projectKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {

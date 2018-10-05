@@ -37,13 +37,14 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.base.Strings.nullToEmpty;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.util.Objects.requireNonNull;
 import static okhttp3.internal.http.StatusLine.HTTP_PERM_REDIRECT;
 import static okhttp3.internal.http.StatusLine.HTTP_TEMP_REDIRECT;
+import static org.apache.commons.lang.StringUtils.defaultString;
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 /**
  * Connect to any SonarQube server available through HTTP or HTTPS.
@@ -65,15 +66,15 @@ public class HttpConnector implements WsConnector {
 
   private HttpConnector(Builder builder) {
     this.baseUrl = HttpUrl.parse(builder.url.endsWith("/") ? builder.url : format("%s/", builder.url));
-    checkArgument(this.baseUrl != null, "Malformed URL: '%s'", builder.url);
+    requireNonNull(this.baseUrl, () -> "Malformed URL: '" + builder.url + "'");
 
     OkHttpClientBuilder okHttpClientBuilder = new OkHttpClientBuilder();
     okHttpClientBuilder.setUserAgent(builder.userAgent);
 
-    if (!isNullOrEmpty(builder.login)) {
+    if (isNotEmpty(builder.login)) {
       // password is null when login represents an access token. In this case
       // the Basic credentials consider an empty password.
-      okHttpClientBuilder.setCredentials(Credentials.basic(builder.login, nullToEmpty(builder.password)));
+      okHttpClientBuilder.setCredentials(Credentials.basic(builder.login, defaultString(builder.password, "")));
     }
     okHttpClientBuilder.setProxy(builder.proxy);
     okHttpClientBuilder.setProxyLogin(builder.proxyLogin);
@@ -340,7 +341,7 @@ public class HttpConnector implements WsConnector {
     }
 
     public HttpConnector build() {
-      checkArgument(!isNullOrEmpty(url), "Server URL is not defined");
+      checkArgument(isNotEmpty(url), "Server URL is not defined");
       return new HttpConnector(this);
     }
   }

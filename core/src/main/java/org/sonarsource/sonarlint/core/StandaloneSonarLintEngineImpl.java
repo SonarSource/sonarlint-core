@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintEngine {
 
@@ -81,8 +81,8 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   @Override
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
-    checkNotNull(configuration);
-    checkNotNull(issueListener);
+    requireNonNull(configuration);
+    requireNonNull(issueListener);
     setLogging(logOutput);
     rwl.readLock().lock();
     try {

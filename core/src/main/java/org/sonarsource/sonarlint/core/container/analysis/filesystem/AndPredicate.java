@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,7 +89,6 @@ class AndPredicate extends AbstractFilePredicate {
     return result;
   }
 
-  @VisibleForTesting
   Collection<OptimizedFilePredicate> predicates() {
     return predicates;
   }

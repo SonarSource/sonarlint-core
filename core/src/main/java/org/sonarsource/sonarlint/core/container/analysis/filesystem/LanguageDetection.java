@@ -19,12 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import com.google.common.base.Joiner;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.fs.InputFile;
@@ -102,7 +103,10 @@ public class LanguageDetection {
   }
 
   private String getDetails(String detectedLanguage) {
-    return detectedLanguage + ": " + Joiner.on(",").join(patternsByLanguage.get(detectedLanguage));
+    return detectedLanguage + ": "
+      + Arrays.stream(patternsByLanguage.get(detectedLanguage))
+        .map(SonarLintPathPattern::toString)
+        .collect(Collectors.joining(","));
   }
 
   static String sanitizeExtension(String suffix) {
