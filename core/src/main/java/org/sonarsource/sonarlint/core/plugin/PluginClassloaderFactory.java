@@ -123,8 +123,6 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonar/api/")
       .addInclusion("org/sonarsource/api/sonarlint/")
       .addInclusion("org/sonar/check/")
-      // Used by SonarCobol
-      .addInclusion("org/sonar/channel/")
       .addInclusion("net/sourceforge/pmd/")
 
       // API exclusions
