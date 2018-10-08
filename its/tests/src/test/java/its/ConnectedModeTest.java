@@ -120,7 +120,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         // TODO update kotlin and ruby version once they are released
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.2.0.1568"))
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.2.0.1568"))
-        .addPlugin(MavenLocation.of("org.sonarsource.web", "sonar-web-plugin", "LATEST_RELEASE"))
+        .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", "LATEST_RELEASE"))
         .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
