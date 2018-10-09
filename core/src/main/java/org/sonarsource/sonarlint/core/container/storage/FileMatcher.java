@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -38,8 +39,8 @@ public class FileMatcher {
   }
 
   public Result match(List<Path> sqRelativePaths, List<Path> localRelativePaths) {
-    Map<Path, Integer> localPrefixes = new HashMap<>();
-    Map<Path, Integer> sqPrefixes = new HashMap<>();
+    Map<Path, Integer> localPrefixes = new LinkedHashMap<>();
+    Map<Path, Integer> sqPrefixes = new LinkedHashMap<>();
     BiFunction<Path, Integer, Integer> incrementer = (p, i) -> i != null ? (i + 1) : 1;
 
     sqRelativePaths.forEach(reversePathTree::index);
