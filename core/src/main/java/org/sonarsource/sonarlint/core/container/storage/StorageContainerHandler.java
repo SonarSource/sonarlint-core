@@ -102,19 +102,19 @@ public class StorageContainerHandler {
     return allProjectReader.get();
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath) {
-    return issueStoreReader.getServerIssues(projectBinding, filePath);
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
+    return issueStoreReader.getServerIssues(projectBinding, ideFilePath);
   }
 
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
-    return storageExclusions.getExcludedFiles(projectBinding, files, filePathExtractor, testFilePredicate);
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
+    return storageExclusions.getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
     PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, filePath);
-    return getServerIssues(projectBinding, filePath);
+    updater.updateFileIssues(projectBinding, configuration, ideFilePath);
+    return getServerIssues(projectBinding, ideFilePath);
   }
 
   public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
@@ -123,8 +123,8 @@ public class StorageContainerHandler {
     updater.updateFileIssues(projectKey, configuration);
   }
 
-  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths) {
-    List<Path> localPathList = localFilePaths.stream()
+  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
+    List<Path> idePathList = ideFilePaths.stream()
       .map(Paths::get)
       .collect(Collectors.toList());
     List<Path> sqPathList = storageReader.readProjectComponents(projectKey)
@@ -133,9 +133,9 @@ public class StorageContainerHandler {
       .collect(Collectors.toList());
 
     FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
-    FileMatcher.Result match = fileMatcher.match(sqPathList, localPathList);
+    FileMatcher.Result match = fileMatcher.match(sqPathList, idePathList);
     return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.mostCommonSqPrefix().toString()),
-      FilenameUtils.separatorsToUnix(match.mostCommonLocalPrefix().toString()));
+      FilenameUtils.separatorsToUnix(match.mostCommonIdePrefix().toString()));
 
   }
 

@@ -36,22 +36,22 @@ public class FileMatcherTest {
   public void simple_case_without_prefixes() {
     List<Path> paths = Collections.singletonList(Paths.get("project1/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(paths, paths);
-    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
   }
 
   @Test
   public void simple_case_with_prefixes() {
-    List<Path> localPaths = Collections.singletonList(Paths.get("local/src/main/java/File.java"));
+    List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File.java"));
-    FileMatcher.Result match = fileMatcher.match(sqPaths, localPaths);
-    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get("local"));
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get("local"));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq"));
   }
 
   @Test
   public void should_return_shortest_prefix_if_there_are_ties() {
-    List<Path> localPaths = Arrays.asList(
+    List<Path> idePaths = Arrays.asList(
       Paths.get("pom.xml")
     );
 
@@ -61,13 +61,13 @@ public class FileMatcherTest {
       Paths.get("pom.xml"),
       Paths.get("aq1/module1/pom.xml")
       );
-    FileMatcher.Result match = fileMatcher.match(sqPaths, localPaths);
-    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get(""));
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
   }
   @Test
   public void should_return_most_common_prefixes() {
-    List<Path> localPaths = Arrays.asList(
+    List<Path> idePaths = Arrays.asList(
       Paths.get("local1/src/main/java/A.java"),
       Paths.get("local1/src/main/java/B.java"),
       Paths.get("local2/src/main/java/B.java")
@@ -79,8 +79,8 @@ public class FileMatcherTest {
       Paths.get("sq1/src/main/java/B.java")
 
     );
-    FileMatcher.Result match = fileMatcher.match(sqPaths, localPaths);
-    assertThat(match.mostCommonLocalPrefix()).isEqualTo(Paths.get("local1"));
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get("local1"));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq1"));
   }
 }
