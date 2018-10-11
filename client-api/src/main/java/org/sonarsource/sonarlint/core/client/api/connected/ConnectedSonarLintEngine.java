@@ -188,6 +188,15 @@ public interface ConnectedSonarLintEngine {
    */
   Collection<LoadedAnalyzer> getLoadedAnalyzers();
 
-  <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate);
+  /**
+   * Get a list of files that are excluded from analysis, out of the provided files.
+   *
+   * @param projectBinding    Specifies the binding to which the files belong.
+   * @param files             The files that will be process to detect which ones are excluded from analysis
+   * @param ideFilePathExtractor Provides a IDE path of each file. The path will be processes using the binding prefixes.
+   * @param testFilePredicate Indicates whether a file is a test file.
+   * @return The list of files that are excluded from analysis.
+   */
+  <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate);
 
 }

@@ -222,20 +222,20 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath) {
-    return withReadLock(() -> getHandler().getServerIssues(projectBinding, filePath));
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
+    return withReadLock(() -> getHandler().getServerIssues(projectBinding, ideFilePath));
   }
 
   @Override
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
-    return withReadLock(() -> getHandler().getExcludedFiles(projectBinding, files, filePathExtractor, testFilePredicate));
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
+    return withReadLock(() -> getHandler().getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate));
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(serverConfig, projectBinding, filePath);
+      return getHandler().downloadServerIssues(serverConfig, projectBinding, ideFilePath);
     });
   }
 
@@ -248,8 +248,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths) {
-    return withReadLock(() -> getHandler().calculatePathPrefixes(projectKey, localFilePaths));
+  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
+    return withReadLock(() -> getHandler().calculatePathPrefixes(projectKey, ideFilePaths));
   }
 
   @Override

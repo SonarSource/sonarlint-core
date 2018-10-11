@@ -28,12 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.api.utils.TempFolder;
-import org.sonar.api.utils.internal.DefaultTempFolder;
 import org.sonar.api.utils.internal.JUnitTempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -88,7 +85,7 @@ public class PartialUpdaterTest {
   public void update_file_issues() {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
-    when(issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
+    when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(downloader.apply("module:file")).thenReturn(issues);
 
@@ -99,7 +96,7 @@ public class PartialUpdaterTest {
 
   @Test
   public void update_file_issues_for_unknown_file() {
-    when(issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
+    when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
     updater.updateFileIssues(projectBinding, projectConfiguration, "file");
     verifyZeroInteractions(downloader);
     verifyZeroInteractions(issueStore);
@@ -109,7 +106,7 @@ public class PartialUpdaterTest {
   public void error_downloading_issues() {
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
     when(downloader.apply("module:file")).thenThrow(IllegalArgumentException.class);
-    when(issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
+    when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
 
     exception.expect(DownloadException.class);
     updater.updateFileIssues(projectBinding, projectConfiguration, "file");

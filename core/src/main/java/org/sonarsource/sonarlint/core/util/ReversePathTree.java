@@ -64,7 +64,7 @@ public class ReversePathTree {
   }
 
   private static void collectPrefixes(Node node, Path currentPath, List<Path> paths) {
-    if (node.children.isEmpty() || node.terminal) {
+    if (node.terminal) {
       paths.add(currentPath);
     }
 

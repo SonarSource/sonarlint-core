@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,47 +37,47 @@ public class FileMatcher {
     this.reversePathTree = reversePathTree;
   }
 
-  public Result match(List<Path> sqRelativePaths, List<Path> localRelativePaths) {
-    Map<Path, Integer> localPrefixes = new LinkedHashMap<>();
+  public Result match(List<Path> sqRelativePaths, List<Path> ideRelativePaths) {
+    Map<Path, Integer> idePrefixes = new LinkedHashMap<>();
     Map<Path, Integer> sqPrefixes = new LinkedHashMap<>();
     BiFunction<Path, Integer, Integer> incrementer = (p, i) -> i != null ? (i + 1) : 1;
 
     sqRelativePaths.forEach(reversePathTree::index);
 
-    for (Path local : localRelativePaths) {
-      ReversePathTree.Match match = reversePathTree.findLongestSuffixMatches(local);
+    for (Path ide : ideRelativePaths) {
+      ReversePathTree.Match match = reversePathTree.findLongestSuffixMatches(ide);
       for (Path sqPrefix : match.matchPrefixes()) {
         sqPrefixes.compute(sqPrefix, incrementer);
       }
 
       if (match.matchLen() > 0) {
-        Path localPrefix = getLocalPrefix(local, match);
-        localPrefixes.compute(localPrefix, incrementer);
+        Path idePrefix = getIdePrefix(ide, match);
+        idePrefixes.compute(idePrefix, incrementer);
       }
     }
 
-    return new Result(mostCommonPrefix(localPrefixes), mostCommonPrefix(sqPrefixes));
+    return new Result(mostCommonPrefix(idePrefixes), mostCommonPrefix(sqPrefixes));
   }
 
-  private static Path getLocalPrefix(Path localPath, ReversePathTree.Match match) {
-    int prefixLen = localPath.getNameCount() - match.matchLen();
+  private static Path getIdePrefix(Path idePath, ReversePathTree.Match match) {
+    int prefixLen = idePath.getNameCount() - match.matchLen();
     if (prefixLen > 0) {
-      return localPath.subpath(0, localPath.getNameCount() - match.matchLen());
+      return idePath.subpath(0, idePath.getNameCount() - match.matchLen());
     }
     return Paths.get("");
   }
 
   public static class Result {
-    private Path localPrefix;
+    private Path idePrefix;
     private Path sqPrefix;
 
-    private Result(Path localPrefix, Path sqPrefix) {
-      this.localPrefix = localPrefix;
+    private Result(Path idePrefix, Path sqPrefix) {
+      this.idePrefix = idePrefix;
       this.sqPrefix = sqPrefix;
     }
 
-    public Path mostCommonLocalPrefix() {
-      return localPrefix;
+    public Path mostCommonIdePrefix() {
+      return idePrefix;
     }
 
     public Path mostCommonSqPrefix() {

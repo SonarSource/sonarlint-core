@@ -57,10 +57,10 @@ public class PartialUpdater {
     this.tempFolder = tempFolder;
   }
 
-  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String localFilePath) {
+  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath) {
     Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
-    String fileKey = issueStorePaths.localPathToFileKey(projectConfiguration, projectBinding, localFilePath);
+    String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
     if (fileKey == null) {
       return;
     }
