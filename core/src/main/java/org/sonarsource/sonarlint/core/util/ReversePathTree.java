@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ReversePathTree {
-  private Node root = new Node();
+  private final Node root = new Node();
 
   public void index(Path path) {
     Node currentNode = root;
