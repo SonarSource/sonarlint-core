@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.util.ReversePathTree;
 import static java.util.Collections.reverseOrder;
 
 public class FileMatcher {
-  private ReversePathTree reversePathTree;
+  private final ReversePathTree reversePathTree;
 
   public FileMatcher(ReversePathTree reversePathTree) {
     this.reversePathTree = reversePathTree;

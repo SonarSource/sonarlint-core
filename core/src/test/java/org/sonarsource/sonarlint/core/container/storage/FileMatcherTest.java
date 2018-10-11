@@ -50,6 +50,24 @@ public class FileMatcherTest {
   }
 
   @Test
+  public void no_match() {
+    List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File1.java"));
+    List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
+  }
+
+  @Test
+  public void empty_project_in_ide() {
+    List<Path> idePaths = Collections.emptyList();
+    List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
+  }
+
+  @Test
   public void should_return_shortest_prefix_if_there_are_ties() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("pom.xml")
@@ -60,11 +78,12 @@ public class FileMatcherTest {
       Paths.get("aq2/pom.xml"),
       Paths.get("pom.xml"),
       Paths.get("aq1/module1/pom.xml")
-      );
+    );
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
   }
+
   @Test
   public void should_return_most_common_prefixes() {
     List<Path> idePaths = Arrays.asList(
