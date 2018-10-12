@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
+import org.sonarqube.ws.WsComponents.ShowWsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 
@@ -29,6 +30,11 @@ public class DefaultRemoteProject implements RemoteProject {
   public DefaultRemoteProject(ProjectList.Project project) {
     this.key = project.getKey();
     this.name = project.getName();
+  }
+
+  public DefaultRemoteProject(ShowWsResponse r) {
+    this.key = r.getComponent().getKey();
+    this.name = r.getComponent().getName();
   }
 
   @Override

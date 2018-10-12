@@ -730,6 +730,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void getProject() throws Exception {
+    WsHelper helper = new WsHelperImpl();
+    assertThat(helper.getProject(getServerConfig(), "foo", null)).isNotPresent();
+    assertThat(helper.getProject(getServerConfig(), PROJECT_KEY_RUBY, null)).isPresent();
+  }
+
+  @Test
   public void analysisRuby() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_RUBY);

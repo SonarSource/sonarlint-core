@@ -20,14 +20,18 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.CheckForNull;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarqube.ws.Organizations;
+import org.sonarqube.ws.WsComponents;
+import org.sonarqube.ws.WsComponents.ShowWsResponse;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -38,6 +42,7 @@ import org.sonarsource.sonarlint.core.container.connected.validate.Authenticatio
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
+import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -65,7 +70,7 @@ public class WsHelperImpl implements WsHelper {
         if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_VERSION_FOR_ORGANIZATIONS)) < 0) {
           return new DefaultValidationResult(false, "No organization support for this server version: " + serverStatus.getVersion());
         }
-        if (fetchOrganization(client, organizationKey, new ProgressWrapper(null)) == null) {
+        if (!fetchOrganization(client, organizationKey, new ProgressWrapper(null)).isPresent()) {
           return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey);
         }
       }
@@ -123,15 +128,31 @@ public class WsHelperImpl implements WsHelper {
   }
 
   @Override
-  @CheckForNull
-  public RemoteOrganization getOrganization(ServerConfiguration serverConfig, String organizationKey, @Nullable ProgressMonitor monitor) {
+  public Optional<RemoteOrganization> getOrganization(ServerConfiguration serverConfig, String organizationKey, @Nullable ProgressMonitor monitor) {
     SonarLintWsClient client = createClient(serverConfig);
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
     return getOrganization(client, serverChecker, organizationKey, new ProgressWrapper(monitor));
   }
 
-  @CheckForNull
-  static RemoteOrganization getOrganization(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, String organizationKey, ProgressWrapper progress) {
+  @Override
+  public Optional<RemoteProject> getProject(ServerConfiguration serverConfig, String projectKey, ProgressMonitor monitor) {
+    SonarLintWsClient client = createClient(serverConfig);
+    return fetchComponent(client, projectKey)
+      .map(DefaultRemoteProject::new);
+  }
+
+  public static Optional<ShowWsResponse> fetchComponent(SonarLintWsClient client, String componentKey) {
+    try (WsResponse response = client.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey))) {
+      if (response.isSuccessful()) {
+        return Optional.of(WsComponents.ShowWsResponse.parseFrom(response.contentStream()));
+      }
+      return Optional.empty();
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to fetch component '" + componentKey + "'", e);
+    }
+  }
+
+  static Optional<RemoteOrganization> getOrganization(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, String organizationKey, ProgressWrapper progress) {
     try {
       checkServer(serverChecker, progress);
       return fetchOrganization(client, organizationKey, progress.subProgress(0.2f, 1.0f, "Fetch organization"));
@@ -155,11 +176,11 @@ public class WsHelperImpl implements WsHelper {
     progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
   }
 
-  @CheckForNull
-  private static RemoteOrganization fetchOrganization(SonarLintWsClient client, String organizationKey, ProgressWrapper progress) {
+  private static Optional<RemoteOrganization> fetchOrganization(SonarLintWsClient client, String organizationKey, ProgressWrapper progress) {
     String url = "api/organizations/search.protobuf?organizations=" + StringUtils.urlEncode(organizationKey);
-    List<RemoteOrganization> orgs = getPaginatedOrganizations(client, url, progress);
-    return orgs.isEmpty() ? null : orgs.iterator().next();
+    return getPaginatedOrganizations(client, url, progress)
+      .stream()
+      .findFirst();
   }
 
   private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, boolean memberOnly, ProgressWrapper progress) {
