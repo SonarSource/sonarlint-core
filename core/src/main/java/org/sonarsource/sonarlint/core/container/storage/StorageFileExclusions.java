@@ -55,6 +55,9 @@ public class StorageFileExclusions {
 
     for (G file : files) {
       String idePath = fileIdePathExtractor.apply(file);
+      if (idePath == null) {
+        continue;
+      }
       String sqPath = issueStorePaths.idePathToSqPath(projectBinding, idePath);
       if (sqPath == null) {
         // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
