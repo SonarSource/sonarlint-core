@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
@@ -35,11 +36,15 @@ public class TelemetryManager {
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
   private final TelemetryStorage storage;
+  private final Supplier<Boolean> usesConnectedModeSupplier;
+  private final Supplier<Boolean> usesSonarCloudSupplier;
   private final TelemetryData data;
   private final TelemetryClient client;
 
-  public TelemetryManager(Path path, TelemetryClient client) {
+  public TelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedModeSupplier, Supplier<Boolean> usesSonarCloudSupplier) {
     this.storage = newTelemetryStorage(path);
+    this.usesConnectedModeSupplier = usesConnectedModeSupplier;
+    this.usesSonarCloudSupplier = usesSonarCloudSupplier;
     this.data = storage.tryLoad();
     this.client = client;
   }
@@ -66,21 +71,13 @@ public class TelemetryManager {
     tryMerge();
     data.setEnabled(false);
     saveNow();
-    client.optOut(data);
-  }
-
-  private void tryMerge() {
-    TelemetryData existing = storage.tryLoad();
-    if (existing != null) {
-      data.mergeFrom(existing);
-    }
+    client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get());
   }
 
   /**
    * Upload telemetry data, when all conditions are satisfied:
    * - the day is different from the last upload
    * - the grace period has elapsed since the last upload
-   *
    * To be called periodically once a day.
    */
   public void uploadLazily() {
@@ -96,7 +93,8 @@ public class TelemetryManager {
 
     data.setLastUploadTime();
     saveNow();
-    client.upload(data);
+    client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get());
+
     data.clearAnalyzers();
     saveNow();
   }
@@ -121,12 +119,6 @@ public class TelemetryManager {
     mergeAndSave();
   }
 
-  public void usedConnectedMode(boolean hasConnectedProject, boolean isSonarCloud) {
-    data.setUsedConnectedMode(hasConnectedProject);
-    data.setUsedSonarcloud(hasConnectedProject && isSonarCloud);
-    mergeAndSave();
-  }
-
   /**
    * Save and upload lazily telemetry data.
    */
@@ -138,6 +130,13 @@ public class TelemetryManager {
   private void mergeAndSave() {
     tryMerge();
     saveNow();
+  }
+
+  private void tryMerge() {
+    TelemetryData existing = storage.tryLoad();
+    if (existing != null) {
+      data.mergeFrom(existing);
+    }
   }
 
   private void saveNow() {

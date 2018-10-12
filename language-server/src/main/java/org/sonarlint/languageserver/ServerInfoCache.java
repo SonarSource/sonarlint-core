@@ -19,6 +19,7 @@
  */
 package org.sonarlint.languageserver;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,8 @@ import static org.apache.commons.lang.StringUtils.isBlank;
  * Cache of server connection details. Used for updating server and module storage.
  */
 class ServerInfoCache {
-
+  static final String[] SONARCLOUD_ALIAS = {"https://sonarqube.com", "https://www.sonarqube.com",
+    "https://www.sonarcloud.io", "https://sonarcloud.io"};
   private final ClientLogger logger;
 
   private final Map<String, ServerInfo> cache = new HashMap<>();
@@ -63,6 +65,19 @@ class ServerInfoCache {
         logger.error(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
       }
     });
+  }
+
+  boolean isEmpty() {
+    return cache.isEmpty();
+  }
+
+  boolean containsSonarCloud() {
+    return cache.values().stream()
+      .anyMatch(s -> isSonarCloudAlias(s.serverUrl));
+  }
+
+  private static boolean isSonarCloudAlias(@Nullable String url) {
+    return Arrays.asList(SONARCLOUD_ALIAS).contains(url);
   }
 
   void forEach(BiConsumer<String, ServerInfo> action) {

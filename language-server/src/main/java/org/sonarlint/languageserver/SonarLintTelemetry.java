@@ -21,7 +21,6 @@ package org.sonarlint.languageserver;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,8 +37,6 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryManager;
 public class SonarLintTelemetry {
   public static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
   private static final Logger LOG = Loggers.get(SonarLintTelemetry.class);
-  static final String[] SONARCLOUD_ALIAS = {"https://sonarqube.com", "https://www.sonarqube.com",
-    "https://www.sonarcloud.io", "https://sonarcloud.io"};
 
   private final Supplier<ScheduledExecutorService> executorFactory;
   private TelemetryManager telemetry;
@@ -80,7 +77,7 @@ public class SonarLintTelemetry {
     return telemetry != null && telemetry.isEnabled();
   }
 
-  public void init(@Nullable Path storagePath, String productName, String productVersion) {
+  public void init(@Nullable Path storagePath, String productName, String productVersion, Supplier<Boolean> usesConnectedMode, Supplier<Boolean> usesSonarCloud) {
     if (storagePath == null) {
       LOG.info("Telemetry disabled because storage path is null");
       return;
@@ -91,7 +88,7 @@ public class SonarLintTelemetry {
     }
     TelemetryClientConfig clientConfig = getTelemetryClientConfig();
     TelemetryClient client = new TelemetryClient(clientConfig, productName, productVersion);
-    this.telemetry = newTelemetryManager(storagePath, client);
+    this.telemetry = newTelemetryManager(storagePath, client, usesConnectedMode, usesSonarCloud);
     try {
       this.scheduler = executorFactory.get();
       this.scheduledFuture = scheduler.scheduleWithFixedDelay(this::upload,
@@ -103,8 +100,8 @@ public class SonarLintTelemetry {
     }
   }
 
-  TelemetryManager newTelemetryManager(Path path, TelemetryClient client) {
-    return new TelemetryManager(path, client);
+  TelemetryManager newTelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedMode, Supplier<Boolean> usesSonarCloud) {
+    return new TelemetryManager(path, client, usesConnectedMode, usesSonarCloud);
   }
 
   @VisibleForTesting
@@ -139,15 +136,4 @@ public class SonarLintTelemetry {
       scheduler.shutdown();
     }
   }
-
-  public void usedConnectedMode(String url) {
-    if (enabled()) {
-      telemetry.usedConnectedMode(true, isSonarCloudAlias(url));
-    }
-  }
-
-  public static boolean isSonarCloudAlias(@Nullable String url) {
-    return Arrays.asList(SONARCLOUD_ALIAS).contains(url);
-  }
-
 }

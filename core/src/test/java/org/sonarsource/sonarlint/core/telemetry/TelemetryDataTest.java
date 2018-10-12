@@ -105,36 +105,6 @@ public class TelemetryDataTest {
   }
 
   @Test
-  public void mergeFrom_should_overwrite_usedConnectedMode_if_set() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    data1.setUsedConnectedMode(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedConnectedMode()).isTrue();
-
-    data1.setUsedConnectedMode(false);
-    data2.setUsedConnectedMode(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedConnectedMode()).isTrue();
-  }
-  
-  @Test
-  public void mergeFrom_should_overwrite_usedSonarcloud_if_set() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    data1.setUsedSonarcloud(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedSonarcloud()).isTrue();
-
-    data1.setUsedSonarcloud(false);
-    data2.setUsedSonarcloud(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedSonarcloud()).isTrue();
-  }
-
-  @Test
   public void test_isOlder_LocalDate() {
     LocalDate date = LocalDate.now();
 

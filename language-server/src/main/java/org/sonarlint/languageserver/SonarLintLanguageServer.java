@@ -128,7 +128,6 @@ import static java.util.Objects.nonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
-
   private static final String USER_AGENT = "SonarLint Language Server";
 
   static final String DISABLE_TELEMETRY = "disableTelemetry";
@@ -246,14 +245,14 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     shouldIncludeRuleDetailsInCodeAction = Boolean.TRUE.equals(options.get(INCLUDE_RULE_DETAILS_IN_CODE_ACTION));
 
-    telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
-    telemetry.optOut(userSettings.disableTelemetry);
-
     String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
     engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
 
     serverInfoCache.replace(options.get(CONNECTED_MODE_SERVERS_PROP));
     updateBinding((Map<?, ?>) options.get(CONNECTED_MODE_PROJECT_PROP));
+
+    telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion, this::usesConnectedMode, this::usesSonarCloud);
+    telemetry.optOut(userSettings.disableTelemetry);
 
     InitializeResult result = new InitializeResult();
     ServerCapabilities c = new ServerCapabilities();
@@ -264,6 +263,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     result.setCapabilities(c);
     return CompletableFuture.completedFuture(result);
+  }
+
+  private boolean usesConnectedMode() {
+    //TODO check if this is correct
+    return !serverInfoCache.isEmpty();
+  }
+
+  private boolean usesSonarCloud() {
+    //TODO check if this is correct
+    return serverInfoCache.containsSonarCloud();
   }
 
   private static WorkspaceServerCapabilities getWorkspaceServerCapabilities() {
@@ -351,7 +360,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     if (updateProjectStorage(engine, serverInfo)) {
       ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
       serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger);
-      telemetry.usedConnectedMode(serverInfo.serverUrl);
     } else {
       binding = null;
     }
