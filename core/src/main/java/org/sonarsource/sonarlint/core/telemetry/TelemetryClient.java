@@ -52,9 +52,9 @@ public class TelemetryClient {
     this.httpFactory = httpFactory;
   }
 
-  void upload(TelemetryData data) {
+  void upload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     try {
-      sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
+      sendPost(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud));
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Failed to upload telemetry data", e);
@@ -62,9 +62,9 @@ public class TelemetryClient {
     }
   }
 
-  void optOut(TelemetryData data) {
+  void optOut(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     try {
-      sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
+      sendDelete(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud));
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Failed to upload telemetry opt-out", e);
@@ -72,12 +72,12 @@ public class TelemetryClient {
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryData data) {
+  private TelemetryPayload createPayload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     OffsetDateTime systemTime = OffsetDateTime.now();
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
-      data.usedConnectedMode(), data.usedSonarcloud(), systemTime, data.installTime(), analyzers);
+      usesConnectedMode, usesSonarCloud, systemTime, data.installTime(), analyzers);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {

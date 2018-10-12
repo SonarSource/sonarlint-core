@@ -66,33 +66,33 @@ public class TelemetryClientTest {
 
   @Test
   public void opt_out() {
-    client.optOut(new TelemetryData());
+    client.optOut(new TelemetryData(), true, true);
     verify(http).delete(any(DeleteRequest.class), Mockito.anyString());
   }
 
   @Test
   public void upload() {
-    client.upload(new TelemetryData());
+    client.upload(new TelemetryData(), true, true);
     verify(http).post(any(PostRequest.class), Mockito.anyString());
   }
 
   @Test
   public void should_not_crash_when_cannot_upload() {
     when(http.post(any(PostRequest.class), anyString())).thenThrow(new RuntimeException());
-    client.upload(new TelemetryData());
+    client.upload(new TelemetryData(), true, true);
   }
 
   @Test
   public void should_not_crash_when_cannot_opt_out() {
     when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new RuntimeException());
-    client.optOut(new TelemetryData());
+    client.optOut(new TelemetryData(), true, true);
   }
 
   @Test
   public void failed_upload_should_log_if_debug() {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     when(http.post(any(PostRequest.class), anyString())).thenThrow(new IllegalStateException("msg"));
-    client.upload(new TelemetryData());
+    client.upload(new TelemetryData(), true, true);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry data");
   }
 
@@ -100,7 +100,7 @@ public class TelemetryClientTest {
   public void failed_optout_should_log_if_debug() {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new IllegalStateException("msg"));
-    client.optOut(new TelemetryData());
+    client.optOut(new TelemetryData(), true, true);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry opt-out");
   }
 }

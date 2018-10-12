@@ -39,8 +39,6 @@ class TelemetryData {
   private OffsetDateTime installTime;
   private long numUseDays;
   private boolean enabled;
-  private boolean usedConnectedMode;
-  private boolean usedSonarcloud;
   private Map<String, TelemetryAnalyzerPerformance> analyzers;
 
   TelemetryData() {
@@ -113,22 +111,6 @@ class TelemetryData {
     return enabled;
   }
 
-  void setUsedConnectedMode(boolean value) {
-    usedConnectedMode = value;
-  }
-
-  boolean usedConnectedMode() {
-    return usedConnectedMode;
-  }
-  
-  void setUsedSonarcloud(boolean value) {
-    usedSonarcloud = value;
-  }
-  
-  boolean usedSonarcloud() {
-    return usedSonarcloud;
-  }
-
   /**
    * Register that an analysis was performed.
    * This should be used when multiple files are analyzed.
@@ -159,14 +141,6 @@ class TelemetryData {
    * @param other existing telemetry data to merge from
    */
   void mergeFrom(TelemetryData other) {
-    if (other.usedConnectedMode) {
-      usedConnectedMode = true;
-    }
-    
-    if (other.usedSonarcloud) {
-      usedSonarcloud = true;
-    }
-
     if (isOlder(lastUseDate, other.lastUseDate)) {
       lastUseDate = other.lastUseDate;
     }

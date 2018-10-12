@@ -70,7 +70,6 @@ public class TelemetryStorageTest {
     assertThat(filePath).doesNotExist();
 
     data.setUsedAnalysis();
-    data.usedConnectedMode();
 
     storage.trySave(data);
     assertThat(filePath).exists();
