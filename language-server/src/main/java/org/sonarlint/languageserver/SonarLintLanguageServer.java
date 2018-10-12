@@ -115,7 +115,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -706,7 +706,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       AnalysisResults analysisResults;
       try {
         analysisResults = analyze(configuration, collector);
-      } catch (GlobalUpdateRequiredException e) {
+      } catch (GlobalStorageUpdateRequiredException e) {
         updateServerStorage(engine, serverInfo);
         updateProjectStorage(engine, serverInfo);
         analysisResults = analyze(configuration, collector);

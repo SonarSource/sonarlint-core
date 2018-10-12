@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -127,7 +127,7 @@ public class BrokenStorageMissingPluginMediumTest {
         new StoreIssueListener(issues), null, null);
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(GlobalUpdateRequiredException.class);
+      assertThat(e).isExactlyInstanceOf(GlobalStorageUpdateRequiredException.class);
     }
   }
 

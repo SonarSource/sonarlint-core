@@ -19,10 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
-public class GlobalUpdateRequiredException extends SonarLintException {
+public class GlobalStorageUpdateRequiredException extends SonarLintException {
 
-  public GlobalUpdateRequiredException(String msg) {
-    super(msg, null);
+  private final String serverId;
+
+  public GlobalStorageUpdateRequiredException(String serverId) {
+    super("Storage of server '" + serverId + "' requires an update", null);
+    this.serverId = serverId;
+  }
+
+  public String getServerId() {
+    return serverId;
   }
 
 }

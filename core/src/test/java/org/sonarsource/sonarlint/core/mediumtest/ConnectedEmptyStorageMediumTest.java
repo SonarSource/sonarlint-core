@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -78,14 +78,14 @@ public class ConnectedEmptyStorageMediumTest {
       sonarlint.allProjectsByKey();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
     try {
       sonarlint.getRuleDetails("rule");
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
     try {
@@ -94,7 +94,7 @@ public class ConnectedEmptyStorageMediumTest {
         mock(IssueListener.class), null, null);
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
   }

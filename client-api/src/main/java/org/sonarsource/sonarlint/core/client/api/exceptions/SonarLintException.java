@@ -19,17 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
+import javax.annotation.Nullable;
+
 public class SonarLintException extends RuntimeException {
 
   public SonarLintException() {
     super();
   }
 
-  public SonarLintException(String msg, Throwable cause) {
+  public SonarLintException(String msg, @Nullable Throwable cause) {
     super(msg, cause);
   }
 
-  public SonarLintException(String msg, Throwable cause, boolean withStackTrace) {
+  public SonarLintException(String msg, @Nullable Throwable cause, boolean withStackTrace) {
     super(msg, cause, !withStackTrace, withStackTrace);
   }
 }

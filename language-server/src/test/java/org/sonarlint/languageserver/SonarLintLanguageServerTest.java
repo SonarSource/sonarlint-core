@@ -65,7 +65,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
@@ -577,7 +577,7 @@ public class SonarLintLanguageServerTest {
 
     engine = mock(ConnectedSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
     when(engine.analyze(any(), any(), any(), any()))
-      .thenThrow(new GlobalUpdateRequiredException("foo"))
+      .thenThrow(new GlobalStorageUpdateRequiredException("foo"))
       .thenReturn(mock(AnalysisResults.class));
     tester.setEngine(serverId, engine);
     tester.analyze(true);

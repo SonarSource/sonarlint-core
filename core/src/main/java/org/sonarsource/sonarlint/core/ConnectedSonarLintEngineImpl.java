@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
@@ -217,7 +217,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   private void checkUpdateStatus() {
     if (state != State.UPDATED) {
-      throw new GlobalUpdateRequiredException("Please update server '" + globalConfig.getServerId() + "'");
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
     }
   }
 
