@@ -146,9 +146,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
-    setLogging(logOutput);
     return withReadLock(() -> {
       try {
+        setLogging(logOutput);
         return getHandler().analyze(storageContainer.getGlobalExtensionContainer(), configuration, issueListener, new ProgressWrapper(monitor));
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.wrap(e);
