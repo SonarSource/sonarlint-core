@@ -219,7 +219,7 @@ public class ConnectedDaemonTest {
     // Analyze without update -> error
     Iterator<Issue> analyze = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVA));
 
-    exception.expectMessage("Please update server 'storage'");
+    exception.expectMessage("Storage of server 'storage' requires an update");
     exception.expect(StatusRuntimeException.class);
     analyze.hasNext();
 
