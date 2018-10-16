@@ -13,3 +13,4 @@ typescript=1.5
 web=3.0
 kotlin=1.1
 ruby=1.1
+scala=1.2.1
