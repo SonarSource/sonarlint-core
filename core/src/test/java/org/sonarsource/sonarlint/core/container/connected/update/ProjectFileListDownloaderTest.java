@@ -41,7 +41,7 @@ public class ProjectFileListDownloaderTest {
   @Test
   public void should_get_files() throws IOException {
     try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
-      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&ps=500&p=1", in);
+      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
       List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(187);
@@ -54,7 +54,7 @@ public class ProjectFileListDownloaderTest {
   public void should_get_files_with_organization() throws IOException {
     try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
       when(wsClient.getOrganizationKey()).thenReturn("myorg");
-      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&organization=myorg&ps=500&p=1", in);
+      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&organization=myorg&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
       List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(187);
@@ -66,7 +66,7 @@ public class ProjectFileListDownloaderTest {
   @Test
   public void should_get_files_before_v64() throws IOException {
     try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
-      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&baseComponentKey=project1&ps=500&p=1", in);
+      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL,UTS&baseComponentKey=project1&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
       List<String> files = underTest.get(Version.create("6.2"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(187);
@@ -78,7 +78,7 @@ public class ProjectFileListDownloaderTest {
   @Test
   public void should_get_empty_files_if_tree_is_empty() throws IOException {
     try (InputStream in = this.getClass().getResourceAsStream("/update/empty_component_tree.pb")) {
-      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL&component=project1&ps=500&p=1", in);
+      WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
       List<String> files = underTest.get(Version.create("7.0"), PROJECT_KEY, progressWrapper);
       assertThat(files.size()).isEqualTo(0);
