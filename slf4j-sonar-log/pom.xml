@@ -8,9 +8,6 @@
   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
   <name>SonarLint slf4j log adaptor</name>
   <description>Adapts slf4j logs to sonar logging framework</description>
-  <properties>
-    <sonar.skip>true</sonar.skip>
-  </properties>
   <dependencies>
 
     <dependency>
