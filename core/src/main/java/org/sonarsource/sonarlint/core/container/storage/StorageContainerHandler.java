@@ -134,8 +134,8 @@ public class StorageContainerHandler {
 
     FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
     FileMatcher.Result match = fileMatcher.match(sqPathList, idePathList);
-    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.mostCommonSqPrefix().toString()),
-      FilenameUtils.separatorsToUnix(match.mostCommonIdePrefix().toString()));
+    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.sqPrefix().toString()),
+      FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
 
   }
 

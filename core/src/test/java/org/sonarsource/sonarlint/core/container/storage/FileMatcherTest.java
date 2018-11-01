@@ -36,8 +36,8 @@ public class FileMatcherTest {
   public void simple_case_without_prefixes() {
     List<Path> paths = Collections.singletonList(Paths.get("project1/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(paths, paths);
-    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
 
   @Test
@@ -45,8 +45,8 @@ public class FileMatcherTest {
     List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
-    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get("local"));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq"));
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local"));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq"));
   }
 
   @Test
@@ -54,8 +54,8 @@ public class FileMatcherTest {
     List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File1.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
-    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
 
   @Test
@@ -63,8 +63,8 @@ public class FileMatcherTest {
     List<Path> idePaths = Collections.emptyList();
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
-    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
 
   @Test
@@ -80,8 +80,8 @@ public class FileMatcherTest {
       Paths.get("aq1/module1/pom.xml")
     );
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
-    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get(""));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
 
   @Test
@@ -99,7 +99,7 @@ public class FileMatcherTest {
 
     );
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
-    assertThat(match.mostCommonIdePrefix()).isEqualTo(Paths.get("local1"));
-    assertThat(match.mostCommonSqPrefix()).isEqualTo(Paths.get("sq1"));
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq1"));
   }
 }

@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
@@ -38,25 +39,24 @@ public class FileMatcher {
   }
 
   public Result match(List<Path> sqRelativePaths, List<Path> ideRelativePaths) {
-    Map<Path, Integer> idePrefixes = new LinkedHashMap<>();
-    Map<Path, Integer> sqPrefixes = new LinkedHashMap<>();
-    BiFunction<Path, Integer, Integer> incrementer = (p, i) -> i != null ? (i + 1) : 1;
+    Map<Result, Integer> results = new LinkedHashMap<>();
+    BiFunction<Result, Integer, Integer> incrementer = (p, i) -> i != null ? (i + 1) : 1;
 
     sqRelativePaths.forEach(reversePathTree::index);
 
     for (Path ide : ideRelativePaths) {
       ReversePathTree.Match match = reversePathTree.findLongestSuffixMatches(ide);
-      for (Path sqPrefix : match.matchPrefixes()) {
-        sqPrefixes.compute(sqPrefix, incrementer);
-      }
-
       if (match.matchLen() > 0) {
         Path idePrefix = getIdePrefix(ide, match);
-        idePrefixes.compute(idePrefix, incrementer);
+
+        for (Path sqPrefix : match.matchPrefixes()) {
+          Result r = new Result(idePrefix, sqPrefix);
+          results.compute(r, incrementer);
+        }
       }
     }
 
-    return new Result(mostCommonPrefix(idePrefixes), mostCommonPrefix(sqPrefixes));
+    return mostCommonResult(results);
   }
 
   private static Path getIdePrefix(Path idePath, ReversePathTree.Match match) {
@@ -65,6 +65,16 @@ public class FileMatcher {
       return idePath.subpath(0, idePath.getNameCount() - match.matchLen());
     }
     return Paths.get("");
+  }
+
+  private static Result mostCommonResult(Map<Result, Integer> prefixes) {
+    Comparator<Map.Entry<Result, Integer>> c = Comparator.comparing(Map.Entry::getValue);
+    c = c.thenComparing(x -> x.getKey().idePrefix.getNameCount(), reverseOrder());
+
+    return prefixes.entrySet().stream()
+      .max(c)
+      .map(Map.Entry::getKey)
+      .orElse(new Result(Paths.get(""), Paths.get("")));
   }
 
   public static class Result {
@@ -76,22 +86,27 @@ public class FileMatcher {
       this.sqPrefix = sqPrefix;
     }
 
-    public Path mostCommonIdePrefix() {
+    public Path idePrefix() {
       return idePrefix;
     }
 
-    public Path mostCommonSqPrefix() {
+    public Path sqPrefix() {
       return sqPrefix;
     }
-  }
 
-  private static Path mostCommonPrefix(Map<Path, Integer> prefixes) {
-    Comparator<Map.Entry<Path, Integer>> c = Comparator.comparing(Map.Entry::getValue);
-    c = c.thenComparing(x -> x.getKey().getNameCount(), reverseOrder());
+    @Override public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Result result = (Result) o;
+      return Objects.equals(idePrefix, result.idePrefix) && Objects.equals(sqPrefix, result.sqPrefix);
+    }
 
-    return prefixes.entrySet().stream()
-      .max(c)
-      .map(Map.Entry::getKey)
-      .orElse(Paths.get(""));
+    @Override public int hashCode() {
+      return Objects.hash(idePrefix, sqPrefix);
+    }
   }
 }
