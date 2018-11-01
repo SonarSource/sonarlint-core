@@ -102,4 +102,21 @@ public class FileMatcherTest {
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq1"));
   }
+
+  @Test
+  public void verify_equals_and_hashcode_of_result() {
+    FileMatcher.Result r1 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
+    FileMatcher.Result r2 = new FileMatcher.Result(Paths.get("ide2"), Paths.get("sq1"));
+    FileMatcher.Result r3 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq2"));
+    FileMatcher.Result r4 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
+
+    assertThat(r1.equals(r1)).isTrue();
+    assertThat(r1.equals(r4)).isTrue();
+    assertThat(r1.hashCode()).isEqualTo(r4.hashCode());
+
+    assertThat(r1.equals(r3)).isFalse();
+    assertThat(r3.equals(r2)).isFalse();
+    assertThat(r1.equals(new Object())).isFalse();
+    assertThat(r1.equals(null)).isFalse();
+  }
 }

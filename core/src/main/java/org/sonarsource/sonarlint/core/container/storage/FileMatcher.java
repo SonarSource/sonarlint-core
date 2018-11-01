@@ -81,7 +81,7 @@ public class FileMatcher {
     private Path idePrefix;
     private Path sqPrefix;
 
-    private Result(Path idePrefix, Path sqPrefix) {
+    Result(Path idePrefix, Path sqPrefix) {
       this.idePrefix = idePrefix;
       this.sqPrefix = sqPrefix;
     }
