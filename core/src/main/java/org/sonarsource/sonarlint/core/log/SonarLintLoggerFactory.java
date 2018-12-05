@@ -43,6 +43,8 @@ public class SonarLintLoggerFactory extends Loggers {
 
   @Override
   protected void setLevel(LoggerLevel level) {
+      // TODO
+      System.out.println("ff");
     // no op
   }
 }
