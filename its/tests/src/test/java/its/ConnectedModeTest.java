@@ -120,7 +120,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", "1.3.0.2158"))
+        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", "LATEST_RELEASE"))
         .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
