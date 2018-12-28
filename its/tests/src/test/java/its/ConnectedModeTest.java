@@ -104,6 +104,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_KOTLIN = "sample-kotlin";
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
+  private static final String PROJECT_KEY_XML = "sample-xml";
 
   @ClassRule
   public static ExternalResource resource = new ExternalResource() {
@@ -122,6 +123,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", "LATEST_RELEASE"))
+        // FIXME this is not a released version but the artifact from sonar-xml master
+        // corresponding to the commit enabling support of sonarlint
+        .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", "2.0.0.1974"))
         .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
@@ -138,7 +142,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
         .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"));
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
+        .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"));
 
       ORCHESTRATOR = orchestratorBuilder.build();
       ORCHESTRATOR.start();
@@ -197,6 +202,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_RUBY, "Sample Ruby");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_SCALA, "Sample Scala");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_XML, "Sample XML");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -211,6 +217,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_RUBY, "ruby", "SonarLint IT Ruby");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
@@ -281,10 +288,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadProjects() {
     updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(14);
+    assertThat(engine.allProjectsByKey()).hasSize(15);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(15).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allProjectsByKey()).hasSize(15).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -768,6 +775,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_SCALA, PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisXml() throws Exception {
+    updateGlobal();
+    updateProject(PROJECT_KEY_XML);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
