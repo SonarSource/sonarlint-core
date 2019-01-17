@@ -123,9 +123,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", "LATEST_RELEASE"))
         .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", "LATEST_RELEASE"))
-        // FIXME this is not a released version but the artifact from sonar-xml master
-        // corresponding to the commit enabling support of sonarlint
-        .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", "2.0.0.1974"))
+        .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", "LATEST_RELEASE"))
         .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
         .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
@@ -784,7 +782,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateProject(PROJECT_KEY_XML);
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, null, null);
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
