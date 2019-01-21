@@ -127,8 +127,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       LOG.debug(e.getMessage(), e);
       changeState(State.NEED_UPDATE);
     } catch (RuntimeException e) {
+      LOG.error("Unable to start the SonarLint engine", e);
       changeState(State.UNKNOW);
-      throw SonarLintWrappedException.wrap(e);
     } finally {
       rwl.writeLock().unlock();
     }

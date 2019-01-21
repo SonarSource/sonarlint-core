@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
-public class BrokenStorageMissingPluginMediumTest {
+public class BrokenStorageBrokenPluginMediumTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -67,9 +68,9 @@ public class BrokenStorageMissingPluginMediumTest {
     Path pluginCache = slHome.resolve("plugins");
 
     /*
-     * This storage contains one server id "local" with references to java and javascript plugins but javascript is not in cache
+     * This storage contains one server id "local" with references to java and javascript plugins but javascript JAR is corrupted
      */
-    Path storage = Paths.get(BrokenStorageMissingPluginMediumTest.class.getResource("/sample-storage").toURI());
+    Path storage = Paths.get(BrokenStorageBrokenPluginMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
     FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
     PluginCache cache = PluginCache.create(pluginCache);
@@ -80,6 +81,15 @@ public class BrokenStorageMissingPluginMediumTest {
       .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
       .setKey("javascript")
       .build());
+
+    Path cachedJSPlugin = cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Copier() {
+
+      @Override
+      public void copy(String filename, Path toFile) throws IOException {
+        FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile());
+      }
+    });
+    FileUtils.write(cachedJSPlugin.toFile(), "corrupted jar", StandardCharsets.UTF_8);
 
     builder.addReference(PluginReference.newBuilder()
       .setFilename(PluginLocator.SONAR_JAVA_PLUGIN_JAR)
@@ -116,8 +126,8 @@ public class BrokenStorageMissingPluginMediumTest {
   }
 
   @Test
-  public void require_update() throws Exception {
-    assertThat(sonarlint.getState()).isEqualTo(ConnectedSonarLintEngine.State.NEED_UPDATE);
+  public void broken_startup() throws Exception {
+    assertThat(sonarlint.getState()).isEqualTo(ConnectedSonarLintEngine.State.UNKNOW);
 
     ClientInputFile inputFile = prepareJavaInputFile();
 
