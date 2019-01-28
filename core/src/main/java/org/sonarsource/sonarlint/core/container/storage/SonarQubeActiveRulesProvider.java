@@ -60,13 +60,13 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
         QProfile qProfile = qProfiles.getQprofilesByKeyOrThrow(qProfileKey);
 
         if (qProfile.getActiveRuleCount() == 0) {
-          LOG.debug("  * {}: {} (0 rules)", language, qProfileKey);
+          LOG.debug("  * {}: {} (0 rules)", language, qProfile.getName());
           continue;
         }
 
         Sonarlint.ActiveRules activeRulesFromStorage = storageReader.readActiveRules(qProfileKey);
 
-        LOG.debug("  * {}: {} ({} rules)", language, qProfileKey, activeRulesFromStorage.getActiveRulesByKeyMap().size());
+        LOG.debug("  * {}: {} ({} rules)", language, qProfile.getName(), activeRulesFromStorage.getActiveRulesByKeyMap().size());
 
         for (ActiveRule activeRule : activeRulesFromStorage.getActiveRulesByKeyMap().values()) {
           createNewActiveRule(builder, activeRule, storageRules, language, rules);
