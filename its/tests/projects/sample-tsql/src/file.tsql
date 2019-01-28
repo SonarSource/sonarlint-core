@@ -1,0 +1,7 @@
+IF @x = 1
+  PRINT 'A'
+ELSE IF @x = 2
+  PRINT 'B'
+ELSE IF @x = 3
+  PRINT 'C'
+-- Noncompliant; final ELSE is missing

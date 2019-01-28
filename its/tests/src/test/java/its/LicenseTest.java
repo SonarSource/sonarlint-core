@@ -20,12 +20,12 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.version.Version;
 import its.tools.ItUtils;
+import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -54,6 +54,7 @@ import static org.junit.Assume.assumeTrue;
 
 public class LicenseTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
+  private static final String PROJECT_KEY_TSQL = "sample-tsql";
 
   private static Orchestrator ORCHESTRATOR;
 
@@ -74,13 +75,14 @@ public class LicenseTest extends AbstractConnectedTest {
     // and dev license plugin requires at least SQ 6.7
     assumeTrue(ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7));
 
-    OrchestratorBuilder builder = Orchestrator.builderEnv()
+    ORCHESTRATOR = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .setEdition(Edition.ENTERPRISE)
-      .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"));
-
-    builder.addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "4.3.0.3019"));
-    ORCHESTRATOR = builder.build();
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
+      .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "4.3.0.3019"))
+      .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", "LATEST_RELEASE"))
+      .build();
     ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
@@ -92,7 +94,9 @@ public class LicenseTest extends AbstractConnectedTest {
       .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_TSQL, "Sample TSQL");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
   }
 
   @AfterClass
@@ -126,7 +130,7 @@ public class LicenseTest extends AbstractConnectedTest {
     Assume.assumeFalse(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
     ORCHESTRATOR.clearLicense();
     updateGlobal();
-    updateModule(PROJECT_KEY_COBOL);
+    updateProject(PROJECT_KEY_COBOL);
 
     exception.expect(SonarLintWrappedException.class);
     exception.expectMessage("No license for cobol");
@@ -139,14 +143,24 @@ public class LicenseTest extends AbstractConnectedTest {
   public void analysisCobol() throws Exception {
     ORCHESTRATOR.activateLicense();
     updateGlobal();
-    updateModule(PROJECT_KEY_COBOL);
+    updateProject(PROJECT_KEY_COBOL);
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
       "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
-  private void updateModule(String projectKey) {
+  @Test
+  public void analysisTsql() throws IOException {
+    updateGlobal();
+    updateProject(PROJECT_KEY_TSQL);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_TSQL, PROJECT_KEY_TSQL, "src/file.tsql"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  private void updateProject(String projectKey) {
     engine.updateProject(ServerConfiguration.builder()
       .url(ORCHESTRATOR.getServer().getUrl())
       .userAgent("SonarLint ITs")
