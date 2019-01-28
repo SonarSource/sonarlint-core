@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT TSQL</name>
+  <language>tsql</language>
+  <rules>
+    <rule>
+      <repositoryKey>tsql</repositoryKey>
+      <!-- "IF ... ELSEIF" constructs should end with "ELSE" clauses -->
+      <key>S126</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

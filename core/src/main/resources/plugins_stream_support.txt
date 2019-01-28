@@ -14,5 +14,6 @@ web=3.0
 kotlin=1.1
 ruby=1.1
 scala=1.2.1
+tsql=1.1
 # FIXME last release is 1.5 and next released version is 2.0, there is no 1.6
 xml=1.6
