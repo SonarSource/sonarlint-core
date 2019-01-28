@@ -1,5 +1,6 @@
 # Minimum supported analyzer versions: the first versions supported by SonarQube 6.7,
 # as defined in https://github.com/SonarSource/sonar-update-center-properties
+sonarapex=1.4
 java=5.1
 php=2.12
 javascript=4.0
@@ -15,7 +16,7 @@ typescript=1.5
 web=2.6
 kotlin=1.2.1
 ruby=1.2.1
-scala=1.2.1
+sonarscala=1.2.1
 tsql=1.1
 # FIXME last release is 1.5 and next released version is 2.0, there is no 1.6
 xml=1.6

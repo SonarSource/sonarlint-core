@@ -55,6 +55,7 @@ import static org.junit.Assume.assumeTrue;
 public class LicenseTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
+  private static final String PROJECT_KEY_APEX = "sample-apex";
 
   private static Orchestrator ORCHESTRATOR;
 
@@ -80,8 +81,10 @@ public class LicenseTest extends AbstractConnectedTest {
       .setEdition(Edition.ENTERPRISE)
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
       .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
-      .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "4.3.0.3019"))
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
+      .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "LATEST_RELEASE"))
       .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", "LATEST_RELEASE"))
+      .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", "LATEST_RELEASE"))
       .build();
     ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
@@ -95,8 +98,10 @@ public class LicenseTest extends AbstractConnectedTest {
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_TSQL, "Sample TSQL");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_APEX, "Sample APEX");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_APEX, "apex", "SonarLint IT APEX");
   }
 
   @AfterClass
@@ -157,6 +162,16 @@ public class LicenseTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_TSQL, PROJECT_KEY_TSQL, "src/file.tsql"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisApex() throws IOException {
+    updateGlobal();
+    updateProject(PROJECT_KEY_APEX);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_APEX, PROJECT_KEY_APEX, "src/file.cls"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 

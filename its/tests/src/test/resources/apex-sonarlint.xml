@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT APEX</name>
+  <language>apex</language>
+  <rules>
+    <rule>
+      <repositoryKey>apex</repositoryKey>
+      <key>S2757</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
