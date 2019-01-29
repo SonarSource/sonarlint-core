@@ -30,6 +30,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Settings.FieldValues.Value;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
@@ -40,11 +42,12 @@ import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static java.util.stream.Collectors.joining;
 
 public class SettingsDownloader {
+  private static final Logger LOG = Loggers.get(SettingsDownloader.class);
+
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
   private static final String API_PROPERTIES_PATH = "/api/properties?format=json";
   private final SonarLintWsClient wsClient;
@@ -76,22 +79,27 @@ public class SettingsDownloader {
   }
 
   private void fetchUsingSettingsWS(@Nullable String projectKey, BiConsumer<String, String> consumer) {
-    String url = API_SETTINGS_PATH;
+    StringBuilder url = new StringBuilder();
+    url.append(API_SETTINGS_PATH);
     if (projectKey != null) {
-      url += "?component=" + StringUtils.urlEncode(projectKey);
+      url.append("?component=").append(StringUtils.urlEncode(projectKey));
     }
-    WsResponse response = wsClient.get(url);
-    try (InputStream is = response.contentStream()) {
-      ValuesWsResponse values = ValuesWsResponse.parseFrom(is);
-      for (Setting s : values.getSettingsList()) {
-        // Storage optimisation: don't store settings having same value than global settings
-        if (!s.getInherited()) {
-          processSetting(consumer, s);
+    SonarLintWsClient.consumeTimed(
+      () -> wsClient.get(url.toString()),
+      response -> {
+        try (InputStream is = response.contentStream()) {
+          ValuesWsResponse values = ValuesWsResponse.parseFrom(is);
+          for (Setting s : values.getSettingsList()) {
+            // Storage optimisation: don't store settings having same value than global settings
+            if (!s.getInherited()) {
+              processSetting(consumer, s);
+            }
+          }
+        } catch (IOException e) {
+          throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
         }
-      }
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
-    }
+      },
+      duration -> LOG.info("Downloaded settings in {}ms", duration));
   }
 
   private static void processSetting(BiConsumer<String, String> consumer, Setting s) {
@@ -124,23 +132,27 @@ public class SettingsDownloader {
   }
 
   private void fetchUsingPropertiesWS(@Nullable String projectKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
-    String url = API_PROPERTIES_PATH;
+    StringBuilder url = new StringBuilder();
+    url.append(API_PROPERTIES_PATH);
     if (projectKey != null) {
-      url += "&resource=" + StringUtils.urlEncode(projectKey);
+      url.append("&resource=").append(StringUtils.urlEncode(projectKey));
     }
-    try (WsResponse response = wsClient.get(url)) {
-      try (JsonReader reader = new JsonReader(response.contentReader())) {
-        reader.beginArray();
-        while (reader.hasNext()) {
-          reader.beginObject();
-          parseProperty(filter, consumer, reader);
-          reader.endObject();
+    SonarLintWsClient.consumeTimed(
+      () -> wsClient.get(url.toString()),
+      response -> {
+        try (JsonReader reader = new JsonReader(response.contentReader())) {
+          reader.beginArray();
+          while (reader.hasNext()) {
+            reader.beginObject();
+            parseProperty(filter, consumer, reader);
+            reader.endObject();
+          }
+          reader.endArray();
+        } catch (IOException e) {
+          throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
         }
-        reader.endArray();
-      } catch (IOException e) {
-        throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
-      }
-    }
+      },
+      duration -> LOG.debug("Downloaded settings in {}ms", duration));
   }
 
   private static void parseProperty(BiPredicate<String, String> filter, BiConsumer<String, String> consumer, JsonReader reader) throws IOException {

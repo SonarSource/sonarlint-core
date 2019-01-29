@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
@@ -36,7 +35,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static java.lang.String.format;
 
@@ -111,15 +109,15 @@ public class PluginReferencesDownloader {
       }
 
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Download plugin '{}' to '{}'", filename, toFile);
+        LOG.debug("Download plugin '{}' to '{}'...", filename, toFile);
       } else {
-        LOG.info("Download '{}'", filename);
+        LOG.info("Download '{}'...", filename);
       }
 
-      WsResponse response = wsClient.get(url);
-      try (InputStream stream = response.contentStream()) {
-        FileUtils.copyInputStreamToFile(stream, toFile.toFile());
-      }
+      SonarLintWsClient.consumeTimed(
+        () -> wsClient.get(url),
+        response -> FileUtils.copyInputStreamToFile(response.contentStream(), toFile.toFile()),
+        duration -> LOG.info("Downloaded '{}' in {}ms", filename, duration));
     }
   }
 }

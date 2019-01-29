@@ -157,7 +157,7 @@ public class ProjectStorageUpdateExecutorTest {
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(destDir.toPath());
 
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("Failed to load project quality profiles");
+    exception.expectMessage("Protocol message contained an invalid tag");
     projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
   }
 
@@ -236,7 +236,7 @@ public class ProjectStorageUpdateExecutorTest {
       projectFileListDownloader, serverIssueUpdater);
     projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
-    //TODO
+    // TODO
     // assertThat(issueStore.load("TODO")).containsOnly(fileIssue1, fileIssue2);
     // assertThat(issueStore.load("TODO")).containsOnly(anotherFileIssue);
     verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class));
@@ -263,8 +263,7 @@ public class ProjectStorageUpdateExecutorTest {
 
     Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(StoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
-      "pom.xml", "unknownFile", "A/a.java", "B/b.java"
-    );
+      "pom.xml", "unknownFile", "A/a.java", "B/b.java");
   }
 
   private String getQualityProfileUrl() {

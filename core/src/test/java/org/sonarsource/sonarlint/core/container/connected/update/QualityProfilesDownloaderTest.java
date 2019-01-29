@@ -91,7 +91,7 @@ public class QualityProfilesDownloaderTest {
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
 
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("Failed to load default quality profiles");
+    exception.expectMessage("Protocol message tag had invalid wire type");
     qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 
   }

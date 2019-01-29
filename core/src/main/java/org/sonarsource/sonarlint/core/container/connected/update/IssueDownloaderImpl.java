@@ -23,13 +23,16 @@ import com.google.protobuf.Parser;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class IssueDownloaderImpl implements IssueDownloader {
+
+  private static final Logger LOG = Loggers.get(IssueDownloaderImpl.class);
 
   private final SonarLintWsClient wsClient;
 
@@ -47,16 +50,19 @@ public class IssueDownloaderImpl implements IssueDownloader {
    */
   @Override
   public List<ScannerInput.ServerIssue> apply(String key) {
-    try (WsResponse response = wsClient.rawGet(getIssuesUrl(key))) {
-      if (response.code() == 403 || response.code() == 404) {
-        return Collections.emptyList();
-      } else if (response.code() != 200) {
-        throw SonarLintWsClient.handleError(response);
-      }
-      InputStream input = response.contentStream();
-      Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
-      return ProtobufUtil.readMessages(input, parser);
-    }
+    return SonarLintWsClient.processTimed(
+      () -> wsClient.rawGet(getIssuesUrl(key)),
+      response -> {
+        if (response.code() == 403 || response.code() == 404) {
+          return Collections.emptyList();
+        } else if (response.code() != 200) {
+          throw SonarLintWsClient.handleError(response);
+        }
+        InputStream input = response.contentStream();
+        Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
+        return ProtobufUtil.readMessages(input, parser);
+      },
+      duration -> LOG.debug("Downloaded issues in {}ms", duration));
   }
 
   private static String getIssuesUrl(String key) {

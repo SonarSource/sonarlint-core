@@ -27,6 +27,8 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -34,9 +36,11 @@ import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersion
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class PluginListDownloader {
+
+  private static final Logger LOG = Loggers.get(PluginListDownloader.class);
+
   public static final String WS_PATH = "/api/plugins/installed";
   public static final String WS_PATH_LTS = "/deploy/plugins/index.txt";
 
@@ -61,27 +65,29 @@ public class PluginListDownloader {
   public List<SonarAnalyzer> downloadPluginListBefore66(Version serverVersion) {
     List<SonarAnalyzer> analyzers = new LinkedList<>();
     boolean compatibleFlagPresent = serverVersion.compareToIgnoreQualifier(Version.create("6.0")) >= 0;
-    String responseStr;
-    try (WsResponse response = wsClient.get(WS_PATH_LTS)) {
-      responseStr = response.content();
-    }
 
-    try (Scanner scanner = new Scanner(responseStr)) {
-      while (scanner.hasNextLine()) {
-        String line = scanner.nextLine();
-        String[] fields = StringUtils.split(line, ",");
-        String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
+    SonarLintWsClient.consumeTimed(
+      () -> wsClient.get(WS_PATH_LTS),
+      response -> {
+        try (Scanner scanner = new Scanner(response.contentReader())) {
+          while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            String[] fields = StringUtils.split(line, ",");
+            String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
 
-        String key = fields[0];
-        String filename = nameAndHash[0];
-        String hash = nameAndHash[1];
+            String key = fields[0];
+            String filename = nameAndHash[0];
+            String hash = nameAndHash[1];
 
-        boolean sonarlintCompatible = !excludedPlugins.contains(key) && (!compatibleFlagPresent || "true".equals(fields[1]));
-        DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, sonarlintCompatible);
-        checkMinVersion(analyzer);
-        analyzers.add(analyzer);
-      }
-    }
+            boolean sonarlintCompatible = !excludedPlugins.contains(key) && (!compatibleFlagPresent || "true".equals(fields[1]));
+            DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, sonarlintCompatible);
+            checkMinVersion(analyzer);
+            analyzers.add(analyzer);
+          }
+        }
+      },
+      duration -> LOG.debug("Downloaded plugin list in {}ms", duration));
+
     return analyzers;
   }
 
@@ -93,10 +99,13 @@ public class PluginListDownloader {
   }
 
   public List<SonarAnalyzer> downloadPluginList66() {
-    try (WsResponse response = wsClient.get(WS_PATH)) {
-      InstalledPlugins installedPlugins = new Gson().fromJson(response.contentReader(), InstalledPlugins.class);
-      return Arrays.stream(installedPlugins.plugins).map(this::toSonarAnalyzer).collect(Collectors.toList());
-    }
+    return SonarLintWsClient.processTimed(
+      () -> wsClient.get(WS_PATH),
+      response -> {
+        InstalledPlugins installedPlugins = new Gson().fromJson(response.contentReader(), InstalledPlugins.class);
+        return Arrays.stream(installedPlugins.plugins).map(this::toSonarAnalyzer).collect(Collectors.toList());
+      },
+      duration -> LOG.info("Downloaded plugin list in {}ms", duration));
   }
 
   private SonarAnalyzer toSonarAnalyzer(InstalledPlugin plugin) {
