@@ -22,13 +22,14 @@ package org.sonarsource.sonarlint.core.container.analysis.issue.ignore;
 import java.util.Set;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.issue.NoSonarFilter;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class SonarLintNoSonarFilter extends NoSonarFilter {
 
   @Override
   public NoSonarFilter noSonarInFile(InputFile inputFile, Set<Integer> noSonarLines) {
-    // In SonarLint world, the component key is the file URI
-    return super.addComponent(inputFile.uri().toString(), noSonarLines);
+    ((SonarLintInputFile) inputFile).noSonarAt(noSonarLines);
+    return this;
   }
 
 }

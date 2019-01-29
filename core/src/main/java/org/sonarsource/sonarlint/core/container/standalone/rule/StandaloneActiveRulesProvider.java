@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
+import org.sonar.api.batch.rule.internal.NewActiveRule.Builder;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.rule.RuleKey;
@@ -86,7 +87,8 @@ public class StandaloneActiveRulesProvider {
         }
         ActiveRulesBuilder builder = rule.activatedByDefault() ? activeBuilder : inactiveBuilder;
         RuleKey ruleKey = RuleKey.of(repo.key(), rule.key());
-        NewActiveRule newAr = builder.create(ruleKey)
+        Builder newAr = new NewActiveRule.Builder()
+          .setRuleKey(ruleKey)
           .setLanguage(repo.language())
           .setName(rule.name())
           .setSeverity(rule.severity())
@@ -94,7 +96,7 @@ public class StandaloneActiveRulesProvider {
         for (Param param : rule.params()) {
           newAr.setParam(param.key(), param.defaultValue());
         }
-        newAr.activate();
+        builder.addRule(newAr.build());
 
         DefaultRuleDetails ruleDetails = new DefaultRuleDetails(ruleKey.toString(), rule.name(), rule.htmlDescription(),
           rule.severity(), rule.type().name(), repo.language(), rule.tags(), "",
@@ -118,7 +120,8 @@ public class StandaloneActiveRulesProvider {
   private static void registerProfile(ActiveRulesBuilder builder, String language, Map.Entry<String, Collection<RulesProfile>> entry) {
     for (RulesProfile rp : entry.getValue()) {
       for (ActiveRule ar : rp.getActiveRules()) {
-        NewActiveRule newAr = builder.create(RuleKey.of(ar.getRepositoryKey(), ar.getRuleKey()))
+        Builder newAr = new NewActiveRule.Builder()
+          .setRuleKey(RuleKey.of(ar.getRepositoryKey(), ar.getRuleKey()))
           .setLanguage(language)
           .setName(ar.getRule().getName())
           .setSeverity(ar.getSeverity().name())
@@ -126,7 +129,7 @@ public class StandaloneActiveRulesProvider {
         for (ActiveRuleParam param : ar.getActiveRuleParams()) {
           newAr.setParam(param.getKey(), param.getValue());
         }
-        newAr.activate();
+        builder.addRule(newAr.build());
       }
     }
   }

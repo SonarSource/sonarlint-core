@@ -198,7 +198,7 @@ public class ConnectedIssueMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues), null, null);
+      new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple(ruleKey, 2, inputFile.getPath()));
 

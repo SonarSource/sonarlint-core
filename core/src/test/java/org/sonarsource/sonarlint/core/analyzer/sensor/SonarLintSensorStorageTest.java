@@ -24,16 +24,16 @@ import org.sonar.api.batch.sensor.code.internal.DefaultSignificantCode;
 import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
 import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
 import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
-import org.sonar.api.batch.sensor.issue.ExternalIssue;
+import org.sonar.api.batch.sensor.issue.internal.DefaultExternalIssue;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class DefaultSensorStorageTest {
+public class SonarLintSensorStorageTest {
 
-  private final DefaultSensorStorage underTest = new DefaultSensorStorage(null, null, null, null, null);
+  private final SonarLintSensorStorage underTest = new SonarLintSensorStorage(null, null, null, null, null);
 
   @Test
   public void store_Measure_doesnt_interact_with_its_param() {
@@ -44,7 +44,7 @@ public class DefaultSensorStorageTest {
 
   @Test
   public void store_ExternalIssue_doesnt_interact_with_its_param() {
-    ExternalIssue externalIssue = mock(ExternalIssue.class);
+    DefaultExternalIssue externalIssue = mock(DefaultExternalIssue.class);
     underTest.store(externalIssue);
     verifyZeroInteractions(externalIssue);
   }

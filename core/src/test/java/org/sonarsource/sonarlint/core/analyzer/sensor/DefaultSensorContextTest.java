@@ -25,7 +25,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
-import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.config.Configuration;
@@ -33,11 +32,11 @@ import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
-import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewExternalIssue;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +47,7 @@ import static org.mockito.Mockito.when;
 
 public class DefaultSensorContextTest {
   @Mock
-  private InputModule module;
+  private SonarLintInputProject module;
   @Mock
   private Settings settings;
   @Mock
@@ -90,7 +89,6 @@ public class DefaultSensorContextTest {
     assertThat(ctx.newMeasure()).isInstanceOf(NoOpNewMeasure.class);
     assertThat(ctx.newCoverage()).isInstanceOf(NoOpNewCoverage.class);
     assertThat(ctx.newSignificantCode()).isInstanceOf(NoOpNewSignificantCode.class);
-    assertThat(ctx.newExternalIssue()).isInstanceOf(NoOpNewExternalIssue.class);
     assertThat(ctx.isCancelled()).isFalse();
     ctx.addContextProperty(null, null);
     ctx.markForPublishing(null);

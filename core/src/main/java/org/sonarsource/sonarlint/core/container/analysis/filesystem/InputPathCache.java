@@ -25,7 +25,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
@@ -55,17 +54,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
   }
 
   @Override
-  public void doAdd(InputDir inputDir) {
-    // SonarLint doesn't handle directories
-  }
-
-  @Override
   public InputFile inputFile(String relativePath) {
-    return null;
-  }
-
-  @Override
-  public InputDir inputDir(String relativePath) {
     return null;
   }
 

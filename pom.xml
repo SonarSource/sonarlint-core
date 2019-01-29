@@ -34,7 +34,7 @@
 
   <properties>
     <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
-    <sonarqube.version>7.3</sonarqube.version>
+    <sonarqube.version>7.6</sonarqube.version>
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
     <logback.version>1.2.3</logback.version>
