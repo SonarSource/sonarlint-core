@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,8 +36,6 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginCacheLoader {
 
-  private static final ImmutableSet<String> PLUGIN_WHITELIST = ImmutableSet.of("xoo", "sonarapex", "java", "javascript", "php", "python", "cobol", "abap", "plsql", "swift",
-    "rpg", "cpp", "pli", "typescript", "web", "kotlin", "ruby", "sonarscala", "tsql", "xml");
   private static final String IMPLEMENTED_SQ_API = "7.6";
 
   private static final Logger LOG = Loggers.get(PluginCacheLoader.class);
@@ -108,16 +105,12 @@ public class PluginCacheLoader {
       return true;
     }
     Boolean sonarLintSupported = info.isSonarLintSupported();
-    if ((sonarLintSupported == null || !sonarLintSupported.booleanValue()) && !isWhitelisted(info.getKey())) {
+    if (sonarLintSupported == null || !sonarLintSupported.booleanValue()) {
       LOG.warn("Code analyzer '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
       return true;
     }
 
     return false;
-  }
-
-  public static boolean isWhitelisted(String pluginKey) {
-    return PLUGIN_WHITELIST.contains(pluginKey);
   }
 
   private Path getFromCache(final PluginReference pluginReference) {

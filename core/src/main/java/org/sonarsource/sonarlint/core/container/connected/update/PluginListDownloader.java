@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
-import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -77,8 +76,7 @@ public class PluginListDownloader {
         String filename = nameAndHash[0];
         String hash = nameAndHash[1];
 
-        boolean sonarlintCompatible = !excludedPlugins.contains(key) && (PluginCacheLoader.isWhitelisted(key)
-          || !compatibleFlagPresent || "true".equals(fields[1]));
+        boolean sonarlintCompatible = !excludedPlugins.contains(key) && (!compatibleFlagPresent || "true".equals(fields[1]));
         DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, sonarlintCompatible);
         checkMinVersion(analyzer);
         analyzers.add(analyzer);
@@ -102,7 +100,7 @@ public class PluginListDownloader {
   }
 
   private SonarAnalyzer toSonarAnalyzer(InstalledPlugin plugin) {
-    boolean sonarlintCompatible = !excludedPlugins.contains(plugin.key) && (PluginCacheLoader.isWhitelisted(plugin.key) || plugin.sonarLintSupported);
+    boolean sonarlintCompatible = !excludedPlugins.contains(plugin.key) && plugin.sonarLintSupported;
     DefaultSonarAnalyzer sonarAnalyzer = new DefaultSonarAnalyzer(plugin.key, plugin.filename, plugin.hash, sonarlintCompatible);
     checkMinVersion(sonarAnalyzer);
     return sonarAnalyzer;
