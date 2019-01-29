@@ -23,11 +23,12 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 
 public class DefaultSonarLintIssue extends DefaultIssue {
 
-  public DefaultSonarLintIssue(@Nullable SensorStorage storage) {
-    super(storage);
+  public DefaultSonarLintIssue(SonarLintInputProject project, @Nullable SensorStorage storage) {
+    super(project, storage);
   }
 
   @Override

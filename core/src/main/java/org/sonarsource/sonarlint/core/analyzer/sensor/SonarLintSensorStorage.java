@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
@@ -33,10 +34,11 @@ import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
 import org.sonar.api.batch.sensor.error.AnalysisError;
 import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
-import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.Issue.Flow;
+import org.sonar.api.batch.sensor.issue.internal.DefaultExternalIssue;
 import org.sonar.api.batch.sensor.measure.Measure;
+import org.sonar.api.batch.sensor.rule.internal.DefaultAdHocRule;
 import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.MessageException;
@@ -49,9 +51,10 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInp
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang.StringUtils.isEmpty;
 
-public class DefaultSensorStorage implements SensorStorage {
+public class SonarLintSensorStorage implements SensorStorage {
 
   private final ActiveRules activeRules;
   private final Rules rules;
@@ -59,7 +62,7 @@ public class DefaultSensorStorage implements SensorStorage {
   private final IssueListener issueListener;
   private final DefaultAnalysisResult analysisResult;
 
-  public DefaultSensorStorage(ActiveRules activeRules, Rules rules, IssueFilters filters, IssueListener issueListener, DefaultAnalysisResult analysisResult) {
+  public SonarLintSensorStorage(ActiveRules activeRules, Rules rules, IssueFilters filters, IssueListener issueListener, DefaultAnalysisResult analysisResult) {
     this.activeRules = activeRules;
     this.rules = rules;
     this.filters = filters;
@@ -83,7 +86,11 @@ public class DefaultSensorStorage implements SensorStorage {
       return;
     }
 
-    String primaryMessage = StringUtils.isEmpty(issue.primaryLocation().message()) ? rule.name() : issue.primaryLocation().message();
+    if (noSonar(inputComponent, issue)) {
+      return;
+    }
+
+    String primaryMessage = defaultIfEmpty(issue.primaryLocation().message(), rule.name());
     org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type();
@@ -95,6 +102,14 @@ public class DefaultSensorStorage implements SensorStorage {
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }
+  }
+
+  private static boolean noSonar(InputComponent inputComponent, Issue issue) {
+    TextRange textRange = issue.primaryLocation().textRange();
+    return inputComponent.isFile()
+      && textRange != null
+      && ((SonarLintInputFile) inputComponent).hasNoSonarAt(textRange.start().line())
+      && !StringUtils.containsIgnoreCase(issue.ruleKey().rule(), "nosonar");
   }
 
   private static List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> mapFlows(List<Flow> flows) {
@@ -150,12 +165,17 @@ public class DefaultSensorStorage implements SensorStorage {
   }
 
   @Override
-  public void store(ExternalIssue issue) {
+  public void store(DefaultExternalIssue issue) {
     // NO-OP
   }
 
   @Override
   public void store(DefaultSignificantCode significantCode) {
+    // NO-OP
+  }
+
+  @Override
+  public void store(DefaultAdHocRule adHocRule) {
     // NO-OP
   }
 

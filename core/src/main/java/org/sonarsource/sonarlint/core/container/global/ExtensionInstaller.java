@@ -23,7 +23,6 @@ import java.util.List;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.internal.PluginContextImpl;
@@ -106,9 +105,7 @@ public class ExtensionInstaller {
   }
 
   private static boolean isSonarLintSide(Object extension) {
-    return ExtensionUtils.isSonarLintSide(extension)
-      // FIXME Waiting for InputFileFilter to be annotated @SonarLintSide
-      || ExtensionUtils.isType(extension, InputFileFilter.class);
+    return ExtensionUtils.isSonarLintSide(extension);
   }
 
   /**

@@ -30,9 +30,9 @@ import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestPlanBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
-import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorStorage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
+import org.sonarsource.sonarlint.core.analyzer.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBui
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputModule;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.EnforceIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.SonarLintNoSonarFilter;
@@ -69,7 +69,7 @@ public class AnalysisContainer extends ComponentContainer {
   private void addCoreComponents() {
     add(
       progress,
-      new SonarLintInputModule(),
+      SonarLintInputProject.class,
       NoOpFileLinesContextFactory.class,
 
       // temp
@@ -107,7 +107,7 @@ public class AnalysisContainer extends ComponentContainer {
       SensorOptimizer.class,
 
       DefaultSensorContext.class,
-      DefaultSensorStorage.class,
+      SonarLintSensorStorage.class,
       IssueFilters.class,
 
       // rules

@@ -19,15 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
+import org.sonar.api.batch.bootstrap.ProjectDefinition;
+import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputModule;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 
-public class SonarLintInputModule implements InputModule {
+public class SonarLintInputProject extends DefaultInputProject implements InputModule {
 
-  public static final String SONARLINT_FAKE_MODULE_KEY = "sonarlint";
+  public SonarLintInputProject(FileSystem fs) {
+    super(ProjectDefinition.create().setBaseDir(fs.baseDir()).setWorkDir(fs.workDir()));
+  }
+
+  public static final String SONARLINT_FAKE_PROJECT_KEY = "sonarlint";
 
   @Override
   public String key() {
-    return SONARLINT_FAKE_MODULE_KEY;
+    return SONARLINT_FAKE_PROJECT_KEY;
   }
 
   @Override

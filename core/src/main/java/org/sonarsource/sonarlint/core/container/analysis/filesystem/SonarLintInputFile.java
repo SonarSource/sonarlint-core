@@ -26,6 +26,8 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -46,6 +48,7 @@ public class SonarLintInputFile implements InputFile {
   private Type type;
   private Metadata metadata;
   private final Function<SonarLintInputFile, Metadata> metadataGenerator;
+  private final Set<Integer> noSonarLines = new HashSet<>();
 
   public SonarLintInputFile(ClientInputFile clientInputFile, Function<SonarLintInputFile, Metadata> metadataGenerator) {
     this.clientInputFile = clientInputFile;
@@ -232,6 +235,14 @@ public class SonarLintInputFile implements InputFile {
 
   private int lastValidGlobalOffsetForLine(int line) {
     return line < this.metadata.lines ? (metadata.originalLineOffsets[line] - 1) : metadata.lastValidOffset;
+  }
+
+  public void noSonarAt(Set<Integer> noSonarLines) {
+    this.noSonarLines.addAll(noSonarLines);
+  }
+
+  public boolean hasNoSonarAt(int line) {
+    return this.noSonarLines.contains(line);
   }
 
 }
