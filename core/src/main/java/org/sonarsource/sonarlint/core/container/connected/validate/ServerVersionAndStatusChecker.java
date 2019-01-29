@@ -23,6 +23,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.net.HttpURLConnection;
 import org.apache.commons.lang.StringUtils;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -33,6 +35,8 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 import static org.apache.commons.lang.StringUtils.trimToEmpty;
 
 public class ServerVersionAndStatusChecker {
+
+  private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
 
   private static final String MIN_SQ_VERSION = "5.6";
   private final SonarLintWsClient wsClient;
@@ -94,24 +98,27 @@ public class ServerVersionAndStatusChecker {
   }
 
   private ServerInfos fetchServerInfos() {
-    try (WsResponse response = wsClient.rawGet("api/system/status")) {
-      if (!response.isSuccessful()) {
-        if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
-          return tryFromDeprecatedApi(response);
+    return SonarLintWsClient.processTimed(
+      () -> wsClient.rawGet("api/system/status"),
+      response -> {
+        if (!response.isSuccessful()) {
+          if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
+            return tryFromDeprecatedApi(response);
+          } else {
+            throw SonarLintWsClient.handleError(response);
+          }
         } else {
-          throw SonarLintWsClient.handleError(response);
+          String responseStr = response.content();
+          try {
+            ServerInfos.Builder builder = ServerInfos.newBuilder();
+            JsonFormat.parser().merge(responseStr, builder);
+            return builder.build();
+          } catch (InvalidProtocolBufferException e) {
+            throw new IllegalStateException("Unable to parse server infos from: " + StringUtils.abbreviate(responseStr, 100), e);
+          }
         }
-      } else {
-        String responseStr = response.content();
-        try {
-          ServerInfos.Builder builder = ServerInfos.newBuilder();
-          JsonFormat.parser().merge(responseStr, builder);
-          return builder.build();
-        } catch (InvalidProtocolBufferException e) {
-          throw new IllegalStateException("Unable to parse server infos from: " + StringUtils.abbreviate(responseStr, 100), e);
-        }
-      }
-    }
+      },
+      duration -> LOG.debug("Downloaded server infos in {}ms", duration));
   }
 
   private ServerInfos tryFromDeprecatedApi(WsResponse originalReponse) {

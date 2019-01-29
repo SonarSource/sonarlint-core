@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
@@ -33,6 +33,8 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfilesDownloader {
+  private static final Logger LOG = Loggers.get(QualityProfilesDownloader.class);
+
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
   private final SonarLintWsClient wsClient;
 
@@ -47,30 +49,33 @@ public class QualityProfilesDownloader {
   public QProfiles fetchQualityProfiles() {
     QProfiles.Builder qProfileBuilder = QProfiles.newBuilder();
 
-    String searchUrl = DEFAULT_QP_SEARCH_URL;
-    if (wsClient.getOrganizationKey() != null) {
-      searchUrl += "?organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
+    StringBuilder searchUrl = new StringBuilder();
+    searchUrl.append(DEFAULT_QP_SEARCH_URL);
+    String organizationKey = wsClient.getOrganizationKey();
+    if (organizationKey != null) {
+      searchUrl.append("?organization=").append(StringUtils.urlEncode(organizationKey));
     }
-    try (InputStream contentStream = wsClient.get(searchUrl).contentStream()) {
-      SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
-      for (QualityProfile qp : qpResponse.getProfilesList()) {
-        QProfile.Builder qpBuilder = QProfile.newBuilder();
-        qpBuilder.setKey(qp.getKey());
-        qpBuilder.setName(qp.getName());
-        qpBuilder.setLanguage(qp.getLanguage());
-        qpBuilder.setLanguageName(qp.getLanguageName());
-        qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
-        qpBuilder.setRulesUpdatedAt(qp.getRulesUpdatedAt());
-        qpBuilder.setUserUpdatedAt(qp.getUserUpdatedAt());
+    SonarLintWsClient.consumeTimed(
+      () -> wsClient.get(searchUrl.toString()),
+      response -> {
+        SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(response.contentStream());
+        for (QualityProfile qp : qpResponse.getProfilesList()) {
+          QProfile.Builder qpBuilder = QProfile.newBuilder();
+          qpBuilder.setKey(qp.getKey());
+          qpBuilder.setName(qp.getName());
+          qpBuilder.setLanguage(qp.getLanguage());
+          qpBuilder.setLanguageName(qp.getLanguageName());
+          qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
+          qpBuilder.setRulesUpdatedAt(qp.getRulesUpdatedAt());
+          qpBuilder.setUserUpdatedAt(qp.getUserUpdatedAt());
 
-        qProfileBuilder.putQprofilesByKey(qp.getKey(), qpBuilder.build());
-        if (qp.getIsDefault()) {
-          qProfileBuilder.putDefaultQProfilesByLanguage(qp.getLanguage(), qp.getKey());
+          qProfileBuilder.putQprofilesByKey(qp.getKey(), qpBuilder.build());
+          if (qp.getIsDefault()) {
+            qProfileBuilder.putDefaultQProfilesByLanguage(qp.getLanguage(), qp.getKey());
+          }
         }
-      }
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load default quality profiles", e);
-    }
+      },
+      duration -> LOG.debug("Downloaded quality profiles in {}ms", duration));
 
     return qProfileBuilder.build();
   }

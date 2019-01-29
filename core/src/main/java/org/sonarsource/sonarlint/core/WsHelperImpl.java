@@ -20,12 +20,13 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Organizations;
 import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.ShowWsResponse;
@@ -52,6 +53,8 @@ import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 import static java.util.Objects.requireNonNull;
 
 public class WsHelperImpl implements WsHelper {
+  private static final Logger LOG = Loggers.get(WsHelperImpl.class);
+
   private static final String MIN_VERSION_FOR_ORGANIZATIONS = "6.3";
 
   @Override
@@ -142,14 +145,15 @@ public class WsHelperImpl implements WsHelper {
   }
 
   public static Optional<ShowWsResponse> fetchComponent(SonarLintWsClient client, String componentKey) {
-    try (WsResponse response = client.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey))) {
-      if (response.isSuccessful()) {
-        return Optional.of(WsComponents.ShowWsResponse.parseFrom(response.contentStream()));
-      }
-      return Optional.empty();
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to fetch component '" + componentKey + "'", e);
-    }
+    return SonarLintWsClient.processTimed(
+      () -> client.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey)),
+      response -> {
+        if (response.isSuccessful()) {
+          return Optional.of(WsComponents.ShowWsResponse.parseFrom(response.contentStream()));
+        }
+        return Optional.empty();
+      },
+      duration -> LOG.debug("Downloaded project details in {}ms", duration));
   }
 
   static Optional<RemoteOrganization> getOrganization(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, String organizationKey, ProgressWrapper progress) {

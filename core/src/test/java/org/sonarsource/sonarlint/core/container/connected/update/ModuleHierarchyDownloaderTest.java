@@ -137,7 +137,7 @@ public class ModuleHierarchyDownloaderTest {
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", "invalid response stream");
     downloader = new ModuleHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("Failed to process paginated WS");
+    exception.expectMessage(" While parsing a protocol message, the input ended unexpectedly in the middle of a field.");
     downloader.fetchModuleHierarchy(Version.create("7.0"), "testRoot", new ProgressWrapper(null));
   }
 }
