@@ -16,7 +16,7 @@ typescript=1.5
 web=2.6
 kotlin=1.2.1
 ruby=1.2.1
-sonarscala=1.2.1
+sonarscala=1.4
 tsql=1.1
 xml=2.0.1
 # Only used by ITs
