@@ -50,8 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 /**
- * This test verifies that SonarJS 2.13 gets excluded due to being below minimum supported version.
- * SonarJS 2.13 doesn't work in SQ >= 7.3
+ * This test verifies that SonarPython 1.9 gets excluded due to being below minimum supported version.
  */
 public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
@@ -67,7 +66,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   private static Orchestrator buildOrchestrator() {
     OrchestratorBuilder builder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
-      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "2.13"));
+      .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.0.2010"));
 
     builder
       .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
@@ -126,7 +125,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
-    assertThat(logs).contains("Code analyzer 'javascript' version '2.13' is not supported (minimal version is '4.0'). Skip downloading it.");
+    assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1'). Skip downloading it.");
   }
 
   private ServerConfiguration config() {

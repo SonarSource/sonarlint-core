@@ -18,5 +18,6 @@ kotlin=1.2.1
 ruby=1.2.1
 sonarscala=1.2.1
 tsql=1.1
-# FIXME last release is 1.5 and next released version is 2.0, there is no 1.6
-xml=1.6
+xml=2.0.1
+# Only used by ITs
+xoo=1.0
