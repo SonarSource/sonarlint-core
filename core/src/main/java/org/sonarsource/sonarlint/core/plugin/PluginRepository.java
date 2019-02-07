@@ -96,7 +96,7 @@ public class PluginRepository implements Startable {
   private boolean supportsStream(String analyzerKey, @Nullable String version) {
     String minVersion = pluginVersionChecker.getMinimumStreamSupportVersion(analyzerKey);
     if (version == null || minVersion == null) {
-      return false;
+      return true;
     }
 
     Version v = Version.create(version);

@@ -56,7 +56,7 @@ public class PluginRepositoryTest {
   @Test
   public void testAnalyzerWithoutVersion() {
     PluginInfo info = new PluginInfo("key");
-    test(info, false);
+    test(info, true);
   }
 
   private void test(PluginInfo info, boolean assertSupportsStream) {
