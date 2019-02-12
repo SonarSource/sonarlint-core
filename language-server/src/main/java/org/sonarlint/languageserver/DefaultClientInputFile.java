@@ -109,6 +109,8 @@ public class DefaultClientInputFile implements ClientInputFile {
       case "typescript":
       case "typescriptreact":
         return "ts";
+      case "html":
+        return "web";
       default:
         return clientLanguageId;
     }
