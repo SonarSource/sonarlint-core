@@ -51,6 +51,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
@@ -72,6 +73,7 @@ import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
@@ -266,12 +268,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private boolean usesConnectedMode() {
-    //TODO check if this is correct
+    // TODO check if this is correct
     return !serverInfoCache.isEmpty();
   }
 
   private boolean usesSonarCloud() {
-    //TODO check if this is correct
+    // TODO check if this is correct
     return serverInfoCache.containsSonarCloud();
   }
 
@@ -468,22 +470,22 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   @Override
-  public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
+  public CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> documentSymbol(DocumentSymbolParams params) {
     return null;
   }
 
   @Override
-  public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
-    List<Command> commands = new ArrayList<>();
+  public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
+    List<Either<Command, CodeAction>> commands = new ArrayList<>();
     for (Diagnostic d : params.getContext().getDiagnostics()) {
       if (SONARLINT_SOURCE.equals(d.getSource())) {
         String ruleKey = d.getCode();
         List<Object> ruleDescriptionParams = getOpenRuleDescriptionParams(ruleKey);
         if (!ruleDescriptionParams.isEmpty()) {
-          commands.add(
+          commands.add(Either.forLeft(
             new Command("Open description of rule " + ruleKey,
               SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
-              ruleDescriptionParams));
+              ruleDescriptionParams)));
         }
       }
     }
@@ -929,8 +931,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     // No watched files
   }
 
-  // TODO this method never seems to get triggered...
-  // Users must restart language server after adding new workspace folder.
   @Override
   public void didChangeWorkspaceFolders(DidChangeWorkspaceFoldersParams params) {
     WorkspaceFoldersChangeEvent event = params.getEvent();

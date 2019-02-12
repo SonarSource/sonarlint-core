@@ -41,6 +41,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.SystemUtils;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
@@ -64,6 +65,7 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
@@ -359,17 +361,17 @@ public class ServerMainTest {
     lsProxy.getTextDocumentService()
       .didChange(new DidChangeTextDocumentParams(docId, Collections.singletonList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
 
-    List<? extends Command> codeActions = lsProxy.getTextDocumentService()
+    List<Either<Command, CodeAction>> codeActions = lsProxy.getTextDocumentService()
       .codeAction(new CodeActionParams(new TextDocumentIdentifier(uri), new Range(new Position(1, 4), new Position(1, 4)),
         new CodeActionContext(waitForDiagnostics(uri))))
       .get();
 
     assertThat(codeActions).hasSize(1);
 
-    String ruleKey = ((JsonPrimitive) codeActions.get(0).getArguments().get(0)).getAsString();
+    String ruleKey = ((JsonPrimitive) codeActions.get(0).getLeft().getArguments().get(0)).getAsString();
     assertThat(ruleKey).isEqualTo("javascript:S1442");
 
-    lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams(codeActions.get(0).getCommand(), codeActions.get(0).getArguments())).get();
+    lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams(codeActions.get(0).getLeft().getCommand(), codeActions.get(0).getLeft().getArguments())).get();
 
     assertThat(client.ruleDescs).hasSize(1);
 
