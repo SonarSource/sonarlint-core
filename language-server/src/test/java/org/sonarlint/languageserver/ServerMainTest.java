@@ -119,6 +119,7 @@ public class ServerMainTest {
     String php = new File("target/plugins/php.jar").getAbsoluteFile().toURI().toURL().toString();
     String py = new File("target/plugins/python.jar").getAbsoluteFile().toURI().toURL().toString();
     String ts = new File("target/plugins/typescript.jar").getAbsoluteFile().toURI().toURL().toString();
+    String html = new File("target/plugins/html.jar").getAbsoluteFile().toURI().toURL().toString();
 
     Path fakeTypeScriptProjectPath = globalTemp.newFolder().toPath();
     Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
@@ -136,7 +137,7 @@ public class ServerMainTest {
     }
 
     try {
-      ServerMain.main("" + port, js, php, py, ts);
+      ServerMain.main("" + port, js, php, py, ts, html);
     } catch (Exception e) {
       e.printStackTrace();
       future.get(1, TimeUnit.SECONDS);
@@ -229,6 +230,34 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(2, 2, 2, 6, "php:S2041", "sonarlint", "Remove the parentheses from this \"echo\" call. (php:S2041)", DiagnosticSeverity.Error));
+  }
+
+  @Test
+  public void analyzeSimpleHtmlFileOnOpen() throws Exception {
+    String uri = getUri("foo.html");
+    lsProxy.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "html", 1, "<html><body></body></html>")));
+
+    assertThat(waitForDiagnostics(uri))
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactlyInAnyOrder(
+        tuple(0, 0, 0, 26, "Web:DoctypePresenceCheck", "sonarlint", "Insert a <!DOCTYPE> declaration to before this <html> tag. (Web:DoctypePresenceCheck)",
+          DiagnosticSeverity.Warning),
+        tuple(0, 0, 0, 26, "Web:PageWithoutTitleCheck", "sonarlint", "Add a <title> tag to this page. (Web:PageWithoutTitleCheck)", DiagnosticSeverity.Warning));
+  }
+
+  @Test
+  public void analyzeSimpleJspFileOnOpen() throws Exception {
+    String uri = getUri("foo.html");
+    lsProxy.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "jsp", 1, "<html><body></body></html>")));
+
+    assertThat(waitForDiagnostics(uri))
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactlyInAnyOrder(
+        tuple(0, 0, 0, 26, "Web:DoctypePresenceCheck", "sonarlint", "Insert a <!DOCTYPE> declaration to before this <html> tag. (Web:DoctypePresenceCheck)",
+          DiagnosticSeverity.Warning),
+        tuple(0, 0, 0, 26, "Web:PageWithoutTitleCheck", "sonarlint", "Add a <title> tag to this page. (Web:PageWithoutTitleCheck)", DiagnosticSeverity.Warning));
   }
 
   @Test
