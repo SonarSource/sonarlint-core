@@ -19,9 +19,8 @@
  */
 package org.sonar.samples.javascript.checks;
 
-import com.google.common.collect.ImmutableSet;
+import java.util.HashSet;
 import java.util.Set;
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.javascript.api.tree.Tree.Kind;
@@ -29,9 +28,8 @@ import org.sonar.plugins.javascript.api.tree.expression.CallExpressionTree;
 import org.sonar.plugins.javascript.api.tree.expression.ExpressionTree;
 import org.sonar.plugins.javascript.api.tree.expression.IdentifierTree;
 import org.sonar.plugins.javascript.api.visitors.DoubleDispatchVisitorCheck;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-import org.sonarsource.api.sonarlint.SonarLintSide;
+
+import static java.util.Arrays.asList;
 
 /**
  * Example of implementation of a check by extending {@link DoubleDispatchVisitorCheck}.
@@ -40,21 +38,22 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
  * <p>
  * Those methods can be overridden to process information
  * related to node and issues can be created via {@link DoubleDispatchVisitorCheck#addIssue} methods}.
+ *
+ * <p>
+ * Description can either be given via {@link Rule} annotation or through HTML name <ruleKey>.html loaded in
+ * {@link org.sonar.samples.javascript.JavaScriptCustomRulesDefinition}
+ * </p>
  */
 @Rule(
   key = "S1",
   priority = Priority.MAJOR,
   name = "Forbidden function should not be used.",
   tags = {"convention"}
-// Description can either be given in this annotation or through HTML name <ruleKey>.html located in package src/resources/org/sonar/l10n/javascript/rules/<repositoryKey>
 // description = "<p>The following functions should not be used:</p> <ul><li>foo</li> <li>bar</li></ul>",
-  )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_RELIABILITY)
-@SqaleConstantRemediation("5min")
-@SonarLintSide
+)
 public class ForbiddenFunctionUseCheck extends DoubleDispatchVisitorCheck {
 
-  private static final Set<String> FORBIDDEN_FUNCTIONS = ImmutableSet.of("foo", "bar");
+  private static final Set<String> FORBIDDEN_FUNCTIONS = new HashSet<>(asList("foo", "bar"));
 
   /**
    * Overriding method visiting the call expression to create an issue

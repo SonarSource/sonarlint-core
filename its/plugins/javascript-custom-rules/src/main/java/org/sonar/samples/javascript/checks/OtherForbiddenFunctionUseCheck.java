@@ -19,10 +19,8 @@
  */
 package org.sonar.samples.javascript.checks;
 
-import com.google.common.collect.ImmutableSet;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.javascript.api.tree.Tree;
@@ -31,9 +29,8 @@ import org.sonar.plugins.javascript.api.tree.expression.CallExpressionTree;
 import org.sonar.plugins.javascript.api.tree.expression.ExpressionTree;
 import org.sonar.plugins.javascript.api.tree.expression.IdentifierTree;
 import org.sonar.plugins.javascript.api.visitors.SubscriptionVisitorCheck;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-import org.sonarsource.api.sonarlint.SonarLintSide;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Example of a check extending {@link SubscriptionVisitorCheck}.
@@ -47,18 +44,14 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
   priority = Priority.MINOR,
   name = "'baz' function should not be used.",
   tags = {"convention"},
-  description = "It's better not to use the 'baz' function."
-  )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_RELIABILITY)
-@SqaleConstantRemediation("5min")
-@SonarLintSide
+  description = "It's better not to use the 'baz' function.")
 public class OtherForbiddenFunctionUseCheck extends SubscriptionVisitorCheck {
 
-  private static final Set<String> FORBIDDEN_FUNCTIONS = ImmutableSet.of("baz");
+  private static final Set<String> FORBIDDEN_FUNCTIONS = new HashSet<>(singletonList("baz"));
 
   @Override
   public Set<Kind> nodesToVisit() {
-    return Collections.singleton(Kind.CALL_EXPRESSION);
+    return new HashSet<>(singletonList(Kind.CALL_EXPRESSION));
   }
 
   @Override
