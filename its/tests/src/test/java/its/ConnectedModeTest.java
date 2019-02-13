@@ -423,8 +423,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT_CUSTOM, PROJECT_KEY_JAVASCRIPT_CUSTOM, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
-      tuple("custom:S1", 3),
-      tuple("custom:S1", 7));
+      tuple("custom-javascript-repo:S1", 3),
+      tuple("custom-javascript-repo:S1", 7));
   }
 
   @Test
