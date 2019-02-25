@@ -870,35 +870,39 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
-    List<Object> args = params.getArguments();
-    switch (params.getCommand()) {
-      case SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND:
-        if (args == null) {
+    try {
+      List<Object> args = params.getArguments();
+      switch (params.getCommand()) {
+        case SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND:
+          if (args == null) {
+            break;
+          }
+          if (args.size() != 1) {
+            logger.warn("Expecting 1 argument");
+          } else {
+            String ruleKey = parseToString(args.get(0));
+            // TODO use the correct engine (currently only Atom reaches this code, and it doesn't have connected mode, yet)
+            RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
+            String ruleName = ruleDetails.getName();
+            String htmlDescription = getHtmlDescription(ruleDetails);
+            String type = ruleDetails.getType();
+            String severity = ruleDetails.getSeverity();
+            client.openRuleDescription(RuleDescription.of(ruleKey, ruleName, htmlDescription, type, severity));
+          }
           break;
-        }
-        if (args.size() != 1) {
-          logger.warn("Expecting 1 argument");
-        } else {
-          String ruleKey = parseToString(args.get(0));
-          // TODO use the correct engine (currently only Atom reaches this code, and it doesn't have connected mode, yet)
-          RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
-          String ruleName = ruleDetails.getName();
-          String htmlDescription = getHtmlDescription(ruleDetails);
-          String type = ruleDetails.getType();
-          String severity = ruleDetails.getSeverity();
-          client.openRuleDescription(RuleDescription.of(ruleKey, ruleName, htmlDescription, type, severity));
-        }
-        break;
-      case SONARLINT_UPDATE_SERVER_STORAGE_COMMAND:
-        List<Object> list = args == null ? null : args.stream().map(SonarLintLanguageServer::parseToMap).collect(Collectors.toList());
-        handleUpdateServerStorageCommand(list);
-        break;
-      case SONARLINT_UPDATE_PROJECT_BINDING_COMMAND:
-        Map<String, Object> map = args == null || args.isEmpty() ? null : parseToMap(args.get(0));
-        updateBinding(map);
-        break;
-      default:
-        logger.warn("Unimplemented command: " + params.getCommand());
+        case SONARLINT_UPDATE_SERVER_STORAGE_COMMAND:
+          List<Object> list = args == null ? null : args.stream().map(SonarLintLanguageServer::parseToMap).collect(Collectors.toList());
+          handleUpdateServerStorageCommand(list);
+          break;
+        case SONARLINT_UPDATE_PROJECT_BINDING_COMMAND:
+          Map<String, Object> map = args == null || args.isEmpty() ? null : parseToMap(args.get(0));
+          updateBinding(map);
+          break;
+        default:
+          logger.warn("Unimplemented command: " + params.getCommand());
+      }
+    } catch (Exception e) {
+      logger.error("Unable to process command '" + params.getCommand() + "'", e);
     }
     return CompletableFuture.completedFuture(new Object());
   }
