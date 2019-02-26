@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.util.Collection;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
@@ -43,7 +44,7 @@ public interface StandaloneSonarLintEngine {
    * @throws IllegalArgumentException if ruleKey is unknown
    * @since 1.2
    */
-  RuleDetails getRuleDetails(String ruleKey);
+  Optional<RuleDetails> getRuleDetails(String ruleKey);
 
   /**
    * Return rule details of all available rules.

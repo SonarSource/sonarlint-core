@@ -132,7 +132,7 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaScript() throws Exception {
 
-    RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable");
+    RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
@@ -165,7 +165,7 @@ public class StandaloneIssueMediumTest {
     // TODO enable it again once https://github.com/SonarSource/SonarTS/issues/598 is fixed
     Assume.assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
-    RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764");
+    RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
     assertThat(ruleDetails.getLanguage()).isEqualTo("ts");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
@@ -340,7 +340,7 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
-    assertThat(sonarlint.getRuleDetails("squid:S1313")).isNull();
+    assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
       "package foo;\n"

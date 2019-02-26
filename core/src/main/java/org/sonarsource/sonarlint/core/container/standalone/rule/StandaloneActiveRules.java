@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
@@ -61,6 +62,7 @@ public class StandaloneActiveRules {
     return activeRules.findAll();
   }
 
+  @CheckForNull
   public RuleDetails ruleDetails(String ruleKeyStr) {
     return ruleDetails.get(ruleKeyStr);
   }

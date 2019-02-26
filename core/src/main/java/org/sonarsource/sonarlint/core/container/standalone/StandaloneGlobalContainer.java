@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.standalone;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
@@ -153,6 +154,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return pluginRepository.getLoadedAnalyzers();
   }
 
+  @CheckForNull
   public RuleDetails getRuleDetails(String ruleKeyStr) {
     return standaloneActiveRules.ruleDetails(ruleKeyStr);
   }

@@ -21,7 +21,7 @@ package org.sonarlint.languageserver;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -101,7 +101,9 @@ import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
@@ -136,7 +138,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   static final String TYPESCRIPT_LOCATION = "typeScriptLocation";
   static final String TEST_FILE_PATTERN = "testFilePattern";
   private static final String ANALYZER_PROPERTIES = "analyzerProperties";
-  private static final String INCLUDE_RULE_DETAILS_IN_CODE_ACTION = "includeRuleDetailsInCodeAction";
   static final String CONNECTED_MODE_SERVERS_PROP = "connectedModeServers";
   static final String CONNECTED_MODE_PROJECT_PROP = "connectedModeProject";
   private static final String TYPESCRIPT_PATH_PROP = "sonar.typescript.internal.typescriptLocation";
@@ -168,9 +169,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private final ServerIssueTrackingLogger serverIssueTrackingLogger = new ServerIssueTrackingLogger();
   private ServerIssueTracker serverIssueTracker;
-
-  // note: only used by SonarLint for VSCode, not Atom
-  private boolean shouldIncludeRuleDetailsInCodeAction;
 
   SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
     BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory,
@@ -244,8 +242,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     String productName = (String) options.get("productName");
     String productVersion = (String) options.get("productVersion");
-
-    shouldIncludeRuleDetailsInCodeAction = Boolean.TRUE.equals(options.get(INCLUDE_RULE_DETAILS_IN_CODE_ACTION));
 
     String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
     engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
@@ -477,29 +473,31 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @Override
   public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
     List<Either<Command, CodeAction>> commands = new ArrayList<>();
-    for (Diagnostic d : params.getContext().getDiagnostics()) {
-      if (SONARLINT_SOURCE.equals(d.getSource())) {
-        String ruleKey = d.getCode();
-        List<Object> ruleDescriptionParams = getOpenRuleDescriptionParams(ruleKey);
-        if (!ruleDescriptionParams.isEmpty()) {
-          commands.add(Either.forLeft(
-            new Command("Open description of rule " + ruleKey,
-              SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
-              ruleDescriptionParams)));
+    try {
+      for (Diagnostic d : params.getContext().getDiagnostics()) {
+        if (SONARLINT_SOURCE.equals(d.getSource())) {
+          String ruleKey = d.getCode();
+          List<Object> ruleDescriptionParams = getOpenRuleDescriptionParams(ruleKey);
+          if (!ruleDescriptionParams.isEmpty()) {
+            commands.add(Either.forLeft(
+              new Command("Open description of rule " + ruleKey,
+                SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
+                ruleDescriptionParams)));
+          }
         }
       }
+    } catch (Exception e) {
+      logger.error("Unable to get code actions", e);
+      return completeExceptionally(-1, e.getMessage());
     }
     return CompletableFuture.completedFuture(commands);
   }
 
   private List<Object> getOpenRuleDescriptionParams(String ruleKey) {
-    if (!shouldIncludeRuleDetailsInCodeAction) {
-      return Collections.singletonList(ruleKey);
-    }
-
     RuleDetails ruleDetails;
     if (binding == null) {
-      ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
+      ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey)
+        .orElseThrow(() -> new IllegalArgumentException("Unknow rule with key: " + ruleKey));
     } else {
       ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
       ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
@@ -873,23 +871,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     try {
       List<Object> args = params.getArguments();
       switch (params.getCommand()) {
-        case SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND:
-          if (args == null) {
-            break;
-          }
-          if (args.size() != 1) {
-            logger.warn("Expecting 1 argument");
-          } else {
-            String ruleKey = parseToString(args.get(0));
-            // TODO use the correct engine (currently only Atom reaches this code, and it doesn't have connected mode, yet)
-            RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
-            String ruleName = ruleDetails.getName();
-            String htmlDescription = getHtmlDescription(ruleDetails);
-            String type = ruleDetails.getType();
-            String severity = ruleDetails.getSeverity();
-            client.openRuleDescription(RuleDescription.of(ruleKey, ruleName, htmlDescription, type, severity));
-          }
-          break;
         case SONARLINT_UPDATE_SERVER_STORAGE_COMMAND:
           List<Object> list = args == null ? null : args.stream().map(SonarLintLanguageServer::parseToMap).collect(Collectors.toList());
           handleUpdateServerStorageCommand(list);
@@ -899,12 +880,23 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           updateBinding(map);
           break;
         default:
-          logger.warn("Unimplemented command: " + params.getCommand());
+          return completeExceptionally(-1, "Unsupported command: " + params.getCommand());
       }
     } catch (Exception e) {
-      logger.error("Unable to process command '" + params.getCommand() + "'", e);
+      String message = "Unable to process command '" + params.getCommand() + "'";
+      logger.error(message, e);
+      return completeExceptionally(-1, message + ": " + e.getMessage());
     }
-    return CompletableFuture.completedFuture(new Object());
+    return CompletableFuture.completedFuture(null);
+  }
+
+  private static <G> CompletableFuture<G> completeExceptionally(int code, String message) {
+    CompletableFuture<G> exceptionalResult = new CompletableFuture<>();
+    ResponseError responseError = new ResponseError();
+    responseError.setCode(code);
+    responseError.setMessage(message);
+    exceptionalResult.completeExceptionally(new ResponseErrorException(responseError));
+    return exceptionalResult;
   }
 
   // visible for testing
@@ -947,13 +939,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   // https://github.com/eclipse/lsp4j/blob/master/CHANGELOG.md
   // (currently JsonElement, used to be Map<String, Object>)
   private static Map<String, Object> parseToMap(Object obj) {
-    return new Gson().fromJson((JsonElement) obj, Map.class);
-  }
-
-  // See the changelog for any evolutions on how properties are parsed:
-  // https://github.com/eclipse/lsp4j/blob/master/CHANGELOG.md
-  private static String parseToString(Object obj) {
-    return ((JsonPrimitive) obj).getAsString();
+    try {
+      return new Gson().fromJson((JsonElement) obj, Map.class);
+    } catch (JsonSyntaxException e) {
+      throw new IllegalArgumentException("Expected a JSON map but was: " + obj);
+    }
   }
 
   static class ServerProjectBinding {
