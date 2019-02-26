@@ -20,6 +20,7 @@
 package org.sonarlint.languageserver;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonPrimitive;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -27,6 +28,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +43,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.SystemUtils;
+import org.eclipse.lsp4j.CodeAction;
+import org.eclipse.lsp4j.CodeActionContext;
+import org.eclipse.lsp4j.CodeActionParams;
+import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
@@ -52,7 +58,9 @@ import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -60,6 +68,7 @@ import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
@@ -362,6 +371,49 @@ public class ServerMainTest {
       assertThat(((ResponseErrorException) e.getCause()).getResponseError().getMessage())
         .isEqualTo("Unable to process command 'SonarLint.UpdateServerStorage': Expected a JSON map but was: \"invalidMap\"");
     }
+  }
+
+  @Test
+  public void testCodeAction_no_diagnostics() throws Exception {
+    Range range = new Range(new Position(1, 0), new Position(1, 10));
+    CodeActionParams codeActionParams = new CodeActionParams(new TextDocumentIdentifier("file://foo.js"), range, new CodeActionContext(Collections.emptyList()));
+    lsProxy.getTextDocumentService().codeAction(codeActionParams).get();
+  }
+
+  @Test
+  public void testCodeAction_with_unknown_diagnostic_rule() throws Exception {
+    Range range = new Range(new Position(1, 0), new Position(1, 10));
+    Diagnostic d = new Diagnostic(range, "An issue");
+    d.setSource("sonarlint");
+    d.setCode("unknown:rule");
+    CodeActionParams codeActionParams = new CodeActionParams(new TextDocumentIdentifier("file://foo.js"), range, new CodeActionContext(Arrays.asList(d)));
+    try {
+      lsProxy.getTextDocumentService().codeAction(codeActionParams).get();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(ExecutionException.class).hasCauseInstanceOf(ResponseErrorException.class);
+      assertThat(((ResponseErrorException) e.getCause()).getResponseError().getMessage())
+        .isEqualTo("Unknow rule with key: unknown:rule");
+    }
+  }
+
+  @Test
+  public void testCodeAction_with_diagnostic_rule() throws Exception {
+    Range range = new Range(new Position(1, 0), new Position(1, 10));
+    Diagnostic d = new Diagnostic(range, "An issue");
+    d.setSource("sonarlint");
+    d.setCode("javascript:S930");
+    CodeActionParams codeActionParams = new CodeActionParams(new TextDocumentIdentifier("file://foo.js"), range, new CodeActionContext(Arrays.asList(d)));
+    List<Either<Command, CodeAction>> list = lsProxy.getTextDocumentService().codeAction(codeActionParams).get();
+    assertThat(list).hasSize(1);
+    Command command = list.get(0).getLeft();
+    assertThat(command.getCommand()).isEqualTo("SonarLint.OpenRuleDesc");
+    assertThat(command.getArguments()).hasSize(5);
+    assertThat(((JsonPrimitive) command.getArguments().get(0)).getAsString()).isEqualTo("javascript:S930");
+    assertThat(((JsonPrimitive) command.getArguments().get(1)).getAsString()).isEqualTo("Function calls should not pass extra arguments");
+    assertThat(((JsonPrimitive) command.getArguments().get(2)).getAsString()).contains("<h2>Noncompliant Code Example");
+    assertThat(((JsonPrimitive) command.getArguments().get(3)).getAsString()).isEqualTo("BUG");
+    assertThat(((JsonPrimitive) command.getArguments().get(4)).getAsString()).isEqualTo("CRITICAL");
   }
 
   private String getUri(String filename) throws IOException {
