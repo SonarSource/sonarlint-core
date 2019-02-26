@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
@@ -70,8 +71,8 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   }
 
   @Override
-  public RuleDetails getRuleDetails(String ruleKey) {
-    return globalContainer.getRuleDetails(ruleKey);
+  public Optional<RuleDetails> getRuleDetails(String ruleKey) {
+    return Optional.ofNullable(globalContainer.getRuleDetails(ruleKey));
   }
 
   @Override

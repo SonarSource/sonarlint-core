@@ -148,7 +148,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   @Override
   public void getRuleDetails(RuleKey key, StreamObserver<RuleDetails> response) {
     try {
-      org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(key.getKey());
+      org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(key.getKey()).get();
       response.onNext(RuleDetails.newBuilder()
         .setKey(ruleDetails.getKey())
         .setName(ruleDetails.getName())

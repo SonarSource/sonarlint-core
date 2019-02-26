@@ -20,7 +20,6 @@
 package org.sonarlint.languageserver;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonPrimitive;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -35,16 +34,13 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.SystemUtils;
-import org.eclipse.lsp4j.CodeAction;
-import org.eclipse.lsp4j.CodeActionContext;
-import org.eclipse.lsp4j.CodeActionParams;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
@@ -56,16 +52,14 @@ import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
-import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
@@ -353,33 +347,21 @@ public class ServerMainTest {
     Thread.sleep(500);
   }
 
+  @Test(expected = ExecutionException.class)
+  public void testInvalidCommand() throws Exception {
+    lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams("SonarLint.OpenRuleDesc", Collections.singletonList("missingRule"))).get();
+  }
+
   @Test
-  public void testCodeActionRuleDescription() throws Exception {
-    String uri = getUri("foo.js");
-    VersionedTextDocumentIdentifier docId = new VersionedTextDocumentIdentifier(1);
-    docId.setUri(uri);
-    lsProxy.getTextDocumentService()
-      .didChange(new DidChangeTextDocumentParams(docId, Collections.singletonList(new TextDocumentContentChangeEvent("function foo() {\n  alert('toto');\n}"))));
-
-    List<Either<Command, CodeAction>> codeActions = lsProxy.getTextDocumentService()
-      .codeAction(new CodeActionParams(new TextDocumentIdentifier(uri), new Range(new Position(1, 4), new Position(1, 4)),
-        new CodeActionContext(waitForDiagnostics(uri))))
-      .get();
-
-    assertThat(codeActions).hasSize(1);
-
-    String ruleKey = ((JsonPrimitive) codeActions.get(0).getLeft().getArguments().get(0)).getAsString();
-    assertThat(ruleKey).isEqualTo("javascript:S1442");
-
-    lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams(codeActions.get(0).getLeft().getCommand(), codeActions.get(0).getLeft().getArguments())).get();
-
-    assertThat(client.ruleDescs).hasSize(1);
-
-    assertThat(client.ruleDescs.get(0).getKey()).isEqualTo("javascript:S1442");
-    assertThat(client.ruleDescs.get(0).getName()).contains("\"alert(...)\" should not be used");
-    assertThat(client.ruleDescs.get(0).getHtmlDescription()).contains("can be useful for debugging during development");
-    assertThat(client.ruleDescs.get(0).getType()).isEqualTo("VULNERABILITY");
-    assertThat(client.ruleDescs.get(0).getSeverity()).isEqualTo("MINOR");
+  public void testCommandFailure() throws Exception {
+    try {
+      lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams("SonarLint.UpdateServerStorage", Collections.singletonList("invalidMap"))).get();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(ExecutionException.class).hasCauseInstanceOf(ResponseErrorException.class);
+      assertThat(((ResponseErrorException) e.getCause()).getResponseError().getMessage())
+        .isEqualTo("Unable to process command 'SonarLint.UpdateServerStorage': Expected a JSON map but was: \"invalidMap\"");
+    }
   }
 
   private String getUri(String filename) throws IOException {
