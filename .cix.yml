@@ -2,7 +2,7 @@
 
 
 SQ_VERSION:
-  - DEV
+  - DOGFOOD
   - MIN_SUPPORTED
   - LATEST_RELEASE
 

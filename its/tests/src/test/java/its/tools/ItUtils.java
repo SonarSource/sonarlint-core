@@ -33,6 +33,6 @@ public class ItUtils {
   }
 
   public static boolean isLatestOrDev(String version) {
-    return "LATEST_RELEASE".equals(version) || "DEV".equals(version);
+    return "LATEST_RELEASE".equals(version) || "DEV".equals(version) || "DOGFOOD".equals(version);
   }
 }
