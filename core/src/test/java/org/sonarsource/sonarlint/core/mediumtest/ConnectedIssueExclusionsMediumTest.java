@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,10 +49,10 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
@@ -59,9 +60,11 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedIssueExclusionsMediumTest {
 
+  private static final String SERVER_ID = "local";
   private static final String JAVA_MODULE_KEY = "test-project-2";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -77,7 +80,8 @@ public class ConnectedIssueExclusionsMediumTest {
     Path pluginCache = slHome.resolve("plugins");
 
     /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default QP)
+     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
+     * QP)
      */
     Path storage = Paths.get(ConnectedIssueExclusionsMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
@@ -94,7 +98,7 @@ public class ConnectedIssueExclusionsMediumTest {
     cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH,
       (filename, target) -> FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), target.toFile()));
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
     writeProjectStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
@@ -102,7 +106,7 @@ public class ConnectedIssueExclusionsMediumTest {
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("local")
+      .setServerId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
@@ -116,7 +120,7 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("projects").resolve(name);
+    Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("projects").resolve(encodeForFs(name));
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
@@ -129,7 +133,7 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("global");
+    Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
@@ -285,7 +289,7 @@ public class ConnectedIssueExclusionsMediumTest {
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 

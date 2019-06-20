@@ -45,6 +45,8 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
+
 public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
@@ -70,7 +72,7 @@ public class RulesDownloader {
     Path activeRulesDir = destDir.resolve(StoragePaths.ACTIVE_RULES_FOLDER);
     FileUtils.mkdirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(StoragePaths.encodeForFs(entry.getKey()) + ".pb"));
+      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(encodeForFs(entry.getKey()) + ".pb"));
     }
 
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StoragePaths.RULES_PB));

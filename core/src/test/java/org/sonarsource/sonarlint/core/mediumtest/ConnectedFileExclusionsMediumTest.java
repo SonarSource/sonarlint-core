@@ -52,9 +52,11 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedFileExclusionsMediumTest {
 
+  private static final String SERVER_ID = "local";
   private static final String PROJECT_KEY = "test-project-2";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -74,13 +76,13 @@ public class ConnectedFileExclusionsMediumTest {
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     writeProjectStatus(tmpStorage, PROJECT_KEY, VersionUtils.getLibraryVersion());
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("local")
+      .setServerId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
@@ -91,7 +93,7 @@ public class ConnectedFileExclusionsMediumTest {
   }
 
   private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("projects").resolve(name);
+    Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("projects").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
@@ -104,7 +106,7 @@ public class ConnectedFileExclusionsMediumTest {
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve("local").resolve("global");
+    Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)

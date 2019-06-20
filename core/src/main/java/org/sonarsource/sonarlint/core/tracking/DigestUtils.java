@@ -50,7 +50,7 @@ public class DigestUtils {
     }
   }
 
-  private static String encodeHexString(byte[] data) {
+  public static String encodeHexString(byte[] data) {
     int length = data.length;
     char[] out = new char[length << 1];
 

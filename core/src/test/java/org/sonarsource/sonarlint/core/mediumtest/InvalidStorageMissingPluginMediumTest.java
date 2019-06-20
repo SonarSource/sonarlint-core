@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class InvalidStorageMissingPluginMediumTest {
 
+  private static final String SERVER_ID = "local";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngine sonarlint;
@@ -94,10 +96,10 @@ public class InvalidStorageMissingPluginMediumTest {
       }
     });
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("local")
+      .setServerId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
@@ -145,7 +147,7 @@ public class InvalidStorageMissingPluginMediumTest {
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }
