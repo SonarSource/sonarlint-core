@@ -116,8 +116,15 @@
             <!-- Force resign of shaded dependencies -->
             <removeExistingSignatures>true</removeExistingSignatures>
           </configuration>
-        </plugin>
-      </plugins>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+	  <source>8</source>
+        </configuration>
+      </plugin>  
+    </plugins>
     </pluginManagement>
   </build>
 

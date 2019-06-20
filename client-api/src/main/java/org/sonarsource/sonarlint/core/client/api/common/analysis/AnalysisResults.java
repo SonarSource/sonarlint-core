@@ -26,7 +26,7 @@ public interface AnalysisResults {
 
   /**
    * Number of file indexed. This number can be different than number of provided {@link ClientInputFile} since
-   * {@link InputFileFilter} can exclude some files.
+   * InputFileFilter can exclude some files.
    */
   int indexedFileCount();
 
