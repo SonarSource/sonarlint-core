@@ -7,6 +7,11 @@
   <packaging>pom</packaging>
   <name>Sonar :: Integration Tests :: Multi-modules Sample</name>
 
+  <properties>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+  </properties>
+
   <modules>
     <module>module_a</module>
     <module>module_b</module>
