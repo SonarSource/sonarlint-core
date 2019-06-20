@@ -44,7 +44,8 @@ public class StorageManagerTest {
       .build());
 
     Path moduleStorageRoot = manager.getProjectStorageRoot("module.:key/with_branch%");
-    assertThat(moduleStorageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("server_id").resolve("projects").resolve("module.%3Akey%2Fwith_branch%25"));
+    assertThat(moduleStorageRoot)
+      .isEqualTo(sonarUserHome.resolve("storage").resolve("7365727665725f6964").resolve("projects").resolve("6d6f64756c652e3a6b65792f776974685f6272616e636825"));
   }
 
   @Test
@@ -57,7 +58,7 @@ public class StorageManagerTest {
       .build());
 
     Path storageRoot = manager.getServerStorageRoot();
-    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("complicated.%3Aname%2Fwith_invalid%25chars"));
+    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("636f6d706c6963617465642e3a6e616d652f776974685f696e76616c6964256368617273"));
   }
 
   @Test
@@ -70,7 +71,7 @@ public class StorageManagerTest {
       .build());
 
     Path storageRoot = manager.getServerStorageRoot();
-    String folderName = StringUtils.repeat("a", 223) + "6eeae9bf4dbb517d471f397af83bc76b";
+    String folderName = StringUtils.repeat("61", 111) + "6" + "6eeae9bf4dbb517d471f397af83bc76b";
     assertThat(folderName.length()).isLessThanOrEqualTo(255);
     assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve(folderName));
   }
@@ -85,22 +86,22 @@ public class StorageManagerTest {
 
     assertThat(manager.getServerIssuesPath("project")).isEqualTo(sonarUserHome
       .resolve("storage")
-      .resolve("server")
+      .resolve("736572766572")
       .resolve("projects")
-      .resolve("project")
+      .resolve("70726f6a656374")
       .resolve("server_issues"));
 
     assertThat(manager.getProjectListPath()).isEqualTo(sonarUserHome
       .resolve("storage")
-      .resolve("server")
+      .resolve("736572766572")
       .resolve("global")
       .resolve("project_list.pb"));
 
     assertThat(manager.getComponentListPath("project")).isEqualTo(sonarUserHome
       .resolve("storage")
-      .resolve("server")
+      .resolve("736572766572")
       .resolve("projects")
-      .resolve("project")
+      .resolve("70726f6a656374")
       .resolve("component_list.pb"));
   }
 

@@ -80,7 +80,8 @@ public class RulesDownloaderTest {
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve(StoragePaths.encodeForFs("js-sonar-way-62960") + ".pb"),
+      ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
   }
 
@@ -113,7 +114,8 @@ public class RulesDownloaderTest {
 
     Rules rules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve("js-sonar-way-62960.pb"), ActiveRules.parser());
+    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.ACTIVE_RULES_FOLDER).resolve(StoragePaths.encodeForFs("js-sonar-way-62960") + ".pb"),
+      ActiveRules.parser());
     assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
   }
 

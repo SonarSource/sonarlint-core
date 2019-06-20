@@ -60,6 +60,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedIssueMediumTest {
 
@@ -82,7 +83,7 @@ public class ConnectedIssueMediumTest {
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
     FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-    Files.move(tmpStorage.resolve("local"), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)));
+    Files.move(tmpStorage.resolve(encodeForFs("local")), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)));
     PluginCache cache = PluginCache.create(pluginCache);
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -122,7 +123,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(name);
+    Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(StoragePaths.encodeForFs(name));
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)

@@ -19,21 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.tracking.DigestUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StoragePaths {
 
   private static final int MAX_FOLDER_NAME_SIZE = 255;
+  private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
   /**
    * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
    */
-  public static final String STORAGE_VERSION = "2";
+  public static final String STORAGE_VERSION = "3";
 
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
   public static final String PROPERTIES_PB = "properties.pb";
@@ -70,17 +70,12 @@ public class StoragePaths {
   }
 
   /**
-   * Encodes a string to be used as a valid filename.
+   * Encodes a string to be used as a valid file or folder name.
    * It should work in all OS and different names should never collide.
-   * See SLCORE-148.
+   * See SLCORE-148 and SLCORE-228.
    */
   public static String encodeForFs(String name) {
-    String encoded;
-    try {
-      encoded = URLEncoder.encode(name, StandardCharsets.UTF_8.name()).replace("*", "%2A");
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("Unable to encode name: " + name, e);
-    }
+    String encoded = DigestUtils.encodeHexString(name.getBytes(StandardCharsets.UTF_8));
     if (encoded.length() > MAX_FOLDER_NAME_SIZE) {
       // Most FS will not support a folder name greater than 255
       String md5 = StringUtils.md5(name);

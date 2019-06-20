@@ -57,6 +57,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 
 public class BrokenStorageBrokenPluginMediumTest {
 
+  private static final String SERVER_ID = "local";
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngine sonarlint;
@@ -104,10 +105,10 @@ public class BrokenStorageBrokenPluginMediumTest {
       }
     });
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve("local").resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("local")
+      .setServerId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())

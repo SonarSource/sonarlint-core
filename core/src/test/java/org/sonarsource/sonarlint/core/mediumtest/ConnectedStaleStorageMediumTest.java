@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedStaleStorageMediumTest {
   @ClassRule
@@ -58,7 +59,7 @@ public class ConnectedStaleStorageMediumTest {
   public static void prepare() throws Exception {
     String storageId = "localhost";
     Path slHome = temp.newFolder().toPath();
-    storage = slHome.resolve("storage").resolve(storageId);
+    storage = slHome.resolve("storage").resolve(encodeForFs(storageId));
 
     config = ConnectedGlobalConfiguration.builder()
       .setServerId(storageId)

@@ -262,7 +262,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput((msg, level) -> logs.add(msg))
+      .setLogOutput((msg, level) -> {
+        logs.add(msg);
+        System.out.println(msg);
+      })
       .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
