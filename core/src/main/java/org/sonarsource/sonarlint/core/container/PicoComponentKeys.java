@@ -21,17 +21,18 @@ package org.sonarsource.sonarlint.core.container;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
-class ComponentKeys {
+class PicoComponentKeys {
 
   private static final Pattern IDENTITY_HASH_PATTERN = Pattern.compile(".+@[a-f0-9]+");
   private final Set<Class> objectsWithoutToString = new HashSet<>();
 
   Object of(Object component) {
-    return of(component, Loggers.get(ComponentKeys.class));
+    return of(component, Loggers.get(PicoComponentKeys.class));
   }
 
   Object of(Object component, Logger log) {
@@ -43,7 +44,7 @@ class ComponentKeys {
       if (!objectsWithoutToString.add(component.getClass())) {
         log.warn(String.format("Bad component key: %s. Please implement toString() method on class %s", key, component.getClass().getName()));
       }
-      key += Uuids.createFast();
+      key += UUID.randomUUID().toString();
     }
     return new StringBuilder().append(component.getClass().getCanonicalName()).append("-").append(key).toString();
   }

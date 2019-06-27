@@ -71,7 +71,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
   ComponentContainer parent;
   MutablePicoContainer pico;
   PropertyDefinitions propertyDefinitions;
-  ComponentKeys componentKeys;
+  PicoComponentKeys componentKeys;
 
   /**
    * Create root container
@@ -83,7 +83,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
   protected ComponentContainer(MutablePicoContainer picoContainer) {
     this.parent = null;
     this.pico = picoContainer;
-    this.componentKeys = new ComponentKeys();
+    this.componentKeys = new PicoComponentKeys();
     propertyDefinitions = new PropertyDefinitions();
     addSingleton(propertyDefinitions);
     addSingleton(this);
@@ -96,7 +96,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
     this.parent = parent;
     this.pico = parent.makeChildContainer();
     this.propertyDefinitions = parent.propertyDefinitions;
-    this.componentKeys = new ComponentKeys();
+    this.componentKeys = new PicoComponentKeys();
     addSingleton(this);
   }
 
@@ -204,20 +204,12 @@ public class ComponentContainer implements ContainerPopulator.Container {
   }
 
   public ComponentContainer addSingleton(Object component) {
-    return addComponent(component, true);
-  }
-
-  /**
-   * @param singleton return always the same instance if true, else a new instance
-   *                  is returned each time the component is requested
-   */
-  public ComponentContainer addComponent(Object component, boolean singleton) {
     Object key = componentKeys.of(component);
     if (component instanceof ComponentAdapter) {
       pico.addAdapter((ComponentAdapter) component);
     } else {
       try {
-        pico.as(singleton ? Characteristics.CACHE : Characteristics.NO_CACHE).addComponent(key, component);
+        pico.as(Characteristics.CACHE).addComponent(key, component);
       } catch (Throwable t) {
         throw new IllegalStateException("Unable to register component " + getName(component), t);
       }

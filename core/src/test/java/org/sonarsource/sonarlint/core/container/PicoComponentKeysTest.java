@@ -23,14 +23,14 @@ import org.junit.Test;
 import org.sonar.api.utils.log.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.startsWith;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class ComponentKeysTest {
+public class PicoComponentKeysTest {
 
-  ComponentKeys keys = new ComponentKeys();
+  PicoComponentKeys keys = new PicoComponentKeys();
 
   @Test
   public void generate_key_of_class() {
@@ -39,7 +39,7 @@ public class ComponentKeysTest {
 
   @Test
   public void generate_key_of_object() {
-    assertThat(keys.of(new FakeComponent())).isEqualTo("org.sonarsource.sonarlint.core.container.ComponentKeysTest.FakeComponent-fake");
+    assertThat(keys.of(new FakeComponent())).isEqualTo("org.sonarsource.sonarlint.core.container.PicoComponentKeysTest.FakeComponent-fake");
   }
 
   @Test
