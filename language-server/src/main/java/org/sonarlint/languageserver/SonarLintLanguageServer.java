@@ -81,6 +81,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -451,7 +452,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   @Override
-  public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
+  public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> definition(TextDocumentPositionParams position) {
     return null;
   }
 
