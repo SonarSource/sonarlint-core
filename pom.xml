@@ -34,7 +34,7 @@
 
   <properties>
     <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
-    <sonarqube.version>7.6</sonarqube.version>
+    <sonarqube.version>7.9</sonarqube.version>
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
     <logback.version>1.2.3</logback.version>
@@ -116,15 +116,15 @@
             <!-- Force resign of shaded dependencies -->
             <removeExistingSignatures>true</removeExistingSignatures>
           </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-	  <source>8</source>
-        </configuration>
-      </plugin>  
-    </plugins>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <source>8</source>
+          </configuration>
+        </plugin>
+      </plugins>
     </pluginManagement>
   </build>
 
