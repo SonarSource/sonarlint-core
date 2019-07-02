@@ -26,7 +26,7 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.internal.ApiVersion;
+import org.sonar.api.internal.MetadataLoader;
 import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
@@ -74,7 +74,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version version = ApiVersion.load(System2.INSTANCE);
+    Version version = MetadataLoader.loadVersion(System2.INSTANCE);
     add(
       StandalonePluginIndex.class,
       PluginRepository.class,
