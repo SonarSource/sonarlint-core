@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.Daemon;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
@@ -54,7 +53,6 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 
 public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedSonarLintImpl.class);
   private final Daemon daemon;
   private final ProxyLogOutput logOutput;
   private ConnectedSonarLintEngine engine;
@@ -83,7 +81,8 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("Error registering", e);
+      System.err.println("Error registering");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
@@ -109,7 +108,8 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("Error analyzing", e);
+      System.err.println("Error analyzing");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
@@ -127,7 +127,8 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("update", e);
+      System.err.println("update");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
@@ -179,7 +180,8 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(StorageState.newBuilder().setState(transformed).build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("status", e);
+      System.err.println("status");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
@@ -192,7 +194,8 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(Void.newBuilder().build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("updateProject", e);
+      System.err.println("updateProject");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
@@ -211,14 +214,15 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
         .build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("getRuleDetails", e);
+      System.err.println("getRuleDetails");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
 
   @Override
   public void shutdown(Void request, StreamObserver<Void> responseObserver) {
-    LOGGER.info("Shutdown requested");
+    System.out.println("Shutdown requested");
     responseObserver.onCompleted();
     daemon.stop();
   }

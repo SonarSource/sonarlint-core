@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.Daemon;
 import org.sonarlint.daemon.Utils;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
@@ -56,7 +55,6 @@ import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 
 public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneSonarLintImplBase {
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(StandaloneSonarLintImpl.class);
   private final ProxyLogOutput logOutput;
   private final Collection<URL> analyzers;
   private final Daemon daemon;
@@ -108,7 +106,8 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
       engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("Error analyzing", e);
+      System.err.println("Error analyzing");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
@@ -127,13 +126,14 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         if (Status.fromThrowable(t).getCode() == Code.CANCELLED) {
           return;
         }
-        LOGGER.error("Received an error during heartbeat, stopping", t);
+        System.err.println("Received an error during heartbeat, stopping");
+        t.printStackTrace(System.err);
         daemon.stop();
       }
 
       @Override
       public void onCompleted() {
-        LOGGER.error("Heartbeat stream completed, stopping");
+        System.err.println("Heartbeat stream completed, stopping");
         daemon.stop();
       }
 
@@ -159,14 +159,15 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         .build());
       response.onCompleted();
     } catch (Exception e) {
-      LOGGER.error("getRuleDetails", e);
+      System.err.println("getRuleDetails");
+      e.printStackTrace(System.err);
       response.onError(e);
     }
   }
 
   @Override
   public void shutdown(Void request, StreamObserver<Void> responseObserver) {
-    LOGGER.info("Shutdown requested");
+    System.out.println("Shutdown requested");
     responseObserver.onCompleted();
     daemon.stop();
   }

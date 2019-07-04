@@ -42,13 +42,6 @@
       <fileMode>0644</fileMode>
       <lineEnding>unix</lineEnding>
     </fileSet>
-    
-    <fileSet>
-      <directory>src/main/assembly/conf</directory>
-      <outputDirectory>conf</outputDirectory>
-      <fileMode>0644</fileMode>
-      <lineEnding>unix</lineEnding>
-    </fileSet>
 	
 	<fileSet>
       <directory>src/main/assembly/bin</directory>

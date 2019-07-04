@@ -22,13 +22,11 @@ package org.sonarlint.daemon.model;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import javax.annotation.Nullable;
-import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.Daemon;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.LogEvent;
 
 public class ProxyLogOutput implements LogOutput {
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProxyLogOutput.class);
   private final Daemon daemon;
   private StreamObserver<LogEvent> response;
 
@@ -45,10 +43,6 @@ public class ProxyLogOutput implements LogOutput {
 
   @Override
   public synchronized void log(String formattedMessage, Level level) {
-    if (level == Level.ERROR) {
-      LOGGER.error(formattedMessage);
-    }
-
     if (response != null) {
       LogEvent log = LogEvent.newBuilder()
         .setLevel(level.name())
@@ -58,10 +52,13 @@ public class ProxyLogOutput implements LogOutput {
       try {
         response.onNext(log);
       } catch (StatusRuntimeException e) {
-        LOGGER.info("Log stream closed, stopping server: {}", e.getMessage());
+        System.err.println("Log stream closed, stopping server");
+        e.printStackTrace(System.err);
         response = null;
         daemon.stop();
       }
+    } else {
+      System.out.println("[" + level.name() + "] " + formattedMessage);
     }
   }
 }

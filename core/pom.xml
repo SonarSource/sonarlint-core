@@ -26,7 +26,8 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-slf4j-sonar-log</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!-- Not needed in classpath, will be packaged as JAR by m-dep-p -->
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>

@@ -24,17 +24,14 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Slf4JLoggerFactory;
+import io.netty.util.internal.logging.JdkLoggerFactory;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.interceptors.ExceptionInterceptor;
 import org.sonarlint.daemon.services.ConnectedSonarLintImpl;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
 
 public class Daemon {
-  private static final Logger LOGGER = LoggerFactory.getLogger(Daemon.class);
   private static final int DEFAULT_PORT = 8050;
   private Server server;
 
@@ -52,7 +49,8 @@ public class Daemon {
 
       port = options.getPort() != null ? options.getPort() : DEFAULT_PORT;
     } catch (Exception e) {
-      LOGGER.error("Error parsing arguments", e);
+      System.err.println("Error parsing arguments");
+      e.printStackTrace(System.err);
       return;
     }
 
@@ -61,17 +59,17 @@ public class Daemon {
   }
 
   private static void setUpNettyLogging() {
-    InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
+    InternalLoggerFactory.setDefaultFactory(JdkLoggerFactory.INSTANCE);
   }
 
   public void stop() {
-    LOGGER.info("Asking gRPC server to shutdown...");
+    System.out.println("Asking gRPC server to shutdown...");
     server.shutdown();
   }
 
   public void start(int port, Path sonarlintHome) {
     try {
-      LOGGER.info("Starting server on port {}", port);
+      System.out.println("Starting server on port " + port);
       ServerInterceptor interceptor = new ExceptionInterceptor();
 
       server = NettyServerBuilder.forAddress(new InetSocketAddress("localhost", port))
@@ -79,11 +77,11 @@ public class Daemon {
         .addService(ServerInterceptors.intercept(new StandaloneSonarLintImpl(this, Utils.getAnalyzers(sonarlintHome)), interceptor))
         .build()
         .start();
-      LOGGER.info("Server started, listening on {}", port);
+      System.out.println("Server started, listening on " + port);
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
-          LOGGER.info("JVM is shutting down");
+          System.out.println("JVM is shutting down");
           if (!server.isShutdown()) {
             Daemon.this.stop();
           }
@@ -92,7 +90,8 @@ public class Daemon {
       server.awaitTermination();
     } catch (Exception e) {
       // grpc threads are daemon, so should not hang process
-      LOGGER.error("Error running daemon", e);
+      System.err.println("Error running daemon");
+      e.printStackTrace(System.err);
     }
   }
 }
