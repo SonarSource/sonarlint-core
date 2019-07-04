@@ -124,6 +124,7 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonarsource/api/sonarlint/")
       .addInclusion("org/sonar/check/")
       .addInclusion("net/sourceforge/pmd/")
+      .addInclusion("com/sonarsource/plugins/license/api/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");
