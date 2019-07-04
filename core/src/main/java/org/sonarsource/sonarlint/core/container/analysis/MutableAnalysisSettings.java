@@ -40,7 +40,7 @@ public class MutableAnalysisSettings extends MapSettings {
 
   public MutableAnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
-    addDefaultProperties();
+    addDefaultProperties(config);
     addProperties(config.extraProperties());
   }
 
@@ -52,14 +52,16 @@ public class MutableAnalysisSettings extends MapSettings {
       ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).projectKey());
       addProperties(projectConfig.getPropertiesMap());
     }
-    addDefaultProperties();
+    addDefaultProperties(config);
     addProperties(config.extraProperties());
   }
 
-  private void addDefaultProperties() {
-    setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
-    setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);
-    setProperty(OBJC_SUFFIXES_KEY, DISABLED_SUFFIX);
+  private void addDefaultProperties(StandaloneAnalysisConfiguration config) {
+    if (!config.extraProperties().containsKey("sonar.cfamily.build-wrapper-output")) {
+      setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
+      setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);
+      setProperty(OBJC_SUFFIXES_KEY, DISABLED_SUFFIX);
+    }
   }
 
   @Override
