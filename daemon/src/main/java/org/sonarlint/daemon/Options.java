@@ -19,15 +19,10 @@
  */
 package org.sonarlint.daemon;
 
+import java.text.ParseException;
 import javax.annotation.CheckForNull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.text.ParseException;
-
 public class Options {
-  private static final Logger LOGGER = LoggerFactory.getLogger(Options.class);
   private boolean help = false;
   private String port = null;
 
@@ -67,12 +62,12 @@ public class Options {
   }
 
   public static void printUsage() {
-    LOGGER.info("");
-    LOGGER.info("usage: sonarlint-daemon [options]");
-    LOGGER.info("");
-    LOGGER.info("Options:");
-    LOGGER.info(" -h,--help              Display help information");
-    LOGGER.info(" --port <port>          Network port to listen to");
+    System.out.println("");
+    System.out.println("usage: sonarlint-daemon [options]");
+    System.out.println("");
+    System.out.println("Options:");
+    System.out.println(" -h,--help              Display help information");
+    System.out.println(" --port <port>          Network port to listen to");
   }
 
 }

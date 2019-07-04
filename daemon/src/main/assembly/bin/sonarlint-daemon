@@ -93,7 +93,6 @@ else
 fi
 
 JAR_FILE="${SONARLINT_DAEMON_HOME}"/lib/sonarlint-daemon-${project.version}.jar
-LOG_FILE="${SONARLINT_DAEMON_HOME}"/conf/logback.xml
 
 #echo "Info: Using sonarlint-daemon in $SONARLINT_DAEMON_HOME"
 #echo "Info: Using java at $JAVA_CMD"
@@ -103,7 +102,6 @@ exec "$JAVA_CMD" \
   -Djava.awt.headless=true \
   $SONARLINT_DAEMON_OPTS \
   -classpath  "$JAR_FILE" \
-  "-Dlogback.configurationFile=\${LOG_FILE}" \
   "-Dsonarlint.home=\${SONARLINT_DAEMON_HOME}" \
   org.sonarlint.daemon.Daemon "$@"
 

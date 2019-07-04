@@ -76,7 +76,7 @@ echo %SONARLINT_DAEMON_HOME%
 
 set PROJECT_HOME=%CD%
 
-%JAVA_EXEC% -Djava.awt.headless=true %SONARLINT_DAEMON_OPTS% -cp "%SONARLINT_DAEMON_HOME%\lib\sonarlint-daemon-${project.version}.jar" "-Dlogback.configurationFile=%SONARLINT_DAEMON_HOME%\conf\logback.xml" "-Dsonarlint.home=%SONARLINT_DAEMON_HOME%" org.sonarlint.daemon.Daemon %*
+%JAVA_EXEC% -Djava.awt.headless=true %SONARLINT_DAEMON_OPTS% -cp "%SONARLINT_DAEMON_HOME%\lib\sonarlint-daemon-${project.version}.jar" "-Dsonarlint.home=%SONARLINT_DAEMON_HOME%" org.sonarlint.daemon.Daemon %*
 if ERRORLEVEL 1 goto error
 goto end
 

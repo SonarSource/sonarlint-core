@@ -24,19 +24,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ServerMain {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ServerMain.class);
 
   private ServerMain() {
   }
 
   public static void main(String... args) {
     if (args.length < 1) {
-      LOG.error("Usage: java -jar sonarlint-server.jar <jsonRpcPort> [file:///path/to/analyzer1.jar [file:///path/to/analyzer2.jar] ...]");
+      System.err.println("Usage: java -jar sonarlint-server.jar <jsonRpcPort> [file:///path/to/analyzer1.jar [file:///path/to/analyzer2.jar] ...]");
       System.exit(1);
     }
     int jsonRpcPort = parsePortArgument(args);
@@ -47,17 +43,19 @@ public class ServerMain {
         try {
           analyzers.add(new URL(args[i]));
         } catch (MalformedURLException e) {
-          LOG.error("Invalid " + i + "th argument. Expected an URL.", e);
+          System.err.println("Invalid " + i + "th argument. Expected an URL.");
+          e.printStackTrace(System.err);
           System.exit(1);
         }
       }
     }
 
-    LOG.info("Binding to {}", jsonRpcPort);
+    System.out.println("Binding to " + jsonRpcPort);
     try {
       SonarLintLanguageServer.bySocket(jsonRpcPort, analyzers);
     } catch (IOException e) {
-      LOG.error("Unable to connect to the client", e);
+      System.err.println("Unable to connect to the client");
+      e.printStackTrace(System.err);
       System.exit(1);
       return;
     }
@@ -68,7 +66,8 @@ public class ServerMain {
     try {
       return Integer.parseInt(args[0]);
     } catch (NumberFormatException e) {
-      LOG.error("Invalid port provided as first parameter", e);
+      System.err.println("Invalid port provided as first parameter");
+      e.printStackTrace(System.err);
       System.exit(1);
     }
     return 0;
