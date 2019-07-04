@@ -19,6 +19,7 @@
       <groupId>io.grpc</groupId>
       <artifactId>grpc-okhttp</artifactId>
       <version>${grpc.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -129,14 +130,12 @@
       </plugin>
     </plugins>
   </build>
-
-
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.squareup.okio</groupId>
-        <artifactId>okio</artifactId>
-        <version>1.12.0</version>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>26.0-android</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
