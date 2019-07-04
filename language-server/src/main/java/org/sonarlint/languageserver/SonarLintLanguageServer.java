@@ -44,6 +44,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -162,6 +163,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private UserSettings userSettings = new UserSettings();
   private final List<String> workspaceFolders = new ArrayList<>();
+  private final Map<String, ProjectBinding> workspaceBindings = new HashMap<>();
+  private final Map<String, ServerIssueTracker> workspaceTrackers = new HashMap<>();
 
   private final EngineCache engineCache;
   private final ServerInfoCache serverInfoCache;
@@ -169,7 +172,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private ServerProjectBinding binding;
 
   private final ServerIssueTrackingLogger serverIssueTrackingLogger = new ServerIssueTrackingLogger();
-  private ServerIssueTracker serverIssueTracker;
 
   SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
     BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory,
@@ -357,8 +359,20 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     binding = new ServerProjectBinding(serverId, projectKey);
 
     if (updateProjectStorage(engine, serverInfo)) {
-      ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
-      serverIssueTracker = new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger);
+      workspaceBindings.clear();
+      workspaceTrackers.clear();
+
+      workspaceFolders.forEach(folderRoot -> {
+        Collection<String> ideFilePaths = FileUtils.allRelativePathsForFilesInTree(Paths.get(folderRoot));
+        ProjectBinding projectBinding = engine.calculatePathPrefixes(binding.projectKey, ideFilePaths);
+        workspaceBindings.put(folderRoot, projectBinding);
+        logger.debug(String.format("Resolved sqPathPrefix:%s / idePathPrefix:%s / for folder %s",
+          projectBinding.sqPathPrefix(),
+          projectBinding.idePathPrefix(),
+          folderRoot));
+        workspaceTrackers.put(folderRoot,
+          new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger));
+      });
     } else {
       binding = null;
     }
@@ -393,7 +407,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private static List<String> toList(List<WorkspaceFolder> workspaceFolders) {
     return workspaceFolders.stream()
-      .filter(f -> f.getUri().startsWith("file:///"))
+      .filter(f -> f.getUri().startsWith("file:/"))
       .map(f -> normalizeUriString(f.getUri()))
       .collect(Collectors.toList());
   }
@@ -628,17 +642,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private AnalysisWrapper getAnalysisWrapper() {
-    if (binding != null) {
-      ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
-      if (serverInfo != null) {
-        ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
-        if (engine != null) {
-          return new ConnectedAnalysisWrapper(engine, binding.projectKey);
-        }
-      }
-    }
+    return getEngine()
+      .map(e -> (AnalysisWrapper) new ConnectedAnalysisWrapper(e, binding.projectKey))
+      .orElse(new StandaloneAnalysisWrapper());
+  }
 
-    return new StandaloneAnalysisWrapper();
+  private Optional<ConnectedSonarLintEngine> getEngine() {
+    return Optional.ofNullable(binding)
+      .map(b -> serverInfoCache.get(b.serverId))
+      .filter(Objects::nonNull)
+      .map(engineCache::getOrCreateConnectedEngine);
   }
 
   static class AnalysisResultsWrapper {
@@ -691,8 +704,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     @Override
     public boolean isExcludedByServerSideExclusions(URI fileUri) {
       Path baseDir = findBaseDir(fileUri);
-      // TODO
-      ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
+      ProjectBinding projectBinding = workspaceBindings.getOrDefault(fileUri.toString(), new ProjectBinding(projectKey, "", ""));
       return !engine.getExcludedFiles(projectBinding,
         singleton(fileUri),
         uri -> getFileRelativePath(baseDir, uri),
@@ -725,6 +737,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       }
 
       String filePath = FileUtils.toSonarQubePath(getFileRelativePath(baseDir, uri));
+      ServerIssueTracker serverIssueTracker = workspaceTrackers.get(baseDir.toString());
       serverIssueTracker.matchAndTrack(filePath, issues, issueListener, shouldFetchServerIssues);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);

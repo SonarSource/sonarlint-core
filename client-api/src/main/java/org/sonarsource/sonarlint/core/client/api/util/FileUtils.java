@@ -30,6 +30,10 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -132,6 +136,30 @@ public class FileUtils {
     } catch (IOException e) {
       throw new IllegalStateException("Unable to delete directory " + path, e);
     }
+  }
+
+  public static Collection<String> allRelativePathsForFilesInTree(Path dir) {
+    if (!dir.toFile().exists()) {
+      return Collections.emptySet();
+    }
+    Set<String> paths = new HashSet<>();
+    try {
+      Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+          retry(() -> paths.add(dir.relativize(file).toString()));
+          return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+          return FileVisitResult.CONTINUE;
+        }
+      });
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to list files in directory " + dir, e);
+    }
+    return paths;
   }
 
   /**

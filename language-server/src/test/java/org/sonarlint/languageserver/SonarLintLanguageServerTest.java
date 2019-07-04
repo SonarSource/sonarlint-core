@@ -650,6 +650,7 @@ public class SonarLintLanguageServerTest {
       DidChangeTextDocumentParams params = new DidChangeTextDocumentParams(textDocument, contentChanges);
       ls.didChange(params);
     });
+    verify(engine).calculatePathPrefixes(eq("bar"), any());
     verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verify(engine).getServerIssues(any(), any());
@@ -663,6 +664,7 @@ public class SonarLintLanguageServerTest {
       DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(textDocument, "dummy content");
       ls.didSave(params);
     });
+    verify(engine).calculatePathPrefixes(eq("bar"), any());
     verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verify(engine).getServerIssues(any(), any());
@@ -676,6 +678,7 @@ public class SonarLintLanguageServerTest {
       DidOpenTextDocumentParams params = new DidOpenTextDocumentParams(textDocumentItem);
       ls.didOpen(params);
     });
+    verify(engine).calculatePathPrefixes(eq("bar"), any());
     verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).analyze(any(), any(), any(), any());
     verify(engine).downloadServerIssues(any(), any(), any());

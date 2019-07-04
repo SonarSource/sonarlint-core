@@ -25,6 +25,8 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -137,6 +139,27 @@ public class FileUtilsTest {
 
     FileUtils.deleteRecursively(basedir);
     assertThat(basedir.toFile().exists()).isFalse();
+  }
+
+  @Test
+  public void allRelativePathsForFilesInTree_should_find_all_files() throws IOException {
+    Path basedir = temporaryFolder.getRoot().toPath();
+    Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
+    assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
+    FileUtils.mkdirs(deeplyNestedDir);
+
+    createNewFile(basedir.toFile(), ".gitignore");
+    createNewFile(basedir.resolve("a").toFile(), "a.txt");
+    createNewFile(basedir.resolve("a/b").toFile(), "b.txt");
+    createNewFile(basedir.resolve("a/b/c").toFile(), "c.txt");
+
+    Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(basedir);
+    assertThat(relativePaths).containsExactlyInAnyOrder(
+      ".gitignore",
+      "a/a.txt",
+      "a/b/b.txt",
+      "a/b/c/c.txt"
+    );
   }
 
   @Test
