@@ -227,7 +227,7 @@ public class ConnectedDaemonTest {
   }
 
   private ClientCall<Void, LogEvent> getLogs(LogCollector collector, Channel channel) {
-    ClientCall<Void, LogEvent> call = channel.newCall(StandaloneSonarLintGrpc.METHOD_STREAM_LOGS, CallOptions.DEFAULT);
+    ClientCall<Void, LogEvent> call = channel.newCall(StandaloneSonarLintGrpc.getStreamLogsMethod(), CallOptions.DEFAULT);
     call.start(collector, new Metadata());
     call.sendMessage(Void.newBuilder().build());
     call.halfClose();
