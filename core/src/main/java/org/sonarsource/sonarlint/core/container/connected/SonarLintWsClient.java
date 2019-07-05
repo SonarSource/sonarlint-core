@@ -179,7 +179,6 @@ public class SonarLintWsClient {
   /**
    * @param responseParser ProtoBuf parser
    * @param getPaging extract {@link Paging} from the protobuf message
-   * @param responseConsummer consume the protobuf message and return <code>true</code> if some elements where present (or <code>false</code> is response is empty)
    */
   public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress) {

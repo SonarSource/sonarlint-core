@@ -43,10 +43,10 @@ import static org.apache.commons.lang.StringUtils.isNotEmpty;
  *   <li>server verifies compatibility of JARs before deploying them at startup (see ServerPluginRepository)</li>
  *   <li>batch loads only the plugins deployed on server (see BatchPluginRepository)</li>
  * </ul>
- * <p/>
+ * <p>
  * Plugins have their own isolated classloader, inheriting only from API classes.
  * Some plugins can extend a "base" plugin, sharing the same classloader.
- * <p/>
+ * </p>
  * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.Plugin}.
  */
 public class PluginLoader {

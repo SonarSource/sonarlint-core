@@ -39,7 +39,7 @@ package org.slf4j;
  *     oldT = t;        
  *     t = temperature;
  *     <span style="color:green">logger.debug("Temperature set to {}. Old temperature was {}.", t, oldT);</span>
- *     if(temperature.intValue() > 50) {
+ *     if(temperature.intValue() &gt; 50) {
  *       <span style="color:green">logger.info("Temperature has risen above 50 degrees.");</span>
  *     }
  *   }

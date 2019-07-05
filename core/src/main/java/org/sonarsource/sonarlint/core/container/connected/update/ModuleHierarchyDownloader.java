@@ -51,7 +51,7 @@ public class ModuleHierarchyDownloader {
    * It returns the relative paths to the given root module for all its sub projects.
    *
    * @param projectKey project for which the hierarchy will be returned.
-   * @return Mapping of moduleKey -> relativePath from given module
+   * @return Mapping of moduleKey -&gt; relativePath from given module
    */
   public Map<String, String> fetchModuleHierarchy(Version serverVersion, String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();

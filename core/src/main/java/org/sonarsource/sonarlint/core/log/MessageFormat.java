@@ -28,9 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-/**
- * {@link org.apache.logging.log4j.message.ParameterFormatter}
- */
 public class MessageFormat {
   /**
    * Prefix for recursion.

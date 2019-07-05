@@ -55,7 +55,7 @@ public interface WsHelper {
 
   /**
    * Get an organization.
-   * @returns null if the organization is not found
+   * @return null if the organization is not found
    * @since 3.5
    */
   Optional<RemoteOrganization> getOrganization(ServerConfiguration serverConfig, String organizationKey, ProgressMonitor monitor);
