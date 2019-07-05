@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 public class StoragePaths {
 
   private static final int MAX_FOLDER_NAME_SIZE = 255;
-  private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
   /**
    * Version of the storage. This should be incremented each time an incompatible change is made to the storage.

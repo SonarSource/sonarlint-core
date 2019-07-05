@@ -114,7 +114,7 @@ public class StandaloneDaemonTest {
         List<String> logsLines = logs.getLogsAndClear();
         // To be sure logs are not flooded by low level logs
         assertThat(logsLines.size()).isLessThan(100);
-        assertThat(logsLines).contains("1 files indexed");
+        assertThat(logsLines).contains("1 file indexed");
       }
     } finally {
       call.cancel("no more logs needed", null);
@@ -166,7 +166,7 @@ public class StandaloneDaemonTest {
       List<String> logsLines = logs.getLogsAndClear();
       // To be sure logs are not flooded by low level logs
       assertThat(logsLines.size()).isLessThan(100);
-      assertThat(logsLines).contains("1 files indexed");
+      assertThat(logsLines).contains("1 file indexed");
     } finally {
       call.cancel("no more logs needed", null);
     }
