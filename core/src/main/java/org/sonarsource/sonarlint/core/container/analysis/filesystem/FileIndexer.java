@@ -75,8 +75,13 @@ public class FileIndexer {
       progressReport.stop(null);
       throw e;
     }
-    progressReport.stop(progress.count() + " files indexed");
-    analysisResult.setIndexedFileCount(progress.count());
+    int totalIndexed = progress.count();
+    progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
+    analysisResult.setIndexedFileCount(totalIndexed);
+  }
+  
+  private static String pluralizeFiles(int count) {
+    return count == 1 ? "file" : "files";
   }
 
   private void indexFiles(SonarLintFileSystem fileSystem, Progress progress, Iterable<ClientInputFile> inputFiles) {
