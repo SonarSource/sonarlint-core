@@ -40,7 +40,6 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class FileUtilsTest {
@@ -142,7 +141,7 @@ public class FileUtilsTest {
   }
 
   @Test
-  public void allRelativePathsForFilesInTree_should_find_all_files() throws IOException {
+  public void allRelativePathsForFilesInTree_should_find_all_files() {
     Path basedir = temporaryFolder.getRoot().toPath();
     Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
     assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
@@ -160,6 +159,16 @@ public class FileUtilsTest {
       "a/b/b.txt",
       "a/b/c/c.txt"
     );
+  }
+
+  @Test
+  public void allRelativePathsForFilesInTree_should_handle_non_existing_dir() {
+    Path basedir = temporaryFolder.getRoot().toPath();
+    Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
+    assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
+
+    Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(deeplyNestedDir);
+    assertThat(relativePaths).isEmpty();
   }
 
   @Test

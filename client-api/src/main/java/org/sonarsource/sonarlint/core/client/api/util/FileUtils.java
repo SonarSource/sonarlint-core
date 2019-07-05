@@ -147,7 +147,7 @@ public class FileUtils {
       Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          retry(() -> paths.add(dir.relativize(file).toString()));
+          retry(() -> paths.add(toSonarQubePath(dir.relativize(file).toString())));
           return FileVisitResult.CONTINUE;
         }
 
