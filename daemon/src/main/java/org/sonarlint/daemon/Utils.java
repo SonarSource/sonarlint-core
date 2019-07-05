@@ -84,7 +84,7 @@ public class Utils {
     String osName = System.getProperty("os.name");
 
     if (osName != null && osName.startsWith("Windows")) {
-      String appData = System.getenv("APPDATA");
+      String appData = System.getenv("LocalAppData");
       if (appData != null) {
         Path appDataPath = Paths.get(appData);
         if (Files.exists(appDataPath)) {
