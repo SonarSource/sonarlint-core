@@ -16,13 +16,6 @@
   </organization>
 
   <properties>
-    <jre.version>8u121</jre.version>
-    <jre.dirname.linux>jre1.8.0_121</jre.dirname.linux>
-    <jre.dirname.windows>jre1.8.0_121</jre.dirname.windows>
-    <jre.dirname.macosx>jre1.8.0_121.jre/Contents/Home</jre.dirname.macosx>
-
-    <unpack.dir>${project.build.directory}/unpack</unpack.dir>
-    
     <!-- embedded analyzers -->
     <sonar.javascript.version>4.0.0.5862</sonar.javascript.version>
     <sonar.cfamily.version>5.0.0.9359</sonar.cfamily.version>
@@ -225,30 +218,28 @@
           <name>!skipDistWindows</name>
         </property>
       </activation>
+      <properties>
+        <jre.dirname.windows>jdk-11.0.3+7-jre</jre.dirname.windows>
+        <unpack.dir>${project.build.directory}/unpack</unpack.dir>
+      </properties>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
+            <groupId>com.googlecode.maven-download-plugin</groupId>
+            <artifactId>download-maven-plugin</artifactId>
+            <version>1.4.2</version>
             <executions>
               <execution>
                 <id>unpack-windows</id>
                 <phase>package</phase>
                 <goals>
-                  <goal>unpack</goal>
+                  <goal>wget</goal>
                 </goals>
                 <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>com.oracle</groupId>
-                      <artifactId>jre</artifactId>
-                      <version>${jre.version}</version>
-                      <classifier>windows-x64</classifier>
-                      <type>tar.gz</type>
-                      <overWrite>true</overWrite>
-                    </artifactItem>
-                  </artifactItems>
+                  <url>https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.3%2B7/OpenJDK11U-jre_x64_windows_hotspot_11.0.3_7.zip</url>
+                  <unpack>true</unpack>
                   <outputDirectory>${unpack.dir}/windows</outputDirectory>
+                  <sha512>370100688282a5c43fe0ac736980eeff64cf212a0fb573181fff8039c121097cbbbd540a652cc6d17397789b894c820b802b875bbd1743eb2b8469009d5fa8f9</sha512>
                 </configuration>
               </execution>
             </executions>
