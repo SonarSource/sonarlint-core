@@ -98,12 +98,12 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
         files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
       }
 
-      ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration(
-        requestConfig.getModuleKey(),
-        baseDir,
-        Paths.get(requestConfig.getWorkDir()),
-        files,
-        requestConfig.getPropertiesMap());
+      ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+        .setProjectKey(requestConfig.getModuleKey())
+        .setBaseDir(baseDir)
+        .addInputFiles(files)
+        .putAllExtraProperties(requestConfig.getPropertiesMap())
+        .build();
 
       engine.analyze(config, new ProxyIssueListener(response), logOutput, null);
       response.onCompleted();

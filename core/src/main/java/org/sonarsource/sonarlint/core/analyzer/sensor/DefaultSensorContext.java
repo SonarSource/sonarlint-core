@@ -107,7 +107,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewIssue newIssue() {
-    return new DefaultSonarLintIssue(project, sensorStorage);
+    return new DefaultSonarLintIssue(project, fs.baseDir().toPath(), sensorStorage);
   }
 
   @Override

@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -46,7 +45,6 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -128,20 +126,6 @@ public class LicenseTest extends AbstractConnectedTest {
     } catch (Exception e) {
       // Ignore
     }
-  }
-
-  @Test
-  public void analysisNoLicense() throws Exception {
-    Assume.assumeFalse(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
-    ORCHESTRATOR.clearLicense();
-    updateGlobal();
-    updateProject(PROJECT_KEY_COBOL);
-
-    exception.expect(SonarLintWrappedException.class);
-    exception.expectMessage("No license for cobol");
-    SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
-      "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
   }
 
   @Test

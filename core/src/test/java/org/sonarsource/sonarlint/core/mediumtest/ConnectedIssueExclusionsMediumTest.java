@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -254,7 +253,11 @@ public class ConnectedIssueExclusionsMediumTest {
   private List<Issue> collectIssues(ClientInputFile inputFile1, ClientInputFile inputFile2) throws IOException {
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new ConnectedAnalysisConfiguration(JAVA_MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile1, inputFile2), ImmutableMap.<String, String>of()),
+      ConnectedAnalysisConfiguration.builder()
+        .setProjectKey(JAVA_MODULE_KEY)
+        .setBaseDir(baseDir.toPath())
+        .addInputFiles(inputFile1, inputFile2)
+        .build(),
       new StoreIssueListener(issues), null, null);
     return issues;
   }

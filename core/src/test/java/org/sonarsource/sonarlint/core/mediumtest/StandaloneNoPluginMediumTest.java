@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -71,7 +69,10 @@ public class StandaloneNoPluginMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
     AnalysisResults results = sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
       i -> {
       }, null, null);
 

@@ -19,15 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
@@ -165,11 +162,10 @@ public class ConnectedIssueMediumTest {
   @Test
   public void testStaleProject() throws IOException {
     assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
-    ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",
-      baseDir.toPath(),
-      temp.newFolder().toPath(),
-      Collections.<ClientInputFile>emptyList(),
-      ImmutableMap.<String, String>of());
+    ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+      .setProjectKey("stale_module")
+      .setBaseDir(baseDir.toPath())
+      .build();
 
     try {
       sonarlint.analyze(config, createNoOpIssueListener(), null, null);
@@ -198,7 +194,10 @@ public class ConnectedIssueMediumTest {
       + "}", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple(ruleKey, 2, inputFile.getPath()));
@@ -210,7 +209,10 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -224,7 +226,10 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaTestInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -236,8 +241,11 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      new ConnectedAnalysisConfiguration(JAVA_MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setProjectKey(JAVA_MODULE_KEY)
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -251,8 +259,11 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      new ConnectedAnalysisConfiguration("test-project", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setProjectKey("test-project")
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();

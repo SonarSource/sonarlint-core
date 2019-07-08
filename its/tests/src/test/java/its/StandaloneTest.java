@@ -19,14 +19,12 @@
  */
 package its;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,13 +87,21 @@ public class StandaloneTest {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issue -> issues.add(issue), null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 0"));
 
     issues.clear();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issue -> issues.add(issue), null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 1"));
   }

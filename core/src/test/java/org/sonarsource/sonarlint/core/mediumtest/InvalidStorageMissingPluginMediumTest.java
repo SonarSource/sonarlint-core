@@ -19,14 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -125,7 +123,10 @@ public class InvalidStorageMissingPluginMediumTest {
 
     final List<Issue> issues = new ArrayList<>();
     try {
-      sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
         new StoreIssueListener(issues), null, null);
       fail("Expected exception");
     } catch (Exception e) {

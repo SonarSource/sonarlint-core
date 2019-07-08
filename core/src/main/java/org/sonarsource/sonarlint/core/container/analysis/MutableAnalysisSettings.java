@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
@@ -38,13 +38,13 @@ public class MutableAnalysisSettings extends MapSettings {
 
   private final Map<String, String> properties = new HashMap<>();
 
-  public MutableAnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public MutableAnalysisSettings(AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     addDefaultProperties(config);
     addProperties(config.extraProperties());
   }
 
-  public MutableAnalysisSettings(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public MutableAnalysisSettings(StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
@@ -56,7 +56,7 @@ public class MutableAnalysisSettings extends MapSettings {
     addProperties(config.extraProperties());
   }
 
-  private void addDefaultProperties(StandaloneAnalysisConfiguration config) {
+  private void addDefaultProperties(AbstractAnalysisConfiguration config) {
     if (!config.extraProperties().containsKey("sonar.cfamily.build-wrapper-output")) {
       setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
       setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);

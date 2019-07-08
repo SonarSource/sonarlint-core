@@ -177,11 +177,12 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
       .map(f -> new TestClientInputFile(projectDir, f, false, StandardCharsets.UTF_8))
       .collect(Collectors.toList());
 
-    return new ConnectedAnalysisConfiguration(projectKey,
-      projectDir,
-      t.newFolder().toPath(),
-      filesToAnalyze,
-      toMap(properties));
+    return ConnectedAnalysisConfiguration.builder()
+      .setProjectKey(projectKey)
+      .setBaseDir(projectDir)
+      .addInputFiles(filesToAnalyze)
+      .putAllExtraProperties(toMap(properties))
+      .build();
   }
 
   private static void analyzeMavenProject(String projectDirName) {

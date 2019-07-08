@@ -95,11 +95,11 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
       }
 
-      StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(
-        baseDir,
-        Paths.get(requestConfig.getWorkDir()),
-        files,
-        requestConfig.getPropertiesMap());
+      StandaloneAnalysisConfiguration config = StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir)
+        .addInputFiles(files)
+        .putAllExtraProperties(requestConfig.getPropertiesMap())
+        .build();
 
       logOutput.log("Analysis configuration:\n" + config.toString(), Level.DEBUG);
 
