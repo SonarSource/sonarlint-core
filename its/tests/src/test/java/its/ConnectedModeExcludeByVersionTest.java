@@ -22,8 +22,6 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
-import its.tools.ItUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +54,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void beforeClass() {
-    boolean atMost72 = !ItUtils.isLatestOrDev(SONAR_VERSION) && !Version.create(SONAR_VERSION).isGreaterThanOrEquals(7, 3);
+    boolean atMost72 = SONAR_VERSION.contains("6.7");
     assumeTrue(atMost72);
   }
 
@@ -125,7 +123,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
-    assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1'). Skip downloading it.");
+    assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1.2080'). Skip downloading it.");
   }
 
   private ServerConfiguration config() {

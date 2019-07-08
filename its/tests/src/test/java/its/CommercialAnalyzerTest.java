@@ -79,10 +79,10 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
       .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
       .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
-      .addPlugin(MavenLocation.of("com.sonarsource.cpp", "sonar-cfamily-plugin", "LATEST_RELEASE"))
-      .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "LATEST_RELEASE"))
-      .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", "LATEST_RELEASE"))
-      .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", "LATEST_RELEASE"))
+      .addPlugin(MavenLocation.of("com.sonarsource.cpp", "sonar-cfamily-plugin", System.getProperty("cppVersion")))
+      .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", System.getProperty("cobolVersion")))
+      .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", System.getProperty("tsqlVersion")))
+      .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", System.getProperty("apexVersion")))
       .build();
     ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
