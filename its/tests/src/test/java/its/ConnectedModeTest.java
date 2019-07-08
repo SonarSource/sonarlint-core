@@ -20,7 +20,6 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
@@ -54,7 +53,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
@@ -107,54 +105,36 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_XML = "sample-xml";
 
   @ClassRule
-  public static ExternalResource resource = new ExternalResource() {
-    @Override
-    protected void before() {
-      OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-        .setSonarVersion(SONAR_VERSION);
-
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", "LATEST_RELEASE"))
-        .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-        .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
-        .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"));
-
-      ORCHESTRATOR = orchestratorBuilder.build();
-      ORCHESTRATOR.start();
-    }
-
-    @Override
-    protected void after() {
-      ORCHESTRATOR.stop();
-    }
-
-  };
-
-  public static Orchestrator ORCHESTRATOR;
+  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
+    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", System.getProperty("javaVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", System.getProperty("pythonVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", System.getProperty("phpVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", System.getProperty("javascriptVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", System.getProperty("kotlinVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", System.getProperty("rubyVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", System.getProperty("scalaVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", System.getProperty("webVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", System.getProperty("xmlVersion")))
+    .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+    .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
+    .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"))
+    .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -346,8 +326,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void semanticErrorJava() throws IOException {
-    // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
+    // since SONARJAVA-2657
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 7));
 
     String fileContent = "package its;public class MyTest {int a;int a;}";
     Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
@@ -417,8 +397,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascriptWithCustomRules() throws Exception {
-    // SonarJS that runs on older versions does not report this correctly
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
+    // old SonarJS versions does not report this correctly
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 7));
 
     updateGlobal();
     updateProject(PROJECT_KEY_JAVASCRIPT_CUSTOM);

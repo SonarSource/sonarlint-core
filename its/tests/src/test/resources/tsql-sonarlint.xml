@@ -5,8 +5,8 @@
   <rules>
     <rule>
       <repositoryKey>tsql</repositoryKey>
-      <!-- "IF ... ELSEIF" constructs should end with "ELSE" clauses -->
-      <key>S126</key>
+      <!-- "NULL" should not be compared directly -->
+      <key>S2527</key>
       <priority>MAJOR</priority>
     </rule>
   </rules>

@@ -23,8 +23,6 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
-import its.tools.ItUtils;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -71,16 +69,8 @@ public class OrganizationTest extends AbstractConnectedTest {
   static {
     OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
-      .setServerProperty("sonar.sonarcloud.enabled", "true");
-
-    boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
-    if (atLeast67) {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
-    } else {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
-    }
+      .setServerProperty("sonar.sonarcloud.enabled", "true")
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
     ORCHESTRATOR = orchestratorBuilder
       .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
       .build();
@@ -99,7 +89,6 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3));
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     sonarUserHome = temp.newFolder().toPath();
 
@@ -197,7 +186,6 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     updateGlobal();
 
     String ruleKey = "squid:S106";
@@ -222,7 +210,6 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @Test
   public void updateModuleInOrga() {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
     engineOnTestOrg.updateProject(getServerConfigForOrg(ORGANIZATION), PROJECT_KEY_JAVA, null);
   }
