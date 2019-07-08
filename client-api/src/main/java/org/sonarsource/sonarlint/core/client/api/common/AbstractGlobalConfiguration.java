@@ -42,7 +42,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Path workDir;
   private final Map<String, String> extraProperties;
 
-  public AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
+  protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
     this.logOutput = builder.logOutput;
@@ -66,7 +66,7 @@ public abstract class AbstractGlobalConfiguration {
     return logOutput;
   }
 
-  public static class AbstractBuilder<G extends AbstractBuilder> {
+  public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
     private LogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;

@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Rule;
@@ -50,12 +49,15 @@ public class ConnectedAnalysisConfigurationTest {
     ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile2, true, StandardCharsets.UTF_8, null);
 
     Path baseDir = temp.newFolder().toPath();
-    Path workDir = temp.newFolder().toPath();
-    ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("foo", baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
+    ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+      .setProjectKey("foo")
+      .setBaseDir(baseDir)
+      .addInputFiles(inputFile, testInputFile)
+      .putAllExtraProperties(props)
+      .build();
     assertThat(config.toString()).isEqualTo("[\n" +
       "  projectKey: foo\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
-      "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
@@ -63,15 +65,17 @@ public class ConnectedAnalysisConfigurationTest {
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
-    assertThat(config.workDir()).isEqualTo(workDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, testInputFile);
     assertThat(config.projectKey()).isEqualTo("foo");
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
 
-    config = new ConnectedAnalysisConfiguration(null, baseDir, workDir, Arrays.asList(inputFile, testInputFile), props);
+    config = ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir)
+      .addInputFiles(inputFile, testInputFile)
+      .putAllExtraProperties(props)
+      .build();
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
-      "  workDir: " + workDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +

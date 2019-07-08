@@ -17,23 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis.filesystem;
+package org.sonarsource.sonarlint.core.container.global;
 
-import org.sonar.api.batch.fs.InputModule;
-import org.sonar.api.scanner.fs.InputProject;
+import java.io.File;
+import org.sonar.api.utils.internal.DefaultTempFolder;
 
-public class SonarLintInputProject implements InputModule, InputProject {
+public class GlobalTempFolder extends DefaultTempFolder {
 
-  public static final String SONARLINT_FAKE_PROJECT_KEY = "sonarlint";
-
-  @Override
-  public String key() {
-    return SONARLINT_FAKE_PROJECT_KEY;
-  }
-
-  @Override
-  public boolean isFile() {
-    return false;
+  public GlobalTempFolder(File tempDir, boolean deleteOnExit) {
+    super(tempDir, deleteOnExit);
   }
 
 }

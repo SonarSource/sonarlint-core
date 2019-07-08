@@ -45,7 +45,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq.Builder;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
@@ -63,9 +62,6 @@ public class StandaloneDaemonTest {
 
   @Rule
   public SonarlintProject clientTools = new SonarlintProject();
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
 
   private ManagedChannel channel;
 
@@ -198,7 +194,6 @@ public class StandaloneDaemonTest {
     }
     return builder
       .setBaseDir(projectPath.toAbsolutePath().toString())
-      .setWorkDir(temp.newFolder().getAbsolutePath())
       .putAllProperties(Collections.singletonMap("key", "value"))
       .build();
   }

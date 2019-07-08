@@ -30,20 +30,20 @@ import org.picocontainer.ComponentLifecycle;
 import org.picocontainer.PicoContainer;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.api.utils.internal.DefaultTempFolder;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 public class GlobalTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
+
   private static final Logger LOG = Loggers.get(GlobalTempFolderProvider.class);
   private static final long CLEAN_MAX_AGE = TimeUnit.DAYS.toMillis(21);
   static final String TMP_NAME_PREFIX = ".sonartmp_";
   private boolean started = false;
 
-  private DefaultTempFolder tempFolder;
+  private GlobalTempFolder tempFolder;
 
-  public TempFolder provide(AbstractGlobalConfiguration globalConfiguration) {
+  public GlobalTempFolder provide(AbstractGlobalConfiguration globalConfiguration) {
     if (tempFolder == null) {
 
       Path workingPath = globalConfiguration.getWorkDir();
@@ -53,7 +53,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
         LOG.error(String.format("failed to clean global working directory: %s", workingPath), e);
       }
       Path tempDir = createTempFolder(workingPath);
-      tempFolder = new DefaultTempFolder(tempDir.toFile(), true);
+      tempFolder = new GlobalTempFolder(tempDir.toFile(), true);
     }
     return tempFolder;
   }

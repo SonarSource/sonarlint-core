@@ -664,9 +664,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     @Override
     public AnalysisResultsWrapper analyze(Path baseDir, URI uri, String content, IssueListener issueListener, boolean shouldFetchServerIssues) {
-      StandaloneAnalysisConfiguration configuration = new StandaloneAnalysisConfiguration(baseDir, baseDir.resolve(".sonarlint"),
-        Collections.singletonList(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri))),
-        userSettings.analyzerProperties);
+      StandaloneAnalysisConfiguration configuration = StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir)
+        .addInputFiles(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri)))
+        .putAllExtraProperties(userSettings.analyzerProperties)
+        .build();
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
       long start = System.currentTimeMillis();
@@ -701,9 +703,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     @Override
     public AnalysisResultsWrapper analyze(Path baseDir, URI uri, String content, IssueListener issueListener, boolean shouldFetchServerIssues) {
-      ConnectedAnalysisConfiguration configuration = new ConnectedAnalysisConfiguration(projectKey, baseDir, baseDir.resolve(".sonarlint"),
-        Collections.singletonList(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri))),
-        userSettings.analyzerProperties);
+      ConnectedAnalysisConfiguration configuration = ConnectedAnalysisConfiguration.builder()
+        .setProjectKey(projectKey)
+        .setBaseDir(baseDir)
+        .addInputFile(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri)))
+        .putAllExtraProperties(userSettings.analyzerProperties)
+        .build();
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
       List<Issue> issues = new LinkedList<>();

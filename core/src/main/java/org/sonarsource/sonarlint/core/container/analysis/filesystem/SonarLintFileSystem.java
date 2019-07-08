@@ -28,7 +28,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 
 public class SonarLintFileSystem extends DefaultFileSystem {
 
@@ -37,11 +37,16 @@ public class SonarLintFileSystem extends DefaultFileSystem {
   private FileIndexer indexer;
   private final DefaultFilePredicates filePredicates;
 
-  public SonarLintFileSystem(StandaloneAnalysisConfiguration analysisConfiguration, InputPathCache moduleInputFileCache, FileIndexer indexer) {
+  public SonarLintFileSystem(AbstractAnalysisConfiguration analysisConfiguration, InputPathCache moduleInputFileCache, FileIndexer indexer) {
     super(analysisConfiguration.baseDir(), moduleInputFileCache);
     this.indexer = indexer;
     this.filePredicates = new DefaultFilePredicates();
-    setWorkDir(analysisConfiguration.workDir());
+  }
+
+  @Override
+  public File workDir() {
+    LOG.warn("No workDir in SonarLint");
+    return baseDir();
   }
 
   public void index() {

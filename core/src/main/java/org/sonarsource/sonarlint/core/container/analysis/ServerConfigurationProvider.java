@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
@@ -40,7 +41,7 @@ public class ServerConfigurationProvider {
 
   private Configuration serverConfig;
 
-  public ServerConfigurationProvider(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public ServerConfigurationProvider(StorageReader storage, ConnectedAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
     this.serverConfig = new ServerConfiguration(storage, config, propertyDefinitions).asConfig();
   }
 
@@ -52,7 +53,7 @@ public class ServerConfigurationProvider {
 
     private final Map<String, String> properties = new HashMap<>();
 
-    private ServerConfiguration(@Nullable StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions);
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalProperties();

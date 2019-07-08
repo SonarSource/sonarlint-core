@@ -257,7 +257,6 @@ public class ConnectedDaemonTest {
     }
     return builder
       .setBaseDir(projectPath.toAbsolutePath().toString())
-      .setWorkDir(temp.newFolder().getAbsolutePath())
       .setModuleKey(PROJECT_KEY_JAVA)
       .putAllProperties(Collections.singletonMap("sonar.java.binaries",
         new File("projects/sample-java/target/classes").getAbsolutePath()))

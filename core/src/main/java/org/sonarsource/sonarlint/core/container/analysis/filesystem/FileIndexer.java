@@ -29,8 +29,8 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
@@ -43,13 +43,13 @@ public class FileIndexer {
   private static final Logger LOG = Loggers.get(FileIndexer.class);
 
   private final InputFileBuilder inputFileBuilder;
-  private final StandaloneAnalysisConfiguration analysisConfiguration;
+  private final AbstractAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
   private final InputFileFilter[] filters;
 
   private ProgressReport progressReport;
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
+  public FileIndexer(InputFileBuilder inputFileBuilder, AbstractAnalysisConfiguration analysisConfiguration,
     DefaultAnalysisResult analysisResult,
     InputFileFilter[] filters) {
     this.inputFileBuilder = inputFileBuilder;
@@ -58,7 +58,7 @@ public class FileIndexer {
     this.filters = filters;
   }
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
+  public FileIndexer(InputFileBuilder inputFileBuilder, AbstractAnalysisConfiguration analysisConfiguration,
     DefaultAnalysisResult analysisResult) {
     this(inputFileBuilder, analysisConfiguration, analysisResult, new InputFileFilter[0]);
   }
@@ -79,7 +79,7 @@ public class FileIndexer {
     progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
     analysisResult.setIndexedFileCount(totalIndexed);
   }
-  
+
   private static String pluralizeFiles(int count) {
     return count == 1 ? "file" : "files";
   }

@@ -19,60 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 @Immutable
-public class StandaloneAnalysisConfiguration {
+public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfiguration {
 
-  private final Iterable<ClientInputFile> inputFiles;
-  private final Map<String, String> extraProperties;
-  private final Path workDir;
-  private final Path baseDir;
   private final Collection<RuleKey> excludedRules;
   private final Collection<RuleKey> includedRules;
   private final String toString;
 
-  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties,
-    Collection<RuleKey> excludedRules, Collection<RuleKey> includedRules) {
-    this.baseDir = baseDir;
-    this.workDir = workDir;
-    this.inputFiles = inputFiles;
-    this.extraProperties = Collections.unmodifiableMap(new HashMap<>(extraProperties));
-    this.excludedRules = Collections.unmodifiableList(new ArrayList<>(excludedRules));
-    this.includedRules = Collections.unmodifiableList(new ArrayList<>(includedRules));
+  private StandaloneAnalysisConfiguration(Builder builder) {
+    super(builder);
+    this.excludedRules = builder.excludedRules;
+    this.includedRules = builder.includedRules;
     this.toString = generateToString();
   }
 
-  public StandaloneAnalysisConfiguration(Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
-    this(baseDir, workDir, inputFiles, extraProperties, Collections.emptyList(), Collections.emptyList());
-  }
-
-  public Map<String, String> extraProperties() {
-    return extraProperties;
-  }
-
-  public Path baseDir() {
-    return baseDir;
-  }
-
-  /**
-   * Work dir specific for this analysis.
-   */
-  public Path workDir() {
-    return workDir;
-  }
-
-  public Iterable<ClientInputFile> inputFiles() {
-    return inputFiles;
+  public static Builder builder() {
+    return new Builder();
   }
 
   public Collection<RuleKey> excludedRules() {
@@ -91,30 +60,53 @@ public class StandaloneAnalysisConfiguration {
   private String generateToString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[\n");
-    sb.append("  baseDir: ").append(baseDir).append("\n");
-    sb.append("  workDir: ").append(workDir).append("\n");
-    sb.append("  extraProperties: ").append(extraProperties).append("\n");
+    generateToStringCommon(sb);
     sb.append("  excludedRules: ").append(excludedRules).append("\n");
     sb.append("  includedRules: ").append(includedRules).append("\n");
-    sb.append("  inputFiles: [\n");
-    for (ClientInputFile inputFile : inputFiles) {
-      sb.append("    ").append(inputFile.uri());
-      sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
-      if (inputFile.isTest()) {
-        sb.append(" [test]");
-      }
-      if (inputFile.language() != null) {
-        sb.append(" [" + inputFile.language() + "]");
-      }
-      sb.append("\n");
-    }
-    sb.append("  ]\n");
+    generateToStringInputFiles(sb);
     sb.append("]\n");
     return sb.toString();
   }
 
-  protected String getCharsetLabel(ClientInputFile inputFile) {
-    Charset charset = inputFile.getCharset();
-    return charset != null ? charset.displayName() : "default";
+  public static final class Builder extends AbstractBuilder<Builder> {
+    private Collection<RuleKey> excludedRules = new ArrayList<>();
+    private Collection<RuleKey> includedRules = new ArrayList<>();
+
+    private Builder() {
+    }
+
+    public Builder addExcludedRules(RuleKey... excludedRules) {
+      Collections.addAll(this.excludedRules, excludedRules);
+      return this;
+    }
+
+    public Builder addExcludedRules(Collection<? extends RuleKey> excludedRules) {
+      this.excludedRules.addAll(excludedRules);
+      return this;
+    }
+
+    public Builder addExcludedRule(RuleKey excludedRule) {
+      this.excludedRules.add(excludedRule);
+      return this;
+    }
+
+    public Builder addIncludedRules(RuleKey... includedRules) {
+      Collections.addAll(this.includedRules, includedRules);
+      return this;
+    }
+
+    public Builder addIncludedRules(Collection<? extends RuleKey> includedRules) {
+      this.includedRules.addAll(includedRules);
+      return this;
+    }
+
+    public Builder addIncludedRule(RuleKey includedRule) {
+      this.includedRules.add(includedRule);
+      return this;
+    }
+
+    public StandaloneAnalysisConfiguration build() {
+      return new StandaloneAnalysisConfiguration(this);
+    }
   }
 }
