@@ -26,6 +26,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -47,6 +48,7 @@ import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.ExecuteCommandParams;
@@ -55,6 +57,7 @@ import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceFolder;
+import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -75,6 +78,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -689,20 +693,66 @@ public class SonarLintLanguageServerTest {
   public void update_module_storage_on_update() {
     LanguageServerTester tester = newLanguageServerTester();
     String serverId = "local1";
-    String projectKey = "project1";
+    String projectKey1 = "project1";
     tester.setInitialServers(serverId);
-    tester.setInitialBinding(serverId, projectKey);
+    tester.setInitialBinding(serverId, projectKey1);
     tester.initialize();
 
+    String projectKey2 = "project2";
     Map<String, String> binding = ImmutableMap.<String, String>builder()
       .put("serverId", serverId)
-      .put("projectKey", projectKey)
+      .put("projectKey", projectKey2)
       .build();
     tester.updateBinding(binding);
-    verify(tester.lastEngine().connectedEngine, times(1)).updateProject(any(), eq(projectKey), any());
+    verify(tester.lastEngine().connectedEngine, times(1)).updateProject(any(), eq(projectKey1), any());
+    verify(tester.lastEngine().connectedEngine, times(1)).updateProject(any(), eq(projectKey2), any());
 
     tester.updateBinding(binding);
-    verify(tester.lastEngine().connectedEngine, times(2)).updateProject(any(), eq(projectKey), any());
+    verify(tester.lastEngine().connectedEngine, times(2)).updateProject(any(), eq(projectKey2), any());
+  }
+
+  @Test
+  public void should_update_workspace_folders_in_standalone_mode() throws IOException {
+    LanguageServerTester tester = newLanguageServerTester();
+    tester.initialize();
+
+    WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
+    WorkspaceFolder addedFolder = new WorkspaceFolder();
+    addedFolder.setUri(tester.temporaryFolder.newFolder("added").toURI().toString());
+    List<WorkspaceFolder> added = Collections.singletonList(addedFolder);
+    event.setAdded(added);
+    DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams(event);
+
+    tester.languageServer.didChangeWorkspaceFolders(params);
+
+    assertThat(tester.lastEngine()).isNull();
+  }
+
+  @Test
+  public void should_update_workspace_folders_in_connected_mode() throws IOException {
+    LanguageServerTester tester = newLanguageServerTester();
+    String serverId = "local1";
+    tester.setInitialServers(serverId);
+    tester.setInitialBinding(serverId, "project1");
+    tester.initialize();
+
+    Map<String, String> server = ImmutableMap.<String, String>builder()
+      .put("serverId", serverId)
+      .put("serverUrl", "bar")
+      .put("token", "baz")
+      .build();
+    tester.updateServers(server);
+    verify(tester.lastEngine().connectedEngine, times(1)).update(any(), any());
+
+    WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
+    WorkspaceFolder addedFolder = new WorkspaceFolder();
+    addedFolder.setUri(tester.temporaryFolder.newFolder("added").toURI().toString());
+    List<WorkspaceFolder> added = Collections.singletonList(addedFolder);
+    event.setAdded(added);
+    DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams(event);
+
+    tester.languageServer.didChangeWorkspaceFolders(params);
+    verify(tester.lastEngine().connectedEngine, times(3)).calculatePathPrefixes(eq("project1"), any());
   }
 
   private LanguageServerTester newLanguageServerTester() {
@@ -892,7 +942,7 @@ public class SonarLintLanguageServerTest {
     void setInitialBinding(String serverId, String projectKey) {
       setInitialBinding(ImmutableMap.<String, String>builder()
         .put("serverId", serverId)
-        .put("projectKey", "bar")
+        .put("projectKey", projectKey)
         .build());
     }
 

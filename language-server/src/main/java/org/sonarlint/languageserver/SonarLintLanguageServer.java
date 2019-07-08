@@ -359,23 +359,27 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     binding = new ServerProjectBinding(serverId, projectKey);
 
     if (updateProjectStorage(engine, serverInfo)) {
-      workspaceBindings.clear();
-      workspaceTrackers.clear();
-
-      workspaceFolders.forEach(folderRoot -> {
-        Collection<String> ideFilePaths = FileUtils.allRelativePathsForFilesInTree(Paths.get(folderRoot));
-        ProjectBinding projectBinding = engine.calculatePathPrefixes(binding.projectKey, ideFilePaths);
-        workspaceBindings.put(folderRoot, projectBinding);
-        logger.debug(String.format("Resolved sqPathPrefix:%s / idePathPrefix:%s / for folder %s",
-          projectBinding.sqPathPrefix(),
-          projectBinding.idePathPrefix(),
-          folderRoot));
-        workspaceTrackers.put(folderRoot,
-          new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger));
-      });
+      updateIssueTrackers(engine, serverInfo);
     } else {
       binding = null;
     }
+  }
+
+  private void updateIssueTrackers(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
+    workspaceBindings.clear();
+    workspaceTrackers.clear();
+
+    workspaceFolders.forEach(folderRoot -> {
+      Collection<String> ideFilePaths = FileUtils.allRelativePathsForFilesInTree(Paths.get(folderRoot));
+      ProjectBinding projectBinding = engine.calculatePathPrefixes(binding.projectKey, ideFilePaths);
+      workspaceBindings.put(folderRoot, projectBinding);
+      logger.debug(String.format("Resolved sqPathPrefix:%s / idePathPrefix:%s / for folder %s",
+        projectBinding.sqPathPrefix(),
+        projectBinding.idePathPrefix(),
+        folderRoot));
+      workspaceTrackers.put(folderRoot,
+        new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger));
+    });
   }
 
   private boolean updateProjectStorage(ConnectedSonarLintEngine engine, ServerInfo serverInfo) {
@@ -947,6 +951,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     workspaceFolders.removeAll(toList(event.getRemoved()));
     workspaceFolders.addAll(toList(event.getAdded()));
     workspaceFolders.sort(Comparator.reverseOrder());
+
+    if (binding != null) {
+      ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
+      if (serverInfo != null) {
+        ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
+        if (engine != null) {
+          updateIssueTrackers(engine, serverInfo);
+        }
+      }
+    }
   }
 
   // See the changelog for any evolutions on how properties are parsed:
