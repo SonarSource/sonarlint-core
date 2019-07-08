@@ -145,14 +145,29 @@ public class FileUtils {
     Set<String> paths = new HashSet<>();
     try {
       Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+        private boolean shouldIgnore(Path path) {
+          return path.getFileName().toString().startsWith(".");
+        }
+
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          retry(() -> paths.add(toSonarQubePath(dir.relativize(file).toString())));
+          if (!shouldIgnore(file)) {
+            retry(() -> paths.add(toSonarQubePath(dir.relativize(file).toString())));
+          }
           return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+          if (shouldIgnore(dir)) {
+            return FileVisitResult.SKIP_SUBTREE;
+          } else {
+            return FileVisitResult.CONTINUE;
+          }
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
           return FileVisitResult.CONTINUE;
         }
       });

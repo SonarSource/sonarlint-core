@@ -146,15 +146,18 @@ public class FileUtilsTest {
     Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
     assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
     FileUtils.mkdirs(deeplyNestedDir);
+    FileUtils.mkdirs(basedir.resolve(".git").resolve("refs"));
+    FileUtils.mkdirs(basedir.resolve("a").resolve(".config"));
 
     createNewFile(basedir.toFile(), ".gitignore");
+    createNewFile(basedir.resolve(".git/refs").toFile(), "HEAD");
     createNewFile(basedir.resolve("a").toFile(), "a.txt");
+    createNewFile(basedir.resolve("a/.config").toFile(), "test");
     createNewFile(basedir.resolve("a/b").toFile(), "b.txt");
     createNewFile(basedir.resolve("a/b/c").toFile(), "c.txt");
 
     Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(basedir);
     assertThat(relativePaths).containsExactlyInAnyOrder(
-      ".gitignore",
       "a/a.txt",
       "a/b/b.txt",
       "a/b/c/c.txt"
