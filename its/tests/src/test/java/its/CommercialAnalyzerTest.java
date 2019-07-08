@@ -23,10 +23,11 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
-import its.tools.ItUtils;
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -42,16 +43,17 @@ import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
 
-public class LicenseTest extends AbstractConnectedTest {
+public class CommercialAnalyzerTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
+  private static final String PROJECT_KEY_C = "sample-c";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
 
@@ -70,16 +72,14 @@ public class LicenseTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    // orchestrator automatically adds dev license plugin when older than SQ 7.2,
-    // and dev license plugin requires at least SQ 6.7
-    assumeTrue(ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7));
-
     ORCHESTRATOR = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .setEdition(Edition.ENTERPRISE)
+      .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
       .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
       .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
       .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
+      .addPlugin(MavenLocation.of("com.sonarsource.cpp", "sonar-cfamily-plugin", "LATEST_RELEASE"))
       .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", "LATEST_RELEASE"))
       .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", "LATEST_RELEASE"))
       .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", "LATEST_RELEASE"))
@@ -94,9 +94,11 @@ public class LicenseTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().adminWsClient().userClient()
       .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
 
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_C, "Sample C");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_TSQL, "Sample TSQL");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_APEX, "Sample APEX");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_C, "c", "SonarLint IT C");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_APEX, "apex", "SonarLint IT APEX");
@@ -126,6 +128,41 @@ public class LicenseTest extends AbstractConnectedTest {
     } catch (Exception e) {
       // Ignore
     }
+  }
+
+  @Test
+  public void analysisC() throws Exception {
+    ORCHESTRATOR.activateLicense();
+    updateGlobal();
+    updateProject(PROJECT_KEY_C);
+    SaveIssueListener issueListener = new SaveIssueListener();
+
+    File buildWrapperOutput = temp.newFolder();
+    FileUtils.write(
+      new File(buildWrapperOutput, "build-wrapper-dump.json"),
+      "{\"version\":0,\"captures\":[" +
+        "{" +
+        "\"compiler\": \"clang\"," +
+        "\"executable\": \"compiler\"," +
+        "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+        "\"stderr\": \"\"" +
+        "}," +
+        "{" +
+        "\"compiler\": \"clang\"," +
+        "\"executable\": \"compiler\"," +
+        "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+        "\"stderr\": \"\"" +
+        "}," +
+        "{\"compiler\":\"clang\",\"cwd\":\"" +
+        Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
+        "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}",
+      StandardCharsets.UTF_8);
+
+    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c",
+      "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
+
+    engine.analyze(analysisConfiguration, issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
