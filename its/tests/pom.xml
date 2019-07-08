@@ -75,13 +75,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sonarsource.license</groupId>
-      <artifactId>sonar-dev-license-plugin</artifactId>
-      <!-- Should be the same version than in Orchestrator builder in the test suite -->
-      <version>3.2.0.1163</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>9.4.7.v20170914</version>

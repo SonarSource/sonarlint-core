@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT C</name>
+  <language>c</language>
+  <rules>
+    <rule>
+      <repositoryKey>c</repositoryKey>
+      <key>S3805</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
