@@ -41,7 +41,7 @@ public class StandaloneAnalysisConfigurationTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void testToString() throws Exception {
+  public void testToString_and_getters() throws Exception {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
@@ -59,13 +59,17 @@ public class StandaloneAnalysisConfigurationTest {
       .addInputFiles(inputFile, inputFileWithLanguage, testInputFile)
       .putAllExtraProperties(props)
       .addExcludedRules(excludedRules)
+      .addExcludedRule(RuleKey.parse("squid:S1"))
+      .addExcludedRules(RuleKey.parse("squid:S2"), RuleKey.parse("squid:S3"))
       .addIncludedRules(includedRules)
+      .addIncludedRule(RuleKey.parse("squid:I1"))
+      .addIncludedRules(RuleKey.parse("squid:I2"), RuleKey.parse("squid:I3"))
       .build();
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
-      "  excludedRules: [squid:S1135, squid:S1181]\n" +
-      "  includedRules: [javascript:S2424, javascript:S1442]\n" +
+      "  excludedRules: [squid:S1135, squid:S1181, squid:S1, squid:S2, squid:S3]\n" +
+      "  includedRules: [javascript:S2424, javascript:S1442, squid:I1, squid:I2, squid:I3]\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
       "    " + srcFile2.toUri().toString() + " (UTF-8) [java]\n" +
@@ -75,5 +79,7 @@ public class StandaloneAnalysisConfigurationTest {
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, inputFileWithLanguage, testInputFile);
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
+    assertThat(config.excludedRules()).extracting(RuleKey::toString).containsExactly("squid:S1135", "squid:S1181", "squid:S1", "squid:S2", "squid:S3");
+    assertThat(config.includedRules()).extracting(RuleKey::toString).containsExactly("javascript:S2424", "javascript:S1442", "squid:I1", "squid:I2", "squid:I3");
   }
 }
