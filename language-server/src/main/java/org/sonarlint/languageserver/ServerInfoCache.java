@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -84,6 +85,7 @@ class ServerInfoCache {
     cache.forEach(action);
   }
 
+  @CheckForNull
   public ServerInfo get(String serverId) {
     return cache.get(serverId);
   }

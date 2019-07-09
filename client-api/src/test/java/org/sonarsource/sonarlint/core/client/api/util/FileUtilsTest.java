@@ -25,6 +25,8 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -38,7 +40,6 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class FileUtilsTest {
@@ -137,6 +138,40 @@ public class FileUtilsTest {
 
     FileUtils.deleteRecursively(basedir);
     assertThat(basedir.toFile().exists()).isFalse();
+  }
+
+  @Test
+  public void allRelativePathsForFilesInTree_should_find_all_files() {
+    Path basedir = temporaryFolder.getRoot().toPath();
+    Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
+    assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
+    FileUtils.mkdirs(deeplyNestedDir);
+    FileUtils.mkdirs(basedir.resolve(".git").resolve("refs"));
+    FileUtils.mkdirs(basedir.resolve("a").resolve(".config"));
+
+    createNewFile(basedir.toFile(), ".gitignore");
+    createNewFile(basedir.resolve(".git/refs").toFile(), "HEAD");
+    createNewFile(basedir.resolve("a").toFile(), "a.txt");
+    createNewFile(basedir.resolve("a/.config").toFile(), "test");
+    createNewFile(basedir.resolve("a/b").toFile(), "b.txt");
+    createNewFile(basedir.resolve("a/b/c").toFile(), "c.txt");
+
+    Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(basedir);
+    assertThat(relativePaths).containsExactlyInAnyOrder(
+      "a/a.txt",
+      "a/b/b.txt",
+      "a/b/c/c.txt"
+    );
+  }
+
+  @Test
+  public void allRelativePathsForFilesInTree_should_handle_non_existing_dir() {
+    Path basedir = temporaryFolder.getRoot().toPath();
+    Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
+    assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
+
+    Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(deeplyNestedDir);
+    assertThat(relativePaths).isEmpty();
   }
 
   @Test
