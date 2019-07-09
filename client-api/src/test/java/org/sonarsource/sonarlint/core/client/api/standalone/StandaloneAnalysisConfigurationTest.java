@@ -50,14 +50,17 @@ public class StandaloneAnalysisConfigurationTest {
     final Path srcFile3 = temp.newFile().toPath();
     ClientInputFile inputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile1, false, StandardCharsets.UTF_8, null);
     ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp.getRoot().toPath(), srcFile2, false, StandardCharsets.UTF_8, "java");
-    ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile3, true, StandardCharsets.UTF_8, "php");
+    ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile3, true, null, "php");
     Path baseDir = temp.newFolder().toPath();
     Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
     Collection<RuleKey> includedRules = Arrays.asList(new RuleKey("javascript", "S2424"), new RuleKey("javascript", "S1442"));
     StandaloneAnalysisConfiguration config = StandaloneAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
-      .addInputFiles(inputFile, inputFileWithLanguage, testInputFile)
+      .addInputFile(inputFile)
+      .addInputFiles(inputFileWithLanguage)
+      .addInputFiles(Arrays.asList(testInputFile))
       .putAllExtraProperties(props)
+      .putExtraProperty("sonar.foo", "bar")
       .addExcludedRules(excludedRules)
       .addExcludedRule(RuleKey.parse("squid:S1"))
       .addExcludedRules(RuleKey.parse("squid:S2"), RuleKey.parse("squid:S3"))
@@ -67,18 +70,18 @@ public class StandaloneAnalysisConfigurationTest {
       .build();
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
-      "  extraProperties: {sonar.java.libraries=foo bar}\n" +
+      "  extraProperties: {sonar.java.libraries=foo bar, sonar.foo=bar}\n" +
       "  excludedRules: [squid:S1135, squid:S1181, squid:S1, squid:S2, squid:S3]\n" +
       "  includedRules: [javascript:S2424, javascript:S1442, squid:I1, squid:I2, squid:I3]\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
       "    " + srcFile2.toUri().toString() + " (UTF-8) [java]\n" +
-      "    " + srcFile3.toUri().toString() + " (UTF-8) [test] [php]\n" +
+      "    " + srcFile3.toUri().toString() + " (default) [test] [php]\n" +
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, inputFileWithLanguage, testInputFile);
-    assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
+    assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"), entry("sonar.foo", "bar"));
     assertThat(config.excludedRules()).extracting(RuleKey::toString).containsExactly("squid:S1135", "squid:S1181", "squid:S1", "squid:S2", "squid:S3");
     assertThat(config.includedRules()).extracting(RuleKey::toString).containsExactly("javascript:S2424", "javascript:S1442", "squid:I1", "squid:I2", "squid:I3");
   }
