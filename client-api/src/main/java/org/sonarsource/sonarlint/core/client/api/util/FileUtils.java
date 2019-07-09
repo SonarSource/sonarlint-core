@@ -26,10 +26,12 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.DosFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -138,6 +140,27 @@ public class FileUtils {
     }
   }
 
+  private static boolean isHidden(Path path) {
+    return isHiddenByWindows(path) || isDotFile(path);
+  }
+
+  private static boolean isHiddenByWindows(Path path) {
+    return WINDOWS && hasWindowsHiddenAttribute(path);
+  }
+
+  private static boolean hasWindowsHiddenAttribute(Path path) {
+    try {
+      DosFileAttributes dosFileAttributes = Files.readAttributes(path, DosFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+      return dosFileAttributes.isHidden();
+    } catch (UnsupportedOperationException | IOException e) {
+      return path.toFile().isHidden();
+    }
+  }
+
+  private static boolean isDotFile(Path path) {
+    return path.getFileName().toString().startsWith(".");
+  }
+
   public static Collection<String> allRelativePathsForFilesInTree(Path dir) {
     if (!dir.toFile().exists()) {
       return Collections.emptySet();
@@ -145,13 +168,9 @@ public class FileUtils {
     Set<String> paths = new HashSet<>();
     try {
       Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
-        private boolean shouldIgnore(Path path) {
-          return path.getFileName().toString().startsWith(".");
-        }
-
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          if (!shouldIgnore(file)) {
+          if (!isHidden(file)) {
             retry(() -> paths.add(toSonarQubePath(dir.relativize(file).toString())));
           }
           return FileVisitResult.CONTINUE;
@@ -159,7 +178,7 @@ public class FileUtils {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-          if (shouldIgnore(dir)) {
+          if (isHidden(dir)) {
             return FileVisitResult.SKIP_SUBTREE;
           } else {
             return FileVisitResult.CONTINUE;
