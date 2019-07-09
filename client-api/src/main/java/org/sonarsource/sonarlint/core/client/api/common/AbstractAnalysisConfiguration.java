@@ -76,7 +76,7 @@ public abstract class AbstractAnalysisConfiguration {
     sb.append("  ]\n");
   }
 
-  private String getCharsetLabel(ClientInputFile inputFile) {
+  private static String getCharsetLabel(ClientInputFile inputFile) {
     Charset charset = inputFile.getCharset();
     return charset != null ? charset.displayName() : "default";
   }
