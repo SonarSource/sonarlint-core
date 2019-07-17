@@ -103,6 +103,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
+  private static final String PROJECT_KEY_GO = "sample-go";
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
@@ -114,6 +115,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", System.getProperty("kotlinVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", System.getProperty("rubyVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", System.getProperty("scalaVersion")))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-go-plugin", System.getProperty("goVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", System.getProperty("webVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", System.getProperty("xmlVersion")))
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
@@ -134,6 +136,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/go-sonarlint.xml"))
     .build();
 
   @ClassRule
@@ -181,6 +184,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_SCALA, "Sample Scala");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_XML, "Sample XML");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_GO, "Sample Go");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -196,6 +200,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GO, "go", "SonarLint IT Go");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
@@ -766,6 +771,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisGo() throws Exception {
+    updateGlobal();
+    updateProject(PROJECT_KEY_GO);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GO, PROJECT_KEY_GO, "src/foo.go"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 

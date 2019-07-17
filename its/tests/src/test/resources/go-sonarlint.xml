@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Go</name>
+  <language>go</language>
+  <rules>
+    <rule>
+      <repositoryKey>go</repositoryKey>
+      <!-- Credentials should not be hard-coded -->
+      <key>S2068</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
