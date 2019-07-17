@@ -269,10 +269,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadProjects() {
     updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(15);
+    assertThat(engine.allProjectsByKey()).hasSize(16);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allProjectsByKey()).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test

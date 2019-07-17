@@ -3,6 +3,8 @@
 abap=3.5.0.1080
 cobol=4.2.0.2826
 cpp=5.0.0.9359
+# dev version which add support of SonarLint
+go=1.6.0.688
 java=5.1.0.13090
 javascript=4.0.0.5862
 kotlin=1.2.1.2009

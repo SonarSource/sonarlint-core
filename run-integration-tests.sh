@@ -21,6 +21,7 @@ case "$SQ_VERSION" in
     KOTLIN_VERSION=$kotlin
     RUBY_VERSION=$ruby
     SCALA_VERSION=$sonarscala
+    GO_VERSION=$go
     # Because of SONARHTML-91, it is simpler to test with 3.0.1.1444
     WEB_VERSION=3.0.1.1444
     XML_VERSION=$xml
@@ -37,6 +38,8 @@ case "$SQ_VERSION" in
     KOTLIN_VERSION=LATEST_RELEASE
     RUBY_VERSION=LATEST_RELEASE
     SCALA_VERSION=LATEST_RELEASE
+    # Sonar-Go plugin compatible with SonarLint not yet released
+    GO_VERSION=1.6.0.688
     WEB_VERSION=LATEST_RELEASE
     XML_VERSION=LATEST_RELEASE
     APEX_VERSION=LATEST_RELEASE
@@ -60,6 +63,7 @@ mvn verify -Pits -Dsonar.runtimeVersion=$SQ_VERSION \
     -DkotlinVersion=$KOTLIN_VERSION \
     -DrubyVersion=$RUBY_VERSION \
     -DscalaVersion=$SCALA_VERSION \
+    -DgoVersion=$GO_VERSION \
     -DwebVersion=$WEB_VERSION \
     -DxmlVersion=$XML_VERSION \
     -DapexVersion=$APEX_VERSION \

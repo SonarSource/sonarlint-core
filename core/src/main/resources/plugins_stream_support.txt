@@ -17,3 +17,4 @@ ruby=1.1
 sonarscala=1.4
 tsql=1.1
 xml=2.0.1
+go=1.6
