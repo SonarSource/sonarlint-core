@@ -55,7 +55,7 @@ public class ProjectFileListDownloader {
   }
 
   private String buildPath(Version serverVersion, String projectKey) {
-    String path = BASE_PATH + getComponentKeyParam(serverVersion) + "=" + projectKey;
+    String path = BASE_PATH + getComponentKeyParam(serverVersion) + "=" + StringUtils.urlEncode(projectKey);
     if (wsClient.getOrganizationKey() != null) {
       path += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
     }
