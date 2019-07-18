@@ -29,18 +29,15 @@ import io.grpc.Metadata;
 import io.grpc.Status;
 import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -112,57 +109,6 @@ public class StandaloneDaemonTest {
         assertThat(logsLines.size()).isLessThan(100);
         assertThat(logsLines).contains("1 file indexed");
       }
-    } finally {
-      call.cancel("no more logs needed", null);
-    }
-
-    System.out.println("TIME " + (System.currentTimeMillis() - start));
-  }
-
-  @Test
-  public void testC() throws InterruptedException, IOException {
-
-    LogCollector logs = new LogCollector();
-    StandaloneSonarLintBlockingStub sonarlint = StandaloneSonarLintGrpc.newBlockingStub(channel);
-
-    AnalysisReq analysisConfig = createAnalysisConfig("sample-c");
-    FileUtils.write(
-      new File(analysisConfig.getBaseDir(), "build-wrapper-dump.json"),
-      "{\"version\":0,\"captures\":[" +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __cplusplus 201703L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{\"compiler\":\"clang\",\"cwd\":\"" +
-        analysisConfig.getBaseDir().replace("\\", "\\\\") +
-        "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}",
-      StandardCharsets.UTF_8);
-
-    analysisConfig = AnalysisReq.newBuilder(analysisConfig)
-      .putProperties("sonar.cfamily.build-wrapper-output", Paths.get(analysisConfig.getBaseDir()).toAbsolutePath().toString())
-      .build();
-
-    long start = System.currentTimeMillis();
-
-    ClientCall<Void, LogEvent> call = getLogs(logs, channel);
-    try {
-      Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
-
-      assertThat(issues).hasSize(1);
-      // Give some time for logs to come
-      Thread.sleep(500);
-      List<String> logsLines = logs.getLogsAndClear();
-      // To be sure logs are not flooded by low level logs
-      assertThat(logsLines.size()).isLessThan(100);
-      assertThat(logsLines).contains("1 file indexed");
     } finally {
       call.cancel("no more logs needed", null);
     }
