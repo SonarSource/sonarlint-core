@@ -18,7 +18,6 @@
   <properties>
     <!-- embedded analyzers -->
     <sonar.javascript.version>4.0.0.5862</sonar.javascript.version>
-    <sonar.cfamily.version>6.3.0.11371</sonar.cfamily.version>
   </properties>
 
   <dependencies>
@@ -147,15 +146,7 @@
                   <type>jar</type>
                   <overWrite>false</overWrite>
                   <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>com.sonarsource.cpp</groupId>
-                  <artifactId>sonar-cfamily-plugin</artifactId>
-                  <version>${sonar.cfamily.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-                </artifactItem>
+                </artifactItem>                
               </artifactItems>
             </configuration>
           </execution>
