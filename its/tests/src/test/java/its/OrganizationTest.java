@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -36,12 +37,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.organization.CreateWsRequest;
+import org.sonarqube.ws.client.project.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -88,24 +89,25 @@ public class OrganizationTest extends AbstractConnectedTest {
   private ConnectedSonarLintEngine engineOnDefaultOrg;
 
   @BeforeClass
-  public static void prepare() throws Exception {
+  public static void prepare() throws IOException {
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     sonarUserHome = temp.newFolder().toPath();
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    adminWsClient.users().create(org.sonarqube.ws.client.user.CreateRequest.builder()
+      .setLogin(SONARLINT_USER)
+      .setPassword(SONARLINT_PWD)
+      .setName("SonarLint")
+      .build());
 
     enableOrganizationsSupport();
     createOrganization();
 
-    ORCHESTRATOR.getServer().adminWsClient().post("/api/projects/create",
-      "key", PROJECT_KEY_JAVA,
-      "name", "Sample Java",
-      "organization", ORGANIZATION);
+    adminWsClient.projects()
+      .create(CreateRequest.builder()
+        .setKey(PROJECT_KEY_JAVA)
+        .setName("Sample Java")
+        .setOrganization(ORGANIZATION)
+        .build());
   }
 
   @Before
@@ -150,10 +152,12 @@ public class OrganizationTest extends AbstractConnectedTest {
   public void downloadModules() {
     updateGlobal();
     assertThat(engineOnTestOrg.allProjectsByKey()).hasSize(1);
-    ORCHESTRATOR.getServer().adminWsClient().post("/api/projects/create",
-      "key", "foo-bar",
-      "name", "Foo",
-      "organization", ORGANIZATION);
+    adminWsClient.projects()
+      .create(CreateRequest.builder()
+        .setKey("foo-bar")
+        .setName("Foo")
+        .setOrganization(ORGANIZATION)
+        .build());
     // Project in default org is not visible
     ORCHESTRATOR.getServer().provisionProject("foo-bar2", "Foo");
     assertThat(engineOnTestOrg.downloadAllProjects(getServerConfigForOrg(ORGANIZATION), null)).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
