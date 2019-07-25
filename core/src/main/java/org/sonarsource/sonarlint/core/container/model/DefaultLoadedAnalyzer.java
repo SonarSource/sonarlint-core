@@ -19,19 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 
 public class DefaultLoadedAnalyzer implements LoadedAnalyzer {
   private final String key;
   private final String name;
   private final String version;
-  private final boolean supportsContentStream;
 
-  public DefaultLoadedAnalyzer(String key, String name, String version, boolean supportsContentStream) {
+  public DefaultLoadedAnalyzer(String key, String name, @Nullable String version) {
     this.key = key;
     this.name = name;
     this.version = version;
-    this.supportsContentStream = supportsContentStream;
   }
 
   @Override
@@ -47,10 +46,5 @@ public class DefaultLoadedAnalyzer implements LoadedAnalyzer {
   @Override
   public String version() {
     return version;
-  }
-
-  @Override
-  public boolean supportsContentStream() {
-    return supportsContentStream;
   }
 }

@@ -45,12 +45,6 @@ public class PluginVersionCheckerTest {
   }
 
   @Test
-  public void testStreamSupport() {
-    assertThat(checker.getMinimumStreamSupportVersion("java")).isEqualTo("4.7");
-    assertThat(checker.getMinimumStreamSupportVersion("unknown")).isNull();
-  }
-
-  @Test
   public void isVersionSupported() {
     assertThat(checker.isVersionSupported("java", "5.1.0.13090")).isTrue();
     assertThat(checker.isVersionSupported("java", "3.9.0.13090")).isFalse();
