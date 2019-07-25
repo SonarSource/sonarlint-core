@@ -23,11 +23,10 @@ import javax.annotation.CheckForNull;
 
 public interface LoadedAnalyzer {
   String key();
-  
+
   String name();
-  
+
   @CheckForNull
   String version();
-  
-  boolean supportsContentStream();
+
 }
