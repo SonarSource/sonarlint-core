@@ -405,15 +405,19 @@ public class ServerMainTest {
     d.setCode("javascript:S930");
     CodeActionParams codeActionParams = new CodeActionParams(new TextDocumentIdentifier("file://foo.js"), range, new CodeActionContext(Arrays.asList(d)));
     List<Either<Command, CodeAction>> list = lsProxy.getTextDocumentService().codeAction(codeActionParams).get();
-    assertThat(list).hasSize(1);
-    Command command = list.get(0).getLeft();
-    assertThat(command.getCommand()).isEqualTo("SonarLint.OpenRuleDesc");
-    assertThat(command.getArguments()).hasSize(5);
-    assertThat(((JsonPrimitive) command.getArguments().get(0)).getAsString()).isEqualTo("javascript:S930");
-    assertThat(((JsonPrimitive) command.getArguments().get(1)).getAsString()).isEqualTo("Function calls should not pass extra arguments");
-    assertThat(((JsonPrimitive) command.getArguments().get(2)).getAsString()).contains("<h2>Noncompliant Code Example");
-    assertThat(((JsonPrimitive) command.getArguments().get(3)).getAsString()).isEqualTo("BUG");
-    assertThat(((JsonPrimitive) command.getArguments().get(4)).getAsString()).isEqualTo("CRITICAL");
+    assertThat(list).hasSize(2);
+    Command openRuleDesc = list.get(0).getLeft();
+    assertThat(openRuleDesc.getCommand()).isEqualTo("SonarLint.OpenRuleDesc");
+    assertThat(openRuleDesc.getArguments()).hasSize(5);
+    assertThat(((JsonPrimitive) openRuleDesc.getArguments().get(0)).getAsString()).isEqualTo("javascript:S930");
+    assertThat(((JsonPrimitive) openRuleDesc.getArguments().get(1)).getAsString()).isEqualTo("Function calls should not pass extra arguments");
+    assertThat(((JsonPrimitive) openRuleDesc.getArguments().get(2)).getAsString()).contains("<h2>Noncompliant Code Example");
+    assertThat(((JsonPrimitive) openRuleDesc.getArguments().get(3)).getAsString()).isEqualTo("BUG");
+    assertThat(((JsonPrimitive) openRuleDesc.getArguments().get(4)).getAsString()).isEqualTo("CRITICAL");
+    Command disableRule = list.get(1).getLeft();
+    assertThat(disableRule.getCommand()).isEqualTo("SonarLint.DeactivateRule");
+    assertThat(disableRule.getArguments()).hasSize(1);
+    assertThat(((JsonPrimitive) disableRule.getArguments().get(0)).getAsString()).isEqualTo("javascript:S930");
   }
 
   private String getUri(String filename) throws IOException {
