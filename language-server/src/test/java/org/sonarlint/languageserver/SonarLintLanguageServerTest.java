@@ -26,7 +26,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -78,14 +77,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-import static org.sonarlint.languageserver.SonarLintLanguageServer.CONNECTED_MODE_PROJECT_PROP;
-import static org.sonarlint.languageserver.SonarLintLanguageServer.CONNECTED_MODE_SERVERS_PROP;
+import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_PROJECT_PROP;
+import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_SERVERS_PROP;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_PROJECT_BINDING_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_SERVER_STORAGE_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.convert;
@@ -190,6 +188,7 @@ public class SonarLintLanguageServerTest {
     InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     ls.initialize(params);
+    verify(params).getInitializationOptions();
   }
 
   @Test
@@ -199,6 +198,8 @@ public class SonarLintLanguageServerTest {
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     when(params.getWorkspaceFolders()).thenReturn(null);
     ls.initialize(params);
+    verify(params).getInitializationOptions();
+    verify(params).getWorkspaceFolders();
   }
 
   @Test
@@ -274,7 +275,7 @@ public class SonarLintLanguageServerTest {
 
   @Test
   public void parseWorkspaceFolders_does_not_crash_when_no_folders() {
-    parseWorkspaceFolders(null, null);
+    assertThat(parseWorkspaceFolders(null, null)).isEmpty();
   }
 
   static class EngineWrapper {

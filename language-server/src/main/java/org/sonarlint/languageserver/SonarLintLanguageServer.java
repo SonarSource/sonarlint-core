@@ -19,9 +19,6 @@
  */
 package org.sonarlint.languageserver;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,9 +26,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -131,16 +126,13 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 import static java.util.Collections.singleton;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_PROJECT_PROP;
+import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_SERVERS_PROP;
+import static org.sonarlint.languageserver.UserSettings.TYPESCRIPT_LOCATION;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
   private static final String USER_AGENT = "SonarLint Language Server";
 
-  static final String DISABLE_TELEMETRY = "disableTelemetry";
-  static final String TYPESCRIPT_LOCATION = "typeScriptLocation";
-  static final String TEST_FILE_PATTERN = "testFilePattern";
-  private static final String ANALYZER_PROPERTIES = "analyzerProperties";
-  static final String CONNECTED_MODE_SERVERS_PROP = "connectedModeServers";
-  static final String CONNECTED_MODE_PROJECT_PROP = "connectedModeProject";
   private static final String TYPESCRIPT_PATH_PROP = "sonar.typescript.internal.typescriptLocation";
 
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
@@ -206,37 +198,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), engineCacheFactory, loggerFactory);
   }
 
-  private static class UserSettings {
-    final Map<String, String> analyzerProperties;
-    final boolean disableTelemetry;
-    final PathMatcher testMatcher;
-
-    private UserSettings() {
-      this(Collections.emptyMap());
-    }
-
-    private UserSettings(Map<String, Object> params) {
-      String testFilePattern = (String) params.get(TEST_FILE_PATTERN);
-      testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : (p -> false);
-      this.analyzerProperties = getAnalyzerProperties(params);
-      this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
-    }
-
-    private static Map<String, String> getAnalyzerProperties(Map<String, Object> params) {
-      Map map = (Map) params.get(ANALYZER_PROPERTIES);
-      if (map == null) {
-        return Collections.emptyMap();
-      }
-      return map;
-    }
-  }
-
   @Override
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
     workspaceFolders.addAll(parseWorkspaceFolders(params.getWorkspaceFolders(), params.getRootUri()));
     workspaceFolders.sort(Comparator.reverseOrder());
 
-    Map<String, Object> options = parseToMap(params.getInitializationOptions());
+    Map<String, Object> options = UserSettings.parseToMap(params.getInitializationOptions());
     userSettings = new UserSettings(options);
 
     String productKey = (String) options.get("productKey");
@@ -690,6 +657,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         .setBaseDir(baseDir)
         .addInputFiles(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri)))
         .putAllExtraProperties(userSettings.analyzerProperties)
+        .addExcludedRules(userSettings.excludedRules)
         .build();
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
@@ -899,11 +867,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       List<Object> args = params.getArguments();
       switch (params.getCommand()) {
         case SONARLINT_UPDATE_SERVER_STORAGE_COMMAND:
-          List<Object> list = args == null ? null : args.stream().map(SonarLintLanguageServer::parseToMap).collect(Collectors.toList());
+          List<Object> list = args == null ? null : args.stream().map(UserSettings::parseToMap).collect(Collectors.toList());
           handleUpdateServerStorageCommand(list);
           break;
         case SONARLINT_UPDATE_PROJECT_BINDING_COMMAND:
-          Map<String, Object> map = args == null || args.isEmpty() ? null : parseToMap(args.get(0));
+          Map<String, Object> map = args == null || args.isEmpty() ? null : UserSettings.parseToMap(args.get(0));
           updateBinding(map);
           break;
         default:
@@ -943,7 +911,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
-    Map<String, Object> settings = parseToMap(params.getSettings());
+    Map<String, Object> settings = UserSettings.parseToMap(params.getSettings());
     Map<String, Object> entries = (Map<String, Object>) settings.get(SONARLINT_CONFIGURATION_NAMESPACE);
     userSettings = new UserSettings(entries);
     telemetry.optOut(userSettings.disableTelemetry);
@@ -969,17 +937,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           updateIssueTrackers(engine, serverInfo);
         }
       }
-    }
-  }
-
-  // See the changelog for any evolutions on how properties are parsed:
-  // https://github.com/eclipse/lsp4j/blob/master/CHANGELOG.md
-  // (currently JsonElement, used to be Map<String, Object>)
-  private static Map<String, Object> parseToMap(Object obj) {
-    try {
-      return new Gson().fromJson((JsonElement) obj, Map.class);
-    } catch (JsonSyntaxException e) {
-      throw new IllegalArgumentException("Expected a JSON map but was: " + obj);
     }
   }
 

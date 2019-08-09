@@ -41,8 +41,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.SystemUtils;
+import org.awaitility.core.ConditionTimeoutException;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -82,12 +84,14 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.internal.apachecommons.io.FileUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.fail;
-import static org.sonarlint.languageserver.SonarLintLanguageServer.DISABLE_TELEMETRY;
-import static org.sonarlint.languageserver.SonarLintLanguageServer.TEST_FILE_PATTERN;
-import static org.sonarlint.languageserver.SonarLintLanguageServer.TYPESCRIPT_LOCATION;
+import static org.sonarlint.languageserver.UserSettings.DISABLE_TELEMETRY;
+import static org.sonarlint.languageserver.UserSettings.RULES;
+import static org.sonarlint.languageserver.UserSettings.TEST_FILE_PATTERN;
+import static org.sonarlint.languageserver.UserSettings.TYPESCRIPT_LOCATION;
 
 public class ServerMainTest {
 
@@ -188,13 +192,32 @@ public class ServerMainTest {
 
   @Test
   public void analyzeSimpleJsFileOnOpen() throws Exception {
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true));
+
     String uri = getUri("foo.js");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n}")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf;\n}")));
+
+    assertThat(waitForDiagnostics(uri))
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(
+        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information),
+        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable. (javascript:UnusedVariable)", DiagnosticSeverity.Information)
+      );
+  }
+
+  @Test
+  public void analyzeSimpleJsFileOnOpenWithDisabledRule() throws Exception {
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true, "javascript:UnusedVariable"));
+
+    String uri = getUri("foo.js");
+    lsProxy.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf;\n}")));
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+      // Expected issue on javascript:UnusedVariable is suppressed by rule configuration
   }
 
   @Test
@@ -289,10 +312,13 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(fooMyTestUri)).isEmpty();
   }
 
-  private DidChangeConfigurationParams changedConfiguration(@Nullable String testFilePattern, boolean disableTelemetry) {
+  private DidChangeConfigurationParams changedConfiguration(@Nullable String testFilePattern, boolean disableTelemetry, String... disabledRules) {
     Map<String, Object> values = new HashMap<>();
     values.put(TEST_FILE_PATTERN, testFilePattern);
     values.put(DISABLE_TELEMETRY, disableTelemetry);
+    Stream.of(disabledRules).forEach(
+      key -> values.put(RULES, ImmutableMap.of(key, ImmutableMap.of("level", "off")))
+    );
     return new DidChangeConfigurationParams(ImmutableMap.of("sonarlint", values));
   }
 
@@ -375,9 +401,16 @@ public class ServerMainTest {
 
   @Test
   public void testCodeAction_no_diagnostics() throws Exception {
+    String uri = "file://foo.js";
     Range range = new Range(new Position(1, 0), new Position(1, 10));
-    CodeActionParams codeActionParams = new CodeActionParams(new TextDocumentIdentifier("file://foo.js"), range, new CodeActionContext(Collections.emptyList()));
+    CodeActionParams codeActionParams = new CodeActionParams(new TextDocumentIdentifier(uri), range, new CodeActionContext(Collections.emptyList()));
     lsProxy.getTextDocumentService().codeAction(codeActionParams).get();
+    try {
+      await().atMost(2, TimeUnit.SECONDS).until(() -> client.containsDiagnostics(uri));
+      failBecauseExceptionWasNotThrown(ConditionTimeoutException.class);
+    } catch(ConditionTimeoutException expected) {
+      assertThat(expected).isInstanceOf(ConditionTimeoutException.class);
+    }
   }
 
   @Test
