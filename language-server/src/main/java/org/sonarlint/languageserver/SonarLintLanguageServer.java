@@ -459,6 +459,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   @Override
   public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
     List<Either<Command, CodeAction>> commands = new ArrayList<>();
+    boolean standaloneMode = this.binding == null;
     try {
       for (Diagnostic d : params.getContext().getDiagnostics()) {
         if (SONARLINT_SOURCE.equals(d.getSource())) {
@@ -470,10 +471,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
                 SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
                 ruleDescriptionParams)));
           }
-          commands.add(Either.forLeft(
-            new Command(String.format("Deactivate rule '%s'", ruleKey),
-              SONARLINT_DEACTIVATE_RULE_COMMAND,
-              Collections.singletonList(ruleKey))));
+          if (standaloneMode) {
+            commands.add(Either.forLeft(
+              new Command(String.format("Deactivate rule '%s'", ruleKey),
+                SONARLINT_DEACTIVATE_RULE_COMMAND,
+                Collections.singletonList(ruleKey))));
+          }
         }
       }
     } catch (Exception e) {
@@ -617,12 +620,12 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   private AnalysisWrapper getAnalysisWrapper() {
-    return getEngine()
+    return getConnectedEngine()
       .map(e -> (AnalysisWrapper) new ConnectedAnalysisWrapper(e, binding.projectKey))
       .orElse(new StandaloneAnalysisWrapper());
   }
 
-  private Optional<ConnectedSonarLintEngine> getEngine() {
+  private Optional<ConnectedSonarLintEngine> getConnectedEngine() {
     return Optional.ofNullable(binding)
       .map(b -> serverInfoCache.get(b.serverId))
       .filter(Objects::nonNull)
