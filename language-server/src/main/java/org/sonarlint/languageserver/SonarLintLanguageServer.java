@@ -701,6 +701,9 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
         .addInputFile(new DefaultClientInputFile(uri, getFileRelativePath(baseDir, uri), content, isTest(uri), languageIdPerFileURI.get(uri)))
         .putAllExtraProperties(userSettings.analyzerProperties)
         .build();
+      if (!userSettings.excludedRules.isEmpty()) {
+        logger.debug("Local rules settings are ignored, using quality profile from server");
+      }
       logger.debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
       List<Issue> issues = new LinkedList<>();

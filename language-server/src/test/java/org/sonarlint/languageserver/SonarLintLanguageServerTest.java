@@ -92,6 +92,7 @@ import static org.sonarlint.languageserver.SonarLintLanguageServer.getHtmlDescri
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.normalizeUriString;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
+import static org.sonarlint.languageserver.UserSettings.RULES;
 
 public class SonarLintLanguageServerTest {
 
@@ -316,7 +317,8 @@ public class SonarLintLanguageServerTest {
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
+    assertThat(tester.debugMessages()).doesNotContain("Local rules settings are ignored, using quality profile from server");
     assertThat(tester.lastEngine().standalone).isTrue();
   }
 
@@ -326,11 +328,12 @@ public class SonarLintLanguageServerTest {
     String serverId = "local1";
     tester.setInitialServers("foo", "bar", serverId, "baz");
     tester.setInitialBinding("local1", "project1");
-    tester.initialize();
+    tester.initialize("xoo:SomeRule");
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
+    assertThat(tester.debugMessages()).contains("Local rules settings are ignored, using quality profile from server");
     assertThat(tester.lastEngine().standalone).isFalse();
     assertThat(tester.lastEngine().serverId).isEqualTo(serverId);
   }
@@ -342,7 +345,7 @@ public class SonarLintLanguageServerTest {
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isTrue();
 
     String serverId = "local1";
@@ -361,7 +364,7 @@ public class SonarLintLanguageServerTest {
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isFalse();
     assertThat(tester.lastEngine().serverId).isEqualTo(serverId);
   }
@@ -375,7 +378,7 @@ public class SonarLintLanguageServerTest {
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isTrue();
   }
 
@@ -388,7 +391,7 @@ public class SonarLintLanguageServerTest {
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isTrue();
   }
 
@@ -418,10 +421,10 @@ public class SonarLintLanguageServerTest {
 
       tester.setInitialServers(serverConfig);
       tester.initialize();
-      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
+      assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
 
       tester.updateServers(serverConfig);
-      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG, ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
+      assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG, ClientLogger.ErrorType.INCOMPLETE_SERVER_CONFIG);
     }
   }
 
@@ -439,10 +442,10 @@ public class SonarLintLanguageServerTest {
 
       tester.setInitialBinding(binding);
       tester.initialize();
-      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_BINDING);
+      assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_BINDING);
 
       tester.updateBinding(binding);
-      assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_BINDING, ClientLogger.ErrorType.INCOMPLETE_BINDING);
+      assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.INCOMPLETE_BINDING, ClientLogger.ErrorType.INCOMPLETE_BINDING);
     }
   }
 
@@ -452,10 +455,10 @@ public class SonarLintLanguageServerTest {
 
     tester.setInitialBinding(Collections.emptyMap());
     tester.initialize();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
 
     tester.updateBinding(Collections.emptyMap());
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
   }
 
   @Test
@@ -469,10 +472,10 @@ public class SonarLintLanguageServerTest {
 
     tester.setInitialBinding(binding);
     tester.initialize();
-    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER);
+    assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER);
 
     tester.updateBinding(binding);
-    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER, ClientLogger.ErrorType.INVALID_BINDING_SERVER);
+    assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.INVALID_BINDING_SERVER, ClientLogger.ErrorType.INVALID_BINDING_SERVER);
   }
 
   @Test
@@ -494,10 +497,10 @@ public class SonarLintLanguageServerTest {
     tester.setInitialBinding(binding);
     tester.setEngine("foo", null);
     tester.initialize();
-    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED);
+    assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED);
 
     tester.updateBinding(binding);
-    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED, ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED);
+    assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED, ClientLogger.ErrorType.START_CONNECTED_ENGINE_FAILED);
   }
 
   @Test
@@ -510,7 +513,7 @@ public class SonarLintLanguageServerTest {
 
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isFalse();
     assertThat(tester.lastEngine().serverId).isEqualTo(serverId);
 
@@ -525,7 +528,7 @@ public class SonarLintLanguageServerTest {
     // binding is broken by replaced server -> fall back to standalone analysis
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isTrue();
 
     Map<String, String> binding = ImmutableMap.<String, String>builder()
@@ -537,7 +540,7 @@ public class SonarLintLanguageServerTest {
     // fix binding -> connected analysis
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     assertThat(tester.lastEngine().standalone).isFalse();
     assertThat(tester.lastEngine().serverId).isEqualTo(serverId);
   }
@@ -587,7 +590,7 @@ public class SonarLintLanguageServerTest {
     tester.setEngine(serverId, engine);
     tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).update(any(), any());
     verify(engine).updateProject(any(), any(), any());
@@ -601,7 +604,7 @@ public class SonarLintLanguageServerTest {
     tester.setEngine(serverId, engine);
     tester.analyze(true);
     assertThat(tester.lastWasSuccess()).isTrue();
-    assertThat(tester.logs()).isEmpty();
+    assertThat(tester.loggedErrors()).isEmpty();
     verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine).updateProject(any(), any(), any());
     verify(engine, times(2)).analyze(any(), any(), any(), any());
@@ -612,7 +615,7 @@ public class SonarLintLanguageServerTest {
     tester.setEngine(serverId, engine);
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isFalse();
-    assertThat(tester.logs()).containsExactly(ClientLogger.ErrorType.ANALYSIS_FAILED);
+    assertThat(tester.loggedErrors()).containsExactly(ClientLogger.ErrorType.ANALYSIS_FAILED);
     verify(engine).getExcludedFiles(any(), any(), any(), any());
     verify(engine, times(1)).analyze(any(), any(), any(), any());
     verifyNoMoreInteractions(engine);
@@ -764,11 +767,13 @@ public class SonarLintLanguageServerTest {
    * Tracks the message types received during processing.
    */
   static class FakeClientLogger implements ClientLogger {
-    List<ErrorType> logs = new ArrayList<>();
+    List<ErrorType> errors = new ArrayList<>();
+
+    List<String> debugMessages = new ArrayList<>();
 
     @Override
     public void error(ErrorType errorType) {
-      logs.add(errorType);
+      errors.add(errorType);
     }
 
     @Override
@@ -786,6 +791,7 @@ public class SonarLintLanguageServerTest {
 
     @Override
     public void debug(String message) {
+      debugMessages.add(message);
     }
   }
 
@@ -864,7 +870,7 @@ public class SonarLintLanguageServerTest {
       this.languageServer = newLanguageServer(fakeEngineCache, fakeLogger);
     }
 
-    void initialize() {
+    void initialize(String... disabledRuleKeys) {
       InitializeParams params = mockInitializeParams();
       WorkspaceFolder workspaceFolder = mockWorkspaceFolder(temporaryFolder.getRoot().toURI().toString());
       when(params.getWorkspaceFolders()).thenReturn(Collections.singletonList(workspaceFolder));
@@ -873,6 +879,11 @@ public class SonarLintLanguageServerTest {
       options.add(CONNECTED_MODE_SERVERS_PROP, toJson(servers));
       if (binding != null) {
         options.add(CONNECTED_MODE_PROJECT_PROP, SonarLintLanguageServerTest.toJson(binding));
+      }
+      if (disabledRuleKeys.length > 0) {
+        ImmutableMap.Builder<String, Object> disabledRulesBuilder = ImmutableMap.builder();
+        Stream.of(disabledRuleKeys).forEach(k -> disabledRulesBuilder.put(k, ImmutableMap.of("level", "off")));
+        options.add(RULES, toJson(disabledRulesBuilder.build()));;
       }
       params.setInitializationOptions(options);
       when(params.getInitializationOptions()).thenReturn(options);
@@ -894,7 +905,7 @@ public class SonarLintLanguageServerTest {
         throw new IllegalStateException("Must call .initialize() before .analyze()");
       }
 
-      fakeLogger.logs.clear();
+      fakeLogger.errors.clear();
       success = false;
 
       URI uri;
@@ -905,15 +916,19 @@ public class SonarLintLanguageServerTest {
       }
       consumer.accept(languageServer, uri);
 
-      success = fakeLogger.logs.isEmpty();
+      success = fakeLogger.errors.isEmpty();
     }
 
     boolean lastWasSuccess() {
       return success;
     }
 
-    List<ClientLogger.ErrorType> logs() {
-      return fakeLogger.logs;
+    List<ClientLogger.ErrorType> loggedErrors() {
+      return fakeLogger.errors;
+    }
+
+    List<String> debugMessages() {
+      return fakeLogger.debugMessages;
     }
 
     void setInitialServers(String... serverIds) {
@@ -967,7 +982,7 @@ public class SonarLintLanguageServerTest {
     }
 
     void clearLogs() {
-      fakeLogger.logs.clear();
+      fakeLogger.errors.clear();
     }
 
     void setEngine(String serverId, ConnectedSonarLintEngine engine) {
@@ -984,7 +999,7 @@ public class SonarLintLanguageServerTest {
     return array;
   }
 
-  private static JsonElement toJson(Map<String, String> map) {
+  private static JsonElement toJson(Map<? extends Object, ? extends Object> map) {
     return new Gson().toJsonTree(map);
   }
 
