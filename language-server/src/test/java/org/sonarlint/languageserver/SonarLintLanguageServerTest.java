@@ -86,6 +86,7 @@ import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_PROJECT_P
 import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_SERVERS_PROP;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_PROJECT_BINDING_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_SERVER_STORAGE_COMMAND;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_REFRESH_DIAGNOSTICS_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.convert;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getHtmlDescription;
@@ -757,6 +758,35 @@ public class SonarLintLanguageServerTest {
 
     tester.languageServer.didChangeWorkspaceFolders(params);
     verify(tester.lastEngine().connectedEngine, times(3)).calculatePathPrefixes(eq("project1"), any());
+  }
+
+  @Test
+  public void should_reanalyze_files_upon_request() throws Exception {
+    LanguageServerTester tester = newLanguageServerTester();
+
+    ExecuteCommandParams params = new ExecuteCommandParams();
+    params.setCommand(SONARLINT_REFRESH_DIAGNOSTICS_COMMAND);
+    String uri1 = temporaryFolder.newFile().toPath().toUri().toString() + ".js", text1 = "'use strict';\nconsole.log('polop');";
+    String uri2 = temporaryFolder.newFile().toPath().toUri().toString() + ".php", text2 = "<?php\necho 'polop';\n?>";
+    Gson gson = new Gson();
+    params.setArguments(Arrays.asList(
+      gson.toJson(new SonarLintLanguageServer.Document(uri1, text1)),
+      gson.toJson(new SonarLintLanguageServer.Document(uri2, text2))
+    ));
+    tester.languageServer.executeCommand(params);
+
+    assertThat(tester.fakeLogger.debugMessages).hasSize(2);
+  }
+
+  @Test
+  public void should_reanalyze_nothing_upon_request() throws Exception {
+    LanguageServerTester tester = newLanguageServerTester();
+
+    ExecuteCommandParams params = new ExecuteCommandParams();
+    params.setCommand(SONARLINT_REFRESH_DIAGNOSTICS_COMMAND);
+    tester.languageServer.executeCommand(params);
+
+    assertThat(tester.fakeLogger.debugMessages).isEmpty();
   }
 
   private LanguageServerTester newLanguageServerTester() {

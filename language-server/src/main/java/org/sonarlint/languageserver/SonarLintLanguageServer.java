@@ -40,12 +40,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+
+import com.google.gson.Gson;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -141,9 +144,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private static final String SONARLINT_DEACTIVATE_RULE_COMMAND = "SonarLint.DeactivateRule";
   static final String SONARLINT_UPDATE_SERVER_STORAGE_COMMAND = "SonarLint.UpdateServerStorage";
   static final String SONARLINT_UPDATE_PROJECT_BINDING_COMMAND = "SonarLint.UpdateProjectBinding";
+  static final String SONARLINT_REFRESH_DIAGNOSTICS_COMMAND = "SonarLint.RefreshDiagnostics";
   private static final List<String> SONARLINT_COMMANDS = Arrays.asList(
     SONARLINT_UPDATE_SERVER_STORAGE_COMMAND,
-    SONARLINT_UPDATE_PROJECT_BINDING_COMMAND);
+    SONARLINT_UPDATE_PROJECT_BINDING_COMMAND,
+    SONARLINT_REFRESH_DIAGNOSTICS_COMMAND);
 
   private final SonarLintLanguageClient client;
   private final Future<?> backgroundProcess;
@@ -880,6 +885,13 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           Map<String, Object> map = args == null || args.isEmpty() ? null : UserSettings.parseToMap(args.get(0));
           updateBinding(map);
           break;
+        case SONARLINT_REFRESH_DIAGNOSTICS_COMMAND:
+          Gson gson = new Gson();
+          Set<Document> docsToRefresh = args == null ?
+            Collections.emptySet() :
+            args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toSet());
+          docsToRefresh.forEach(doc -> analyze(parseURI(doc.uri), doc.text, false));
+          break;
         default:
           return completeExceptionally(-1, "Unsupported command: " + params.getCommand());
       }
@@ -953,6 +965,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     ServerProjectBinding(String serverId, String projectKey) {
       this.serverId = serverId;
       this.projectKey = projectKey;
+    }
+  }
+
+  static class Document {
+    final String uri;
+    final String text;
+
+    public Document(String uri, String text) {
+      this.uri = uri;
+      this.text = text;
     }
   }
 }
