@@ -70,15 +70,13 @@ public class FileMatcherTest {
   @Test
   public void should_return_shortest_prefix_if_there_are_ties() {
     List<Path> idePaths = Arrays.asList(
-      Paths.get("pom.xml")
-    );
+      Paths.get("pom.xml"));
 
     List<Path> sqPaths = Arrays.asList(
       Paths.get("aq1/module2/pom.xml"),
       Paths.get("aq2/pom.xml"),
       Paths.get("pom.xml"),
-      Paths.get("aq1/module1/pom.xml")
-    );
+      Paths.get("aq1/module1/pom.xml"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
@@ -89,8 +87,7 @@ public class FileMatcherTest {
     List<Path> idePaths = Arrays.asList(
       Paths.get("local1/src/main/java/A.java"),
       Paths.get("local1/src/main/java/B.java"),
-      Paths.get("local2/src/main/java/B.java")
-    );
+      Paths.get("local2/src/main/java/B.java"));
 
     List<Path> sqPaths = Arrays.asList(
       Paths.get("sq1/src/main/java/A.java"),
@@ -101,6 +98,46 @@ public class FileMatcherTest {
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq1"));
+  }
+
+  @Test
+  public void should_favor_deepest_common_path() {
+    List<Path> idePaths = Arrays.asList(
+      Paths.get("local1/pom.xml"),
+      Paths.get("local1/build.properties"),
+      Paths.get("local1/src/main/java/com/foo/A.java"));
+
+    List<Path> sqPaths = Arrays.asList(
+      Paths.get("sq1/pom.xml"),
+      Paths.get("sq1/build.properties"),
+      Paths.get("sq2/src/main/java/com/foo/A.java")
+
+    );
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq2"));
+  }
+
+  @Test
+  public void should_disfavor_path_having_multiple_matches() {
+    List<Path> idePaths = Arrays.asList(
+      Paths.get("local1/pom.xml"),
+      Paths.get("local1/build.properties"),
+      Paths.get("local1/src/A.java"));
+
+    List<Path> sqPaths = Arrays.asList(
+      Paths.get("sq1/pom.xml"),
+      Paths.get("sq1/build.properties"),
+      Paths.get("sq2/pom.xml"),
+      Paths.get("sq2/build.properties"),
+      Paths.get("sq3/pom.xml"),
+      Paths.get("sq3/build.properties"),
+      Paths.get("sq4/src/A.java")
+
+    );
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq4"));
   }
 
   @Test

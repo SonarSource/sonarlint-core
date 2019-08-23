@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
 import static java.util.Collections.reverseOrder;
@@ -39,8 +39,7 @@ public class FileMatcher {
   }
 
   public Result match(List<Path> sqRelativePaths, List<Path> ideRelativePaths) {
-    Map<Result, Integer> results = new LinkedHashMap<>();
-    BiFunction<Result, Integer, Integer> incrementer = (p, i) -> i != null ? (i + 1) : 1;
+    Map<Result, Double> resultScores = new LinkedHashMap<>();
 
     sqRelativePaths.forEach(reversePathTree::index);
 
@@ -51,12 +50,17 @@ public class FileMatcher {
 
         for (Path sqPrefix : match.matchPrefixes()) {
           Result r = new Result(idePrefix, sqPrefix);
-          results.compute(r, incrementer);
+          resultScores.compute(r, (p, i) -> computeScore(i, match));
         }
       }
     }
 
-    return mostCommonResult(results);
+    return higherScoreResult(resultScores);
+  }
+
+  private static double computeScore(@Nullable Double currentScore, ReversePathTree.Match match) {
+    double matchScore = (double) match.matchLen() / match.matchPrefixes().size();
+    return currentScore != null ? (currentScore.doubleValue() + matchScore) : matchScore;
   }
 
   private static Path getIdePrefix(Path idePath, ReversePathTree.Match match) {
@@ -67,8 +71,8 @@ public class FileMatcher {
     return Paths.get("");
   }
 
-  private static Result mostCommonResult(Map<Result, Integer> prefixes) {
-    Comparator<Map.Entry<Result, Integer>> c = Comparator.comparing(Map.Entry::getValue);
+  private static Result higherScoreResult(Map<Result, Double> prefixes) {
+    Comparator<Map.Entry<Result, Double>> c = Comparator.comparing(Map.Entry::getValue);
     c = c.thenComparing(x -> x.getKey().idePrefix.getNameCount(), reverseOrder());
 
     return prefixes.entrySet().stream()
@@ -94,7 +98,8 @@ public class FileMatcher {
       return sqPrefix;
     }
 
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
       if (this == o) {
         return true;
       }
@@ -105,7 +110,8 @@ public class FileMatcher {
       return Objects.equals(idePrefix, result.idePrefix) && Objects.equals(sqPrefix, result.sqPrefix);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       return Objects.hash(idePrefix, sqPrefix);
     }
   }
