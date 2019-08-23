@@ -32,13 +32,10 @@ import org.sonarsource.sonarlint.core.util.ReversePathTree;
 import static java.util.Collections.reverseOrder;
 
 public class FileMatcher {
-  private final ReversePathTree reversePathTree;
-
-  public FileMatcher(ReversePathTree reversePathTree) {
-    this.reversePathTree = reversePathTree;
-  }
 
   public Result match(List<Path> sqRelativePaths, List<Path> ideRelativePaths) {
+    ReversePathTree reversePathTree = new ReversePathTree();
+
     Map<Result, Double> resultScores = new LinkedHashMap<>();
 
     sqRelativePaths.forEach(reversePathTree::index);
@@ -64,21 +61,30 @@ public class FileMatcher {
   }
 
   private static Path getIdePrefix(Path idePath, ReversePathTree.Match match) {
-    int prefixLen = idePath.getNameCount() - match.matchLen();
+    int prefixLen = depth(idePath) - match.matchLen();
     if (prefixLen > 0) {
-      return idePath.subpath(0, idePath.getNameCount() - match.matchLen());
+      return idePath.subpath(0, depth(idePath) - match.matchLen());
     }
     return Paths.get("");
   }
 
   private static Result higherScoreResult(Map<Result, Double> prefixes) {
+    // Prefere higher score
     Comparator<Map.Entry<Result, Double>> c = Comparator.comparing(Map.Entry::getValue);
-    c = c.thenComparing(x -> x.getKey().idePrefix.getNameCount(), reverseOrder());
+    c = c
+      // fallback on prefix depth
+      .thenComparing(x -> depth(x.getKey().sqPrefix), reverseOrder())
+      // fallback on prefix lexicographic order
+      .thenComparing(x -> x.getKey().sqPrefix.toString(), reverseOrder());
 
     return prefixes.entrySet().stream()
       .max(c)
       .map(Map.Entry::getKey)
       .orElse(new Result(Paths.get(""), Paths.get("")));
+  }
+
+  private static int depth(Path path) {
+    return path.toString().length() == 0 ? 0 : path.getNameCount();
   }
 
   public static class Result {
