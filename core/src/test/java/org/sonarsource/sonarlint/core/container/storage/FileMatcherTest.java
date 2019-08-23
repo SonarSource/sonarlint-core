@@ -25,12 +25,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileMatcherTest {
-  private FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
+  private FileMatcher fileMatcher = new FileMatcher();
 
   @Test
   public void simple_case_without_prefixes() {
@@ -68,7 +67,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void should_return_shortest_prefix_if_there_are_ties() {
+  public void should_return_shortest_sq_prefix_if_there_are_ties() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("pom.xml"));
 
@@ -80,6 +79,49 @@ public class FileMatcherTest {
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
+
+    sqPaths = Arrays.asList(
+      Paths.get("aq1/module2/pom.xml"),
+      Paths.get("aq2/pom.xml"),
+      Paths.get("aq1/module1/pom.xml"));
+    match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("aq2"));
+
+    // In case there is also a tie on the prefix segment count, fallback on lexicographic order
+    sqPaths = Arrays.asList(
+      Paths.get("aq1/module2/pom.xml"),
+      Paths.get("aq1/module1/pom.xml"));
+    match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("aq1/module1"));
+  }
+
+  @Test
+  public void more_complex_test_with_multiple_files() throws Exception {
+    List<Path> idePaths = Arrays.asList(
+      Paths.get("local/sub/index.html"),
+      Paths.get("local/sub/product1/index.html"),
+      Paths.get("local/sub/product2/index.html"),
+      Paths.get("local/sub/product3/index.html"));
+    List<Path> sqPaths = Arrays.asList(
+      Paths.get("sq/index.html"),
+      Paths.get("sq/news/index.html"),
+      Paths.get("sq/news/product1/index.html"),
+      Paths.get("sq/news/product2/index.html"),
+      Paths.get("sq/news/product3/index.html"),
+      Paths.get("sq/products/index.html"),
+      Paths.get("sq/products/product1/index.html"),
+      Paths.get("sq/products/product2/index.html"),
+      Paths.get("sq/products/product3/index.html"),
+      Paths.get("sq/company/index.html"),
+      Paths.get("sq/company/jobs/index.html"),
+      Paths.get("sq/company/news/index.html"),
+      Paths.get("sq/company/contact/index.html"));
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub"));
+    // sq/news is preferred to sq/products because of lexicographic order
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq/news"));
   }
 
   @Test

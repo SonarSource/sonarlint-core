@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpd
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
@@ -132,7 +131,7 @@ public class StorageContainerHandler {
       .map(Paths::get)
       .collect(Collectors.toList());
 
-    FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
+    FileMatcher fileMatcher = new FileMatcher();
     FileMatcher.Result match = fileMatcher.match(sqPathList, idePathList);
     return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.sqPrefix().toString()),
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
