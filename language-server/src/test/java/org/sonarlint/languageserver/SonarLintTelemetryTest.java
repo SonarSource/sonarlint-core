@@ -67,7 +67,7 @@ public class SonarLintTelemetryTest {
         return telemetryManager;
       }
     };
-    telemetry.init(Paths.get("dummy"), "product", "version", () -> true, () -> true);
+    telemetry.init(Paths.get("dummy"), "product", "version", "ideVersion", () -> true, () -> true);
     return telemetry;
   }
 
@@ -85,7 +85,7 @@ public class SonarLintTelemetryTest {
     telemetry = new SonarLintTelemetry(() -> {
       throw new IllegalStateException("error");
     });
-    telemetry.init(Paths.get("dummy"), "product", "version", () -> true, () -> true);
+    telemetry.init(Paths.get("dummy"), "product", "version", "ideVersion", () -> true, () -> true);
 
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed scheduling period telemetry job");
   }
@@ -191,7 +191,7 @@ public class SonarLintTelemetryTest {
         return telemetryManager;
       }
     };
-    telemetry.init(null, "product", "version", () -> true, () -> true);
+    telemetry.init(null, "product", "version", "ideVersion", () -> true, () -> true);
     assertThat(telemetry.enabled()).isFalse();
   }
 }

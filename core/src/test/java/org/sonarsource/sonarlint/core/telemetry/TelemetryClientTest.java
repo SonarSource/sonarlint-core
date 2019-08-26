@@ -55,7 +55,7 @@ public class TelemetryClientTest {
     http = mock(HttpConnector.class, RETURNS_DEEP_STUBS);
     TelemetryHttpFactory httpFactory = mock(TelemetryHttpFactory.class, RETURNS_DEEP_STUBS);
     when(httpFactory.buildClient(any(TelemetryClientConfig.class))).thenReturn(http);
-    client = new TelemetryClient(mock(TelemetryClientConfig.class), "product", "version", httpFactory);
+    client = new TelemetryClient(mock(TelemetryClientConfig.class), "product", "version", "ideversion", httpFactory);
   }
 
   @AfterClass
