@@ -77,7 +77,8 @@ public class SonarLintTelemetry {
     return telemetry != null && telemetry.isEnabled();
   }
 
-  public void init(@Nullable Path storagePath, String productName, String productVersion, Supplier<Boolean> usesConnectedMode, Supplier<Boolean> usesSonarCloud) {
+  public void init(@Nullable Path storagePath, String productName, String productVersion, String ideVersion, Supplier<Boolean> usesConnectedMode,
+    Supplier<Boolean> usesSonarCloud) {
     if (storagePath == null) {
       LOG.info("Telemetry disabled because storage path is null");
       return;
@@ -87,7 +88,7 @@ public class SonarLintTelemetry {
       return;
     }
     TelemetryClientConfig clientConfig = getTelemetryClientConfig();
-    TelemetryClient client = new TelemetryClient(clientConfig, productName, productVersion);
+    TelemetryClient client = new TelemetryClient(clientConfig, productName, productVersion, ideVersion);
     this.telemetry = newTelemetryManager(storagePath, client, usesConnectedMode, usesSonarCloud);
     try {
       this.scheduler = executorFactory.get();

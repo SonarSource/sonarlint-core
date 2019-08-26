@@ -40,12 +40,15 @@ class TelemetryPayload {
   @SerializedName("sonarlint_product")
   private final String product;
 
+  @SerializedName("ide_version")
+  private final String ideVersion;
+
   @SerializedName("connected_mode_used")
   private final boolean connectedMode;
 
   @SerializedName("connected_mode_sonarcloud")
   private final boolean connectedModeSonarcloud;
-  
+
   @SerializedName("system_time")
   private final OffsetDateTime systemTime;
 
@@ -55,12 +58,13 @@ class TelemetryPayload {
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
-  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode, boolean connectedModeSonarcloud,
+  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
     OffsetDateTime systemTime, OffsetDateTime installTime, TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
     this.version = version;
+    this.ideVersion = ideVersion;
     this.connectedMode = connectedMode;
     this.connectedModeSonarcloud = connectedModeSonarcloud;
     this.systemTime = systemTime;
@@ -91,7 +95,7 @@ class TelemetryPayload {
   public boolean connectedMode() {
     return connectedMode;
   }
-  
+
   public boolean connectedModeSonarcloud() {
     return connectedModeSonarcloud;
   }

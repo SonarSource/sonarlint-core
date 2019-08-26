@@ -19,6 +19,7 @@
  */
 package org.sonarlint.languageserver;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,8 +48,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-
-import com.google.gson.Gson;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -217,6 +216,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
     String productName = (String) options.get("productName");
     String productVersion = (String) options.get("productVersion");
+    String ideVersion = (String) options.get("ideVersion");
 
     String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
     engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
@@ -224,7 +224,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     serverInfoCache.replace(options.get(CONNECTED_MODE_SERVERS_PROP));
     updateBinding((Map<?, ?>) options.get(CONNECTED_MODE_PROJECT_PROP));
 
-    telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion, this::usesConnectedMode, this::usesSonarCloud);
+    telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion, ideVersion, this::usesConnectedMode, this::usesSonarCloud);
     telemetry.optOut(userSettings.disableTelemetry);
 
     InitializeResult result = new InitializeResult();
@@ -887,9 +887,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           break;
         case SONARLINT_REFRESH_DIAGNOSTICS_COMMAND:
           Gson gson = new Gson();
-          Set<Document> docsToRefresh = args == null ?
-            Collections.emptySet() :
-            args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toSet());
+          Set<Document> docsToRefresh = args == null ? Collections.emptySet() : args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toSet());
           docsToRefresh.forEach(doc -> analyze(parseURI(doc.uri), doc.text, false));
           break;
         default:

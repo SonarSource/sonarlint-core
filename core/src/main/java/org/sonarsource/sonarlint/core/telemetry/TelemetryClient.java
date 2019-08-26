@@ -40,15 +40,17 @@ public class TelemetryClient {
   private final TelemetryClientConfig clientConfig;
   private final String product;
   private final String version;
+  private final String ideVersion;
 
-  public TelemetryClient(TelemetryClientConfig clientConfig, String product, String version) {
-    this(clientConfig, product, version, new TelemetryHttpFactory());
+  public TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, String ideVersion) {
+    this(clientConfig, product, version, ideVersion, new TelemetryHttpFactory());
   }
 
-  TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, TelemetryHttpFactory httpFactory) {
+  TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, String ideVersion, TelemetryHttpFactory httpFactory) {
     this.clientConfig = clientConfig;
     this.product = product;
     this.version = version;
+    this.ideVersion = ideVersion;
     this.httpFactory = httpFactory;
   }
 
@@ -76,7 +78,7 @@ public class TelemetryClient {
     OffsetDateTime systemTime = OffsetDateTime.now();
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
-    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
+    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       usesConnectedMode, usesSonarCloud, systemTime, data.installTime(), analyzers);
   }
 
