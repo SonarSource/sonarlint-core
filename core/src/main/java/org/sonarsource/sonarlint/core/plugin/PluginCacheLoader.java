@@ -94,8 +94,8 @@ public class PluginCacheLoader {
       LOG.warn("Code analyzer '{}' is excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
-    if (info.getRequiredPlugins().stream().anyMatch(required -> excludedPlugins.contains(required.getKey()))) {
-      LOG.debug("Code analyzer '{}' is excluded in this version of SonarLint. Skip loading it.", info.getName());
+    if (info.getRequiredPlugins().stream().anyMatch(required -> excludedPlugins.contains(required.getKey())) || excludedPlugins.contains(info.getBasePlugin())) {
+      LOG.debug("Code analyzer '{}' is transitively excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
     String minVersion = pluginVersionChecker.getMinimumVersion(info.getKey());

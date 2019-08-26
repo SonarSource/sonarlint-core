@@ -27,10 +27,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.TempFolder;
+import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
@@ -50,6 +52,8 @@ import static org.apache.commons.lang.StringUtils.isNotEmpty;
  * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.Plugin}.
  */
 public class PluginLoader {
+
+  private static final Logger LOG = Loggers.get(PluginLoader.class);
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
   private static final String SLF4J_ADAPTER_JAR_NAME = "sonarlint-slf4j-sonar-log";
@@ -80,6 +84,9 @@ public class PluginLoader {
 
     for (PluginInfo info : infoByKeys.values()) {
       String baseKey = basePluginKey(info, infoByKeys);
+      if (baseKey == null) {
+        continue;
+      }
       PluginClassLoaderDef def = classloadersByBasePlugin.get(baseKey);
       if (def == null) {
         def = new PluginClassLoaderDef(baseKey);
@@ -163,11 +170,16 @@ public class PluginLoader {
    * Get the root key of a tree of plugins. For example if plugin C depends on B, which depends on A, then
    * B and C must be attached to the classloader of A. The method returns A in the three cases.
    */
+  @CheckForNull
   static String basePluginKey(PluginInfo plugin, Map<String, PluginInfo> allPluginsPerKey) {
     String base = plugin.getKey();
     String parentKey = plugin.getBasePlugin();
     while (isNotEmpty(parentKey)) {
       PluginInfo parentPlugin = allPluginsPerKey.get(parentKey);
+      if (parentPlugin == null) {
+        LOG.warn("Unable to find base plugin '{}' referenced by plugin '{}'", parentKey, base);
+        return null;
+      }
       base = parentPlugin.getKey();
       parentKey = parentPlugin.getBasePlugin();
     }
