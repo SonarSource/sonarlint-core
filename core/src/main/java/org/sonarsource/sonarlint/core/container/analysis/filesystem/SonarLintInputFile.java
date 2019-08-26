@@ -26,6 +26,8 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
@@ -48,7 +50,9 @@ public class SonarLintInputFile implements InputFile {
   private Type type;
   private Metadata metadata;
   private final Function<SonarLintInputFile, Metadata> metadataGenerator;
+  private boolean ignoreAllIssues;
   private final Set<Integer> noSonarLines = new HashSet<>();
+  private Collection<int[]> ignoreIssuesOnlineRanges;
 
   public SonarLintInputFile(ClientInputFile clientInputFile, Function<SonarLintInputFile, Metadata> metadataGenerator) {
     this.clientInputFile = clientInputFile;
@@ -243,6 +247,30 @@ public class SonarLintInputFile implements InputFile {
 
   public boolean hasNoSonarAt(int line) {
     return this.noSonarLines.contains(line);
+  }
+
+  public boolean isIgnoreAllIssues() {
+    checkMetadata();
+    return ignoreAllIssues;
+  }
+
+  public void setIgnoreAllIssues(boolean ignoreAllIssues) {
+    this.ignoreAllIssues = ignoreAllIssues;
+  }
+
+  public void addIgnoreIssuesOnLineRanges(Collection<int[]> lineRanges) {
+    if (this.ignoreIssuesOnlineRanges == null) {
+      this.ignoreIssuesOnlineRanges = new ArrayList<>();
+    }
+    this.ignoreIssuesOnlineRanges.addAll(lineRanges);
+  }
+
+  public boolean isIgnoreAllIssuesOnLine(@Nullable Integer line) {
+    checkMetadata();
+    if (line == null || ignoreIssuesOnlineRanges == null) {
+      return false;
+    }
+    return ignoreIssuesOnlineRanges.stream().anyMatch(r -> r[0] <= line && line <= r[1]);
   }
 
 }

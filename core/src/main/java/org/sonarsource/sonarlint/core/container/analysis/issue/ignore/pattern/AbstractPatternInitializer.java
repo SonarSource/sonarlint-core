@@ -22,11 +22,14 @@ package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 import java.util.ArrayList;
 import java.util.List;
 import org.sonar.api.config.Configuration;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
-
-import static org.apache.commons.lang.StringUtils.defaultIfBlank;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public abstract class AbstractPatternInitializer {
+
+  private static final Logger LOG = Loggers.get(AbstractPatternInitializer.class);
 
   private Configuration serverConfig;
 
@@ -37,8 +40,20 @@ public abstract class AbstractPatternInitializer {
     initPatterns();
   }
 
+  protected Configuration getSettings() {
+    return serverConfig;
+  }
+
   public List<IssuePattern> getMulticriteriaPatterns() {
     return multicriteriaPatterns;
+  }
+
+  public boolean hasConfiguredPatterns() {
+    return hasMulticriteriaPatterns();
+  }
+
+  public boolean hasMulticriteriaPatterns() {
+    return !multicriteriaPatterns.isEmpty();
   }
 
   protected final void initPatterns() {
@@ -46,9 +61,18 @@ public abstract class AbstractPatternInitializer {
     multicriteriaPatterns = new ArrayList<>();
     for (String id : serverConfig.getStringArray(getMulticriteriaConfigurationKey())) {
       String propPrefix = getMulticriteriaConfigurationKey() + "." + id + ".";
-      String resourceKeyPattern = serverConfig.get(propPrefix + "resourceKey").orElse(null);
+      String filePathPattern = serverConfig.get(propPrefix + "resourceKey").orElse(null);
+      if (StringUtils.isBlank(filePathPattern)) {
+        LOG.debug("Issue exclusions are misconfigured. File pattern is mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
+        continue;
+      }
       String ruleKeyPattern = serverConfig.get(propPrefix + "ruleKey").orElse(null);
-      IssuePattern pattern = new IssuePattern(defaultIfBlank(resourceKeyPattern, "*"), defaultIfBlank(ruleKeyPattern, "*"));
+      if (StringUtils.isBlank(ruleKeyPattern)) {
+        LOG.debug("Issue exclusions are misconfigured. Rule key pattern is mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
+        continue;
+      }
+      IssuePattern pattern = new IssuePattern(filePathPattern != null ? filePathPattern : "*", ruleKeyPattern != null ? ruleKeyPattern : "*");
+
       multicriteriaPatterns.add(pattern);
     }
   }

@@ -31,6 +31,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.sonar.api.CoreProperties;
@@ -136,18 +137,24 @@ public class FileMetadata {
    */
   Metadata readMetadata(File file, Charset encoding) {
     InputStream stream = streamFile(file);
-    return readMetadata(stream, encoding, file.toURI());
+    return readMetadata(stream, encoding, file.toURI(), null);
   }
 
   /**
    * Compute hash of an inputStream ignoring line ends differences.
    * Maximum performance is needed.
    */
-  public Metadata readMetadata(InputStream stream, Charset encoding, URI fileUri) {
+  public Metadata readMetadata(InputStream stream, Charset encoding, URI fileUri, @Nullable CharHandler otherHandler) {
     LineCounter lineCounter = new LineCounter(fileUri, encoding);
     LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
     try (Reader reader = new BufferedReader(new InputStreamReader(stream, encoding))) {
-      read(reader, lineCounter, lineOffsetCounter);
+      CharHandler[] handlers;
+      if (otherHandler != null) {
+        handlers = new CharHandler[] {lineCounter, lineOffsetCounter, otherHandler};
+      } else {
+        handlers = new CharHandler[] {lineCounter, lineOffsetCounter};
+      }
+      read(reader, handlers);
     } catch (IOException e) {
       throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", fileUri, encoding), e);
     }

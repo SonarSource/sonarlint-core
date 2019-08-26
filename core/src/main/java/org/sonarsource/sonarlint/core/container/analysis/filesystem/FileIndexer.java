@@ -31,6 +31,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
@@ -46,21 +47,23 @@ public class FileIndexer {
   private final AbstractAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
   private final InputFileFilter[] filters;
+  private final IssueExclusionsLoader issueExclusionsLoader;
 
   private ProgressReport progressReport;
 
   public FileIndexer(InputFileBuilder inputFileBuilder, AbstractAnalysisConfiguration analysisConfiguration,
-    DefaultAnalysisResult analysisResult,
+    DefaultAnalysisResult analysisResult, IssueExclusionsLoader issueExclusionsLoader,
     InputFileFilter[] filters) {
     this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
     this.analysisResult = analysisResult;
+    this.issueExclusionsLoader = issueExclusionsLoader;
     this.filters = filters;
   }
 
   public FileIndexer(InputFileBuilder inputFileBuilder, AbstractAnalysisConfiguration analysisConfiguration,
-    DefaultAnalysisResult analysisResult) {
-    this(inputFileBuilder, analysisConfiguration, analysisResult, new InputFileFilter[0]);
+    DefaultAnalysisResult analysisResult, IssueExclusionsLoader issueExclusionsLoader) {
+    this(inputFileBuilder, analysisConfiguration, analysisResult, issueExclusionsLoader, new InputFileFilter[0]);
   }
 
   void index(SonarLintFileSystem fileSystem) {
@@ -95,6 +98,7 @@ public class FileIndexer {
     if (accept(inputFile)) {
       analysisResult.setLanguageForFile(file, inputFile.language());
       indexFile(fileSystem, progress, inputFile);
+      issueExclusionsLoader.addMulticriteriaPatterns(inputFile);
     }
   }
 

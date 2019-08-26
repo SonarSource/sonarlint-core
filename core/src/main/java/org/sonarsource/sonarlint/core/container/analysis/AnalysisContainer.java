@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssu
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.SonarLintNoSonarFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -103,6 +104,7 @@ public class AnalysisContainer extends ComponentContainer {
       IgnoreIssuesFilter.class,
       IssueExclusionPatternInitializer.class,
       IssueInclusionPatternInitializer.class,
+      IssueExclusionsLoader.class,
 
       SensorOptimizer.class,
 

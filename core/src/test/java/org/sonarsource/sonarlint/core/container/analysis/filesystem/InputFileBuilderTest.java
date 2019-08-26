@@ -31,10 +31,12 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
@@ -46,6 +48,7 @@ public class InputFileBuilderTest {
   public ExpectedException exception = ExpectedException.none();
 
   private LanguageDetection langDetection = mock(LanguageDetection.class);
+  private IssueExclusionsLoader issueExclusionsLoader = mock(IssueExclusionsLoader.class);
   private FileMetadata metadata = new FileMetadata();
 
   @Test
@@ -56,7 +59,7 @@ public class InputFileBuilderTest {
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
     ClientInputFile file = new TestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1);
 
-    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
+    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     SonarLintInputFile inputFile = builder.create(file);
 
     assertThat(inputFile.type()).isEqualTo(InputFile.Type.TEST);
@@ -67,6 +70,8 @@ public class InputFileBuilderTest {
     assertThat(inputFile.lines()).isEqualTo(1);
 
     assertThat(builder.langDetection()).isEqualTo(langDetection);
+
+    verify(issueExclusionsLoader).createCharHandlerFor(inputFile);
   }
 
   @Test
@@ -75,7 +80,7 @@ public class InputFileBuilderTest {
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
     ClientInputFile file = new TestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, "cpp");
 
-    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
+    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     SonarLintInputFile inputFile = builder.create(file);
 
     assertThat(inputFile.language()).isEqualTo("cpp");
@@ -87,7 +92,7 @@ public class InputFileBuilderTest {
     when(langDetection.language(any(InputFile.class))).thenReturn("java");
     ClientInputFile file = new TestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
 
-    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata);
+    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     SonarLintInputFile slFile = builder.create(file);
 
     exception.expect(IllegalStateException.class);
