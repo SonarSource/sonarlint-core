@@ -21,6 +21,7 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
+import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -57,7 +58,9 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
     builder
       .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-      .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"));
+      .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
+      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+      .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"));
 
     return builder.build();
   }
@@ -119,6 +122,14 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.update(config(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
+  }
+
+  @Test
+  public void dontFailIfMissingBasePlugin() {
+    engine = createEngine(e -> e.addExcludedCodeAnalyzer("javascript"));
+    engine.update(config(), null);
+    assertThat(logs).contains("Code analyzer 'JavaScript Custom Rules Plugin' is transitively excluded in this version of SonarLint. Skip loading it.");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("custom");
   }
 
   @Test

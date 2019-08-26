@@ -137,6 +137,32 @@ public class PluginLoaderTest {
     // TODO test mask - require change in sonar-classloader
   }
 
+  // SLCORE-222
+  @Test
+  public void skip_plugins_when_base_plugin_missing() throws Exception {
+    File extensionJar1 = temp.newFile();
+    File extensionJar2 = temp.newFile();
+
+    PluginInfo extension1 = new PluginInfo("fooExtension1")
+      .setJarFile(extensionJar1)
+      .setMainClass("org.foo.Extension1Plugin");
+    PluginInfo extension2 = new PluginInfo("fooExtension2")
+      .setJarFile(extensionJar2)
+      .setMainClass("org.foo.Extension2Plugin")
+      .setBasePlugin("foo");
+
+    File slf4jAdapter = temp.newFile();
+
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of(
+      extension1.getKey(), extension1, extension2.getKey(), extension2), slf4jAdapter);
+
+    assertThat(defs).hasSize(1);
+    PluginClassLoaderDef def = defs.iterator().next();
+    assertThat(def.getFiles()).containsOnly(extensionJar1, slf4jAdapter);
+    assertThat(def.getMainClassesByPluginKey()).containsOnly(
+      entry("fooExtension1", "org.foo.Extension1Plugin"));
+  }
+
   /**
    * Does not unzip jar file. It directly returns the JAR file defined on PluginInfo.
    */

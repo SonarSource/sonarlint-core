@@ -62,6 +62,7 @@
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
           <requirePlugins>javascript:4.2</requirePlugins>
+          <basePlugin>javascript</basePlugin>
         </configuration>
       </plugin>
 
