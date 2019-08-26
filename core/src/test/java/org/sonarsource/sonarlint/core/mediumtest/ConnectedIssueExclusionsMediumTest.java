@@ -163,7 +163,7 @@ public class ConnectedIssueExclusionsMediumTest {
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
@@ -179,7 +179,7 @@ public class ConnectedIssueExclusionsMediumTest {
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"));
@@ -188,7 +188,7 @@ public class ConnectedIssueExclusionsMediumTest {
       "sonar.issue.ignore.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"));
 
@@ -205,6 +205,55 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   @Test
+  public void issueExclusionsByRegexp() throws Exception {
+    ClientInputFile inputFile1 = prepareJavaInputFile1();
+    ClientInputFile inputFile2 = prepareJavaInputFile2();
+
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
+
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.allfile", "1",
+      "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL1"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
+
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.allfile", "1",
+      "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL(1|2)"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").isEmpty();
+  }
+
+  @Test
+  public void issueExclusionsByBlock() throws Exception {
+    ClientInputFile inputFile1 = prepareJavaInputFile1();
+    ClientInputFile inputFile2 = prepareJavaInputFile2();
+
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
+
+    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.block", "1",
+      "sonar.issue.ignore.block.1.beginBlockRegexp", "SON.*-OFF",
+      "sonar.issue.ignore.block.1.endBlockRegexp", "SON.*-ON"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
+      tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
+      tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
+  }
+
+  @Test
   public void issueInclusions() throws Exception {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
@@ -213,7 +262,7 @@ public class ConnectedIssueExclusionsMediumTest {
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
@@ -224,7 +273,7 @@ public class ConnectedIssueExclusionsMediumTest {
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo2.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S106", 4, inputFile2.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
@@ -244,7 +293,7 @@ public class ConnectedIssueExclusionsMediumTest {
       "sonar.issue.enforce.multicriteria.2.resourceKey", "Foo.java",
       "sonar.issue.enforce.multicriteria.2.ruleKey", "squid:S106"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile1.getPath(), "MAJOR"),
+      tuple("squid:S106", 5, inputFile1.getPath(), "MAJOR"),
       tuple("squid:S1220", null, inputFile1.getPath(), "MINOR"),
       tuple("squid:S1220", null, inputFile2.getPath(), "MINOR"),
       tuple("squid:S1481", 3, inputFile2.getPath(), "MAJOR"));
@@ -270,10 +319,12 @@ public class ConnectedIssueExclusionsMediumTest {
 
   private ClientInputFile prepareJavaInputFile1() throws IOException {
     return prepareInputFile("Foo.java",
-      "public class Foo {\n"
+      "/*NOSL1*/ public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
+        + "    // SONAR-OFF\n"
         + "    System.out.println(\"Foo\");\n"
+        + "    // SONAR-ON\n"
         + "  }\n"
         + "}",
       false);
@@ -281,7 +332,7 @@ public class ConnectedIssueExclusionsMediumTest {
 
   private ClientInputFile prepareJavaInputFile2() throws IOException {
     return prepareInputFile("Foo2.java",
-      "public class Foo2 {\n"
+      "/*NOSL2*/ public class Foo2 {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
         + "    System.out.println(\"Foo\");\n"

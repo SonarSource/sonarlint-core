@@ -49,9 +49,19 @@ public class ServerConfigurationProvider {
     this.serverConfig = new ServerConfiguration(null, config, propertyDefinitions).asConfig();
   }
 
+  // For testing
+  public ServerConfigurationProvider(Map<String, String> properties) {
+    this.serverConfig = new ServerConfiguration(properties).asConfig();
+  }
+
   public static class ServerConfiguration extends MapSettings {
 
     private final Map<String, String> properties = new HashMap<>();
+
+    // For testing
+    private ServerConfiguration(Map<String, String> properties) {
+      this.properties.putAll(properties);
+    }
 
     private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions);

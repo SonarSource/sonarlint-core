@@ -19,40 +19,58 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.issue.ignore;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
+import org.sonar.api.utils.WildcardPattern;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFilterableIssue;
-import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
-import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssuePattern;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class IgnoreIssuesFilter implements IssueFilter {
 
+  private Map<InputComponent, List<WildcardPattern>> rulePatternByComponent = new HashMap<>();
+
   private static final Logger LOG = Loggers.get(IgnoreIssuesFilter.class);
-
-  private final IssueExclusionPatternInitializer patternInitializer;
-
-  public IgnoreIssuesFilter(IssueExclusionPatternInitializer patternInitializer) {
-    this.patternInitializer = patternInitializer;
-  }
 
   @Override
   public boolean accept(FilterableIssue issue, IssueFilterChain chain) {
-
-    InputComponent inputComponent = ((DefaultFilterableIssue) issue).getInputComponent();
-
-    for (IssuePattern pattern : patternInitializer.getMulticriteriaPatterns()) {
-      if (pattern.getRulePattern().match(issue.ruleKey().toString())
-        && inputComponent.isFile()
-        && pattern.getPathPattern().match((InputFile) inputComponent)) {
-        LOG.debug("Issue {} ignored by exclusion pattern {}", issue, pattern);
-        return false;
-      }
+    InputComponent component = ((DefaultFilterableIssue) issue).getComponent();
+    if (component.isFile() && ((SonarLintInputFile) component).isIgnoreAllIssues()) {
+      return false;
+    }
+    if (component.isFile() && ((SonarLintInputFile) component).isIgnoreAllIssuesOnLine(issue.line())) {
+      return false;
+    }
+    if (hasRuleMatchFor(component, issue)) {
+      return false;
     }
     return chain.accept(issue);
+  }
+
+  public void addRuleExclusionPatternForComponent(SonarLintInputFile inputFile, WildcardPattern rulePattern) {
+    if ("*".equals(rulePattern.toString())) {
+      inputFile.setIgnoreAllIssues(true);
+    } else {
+      rulePatternByComponent.computeIfAbsent(inputFile, x -> new LinkedList<>()).add(rulePattern);
+    }
+  }
+
+  private boolean hasRuleMatchFor(InputComponent component, FilterableIssue issue) {
+    for (WildcardPattern pattern : rulePatternByComponent.getOrDefault(component, Collections.emptyList())) {
+      if (pattern.match(issue.ruleKey().toString())) {
+        LOG.debug("Issue {} ignored by exclusion pattern {}", issue, pattern);
+        return true;
+      }
+    }
+    return false;
+
   }
 }

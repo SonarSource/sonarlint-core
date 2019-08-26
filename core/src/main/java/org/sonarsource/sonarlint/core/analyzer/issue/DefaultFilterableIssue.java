@@ -29,17 +29,17 @@ import org.sonar.api.scan.issue.filter.FilterableIssue;
 
 public class DefaultFilterableIssue implements FilterableIssue {
   private final DefaultClientIssue rawIssue;
-  private final InputComponent inputComponent;
+  private final InputComponent component;
 
-  public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent inputComponent) {
+  public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent component) {
     this.rawIssue = rawIssue;
-    this.inputComponent = inputComponent;
+    this.component = component;
 
   }
 
   @Override
   public String componentKey() {
-    return inputComponent.key();
+    return component.key();
   }
 
   @Override
@@ -86,8 +86,8 @@ public class DefaultFilterableIssue implements FilterableIssue {
     throw unsupported();
   }
 
-  public InputComponent getInputComponent() {
-    return inputComponent;
+  public InputComponent getComponent() {
+    return component;
   }
 
   @Override
