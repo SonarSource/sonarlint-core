@@ -28,16 +28,13 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 
 public class PartialUpdaterFactory {
-  private final StorageReader storageReader;
   private final StoragePaths storagePaths;
   private final IssueStorePaths issueStorePaths;
   private final TempFolder tempFolder;
 
-  public PartialUpdaterFactory(StorageReader storageReader, StoragePaths storagePaths, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
-    this.storageReader = storageReader;
+  public PartialUpdaterFactory(StoragePaths storagePaths, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
     this.storagePaths = storagePaths;
     this.issueStorePaths = issueStorePaths;
     this.tempFolder = tempFolder;
@@ -48,7 +45,7 @@ public class PartialUpdaterFactory {
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
     IssueDownloader downloader = new IssueDownloaderImpl(client);
     ProjectListDownloader projectListDownloader = new ProjectListDownloader(client);
-    return new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, projectListDownloader,
+    return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader,
       issueStorePaths, tempFolder);
   }
 }

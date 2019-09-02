@@ -39,20 +39,6 @@ public class ProjectListDownloaderTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void update_modules_before_6_dot_3() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    WsClientTestUtils.addReaderResponse(wsClient, "api/projects/index?format=json", "/update/all_projects.json");
-
-    File tempDir = temp.newFolder();
-
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchTo(tempDir.toPath(), "6.2", new ProgressWrapper(null));
-
-    ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
-    assertThat(moduleList.getProjectsByKeyMap()).hasSize(1559);
-  }
-
-  @Test
   public void update_modules_after_6_dot_3() throws Exception {
 
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
@@ -61,7 +47,7 @@ public class ProjectListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
@@ -77,7 +63,7 @@ public class ProjectListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);

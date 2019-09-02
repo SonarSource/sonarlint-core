@@ -38,7 +38,7 @@ public class ServerVersionAndStatusChecker {
 
   private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
 
-  private static final String MIN_SQ_VERSION = "5.6";
+  private static final String MIN_SQ_VERSION = "6.7";
   private final SonarLintWsClient wsClient;
 
   public ServerVersionAndStatusChecker(SonarLintWsClient wsClient) {

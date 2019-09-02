@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.io.Resources;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -51,8 +49,21 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class WsHelperImplTest {
-  private static final String RESPONSE_FILE_LTS = "/validate/plugins_index.txt";
-  private static final String RESPONSE_FILE_LTS_FAIL = "/validate/plugins_index_fail.txt";
+  public static final String PLUGINS_INSTALLED = "{\"plugins\": [\n" +
+    "    {\n" +
+    "      \"key\": \"branch\",\n" +
+    "      \"filename\": \"sonar-branch-plugin-1.1.0.879.jar\",\n" +
+    "      \"sonarLintSupported\": false,\n" +
+    "      \"hash\": \"064d334d27aa14aab6e39315428ee3cf\",\n" +
+    "      \"version\": \"1.1 (build 879)\"\n" +
+    "    },\n" +
+    "    {\n" +
+    "      \"key\": \"javascript\",\n" +
+    "      \"filename\": \"sonar-javascript-plugin-3.4.0.5828.jar\",\n" +
+    "      \"sonarLintSupported\": true,\n" +
+    "      \"hash\": \"d136fdb31fe38c3d780650f7228a49fa\",\n" +
+    "      \"version\": \"3.4 (build 5828)\"\n" +
+    "    } ]}";
 
   private WsHelperImpl helper;
 
@@ -116,9 +127,8 @@ public class WsHelperImplTest {
 
   @Test
   public void testConnection_ok() throws Exception {
-    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
+    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH, PLUGINS_INSTALLED);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     ValidationResult validation = WsHelperImpl.validateConnection(client, null);
     assertThat(validation.success()).isTrue();
@@ -126,21 +136,9 @@ public class WsHelperImplTest {
   }
 
   @Test
-  public void testConnectionUnsupportedOrganizations() throws Exception {
-    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
-    WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
-    ValidationResult validation = WsHelperImpl.validateConnection(client, "myOrg");
-    assertThat(validation.success()).isFalse();
-    assertThat(validation.message()).isEqualTo("No organization support for this server version: 5.6");
-  }
-
-  @Test
   public void testConnectionOrganizationNotFound() throws Exception {
-    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.3\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
+    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH, PLUGINS_INSTALLED);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1", "/orgs/empty.pb");
     ValidationResult validation = WsHelperImpl.validateConnection(client, "myOrg");
@@ -150,9 +148,8 @@ public class WsHelperImplTest {
 
   @Test
   public void testConnection_ok_with_org() throws Exception {
-    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.3\",\"status\": \"UP\"}");
-    String content = Resources.toString(this.getClass().getResource(RESPONSE_FILE_LTS), StandardCharsets.UTF_8);
-    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH_LTS, content);
+    WsClientTestUtils.addResponse(client, "api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
+    WsClientTestUtils.addResponse(client, PluginListDownloader.WS_PATH, PLUGINS_INSTALLED);
     WsClientTestUtils.addResponse(client, "api/authentication/validate?format=json", "{\"valid\": true}");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=1", "/orgs/single.pb");
     WsClientTestUtils.addStreamResponse(client, "api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=2", "/orgs/empty.pb");
@@ -166,7 +163,7 @@ public class WsHelperImplTest {
     when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
     ValidationResult validation = WsHelperImpl.validateConnection(client, null);
     assertThat(validation.success()).isFalse();
-    assertThat(validation.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
+    assertThat(validation.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 6.7");
   }
 
   @Test
@@ -204,9 +201,9 @@ public class WsHelperImplTest {
     List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, true, new ProgressWrapper(null));
     assertThat(orgs).hasSize(4);
 
-    verify(serverChecker).checkVersionAndStatus("6.3");
+    verify(serverChecker).checkVersionAndStatus();
 
-    when(serverChecker.checkVersionAndStatus("6.3")).thenThrow(UnsupportedServerException.class);
+    when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
     try {
       WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
       fail("Expected exception");
@@ -223,9 +220,9 @@ public class WsHelperImplTest {
     List<RemoteOrganization> orgs = WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
     assertThat(orgs).hasSize(4);
 
-    verify(serverChecker).checkVersionAndStatus("6.3");
+    verify(serverChecker).checkVersionAndStatus();
 
-    when(serverChecker.checkVersionAndStatus("6.3")).thenThrow(UnsupportedServerException.class);
+    when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
     try {
       WsHelperImpl.listOrganizations(client, serverChecker, false, new ProgressWrapper(null));
       fail("Expected exception");

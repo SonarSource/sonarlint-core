@@ -30,9 +30,9 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
@@ -70,7 +70,7 @@ public class GlobalStorageUpdateExecutorTest {
     tempFolder = mock(TempFolder.class);
     rulesDownloader = mock(RulesDownloader.class);
 
-    wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6-SNAPSHOT\",\"status\": \"UP\"}");
+    wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
     tempDir = temp.newFolder();
     destDir = temp.newFolder();
@@ -94,7 +94,7 @@ public class GlobalStorageUpdateExecutorTest {
 
     ServerInfos serverInfos = ProtobufUtil.readFile(destDir.toPath().resolve(StoragePaths.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");
-    assertThat(serverInfos.getVersion()).isEqualTo("5.6-SNAPSHOT");
+    assertThat(serverInfos.getVersion()).isEqualTo("6.7");
   }
 
   @Test

@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -50,11 +49,10 @@ public class ProjectStorageUpdateChecker {
 
   public StorageUpdateCheckResult checkForUpdates(String projectKey, ProgressWrapper progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
-    GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings(serverVersion);
+    GlobalProperties globalProps = settingsDownloader.fetchGlobalSettings();
 
     ProjectConfiguration serverProjectConfiguration = projectConfigurationDownloader
-      .fetch(serverVersion, projectKey, globalProps, progress);
+      .fetch(projectKey, globalProps, progress);
     ProjectConfiguration storageProjectConfiguration = storageReader.readProjectConfig(projectKey);
 
     checkForSettingsUpdates(result, serverProjectConfiguration, storageProjectConfiguration);

@@ -44,8 +44,6 @@ import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValida
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
-import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -54,8 +52,6 @@ import static java.util.Objects.requireNonNull;
 
 public class WsHelperImpl implements WsHelper {
   private static final Logger LOG = Loggers.get(WsHelperImpl.class);
-
-  private static final String MIN_VERSION_FOR_ORGANIZATIONS = "6.3";
 
   @Override
   public ValidationResult validateConnection(ServerConfiguration serverConfig) {
@@ -66,13 +62,9 @@ public class WsHelperImpl implements WsHelper {
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
     AuthenticationChecker authChecker = new AuthenticationChecker(client);
     try {
-      ServerInfos serverStatus = serverChecker.checkVersionAndStatus();
+      serverChecker.checkVersionAndStatus();
       ValidationResult validateCredentials = authChecker.validateCredentials();
       if (validateCredentials.success() && organizationKey != null) {
-        Version serverVersion = Version.create(serverStatus.getVersion());
-        if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_VERSION_FOR_ORGANIZATIONS)) < 0) {
-          return new DefaultValidationResult(false, "No organization support for this server version: " + serverStatus.getVersion());
-        }
         if (!fetchOrganization(client, organizationKey, new ProgressWrapper(null)).isPresent()) {
           return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey);
         }
@@ -176,7 +168,7 @@ public class WsHelperImpl implements WsHelper {
 
   private static void checkServer(ServerVersionAndStatusChecker serverChecker, ProgressWrapper progress) {
     progress.setProgressAndCheckCancel("Check server version", 0.1f);
-    serverChecker.checkVersionAndStatus(MIN_VERSION_FOR_ORGANIZATIONS);
+    serverChecker.checkVersionAndStatus();
     progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
   }
 

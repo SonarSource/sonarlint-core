@@ -19,24 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.gson.Gson;
-import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Path;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.WsComponents;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectListDownloader {
-  private static final Logger LOG = Loggers.get(ProjectListDownloader.class);
 
   private final SonarLintWsClient wsClient;
 
@@ -44,15 +37,7 @@ public class ProjectListDownloader {
     this.wsClient = wsClient;
   }
 
-  public void fetchTo(Path dest, String serverVersion, ProgressWrapper progress) {
-    if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchProjectListAfter6dot3(dest, progress);
-    } else {
-      fetchProjectListBefore6dot3(dest);
-    }
-  }
-
-  private void fetchProjectListAfter6dot3(Path dest, ProgressWrapper progress) {
+  public void fetchTo(Path dest, ProgressWrapper progress) {
     ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
     Builder projectBuilder = ProjectList.Project.newBuilder();
 
@@ -75,36 +60,6 @@ public class ProjectListDownloader {
       progress);
 
     ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
-  }
-
-  private void fetchProjectListBefore6dot3(Path dest) {
-    SonarLintWsClient.consumeTimed(
-      () -> wsClient.get("api/projects/index?format=json"),
-      response -> {
-        try (Reader contentReader = response.contentReader()) {
-          DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
-
-          ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
-          Builder projectBuilder = ProjectList.Project.newBuilder();
-          for (DefaultModule project : results) {
-            projectBuilder.clear();
-            projectListBuilder.putProjectsByKey(project.k, projectBuilder
-              .setKey(project.k)
-              .setName(project.nm)
-              .build());
-          }
-          ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
-        } catch (IOException e) {
-          throw new IllegalStateException("Failed to load module list", e);
-        }
-      },
-      duration -> LOG.debug("Downloaded project list in {}ms", duration));
-  }
-
-  private static class DefaultModule {
-    String k;
-    String nm;
-    String qu;
   }
 
 }
