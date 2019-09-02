@@ -38,12 +38,9 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyListOf;
 import static org.mockito.ArgumentMatchers.eq;
@@ -54,7 +51,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class PartialUpdaterTest {
-  private static final String SERVER_VERSION = "6.0";
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   @Rule
@@ -65,7 +61,6 @@ public class PartialUpdaterTest {
   private IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
   private IssueDownloader downloader = mock(IssueDownloader.class);
   private StoragePaths storagePaths = mock(StoragePaths.class);
-  private StorageReader storageReader = mock(StorageReader.class);
   private IssueStore issueStore = mock(IssueStore.class);
   private ProjectListDownloader projectListDownloader = mock(ProjectListDownloader.class);
   private IssueStorePaths issueStorePaths = mock(IssueStorePaths.class);
@@ -76,9 +71,8 @@ public class PartialUpdaterTest {
 
   @Before
   public void setUp() {
-    updater = new PartialUpdater(issueStoreFactory, downloader, storageReader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
+    updater = new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
-    when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().setVersion(SERVER_VERSION).build());
   }
 
   @Test
@@ -128,7 +122,7 @@ public class PartialUpdaterTest {
   @Test
   public void error_downloading_modules() {
     when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    doThrow(IllegalArgumentException.class).when(projectListDownloader).fetchTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
+    doThrow(IllegalArgumentException.class).when(projectListDownloader).fetchTo(eq(temp.getRoot().toPath()), any(ProgressWrapper.class));
     exception.expect(DownloadException.class);
 
     updater.updateProjectList(new ProgressWrapper(null));
@@ -138,6 +132,6 @@ public class PartialUpdaterTest {
   public void update_module_list() {
     when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
     updater.updateProjectList(new ProgressWrapper(null));
-    verify(projectListDownloader).fetchTo(eq(temp.getRoot().toPath()), eq(SERVER_VERSION), any(ProgressWrapper.class));
+    verify(projectListDownloader).fetchTo(eq(temp.getRoot().toPath()), any(ProgressWrapper.class));
   }
 }

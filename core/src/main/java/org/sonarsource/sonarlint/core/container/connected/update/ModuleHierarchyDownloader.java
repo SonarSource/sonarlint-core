@@ -32,7 +32,6 @@ import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -53,12 +52,10 @@ public class ModuleHierarchyDownloader {
    * @param projectKey project for which the hierarchy will be returned.
    * @return Mapping of moduleKey -&gt; relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(Version serverVersion, String projectKey, ProgressWrapper progress) {
+  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&" +
-      getComponentKeyParam(serverVersion)
-      + "=" + StringUtils.urlEncode(projectKey),
+    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
       WsComponents.TreeWsResponse::parseFrom,
       WsComponents.TreeWsResponse::getPaging,
       WsComponents.TreeWsResponse::getComponentsList,
@@ -81,13 +78,6 @@ public class ModuleHierarchyDownloader {
     modules.forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
 
     return modulesWithPath;
-  }
-
-  private static String getComponentKeyParam(Version serverVersion) {
-    if (serverVersion.compareTo(Version.create("6.4")) > 0) {
-      return "component";
-    }
-    return "baseComponentKey";
   }
 
   private static String findPathFromRoot(Component component, Map<Component, Component> ancestors) {

@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.Is
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class GlobalSettingsUpdateChecker {
@@ -59,8 +58,8 @@ public class GlobalSettingsUpdateChecker {
     this.globalPropertiesDownloader = globalPropertiesDownloader;
   }
 
-  public void checkForUpdates(Version serverVersion, DefaultStorageUpdateCheckResult result) {
-    GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalSettings(serverVersion);
+  public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
+    GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalSettings();
     GlobalProperties storageGlobalProperties = storageReader.readGlobalProperties();
     MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties.getPropertiesMap()), filter(serverGlobalProperties.getPropertiesMap()));
     if (!propDiff.areEqual()) {

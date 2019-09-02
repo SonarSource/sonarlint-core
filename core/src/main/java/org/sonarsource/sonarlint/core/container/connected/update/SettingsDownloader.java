@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
@@ -38,7 +36,6 @@ import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -49,36 +46,27 @@ public class SettingsDownloader {
   private static final Logger LOG = Loggers.get(SettingsDownloader.class);
 
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
-  private static final String API_PROPERTIES_PATH = "/api/properties?format=json";
   private final SonarLintWsClient wsClient;
 
   public SettingsDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
-  public void fetchGlobalSettingsTo(Version serverVersion, Path dest) {
-    ProtobufUtil.writeToFile(fetchGlobalSettings(serverVersion), dest.resolve(StoragePaths.PROPERTIES_PB));
+  public void fetchGlobalSettingsTo(Path dest) {
+    ProtobufUtil.writeToFile(fetchGlobalSettings(), dest.resolve(StoragePaths.PROPERTIES_PB));
   }
 
-  public GlobalProperties fetchGlobalSettings(Version serverVersion) {
+  public GlobalProperties fetchGlobalSettings() {
     GlobalProperties.Builder builder = GlobalProperties.newBuilder();
-    fetchSettings(serverVersion, null, (k, v) -> true, builder::putProperties);
+    fetchSettings(null, builder::putProperties);
     return builder.build();
   }
 
-  public void fetchProjectSettings(Version serverVersion, String projectKey, GlobalProperties globalProps, ProjectConfiguration.Builder projectConfigurationBuilder) {
-    fetchSettings(serverVersion, projectKey, (k, v) -> !v.equals(globalProps.getPropertiesMap().get(k)), projectConfigurationBuilder::putProperties);
+  public void fetchProjectSettings(String projectKey, GlobalProperties globalProps, ProjectConfiguration.Builder projectConfigurationBuilder) {
+    fetchSettings(projectKey, projectConfigurationBuilder::putProperties);
   }
 
-  private void fetchSettings(Version serverVersion, @Nullable String projectKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
-    if (serverVersion.compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchUsingSettingsWS(projectKey, consumer);
-    } else {
-      fetchUsingPropertiesWS(projectKey, filter, consumer);
-    }
-  }
-
-  private void fetchUsingSettingsWS(@Nullable String projectKey, BiConsumer<String, String> consumer) {
+  private void fetchSettings(@Nullable String projectKey, BiConsumer<String, String> consumer) {
     StringBuilder url = new StringBuilder();
     url.append(API_SETTINGS_PATH);
     if (projectKey != null) {
@@ -129,52 +117,6 @@ public class SettingsDownloader {
       id++;
     }
     consumer.accept(s.getKey(), ids.stream().collect(Collectors.joining(",")));
-  }
-
-  private void fetchUsingPropertiesWS(@Nullable String projectKey, BiPredicate<String, String> filter, BiConsumer<String, String> consumer) {
-    StringBuilder url = new StringBuilder();
-    url.append(API_PROPERTIES_PATH);
-    if (projectKey != null) {
-      url.append("&resource=").append(StringUtils.urlEncode(projectKey));
-    }
-    SonarLintWsClient.consumeTimed(
-      () -> wsClient.get(url.toString()),
-      response -> {
-        try (JsonReader reader = new JsonReader(response.contentReader())) {
-          reader.beginArray();
-          while (reader.hasNext()) {
-            reader.beginObject();
-            parseProperty(filter, consumer, reader);
-            reader.endObject();
-          }
-          reader.endArray();
-        } catch (IOException e) {
-          throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
-        }
-      },
-      duration -> LOG.debug("Downloaded settings in {}ms", duration));
-  }
-
-  private static void parseProperty(BiPredicate<String, String> filter, BiConsumer<String, String> consumer, JsonReader reader) throws IOException {
-    String key = null;
-    String value = null;
-    while (reader.hasNext()) {
-      String propName = reader.nextName();
-      switch (propName) {
-        case "key":
-          key = reader.nextString();
-          break;
-        case "value":
-          value = reader.nextString();
-          break;
-        default:
-          reader.skipValue();
-      }
-    }
-    // Storage optimisation: don't store properties having same value than global properties
-    if (filter.test(key, value)) {
-      consumer.accept(key, value);
-    }
   }
 
 }

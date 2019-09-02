@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +41,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarqube.ws.Settings.Setting;
+import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
@@ -53,7 +57,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloa
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
@@ -112,10 +115,23 @@ public class ProjectStorageUpdateExecutorTest {
       "/update/qualityprofiles_project.pb");
     when(wsClient.getOrganizationKey()).thenReturn(organizationKey);
 
-    WsClientTestUtils.addResponse(wsClient, "/api/properties?format=json&resource=" + MODULE_KEY_WITH_BRANCH_URLENCODED,
-      "[{\"key\":\"sonar.qualitygate\",\"value\":\"1\",\"values\": []},"
-        + "{\"key\":\"sonar.core.version\",\"value\":\"5.5-SNAPSHOT\"},"
-        + "{\"key\":\"sonar.java.someProp\",\"value\":\"foo\"}]");
+    ValuesWsResponse response = ValuesWsResponse.newBuilder()
+      .addSettings(Setting.newBuilder()
+        .setKey("sonar.qualitygate")
+        .setValue("1")
+        .setInherited(true))
+      .addSettings(Setting.newBuilder()
+        .setKey("sonar.core.version")
+        .setValue("6.7.1.23"))
+      .addSettings(Setting.newBuilder()
+        .setKey("sonar.java.someProp")
+        .setValue("foo"))
+      .build();
+    PipedInputStream in = new PipedInputStream();
+    final PipedOutputStream out = new PipedOutputStream(in);
+    response.writeTo(out);
+    out.close();
+    WsClientTestUtils.addResponse(wsClient, "/api/settings/values.protobufcomponent=" + MODULE_KEY_WITH_BRANCH_URLENCODED, in);
 
     WsClientTestUtils.addResponse(wsClient, "/batch/issues?key=" + MODULE_KEY_WITH_BRANCH_URLENCODED, newEmptyStream());
 
@@ -124,14 +140,14 @@ public class ProjectStorageUpdateExecutorTest {
     when(tempFolder.newDir()).thenReturn(tempDir);
     org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties.Builder propBuilder = GlobalProperties.newBuilder();
     propBuilder.putProperties("sonar.qualitygate", "2");
-    propBuilder.putProperties("sonar.core.version", "5.5-SNAPSHOT");
+    propBuilder.putProperties("sonar.core.version", "6.7.1.23");
     when(storageReader.readGlobalProperties()).thenReturn(propBuilder.build());
     when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().build());
 
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
-    when(moduleHierarchy.fetchModuleHierarchy(any(Version.class), eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class)))
+    when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class)))
       .thenReturn(modulesPath);
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
@@ -258,8 +274,8 @@ public class ProjectStorageUpdateExecutorTest {
     fileList.add("moduleA:a.java");
     fileList.add("moduleB:b.java");
 
-    when(projectFileListDownloader.get(any(Version.class), eq("rootModule"), any(ProgressWrapper.class))).thenReturn(fileList);
-    projectUpdate.updateComponents(Version.create("7.0"), "rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressWrapper.class));
+    when(projectFileListDownloader.get(eq("rootModule"), any(ProgressWrapper.class))).thenReturn(fileList);
+    projectUpdate.updateComponents("rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressWrapper.class));
 
     Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(StoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
@@ -267,7 +283,7 @@ public class ProjectStorageUpdateExecutorTest {
   }
 
   private String getQualityProfileUrl() {
-    String url = "/api/qualityprofiles/search.protobuf?projectKey=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
+    String url = "/api/qualityprofiles/search.protobuf?project=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
     if (organizationKey != null) {
       url += "&organization=" + organizationKey;
     }

@@ -19,11 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
-public class DownloadException  extends SonarLintException {
+import javax.annotation.Nullable;
+
+public class DownloadException extends SonarLintException {
   public DownloadException() {
     super();
   }
-  public DownloadException(String msg, Throwable cause) {
+
+  public DownloadException(String msg, @Nullable Throwable cause) {
     super(msg, cause);
   }
 }

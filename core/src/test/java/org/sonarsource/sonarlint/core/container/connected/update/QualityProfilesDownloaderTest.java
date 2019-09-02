@@ -87,7 +87,7 @@ public class QualityProfilesDownloaderTest {
   @Test
   public void testParsingError() throws IOException {
     // wrong file
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf", "/update/all_projects.json");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("/api/qualityprofiles/search.protobuf", "foo bar");
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
 
     exception.expect(IllegalStateException.class);

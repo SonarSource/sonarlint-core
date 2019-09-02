@@ -21,12 +21,9 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import com.google.gson.Gson;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -34,7 +31,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class PluginListDownloader {
@@ -42,7 +38,6 @@ public class PluginListDownloader {
   private static final Logger LOG = Loggers.get(PluginListDownloader.class);
 
   public static final String WS_PATH = "/api/plugins/installed";
-  public static final String WS_PATH_LTS = "/deploy/plugins/index.txt";
 
   private final SonarLintWsClient wsClient;
   private final PluginVersionChecker pluginVersionChecker;
@@ -54,51 +49,7 @@ public class PluginListDownloader {
     this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
   }
 
-  public List<SonarAnalyzer> downloadPluginList(Version version) {
-    if (version.compareToIgnoreQualifier(Version.create("6.6")) >= 0) {
-      return downloadPluginList66();
-    } else {
-      return downloadPluginListBefore66(version);
-    }
-  }
-
-  public List<SonarAnalyzer> downloadPluginListBefore66(Version serverVersion) {
-    List<SonarAnalyzer> analyzers = new LinkedList<>();
-    boolean compatibleFlagPresent = serverVersion.compareToIgnoreQualifier(Version.create("6.0")) >= 0;
-
-    SonarLintWsClient.consumeTimed(
-      () -> wsClient.get(WS_PATH_LTS),
-      response -> {
-        try (Scanner scanner = new Scanner(response.contentReader())) {
-          while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            String[] fields = StringUtils.split(line, ",");
-            String[] nameAndHash = StringUtils.split(fields[fields.length - 1], "|");
-
-            String key = fields[0];
-            String filename = nameAndHash[0];
-            String hash = nameAndHash[1];
-
-            boolean sonarlintCompatible = !excludedPlugins.contains(key) && (!compatibleFlagPresent || "true".equals(fields[1]));
-            DefaultSonarAnalyzer analyzer = new DefaultSonarAnalyzer(key, filename, hash, sonarlintCompatible);
-            checkMinVersion(analyzer);
-            analyzers.add(analyzer);
-          }
-        }
-      },
-      duration -> LOG.debug("Downloaded plugin list in {}ms", duration));
-
-    return analyzers;
-  }
-
-  private void checkMinVersion(DefaultSonarAnalyzer analyzer) {
-    String minVersion = pluginVersionChecker.getMinimumVersion(analyzer.key());
-    analyzer.minimumVersion(minVersion);
-    analyzer.version(VersionUtils.getJarVersion(analyzer.filename()));
-    analyzer.versionSupported(pluginVersionChecker.isVersionSupported(analyzer.key(), analyzer.version()));
-  }
-
-  public List<SonarAnalyzer> downloadPluginList66() {
+  public List<SonarAnalyzer> downloadPluginList() {
     return SonarLintWsClient.processTimed(
       () -> wsClient.get(WS_PATH),
       response -> {
@@ -113,6 +64,13 @@ public class PluginListDownloader {
     DefaultSonarAnalyzer sonarAnalyzer = new DefaultSonarAnalyzer(plugin.key, plugin.filename, plugin.hash, sonarlintCompatible);
     checkMinVersion(sonarAnalyzer);
     return sonarAnalyzer;
+  }
+
+  private void checkMinVersion(DefaultSonarAnalyzer analyzer) {
+    String minVersion = pluginVersionChecker.getMinimumVersion(analyzer.key());
+    analyzer.minimumVersion(minVersion);
+    analyzer.version(VersionUtils.getJarVersion(analyzer.filename()));
+    analyzer.versionSupported(pluginVersionChecker.isVersionSupported(analyzer.key(), analyzer.version()));
   }
 
   private static class InstalledPlugins {
