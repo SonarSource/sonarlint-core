@@ -129,7 +129,7 @@ public class StandaloneIssueMediumTest {
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
-    assertThat(ruleDetails.getLanguage()).isEqualTo("js");
+    assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
@@ -170,7 +170,7 @@ public class StandaloneIssueMediumTest {
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
-    assertThat(ruleDetails.getLanguage()).isEqualTo("ts");
+    assertThat(ruleDetails.getLanguageKey()).isEqualTo("ts");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
     assertThat(ruleDetails.getTags()).containsOnly("cert");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
@@ -394,6 +394,14 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
+    assertThat(sonarlint.getAllLanguagesNameByKey()).containsExactly(
+      entry("java", "Java"),
+      entry("js", "JavaScript"),
+      entry("php", "PHP"),
+      entry("py", "Python"),
+      entry("ts", "TypeScript"),
+      entry("xoo", "Xoo"),
+      entry("xoo2", "Xoo2"));
     assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",

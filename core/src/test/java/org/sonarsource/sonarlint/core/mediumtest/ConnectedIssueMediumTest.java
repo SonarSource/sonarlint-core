@@ -183,7 +183,7 @@ public class ConnectedIssueMediumTest {
     RuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
-    assertThat(ruleDetails.getLanguage()).isEqualTo("js");
+    assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
