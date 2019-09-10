@@ -71,7 +71,9 @@ public class StandaloneIssueMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
   private File baseDir;
-  private static boolean commercialEnabled;
+  // commercial plugins might not be available
+  // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
+  private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -105,13 +107,8 @@ public class StandaloneIssueMediumTest {
       .setLogOutput((msg, level) -> System.out.println(msg))
       .setExtraProperties(extraProperties);
 
-    // commercial plugins might not be available (if you pass -Dcommercial to maven, a profile will be activated that downloads the
-    // commercial plugins)
-    if (System.getProperty("commercial") != null) {
-      commercialEnabled = true;
+    if (COMMERCIAL_ENABLED) {
       configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
-    } else {
-      commercialEnabled = false;
     }
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
   }
@@ -237,7 +234,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleC() throws Exception {
-    assumeTrue(commercialEnabled);
+    assumeTrue(COMMERCIAL_ENABLED);
     ClientInputFile inputFile = prepareInputFile("foo.c", "#import \"foo.h\"\n"
       + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, "c");
 
@@ -405,7 +402,7 @@ public class StandaloneIssueMediumTest {
       entry("xoo", "Xoo"),
       entry("xoo2", "Xoo2"));
 
-    if (System.getProperty("commercial") != null) {
+    if (COMMERCIAL_ENABLED) {
       List<Map.Entry<String, String>> commercialLanguages = Arrays.asList(
         entry("c", "C"),
         entry("cpp", "C++"),
@@ -622,7 +619,7 @@ public class StandaloneIssueMediumTest {
     FileUtils.write(surefireReport, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
       "<testsuite name=\"FooTest\" time=\"0.121\" tests=\"1\" errors=\"0\" skipped=\"0\" failures=\"0\">\n" +
       "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
-      "</testsuite>");
+      "</testsuite>", StandardCharsets.UTF_8);
 
     ClientInputFile inputFile = prepareInputFile("Foo.java",
       "public class Foo {\n"
