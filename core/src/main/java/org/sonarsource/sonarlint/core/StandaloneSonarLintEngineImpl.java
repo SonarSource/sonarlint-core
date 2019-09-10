@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -126,6 +127,17 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     rwl.readLock().lock();
     try {
       return globalContainer.getLoadedAnalyzers();
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
+
+  @Override
+  public Map<String, String> getAllLanguagesNameByKey() {
+    setLogging(null);
+    rwl.readLock().lock();
+    try {
+      return globalContainer.getAllLanguagesNameByKey();
     } finally {
       rwl.readLock().unlock();
     }

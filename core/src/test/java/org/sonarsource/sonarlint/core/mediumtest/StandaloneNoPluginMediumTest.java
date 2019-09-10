@@ -78,6 +78,9 @@ public class StandaloneNoPluginMediumTest {
 
     assertThat(results.indexedFileCount()).isEqualTo(1);
     assertThat(logs.get(Level.WARN)).contains("No analyzers installed");
+
+    assertThat(sonarlint.getAllRuleDetails()).isEmpty();
+    assertThat(sonarlint.getAllLanguagesNameByKey()).isEmpty();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

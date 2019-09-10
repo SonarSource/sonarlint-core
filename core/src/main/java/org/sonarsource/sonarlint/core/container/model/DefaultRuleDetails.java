@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.Set;
-
 import javax.annotation.Nullable;
-
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 
@@ -30,7 +28,7 @@ import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 public class DefaultRuleDetails implements RuleDetails {
 
   private final String key;
-  private final String language;
+  private final String languageKey;
   private final Set<String> tags;
   private final String name;
   private final String htmlDescription;
@@ -39,14 +37,14 @@ public class DefaultRuleDetails implements RuleDetails {
   private final String extendedDescription;
   private final boolean activeByDefault;
 
-  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, String language, Set<String> tags,
+  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, String languageKey, Set<String> tags,
     String extendedDescription, boolean activeByDefault) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
     this.severity = severity;
     this.type = type;
-    this.language = language;
+    this.languageKey = languageKey;
     this.tags = tags;
     this.extendedDescription = extendedDescription;
     this.activeByDefault = activeByDefault;
@@ -68,15 +66,15 @@ public class DefaultRuleDetails implements RuleDetails {
   }
 
   @Override
-  public String getLanguage() {
-    return language;
+  public String getLanguageKey() {
+    return languageKey;
   }
 
   @Override
   public String getSeverity() {
     return severity;
   }
-  
+
   @Override
   public String getType() {
     return type;

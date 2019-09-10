@@ -207,7 +207,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
       response.onNext(RuleDetails.newBuilder()
         .setKey(ruleDetails.getKey())
         .setName(ruleDetails.getName())
-        .setLanguage(ruleDetails.getLanguage())
+        .setLanguage(ruleDetails.getLanguageKey())
         .setSeverity(ruleDetails.getSeverity())
         .setHtmlDescription(ruleDetails.getHtmlDescription())
         .addAllTags(Arrays.asList(ruleDetails.getTags()))

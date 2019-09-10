@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -69,7 +71,9 @@ public class StandaloneIssueMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
   private File baseDir;
-  private static boolean commercialEnabled;
+  // commercial plugins might not be available
+  // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
+  private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -103,13 +107,8 @@ public class StandaloneIssueMediumTest {
       .setLogOutput((msg, level) -> System.out.println(msg))
       .setExtraProperties(extraProperties);
 
-    // commercial plugins might not be available (if you pass -Dcommercial to maven, a profile will be activated that downloads the
-    // commercial plugins)
-    if (System.getProperty("commercial") != null) {
-      commercialEnabled = true;
+    if (COMMERCIAL_ENABLED) {
       configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
-    } else {
-      commercialEnabled = false;
     }
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
   }
@@ -129,7 +128,7 @@ public class StandaloneIssueMediumTest {
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
-    assertThat(ruleDetails.getLanguage()).isEqualTo("js");
+    assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
@@ -170,7 +169,7 @@ public class StandaloneIssueMediumTest {
 
     RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
-    assertThat(ruleDetails.getLanguage()).isEqualTo("ts");
+    assertThat(ruleDetails.getLanguageKey()).isEqualTo("ts");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
     assertThat(ruleDetails.getTags()).containsOnly("cert");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
@@ -235,7 +234,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleC() throws Exception {
-    assumeTrue(commercialEnabled);
+    assumeTrue(COMMERCIAL_ENABLED);
     ClientInputFile inputFile = prepareInputFile("foo.c", "#import \"foo.h\"\n"
       + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, "c");
 
@@ -394,6 +393,26 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
+    List<Map.Entry<String, String>> ossLanguages = Arrays.asList(
+      entry("java", "Java"),
+      entry("js", "JavaScript"),
+      entry("php", "PHP"),
+      entry("py", "Python"),
+      entry("ts", "TypeScript"),
+      entry("xoo", "Xoo"),
+      entry("xoo2", "Xoo2"));
+
+    if (COMMERCIAL_ENABLED) {
+      List<Map.Entry<String, String>> commercialLanguages = Arrays.asList(
+        entry("c", "C"),
+        entry("cpp", "C++"),
+        entry("objc", "Objective-C"));
+      assertThat(sonarlint.getAllLanguagesNameByKey()).containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
+        .toArray(Map.Entry[]::new));
+    } else {
+      assertThat(sonarlint.getAllLanguagesNameByKey()).containsOnly(ossLanguages.toArray(new Map.Entry[0]));
+    }
+
     assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
@@ -600,7 +619,7 @@ public class StandaloneIssueMediumTest {
     FileUtils.write(surefireReport, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
       "<testsuite name=\"FooTest\" time=\"0.121\" tests=\"1\" errors=\"0\" skipped=\"0\" failures=\"0\">\n" +
       "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
-      "</testsuite>");
+      "</testsuite>", StandardCharsets.UTF_8);
 
     ClientInputFile inputFile = prepareInputFile("Foo.java",
       "public class Foo {\n"
