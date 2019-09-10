@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -394,7 +396,7 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
-    assertThat(sonarlint.getAllLanguagesNameByKey()).containsExactly(
+    List<Map.Entry<String, String>> ossLanguages = Arrays.asList(
       entry("java", "Java"),
       entry("js", "JavaScript"),
       entry("php", "PHP"),
@@ -402,6 +404,18 @@ public class StandaloneIssueMediumTest {
       entry("ts", "TypeScript"),
       entry("xoo", "Xoo"),
       entry("xoo2", "Xoo2"));
+
+    if (System.getProperty("commercial") != null) {
+      List<Map.Entry<String, String>> commercialLanguages = Arrays.asList(
+        entry("c", "C"),
+        entry("cpp", "C++"),
+        entry("objc", "Objective-C"));
+      assertThat(sonarlint.getAllLanguagesNameByKey()).containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
+        .toArray(Map.Entry[]::new));
+    } else {
+      assertThat(sonarlint.getAllLanguagesNameByKey()).containsOnly(ossLanguages.toArray(new Map.Entry[0]));
+    }
+
     assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
