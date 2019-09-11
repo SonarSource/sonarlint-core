@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -38,22 +39,33 @@ public class MutableAnalysisSettings extends MapSettings {
 
   private final Map<String, String> properties = new HashMap<>();
 
-  public MutableAnalysisSettings(AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  /**
+   * Standalone mode
+   */
+  public MutableAnalysisSettings(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
-    addDefaultProperties(config);
-    addProperties(config.extraProperties());
+    addPropertiesInOrder(globalConfig, analysisConfig);
   }
 
-  public MutableAnalysisSettings(StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  /**
+   * Connected mode
+   */
+  public MutableAnalysisSettings(StorageReader storage, AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig,
+    PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
-    if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).projectKey() != null) {
-      ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).projectKey());
+    if (analysisConfig instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) analysisConfig).projectKey() != null) {
+      ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) analysisConfig).projectKey());
       addProperties(projectConfig.getPropertiesMap());
     }
-    addDefaultProperties(config);
-    addProperties(config.extraProperties());
+    addPropertiesInOrder(globalConfig, analysisConfig);
+  }
+
+  private void addPropertiesInOrder(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig) {
+    addProperties(globalConfig.extraProperties());
+    addDefaultProperties(analysisConfig);
+    addProperties(analysisConfig.extraProperties());
   }
 
   private void addDefaultProperties(AbstractAnalysisConfiguration config) {
