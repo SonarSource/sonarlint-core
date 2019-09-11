@@ -39,6 +39,8 @@ public class UserSettingsTest {
     assertThat(settings.analyzerProperties).isEmpty();
     assertThat(settings.disableTelemetry).isFalse();
     assertThat(settings.excludedRules).isEmpty();
+    assertThat(settings.includedRules).isEmpty();
+    assertThat(settings.hasLocalRuleConfiguration()).isFalse();
   }
 
   @Test
@@ -56,6 +58,10 @@ public class UserSettingsTest {
       "    \"xoo:rule2\": {\n" +
       "      \"level\": \"warn\"\n" +
       "    },\n" +
+      "    \"xoo:rule3\": {\n" +
+      "      \"level\": \"on\"\n" +
+      "    },\n" +
+      "    \"xoo:notEvenARule\": \"definitely not a rule\",\n" +
       "    \"somethingNotParsedByRuleKey\": {\n" +
       "      \"level\": \"off\"\n" +
       "    }\n" +
@@ -67,11 +73,35 @@ public class UserSettingsTest {
     assertThat(settings.analyzerProperties).containsExactly(entry("sonar.polop", "palap"));
     assertThat(settings.disableTelemetry).isTrue();
     assertThat(settings.excludedRules).extracting("repository", "rule").containsExactly(tuple("xoo", "rule1"));
+    assertThat(settings.includedRules).extracting("repository", "rule").containsExactly(tuple("xoo", "rule3"));
+    assertThat(settings.hasLocalRuleConfiguration()).isTrue();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void shouldThrowOnUnexpectedObjectInSettings() {
     fromJsonString("\"not a JSON object\"");
+  }
+
+  @Test
+  public void shouldHaveLocalRuleConfigurationWithDisabledRule() {
+    assertThat(fromJsonString("{\n" +
+      "  \"rules\": {\n" +
+      "    \"xoo:rule1\": {\n" +
+      "      \"level\": \"off\"\n" +
+      "    }\n" +
+      "  }\n" +
+      "}\n").hasLocalRuleConfiguration()).isTrue();
+  }
+
+  @Test
+  public void shouldHaveLocalRuleConfigurationWithEnabledRule() {
+    assertThat(fromJsonString("{\n" +
+      "  \"rules\": {\n" +
+      "    \"xoo:rule1\": {\n" +
+      "      \"level\": \"on\"\n" +
+      "    }\n" +
+      "  }\n" +
+      "}\n").hasLocalRuleConfiguration()).isTrue();
   }
 
   private static UserSettings fromJsonString(String json) {
