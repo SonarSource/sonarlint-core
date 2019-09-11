@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -51,6 +52,7 @@ class UserSettings {
   final boolean disableTelemetry;
   final PathMatcher testMatcher;
   final Collection<RuleKey> excludedRules;
+  final Collection<RuleKey> includedRules;
 
   UserSettings() {
     this(Collections.emptyMap());
@@ -61,22 +63,23 @@ class UserSettings {
     testMatcher = testFilePattern != null ? FileSystems.getDefault().getPathMatcher("glob:" + testFilePattern) : (p -> false);
     this.analyzerProperties = getAnalyzerProperties(params);
     this.disableTelemetry = (Boolean) params.getOrDefault(DISABLE_TELEMETRY, false);
-    this.excludedRules = parseExcludedRules(params);
+    this.excludedRules = parseRuleKeysMatching(params, UserSettings.hasLevelSetTo("off"));
+    this.includedRules = parseRuleKeysMatching(params, UserSettings.hasLevelSetTo("on"));
   }
 
-  private static Set<RuleKey> parseExcludedRules(Map<String, Object> params) {
+  private static Set<RuleKey> parseRuleKeysMatching(Map<String, Object> params, Predicate<Map.Entry<String, Object>> filter) {
     return ((Map<String, Object>) params.getOrDefault(RULES, Collections.emptyMap()))
       .entrySet()
       .stream()
-      .filter(UserSettings::hasLevelSetToOff)
+      .filter(filter)
       .map(UserSettings::safeParseRuleKey)
       .filter(Objects::nonNull)
       .collect(Collectors.toSet());
   }
 
-  private static boolean hasLevelSetToOff(Map.Entry<String, Object> e) {
-    return e.getValue() instanceof Map &&
-      "off".equals(((Map) e.getValue()).get("level"));
+  private static Predicate<Map.Entry<String, Object>> hasLevelSetTo(String expectedLevel) {
+    return  e -> e.getValue() instanceof Map &&
+      expectedLevel.equals(((Map) e.getValue()).get("level"));
   }
 
   @CheckForNull
@@ -105,5 +108,9 @@ class UserSettings {
     } catch (JsonSyntaxException e) {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Expected a JSON map but was: " + obj, e));
     }
+  }
+
+  boolean hasLocalRuleConfiguration() {
+    return !excludedRules.isEmpty() || !includedRules.isEmpty();
   }
 }

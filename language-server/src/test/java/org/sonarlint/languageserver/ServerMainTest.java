@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.SystemUtils;
 import org.awaitility.core.ConditionTimeoutException;
@@ -198,7 +197,7 @@ public class ServerMainTest {
 
     String uri = getUri("foo.js");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf;\n}")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf\n}")));
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
@@ -209,17 +208,23 @@ public class ServerMainTest {
   }
 
   @Test
-  public void analyzeSimpleJsFileOnOpenWithDisabledRule() throws Exception {
-    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true, "javascript:UnusedVariable"));
+  public void analyzeSimpleJsFileOnOpenWithCustomRuleConfig() throws Exception {
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true,
+      "javascript:UnusedVariable", "off",
+      "javascript:Semicolon", "on"
+    ));
 
     String uri = getUri("foo.js");
     lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf;\n}")));
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf\n}")));
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information));
-    // Expected issue on javascript:UnusedVariable is suppressed by rule configuration
+      .containsExactly(
+        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information),
+        tuple(2, 2, 2, 13, "javascript:Semicolon", "sonarlint", "Add a semicolon at the end of this statement.", DiagnosticSeverity.Information)
+        // Expected issue on javascript:UnusedVariable is suppressed by rule configuration
+      );
   }
 
   @Test
@@ -314,13 +319,21 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(fooMyTestUri)).isEmpty();
   }
 
-  private DidChangeConfigurationParams changedConfiguration(@Nullable String testFilePattern, boolean disableTelemetry, String... disabledRules) {
+  private DidChangeConfigurationParams changedConfiguration(@Nullable String testFilePattern, boolean disableTelemetry, String... ruleConfigs) {
     Map<String, Object> values = new HashMap<>();
     values.put(TEST_FILE_PATTERN, testFilePattern);
     values.put(DISABLE_TELEMETRY, disableTelemetry);
-    Stream.of(disabledRules).forEach(
-      key -> values.put(RULES, ImmutableMap.of(key, ImmutableMap.of("level", "off"))));
+    values.put(RULES, buildRulesMap(ruleConfigs));
     return new DidChangeConfigurationParams(ImmutableMap.of("sonarlint", values));
+  }
+
+  private Map<String, Object> buildRulesMap(String... ruleConfigs) {
+    assertThat(ruleConfigs.length % 2).withFailMessage("ruleConfigs must contain 'rule:key', 'level' pairs").isEqualTo(0);
+    ImmutableMap.Builder<String, Object> rules = ImmutableMap.builder();
+    for(int i = 0; i < ruleConfigs.length; i += 2) {
+      rules.put(ruleConfigs[i], ImmutableMap.of("level", ruleConfigs[i + 1]));
+    }
+    return rules.build();
   }
 
   @Test
