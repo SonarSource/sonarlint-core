@@ -96,6 +96,8 @@ public class StandaloneIssueMediumTest {
 
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("sonar.typescript.internal.typescriptLocation", fakeTypeScriptProjectPath.resolve("node_modules").toString());
+    // See test sonarjs_should_honor_global_and_analysis_level_properties
+    extraProperties.put("sonar.javascript.globals", "GLOBAL1");
     StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
@@ -160,6 +162,43 @@ public class StandaloneIssueMediumTest {
       .build(), issues::add, null,
       null);
     assertThat(issues).isEmpty();
+  }
+
+  @Test
+  public void sonarjs_should_honor_global_and_analysis_level_properties() throws Exception {
+    String content = "function foo() {\n"
+      + "  console.log(LOCAL1); // Noncompliant\n"
+      + "  console.log(GLOBAL1); // GLOBAL1 defined as global varibale in global settings\n"
+      + "}";
+    ClientInputFile inputFile = prepareInputFile("foo.js", content, false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .addIncludedRule(RuleKey.parse("javascript:S3827"))
+        .build(),
+      issues::add, null,
+      null);
+    assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
+      .extracting("startLine", "inputFile.path").containsOnly(
+        tuple(2, inputFile.getPath()));
+
+    // Change globals using analysis property
+    issues.clear();
+    sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .putExtraProperty("sonar.javascript.globals", "LOCAL1")
+        .addIncludedRule(RuleKey.parse("javascript:S3827"))
+        .build(),
+      issues::add, null,
+      null);
+    assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
+      .extracting("startLine", "inputFile.path").containsOnly(
+        tuple(3, inputFile.getPath()));
   }
 
   @Test
