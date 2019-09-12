@@ -20,6 +20,7 @@
 package org.sonarlint.languageserver;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.google.gson.JsonPrimitive;
 import java.io.File;
 import java.io.IOException;
@@ -208,15 +209,31 @@ public class ServerMainTest {
   }
 
   @Test
-  public void analyzeSimpleJsFileOnOpenWithCustomRuleConfig() throws Exception {
+  public void analyzeSimpleJsFileWithCustomRuleConfig() throws Exception {
+    String uri = getUri("foo.js");
+    String jsSource = "function foo() {\n  alert('toto');\n  const plouf\n}";
+
+    // Default configuration should result in 2 issues: S1442 and UnusedVariable
+    lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true));
+    lsProxy.getTextDocumentService()
+      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, jsSource)));
+    assertThat(waitForDiagnostics(uri))
+      .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
+      .containsExactly(
+        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information),
+        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable. (javascript:UnusedVariable)", DiagnosticSeverity.Information)
+      );
+    // Update rules configuration: disable UnusedVariable, enable Semicolon
     lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true,
       "javascript:UnusedVariable", "off",
       "javascript:Semicolon", "on"
     ));
-
-    String uri = getUri("foo.js");
-    lsProxy.getTextDocumentService()
-      .didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "javascript", 1, "function foo() {\n  alert('toto');\n  const plouf\n}")));
+    // Trigger diagnostics refresh (called by client on config change)
+    ExecuteCommandParams refreshDiagsCommand = new ExecuteCommandParams();
+    refreshDiagsCommand.setCommand("SonarLint.RefreshDiagnostics");
+    refreshDiagsCommand.setArguments(Collections.singletonList(new Gson().toJsonTree(new SonarLintLanguageServer.Document(uri, jsSource))));
+    client.clear();
+    lsProxy.getWorkspaceService().executeCommand(refreshDiagsCommand);
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
