@@ -73,8 +73,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
-import org.eclipse.lsp4j.launch.LSPLauncher;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
@@ -102,7 +100,7 @@ public class ServerMainTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   private static ServerSocket serverSocket;
-  private static LanguageServer lsProxy;
+  private static SonarLintExtendedLanguageServer lsProxy;
   private static FakeLanguageClient client;
 
   @BeforeClass
@@ -115,15 +113,18 @@ public class ServerMainTest {
     client = new FakeLanguageClient();
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
-    Callable<LanguageServer> callable = () -> {
+    Callable<SonarLintExtendedLanguageServer> callable = () -> {
       Socket socket = serverSocket.accept();
-      Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
-        socket.getInputStream(),
-        socket.getOutputStream());
+      Launcher<SonarLintExtendedLanguageServer> launcher = (new Launcher.Builder())
+        .setLocalService(client)
+        .setRemoteInterface(SonarLintExtendedLanguageServer.class)
+        .setInput(socket.getInputStream())
+        .setOutput(socket.getOutputStream())
+        .create();
       launcher.startListening();
       return launcher.getRemoteProxy();
     };
-    Future<LanguageServer> future = executor.submit(callable);
+    Future<SonarLintExtendedLanguageServer> future = executor.submit(callable);
     executor.shutdown();
 
     String js = new File("target/plugins/javascript.jar").getAbsoluteFile().toURI().toURL().toString();
@@ -220,8 +221,8 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
-        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information),
-        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable. (javascript:UnusedVariable)", DiagnosticSeverity.Information)
+        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information),
+        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable.", DiagnosticSeverity.Information)
       );
     // Update rules configuration: disable UnusedVariable, enable Semicolon
     lsProxy.getWorkspaceService().didChangeConfiguration(changedConfiguration("**/*Test.js", true,
@@ -491,6 +492,12 @@ public class ServerMainTest {
     assertThat(disableRule.getCommand()).isEqualTo("SonarLint.DeactivateRule");
     assertThat(disableRule.getArguments()).hasSize(1);
     assertThat(((JsonPrimitive) disableRule.getArguments().get(0)).getAsString()).isEqualTo("javascript:S930");
+  }
+
+  @Test
+  public void testListAllRules() throws Exception {
+    Map<String, List<RuleDescription>> result = lsProxy.listAllRules().join();
+    assertThat(result).containsOnlyKeys("HTML", "JavaScript", "TypeScript", "PHP", "Python");
   }
 
   private String getUri(String filename) throws IOException {

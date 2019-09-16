@@ -22,6 +22,10 @@ package org.sonarlint.languageserver;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class RuleDescription {
 
@@ -45,6 +49,10 @@ public class RuleDescription {
   @Expose
   private String severity;
 
+  @SerializedName("activeByDefault")
+  @Expose
+  private boolean activeByDefault;
+
   public String getKey() {
     return key;
   }
@@ -53,16 +61,22 @@ public class RuleDescription {
     return name;
   }
 
+  @CheckForNull
   public String getHtmlDescription() {
     return htmlDescription;
   }
 
+  @CheckForNull
   public String getType() {
     return type;
   }
 
   public String getSeverity() {
     return severity;
+  }
+
+  public boolean isActiveByDefault() {
+    return activeByDefault;
   }
 
   public RuleDescription setKey(String key) {
@@ -75,12 +89,12 @@ public class RuleDescription {
     return this;
   }
 
-  public RuleDescription setHtmlDescription(String htmlDescription) {
+  public RuleDescription setHtmlDescription(@Nullable String htmlDescription) {
     this.htmlDescription = htmlDescription;
     return this;
   }
 
-  public RuleDescription setType(String type) {
+  public RuleDescription setType(@Nullable String type) {
     this.type = type;
     return this;
   }
@@ -90,17 +104,27 @@ public class RuleDescription {
     return this;
   }
 
+  public RuleDescription setActiveByDefault(boolean activeByDefault) {
+    this.activeByDefault = activeByDefault;
+    return this;
+  }
+
   @Override
   public String toString() {
     return MessageJsonHandler.toString(this);
   }
 
-  public static RuleDescription of(String key, String name, String htmlDescription, String type, String severity) {
+  public static RuleDescription of(String key, String name, @Nullable String htmlDescription, @Nullable String type, String severity, boolean activeByDefault) {
     return new RuleDescription()
       .setKey(key)
       .setName(name)
       .setHtmlDescription(htmlDescription)
       .setType(type)
-      .setSeverity(severity);
+      .setSeverity(severity)
+      .setActiveByDefault(activeByDefault);
+  }
+
+  public static RuleDescription of(RuleDetails d) {
+    return of(d.getKey(), d.getName(), d.getHtmlDescription(), d.getType(), d.getSeverity(), d.isActiveByDefault());
   }
 }

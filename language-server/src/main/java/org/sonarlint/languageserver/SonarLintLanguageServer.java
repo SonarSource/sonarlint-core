@@ -83,7 +83,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonar.api.internal.apachecommons.lang.StringUtils;
@@ -113,7 +112,7 @@ import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_PROJECT_P
 import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_SERVERS_PROP;
 import static org.sonarlint.languageserver.UserSettings.TYPESCRIPT_LOCATION;
 
-public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
+public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer, WorkspaceService, TextDocumentService {
   private static final String USER_AGENT = "SonarLint Language Server";
 
   private static final String TYPESCRIPT_PATH_PROP = "sonar.typescript.internal.typescriptLocation";
@@ -497,6 +496,21 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       throw new IllegalStateException(e.getMessage(), e);
     }
     return uri;
+  }
+
+  @Override
+  public CompletableFuture<Map<String, List<RuleDescription>>> listAllRules() {
+    Map<String, List<RuleDescription>> result = new HashMap<>();
+    Map<String, String> languagesNameByKey = engineCache.getOrCreateStandaloneEngine().getAllLanguagesNameByKey();
+    engineCache.getOrCreateStandaloneEngine().getAllRuleDetails()
+      .forEach(d -> {
+        String languageName = languagesNameByKey.get(d.getLanguageKey());
+        if (!result.containsKey(languageName)) {
+          result.put(languageName, new ArrayList<>());
+        }
+        result.get(languageName).add(RuleDescription.of(d));
+      });
+    return CompletableFuture.completedFuture(result);
   }
 
   // visible for testing
