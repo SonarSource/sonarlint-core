@@ -50,12 +50,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
-import org.eclipse.lsp4j.CodeLens;
-import org.eclipse.lsp4j.CodeLensParams;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.CompletionItem;
-import org.eclipse.lsp4j.CompletionList;
-import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticRelatedInformation;
 import org.eclipse.lsp4j.DiagnosticSeverity;
@@ -66,38 +61,22 @@ import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
-import org.eclipse.lsp4j.DocumentFormattingParams;
-import org.eclipse.lsp4j.DocumentHighlight;
-import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
-import org.eclipse.lsp4j.DocumentRangeFormattingParams;
-import org.eclipse.lsp4j.DocumentSymbol;
-import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
-import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.ReferenceParams;
-import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.SaveOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.SignatureHelp;
-import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
-import org.eclipse.lsp4j.TextEdit;
-import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
-import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -422,46 +401,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   }
 
   @Override
-  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> definition(TextDocumentPositionParams position) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> documentSymbol(DocumentSymbolParams params) {
-    return null;
-  }
-
-  @Override
   public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
     List<Either<Command, CodeAction>> commands = new ArrayList<>();
     boolean standaloneMode = this.binding == null;
@@ -510,36 +449,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     String type = ruleDetails.getType();
     String severity = ruleDetails.getSeverity();
     return Arrays.asList(ruleKey, ruleName, htmlDescription, type, severity);
-  }
-
-  @Override
-  public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
-    return null;
-  }
-
-  @Override
-  public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
-    return null;
   }
 
   @Override
@@ -918,11 +827,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       htmlDescription += "<div>" + extendedDescription + "</div>";
     }
     return htmlDescription;
-  }
-
-  @Override
-  public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-    return null;
   }
 
   @Override

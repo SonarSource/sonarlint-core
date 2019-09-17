@@ -82,17 +82,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_PROJECT_PROP;
-import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_SERVERS_PROP;
+import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_REFRESH_DIAGNOSTICS_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_PROJECT_BINDING_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_UPDATE_SERVER_STORAGE_COMMAND;
-import static org.sonarlint.languageserver.SonarLintLanguageServer.SONARLINT_REFRESH_DIAGNOSTICS_COMMAND;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.convert;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.findBaseDir;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getHtmlDescription;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.getStoragePath;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.normalizeUriString;
 import static org.sonarlint.languageserver.SonarLintLanguageServer.parseWorkspaceFolders;
+import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_PROJECT_PROP;
+import static org.sonarlint.languageserver.UserSettings.CONNECTED_MODE_SERVERS_PROP;
 import static org.sonarlint.languageserver.UserSettings.RULES;
 
 public class SonarLintLanguageServerTest {
@@ -133,23 +133,7 @@ public class SonarLintLanguageServerTest {
     SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(),
       engineCacheFactory, loggerFactory);
 
-    assertThat(server.getTextDocumentService().codeLens(null)).isNull();
-    assertThat(server.getTextDocumentService().completion(null)).isNull();
-    assertThat(server.getTextDocumentService().definition(null)).isNull();
-    assertThat(server.getTextDocumentService().documentHighlight(null)).isNull();
-    assertThat(server.getTextDocumentService().documentSymbol(null)).isNull();
-    assertThat(server.getTextDocumentService().formatting(null)).isNull();
-    assertThat(server.getTextDocumentService().hover(null)).isNull();
-    assertThat(server.getTextDocumentService().onTypeFormatting(null)).isNull();
-    assertThat(server.getTextDocumentService().rangeFormatting(null)).isNull();
-    assertThat(server.getTextDocumentService().references(null)).isNull();
-    assertThat(server.getTextDocumentService().rename(null)).isNull();
-    assertThat(server.getTextDocumentService().resolveCodeLens(null)).isNull();
-    assertThat(server.getTextDocumentService().resolveCompletionItem(null)).isNull();
-    assertThat(server.getTextDocumentService().signatureHelp(null)).isNull();
-
     server.getWorkspaceService().didChangeWatchedFiles(null);
-    assertThat(server.getWorkspaceService().symbol(null)).isNull();
   }
 
   @Test
@@ -771,8 +755,7 @@ public class SonarLintLanguageServerTest {
     Gson gson = new Gson();
     params.setArguments(Arrays.asList(
       gson.toJson(new SonarLintLanguageServer.Document(uri1, text1)),
-      gson.toJson(new SonarLintLanguageServer.Document(uri2, text2))
-    ));
+      gson.toJson(new SonarLintLanguageServer.Document(uri2, text2))));
     tester.languageServer.executeCommand(params);
 
     assertThat(tester.fakeLogger.debugMessages).hasSize(2);
@@ -813,6 +796,10 @@ public class SonarLintLanguageServerTest {
 
     @Override
     public void error(String message, Throwable t) {
+    }
+
+    @Override
+    public void error(String message) {
     }
 
     @Override
@@ -913,7 +900,7 @@ public class SonarLintLanguageServerTest {
       if (disabledRuleKeys.length > 0) {
         ImmutableMap.Builder<String, Object> disabledRulesBuilder = ImmutableMap.builder();
         Stream.of(disabledRuleKeys).forEach(k -> disabledRulesBuilder.put(k, ImmutableMap.of("level", "off")));
-        options.add(RULES, toJson(disabledRulesBuilder.build()));;
+        options.add(RULES, toJson(disabledRulesBuilder.build()));
       }
       params.setInitializationOptions(options);
       when(params.getInitializationOptions()).thenReturn(options);
