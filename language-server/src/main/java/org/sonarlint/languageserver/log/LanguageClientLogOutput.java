@@ -17,18 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.languageserver;
+package org.sonarlint.languageserver.log;
 
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 
-class LanguageClientLogOutput implements LogOutput {
+/**
+ * Used by engines
+ */
+public class LanguageClientLogOutput implements LogOutput {
 
   private final LanguageClient client;
 
-  LanguageClientLogOutput(LanguageClient client) {
+  public LanguageClientLogOutput(LanguageClient client) {
     this.client = client;
   }
 
@@ -51,4 +54,5 @@ class LanguageClientLogOutput implements LogOutput {
     }
     throw new IllegalStateException("Unexpected level: " + level);
   }
+
 }

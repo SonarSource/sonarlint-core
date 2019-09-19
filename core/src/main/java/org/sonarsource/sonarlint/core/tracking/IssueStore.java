@@ -34,10 +34,11 @@ import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class IssueStore {
+
   private Path basePath;
   private IndexedObjectStore<String, Sonarlint.Issues> store;
 
-  public IssueStore(Path storeBasePath, Path projectBasePath, Logger logger) {
+  public IssueStore(Path storeBasePath, Path projectBasePath) {
     this.basePath = storeBasePath;
     FileUtils.mkdirs(storeBasePath);
     StoreIndex<String> index = new StringStoreIndex(storeBasePath);
@@ -57,7 +58,7 @@ public class IssueStore {
         throw new IllegalStateException("Failed to save issues", e);
       }
     };
-    store = new IndexedObjectStore<>(index, mapper, reader, writer, validator, logger);
+    store = new IndexedObjectStore<>(index, mapper, reader, writer, validator);
     store.deleteInvalid();
   }
 

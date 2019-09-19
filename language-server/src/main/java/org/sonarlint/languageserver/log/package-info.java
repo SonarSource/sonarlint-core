@@ -17,18 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.languageserver;
+@ParametersAreNonnullByDefault
+package org.sonarlint.languageserver.log;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.services.LanguageClient;
-
-public interface SonarLintLanguageClient extends LanguageClient {
-
-  /**
-   * This command is sent from a server to a client to ask
-   * the client to display a rule description in the user interface.
-   */
-  @JsonNotification("sonarlint/openRuleDescription")
-  void openRuleDescription(RuleDescription notification);
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

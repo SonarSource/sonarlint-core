@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.tracking.CachingIssueTrackerImpl;
 import org.sonarsource.sonarlint.core.tracking.InMemoryIssueTrackerCache;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackable;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackerCache;
-import org.sonarsource.sonarlint.core.tracking.Logger;
 import org.sonarsource.sonarlint.core.tracking.Trackable;
 
 class ServerIssueTracker {
@@ -46,14 +45,14 @@ class ServerIssueTracker {
   private final CachingIssueTracker cachingIssueTracker;
   private final org.sonarsource.sonarlint.core.tracking.ServerIssueTracker tracker;
 
-  ServerIssueTracker(ConnectedSonarLintEngine engine, ServerConfiguration serverConfiguration, ProjectBinding projectBinding, Logger logger) {
+  ServerIssueTracker(ConnectedSonarLintEngine engine, ServerConfiguration serverConfiguration, ProjectBinding projectBinding) {
     this.engine = engine;
     this.serverConfiguration = serverConfiguration;
     this.projectBinding = projectBinding;
 
     this.issueTrackerCache = new InMemoryIssueTrackerCache();
     this.cachingIssueTracker = new CachingIssueTrackerImpl(issueTrackerCache);
-    this.tracker = new org.sonarsource.sonarlint.core.tracking.ServerIssueTracker(logger, cachingIssueTracker);
+    this.tracker = new org.sonarsource.sonarlint.core.tracking.ServerIssueTracker(cachingIssueTracker);
   }
 
   void matchAndTrack(String filePath, Collection<Issue> issues, IssueListener issueListener, boolean shouldFetchServerIssues) {

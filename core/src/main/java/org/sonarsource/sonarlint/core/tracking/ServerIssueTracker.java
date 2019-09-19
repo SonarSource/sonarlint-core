@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -31,11 +33,11 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 
 public class ServerIssueTracker {
 
-  private final Logger logger;
+  private static final Logger LOGGER = Loggers.get(ServerIssueTracker.class);
+
   private final CachingIssueTracker issueTracker;
 
-  public ServerIssueTracker(Logger logger, CachingIssueTracker issueTracker) {
-    this.logger = logger;
+  public ServerIssueTracker(CachingIssueTracker issueTracker) {
     this.issueTracker = issueTracker;
   }
 
@@ -56,18 +58,18 @@ public class ServerIssueTracker {
       }
     } catch (Exception e) {
       String message = "error while fetching and matching server issues";
-      logger.error(message, e);
+      LOGGER.error(message, e);
     }
   }
 
-  private List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine,
-    ProjectBinding projectBinding, String fileKey) {
+  private static List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine,
+    ProjectBinding projectBinding, String ideFilePath) {
     try {
-      logger.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", fileKey=" + fileKey);
-      return engine.downloadServerIssues(serverConfiguration, projectBinding, fileKey);
+      LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath);
+      return engine.downloadServerIssues(serverConfiguration, projectBinding, ideFilePath);
     } catch (DownloadException e) {
-      logger.debug("failed to download server issues", e);
-      return engine.getServerIssues(projectBinding, fileKey);
+      LOGGER.debug("Failed to download server issues", e);
+      return engine.getServerIssues(projectBinding, ideFilePath);
     }
   }
 }

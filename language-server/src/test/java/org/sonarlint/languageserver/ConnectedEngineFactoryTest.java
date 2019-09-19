@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.*;
 import org.mockito.ArgumentCaptor;
+import org.sonarlint.languageserver.log.ClientLogger;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;

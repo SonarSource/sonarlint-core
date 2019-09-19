@@ -24,20 +24,21 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 public class PersistentIssueTrackerCache implements IssueTrackerCache {
 
-  private final Logger logger;
+  private static final Logger LOGGER = Loggers.get(PersistentIssueTrackerCache.class);
 
   static final int MAX_ENTRIES = 100;
 
   private final IssueStore store;
   private final Map<String, Collection<Trackable>> cache;
 
-  public PersistentIssueTrackerCache(IssueStore store, Logger logger) {
+  public PersistentIssueTrackerCache(IssueStore store) {
     this.store = store;
     this.cache = new LimitedSizeLinkedHashMap();
-    this.logger = logger;
   }
 
   /**
@@ -57,7 +58,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
 
       String key = eldest.getKey();
       try {
-        logger.debug("Persisting issues for " + key);
+        LOGGER.debug("Persisting issues for " + key);
         store.save(key, eldest.getValue());
       } catch (IOException e) {
         throw new IllegalStateException(String.format("Error persisting issues for %s", key), e);
@@ -97,7 +98,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
         return Collections.unmodifiableCollection(storedTrackables);
       }
     } catch (IOException e) {
-      logger.error(String.format("Failed to read issues from store for file %s", file), e);
+      LOGGER.error(String.format("Failed to read issues from store for file %s", file), e);
     }
     return Collections.emptyList();
   }
@@ -118,7 +119,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
    * It does not clear the cache.
    */
   public synchronized void flushAll() {
-    logger.debug("Persisting all issues");
+    LOGGER.debug("Persisting all issues");
     cache.forEach((path, trackables) -> {
       try {
         store.save(path, trackables);

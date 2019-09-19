@@ -73,6 +73,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
+import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
@@ -115,7 +116,7 @@ public class ServerMainTest {
     ExecutorService executor = Executors.newSingleThreadExecutor();
     Callable<SonarLintExtendedLanguageServer> callable = () -> {
       Socket socket = serverSocket.accept();
-      Launcher<SonarLintExtendedLanguageServer> launcher = (new Launcher.Builder())
+      Launcher<SonarLintExtendedLanguageServer> launcher = new LSPLauncher.Builder<SonarLintExtendedLanguageServer>()
         .setLocalService(client)
         .setRemoteInterface(SonarLintExtendedLanguageServer.class)
         .setInput(socket.getInputStream())
@@ -162,6 +163,7 @@ public class ServerMainTest {
     lsProxy = future.get();
 
     InitializeParams initializeParams = new InitializeParams();
+    initializeParams.setTrace("messages");
     initializeParams.setInitializationOptions(ImmutableMap.builder()
       .put(TEST_FILE_PATTERN, "{**/test/**,**/*test*,**/*Test*}")
       .put(TYPESCRIPT_LOCATION, fakeTypeScriptProjectPath.resolve("node_modules").toString())
@@ -170,7 +172,7 @@ public class ServerMainTest {
       .put("productName", "SLCORE tests")
       .put("productVersion", "0.1")
       .build());
-    lsProxy.initialize(initializeParams).get();
+    lsProxy.initialize(initializeParams).join();
   }
 
   @AfterClass
@@ -178,7 +180,7 @@ public class ServerMainTest {
     System.clearProperty(SonarLintTelemetry.DISABLE_PROPERTY_KEY);
     try {
       if (lsProxy != null) {
-        lsProxy.shutdown().get();
+        lsProxy.shutdown().join();
         lsProxy.exit();
         // Give some time to the server to stop
         Thread.sleep(1000);
@@ -509,14 +511,16 @@ public class ServerMainTest {
     return client.getDiagnostics(uri);
   }
 
-  private static class FakeLanguageClient implements SonarLintLanguageClient {
+  private static class FakeLanguageClient implements SonarLintExtendedLanguageClient {
 
     Map<String, List<Diagnostic>> diagnostics = new ConcurrentHashMap<>();
     List<RuleDescription> ruleDescs = new ArrayList<>();
+    List<MessageParams> logs = new ArrayList<>();
 
     void clear() {
       diagnostics.clear();
       ruleDescs.clear();
+      logs.clear();
     }
 
     @Override
@@ -548,7 +552,7 @@ public class ServerMainTest {
 
     @Override
     public void logMessage(MessageParams message) {
-      System.out.println(message.getMessage());
+      logs.add(message);
     }
 
     @Override

@@ -41,7 +41,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
@@ -86,6 +85,10 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonar.api.internal.apachecommons.lang.StringUtils;
+import org.sonar.api.utils.log.Loggers;
+import org.sonarlint.languageserver.log.ClientLogger;
+import org.sonarlint.languageserver.log.DefaultClientLogger;
+import org.sonarlint.languageserver.log.LanguageClientLogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -129,7 +132,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
     SONARLINT_UPDATE_PROJECT_BINDING_COMMAND,
     SONARLINT_REFRESH_DIAGNOSTICS_COMMAND);
 
-  private final SonarLintLanguageClient client;
+  private final SonarLintExtendedLanguageClient client;
   private final Future<?> backgroundProcess;
   private final LanguageClientLogOutput logOutput;
   private final ClientLogger logger;
@@ -147,23 +150,25 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
 
   private ServerProjectBinding binding;
 
-  private final ServerIssueTrackingLogger serverIssueTrackingLogger = new ServerIssueTrackingLogger();
+  /**
+   * Keep track of value 'sonarlint.trace.server' on client side. Not used currently, but keeping it just in case.
+   */
+  private TraceValues traceLevel;
 
   SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
     BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory,
-    Function<SonarLintLanguageClient, ClientLogger> loggerFactory) {
-    Launcher<SonarLintLanguageClient> launcher = Launcher.createLauncher(this,
-      SonarLintLanguageClient.class,
+    Function<SonarLintExtendedLanguageClient, ClientLogger> loggerFactory) {
+    Launcher<SonarLintExtendedLanguageClient> launcher = Launcher.createLauncher(this,
+      SonarLintExtendedLanguageClient.class,
       inputStream,
-      outputStream,
-      true, null);
+      outputStream);
 
     this.client = launcher.getRemoteProxy();
-    this.logOutput = new LanguageClientLogOutput(client);
 
     backgroundProcess = launcher.startListening();
 
     this.logger = loggerFactory.apply(this.client);
+    this.logOutput = new LanguageClientLogOutput(this.client);
     this.engineCache = engineCacheFactory.apply(logOutput, logger);
     this.serverInfoCache = new ServerInfoCache(logger);
   }
@@ -177,7 +182,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
       return new DefaultEngineCache(standaloneEngineFactory, connectedEngineFactory);
     };
 
-    Function<SonarLintLanguageClient, ClientLogger> loggerFactory = DefaultClientLogger::new;
+    Function<SonarLintExtendedLanguageClient, ClientLogger> loggerFactory = DefaultClientLogger::new;
 
     return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), engineCacheFactory, loggerFactory);
   }
@@ -186,6 +191,9 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
     return CompletableFutures.computeAsync(cancelToken -> {
       cancelToken.checkCanceled();
+      this.traceLevel = parseTraceLevel(params.getTrace());
+      Loggers.setTarget(logOutput);
+
       workspaceFolders.addAll(parseWorkspaceFolders(params.getWorkspaceFolders(), params.getRootUri()));
       workspaceFolders.sort(Comparator.reverseOrder());
 
@@ -333,7 +341,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
         projectBinding.idePathPrefix(),
         folderRoot));
       workspaceTrackers.put(folderRoot,
-        new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding, serverIssueTrackingLogger));
+        new ServerIssueTracker(engine, getServerConfiguration(serverInfo), projectBinding));
     });
   }
 
@@ -681,23 +689,6 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
     return userSettings.testMatcher.matches(Paths.get(uri));
   }
 
-  private class ServerIssueTrackingLogger implements org.sonarsource.sonarlint.core.tracking.Logger {
-    @Override
-    public void error(String message, Exception e) {
-      logger.error(message, e);
-    }
-
-    @Override
-    public void debug(String message, Exception e) {
-      logger.debug(message);
-    }
-
-    @Override
-    public void debug(String message) {
-      logger.debug(message);
-    }
-  }
-
   // visible for testing
   Path findBaseDir(URI uri) {
     return findBaseDir(workspaceFolders, uri);
@@ -823,8 +814,8 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
           break;
         case SONARLINT_REFRESH_DIAGNOSTICS_COMMAND:
           Gson gson = new Gson();
-          Set<Document> docsToRefresh = args == null ? Collections.emptySet()
-            : args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toSet());
+          List<Document> docsToRefresh = args == null ? Collections.emptyList()
+            : args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toList());
           docsToRefresh.forEach(doc -> analyze(parseURI(doc.uri), doc.text, false));
           break;
         default:
@@ -873,6 +864,18 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
         }
       }
     }
+  }
+
+  @Override
+  public void setTraceNotification(SetTraceNotificationParams params) {
+    this.traceLevel = parseTraceLevel(params.getValue());
+  }
+
+  private static TraceValues parseTraceLevel(@Nullable String trace) {
+    return Optional.ofNullable(trace)
+      .map(String::toUpperCase)
+      .map(TraceValues::valueOf)
+      .orElse(TraceValues.OFF);
   }
 
   static class ServerProjectBinding {
