@@ -17,24 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.languageserver;
+package org.sonarlint.languageserver.log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
+import org.sonarlint.languageserver.SonarLintExtendedLanguageClient;
 
-class DefaultClientLogger implements ClientLogger {
+public class DefaultClientLogger implements ClientLogger {
 
-  private final SonarLintLanguageClient client;
+  private final SonarLintExtendedLanguageClient client;
 
-  DefaultClientLogger(SonarLintLanguageClient client) {
+  public DefaultClientLogger(SonarLintExtendedLanguageClient client) {
     this.client = client;
   }
 
   @Override
   public void error(ErrorType errorType) {
-    client.showMessage(new MessageParams(MessageType.Error, errorType.message));
+    showMessage(new MessageParams(MessageType.Error, errorType.message));
   }
 
   @Override
@@ -44,26 +45,40 @@ class DefaultClientLogger implements ClientLogger {
 
   @Override
   public void error(String message, Throwable t) {
-    client.showMessage(new MessageParams(MessageType.Error, message + "\n" + t.getMessage()));
+    showMessage(new MessageParams(MessageType.Error, message + "\n" + t.getMessage()));
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
-    client.logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString()));
+    logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString()));
   }
 
   @Override
   public void error(String message) {
-    client.showMessage(new MessageParams(MessageType.Error, message));
-    client.logMessage(new MessageParams(MessageType.Error, message));
+    showMessage(new MessageParams(MessageType.Error, message));
+    logMessage(new MessageParams(MessageType.Error, message));
   }
 
   @Override
   public void warn(String message) {
-    client.logMessage(new MessageParams(MessageType.Warning, message));
+    logMessage(new MessageParams(MessageType.Warning, message));
+  }
+
+  @Override
+  public void info(String message) {
+    logMessage(new MessageParams(MessageType.Info, message));
   }
 
   @Override
   public void debug(String message) {
-    client.logMessage(new MessageParams(MessageType.Log, message));
+    logMessage(new MessageParams(MessageType.Log, message));
   }
+
+  private void logMessage(MessageParams message) {
+    client.logMessage(message);
+  }
+
+  private void showMessage(MessageParams message) {
+    client.showMessage(message);
+  }
+
 }

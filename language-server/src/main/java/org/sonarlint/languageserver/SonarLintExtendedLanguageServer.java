@@ -19,15 +19,47 @@
  */
 package org.sonarlint.languageserver;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.services.LanguageServer;
-
+import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.eclipse.lsp4j.services.LanguageServer;
 
 public interface SonarLintExtendedLanguageServer extends LanguageServer {
 
   @JsonRequest("sonarlint/listAllRules")
   CompletableFuture<Map<String, List<RuleDescription>>> listAllRules();
+
+  /**
+   * Undocumented VSCode message
+   * https://github.com/Microsoft/vscode-languageserver-node/issues/170
+   * https://github.com/eclipse/lsp4j/issues/22
+   * https://github.com/microsoft/vscode-languageserver-node/blob/5c446d0620fc5fa6c57b1addcdfaff89a47624ae/jsonrpc/src/main.ts#L204
+   */
+  @JsonNotification("$/setTraceNotification")
+  void setTraceNotification(SetTraceNotificationParams params);
+
+  public static class SetTraceNotificationParams {
+    private String value;
+
+    public String getValue() {
+      return value;
+    }
+
+    public void setValue(String value) {
+      this.value = value;
+    }
+  }
+
+  public enum TraceValues {
+    @SerializedName("off")
+    OFF,
+    @SerializedName("messages")
+    MESSAGES,
+    @SerializedName("verbose")
+    VERBOSE
+  }
+
 }

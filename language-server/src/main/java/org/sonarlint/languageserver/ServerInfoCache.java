@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarlint.languageserver.log.ClientLogger;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 

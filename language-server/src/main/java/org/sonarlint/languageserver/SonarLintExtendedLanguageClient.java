@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Language Server
  * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,14 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarlint.languageserver;
 
-public interface Logger {
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.services.LanguageClient;
 
-  void error(String message, Exception e);
+public interface SonarLintExtendedLanguageClient extends LanguageClient {
 
-  void debug(String message, Exception e);
-
-  void debug(String message);
+  /**
+   * This command is sent from a server to a client to ask
+   * the client to display a rule description in the user interface.
+   */
+  @JsonNotification("sonarlint/openRuleDescription")
+  void openRuleDescription(RuleDescription notification);
 
 }

@@ -17,9 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.languageserver;
+package org.sonarlint.languageserver.log;
 
-interface ClientLogger {
+public interface ClientLogger {
 
   enum ErrorType {
     INCOMPLETE_SERVER_CONFIG("Incomplete server configuration. Required parameters must not be blank: serverId, serverUrl, token."),
@@ -47,6 +47,8 @@ interface ClientLogger {
   void error(String message);
 
   void warn(String message);
+
+  void info(String message);
 
   void debug(String message);
 

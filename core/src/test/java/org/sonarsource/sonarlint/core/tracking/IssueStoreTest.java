@@ -42,7 +42,7 @@ public class IssueStoreTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private final AtomicInteger counter = new AtomicInteger();
-  private final  String key = "filePath";
+  private final String key = "filePath";
 
   @Test
   public void contains_should_find_issues_after_added() throws IOException {
@@ -109,7 +109,7 @@ public class IssueStoreTest {
   public void clean_should_remove_entries_without_valid_files() throws IOException {
     Path base = temporaryFolder.newFolder().toPath();
     Path projectPath = base.resolve("project");
-    IssueStore issueStore = new IssueStore(base.resolve("store"), projectPath, mock(Logger.class));
+    IssueStore issueStore = new IssueStore(base.resolve("store"), projectPath);
 
     String nonexistentFileKey = "nonexistent";
     String validFileKey = "some/relative/path";
@@ -135,14 +135,14 @@ public class IssueStoreTest {
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
 
-    new IssueStore(storePath, base.resolve("project"), mock(Logger.class));
+    new IssueStore(storePath, base.resolve("project"));
   }
 
   @Test(expected = IllegalStateException.class)
   public void should_fail_to_save_issues_if_cannot_write_to_filesystem() throws IOException {
     Path base = temporaryFolder.newFolder().toPath();
     Path storePath = base.resolve("store");
-    IssueStore issueStore = new IssueStore(storePath, base.resolve("project"), mock(Logger.class));
+    IssueStore issueStore = new IssueStore(storePath, base.resolve("project"));
 
     Files.delete(storePath);
     // the presence of a file will effectively prevent writing to the store
@@ -166,7 +166,7 @@ public class IssueStoreTest {
     Path base = temporaryFolder.newFolder().toPath();
     Path storePath = base.resolve("store");
     Path projectPath = base.resolve("project");
-    return new IssueStore(storePath, projectPath, mock(Logger.class));
+    return new IssueStore(storePath, projectPath);
   }
 
 }

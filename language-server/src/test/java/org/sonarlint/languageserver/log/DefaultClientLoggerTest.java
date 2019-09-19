@@ -17,18 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarlint.languageserver;
+package org.sonarlint.languageserver.log;
 
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
-import org.junit.*;
+import org.junit.Test;
+import org.sonarlint.languageserver.SonarLintExtendedLanguageClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class DefaultClientLoggerTest {
 
-  private final SonarLintLanguageClient client = mock(SonarLintLanguageClient.class);
+  private final SonarLintExtendedLanguageClient client = mock(SonarLintExtendedLanguageClient.class);
   private final DefaultClientLogger logger = new DefaultClientLogger(client);
 
   @Test
@@ -62,6 +66,16 @@ public class DefaultClientLoggerTest {
   }
 
   @Test
+  public void error_with_message_shows_message_and_logs_to_client() {
+    String message = "Unknown error";
+    logger.error(message);
+
+    verify(client).showMessage(eq(new MessageParams(MessageType.Error, message)));
+    verify(client).logMessage(any());
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
   public void warn_logs_warning_to_client() {
     String message = "Unknown warning";
     logger.warn(message);
@@ -71,11 +85,21 @@ public class DefaultClientLoggerTest {
   }
 
   @Test
-  public void debug_logs_to_client() {
+  public void info_logs_to_client() {
+    String message = "Unknown event";
+    logger.info(message);
+
+    verify(client).logMessage(eq(new MessageParams(MessageType.Info, message)));
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  public void log_debug_logs_to_client() {
     String message = "Unknown event";
     logger.debug(message);
 
     verify(client).logMessage(eq(new MessageParams(MessageType.Log, message)));
     verifyNoMoreInteractions(client);
   }
+
 }

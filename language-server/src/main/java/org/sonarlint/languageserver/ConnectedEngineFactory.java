@@ -22,6 +22,7 @@ package org.sonarlint.languageserver;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
+import org.sonarlint.languageserver.log.ClientLogger;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;

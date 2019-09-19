@@ -62,6 +62,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Answers;
+import org.sonarlint.languageserver.log.ClientLogger;
+import org.sonarlint.languageserver.log.LanguageClientLogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -130,7 +132,7 @@ public class SonarLintLanguageServerTest {
   @Test
   public void makeQualityGateHappy() {
     BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory = (a, b) -> mock(EngineCache.class);
-    Function<SonarLintLanguageClient, ClientLogger> loggerFactory = client -> new FakeClientLogger();
+    Function<SonarLintExtendedLanguageClient, ClientLogger> loggerFactory = client -> new FakeClientLogger();
     SonarLintLanguageServer server = new SonarLintLanguageServer(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(),
       engineCacheFactory, loggerFactory);
 
@@ -173,6 +175,7 @@ public class SonarLintLanguageServerTest {
   public void initialize_should_not_crash_when_disableTelemetry_param_missing() {
     SonarLintLanguageServer ls = newLanguageServer();
     InitializeParams params = mockInitializeParams();
+    when(params.getTrace()).thenReturn(null);
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     ls.initialize(params).join();
     verify(params).getInitializationOptions();
@@ -182,6 +185,7 @@ public class SonarLintLanguageServerTest {
   public void initialize_should_not_crash_when_client_doesnt_support_folders() {
     SonarLintLanguageServer ls = newLanguageServer();
     InitializeParams params = mockInitializeParams();
+    when(params.getTrace()).thenReturn(null);
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     when(params.getWorkspaceFolders()).thenReturn(null);
     ls.initialize(params).join();
@@ -223,6 +227,7 @@ public class SonarLintLanguageServerTest {
   public void findBaseDir_finds_longest_match() {
     SonarLintLanguageServer ls = newLanguageServer();
     InitializeParams params = mockInitializeParams();
+    when(params.getTrace()).thenReturn(null);
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
 
     String basedir = "file:///path/to/base";
@@ -760,6 +765,8 @@ public class SonarLintLanguageServerTest {
     tester.languageServer.executeCommand(params).join();
 
     assertThat(tester.fakeLogger.debugMessages).hasSize(2);
+    assertThat(tester.fakeLogger.debugMessages.get(0)).contains("Analysis triggered on " + uri1);
+    assertThat(tester.fakeLogger.debugMessages.get(1)).contains("Analysis triggered on " + uri2);
   }
 
   @Test
@@ -811,6 +818,11 @@ public class SonarLintLanguageServerTest {
     public void debug(String message) {
       debugMessages.add(message);
     }
+
+    @Override
+    public void info(String message) {
+    }
+
   }
 
   /**
@@ -892,6 +904,7 @@ public class SonarLintLanguageServerTest {
       InitializeParams params = mockInitializeParams();
       WorkspaceFolder workspaceFolder = mockWorkspaceFolder(temporaryFolder.getRoot().toURI().toString());
       when(params.getWorkspaceFolders()).thenReturn(Collections.singletonList(workspaceFolder));
+      when(params.getTrace()).thenReturn(null);
 
       JsonObject options = new JsonObject();
       options.add(CONNECTED_MODE_SERVERS_PROP, toJson(servers));
