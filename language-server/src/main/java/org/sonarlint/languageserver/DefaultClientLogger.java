@@ -44,11 +44,17 @@ class DefaultClientLogger implements ClientLogger {
 
   @Override
   public void error(String message, Throwable t) {
+    client.showMessage(new MessageParams(MessageType.Error, message + "\n" + t.getMessage()));
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
-    client.showMessage(new MessageParams(MessageType.Error, message + "\n" + t.getMessage()));
     client.logMessage(new MessageParams(MessageType.Error, message + "\n" + sw.toString()));
+  }
+
+  @Override
+  public void error(String message) {
+    client.showMessage(new MessageParams(MessageType.Error, message));
+    client.logMessage(new MessageParams(MessageType.Error, message));
   }
 
   @Override

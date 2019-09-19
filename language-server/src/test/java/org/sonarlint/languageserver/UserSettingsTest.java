@@ -21,9 +21,9 @@ package org.sonarlint.languageserver;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.junit.Test;
-
 import java.io.File;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -69,7 +69,7 @@ public class UserSettingsTest {
     assertThat(settings.excludedRules).extracting("repository", "rule").containsExactly(tuple("xoo", "rule1"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = ResponseErrorException.class)
   public void shouldThrowOnUnexpectedObjectInSettings() {
     fromJsonString("\"not a JSON object\"");
   }

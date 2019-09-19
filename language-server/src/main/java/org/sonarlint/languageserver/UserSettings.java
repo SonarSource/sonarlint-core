@@ -22,9 +22,6 @@ package org.sonarlint.languageserver;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
-
-import javax.annotation.CheckForNull;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.util.Collection;
@@ -33,6 +30,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 @SuppressWarnings("unchecked")
 class UserSettings {
@@ -101,7 +103,7 @@ class UserSettings {
     try {
       return new Gson().fromJson((JsonElement) obj, Map.class);
     } catch (JsonSyntaxException e) {
-      throw new IllegalArgumentException("Expected a JSON map but was: " + obj);
+      throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Expected a JSON map but was: " + obj, e));
     }
   }
 }

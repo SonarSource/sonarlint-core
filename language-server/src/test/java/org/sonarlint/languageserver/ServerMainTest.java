@@ -71,6 +71,8 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.AfterClass;
@@ -202,8 +204,8 @@ public class ServerMainTest {
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
         tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information),
-        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable. (javascript:UnusedVariable)", DiagnosticSeverity.Information)
-      );
+        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable. (javascript:UnusedVariable)",
+          DiagnosticSeverity.Information));
   }
 
   @Test
@@ -217,7 +219,7 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
-      // Expected issue on javascript:UnusedVariable is suppressed by rule configuration
+    // Expected issue on javascript:UnusedVariable is suppressed by rule configuration
   }
 
   @Test
@@ -317,8 +319,7 @@ public class ServerMainTest {
     values.put(TEST_FILE_PATTERN, testFilePattern);
     values.put(DISABLE_TELEMETRY, disableTelemetry);
     Stream.of(disabledRules).forEach(
-      key -> values.put(RULES, ImmutableMap.of(key, ImmutableMap.of("level", "off")))
-    );
+      key -> values.put(RULES, ImmutableMap.of(key, ImmutableMap.of("level", "off"))));
     return new DidChangeConfigurationParams(ImmutableMap.of("sonarlint", values));
   }
 
@@ -382,20 +383,29 @@ public class ServerMainTest {
     Thread.sleep(500);
   }
 
-  @Test(expected = ExecutionException.class)
-  public void testInvalidCommand() throws Exception {
-    lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams("SonarLint.OpenRuleDesc", Collections.singletonList("missingRule"))).get();
+  @Test
+  public void testUnknownCommand() throws Exception {
+    try {
+      lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams("unknown", Collections.emptyList())).get();
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(ExecutionException.class).hasCauseInstanceOf(ResponseErrorException.class);
+      ResponseError responseError = ((ResponseErrorException) e.getCause()).getResponseError();
+      assertThat(responseError.getCode()).isEqualTo(ResponseErrorCode.InvalidParams.getValue());
+      assertThat(responseError.getMessage()).isEqualTo("Unsupported command: unknown");
+    }
   }
 
   @Test
-  public void testCommandFailure() throws Exception {
+  public void testCommandInvalidParams() throws Exception {
     try {
       lsProxy.getWorkspaceService().executeCommand(new ExecuteCommandParams("SonarLint.UpdateServerStorage", Collections.singletonList("invalidMap"))).get();
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).isInstanceOf(ExecutionException.class).hasCauseInstanceOf(ResponseErrorException.class);
-      assertThat(((ResponseErrorException) e.getCause()).getResponseError().getMessage())
-        .isEqualTo("Unable to process command 'SonarLint.UpdateServerStorage': Expected a JSON map but was: \"invalidMap\"");
+      ResponseError responseError = ((ResponseErrorException) e.getCause()).getResponseError();
+      assertThat(responseError.getCode()).isEqualTo(ResponseErrorCode.InvalidParams.getValue());
+      assertThat(responseError.getMessage()).isEqualTo("Expected a JSON map but was: \"invalidMap\"");
     }
   }
 
@@ -408,7 +418,7 @@ public class ServerMainTest {
     try {
       await().atMost(2, TimeUnit.SECONDS).until(() -> client.containsDiagnostics(uri));
       failBecauseExceptionWasNotThrown(ConditionTimeoutException.class);
-    } catch(ConditionTimeoutException expected) {
+    } catch (ConditionTimeoutException expected) {
       assertThat(expected).isInstanceOf(ConditionTimeoutException.class);
     }
   }
@@ -426,7 +436,7 @@ public class ServerMainTest {
     } catch (Exception e) {
       assertThat(e).isInstanceOf(ExecutionException.class).hasCauseInstanceOf(ResponseErrorException.class);
       assertThat(((ResponseErrorException) e.getCause()).getResponseError().getMessage())
-        .isEqualTo("Unknow rule with key: unknown:rule");
+        .isEqualTo("Unknown rule with key: unknown:rule");
     }
   }
 
