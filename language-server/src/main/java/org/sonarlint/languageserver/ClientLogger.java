@@ -44,6 +44,8 @@ interface ClientLogger {
 
   void error(String message, Throwable t);
 
+  void error(String message);
+
   void warn(String message);
 
   void debug(String message);

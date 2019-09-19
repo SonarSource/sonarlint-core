@@ -173,7 +173,7 @@ public class SonarLintLanguageServerTest {
     SonarLintLanguageServer ls = newLanguageServer();
     InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
-    ls.initialize(params);
+    ls.initialize(params).join();
     verify(params).getInitializationOptions();
   }
 
@@ -183,7 +183,7 @@ public class SonarLintLanguageServerTest {
     InitializeParams params = mockInitializeParams();
     when(params.getInitializationOptions()).thenReturn(new JsonObject());
     when(params.getWorkspaceFolders()).thenReturn(null);
-    ls.initialize(params);
+    ls.initialize(params).join();
     verify(params).getInitializationOptions();
     verify(params).getWorkspaceFolders();
   }
@@ -756,7 +756,7 @@ public class SonarLintLanguageServerTest {
     params.setArguments(Arrays.asList(
       gson.toJson(new SonarLintLanguageServer.Document(uri1, text1)),
       gson.toJson(new SonarLintLanguageServer.Document(uri2, text2))));
-    tester.languageServer.executeCommand(params);
+    tester.languageServer.executeCommand(params).join();
 
     assertThat(tester.fakeLogger.debugMessages).hasSize(2);
   }
@@ -767,7 +767,7 @@ public class SonarLintLanguageServerTest {
 
     ExecuteCommandParams params = new ExecuteCommandParams();
     params.setCommand(SONARLINT_REFRESH_DIAGNOSTICS_COMMAND);
-    tester.languageServer.executeCommand(params);
+    tester.languageServer.executeCommand(params).join();
 
     assertThat(tester.fakeLogger.debugMessages).isEmpty();
   }
@@ -905,7 +905,7 @@ public class SonarLintLanguageServerTest {
       params.setInitializationOptions(options);
       when(params.getInitializationOptions()).thenReturn(options);
 
-      this.languageServer.initialize(params);
+      this.languageServer.initialize(params).join();
       this.initialized = true;
     }
 
@@ -969,7 +969,7 @@ public class SonarLintLanguageServerTest {
       ExecuteCommandParams params = new ExecuteCommandParams();
       params.setCommand(SONARLINT_UPDATE_SERVER_STORAGE_COMMAND);
       params.setArguments(Collections.singletonList(toJson(server)));
-      languageServer.executeCommand(params);
+      languageServer.executeCommand(params).join();
     }
 
     void setInitialBinding(String serverId, String projectKey) {
@@ -987,7 +987,7 @@ public class SonarLintLanguageServerTest {
       ExecuteCommandParams params = new ExecuteCommandParams();
       params.setCommand(SONARLINT_UPDATE_PROJECT_BINDING_COMMAND);
       params.setArguments(Collections.singletonList(toJson(binding)));
-      languageServer.executeCommand(params);
+      languageServer.executeCommand(params).join();
     }
 
     EngineWrapper lastEngine() {

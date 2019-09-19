@@ -77,10 +77,12 @@ import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
@@ -183,38 +185,41 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-    workspaceFolders.addAll(parseWorkspaceFolders(params.getWorkspaceFolders(), params.getRootUri()));
-    workspaceFolders.sort(Comparator.reverseOrder());
+    return CompletableFutures.computeAsync(cancelToken -> {
+      cancelToken.checkCanceled();
+      workspaceFolders.addAll(parseWorkspaceFolders(params.getWorkspaceFolders(), params.getRootUri()));
+      workspaceFolders.sort(Comparator.reverseOrder());
 
-    Map<String, Object> options = UserSettings.parseToMap(params.getInitializationOptions());
-    userSettings = new UserSettings(options);
+      Map<String, Object> options = UserSettings.parseToMap(params.getInitializationOptions());
+      userSettings = new UserSettings(options);
 
-    String productKey = (String) options.get("productKey");
-    // deprecated, will be ignored when productKey present
-    String telemetryStorage = (String) options.get("telemetryStorage");
+      String productKey = (String) options.get("productKey");
+      // deprecated, will be ignored when productKey present
+      String telemetryStorage = (String) options.get("telemetryStorage");
 
-    String productName = (String) options.get("productName");
-    String productVersion = (String) options.get("productVersion");
-    String ideVersion = (String) options.get("ideVersion");
+      String productName = (String) options.get("productName");
+      String productVersion = (String) options.get("productVersion");
+      String ideVersion = (String) options.get("ideVersion");
 
-    String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
-    engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
+      String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
+      engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
 
-    serverInfoCache.replace(options.get(CONNECTED_MODE_SERVERS_PROP));
-    updateBinding((Map<?, ?>) options.get(CONNECTED_MODE_PROJECT_PROP));
+      serverInfoCache.replace(options.get(CONNECTED_MODE_SERVERS_PROP));
+      updateBinding((Map<?, ?>) options.get(CONNECTED_MODE_PROJECT_PROP));
 
-    telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion, ideVersion, this::usesConnectedMode, this::usesSonarCloud);
-    telemetry.optOut(userSettings.disableTelemetry);
+      telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion, ideVersion, this::usesConnectedMode, this::usesSonarCloud);
+      telemetry.optOut(userSettings.disableTelemetry);
 
-    InitializeResult result = new InitializeResult();
-    ServerCapabilities c = new ServerCapabilities();
-    c.setTextDocumentSync(getTextDocumentSyncOptions());
-    c.setCodeActionProvider(true);
-    c.setExecuteCommandProvider(new ExecuteCommandOptions(SONARLINT_COMMANDS));
-    c.setWorkspace(getWorkspaceServerCapabilities());
+      InitializeResult result = new InitializeResult();
+      ServerCapabilities c = new ServerCapabilities();
+      c.setTextDocumentSync(getTextDocumentSyncOptions());
+      c.setCodeActionProvider(true);
+      c.setExecuteCommandProvider(new ExecuteCommandOptions(SONARLINT_COMMANDS));
+      c.setWorkspace(getWorkspaceServerCapabilities());
 
-    result.setCapabilities(c);
-    return CompletableFuture.completedFuture(result);
+      result.setCapabilities(c);
+      return result;
+    });
   }
 
   private boolean usesConnectedMode() {
@@ -384,10 +389,13 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<Object> shutdown() {
-    engineCache.stopStandaloneEngine();
-    engineCache.clearConnectedEngines();
-    telemetry.stop();
-    return CompletableFuture.completedFuture("Stopped");
+    return CompletableFutures.computeAsync(cancelToken -> {
+      cancelToken.checkCanceled();
+      engineCache.stopStandaloneEngine();
+      engineCache.clearConnectedEngines();
+      telemetry.stop();
+      return new Object();
+    });
   }
 
   @Override
@@ -402,13 +410,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
-    List<Either<Command, CodeAction>> commands = new ArrayList<>();
-    boolean standaloneMode = this.binding == null;
-    try {
+    return CompletableFutures.computeAsync(cancelToken -> {
+      cancelToken.checkCanceled();
+      List<Either<Command, CodeAction>> commands = new ArrayList<>();
+      boolean standaloneMode = this.binding == null;
       for (Diagnostic d : params.getContext().getDiagnostics()) {
         if (SONARLINT_SOURCE.equals(d.getSource())) {
           String ruleKey = d.getCode();
           List<Object> ruleDescriptionParams = getOpenRuleDescriptionParams(ruleKey);
+          // May take time to initialize the engine so check for cancellation just after
+          cancelToken.checkCanceled();
           if (!ruleDescriptionParams.isEmpty()) {
             commands.add(Either.forLeft(
               new Command(String.format("Open description of SonarLint rule '%s'", ruleKey),
@@ -423,18 +434,15 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           }
         }
       }
-    } catch (Exception e) {
-      logger.error("Unable to get code actions", e);
-      return completeExceptionally(-1, e.getMessage());
-    }
-    return CompletableFuture.completedFuture(commands);
+      return commands;
+    });
   }
 
   private List<Object> getOpenRuleDescriptionParams(String ruleKey) {
     RuleDetails ruleDetails;
     if (binding == null) {
       ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey)
-        .orElseThrow(() -> new IllegalArgumentException("Unknow rule with key: " + ruleKey));
+        .orElseThrow(() -> new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Unknown rule with key: " + ruleKey, null)));
     } else {
       ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
       ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
@@ -783,7 +791,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
-    try {
+    return CompletableFutures.computeAsync(cancelToken -> {
+      cancelToken.checkCanceled();
       List<Object> args = params.getArguments();
       switch (params.getCommand()) {
         case SONARLINT_UPDATE_SERVER_STORAGE_COMMAND:
@@ -796,27 +805,15 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           break;
         case SONARLINT_REFRESH_DIAGNOSTICS_COMMAND:
           Gson gson = new Gson();
-          Set<Document> docsToRefresh = args == null ? Collections.emptySet() : args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toSet());
+          Set<Document> docsToRefresh = args == null ? Collections.emptySet()
+            : args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toSet());
           docsToRefresh.forEach(doc -> analyze(parseURI(doc.uri), doc.text, false));
           break;
         default:
-          return completeExceptionally(-1, "Unsupported command: " + params.getCommand());
+          throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Unsupported command: " + params.getCommand(), null));
       }
-    } catch (Exception e) {
-      String message = "Unable to process command '" + params.getCommand() + "'";
-      logger.error(message, e);
-      return completeExceptionally(-1, message + ": " + e.getMessage());
-    }
-    return CompletableFuture.completedFuture(null);
-  }
-
-  private static <G> CompletableFuture<G> completeExceptionally(int code, String message) {
-    CompletableFuture<G> exceptionalResult = new CompletableFuture<>();
-    ResponseError responseError = new ResponseError();
-    responseError.setCode(code);
-    responseError.setMessage(message);
-    exceptionalResult.completeExceptionally(new ResponseErrorException(responseError));
-    return exceptionalResult;
+      return null;
+    });
   }
 
   // visible for testing
