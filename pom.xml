@@ -106,7 +106,7 @@
           <artifactId>maven-jarsigner-plugin</artifactId>
           <version>1.4</version>
           <configuration>
-            <alias>sonarsource-codesign-2017-2019</alias>
+            <alias>sonarsource-codesign-2019-2021</alias>
             <keystore>${sonarsource.keystore.path}</keystore>
             <storepass>${sonarsource.keystore.password}</storepass>
             <tsa>http://sha256timestamp.ws.symantec.com/sha256/timestamp</tsa>
