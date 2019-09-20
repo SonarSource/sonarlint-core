@@ -48,7 +48,7 @@ public interface StandaloneSonarLintEngine {
   Optional<RuleDetails> getRuleDetails(String ruleKey);
 
   /**
-   * Return rule details of all available rules.
+   * Return rule details of all available rules for SonarLint standalone mode. For now, excluding hotspots and rule templates.
    */
   Collection<RuleDetails> getAllRuleDetails();
 

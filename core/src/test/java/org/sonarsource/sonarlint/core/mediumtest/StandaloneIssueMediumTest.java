@@ -429,6 +429,14 @@ public class StandaloneIssueMediumTest {
       tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"));
   }
 
+  // SLCORE-251
+  @Test
+  public void noRuleTemplates() throws Exception {
+    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("python:XPath", "xoo:xoo-template");
+    assertThat(sonarlint.getRuleDetails("python:XPath")).isEmpty();
+    assertThat(sonarlint.getRuleDetails("xoo:xoo-template")).isEmpty();
+  }
+
   @Test
   public void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
