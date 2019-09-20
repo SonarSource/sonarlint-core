@@ -713,7 +713,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       diagnostic.setSeverity(severity);
       diagnostic.setRange(range);
       diagnostic.setCode(issue.getRuleKey());
-      diagnostic.setMessage(issue.getMessage() + " (" + issue.getRuleKey() + ")");
+      diagnostic.setMessage(issue.getMessage());
       diagnostic.setSource(SONARLINT_SOURCE);
 
       List<Flow> flows = issue.flows();

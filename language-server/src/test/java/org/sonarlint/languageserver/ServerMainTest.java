@@ -203,8 +203,8 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
-        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information),
-        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable. (javascript:UnusedVariable)",
+        tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information),
+        tuple(2, 8, 2, 13, "javascript:UnusedVariable", "sonarlint", "Remove the declaration of the unused 'plouf' variable.",
           DiagnosticSeverity.Information));
   }
 
@@ -218,7 +218,7 @@ public class ServerMainTest {
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information));
     // Expected issue on javascript:UnusedVariable is suppressed by rule configuration
   }
 
@@ -235,7 +235,7 @@ public class ServerMainTest {
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(1, 4, 1, 18, "typescript:S1764", "sonarlint", "Correct one of the identical sub-expressions on both sides of operator \"&&\" (typescript:S1764)",
+      .containsExactly(tuple(1, 4, 1, 18, "typescript:S1764", "sonarlint", "Correct one of the identical sub-expressions on both sides of operator \"&&\"",
         DiagnosticSeverity.Warning));
   }
 
@@ -248,7 +248,7 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
-        tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function. (python:PrintStatementUsage)", DiagnosticSeverity.Warning));
+        tuple(1, 2, 1, 7, "python:PrintStatementUsage", "sonarlint", "Replace print statement by built-in function.", DiagnosticSeverity.Warning));
   }
 
   @Test
@@ -259,7 +259,7 @@ public class ServerMainTest {
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(2, 2, 2, 6, "php:S2041", "sonarlint", "Remove the parentheses from this \"echo\" call. (php:S2041)", DiagnosticSeverity.Error));
+      .containsExactly(tuple(2, 2, 2, 6, "php:S2041", "sonarlint", "Remove the parentheses from this \"echo\" call.", DiagnosticSeverity.Error));
   }
 
   @Test
@@ -271,9 +271,9 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactlyInAnyOrder(
-        tuple(0, 0, 0, 26, "Web:DoctypePresenceCheck", "sonarlint", "Insert a <!DOCTYPE> declaration to before this <html> tag. (Web:DoctypePresenceCheck)",
+        tuple(0, 0, 0, 26, "Web:DoctypePresenceCheck", "sonarlint", "Insert a <!DOCTYPE> declaration to before this <html> tag.",
           DiagnosticSeverity.Warning),
-        tuple(0, 0, 0, 26, "Web:PageWithoutTitleCheck", "sonarlint", "Add a <title> tag to this page. (Web:PageWithoutTitleCheck)", DiagnosticSeverity.Warning));
+        tuple(0, 0, 0, 26, "Web:PageWithoutTitleCheck", "sonarlint", "Add a <title> tag to this page.", DiagnosticSeverity.Warning));
   }
 
   @Test
@@ -285,9 +285,9 @@ public class ServerMainTest {
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactlyInAnyOrder(
-        tuple(0, 0, 0, 26, "Web:DoctypePresenceCheck", "sonarlint", "Insert a <!DOCTYPE> declaration to before this <html> tag. (Web:DoctypePresenceCheck)",
+        tuple(0, 0, 0, 26, "Web:DoctypePresenceCheck", "sonarlint", "Insert a <!DOCTYPE> declaration to before this <html> tag.",
           DiagnosticSeverity.Warning),
-        tuple(0, 0, 0, 26, "Web:PageWithoutTitleCheck", "sonarlint", "Add a <title> tag to this page. (Web:PageWithoutTitleCheck)", DiagnosticSeverity.Warning));
+        tuple(0, 0, 0, 26, "Web:PageWithoutTitleCheck", "sonarlint", "Add a <title> tag to this page.", DiagnosticSeverity.Warning));
   }
 
   @Test
@@ -333,7 +333,7 @@ public class ServerMainTest {
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information));
   }
 
   @Test
@@ -344,7 +344,7 @@ public class ServerMainTest {
 
     assertThat(waitForDiagnostics(uri))
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
-      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...). (javascript:S1442)", DiagnosticSeverity.Information));
+      .containsExactly(tuple(1, 2, 1, 15, "javascript:S1442", "sonarlint", "Remove this usage of alert(...).", DiagnosticSeverity.Information));
   }
 
   @Test
@@ -359,7 +359,7 @@ public class ServerMainTest {
     assertThat(diagnostics)
       .extracting("range.start.line", "range.start.character", "range.end.line", "range.end.character", "code", "source", "message", "severity")
       .containsExactly(
-        tuple(2, 3, 2, 25, "javascript:S930", "sonarlint", "\"foo\" declared at line 1 expects 0 arguments, but 1 was provided. (javascript:S930)", DiagnosticSeverity.Error));
+        tuple(2, 3, 2, 25, "javascript:S930", "sonarlint", "\"foo\" declared at line 1 expects 0 arguments, but 1 was provided.", DiagnosticSeverity.Error));
 
     assertThat(diagnostics.get(0).getRelatedInformation())
       .extracting("location.range.start.line", "location.range.start.character", "location.range.end.line", "location.range.end.character", "location.uri", "message")

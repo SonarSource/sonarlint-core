@@ -115,6 +115,7 @@ public class SonarLintLanguageServerTest {
     Issue issue = mock(Issue.class);
     when(issue.getStartLine()).thenReturn(1);
     when(issue.getSeverity()).thenReturn("BLOCKER");
+    when(issue.getMessage()).thenReturn("Do this, don't do that");
     assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
     when(issue.getSeverity()).thenReturn("CRITICAL");
     assertThat(convert(issue).get().getSeverity()).isEqualTo(DiagnosticSeverity.Error);
