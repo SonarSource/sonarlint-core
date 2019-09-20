@@ -82,7 +82,7 @@ public class StandaloneActiveRulesProvider {
 
     for (Repository repo : ruleDefsLoader.getContext().repositories()) {
       for (Rule rule : repo.rules()) {
-        if (rule.type() == RuleType.SECURITY_HOTSPOT) {
+        if (rule.type() == RuleType.SECURITY_HOTSPOT || rule.template()) {
           continue;
         }
         ActiveRulesBuilder builder = rule.activatedByDefault() ? activeBuilder : inactiveBuilder;
