@@ -500,17 +500,20 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
 
   @Override
   public CompletableFuture<Map<String, List<RuleDescription>>> listAllRules() {
-    Map<String, List<RuleDescription>> result = new HashMap<>();
-    Map<String, String> languagesNameByKey = engineCache.getOrCreateStandaloneEngine().getAllLanguagesNameByKey();
-    engineCache.getOrCreateStandaloneEngine().getAllRuleDetails()
-      .forEach(d -> {
-        String languageName = languagesNameByKey.get(d.getLanguageKey());
-        if (!result.containsKey(languageName)) {
-          result.put(languageName, new ArrayList<>());
-        }
-        result.get(languageName).add(RuleDescription.of(d));
-      });
-    return CompletableFuture.completedFuture(result);
+    return CompletableFutures.computeAsync(cancelToken -> {
+      cancelToken.checkCanceled();
+      Map<String, List<RuleDescription>> result = new HashMap<>();
+      Map<String, String> languagesNameByKey = engineCache.getOrCreateStandaloneEngine().getAllLanguagesNameByKey();
+      engineCache.getOrCreateStandaloneEngine().getAllRuleDetails()
+        .forEach(d -> {
+          String languageName = languagesNameByKey.get(d.getLanguageKey());
+          if (!result.containsKey(languageName)) {
+            result.put(languageName, new ArrayList<>());
+          }
+          result.get(languageName).add(RuleDescription.of(d));
+        });
+      return result;
+    });
   }
 
   // visible for testing
