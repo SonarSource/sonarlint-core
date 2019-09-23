@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -72,8 +70,6 @@ import org.eclipse.lsp4j.SaveOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
-import org.eclipse.lsp4j.WorkspaceFolder;
-import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
@@ -86,6 +82,8 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonar.api.internal.apachecommons.lang.StringUtils;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarlint.languageserver.folders.WorkspaceFolderWrapper;
+import org.sonarlint.languageserver.folders.WorkspaceFoldersManager;
 import org.sonarlint.languageserver.log.ClientLogger;
 import org.sonarlint.languageserver.log.DefaultClientLogger;
 import org.sonarlint.languageserver.log.LanguageClientLogOutput;
@@ -108,6 +106,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
+import static java.net.URI.create;
 import static java.util.Collections.singleton;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -141,9 +140,8 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
 
   private UserSettings userSettings = new UserSettings();
-  private final List<String> workspaceFolders = new ArrayList<>();
-  private final Map<String, ProjectBinding> workspaceBindings = new HashMap<>();
-  private final Map<String, ServerIssueTracker> workspaceTrackers = new HashMap<>();
+  private final Map<Path, ProjectBinding> workspaceBindings = new HashMap<>();
+  private final Map<Path, ServerIssueTracker> workspaceTrackers = new HashMap<>();
 
   private final EngineCache engineCache;
   private final ServerInfoCache serverInfoCache;
@@ -154,6 +152,8 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
    * Keep track of value 'sonarlint.trace.server' on client side. Not used currently, but keeping it just in case.
    */
   private TraceValues traceLevel;
+
+  private WorkspaceFoldersManager workspaceFoldersManager;
 
   SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
     BiFunction<LanguageClientLogOutput, ClientLogger, EngineCache> engineCacheFactory,
@@ -194,8 +194,8 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
       this.traceLevel = parseTraceLevel(params.getTrace());
       Loggers.setTarget(logOutput);
 
-      workspaceFolders.addAll(parseWorkspaceFolders(params.getWorkspaceFolders(), params.getRootUri()));
-      workspaceFolders.sort(Comparator.reverseOrder());
+      this.workspaceFoldersManager = new WorkspaceFoldersManager();
+      workspaceFoldersManager.initialize(params.getWorkspaceFolders());
 
       Map<String, Object> options = UserSettings.parseToMap(params.getInitializationOptions());
       userSettings = new UserSettings(options);
@@ -332,8 +332,9 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
     workspaceBindings.clear();
     workspaceTrackers.clear();
 
-    workspaceFolders.forEach(folderRoot -> {
-      Collection<String> ideFilePaths = FileUtils.allRelativePathsForFilesInTree(Paths.get(folderRoot));
+    workspaceFoldersManager.getAll().forEach(folder -> {
+      Path folderRoot = folder.getRootPath();
+      Collection<String> ideFilePaths = FileUtils.allRelativePathsForFilesInTree(folderRoot);
       ProjectBinding projectBinding = engine.calculatePathPrefixes(binding.projectKey, ideFilePaths);
       workspaceBindings.put(folderRoot, projectBinding);
       logger.debug(String.format("Resolved sqPathPrefix:%s / idePathPrefix:%s / for folder %s",
@@ -356,31 +357,6 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
       logger.warn(e.getMessage());
     }
     return false;
-  }
-
-  // visible for testing
-  static List<String> parseWorkspaceFolders(@Nullable List<WorkspaceFolder> workspaceFolders, @Nullable String rootUri) {
-    if (workspaceFolders != null && !workspaceFolders.isEmpty()) {
-      return toList(workspaceFolders);
-    }
-
-    // rootURI is null when no folder is open (like opening a single file in VSCode)
-    if (rootUri != null) {
-      return Collections.singletonList(rootUri);
-    }
-
-    return Collections.emptyList();
-  }
-
-  private static List<String> toList(List<WorkspaceFolder> workspaceFolders) {
-    return workspaceFolders.stream()
-      .filter(f -> f.getUri().startsWith("file:/"))
-      .map(f -> normalizeUriString(f.getUri()))
-      .collect(Collectors.toList());
-  }
-
-  static String normalizeUriString(String uriString) {
-    return Paths.get(URI.create(uriString)).toFile().toString();
   }
 
   // visible for testing
@@ -468,20 +444,20 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
 
   @Override
   public void didOpen(DidOpenTextDocumentParams params) {
-    URI uri = parseURI(params.getTextDocument().getUri());
+    URI uri = create(params.getTextDocument().getUri());
     languageIdPerFileURI.put(uri, params.getTextDocument().getLanguageId());
     analyze(uri, params.getTextDocument().getText(), true);
   }
 
   @Override
   public void didChange(DidChangeTextDocumentParams params) {
-    URI uri = parseURI(params.getTextDocument().getUri());
+    URI uri = create(params.getTextDocument().getUri());
     analyze(uri, params.getContentChanges().get(0).getText(), false);
   }
 
   @Override
   public void didClose(DidCloseTextDocumentParams params) {
-    URI uri = parseURI(params.getTextDocument().getUri());
+    URI uri = create(params.getTextDocument().getUri());
     languageIdPerFileURI.remove(uri);
     // Clear issues
     client.publishDiagnostics(newPublishDiagnostics(uri));
@@ -491,19 +467,9 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
   public void didSave(DidSaveTextDocumentParams params) {
     String content = params.getText();
     if (content != null) {
-      URI uri = parseURI(params.getTextDocument().getUri());
+      URI uri = create(params.getTextDocument().getUri());
       analyze(uri, params.getText(), false);
     }
-  }
-
-  private static URI parseURI(String uriStr) {
-    URI uri;
-    try {
-      uri = new URI(uriStr);
-    } catch (URISyntaxException e) {
-      throw new IllegalStateException(e.getMessage(), e);
-    }
-    return uri;
   }
 
   @Override
@@ -526,7 +492,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
 
   // visible for testing
   void analyze(URI uri, String content, boolean shouldFetchServerIssues) {
-    if (!uri.toString().startsWith("file:/")) {
+    if (!uri.getScheme().equalsIgnoreCase("file")) {
       logger.warn("URI is not a file, analysis not supported");
       return;
     }
@@ -633,7 +599,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
     @Override
     public boolean isExcludedByServerSideExclusions(URI fileUri) {
       Path baseDir = findBaseDir(fileUri);
-      ProjectBinding projectBinding = workspaceBindings.getOrDefault(fileUri.toString(), new ProjectBinding(projectKey, "", ""));
+      ProjectBinding projectBinding = workspaceBindings.getOrDefault(baseDir, new ProjectBinding(projectKey, "", ""));
       return !engine.getExcludedFiles(projectBinding,
         singleton(fileUri),
         uri -> getFileRelativePath(baseDir, uri),
@@ -672,7 +638,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
       }
 
       String filePath = FileUtils.toSonarQubePath(getFileRelativePath(baseDir, uri));
-      ServerIssueTracker serverIssueTracker = workspaceTrackers.get(baseDir.toString());
+      ServerIssueTracker serverIssueTracker = workspaceTrackers.get(baseDir);
       serverIssueTracker.matchAndTrack(filePath, issues, issueListener, shouldFetchServerIssues);
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
@@ -689,28 +655,14 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
     return userSettings.testMatcher.matches(Paths.get(uri));
   }
 
-  // visible for testing
-  Path findBaseDir(URI uri) {
-    return findBaseDir(workspaceFolders, uri);
+  private Path findBaseDir(URI uri) {
+    return workspaceFoldersManager.findFolderForFile(uri).map(WorkspaceFolderWrapper::getRootPath)
+      // Default to take file parent dir if file is not part of any workspace
+      .orElse(Paths.get(uri).getParent());
   }
 
   private static String getFileRelativePath(Path baseDir, URI uri) {
     return baseDir.relativize(Paths.get(uri)).toString();
-  }
-
-  // visible for testing
-  static Path findBaseDir(List<String> workspaceFolders, URI uri) {
-    Path inputFilePath = Paths.get(uri);
-    if (!workspaceFolders.isEmpty()) {
-      String uriString = inputFilePath.toString();
-      for (String folder : workspaceFolders) {
-        if (uriString.startsWith(folder)) {
-          return Paths.get(folder);
-        }
-      }
-    }
-
-    return inputFilePath.getParent();
   }
 
   static Optional<Diagnostic> convert(Issue issue) {
@@ -816,7 +768,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
           Gson gson = new Gson();
           List<Document> docsToRefresh = args == null ? Collections.emptyList()
             : args.stream().map(arg -> gson.fromJson(arg.toString(), Document.class)).collect(Collectors.toList());
-          docsToRefresh.forEach(doc -> analyze(parseURI(doc.uri), doc.text, false));
+          docsToRefresh.forEach(doc -> analyze(create(doc.uri), doc.text, false));
           break;
         default:
           throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Unsupported command: " + params.getCommand(), null));
@@ -850,11 +802,7 @@ public class SonarLintLanguageServer implements SonarLintExtendedLanguageServer,
 
   @Override
   public void didChangeWorkspaceFolders(DidChangeWorkspaceFoldersParams params) {
-    WorkspaceFoldersChangeEvent event = params.getEvent();
-    workspaceFolders.removeAll(toList(event.getRemoved()));
-    workspaceFolders.addAll(toList(event.getAdded()));
-    workspaceFolders.sort(Comparator.reverseOrder());
-
+    workspaceFoldersManager.didChangeWorkspaceFolders(params.getEvent());
     if (binding != null) {
       ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
       if (serverInfo != null) {
