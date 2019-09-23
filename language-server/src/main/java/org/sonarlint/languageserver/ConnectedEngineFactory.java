@@ -52,6 +52,7 @@ class ConnectedEngineFactory {
         .setLogOutput(logOutput)
         .setServerId(serverId)
         .setExtraProperties(extraProperties)
+        .addExcludedCodeAnalyzers("abap", "cpp", "cobol", "java", "kotlin", "pli", "rpg", "ruby", "sonarscala", "swift", "tsql", "xml")
         .build();
 
       ConnectedSonarLintEngine engine = createEngine(configuration);
