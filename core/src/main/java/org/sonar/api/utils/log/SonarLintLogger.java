@@ -19,7 +19,6 @@
  */
 package org.sonar.api.utils.log;
 
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
 import org.sonarsource.sonarlint.core.log.MessageFormat;
@@ -107,7 +106,7 @@ public class SonarLintLogger extends BaseLogger {
 
   @Override
   void doWarn(String msg, Throwable thrown) {
-    logOutput.log(msg, Level.WARN);
+    logOutput.log(msg, Level.WARN, thrown);
   }
 
   @Override
@@ -147,7 +146,7 @@ public class SonarLintLogger extends BaseLogger {
 
   @Override
   void doError(String msg, Throwable thrown) {
-    logOutput.logError(msg, thrown);
+    logOutput.log(msg, Level.ERROR, thrown);
   }
 
   @Override

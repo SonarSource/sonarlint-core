@@ -35,16 +35,13 @@ public class LogOutputDelegator {
     }
   }
 
-  public void logError(String msg, Throwable t) {
+  public void log(String formattedMessage, Level level, Throwable t) {
+    log(formattedMessage, level);
+
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
-
-    LogOutput output = target.get();
-    if (output != null) {
-      output.log(msg, Level.ERROR);
-      output.log(sw.toString(), Level.ERROR);
-    }
+    log(sw.toString(), level);
   }
 
   public void setTarget(@Nullable LogOutput target) {

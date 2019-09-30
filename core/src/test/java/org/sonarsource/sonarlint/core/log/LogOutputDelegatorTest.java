@@ -56,7 +56,7 @@ public class LogOutputDelegatorTest {
   @Test
   public void should_report_throwables() {
     delegator.setTarget(output);
-    delegator.logError("msg", new NullPointerException("error"));
+    delegator.log("msg", Level.ERROR, new NullPointerException("error"));
     verify(output).log("msg", Level.ERROR);
     verify(output).log(Mockito.startsWith("java.lang.NullPointerException: error"), Mockito.eq(Level.ERROR));
     verifyNoMoreInteractions(output);

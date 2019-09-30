@@ -247,7 +247,7 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public void warn(String msg, Throwable t) {
-    SONAR_LOGGER.warn(msg);
+    SONAR_LOGGER.warn(msg, t);
   }
 
   @Override
