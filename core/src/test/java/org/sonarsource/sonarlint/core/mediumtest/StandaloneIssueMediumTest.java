@@ -532,14 +532,15 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleJavaWithBytecode() throws Exception {
-    ClientInputFile inputFile = TestUtils.createInputFile(new File("src/test/projects/java-with-bytecode/src/Foo.java").getAbsoluteFile().toPath(), "src/Foo.java", false);
+    Path projectWithByteCode = new File("src/test/projects/java-with-bytecode").getAbsoluteFile().toPath();
+    ClientInputFile inputFile = TestUtils.createInputFile(projectWithByteCode.resolve("src/Foo.java"), "src/Foo.java", false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(projectWithByteCode)
         .addInputFile(inputFile)
-        .putExtraProperty("sonar.java.binaries", new File("src/test/projects/java-with-bytecode/bin").getAbsolutePath())
+        .putExtraProperty("sonar.java.binaries", projectWithByteCode.resolve("bin").toString())
         .build(),
       issues::add, null, null);
 

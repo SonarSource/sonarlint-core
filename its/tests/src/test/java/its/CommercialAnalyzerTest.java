@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +31,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -57,7 +57,19 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
 
-  private static Orchestrator ORCHESTRATOR;
+  @ClassRule
+  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
+    .setEdition(Edition.ENTERPRISE)
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
+    .addPlugin(MavenLocation.of("com.sonarsource.cpp", "sonar-cfamily-plugin", ItUtils.cppVersion))
+    .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", ItUtils.cobolVersion))
+    .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", ItUtils.tsqlVersion))
+    .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", ItUtils.apexVersion))
+    .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -72,19 +84,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    ORCHESTRATOR = Orchestrator.builderEnv()
-      .setSonarVersion(SONAR_VERSION)
-      .setEdition(Edition.ENTERPRISE)
-      .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
-      .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
-      .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
-      .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
-      .addPlugin(MavenLocation.of("com.sonarsource.cpp", "sonar-cfamily-plugin", System.getProperty("cppVersion")))
-      .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", System.getProperty("cobolVersion")))
-      .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", System.getProperty("tsqlVersion")))
-      .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", System.getProperty("apexVersion")))
-      .build();
-    ORCHESTRATOR.start();
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
     sonarUserHome = temp.newFolder().toPath();
@@ -102,13 +101,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_APEX, "apex", "SonarLint IT APEX");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (ORCHESTRATOR != null) {
-      ORCHESTRATOR.stop();
-    }
   }
 
   @Before

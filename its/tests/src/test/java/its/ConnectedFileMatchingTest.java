@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.tools.ItUtils;
 import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   static {
     OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
     ORCHESTRATOR = orchestratorBuilder.build();
   }
 

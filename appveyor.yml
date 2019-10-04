@@ -1,6 +1,0 @@
-cache:
-  - '%USERPROFILE%\.m2\repository -> **\pom.xml'
-
-build_script:
-  - ps: ./appveyor.ps1
-

@@ -19,14 +19,13 @@
  */
 package its.tools;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import net.lingala.zip4j.core.ZipFile;
 import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Attempts to install a specific version of SonarLint Daemon from the local maven repository.
