@@ -32,6 +32,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import its.tools.ItUtils;
 import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.File;
@@ -89,7 +90,7 @@ public class ConnectedDaemonTest {
       .setSonarVersion(SONAR_VERSION);
 
     orchestratorBuilder
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
     ORCHESTRATOR = orchestratorBuilder
       .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
       .build();

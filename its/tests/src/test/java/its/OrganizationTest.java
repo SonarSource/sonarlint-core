@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.tools.ItUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -71,7 +72,7 @@ public class OrganizationTest extends AbstractConnectedTest {
     OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
       .setServerProperty("sonar.sonarcloud.enabled", "true")
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
     ORCHESTRATOR = orchestratorBuilder
       .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
       .build();
