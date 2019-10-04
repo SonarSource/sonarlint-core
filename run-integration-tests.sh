@@ -16,6 +16,7 @@ case "$SQ_VERSION" in
     PHP_VERSION=$php
     # Can't test the version 4.0.0 since there was a change of custom rule API
     JAVASCRIPT_VERSION=4.2.0.6476
+    TYPESCRIPT_VERSION=$typescript
     PYTHON_VERSION=$python
     COBOL_VERSION=$cobol
     KOTLIN_VERSION=$kotlin
@@ -32,6 +33,7 @@ case "$SQ_VERSION" in
     JAVA_VERSION=LATEST_RELEASE
     PHP_VERSION=LATEST_RELEASE
     JAVASCRIPT_VERSION=LATEST_RELEASE
+    TYPESCRIPT_VERSION=LATEST_RELEASE
     PYTHON_VERSION=LATEST_RELEASE
     COBOL_VERSION=LATEST_RELEASE
     KOTLIN_VERSION=LATEST_RELEASE
@@ -55,6 +57,7 @@ mvn verify -Pits -Dsonar.runtimeVersion=$SQ_VERSION \
     -DjavaVersion=$JAVA_VERSION \
     -DphpVersion=$PHP_VERSION \
     -DjavascriptVersion=$JAVASCRIPT_VERSION \
+    -DtypescriptVersion=$TYPESCRIPT_VERSION \
     -DpythonVersion=$PYTHON_VERSION \
     -DcobolVersion=$COBOL_VERSION \
     -DkotlinVersion=$KOTLIN_VERSION \

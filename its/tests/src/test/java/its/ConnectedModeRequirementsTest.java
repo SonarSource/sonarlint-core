@@ -59,7 +59,9 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     builder
       .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
       .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
-      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
+      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", System.getProperty("javascriptVersion")))
+      // With recent version of SonarJS, SonarTS is required
+      .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", System.getProperty("typescriptVersion")))
       .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"));
 
     return builder.build();

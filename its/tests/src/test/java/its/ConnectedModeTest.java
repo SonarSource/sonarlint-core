@@ -111,6 +111,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", System.getProperty("pythonVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", System.getProperty("phpVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", System.getProperty("javascriptVersion")))
+    // With recent version of SonarJS, SonarTS is required
+    .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", System.getProperty("typescriptVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", System.getProperty("kotlinVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", System.getProperty("rubyVersion")))
     .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", System.getProperty("scalaVersion")))
