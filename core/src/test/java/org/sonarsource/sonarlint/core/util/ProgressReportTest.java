@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.util;
 
 import java.util.Set;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,7 +27,9 @@ import org.junit.Test;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class ProgressReportTest {
   private static final String THREAD_NAME = "progress";
@@ -76,13 +77,9 @@ public class ProgressReportTest {
   public void do_log() {
     progressReport.start("start");
     progressReport.message(() -> "Some message");
-    try {
-      Thread.sleep(200);
-    } catch (InterruptedException e) {
-      // Ignore
-    }
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(logTester.logs()).contains("start", "Some message"));
     progressReport.stop("stop");
-    assertThat(logTester.logs()).contains("Some message");
+    assertThat(logTester.logs()).contains("start", "Some message", "stop");
   }
 
   private static boolean isDaemon(String name) {
