@@ -2,8 +2,8 @@ SonarLint Core
 ==============
 Core library to run SonarLint analysis (used by SonarLint Eclipse and IntelliJ), as well as the SonarLint language server (used by SonarLint VSCode)
 
-[![Travis CI Build Status](https://travis-ci.org/SonarSource/sonarlint-core.svg?branch=master)](https://travis-ci.org/SonarSource/sonarlint-core)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/teulmha62fw3n07h/branch/master?svg=true)](https://ci.appveyor.com/project/SonarSource/sonarlint-core/branch/master)
+[![Build Status](https://dev.azure.com/sonarsource/DotNetTeam%20Project/_apis/build/status/sonarlint/SonarSource.sonarlint-core?branchName=master)](https://dev.azure.com/sonarsource/DotNetTeam%20Project/_build/latest?definitionId=59&branchName=master)
+[![Quality Gate Status](https://next.sonarqube.com/sonarqube/api/project_badges/measure?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent&metric=alert_status)](https://next.sonarqube.com/sonarqube/dashboard?id=org.sonarsource.sonarlint.core%3Asonarlint-core-parent)
 
 Have Question or Feedback?
 --------------------------
