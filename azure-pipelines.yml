@@ -9,7 +9,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref: refs/tags/v1.0
+      ref: refs/heads/feature/jh/burg_link_to_stage
 
 stages:
 - template: stage-with-burgr-notifications.yml@commonTemplates
