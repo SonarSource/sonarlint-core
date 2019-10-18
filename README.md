@@ -33,11 +33,11 @@ To build sources locally follow these instructions.
 
 Execute from project base directory:
 
-    mvn install
+    mvn verify
 
 ### Run integration tests
 
-    ./run-integration-tests.sh LATEST_RELEASE
+    mvn verify -f its/pom.xml -Dsonar.runtimeVersion=<SQ server version>
 
 License
 -------
