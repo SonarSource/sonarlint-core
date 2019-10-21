@@ -9,7 +9,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref: refs/heads/fix/job_deps
+      ref:  refs/heads/fix/job_deps
 
 stages:
 - template: stage-with-burgr-notifications.yml@commonTemplates
