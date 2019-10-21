@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import org.apache.commons.lang.SystemUtils;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.junit.Rule;
@@ -35,6 +36,7 @@ import static java.net.URI.create;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.sonarlint.languageserver.folders.WorkspaceFoldersManager.isAncestor;
 
 public class WorkspaceFoldersManagerTest {
@@ -123,8 +125,15 @@ public class WorkspaceFoldersManagerTest {
     assertThat(isAncestor(create("file:///foo"), create("file:///foo/bar.txt"))).isTrue();
     assertThat(isAncestor(create("file:///foo/bar"), create("file:///foo/bar.txt"))).isFalse();
     assertThat(isAncestor(create("file:///foo/bar"), create("file:///foo/bar2"))).isFalse();
+
+    // Non file scheme
+    assertThat(isAncestor(create("ftp://ftp.example.com/foo"), create("ftp://ftp.example.com/foo"))).isTrue();
+    assertThat(isAncestor(create("ftp://ftp.example.com/foo"), create("ftp://ftp.example.com/foo/bar.txt"))).isTrue();
+    assertThat(isAncestor(create("ftp://ftp.example.com/foo/bar"), create("ftp://ftp.example.com/foo/bar.txt"))).isFalse();
+    assertThat(isAncestor(create("ftp://ftp.example.com/foo/bar"), create("ftp://ftp.example.com/foo/bar2"))).isFalse();
+    assertThat(isAncestor(create("ftp://ftp.example.com/foo/bar"), create("ftp://ftp.example.com/bar.txt"))).isFalse();
+
     // Windows
-    assertThat(isAncestor(create("file://laptop/My%20Documents"), create("file://laptop/My%20Documents/FileSchemeURIs.doc"))).isTrue();
     assertThat(isAncestor(create("file:///C:/Documents%20and%20Settings/davris"), create("file:///C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc"))).isTrue();
 
     // Corner cases
@@ -147,6 +156,14 @@ public class WorkspaceFoldersManagerTest {
     } catch (Exception e) {
       assertThat(e).isInstanceOf(IllegalArgumentException.class);
     }
+  }
+
+  @Test
+  public void testURIAncestor_UNC_path() {
+    // Fail on Linux with IllegalArgumentException: URI has an authority component
+    assumeTrue(SystemUtils.IS_OS_WINDOWS);
+
+    assertThat(isAncestor(create("file://laptop/My%20Documents"), create("file://laptop/My%20Documents/FileSchemeURIs.doc"))).isTrue();
   }
 
   @Test
