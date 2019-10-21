@@ -36,6 +36,7 @@ import static java.net.URI.create;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.sonarlint.languageserver.folders.WorkspaceFoldersManager.isAncestor;
 
 public class WorkspaceFoldersManagerTest {
@@ -134,10 +135,6 @@ public class WorkspaceFoldersManagerTest {
 
     // Windows
     assertThat(isAncestor(create("file:///C:/Documents%20and%20Settings/davris"), create("file:///C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc"))).isTrue();
-    if (SystemUtils.IS_OS_WINDOWS) {
-      // Fail on Linux with IllegalArgumentException: URI has an authority component
-      assertThat(isAncestor(create("file://laptop/My%20Documents"), create("file://laptop/My%20Documents/FileSchemeURIs.doc"))).isTrue();
-    }
 
     // Corner cases
     // Not the same scheme
@@ -159,6 +156,14 @@ public class WorkspaceFoldersManagerTest {
     } catch (Exception e) {
       assertThat(e).isInstanceOf(IllegalArgumentException.class);
     }
+  }
+
+  @Test
+  public void testURIAncestor_UNC_path() {
+    // Fail on Linux with IllegalArgumentException: URI has an authority component
+    assumeTrue(SystemUtils.IS_OS_WINDOWS);
+
+    assertThat(isAncestor(create("file://laptop/My%20Documents"), create("file://laptop/My%20Documents/FileSchemeURIs.doc"))).isTrue();
   }
 
   @Test
