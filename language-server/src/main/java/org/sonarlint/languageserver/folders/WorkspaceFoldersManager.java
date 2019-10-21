@@ -21,6 +21,7 @@ package org.sonarlint.languageserver.folders;
 
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -109,7 +110,13 @@ public class WorkspaceFoldersManager {
     if (folderUri.getPort() != fileUri.getPort()) {
       return false;
     }
-    return Paths.get(fileUri.getPath()).startsWith(Paths.get(folderUri.getPath()));
+    if (folderUri.getScheme().equalsIgnoreCase("file")) {
+      return Paths.get(fileUri).startsWith(Paths.get(folderUri));
+    }
+    // Assume "/" is the separator of "folders"
+    String[] fileSegments = fileUri.getPath().split("/");
+    String[] folderSegments = folderUri.getPath().split("/");
+    return folderSegments.length <= fileSegments.length && Arrays.equals(folderSegments, Arrays.copyOfRange(fileSegments, 0, folderSegments.length));
   }
 
   public Collection<WorkspaceFolderWrapper> getAll() {
