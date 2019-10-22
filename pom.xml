@@ -27,7 +27,6 @@
     <module>core</module>
     <module>daemon</module>
     <module>daemon-protocol</module>
-    <module>language-server</module>
     <module>slf4j-sonar-log</module>
   </modules>
 
@@ -42,7 +41,7 @@
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>3.14.2</okhttp.version>
     <!-- Release: enable publication to Bintray -->
-    <artifactsToPublish>${project.groupId}:sonarlint-daemon:zip:windows,${project.groupId}:sonarlint-language-server:jar</artifactsToPublish>
+    <artifactsToPublish>${project.groupId}:sonarlint-daemon:zip:windows</artifactsToPublish>
     <jarsigner.skip>true</jarsigner.skip>
   </properties>
 
