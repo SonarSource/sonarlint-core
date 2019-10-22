@@ -190,7 +190,7 @@ stages:
 - template: stage-with-burgr-notifications.yml@commonTemplates
   parameters:
     burgrName: 'qa'
-    burgrType: 'QA'
+    burgrType: 'qa'
     stageName: 'qa'
     stageDisplayName: Run ITs
     stageDependencies: build
