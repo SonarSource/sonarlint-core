@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
+import org.sonarsource.sonarlint.core.plugin.PluginInfo.RequiredPlugin;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginCacheLoader {
@@ -94,7 +95,7 @@ public class PluginCacheLoader {
       LOG.warn("Code analyzer '{}' is excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
-    if (info.getRequiredPlugins().stream().anyMatch(required -> excludedPlugins.contains(required.getKey())) || excludedPlugins.contains(info.getBasePlugin())) {
+    if (dependencyExcluded(info)) {
       LOG.debug("Code analyzer '{}' is transitively excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
@@ -111,6 +112,20 @@ public class PluginCacheLoader {
     }
 
     return false;
+  }
+
+  private boolean dependencyExcluded(PluginInfo info) {
+    for (RequiredPlugin required : info.getRequiredPlugins()) {
+      if ("javascript".equals(info.getKey()) && "typescript".equals(required.getKey())) {
+        // Workaround for SLCORE-259
+        // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
+        continue;
+      }
+      if (excludedPlugins.contains(required.getKey())) {
+        return true;
+      }
+    }
+    return excludedPlugins.contains(info.getBasePlugin());
   }
 
   private Path getFromCache(final PluginReference pluginReference) {

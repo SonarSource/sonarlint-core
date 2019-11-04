@@ -20,7 +20,6 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.tools.ItUtils;
@@ -51,22 +50,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
+  private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
+
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = buildOrchestrator();
-
-  private static Orchestrator buildOrchestrator() {
-    OrchestratorBuilder builder = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION);
-
-    builder
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
-      .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion))
-      .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
-      // With recent version of SonarJS, SonarTS is required
-      .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
-      .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"));
-
-    return builder.build();
-  }
+  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION)
+    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
+    // With recent version of SonarJS, SonarTS is required
+    .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
+    .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+    .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -89,6 +84,9 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
         .password(SONARLINT_PWD)
         .passwordConfirmation(SONARLINT_PWD)
         .name("SonarLint"));
+
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
   }
 
   @Before
@@ -145,6 +143,19 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
     assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
+  }
+
+  // SLCORE-259
+  @Test
+  public void analysisJavascriptWithoutTypescript() throws Exception {
+    engine = createEngine(e -> e.addExcludedCodeAnalyzer("typescript"));
+    engine.update(config(), null);
+    assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
+
+    engine.updateProject(config(), PROJECT_KEY_JAVASCRIPT, null);
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
