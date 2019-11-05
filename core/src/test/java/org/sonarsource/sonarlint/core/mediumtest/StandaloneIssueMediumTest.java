@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -203,9 +202,6 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleTypeScript() throws Exception {
-    // TODO enable it again once https://github.com/SonarSource/SonarTS/issues/598 is fixed
-    Assume.assumeFalse(SystemUtils.IS_OS_WINDOWS);
-
     RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
     assertThat(ruleDetails.getLanguageKey()).isEqualTo("ts");

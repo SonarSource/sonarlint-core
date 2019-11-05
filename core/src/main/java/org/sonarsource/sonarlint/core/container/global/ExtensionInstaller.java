@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
+import java.util.Collections;
+import java.util.Set;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
@@ -28,6 +30,7 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -41,12 +44,30 @@ public class ExtensionInstaller {
   private final PluginRepository pluginRepository;
   private final Configuration bootConfiguration;
   private final PluginVersionChecker pluginVersionChecker;
+  private final Set<String> excludedPlugins;
 
+  /**
+   * Standalone mode
+   */
   public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker) {
+    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, Collections.emptySet());
+  }
+
+  /**
+   * Connected mode
+   */
+  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
+    ConnectedGlobalConfiguration connectedGlobalConfig) {
+    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, connectedGlobalConfig.getExcludedCodeAnalyzers());
+  }
+
+  private ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
+    Set<String> excludedPlugins) {
     this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;
     this.bootConfiguration = bootConfiguration;
     this.pluginVersionChecker = pluginVersionChecker;
+    this.excludedPlugins = excludedPlugins;
   }
 
   public ExtensionInstaller install(ComponentContainer container, boolean global) {
@@ -85,6 +106,10 @@ public class ExtensionInstaller {
   }
 
   private boolean onlySonarSourceSensor(PluginInfo pluginInfo, Object extension) {
+    // SLCORE-259
+    if (excludedPlugins.contains("typescript") && "org.sonar.plugins.javascript.eslint.TypeScriptSensor".equals(className(extension))) {
+      return false;
+    }
     return pluginVersionChecker.getMinimumVersion(pluginInfo.getKey()) != null || isNotSensor(extension);
   }
 
