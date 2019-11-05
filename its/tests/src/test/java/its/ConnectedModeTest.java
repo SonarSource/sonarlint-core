@@ -572,8 +572,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertTrue(response.isSuccessful());
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
-      .setParam("profile_key", qp.getKey())
-      .setParam("rule_key", "squid:myrule");
+      .setParam("key", qp.getKey())
+      .setParam("rule", "squid:myrule");
     response = adminWsClient.wsConnector().call(request);
     assertTrue(response.isSuccessful());
 
@@ -688,7 +688,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Activate a new rule
     SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "profile_key", profileKey, "rule_key", "squid:S1228");
+    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "key", profileKey, "rule", "squid:S1228");
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
