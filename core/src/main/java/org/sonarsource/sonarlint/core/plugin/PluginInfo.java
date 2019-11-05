@@ -230,7 +230,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return this;
   }
 
-  public PluginInfo setSonarLintSupported(Boolean sonarLintSupported) {
+  public PluginInfo setSonarLintSupported(@Nullable Boolean sonarLintSupported) {
     this.sonarLintSupported = sonarLintSupported;
     return this;
   }
