@@ -19,6 +19,7 @@ resources:
       name: pipelines-yaml-templates
       ref:  refs/tags/v1.0.4
 
+
 stages:
 - template: stage-with-burgr-notifications.yml@commonTemplates
   parameters:
