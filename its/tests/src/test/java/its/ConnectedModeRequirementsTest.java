@@ -203,6 +203,9 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     SaveIssueListener issueListenerTs = new SaveIssueListener();
     engine.analyze(tsAnalysisConfig, issueListenerTs, (m, l) -> System.out.println(m), null);
     assertThat(issueListenerTs.getIssues()).hasSize(0);
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 0)) {
+      assertThat(logs).contains("TypeScript sensor excluded");
+    }
     assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
   }
 

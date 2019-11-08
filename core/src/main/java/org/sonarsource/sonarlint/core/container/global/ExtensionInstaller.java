@@ -107,7 +107,8 @@ public class ExtensionInstaller {
 
   private boolean onlySonarSourceSensor(PluginInfo pluginInfo, Object extension) {
     // SLCORE-259
-    if (excludedPlugins.contains("typescript") && "org.sonar.plugins.javascript.eslint.TypeScriptSensor".equals(className(extension))) {
+    if (excludedPlugins.contains("typescript") && className(extension).contains("TypeScriptSensor")) {
+      LOG.debug("TypeScript sensor excluded");
       return false;
     }
     return pluginVersionChecker.getMinimumVersion(pluginInfo.getKey()) != null || isNotSensor(extension);
