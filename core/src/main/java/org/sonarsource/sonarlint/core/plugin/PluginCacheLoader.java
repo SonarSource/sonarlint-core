@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
+import org.sonarsource.sonarlint.core.plugin.PluginInfo.RequiredPlugin;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginCacheLoader {
@@ -40,7 +41,7 @@ public class PluginCacheLoader {
 
   private static final Logger LOG = Loggers.get(PluginCacheLoader.class);
 
-  private final PluginCache fileCache;
+  private final PluginCache pluginCache;
   private final PluginIndex pluginIndex;
   private final Set<String> excludedPlugins;
   private final PluginVersionChecker pluginVersionChecker;
@@ -48,18 +49,22 @@ public class PluginCacheLoader {
   /**
    * This constructor will be used in standalone mode
    */
-  public PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache fileCache, PluginIndex pluginIndex) {
-    this.pluginVersionChecker = pluginVersionChecker;
-    this.fileCache = fileCache;
-    this.pluginIndex = pluginIndex;
-    this.excludedPlugins = Collections.emptySet();
+  public PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex) {
+    this(pluginVersionChecker, pluginCache, pluginIndex, Collections.emptySet());
   }
 
-  public PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache fileCache, PluginIndex pluginIndex, ConnectedGlobalConfiguration globalConfiguration) {
+  /**
+   * This constructor will be used in connected mode
+   */
+  public PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, ConnectedGlobalConfiguration globalConfiguration) {
+    this(pluginVersionChecker, pluginCache, pluginIndex, globalConfiguration.getExcludedCodeAnalyzers());
+  }
+
+  private PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, Set<String> excludedPlugins) {
     this.pluginVersionChecker = pluginVersionChecker;
-    this.fileCache = fileCache;
+    this.pluginCache = pluginCache;
     this.pluginIndex = pluginIndex;
-    this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
+    this.excludedPlugins = excludedPlugins;
   }
 
   public Map<String, PluginInfo> load() {
@@ -86,7 +91,7 @@ public class PluginCacheLoader {
 
   private boolean shouldSkip(PluginInfo info) {
     if (!info.isCompatibleWith(IMPLEMENTED_SQ_API)) {
-      LOG.warn("Code analyzer '{}' needs SonarQube plugin API {} while SonarLint supports only up to {}. Skip loading it.", info.getName(), info.getMinimalSqVersion(),
+      LOG.warn("Code analyzer '{}' needs plugin API {} while SonarLint supports only up to {}. Skip loading it.", info.getName(), info.getMinimalSqVersion(),
         IMPLEMENTED_SQ_API);
       return true;
     }
@@ -94,7 +99,7 @@ public class PluginCacheLoader {
       LOG.warn("Code analyzer '{}' is excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
-    if (info.getRequiredPlugins().stream().anyMatch(required -> excludedPlugins.contains(required.getKey())) || excludedPlugins.contains(info.getBasePlugin())) {
+    if (isMandatoryDependencyExcluded(info)) {
       LOG.debug("Code analyzer '{}' is transitively excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
@@ -113,10 +118,24 @@ public class PluginCacheLoader {
     return false;
   }
 
+  private boolean isMandatoryDependencyExcluded(PluginInfo info) {
+    for (RequiredPlugin required : info.getRequiredPlugins()) {
+      if ("javascript".equals(info.getKey()) && "typescript".equals(required.getKey())) {
+        // Workaround for SLCORE-259
+        // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
+        continue;
+      }
+      if (excludedPlugins.contains(required.getKey())) {
+        return true;
+      }
+    }
+    return excludedPlugins.contains(info.getBasePlugin());
+  }
+
   private Path getFromCache(final PluginReference pluginReference) {
     Path jar;
     try {
-      jar = fileCache.get(pluginReference.getFilename(), pluginReference.getHash());
+      jar = pluginCache.get(pluginReference.getFilename(), pluginReference.getHash());
     } catch (StorageException e) {
       throw e;
     } catch (Exception e) {
