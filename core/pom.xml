@@ -123,11 +123,6 @@
       <version>${protobuf.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java-util</artifactId>
-      <version>${protobuf.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonarqube.version}</version>
@@ -273,22 +268,22 @@
             <goals>
               <goal>copy</goal>
             </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.outputDirectory}/</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <stripVersion>true</stripVersion>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <artifactItems>
-            <artifactItem>
-              <groupId>${project.groupId}</groupId>
-              <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-              <version>${project.version}</version>
-              <type>jar</type>
-            </artifactItem>
-          </artifactItems>
-          <outputDirectory>${project.build.outputDirectory}/</outputDirectory>
-          <overWriteReleases>false</overWriteReleases>
-          <overWriteSnapshots>true</overWriteSnapshots>
-          <stripVersion>true</stripVersion>
-        </configuration>
       </plugin>
 
       <plugin>
@@ -344,6 +339,12 @@
                   <includes>
                     <include>**</include>
                   </includes>
+                </filter>
+                <filter>
+                  <artifact>org.sonarsource.sonarqube:sonar-ws</artifact>
+                  <excludes>
+                    <exclude>*.proto</exclude>
+                  </excludes>
                 </filter>
               </filters>
             </configuration>
