@@ -27,9 +27,9 @@ public class StandaloneRuleConfigurationProvider extends ProviderAdapter {
 
   private Configuration config;
 
-  public Configuration provide(MapSettings settings) {
+  public Configuration provide() {
     if (config == null) {
-      this.config = settings.asConfig();
+      this.config = new MapSettings().asConfig();
     }
     return config;
   }

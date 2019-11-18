@@ -21,11 +21,8 @@ package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import java.util.List;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.config.internal.MapSettings;
-import org.sonar.api.profiles.XMLProfileParser;
 import org.sonar.api.resources.Language;
 import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonar.api.server.rule.RulesDefinitionXmlLoader;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 
@@ -49,12 +46,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   private void addCoreComponents() {
     add(StandaloneRuleDefinitionsLoader.class,
       new StandaloneRulesProvider(),
-      RuleFinderCompatibility.class,
-      RulesDefinitionXmlLoader.class,
-      XMLProfileParser.class,
       StandaloneActiveRulesProvider.class,
-      // for cfamily plugin
-      new MapSettings(),
       new StandaloneRuleConfigurationProvider());
   }
 
