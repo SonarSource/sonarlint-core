@@ -17,7 +17,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref:  refs/heads/fix/repox_promote
+      ref:  refs/tags/v1.0.5
 
 
 stages:
