@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.util.JsonFormat;
-import java.net.HttpURLConnection;
+import com.google.gson.Gson;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -30,9 +28,6 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerExc
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-
-import static org.apache.commons.lang.StringUtils.trimToEmpty;
 
 public class ServerVersionAndStatusChecker {
 
@@ -99,40 +94,27 @@ public class ServerVersionAndStatusChecker {
 
   private ServerInfos fetchServerInfos() {
     return SonarLintWsClient.processTimed(
-      () -> wsClient.rawGet("api/system/status"),
+      () -> wsClient.get("api/system/status"),
       response -> {
-        if (!response.isSuccessful()) {
-          if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
-            return tryFromDeprecatedApi(response);
-          } else {
-            throw SonarLintWsClient.handleError(response);
-          }
-        } else {
-          String responseStr = response.content();
-          try {
-            ServerInfos.Builder builder = ServerInfos.newBuilder();
-            JsonFormat.parser().merge(responseStr, builder);
-            return builder.build();
-          } catch (InvalidProtocolBufferException e) {
-            throw new IllegalStateException("Unable to parse server infos from: " + StringUtils.abbreviate(responseStr, 100), e);
-          }
+        String responseStr = response.content();
+        try {
+          SystemStatus status = new Gson().fromJson(responseStr, SystemStatus.class);
+          ServerInfos.Builder builder = ServerInfos.newBuilder();
+          builder.setId(status.id);
+          builder.setStatus(status.status);
+          builder.setVersion(status.version);
+          return builder.build();
+        } catch (Exception e) {
+          throw new IllegalStateException("Unable to parse server infos from: " + StringUtils.abbreviate(responseStr, 100), e);
         }
       },
       duration -> LOG.debug("Downloaded server infos in {}ms", duration));
   }
 
-  private ServerInfos tryFromDeprecatedApi(WsResponse originalReponse) {
-    // Maybe a server version prior to 5.2. Fallback on deprecated api/server/version
-    try (WsResponse responseFallback = wsClient.rawGet("api/server/version")) {
-      if (!responseFallback.isSuccessful()) {
-        // We prefer to report original error
-        throw SonarLintWsClient.handleError(originalReponse);
-      }
-      String responseStr = responseFallback.content();
-      ServerInfos.Builder builder = ServerInfos.newBuilder();
-      builder.setStatus("UP");
-      builder.setVersion(trimToEmpty(responseStr));
-      return builder.build();
-    }
+  static class SystemStatus {
+    String id;
+    String version;
+    String status;
   }
+
 }
