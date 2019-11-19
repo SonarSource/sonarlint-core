@@ -66,6 +66,7 @@ stages:
           options: >-
             $(commonMavenArguments)
             --settings $(mavenSettings.secureFilePath)
+            -Prelease
             -Djarsigner.skip=false
             -Dsonarsource.keystore.path=$(jks.secureFilePath)
             -Dsonarsource.keystore.password=$(jksPassword)
