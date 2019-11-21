@@ -17,7 +17,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref:  refs/tags/v1.0.5
+      ref:  refs/tags/v1.0.6
 
 
 stages:
@@ -126,7 +126,7 @@ stages:
           ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
         inputs:
           goals: 'verify'
-          options: '-B --settings $(mavenSettings.secureFilePath) -Prelease -Dcommercial -Denable-repo=private'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private'
           publishJUnitResults: true
           testResultsFiles: '**/surefire-reports/TEST-*.xml'
           testRunTitle: 'UTs on Windows'
@@ -160,7 +160,7 @@ stages:
           ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
         inputs:
           goals: 'verify'
-          options: '-B --settings $(mavenSettings.secureFilePath) -Prelease -Dcommercial -Denable-repo=private'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private'
           publishJUnitResults: true
           testResultsFiles: '**/surefire-reports/TEST-*.xml'
           testRunTitle: 'UTs on Linux'
@@ -189,8 +189,8 @@ stages:
           ARTIFACTORY_PRIVATE_READER_USERNAME: $(ARTIFACTORY_PRIVATE_READER_USERNAME)
           ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
         inputs:
-          goals: 'org.jacoco:jacoco-maven-plugin:prepare-agent verify'
-          options: -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private
+          goals: 'verify'
+          options: -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private -Pcoverage
           publishJUnitResults: false
           javaHomeOption: 'JDKVersion'
           jdkVersionOption: '1.11'
