@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import javax.annotation.Nullable;
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
@@ -41,6 +43,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
@@ -72,6 +75,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.assertTrue;
 
+@Category(SonarCloud.class)
 public class SonarCloudTest extends AbstractConnectedTest {
   private static final String SONARCLOUD_STAGING_URL = "https://sc-staging.io";
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
@@ -153,8 +157,12 @@ public class SonarCloudTest extends AbstractConnectedTest {
     associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
 
     // Build project to have bytecode
-    Runtime runtime = Runtime.getRuntime();
-    runtime.exec(new String[] {"mvn", "clean", "compile"}, null, new File("projects/sample-java"));
+    String line = "mvn clean compile";
+    CommandLine cmdLine = CommandLine.parse(line);
+    DefaultExecutor executor = new DefaultExecutor();
+    executor.setWorkingDirectory(new File("projects/sample-java"));
+    int exitValue = executor.execute(cmdLine);
+    assertThat(exitValue).isEqualTo(0);
   }
 
   @AfterClass
