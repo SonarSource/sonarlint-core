@@ -637,12 +637,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
+    assertThat(issueListener.getIssues()).isEmpty();
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
+    issueListener.clear();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),

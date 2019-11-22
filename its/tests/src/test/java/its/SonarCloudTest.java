@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -47,7 +46,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
@@ -71,9 +69,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.Assert.assertTrue;
 
 @Category(SonarCloud.class)
 public class SonarCloudTest extends AbstractConnectedTest {
@@ -107,7 +103,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
   private ConnectedSonarLintEngine engine;
   private List<String> logs;
 
-  private static Server server;
   private static int randomPositiveInt;
 
   @BeforeClass
@@ -201,11 +196,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
     return "sonarlint-its-" + key + "-" + randomPositiveInt;
   }
 
-  @AfterClass
-  public static void after() throws Exception {
-    server.stop();
-  }
-
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
@@ -244,23 +234,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
   @Test
   public void downloadProjects() {
     updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(15);
-    provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(16).containsKeys("foo-bar", projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
-    assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
-  }
-
-  @Test
-  public void updateNoAuth() {
-    try {
-      engine.update(ServerConfiguration.builder()
-        .url(SONARCLOUD_STAGING_URL)
-        .userAgent("SonarLint ITs")
-        .build(), null);
-      fail("Exception expected");
-    } catch (Exception e) {
-      assertThat(e).hasMessage("Not authorized. Please check server credentials.");
-    }
+    assertThat(engine.allProjectsByKey()).hasSize(12);
+    provisionProject(projectKey("foo-bar"), "Foo");
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
+    assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys("foo-bar", projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
   }
 
   @Test
@@ -285,10 +262,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
-    updateProject(PROJECT_KEY_JAVASCRIPT);
+    updateProject(projectKey(PROJECT_KEY_JAVASCRIPT));
 
     SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener, null, null);
+    AnalysisResults results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
@@ -341,6 +318,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     WsRequest request = new PostRequest("/api/rules/update")
       .setParam("key", ruleKey)
+      .setParam("organization", SONARCLOUD_ORGANIZATION)
       .setParam("markdown_note", extendedDescription);
     WsResponse response = adminWsClient.wsConnector().call(request);
     assertThat(response.code()).isEqualTo(200);
@@ -446,61 +424,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisTemplateRule() throws Exception {
-    SearchWsRequest searchReq = new SearchWsRequest();
-    searchReq.setQualityProfile("SonarLint IT Java");
-    searchReq.setProjectKey(projectKey(PROJECT_KEY_JAVA));
-    searchReq.setDefaults(false);
-    SearchWsResponse search = adminWsClient.qualityProfiles().search(searchReq);
-    QualityProfile qp = null;
-    for (QualityProfile q : search.getProfilesList()) {
-      if (q.getName().equals("SonarLint IT Java")) {
-        qp = q;
-      }
-    }
-    assertThat(qp).isNotNull();
-
-    WsRequest request = new PostRequest("/api/rules/create")
-      .setParam("custom_key", "myrule")
-      .setParam("name", "myrule")
-      .setParam("markdown_description", "my_rule_description")
-      .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
-      .setParam("template_key", "squid:S2253")
-      .setParam("severity", "MAJOR");
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
-
-    request = new PostRequest("/api/qualityprofiles/activate_rule")
-      .setParam("key", qp.getKey())
-      .setParam("rule", "squid:myrule");
-    response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
-
-    try {
-
-      updateGlobal();
-      updateProject(projectKey(PROJECT_KEY_JAVA));
-
-      SaveIssueListener issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).hasSize(3);
-
-      assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("my_rule_description");
-
-    } finally {
-
-      request = new PostRequest("/api/rules/delete")
-        .setParam("key", "squid:myrule");
-      response = adminWsClient.wsConnector().call(request);
-      assertTrue(response.isSuccessful());
-    }
-  }
-
-  @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA_EMPTY));
@@ -526,8 +449,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
       issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(2);
 
-    // Override default file suffixes in global props so that input file is not considered as a Java file
-    setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
+    // Override default file suffixes in project props so that input file is not considered as a Java file
+    setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), "sonar.java.file.suffixes", ".foo");
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
@@ -536,18 +459,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
-
-    // Override default file suffixes in project props so that input file is considered as a Java file again
-    setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), "sonar.java.file.suffixes", ".java");
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
-    engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener, null, null);
-    assertThat(issueListener.getIssues()).hasSize(2);
-
+    assertThat(issueListener.getIssues()).isEmpty();
   }
 
   @Test
@@ -555,10 +467,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     WsHelper ws = new WsHelperImpl();
     ServerConfiguration serverConfig = getServerConfig();
 
-    String token = ws.generateAuthenticationToken(serverConfig, "name", false);
-    assertThat(token).isNotNull();
-
-    token = ws.generateAuthenticationToken(serverConfig, "name", true);
+    String token = ws.generateAuthenticationToken(serverConfig, "test-its", true);
     assertThat(token).isNotNull();
   }
 
@@ -609,7 +518,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   @Test
   public void getProject() throws Exception {
     WsHelper helper = new WsHelperImpl();
-    assertThat(helper.getProject(getServerConfig(), "foo", null)).isNotPresent();
+    assertThat(helper.getProject(getServerConfig(), projectKey("foo"), null)).isNotPresent();
     assertThat(helper.getProject(getServerConfig(), projectKey(PROJECT_KEY_RUBY), null)).isPresent();
   }
 
