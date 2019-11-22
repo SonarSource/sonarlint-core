@@ -17,7 +17,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref:  refs/tags/v1.0.5
+      ref:  refs/tags/v1.0.6
 
 
 stages:
@@ -250,6 +250,8 @@ stages:
           GITHUB_TOKEN: $(GITHUB_TOKEN)
           # SonarLintInstaller
           MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
           goals: 'verify'
           mavenPomFile: 'its/pom.xml'
