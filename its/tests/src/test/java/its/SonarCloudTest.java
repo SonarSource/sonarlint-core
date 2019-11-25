@@ -236,8 +236,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allProjectsByKey()).hasSize(12);
     provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
-    assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
+    assertThat(engine.allProjectsByKey()).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
   }
 
   @Test
@@ -477,9 +477,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
     StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isFalse();
 
-    // Activate a new rule
-    SearchWsResponse response = adminWsClient.qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
+    // Toggle a rule to ensure quality profile date is changed
+    SearchWsResponse response = adminWsClient.qualityProfiles().search(new SearchWsRequest().setOrganizationKey(SONARCLOUD_ORGANIZATION).setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
+    adminWsClient.qualityProfiles().deactivateRule(profileKey, "squid:S1228");
     adminWsClient.qualityProfiles().activateRule(ActivateRuleWsRequest.builder()
       .setKey(profileKey)
       .setRuleKey("squid:S1228")
@@ -487,7 +488,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
+    assertThat(result.changelog()).contains("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
     result = engine.checkIfProjectStorageNeedUpdate(serverConfig, projectKey(PROJECT_KEY_JAVA), null);
     assertThat(result.needUpdate()).isFalse();
