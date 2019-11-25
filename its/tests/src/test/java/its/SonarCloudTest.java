@@ -488,7 +488,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).contains("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
+    assertThat(result.changelog()).contains("Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
     result = engine.checkIfProjectStorageNeedUpdate(serverConfig, projectKey(PROJECT_KEY_JAVA), null);
     assertThat(result.needUpdate()).isFalse();
