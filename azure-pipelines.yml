@@ -37,11 +37,14 @@ stages:
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: CacheBeta@0
-        displayName: Cache Maven local repo
+      - task: Cache@2
         inputs:
-          key: maven | pom.xml
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
           path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -109,11 +112,14 @@ stages:
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: CacheBeta@0
-        displayName: Cache Maven local repo
+      - task: Cache@2
         inputs:
-          key: maven | pom.xml
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
           path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -143,11 +149,14 @@ stages:
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: CacheBeta@0
-        displayName: Cache Maven local repo
+      - task: Cache@2
         inputs:
-          key: maven | pom.xml
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
           path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -173,11 +182,14 @@ stages:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
         MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
       steps:
-      - task: CacheBeta@0
-        displayName: Cache Maven local repo
+      - task: Cache@2
         inputs:
-          key: maven | pom.xml
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
           path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -227,11 +239,14 @@ stages:
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: CacheBeta@0
-        displayName: Cache Maven local repo
+      - task: Cache@2
         inputs:
-          key: maven | its/pom.xml,its/tests/pom.xml
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
           path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
