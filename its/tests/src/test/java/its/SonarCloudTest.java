@@ -235,7 +235,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   public void downloadProjects() {
     updateGlobal();
     assertThat(engine.allProjectsByKey()).hasSize(12);
-    provisionProject(projectKey("foo-bar"), "Foo");
+    provisionProject("foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
     assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
   }
@@ -308,11 +308,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() {
-    updateGlobal();
-
     String ruleKey = "squid:S106";
-
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
 
     String extendedDescription = "my dummy extended description";
 
