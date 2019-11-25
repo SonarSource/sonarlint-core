@@ -237,7 +237,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     assertThat(engine.allProjectsByKey()).hasSize(12);
     provisionProject(projectKey("foo-bar"), "Foo");
     assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
-    assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys("foo-bar", projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
+    assertThat(engine.allProjectsByKey()).hasSize(13).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
   }
 
   @Test
