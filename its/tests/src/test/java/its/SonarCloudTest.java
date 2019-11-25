@@ -316,8 +316,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setParam("key", ruleKey)
       .setParam("organization", SONARCLOUD_ORGANIZATION)
       .setParam("markdown_note", extendedDescription);
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertThat(response.code()).isEqualTo(200);
+    }
 
     updateGlobal();
 

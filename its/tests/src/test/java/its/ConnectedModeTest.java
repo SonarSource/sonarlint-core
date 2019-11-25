@@ -380,8 +380,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     WsRequest request = new PostRequest("/api/rules/update")
       .setParam("key", ruleKey)
       .setParam("markdown_note", extendedDescription);
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertThat(response.code()).isEqualTo(200);
+    }
 
     updateGlobal();
 
@@ -568,14 +569,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
       .setParam("template_key", "squid:S2253")
       .setParam("severity", "MAJOR");
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertTrue(response.isSuccessful());
+    }
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
       .setParam("key", qp.getKey())
       .setParam("rule", "squid:myrule");
-    response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertTrue(response.isSuccessful());
+    }
 
     try {
 
@@ -596,8 +599,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       request = new PostRequest("/api/rules/delete")
         .setParam("key", "squid:myrule");
-      response = adminWsClient.wsConnector().call(request);
-      assertTrue(response.isSuccessful());
+      try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+        assertTrue(response.isSuccessful());
+      }
     }
   }
 
