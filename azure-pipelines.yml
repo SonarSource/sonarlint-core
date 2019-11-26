@@ -221,18 +221,26 @@ stages:
       displayName: Run ITs
       strategy:
         matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
           Dogfood:
             SQ_VERSION: 'DOGFOOD'
             JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
           Latest:
             SQ_VERSION: 'LATEST_RELEASE'
             JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
           Lts79:
             SQ_VERSION: 'LATEST_RELEASE[7.9]'
             JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
           Lts67:
             SQ_VERSION: 'LATEST_RELEASE[6.7]'
             JDKVersion: '1.8'
+            Category: '-DexcludedGroups=SonarCloud'
       variables:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
         MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
@@ -265,10 +273,12 @@ stages:
           GITHUB_TOKEN: $(GITHUB_TOKEN)
           # SonarLintInstaller
           MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
           goals: 'verify'
           mavenPomFile: 'its/pom.xml'
-          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION)'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
           publishJUnitResults: true
           testResultsFiles: '**/surefire-reports/TEST-*.xml'
           testRunTitle: 'ITs $(SQ_VERSION)'

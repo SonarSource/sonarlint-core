@@ -202,7 +202,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
-    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
+    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean compile"));
 
     prepareRedirectServer();
   }
@@ -380,8 +380,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     WsRequest request = new PostRequest("/api/rules/update")
       .setParam("key", ruleKey)
       .setParam("markdown_note", extendedDescription);
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertThat(response.code()).isEqualTo(200);
+    }
 
     updateGlobal();
 
@@ -568,14 +569,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
       .setParam("template_key", "squid:S2253")
       .setParam("severity", "MAJOR");
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertTrue(response.isSuccessful());
+    }
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
       .setParam("key", qp.getKey())
       .setParam("rule", "squid:myrule");
-    response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertTrue(response.isSuccessful());
+    }
 
     try {
 
@@ -596,8 +599,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       request = new PostRequest("/api/rules/delete")
         .setParam("key", "squid:myrule");
-      response = adminWsClient.wsConnector().call(request);
-      assertTrue(response.isSuccessful());
+      try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+        assertTrue(response.isSuccessful());
+      }
     }
   }
 
@@ -637,12 +641,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
+    assertThat(issueListener.getIssues()).isEmpty();
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
+    issueListener.clear();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
