@@ -58,6 +58,7 @@ public class RulesDownloader {
   }
 
   public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
+
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
 
@@ -103,9 +104,8 @@ public class RulesDownloader {
   private String getUrl(String severity, int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
-    if (wsClient.getOrganizationKey() != null) {
-      builder.append("&organization=").append(StringUtils.urlEncode(wsClient.getOrganizationKey()));
-    }
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
     builder.append("&severities=").append(severity);
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);

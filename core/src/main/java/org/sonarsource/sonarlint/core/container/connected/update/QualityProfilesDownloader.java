@@ -51,10 +51,8 @@ public class QualityProfilesDownloader {
 
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(DEFAULT_QP_SEARCH_URL);
-    String organizationKey = wsClient.getOrganizationKey();
-    if (organizationKey != null) {
-      searchUrl.append("?organization=").append(StringUtils.urlEncode(organizationKey));
-    }
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append("?organization=").append(StringUtils.urlEncode(org)));
     SonarLintWsClient.consumeTimed(
       () -> wsClient.get(searchUrl.toString()),
       response -> {

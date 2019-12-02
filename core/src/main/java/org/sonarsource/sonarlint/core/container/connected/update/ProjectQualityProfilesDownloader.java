@@ -45,17 +45,15 @@ public class ProjectQualityProfilesDownloader {
     StringBuilder url = new StringBuilder();
     url.append("/api/qualityprofiles/search.protobuf?project=");
     url.append(StringUtils.urlEncode(projectKey));
-    String organizationKey = wsClient.getOrganizationKey();
-    if (organizationKey != null) {
-      url.append("&organization=").append(StringUtils.urlEncode(organizationKey));
-    }
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
     try {
       qpResponse = SonarLintWsClient.processTimed(
         () -> wsClient.get(url.toString()),
         response -> QualityProfiles.SearchWsResponse.parseFrom(response.contentStream()),
         duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
     } catch (NotFoundException e) {
-      throw new ProjectNotFoundException(projectKey, organizationKey);
+      throw new ProjectNotFoundException(projectKey, wsClient.getOrganizationKey().orElse(null));
     }
     return qpResponse.getProfilesList();
   }

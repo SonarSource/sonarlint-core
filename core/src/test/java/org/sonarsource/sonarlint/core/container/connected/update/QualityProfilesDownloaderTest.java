@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -66,7 +67,7 @@ public class QualityProfilesDownloaderTest {
   @Test
   public void testWithOrg() {
     SonarLintWsClient wsClient = WsClientTestUtils.createMockWithStreamResponse("/api/qualityprofiles/search.protobuf?organization=myOrg", "/update/qualityprofiles.pb");
-    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
+    when(wsClient.getOrganizationKey()).thenReturn(Optional.of("myOrg"));
     qProfilesDownloader = new QualityProfilesDownloader(wsClient);
     qProfilesDownloader.fetchQualityProfilesTo(temp.getRoot().toPath());
 

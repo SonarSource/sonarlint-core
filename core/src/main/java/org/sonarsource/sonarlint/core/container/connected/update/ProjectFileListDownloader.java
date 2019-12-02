@@ -47,10 +47,10 @@ public class ProjectFileListDownloader {
   }
 
   private String buildPath(String projectKey) {
-    String path = BASE_PATH + "component=" + StringUtils.urlEncode(projectKey);
-    if (wsClient.getOrganizationKey() != null) {
-      path += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
-    }
-    return path;
+    StringBuilder url = new StringBuilder();
+    url.append(BASE_PATH);
+    url.append("component=").append(StringUtils.urlEncode(projectKey));
+    wsClient.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    return url.toString();
   }
 }

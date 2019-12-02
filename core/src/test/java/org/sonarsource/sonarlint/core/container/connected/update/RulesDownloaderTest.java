@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,7 +108,7 @@ public class RulesDownloaderTest {
     emptyMockForAllSeverities(wsClient, RULES_SEARCH_URL + "&organization=myOrg");
     WsClientTestUtils.addStreamResponse(wsClient, RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&p=1&ps=500", "/update/rulesp1.pb");
     WsClientTestUtils.addStreamResponse(wsClient, RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
-    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
+    when(wsClient.getOrganizationKey()).thenReturn(Optional.of("myOrg"));
 
     RulesDownloader rulesUpdate = new RulesDownloader(wsClient);
     rulesUpdate.fetchRulesTo(tempDir.toPath(), progressWrapper);

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
@@ -52,7 +53,7 @@ public class ProjectFileListDownloaderTest {
   @Test
   public void should_get_files_with_organization() throws IOException {
     try (InputStream in = this.getClass().getResourceAsStream("/update/component_tree.pb")) {
-      when(wsClient.getOrganizationKey()).thenReturn("myorg");
+      when(wsClient.getOrganizationKey()).thenReturn(Optional.of("myorg"));
       WsClientTestUtils.addResponse(wsClient, "api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&organization=myorg&ps=500&p=1", in);
       ProjectFileListDownloader underTest = new ProjectFileListDownloader(wsClient);
       List<String> files = underTest.get(PROJECT_KEY, progressWrapper);

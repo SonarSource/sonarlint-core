@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -57,7 +58,7 @@ public class ProjectListDownloaderTest {
   public void update_modules_after_6_dot_3_with_org() throws Exception {
 
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
+    when(wsClient.getOrganizationKey()).thenReturn(Optional.of("myOrg"));
     WsClientTestUtils.addStreamResponse(wsClient, "api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
 
     File tempDir = temp.newFolder();

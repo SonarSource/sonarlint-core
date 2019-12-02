@@ -28,13 +28,13 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
@@ -170,9 +170,8 @@ public class SonarLintWsClient {
     return userAgent;
   }
 
-  @CheckForNull
-  public String getOrganizationKey() {
-    return organizationKey;
+  public Optional<String> getOrganizationKey() {
+    return Optional.ofNullable(organizationKey);
   }
 
   // static to allow mocking SonarLintWsClient while still using this method
