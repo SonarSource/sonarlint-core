@@ -20,8 +20,6 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
-import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import io.grpc.CallOptions;
@@ -45,7 +43,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -54,7 +51,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
-import org.sonar.wsclient.services.PropertyDeleteQuery;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
@@ -77,24 +73,18 @@ import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedDaemonTest {
-  private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String SONARLINT_USER = "sonarlint";
   private static final String SONARLINT_PWD = "sonarlintpwd";
   private static final String STORAGE_ID = "storage";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR;
-
-  static {
-    OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-      .setSonarVersion(SONAR_VERSION);
-
-    orchestratorBuilder
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
-    ORCHESTRATOR = orchestratorBuilder
-      .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
-      .build();
-  }
+  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setSonarVersion(SONAR_VERSION).addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
+    // With recent version of SonarJS, SonarTS is required
+    .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+    .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -122,25 +112,14 @@ public class ConnectedDaemonTest {
     ORCHESTRATOR.getServer().adminWsClient().userClient()
       .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
 
-    // addUserPermission("sonarlint", "dryRunScan");
-
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
-    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
-
-    // Build project to have bytecode
-    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
   }
 
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     daemon.install();
-  }
-
-  @After
-  public void stop() {
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
   }
 
   @Test
@@ -176,17 +155,16 @@ public class ConnectedDaemonTest {
 
     // UPDATE MODULE
     ModuleUpdateReq moduleUpdate = ModuleUpdateReq.newBuilder()
-      .setModuleKey(PROJECT_KEY_JAVA)
+      .setModuleKey(PROJECT_KEY_JAVASCRIPT)
       .setServerConfig(serverConfig)
       .build();
     sonarlint.updateModule(moduleUpdate);
 
     // ANALYSIS
     ClientCall<Void, LogEvent> call = getLogs(logs, channel);
-    Iterator<Issue> issues = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVA));
+    Iterator<Issue> issues = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVASCRIPT));
 
-    assertThat(issues).hasSize(3);
-    // assertThat(logs.getLogsAndClear()).contains("2 files indexed");
+    assertThat(issues).hasSize(1);
     call.cancel(null, null);
 
     channel.shutdownNow();
@@ -218,7 +196,7 @@ public class ConnectedDaemonTest {
     sonarlint.start(createConnectedConfig());
 
     // Analyze without update -> error
-    Iterator<Issue> analyze = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVA));
+    Iterator<Issue> analyze = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVASCRIPT));
 
     exception.expectMessage("Storage of server 'storage' requires an update");
     exception.expect(StatusRuntimeException.class);
@@ -258,7 +236,7 @@ public class ConnectedDaemonTest {
     }
     return builder
       .setBaseDir(projectPath.toAbsolutePath().toString())
-      .setModuleKey(PROJECT_KEY_JAVA)
+      .setModuleKey(PROJECT_KEY_JAVASCRIPT)
       .putAllProperties(Collections.singletonMap("sonar.java.binaries",
         new File("projects/sample-java/target/classes").getAbsolutePath()))
       .build();

@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -205,6 +206,15 @@ public class SonarCloudTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("sonarcloud")
       .setSonarLintUserHome(sonarUserHome)
+      .addEnabledLanguage(Language.JAVA)
+      .addEnabledLanguage(Language.PHP)
+      .addEnabledLanguage(Language.JS)
+      .addEnabledLanguage(Language.PYTHON)
+      .addEnabledLanguage(Language.HTML)
+      .addEnabledLanguage(Language.RUBY)
+      .addEnabledLanguage(Language.KOTLIN)
+      .addEnabledLanguage(Language.SCALA)
+      .addEnabledLanguage(Language.XML)
       .setLogOutput((msg, level) -> {
         logs.add(msg);
         System.out.println(msg);

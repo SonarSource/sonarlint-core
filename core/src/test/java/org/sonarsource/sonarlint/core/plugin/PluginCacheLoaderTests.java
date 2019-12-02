@@ -42,6 +42,7 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.ZipUtils;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
@@ -70,7 +71,7 @@ class PluginCacheLoaderTests {
   private PluginIndex pluginIndex;
   private PluginCache pluginCache;
   private PluginVersionChecker pluginVersionChecker;
-  private Set<String> excludedAnalyzers;
+  private Set<Language> enabledLanguages;
 
   @BeforeEach
   public void prepare() {
@@ -78,8 +79,8 @@ class PluginCacheLoaderTests {
     pluginCache = mock(PluginCache.class);
     pluginVersionChecker = mock(PluginVersionChecker.class);
     ConnectedGlobalConfiguration configuration = mock(ConnectedGlobalConfiguration.class);
-    excludedAnalyzers = new HashSet<>();
-    when(configuration.getExcludedCodeAnalyzers()).thenReturn(excludedAnalyzers);
+    enabledLanguages = new HashSet<>();
+    when(configuration.getEnabledLanguages()).thenReturn(enabledLanguages);
     underTest = new PluginCacheLoader(pluginVersionChecker, pluginCache, pluginIndex, configuration);
 
     when(pluginVersionChecker.isVersionSupported(any(), ArgumentMatchers.<String>any())).thenThrow(new IllegalStateException("Non specified behavior"));
@@ -168,22 +169,22 @@ class PluginCacheLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_excluded_plugins(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null));
+  public void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
-    excludedAnalyzers.add(FAKE_PLUGIN_KEY);
+    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
+    enabledLanguages.add(Language.TS);
 
     assertThat(underTest.load()).hasSize(0);
-    assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' is excluded in this version of SonarLint. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Code analyzer 'javascript' is excluded in this version of SonarLint. Skip loading it.");
   }
 
   @Test
   public void load_plugin_skip_plugins_having_excluded_base_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "basePluginKey"));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, Language.JS.getPluginKey()));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
-    excludedAnalyzers.add("basePluginKey");
+    enabledLanguages.add(Language.TS);
 
     assertThat(underTest.load()).hasSize(0);
     assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' is transitively excluded in this version of SonarLint. Skip loading it.");
@@ -191,10 +192,11 @@ class PluginCacheLoaderTests {
 
   @Test
   public void load_plugin_skip_plugins_having_excluded_required_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, "required1:1.0", "required2:1.0"));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey() + ":1.0", "required2:1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
-    excludedAnalyzers.add("required2");
+    enabledLanguages.add(Language.TS);
 
     assertThat(underTest.load()).hasSize(0);
     assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' is transitively excluded in this version of SonarLint. Skip loading it.");
@@ -203,10 +205,11 @@ class PluginCacheLoaderTests {
   // SLCORE-259
   @Test
   public void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, "javascript", V1_0, true, null, null, "typescript:1.0"));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar",
+      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, Language.TS.getPluginKey() + ":1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq("javascript"), eq(Version.create(V1_0)));
-    excludedAnalyzers.add("typescript");
+    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
+    enabledLanguages.add(Language.JS);
 
     assertThat(underTest.load()).as(logsWithoutStartStop().collect(Collectors.joining("\n"))).hasSize(1);
   }

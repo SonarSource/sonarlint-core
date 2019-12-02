@@ -20,9 +20,7 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.tools.ItUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +35,15 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
+import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,19 +61,9 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   }
 
   @Rule
-  public Orchestrator ORCHESTRATOR = buildOrchestrator();
-
-  private static Orchestrator buildOrchestrator() {
-    OrchestratorBuilder builder = Orchestrator.builderEnv()
-      .setSonarVersion(SONAR_VERSION)
-      .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.0.2010"));
-
-    builder
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
-      .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion));
-
-    return builder.build();
-  }
+  public Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
+    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.0.2010")).build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -117,14 +108,21 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   @Test
   public void dontDownloadPluginWithUnsupportedVersion() {
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
+    engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
     UpdateResult update = engine.update(config(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("javascript");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.PYTHON.getPluginKey());
     assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1.2080'). Skip downloading it.");
+  }
+
+  @Test
+  public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
+    engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
+    ValidationResult result = new WsHelperImpl().validateConnection(config());
+    assertThat(result.success()).isTrue();
   }
 
   private ServerConfiguration config() {

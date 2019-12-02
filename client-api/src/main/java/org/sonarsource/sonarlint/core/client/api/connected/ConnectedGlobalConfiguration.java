@@ -39,12 +39,12 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final String serverId;
   private final Path storageRoot;
-  private final Set<String> excludedCodeAnalyzers;
+  private final Set<Language> enabledLanguages;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
     this.serverId = builder.serverId;
-    this.excludedCodeAnalyzers = builder.excludedCodeAnalyzers;
+    this.enabledLanguages = builder.enabledLanguages;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
   }
 
@@ -60,14 +60,14 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return serverId;
   }
 
-  public Set<String> getExcludedCodeAnalyzers() {
-    return excludedCodeAnalyzers;
+  public Set<Language> getEnabledLanguages() {
+    return enabledLanguages;
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
     private String serverId;
     private Path storageRoot;
-    private Set<String> excludedCodeAnalyzers = new HashSet<>();
+    private Set<Language> enabledLanguages = new HashSet<>();
 
     private Builder() {
     }
@@ -87,13 +87,13 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
       }
     }
 
-    public Builder addExcludedCodeAnalyzer(String key) {
-      excludedCodeAnalyzers.add(key);
+    public Builder addEnabledLanguage(Language language) {
+      enabledLanguages.add(language);
       return this;
     }
 
-    public Builder addExcludedCodeAnalyzers(String... keys) {
-      excludedCodeAnalyzers.addAll(Arrays.asList(keys));
+    public Builder addEnabledLanguages(Language... languages) {
+      enabledLanguages.addAll(Arrays.asList(languages));
       return this;
     }
 

@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static its.tools.ItUtils.SONAR_VERSION;
@@ -109,6 +110,10 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
+      .addEnabledLanguage(Language.COBOL)
+      .addEnabledLanguage(Language.C)
+      .addEnabledLanguage(Language.TSQL)
+      .addEnabledLanguage(Language.APEX)
       .setLogOutput((msg, level) -> System.out.println(msg))
       .build());
   }

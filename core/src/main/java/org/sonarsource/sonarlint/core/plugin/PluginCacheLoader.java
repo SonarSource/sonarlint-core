@@ -20,15 +20,16 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
@@ -43,28 +44,28 @@ public class PluginCacheLoader {
 
   private final PluginCache pluginCache;
   private final PluginIndex pluginIndex;
-  private final Set<String> excludedPlugins;
+  private final Set<Language> enabledLanguages;
   private final PluginVersionChecker pluginVersionChecker;
 
   /**
    * This constructor will be used in standalone mode
    */
   public PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex) {
-    this(pluginVersionChecker, pluginCache, pluginIndex, Collections.emptySet());
+    this(pluginVersionChecker, pluginCache, pluginIndex, (Set<Language>) null);
   }
 
   /**
    * This constructor will be used in connected mode
    */
   public PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, ConnectedGlobalConfiguration globalConfiguration) {
-    this(pluginVersionChecker, pluginCache, pluginIndex, globalConfiguration.getExcludedCodeAnalyzers());
+    this(pluginVersionChecker, pluginCache, pluginIndex, globalConfiguration.getEnabledLanguages());
   }
 
-  private PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, Set<String> excludedPlugins) {
+  private PluginCacheLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, @Nullable Set<Language> enabledLanguages) {
     this.pluginVersionChecker = pluginVersionChecker;
     this.pluginCache = pluginCache;
     this.pluginIndex = pluginIndex;
-    this.excludedPlugins = excludedPlugins;
+    this.enabledLanguages = enabledLanguages;
   }
 
   public Map<String, PluginInfo> load() {
@@ -95,7 +96,7 @@ public class PluginCacheLoader {
         IMPLEMENTED_SQ_API);
       return true;
     }
-    if (excludedPlugins.contains(info.getKey())) {
+    if (excludedSonarSourceAnalyzer(info.getKey())) {
       LOG.warn("Code analyzer '{}' is excluded in this version of SonarLint. Skip loading it.", info.getName());
       return true;
     }
@@ -120,16 +121,21 @@ public class PluginCacheLoader {
 
   private boolean isMandatoryDependencyExcluded(PluginInfo info) {
     for (RequiredPlugin required : info.getRequiredPlugins()) {
-      if ("javascript".equals(info.getKey()) && "typescript".equals(required.getKey())) {
+      if (Language.JS.getPluginKey().equals(info.getKey()) && Language.TS.getPluginKey().equals(required.getKey())) {
         // Workaround for SLCORE-259
         // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
         continue;
       }
-      if (excludedPlugins.contains(required.getKey())) {
+      if (excludedSonarSourceAnalyzer(required.getKey())) {
         return true;
       }
     }
-    return excludedPlugins.contains(info.getBasePlugin());
+    String basePlugin = info.getBasePlugin();
+    return basePlugin != null && excludedSonarSourceAnalyzer(basePlugin);
+  }
+
+  private boolean excludedSonarSourceAnalyzer(String pluginKey) {
+    return enabledLanguages != null && Language.containsPlugin(pluginKey) && enabledLanguages.stream().noneMatch(l -> l.getPluginKey().equals(pluginKey));
   }
 
   private Path getFromCache(final PluginReference pluginReference) {
