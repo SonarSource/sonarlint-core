@@ -31,6 +31,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -44,7 +45,7 @@ public class ExtensionInstaller {
   private final PluginRepository pluginRepository;
   private final Configuration bootConfiguration;
   private final PluginVersionChecker pluginVersionChecker;
-  private final Set<String> excludedPlugins;
+  private final Set<Language> enabledLanguages;
 
   /**
    * Standalone mode
@@ -58,16 +59,16 @@ public class ExtensionInstaller {
    */
   public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
     ConnectedGlobalConfiguration connectedGlobalConfig) {
-    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, connectedGlobalConfig.getExcludedCodeAnalyzers());
+    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, connectedGlobalConfig.getEnabledLanguages());
   }
 
   private ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
-    Set<String> excludedPlugins) {
+    Set<Language> enabledLanguages) {
     this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;
     this.bootConfiguration = bootConfiguration;
     this.pluginVersionChecker = pluginVersionChecker;
-    this.excludedPlugins = excludedPlugins;
+    this.enabledLanguages = enabledLanguages;
   }
 
   public ExtensionInstaller install(ComponentContainer container, boolean global) {
@@ -107,7 +108,7 @@ public class ExtensionInstaller {
 
   private boolean onlySonarSourceSensor(PluginInfo pluginInfo, Object extension) {
     // SLCORE-259
-    if (excludedPlugins.contains("typescript") && className(extension).contains("TypeScriptSensor")) {
+    if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
       LOG.debug("TypeScript sensor excluded");
       return false;
     }

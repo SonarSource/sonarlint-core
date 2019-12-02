@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -41,12 +42,13 @@ public class PluginListDownloader {
 
   private final SonarLintWsClient wsClient;
   private final PluginVersionChecker pluginVersionChecker;
-  private final Set<String> excludedPlugins;
+  private final Set<Language> enabledLanguages;
 
   public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, SonarLintWsClient wsClient, PluginVersionChecker pluginVersionChecker) {
     this.wsClient = wsClient;
     this.pluginVersionChecker = pluginVersionChecker;
-    this.excludedPlugins = globalConfiguration.getExcludedCodeAnalyzers();
+
+    this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
   public List<SonarAnalyzer> downloadPluginList() {
@@ -60,10 +62,18 @@ public class PluginListDownloader {
   }
 
   private SonarAnalyzer toSonarAnalyzer(InstalledPlugin plugin) {
-    boolean sonarlintCompatible = !excludedPlugins.contains(plugin.key) && plugin.sonarLintSupported;
+    boolean sonarlintCompatible = (!isKnownSonarSourceAnalyzer(plugin.key) || providesAtLeastOneEnabledLanguage(plugin.key)) && plugin.sonarLintSupported;
     DefaultSonarAnalyzer sonarAnalyzer = new DefaultSonarAnalyzer(plugin.key, plugin.filename, plugin.hash, sonarlintCompatible);
     checkMinVersion(sonarAnalyzer);
     return sonarAnalyzer;
+  }
+
+  private boolean providesAtLeastOneEnabledLanguage(String pluginKey) {
+    return enabledLanguages.stream().anyMatch(language -> pluginKey.equals(language.getPluginKey()));
+  }
+
+  private static boolean isKnownSonarSourceAnalyzer(String pluginKey) {
+    return Language.containsPlugin(pluginKey);
   }
 
   private void checkMinVersion(DefaultSonarAnalyzer analyzer) {

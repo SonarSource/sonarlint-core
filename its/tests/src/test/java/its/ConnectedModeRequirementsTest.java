@@ -41,13 +41,12 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +54,7 @@ import static org.junit.Assert.fail;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
+  private static final String CUSTOM_JS_PLUGIN_KEY = "custom";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
 
@@ -130,41 +130,42 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontDownloadExcludedPlugin() {
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
+  public void dontDownloadPluginIfNotEnabledLanguage() {
+    engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
     engine.update(config(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), Language.TS.getPluginKey(),
+      CUSTOM_JS_PLUGIN_KEY);
   }
 
   @Test
   public void dontFailIfMissingBasePlugin() {
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("javascript"));
+    engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
     engine.update(config(), null);
     assertThat(logs).contains("Code analyzer 'JavaScript Custom Rules Plugin' is transitively excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("custom");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(CUSTOM_JS_PLUGIN_KEY);
   }
 
   @Test
   public void dontLoadExcludedPlugin() {
-    engine = createEngine();
+    engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
     engine.update(config(), null);
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains("java");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JAVA.getPluginKey());
     engine.stop(false);
 
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
+    engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("java");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.JAVA.getPluginKey());
   }
 
   // SLCORE-259
   @Test
   public void analysisJavascriptWithoutTypescript() throws Exception {
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("typescript"));
+    engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(config(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains("javascript");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("typescript");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JS.getPluginKey());
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.TS.getPluginKey());
 
     engine.updateProject(config(), PROJECT_KEY_JAVASCRIPT, null);
     SaveIssueListener issueListener = new SaveIssueListener();
@@ -193,11 +194,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     extraProperties.put("sonar.typescript.internal.typescriptLocation", tsAnalysisConfig.baseDir().resolve("node_modules").toString());
     engine = createEngine(e -> e
       .setExtraProperties(extraProperties)
-      .addExcludedCodeAnalyzer("typescript"));
+      .addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(config(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains("javascript");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain("typescript");
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JS.getPluginKey());
+    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.TS.getPluginKey());
 
     engine.updateProject(config(), PROJECT_KEY_TYPESCRIPT, null);
     SaveIssueListener issueListenerTs = new SaveIssueListener();
@@ -207,13 +208,6 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
       assertThat(logs).contains("TypeScript sensor excluded");
     }
     assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
-  }
-
-  @Test
-  public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
-    engine = createEngine(e -> e.addExcludedCodeAnalyzer("java"));
-    ValidationResult result = new WsHelperImpl().validateConnection(config());
-    assertThat(result.success()).isTrue();
   }
 
   private ServerConfiguration config() {

@@ -59,7 +59,7 @@
         <extensions>true</extensions>
         <configuration>
           <pluginClass>org.sonarsource.plugins.example.GlobalExtensionPlugin</pluginClass>
-          <!-- Need to be one part of the whitelist -->
+          <!-- Need to be one part of the sensor whitelist -->
           <pluginKey>xoo</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
           <sonarQubeMinVersion>6.7</sonarQubeMinVersion>

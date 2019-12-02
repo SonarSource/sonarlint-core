@@ -70,14 +70,14 @@ public class ConnectedGlobalConfigurationTest {
     assertThat(config.getStorageRoot()).isEqualTo(storage);
     assertThat(config.getWorkDir()).isEqualTo(work);
   }
-  
+
   @Test
-  public void excludeAnalyzers() {
+  public void enableLanguages() {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .addExcludedCodeAnalyzers("k1", "k2")
-      .addExcludedCodeAnalyzer("k3")
+      .addEnabledLanguages(Language.JAVA, Language.ABAP)
+      .addEnabledLanguage(Language.C)
       .build();
-    assertThat(config.getExcludedCodeAnalyzers()).containsOnly("k1", "k2", "k3");
+    assertThat(config.getEnabledLanguages()).containsOnly(Language.JAVA, Language.ABAP, Language.C);
   }
 
   @Test

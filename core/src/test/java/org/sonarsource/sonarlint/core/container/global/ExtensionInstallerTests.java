@@ -36,6 +36,7 @@ import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -105,23 +106,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void install_typescript_sensor_if_typescript_plugin_not_excluded() {
-    PluginInfo pluginInfo = new PluginInfo("foo");
-    pluginInfo.setSonarLintSupported(true);
-    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
-
-    when(pluginRepository.getPluginInfos()).thenReturn(Arrays.asList(pluginInfo));
-    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
-
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder().build());
-
-    underTest.install(container, false);
-
-    verify(container).addExtension(pluginInfo, TypeScriptSensor.class);
-  }
-
-  @Test
-  public void dont_install_typescript_sensor_if_typescript_plugin_excluded() {
+  public void install_typescript_sensor_if_typescript_language_enabled() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
@@ -130,7 +115,24 @@ public class ExtensionInstallerTests {
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
 
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
-      .addExcludedCodeAnalyzer("typescript").build());
+      .addEnabledLanguage(Language.TS).build());
+
+    underTest.install(container, false);
+
+    verify(container).addExtension(pluginInfo, TypeScriptSensor.class);
+  }
+
+  @Test
+  public void dont_install_typescript_sensor_if_typescript_language_not_enabled() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
+
+    when(pluginRepository.getPluginInfos()).thenReturn(Arrays.asList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
+
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
+      .addEnabledLanguage(Language.JS).build());
 
     underTest.install(container, false);
 
