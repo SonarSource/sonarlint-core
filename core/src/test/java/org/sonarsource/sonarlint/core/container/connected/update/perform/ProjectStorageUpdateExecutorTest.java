@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Rule;
@@ -113,7 +114,7 @@ public class ProjectStorageUpdateExecutorTest {
   public void setUp() throws IOException {
     wsClient = WsClientTestUtils.createMockWithStreamResponse(getQualityProfileUrl(),
       "/update/qualityprofiles_project.pb");
-    when(wsClient.getOrganizationKey()).thenReturn(organizationKey);
+    when(wsClient.getOrganizationKey()).thenReturn(Optional.ofNullable(organizationKey));
 
     ValuesWsResponse response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()

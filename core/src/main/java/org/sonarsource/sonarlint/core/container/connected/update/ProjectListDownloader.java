@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectListDownloader {
 
+  private static final String PROJECT_SEARCH_URL = "api/components/search.protobuf?qualifiers=TRK";
   private final SonarLintWsClient wsClient;
 
   public ProjectListDownloader(SonarLintWsClient wsClient) {
@@ -41,11 +42,11 @@ public class ProjectListDownloader {
     ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
     Builder projectBuilder = ProjectList.Project.newBuilder();
 
-    String baseUrl = "api/components/search.protobuf?qualifiers=TRK";
-    if (wsClient.getOrganizationKey() != null) {
-      baseUrl += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
-    }
-    SonarLintWsClient.getPaginated(wsClient, baseUrl,
+    StringBuilder searchUrl = new StringBuilder();
+    searchUrl.append(PROJECT_SEARCH_URL);
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+    SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
       WsComponents.SearchWsResponse::parseFrom,
       WsComponents.SearchWsResponse::getPaging,
       WsComponents.SearchWsResponse::getComponentsList,
