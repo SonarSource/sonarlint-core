@@ -19,20 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.fs.InputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class InputPathCacheTest {
-  private InputPathCache cache;
+class InputFileCacheTests {
+  private InputFileCache cache;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    cache = new InputPathCache();
+    cache = new InputFileCache();
   }
 
   @Test
@@ -48,8 +49,7 @@ public class InputPathCacheTest {
     cache.doAdd(file2);
     assertThat(cache.inputFiles()).containsOnly(file1, file2);
 
-    // always null
-    assertThat(cache.inputFile("file1.java")).isNull();
+    assertThrows(UnsupportedOperationException.class, () -> cache.inputFile("file1.java"));
 
     assertThat(cache.getFilesByExtension("java")).containsOnly(file1);
     assertThat(cache.getFilesByExtension("")).containsOnly(file2);

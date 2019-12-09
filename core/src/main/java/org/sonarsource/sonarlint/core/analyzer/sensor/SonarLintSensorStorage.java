@@ -27,26 +27,27 @@ import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.batch.rule.internal.DefaultRule;
-import org.sonar.api.batch.sensor.code.internal.DefaultSignificantCode;
-import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
-import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
+import org.sonar.api.batch.sensor.code.NewSignificantCode;
+import org.sonar.api.batch.sensor.coverage.NewCoverage;
+import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.error.AnalysisError;
-import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
+import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
+import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.Issue.Flow;
-import org.sonar.api.batch.sensor.issue.internal.DefaultExternalIssue;
 import org.sonar.api.batch.sensor.measure.Measure;
-import org.sonar.api.batch.sensor.rule.internal.DefaultAdHocRule;
-import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
+import org.sonar.api.batch.sensor.rule.AdHocRule;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.rules.RuleType;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFlow;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 
@@ -79,7 +80,7 @@ public class SonarLintSensorStorage implements SensorStorage {
   public void store(Issue issue) {
     InputComponent inputComponent = issue.primaryLocation().inputComponent();
 
-    DefaultRule rule = validateRule(issue);
+    SonarLintRule rule = validateRule(issue);
     ActiveRule activeRule = activeRules.find(issue.ruleKey());
     if (activeRule == null) {
       // rule does not exist or is not enabled -> ignore the issue
@@ -93,7 +94,8 @@ public class SonarLintSensorStorage implements SensorStorage {
     String primaryMessage = defaultIfEmpty(issue.primaryLocation().message(), rule.name());
     org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
-    String type = rule.type();
+    RuleType typeOrNull = rule.type();
+    String type = typeOrNull != null ? typeOrNull.name() : null;
 
     List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows());
 
@@ -121,7 +123,7 @@ public class SonarLintSensorStorage implements SensorStorage {
       .collect(toList());
   }
 
-  private DefaultRule validateRule(Issue issue) {
+  private SonarLintRule validateRule(Issue issue) {
     RuleKey ruleKey = issue.ruleKey();
     Rule rule = rules.find(ruleKey);
     if (rule == null) {
@@ -130,26 +132,26 @@ public class SonarLintSensorStorage implements SensorStorage {
     if (isEmpty(rule.name()) && isEmpty(issue.primaryLocation().message())) {
       throw MessageException.of(String.format("The rule '%s' has no name and the related issue has no message.", ruleKey));
     }
-    return (DefaultRule) rule;
+    return (SonarLintRule) rule;
   }
 
   @Override
-  public void store(DefaultHighlighting highlighting) {
+  public void store(NewHighlighting highlighting) {
     // NO-OP
   }
 
   @Override
-  public void store(DefaultCoverage defaultCoverage) {
+  public void store(NewCoverage defaultCoverage) {
     // NO-OP
   }
 
   @Override
-  public void store(DefaultCpdTokens defaultCpdTokens) {
+  public void store(NewCpdTokens defaultCpdTokens) {
     // NO-OP
   }
 
   @Override
-  public void store(DefaultSymbolTable symbolTable) {
+  public void store(NewSymbolTable symbolTable) {
     // NO-OP
   }
 
@@ -165,17 +167,17 @@ public class SonarLintSensorStorage implements SensorStorage {
   }
 
   @Override
-  public void store(DefaultExternalIssue issue) {
+  public void store(ExternalIssue issue) {
     // NO-OP
   }
 
   @Override
-  public void store(DefaultSignificantCode significantCode) {
+  public void store(NewSignificantCode significantCode) {
     // NO-OP
   }
 
   @Override
-  public void store(DefaultAdHocRule adHocRule) {
+  public void store(AdHocRule adHocRule) {
     // NO-OP
   }
 

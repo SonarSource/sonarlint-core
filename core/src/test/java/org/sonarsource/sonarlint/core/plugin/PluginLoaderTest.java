@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarPlugin;
-import org.sonar.api.utils.internal.JUnitTempFolder;
+import org.sonarsource.sonarlint.core.JUnitTempFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;

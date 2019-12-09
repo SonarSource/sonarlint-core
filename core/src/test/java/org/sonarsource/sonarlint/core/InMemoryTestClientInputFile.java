@@ -19,37 +19,38 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
+import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
-public class TestClientInputFile implements ClientInputFile {
-  private Path path;
+public class InMemoryTestClientInputFile implements ClientInputFile {
   private boolean isTest;
-  private Charset encoding;
   private String language;
   private String relativePath;
+  private String contents;
+  private Path path;
 
-  public TestClientInputFile(final Path path, String relativePath, final boolean isTest, final Charset encoding) {
-    this(path, relativePath, isTest, encoding, null);
-  }
-
-  public TestClientInputFile(final Path path, String relativePath, final boolean isTest, final Charset encoding, @Nullable String language) {
-    this.path = path;
+  public InMemoryTestClientInputFile(String contents, String relativePath, @Nullable Path path, final boolean isTest, @Nullable String language) {
+    this.contents = contents;
     this.relativePath = relativePath;
+    this.path = path;
     this.isTest = isTest;
-    this.encoding = encoding;
     this.language = language;
   }
 
   @Override
   public String getPath() {
-    return path.toString();
+    if (path == null) {
+      throw new UnsupportedOperationException("getPath");
+    }
+    return PathUtils.sanitize(path.toString());
   }
 
   @Override
@@ -69,7 +70,7 @@ public class TestClientInputFile implements ClientInputFile {
 
   @Override
   public Charset getCharset() {
-    return encoding;
+    return StandardCharsets.UTF_8;
   }
 
   @Override
@@ -79,16 +80,19 @@ public class TestClientInputFile implements ClientInputFile {
 
   @Override
   public InputStream inputStream() throws IOException {
-    return Files.newInputStream(path);
+    return new ByteArrayInputStream(relativePath.getBytes(StandardCharsets.UTF_8));
   }
 
   @Override
   public String contents() throws IOException {
-    return new String(Files.readAllBytes(path), encoding);
+    return contents;
   }
 
   @Override
   public URI uri() {
+    if (path == null) {
+      return URI.create("file://" + relativePath);
+    }
     return path.toUri();
   }
 }

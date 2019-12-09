@@ -28,8 +28,6 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.internal.MetadataLoader;
-import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.resources.Language;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
@@ -50,6 +48,8 @@ import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvid
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
+import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
@@ -91,7 +91,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
       new SonarQubeVersion(version),
-      SonarRuntimeImpl.forSonarLint(version),
+      new SonarLintRuntimeImpl(version),
 
       new GlobalTempFolderProvider(),
       UriReader.class,
@@ -140,7 +140,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
-    // TODO configuration should be set directly with Strings
     Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(Collectors.toSet());
     Set<String> includedRules = configuration.includedRules().stream()
       .map(RuleKey::toString)
@@ -165,9 +164,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   public Collection<String> getActiveRuleKeys() {
-    return standaloneActiveRules.activeRulesByDefault().stream()
-      .map(rule -> rule.ruleKey().toString())
-      .collect(Collectors.toList());
+    return standaloneActiveRules.getActiveRuleKeys();
   }
 
   public Collection<RuleDetails> getAllRuleDetails() {

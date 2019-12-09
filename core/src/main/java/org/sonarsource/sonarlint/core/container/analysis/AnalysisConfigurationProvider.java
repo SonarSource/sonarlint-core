@@ -28,7 +28,7 @@ public class AnalysisConfigurationProvider extends ProviderAdapter {
 
   public Configuration provide(MutableAnalysisSettings settings) {
     if (analysisConfig == null) {
-      this.analysisConfig = settings.asConfig();
+      this.analysisConfig = new ConfigurationBridge(settings);
     }
     return analysisConfig;
   }

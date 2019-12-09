@@ -17,29 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis.filesystem;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import java.util.Optional;
+import org.sonar.api.config.Configuration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+public class EmptyConfiguration implements Configuration {
 
-public class SonarLintFileSystemTest {
+  @Override
+  public Optional<String> get(String key) {
+    return Optional.empty();
+  }
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+  @Override
+  public boolean hasKey(String key) {
+    return false;
+  }
 
-  @Test
-  public void return_fake_workdir() throws IOException {
-    Path baseDir = temp.newFolder().toPath();
-    SonarLintFileSystem fs = new SonarLintFileSystem(StandaloneAnalysisConfiguration.builder().setBaseDir(baseDir).build(), mock(InputPathCache.class),
-      mock(FileIndexer.class));
-    assertThat(fs.workDir()).isEqualTo(baseDir.toFile());
+  @Override
+  public String[] getStringArray(String key) {
+    return new String[0];
   }
 
 }

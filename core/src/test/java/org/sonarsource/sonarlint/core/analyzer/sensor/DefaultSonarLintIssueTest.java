@@ -25,11 +25,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
+import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.core.TestInputFileBuilder;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputDir;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 
@@ -46,7 +46,7 @@ public class DefaultSonarLintIssueTest {
   private SonarLintInputProject project;
   private Path baseDir;
 
-  private DefaultInputFile inputFile = new TestInputFileBuilder("foo", "src/Foo.php")
+  private InputFile inputFile = new TestInputFileBuilder("src/Foo.php")
     .initMetadata("Foo\nBar\n")
     .build();
 

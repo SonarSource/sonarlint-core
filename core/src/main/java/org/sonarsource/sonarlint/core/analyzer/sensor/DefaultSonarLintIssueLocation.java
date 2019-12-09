@@ -20,15 +20,25 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import com.google.common.base.Preconditions;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
+import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 
-/**
- * Override default implementation to not cast as DefaultInputFile
- */
-public class DefaultSonarLintIssueLocation extends DefaultIssueLocation {
+import static java.util.Objects.requireNonNull;
 
+public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLocation {
+
+  private InputComponent component;
   private TextRange textRange;
+  private String message;
+
+  @Override
+  public DefaultSonarLintIssueLocation on(InputComponent component) {
+    requireNonNull(component, "Component can't be null");
+    this.component = component;
+    return this;
+  }
 
   @Override
   public DefaultSonarLintIssueLocation at(TextRange location) {
@@ -39,8 +49,24 @@ public class DefaultSonarLintIssueLocation extends DefaultIssueLocation {
   }
 
   @Override
+  public DefaultSonarLintIssueLocation message(String message) {
+    this.message = message;
+    return this;
+  }
+
+  @Override
+  public InputComponent inputComponent() {
+    return this.component;
+  }
+
+  @Override
   public TextRange textRange() {
     return textRange;
+  }
+
+  @Override
+  public String message() {
+    return this.message;
   }
 
 }

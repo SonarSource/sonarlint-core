@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.global;
 
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.core.container.analysis.ConfigurationBridge;
 
 public class GlobalConfigurationProvider extends ProviderAdapter {
 
@@ -28,7 +29,7 @@ public class GlobalConfigurationProvider extends ProviderAdapter {
 
   public Configuration provide(GlobalSettings settings) {
     if (globalConfig == null) {
-      this.globalConfig = settings.asConfig();
+      this.globalConfig = new ConfigurationBridge(settings);
     }
     return globalConfig;
   }

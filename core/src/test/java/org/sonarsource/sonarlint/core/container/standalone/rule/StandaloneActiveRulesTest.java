@@ -19,17 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckForNull;
 import org.junit.Test;
-import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -47,9 +43,10 @@ public class StandaloneActiveRulesTest {
   private final ActiveRules underTest;
 
   public StandaloneActiveRulesTest() {
-    ActiveRules activeRules = new FakeActiveRules(ACTIVE_RULE, ACTIVE_EXCLUDED_RULE);
-    ActiveRules inactiveRules = new FakeActiveRules(INACTIVE_RULE, INACTIVE_INCLUDED_RULE);
-    StandaloneActiveRules standaloneActiveRules = new StandaloneActiveRules(activeRules, inactiveRules, Collections.emptyMap());
+    StandaloneActiveRules standaloneActiveRules = new StandaloneActiveRules(asList(mockActiveRule(ACTIVE_RULE, true),
+      mockActiveRule(ACTIVE_EXCLUDED_RULE, true),
+      mockActiveRule(INACTIVE_RULE, false),
+      mockActiveRule(INACTIVE_INCLUDED_RULE, false)));
 
     Set<String> excluded = Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE).toString());
     Set<String> included = Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE).toString());
@@ -93,45 +90,14 @@ public class StandaloneActiveRulesTest {
     assertThat(underTest.findByInternalKey(REPOSITORY, INACTIVE_INCLUDED_RULE)).isNotNull();
   }
 
-  private static class FakeActiveRules implements ActiveRules {
-    private final Map<org.sonar.api.rule.RuleKey, ActiveRule> map = new HashMap<>();
-
-    FakeActiveRules(String... rules) {
-      for (String rule : rules) {
-        ActiveRule activeRule = mock(ActiveRule.class);
-        org.sonar.api.rule.RuleKey ruleKey = org.sonar.api.rule.RuleKey.of(REPOSITORY, rule);
-        when(activeRule.ruleKey()).thenReturn(ruleKey);
-        when(activeRule.language()).thenReturn(LANGUAGE);
-        when(activeRule.internalKey()).thenReturn(rule);
-        map.put(ruleKey, activeRule);
-      }
-    }
-
-    @CheckForNull
-    @Override
-    public ActiveRule find(org.sonar.api.rule.RuleKey ruleKey) {
-      return map.get(ruleKey);
-    }
-
-    @Override
-    public Collection<ActiveRule> findAll() {
-      return map.values();
-    }
-
-    @Override
-    public Collection<ActiveRule> findByRepository(String s) {
-      return map.values();
-    }
-
-    @Override
-    public Collection<ActiveRule> findByLanguage(String s) {
-      return map.values();
-    }
-
-    @CheckForNull
-    @Override
-    public ActiveRule findByInternalKey(String repository, String internalKey) {
-      return map.get(org.sonar.api.rule.RuleKey.of(repository, internalKey));
-    }
+  private static StandaloneRule mockActiveRule(String rule, boolean activeByDefault) {
+    StandaloneRule activeRule = mock(StandaloneRule.class);
+    org.sonar.api.rule.RuleKey ruleKey = org.sonar.api.rule.RuleKey.of(REPOSITORY, rule);
+    when(activeRule.key()).thenReturn(ruleKey);
+    when(activeRule.getKey()).thenReturn(ruleKey.toString());
+    when(activeRule.getLanguageKey()).thenReturn(LANGUAGE);
+    when(activeRule.internalKey()).thenReturn(rule);
+    when(activeRule.isActiveByDefault()).thenReturn(activeByDefault);
+    return activeRule;
   }
 }

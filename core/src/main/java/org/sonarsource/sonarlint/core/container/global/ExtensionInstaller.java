@@ -25,7 +25,6 @@ import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.internal.PluginContextImpl;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;

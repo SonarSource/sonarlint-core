@@ -21,53 +21,57 @@ package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
+
+import static java.util.stream.Collectors.toList;
 
 public class StandaloneActiveRules {
-  public final ActiveRules activeRules;
-  private final ActiveRules inactiveRules;
-  private final Map<String, RuleDetails> ruleDetails;
+  private Map<String, StandaloneRule> rulesByKey;
 
-  StandaloneActiveRules(ActiveRules activeRules, ActiveRules inactiveRules, Map<String, RuleDetails> ruleDetails) {
-    this.activeRules = activeRules;
-    this.inactiveRules = inactiveRules;
-    this.ruleDetails = ruleDetails;
+  public StandaloneActiveRules(List<StandaloneRule> rules) {
+    rulesByKey = rules.stream().collect(Collectors.toMap(r -> r.key().toString(), r -> r));
   }
 
   public ActiveRules filtered(Set<String> excludedRules, Set<String> includedRules) {
-    Collection<ActiveRule> filteredActiveRules = new ArrayList<>();
+    Collection<StandaloneRule> filteredActiveRules = new ArrayList<>();
 
-    filteredActiveRules.addAll(activeRules.findAll().stream()
-      .filter(r -> !excludedRules.contains(r.ruleKey().toString()))
+    filteredActiveRules.addAll(rulesByKey.values().stream()
+      .filter(StandaloneRule::isActiveByDefault)
+      .filter(r -> !excludedRules.contains(r.getKey()))
       .collect(Collectors.toList()));
-    filteredActiveRules.addAll(inactiveRules.findAll().stream()
-      .filter(r -> includedRules.contains(r.ruleKey().toString()))
+    filteredActiveRules.addAll(rulesByKey.values().stream()
+      .filter(r -> !r.isActiveByDefault())
+      .filter(r -> includedRules.contains(r.getKey()))
       .collect(Collectors.toList()));
 
-    return new DefaultActiveRules(filteredActiveRules);
+    return new DefaultActiveRules(filteredActiveRules.stream().map(StandaloneActiveRuleAdapter::new).collect(toList()));
   }
 
   boolean isActiveByDefault(RuleKey ruleKey) {
-    return activeRules.find(ruleKey) != null;
-  }
-
-  public Collection<ActiveRule> activeRulesByDefault() {
-    return activeRules.findAll();
+    return rulesByKey.get(ruleKey.toString()).isActiveByDefault();
   }
 
   @CheckForNull
   public RuleDetails ruleDetails(String ruleKeyStr) {
-    return ruleDetails.get(ruleKeyStr);
+    return rulesByKey.get(ruleKeyStr);
   }
 
   public Collection<RuleDetails> allRuleDetails() {
-    return ruleDetails.values();
+    return rulesByKey.values().stream().map(r -> (RuleDetails) r).collect(toList());
+  }
+
+  public Collection<String> getActiveRuleKeys() {
+    return rulesByKey.values().stream()
+      .filter(StandaloneRule::isActiveByDefault)
+      .map(StandaloneRule::getKey)
+      .collect(toList());
   }
 }

@@ -20,13 +20,13 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.junit.Test;
-import org.sonar.api.batch.sensor.code.internal.DefaultSignificantCode;
-import org.sonar.api.batch.sensor.coverage.internal.DefaultCoverage;
-import org.sonar.api.batch.sensor.cpd.internal.DefaultCpdTokens;
-import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
-import org.sonar.api.batch.sensor.issue.internal.DefaultExternalIssue;
+import org.sonar.api.batch.sensor.code.NewSignificantCode;
+import org.sonar.api.batch.sensor.coverage.NewCoverage;
+import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
+import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
+import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.measure.Measure;
-import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -44,42 +44,42 @@ public class SonarLintSensorStorageTest {
 
   @Test
   public void store_ExternalIssue_doesnt_interact_with_its_param() {
-    DefaultExternalIssue externalIssue = mock(DefaultExternalIssue.class);
+    ExternalIssue externalIssue = mock(ExternalIssue.class);
     underTest.store(externalIssue);
     verifyZeroInteractions(externalIssue);
   }
 
   @Test
   public void store_DefaultSignificantCode_doesnt_interact_with_its_param() {
-    DefaultSignificantCode significantCode = mock(DefaultSignificantCode.class);
+    NewSignificantCode significantCode = mock(NewSignificantCode.class);
     underTest.store(significantCode);
     verifyZeroInteractions(significantCode);
   }
 
   @Test
   public void store_DefaultHighlighting_doesnt_interact_with_its_param() {
-    DefaultHighlighting highlighting = mock(DefaultHighlighting.class);
+    NewHighlighting highlighting = mock(NewHighlighting.class);
     underTest.store(highlighting);
     verifyZeroInteractions(highlighting);
   }
 
   @Test
   public void store_DefaultCoverage_doesnt_interact_with_its_param() {
-    DefaultCoverage coverage = mock(DefaultCoverage.class);
+    NewCoverage coverage = mock(NewCoverage.class);
     underTest.store(coverage);
     verifyZeroInteractions(coverage);
   }
 
   @Test
   public void store_DefaultCpdTokens_doesnt_interact_with_its_param() {
-    DefaultCpdTokens cpdTokens = mock(DefaultCpdTokens.class);
+    NewCpdTokens cpdTokens = mock(NewCpdTokens.class);
     underTest.store(cpdTokens);
     verifyZeroInteractions(cpdTokens);
   }
 
   @Test
   public void store_DefaultSymbolTable_doesnt_interact_with_its_param() {
-    DefaultSymbolTable symbolTable = mock(DefaultSymbolTable.class);
+    NewSymbolTable symbolTable = mock(NewSymbolTable.class);
     underTest.store(symbolTable);
     verifyZeroInteractions(symbolTable);
   }

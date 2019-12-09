@@ -19,20 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
+import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.utils.PathUtils;
 
-class AbsolutePathPredicate extends AbstractFilePredicate {
+public class FilenamePredicate extends AbstractFilePredicate {
+  private final String filename;
 
-  private final String path;
-
-  AbsolutePathPredicate(String path) {
-    this.path = PathUtils.sanitize(path);
+  public FilenamePredicate(String filename) {
+    this.filename = filename;
   }
 
   @Override
-  public boolean apply(InputFile f) {
-    return path.equals(f.absolutePath());
+  public boolean apply(InputFile inputFile) {
+    return filename.equals(inputFile.filename());
+  }
+
+  @Override
+  public Iterable<InputFile> get(FileSystem.Index index) {
+    return index.getFilesByName(filename);
   }
 
 }

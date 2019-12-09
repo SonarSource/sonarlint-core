@@ -27,9 +27,8 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.internal.DefaultInputDir;
+import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.rule.Severity;
-import org.sonar.api.batch.sensor.internal.DefaultStorable;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
@@ -137,8 +136,8 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     InputComponent component = location.inputComponent();
     Optional<Path> dirOrModulePath = Optional.empty();
 
-    if (component instanceof DefaultInputDir) {
-      DefaultInputDir dirComponent = (DefaultInputDir) component;
+    if (component instanceof InputDir) {
+      InputDir dirComponent = (InputDir) component;
       dirOrModulePath = Optional.of(baseDir.relativize(dirComponent.path()));
     }
 

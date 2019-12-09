@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.sonarsource.sonarlint.core.TestClientInputFile;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
@@ -62,7 +62,7 @@ public class IssueExclusionsLoaderTest {
   }
 
   private SonarLintInputFile createFile(String path) {
-    return new SonarLintInputFile(new TestClientInputFile(Paths.get(path), path, false, StandardCharsets.UTF_8), f -> mock(Metadata.class));
+    return new SonarLintInputFile(new OnDiskTestClientInputFile(Paths.get(path), path, false, StandardCharsets.UTF_8), f -> mock(Metadata.class));
   }
 
   @Test

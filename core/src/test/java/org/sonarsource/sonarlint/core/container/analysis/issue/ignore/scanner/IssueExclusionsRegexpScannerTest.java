@@ -35,7 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.sonarsource.sonarlint.core.TestClientInputFile;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
@@ -67,7 +67,7 @@ public class IssueExclusionsRegexpScannerTest {
     });
     allFilePatterns = Collections.singletonList(Pattern.compile("@SONAR-IGNORE-ALL"));
 
-    javaFile = new SonarLintInputFile(new TestClientInputFile(Paths.get("src/Foo.java"), "src/Foo.java", false, StandardCharsets.UTF_8), f -> mock(Metadata.class));
+    javaFile = new SonarLintInputFile(new OnDiskTestClientInputFile(Paths.get("src/Foo.java"), "src/Foo.java", false, StandardCharsets.UTF_8), f -> mock(Metadata.class));
     regexpScanner = new IssueExclusionsRegexpScanner(javaFile, allFilePatterns, blockPatterns);
   }
 

@@ -158,7 +158,7 @@ public class FileMetadata {
     } catch (IOException e) {
       throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", fileUri, encoding), e);
     }
-    return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
+    return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets().stream().mapToInt(i -> i).toArray(), lineOffsetCounter.getLastValidOffset());
   }
 
   private static InputStream streamFile(File file) {
@@ -218,14 +218,26 @@ public class FileMetadata {
   }
 
   public static class Metadata {
-    final int lines;
-    final int[] originalLineOffsets;
-    final int lastValidOffset;
+    private final int lines;
+    private final int[] originalLineOffsets;
+    private final int lastValidOffset;
 
-    private Metadata(int lines, List<Integer> originalLineOffsets, int lastValidOffset) {
+    public Metadata(int lines, int[] originalLineOffsets, int lastValidOffset) {
       this.lines = lines;
-      this.originalLineOffsets = originalLineOffsets.stream().mapToInt(i -> i).toArray();
+      this.originalLineOffsets = originalLineOffsets;
       this.lastValidOffset = lastValidOffset;
+    }
+
+    public int lines() {
+      return lines;
+    }
+
+    public int[] originalLineOffsets() {
+      return originalLineOffsets;
+    }
+
+    public int lastValidOffset() {
+      return lastValidOffset;
     }
   }
 }

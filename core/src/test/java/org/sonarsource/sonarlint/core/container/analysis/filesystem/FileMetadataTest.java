@@ -50,9 +50,9 @@ public class FileMetadataTest {
     FileUtils.touch(tempFile);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(1);
-    assertThat(metadata.originalLineOffsets).containsOnly(0);
-    assertThat(metadata.lastValidOffset).isEqualTo(0);
+    assertThat(metadata.lines()).isEqualTo(1);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0);
+    assertThat(metadata.lastValidOffset()).isEqualTo(0);
   }
 
   @AfterClass
@@ -67,9 +67,9 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\r\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(3);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 5, 10);
-    assertThat(metadata.lastValidOffset).isEqualTo(13);
+    assertThat(metadata.lines()).isEqualTo(3);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 5, 10);
+    assertThat(metadata.lastValidOffset()).isEqualTo(13);
   }
 
   @Test
@@ -78,8 +78,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "marker´s\n", Charset.forName("cp1252"));
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(2);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 9);
+    assertThat(metadata.lines()).isEqualTo(2);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 9);
   }
 
   @Test
@@ -88,8 +88,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "föo\r\nbàr\r\n\u1D11Ebaßz\r\n", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 5, 10, 18);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 5, 10, 18);
   }
 
   @Test
@@ -97,8 +97,8 @@ public class FileMetadataTest {
     File tempFile = temp.newFile();
     FileUtils.write(tempFile, "föo\r\nbàr\r\n\u1D11Ebaßz\r\n", StandardCharsets.UTF_16, true);
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_16);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 5, 10, 18);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 5, 10, 18);
   }
 
   @Test
@@ -107,9 +107,9 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\nbar\nbaz", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(3);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 8);
-    assertThat(metadata.lastValidOffset).isEqualTo(11);
+    assertThat(metadata.lines()).isEqualTo(3);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8);
+    assertThat(metadata.lastValidOffset()).isEqualTo(11);
   }
 
   @Test
@@ -118,9 +118,9 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\nbar\nbaz\n", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 8, 12);
-    assertThat(metadata.lastValidOffset).isEqualTo(12);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8, 12);
+    assertThat(metadata.lastValidOffset()).isEqualTo(12);
   }
 
   @Test
@@ -129,9 +129,9 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\rbar\rbaz", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(3);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 8);
-    assertThat(metadata.lastValidOffset).isEqualTo(11);
+    assertThat(metadata.lines()).isEqualTo(3);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8);
+    assertThat(metadata.lastValidOffset()).isEqualTo(11);
   }
 
   @Test
@@ -140,9 +140,9 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\rbar\rbaz\r", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 8, 12);
-    assertThat(metadata.lastValidOffset).isEqualTo(12);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8, 12);
+    assertThat(metadata.lastValidOffset()).isEqualTo(12);
   }
 
   @Test
@@ -151,8 +151,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\nbar\r\nbaz\n", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 9, 13);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 9, 13);
   }
 
   @Test
@@ -161,8 +161,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\n\n\nbar", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 5, 6);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 5, 6);
   }
 
   @Test
@@ -171,8 +171,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "foo\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(3);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 9);
+    assertThat(metadata.lines()).isEqualTo(3);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 9);
   }
 
   @Test
@@ -181,8 +181,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "\nfoo\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(4);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 1, 5, 10);
+    assertThat(metadata.lines()).isEqualTo(4);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 1, 5, 10);
   }
 
   @Test
@@ -191,8 +191,8 @@ public class FileMetadataTest {
     FileUtils.write(tempFile, "\uFEFFfoo\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(tempFile, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(3);
-    assertThat(metadata.originalLineOffsets).containsOnly(0, 4, 9);
+    assertThat(metadata.lines()).isEqualTo(3);
+    assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 9);
   }
 
   @Test
@@ -211,7 +211,7 @@ public class FileMetadataTest {
     File woff = new File(this.getClass().getResource("/glyphicons-halflings-regular.woff").toURI());
 
     FileMetadata.Metadata metadata = new FileMetadata().readMetadata(woff, StandardCharsets.UTF_8);
-    assertThat(metadata.lines).isEqualTo(135);
+    assertThat(metadata.lines()).isEqualTo(135);
 
     assertThat(logTester.logs(LoggerLevel.WARN).get(0)).contains("Invalid character encountered in file");
     assertThat(logTester.logs(LoggerLevel.WARN).get(0)).contains(

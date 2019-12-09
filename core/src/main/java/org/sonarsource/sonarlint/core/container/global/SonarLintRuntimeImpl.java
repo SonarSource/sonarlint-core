@@ -17,43 +17,42 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis.filesystem;
+package org.sonarsource.sonarlint.core.container.global;
 
-import java.util.Arrays;
-import java.util.Collections;
-import org.sonar.api.batch.fs.FileSystem.Index;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.utils.PathUtils;
+import org.sonar.api.SonarEdition;
+import org.sonar.api.SonarProduct;
+import org.sonar.api.SonarQubeSide;
+import org.sonar.api.SonarRuntime;
+import org.sonar.api.utils.Version;
 
-/**
- * @since 4.2
- */
-public class RelativePathPredicate extends AbstractFilePredicate {
+import static java.util.Objects.requireNonNull;
 
-  private final String path;
+public class SonarLintRuntimeImpl implements SonarRuntime {
 
-  RelativePathPredicate(String path) {
-    this.path = PathUtils.sanitize(path);
-  }
+  private final Version version;
 
-  public String path() {
-    return path;
+  public SonarLintRuntimeImpl(Version version) {
+    this.version = requireNonNull(version);
   }
 
   @Override
-  public boolean apply(InputFile f) {
-    return path.equals(f.relativePath());
+  public Version getApiVersion() {
+    return version;
   }
 
   @Override
-  public Iterable<InputFile> get(Index index) {
-    InputFile f = index.inputFile(this.path);
-    return f != null ? Arrays.asList(f) : Collections.<InputFile>emptyList();
+  public SonarProduct getProduct() {
+    return SonarProduct.SONARLINT;
   }
 
   @Override
-  public int priority() {
-    return USE_INDEX;
+  public SonarQubeSide getSonarQubeSide() {
+    throw new UnsupportedOperationException("Can only be called in SonarQube");
+  }
+
+  @Override
+  public SonarEdition getEdition() {
+    throw new UnsupportedOperationException("Can only be called in SonarQube");
   }
 
 }

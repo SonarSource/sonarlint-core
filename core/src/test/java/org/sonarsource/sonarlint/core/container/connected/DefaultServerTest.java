@@ -23,8 +23,8 @@ import org.junit.Test;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.config.Settings;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

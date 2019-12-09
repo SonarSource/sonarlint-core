@@ -17,20 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.container.storage;
 
+import java.util.Map;
 import org.picocontainer.injectors.ProviderAdapter;
-import org.sonar.api.config.Configuration;
-import org.sonar.api.config.internal.MapSettings;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class StandaloneRuleConfigurationProvider extends ProviderAdapter {
+public class SonarLintRulesProvider extends ProviderAdapter {
 
-  private Configuration config;
+  private SonarLintRules rules;
 
-  public Configuration provide() {
-    if (config == null) {
-      this.config = new MapSettings().asConfig();
+  public SonarLintRules provide(Sonarlint.Rules storageRules) {
+    if (rules == null) {
+      rules = new SonarLintRules();
+
+      for (Map.Entry<String, Sonarlint.Rules.Rule> entry : storageRules.getRulesByKeyMap().entrySet()) {
+        Sonarlint.Rules.Rule r = entry.getValue();
+        rules.add(new StorageRuleAdapter(r));
+      }
+
     }
-    return config;
+    return rules;
   }
+
 }

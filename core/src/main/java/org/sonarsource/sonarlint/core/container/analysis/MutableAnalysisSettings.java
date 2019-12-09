@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.container.analysis;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -31,7 +32,7 @@ import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
-public class MutableAnalysisSettings extends MapSettings {
+public class MutableAnalysisSettings extends Settings {
   private static final String C_SUFFIXES_KEY = "sonar.c.file.suffixes";
   private static final String CPP_SUFFIXES_KEY = "sonar.cpp.file.suffixes";
   private static final String OBJC_SUFFIXES_KEY = "sonar.objc.file.suffixes";
@@ -43,7 +44,7 @@ public class MutableAnalysisSettings extends MapSettings {
    * Standalone mode
    */
   public MutableAnalysisSettings(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions);
+    super(propertyDefinitions, new Encryption(null));
     addPropertiesInOrder(globalConfig, analysisConfig);
   }
 
@@ -52,7 +53,7 @@ public class MutableAnalysisSettings extends MapSettings {
    */
   public MutableAnalysisSettings(StorageReader storage, AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig,
     PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions);
+    super(propertyDefinitions, new Encryption(null));
     GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
     if (analysisConfig instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) analysisConfig).projectKey() != null) {

@@ -24,11 +24,13 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.config.Configuration;
+import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -41,30 +43,37 @@ public class ServerConfigurationProvider {
 
   private Configuration serverConfig;
 
+  /**
+   * Connected mode
+   */
   public ServerConfigurationProvider(StorageReader storage, ConnectedAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ServerConfiguration(storage, config, propertyDefinitions).asConfig();
+    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, config, propertyDefinitions));
   }
 
+  /**
+   * Standalone mode
+   */
   public ServerConfigurationProvider(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ServerConfiguration(null, config, propertyDefinitions).asConfig();
+    this.serverConfig = new EmptyConfiguration();
   }
 
   // For testing
   public ServerConfigurationProvider(Map<String, String> properties) {
-    this.serverConfig = new ServerConfiguration(properties).asConfig();
+    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(properties));
   }
 
-  public static class ServerConfiguration extends MapSettings {
+  public static class ServerConfiguration extends Settings {
 
     private final Map<String, String> properties = new HashMap<>();
 
     // For testing
     private ServerConfiguration(Map<String, String> properties) {
+      super(new PropertyDefinitions(), new Encryption(null));
       this.properties.putAll(properties);
     }
 
     private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-      super(propertyDefinitions);
+      super(propertyDefinitions, new Encryption(null));
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalProperties();
         addProperties(globalProps.getPropertiesMap());

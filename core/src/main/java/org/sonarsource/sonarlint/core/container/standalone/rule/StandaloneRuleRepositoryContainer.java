@@ -45,9 +45,9 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   private void addCoreComponents() {
     add(StandaloneRuleDefinitionsLoader.class,
-      new StandaloneRulesProvider(),
+      new StandaloneSonarLintRulesProvider(),
       StandaloneActiveRulesProvider.class,
-      new StandaloneRuleConfigurationProvider());
+      new EmptyConfiguration());
   }
 
   private void addPluginExtensions() {

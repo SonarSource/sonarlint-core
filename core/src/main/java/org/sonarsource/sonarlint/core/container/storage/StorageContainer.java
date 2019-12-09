@@ -23,8 +23,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
-import org.sonar.api.internal.MetadataLoader;
-import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
@@ -41,6 +39,8 @@ import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvid
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
+import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
@@ -104,9 +104,9 @@ public class StorageContainer extends ComponentContainer {
       ExtensionInstaller.class,
       new StorageRulesProvider(),
       new StorageQProfilesProvider(),
-      new SonarQubeRulesProvider(),
+      new SonarLintRulesProvider(),
       new SonarQubeVersion(version),
-      SonarRuntimeImpl.forSonarLint(version),
+      new SonarLintRuntimeImpl(version),
       System2.INSTANCE);
   }
 

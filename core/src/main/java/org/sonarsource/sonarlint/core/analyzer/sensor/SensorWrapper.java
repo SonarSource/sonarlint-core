@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
-import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 
 public class SensorWrapper {
   private final Sensor wrappedSensor;
