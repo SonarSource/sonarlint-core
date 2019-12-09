@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.AbstractFilePredicate;
 
 public class StatusPredicate extends AbstractFilePredicate {
 

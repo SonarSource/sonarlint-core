@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import java.io.File;
-import org.sonar.api.utils.internal.DefaultTempFolder;
 
 public class GlobalTempFolder extends DefaultTempFolder {
 

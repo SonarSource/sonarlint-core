@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 public class GlobalSettings extends MapSettings {

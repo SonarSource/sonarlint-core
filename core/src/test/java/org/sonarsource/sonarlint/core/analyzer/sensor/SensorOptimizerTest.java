@@ -24,17 +24,22 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
+import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
-import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
-import org.sonar.api.batch.rule.internal.NewActiveRule;
-import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.core.TestInputFileBuilder;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileCache;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
+import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SensorOptimizerTest {
 
@@ -44,15 +49,16 @@ public class SensorOptimizerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private DefaultFileSystem fs;
+  private FileSystem fs;
   private SensorOptimizer optimizer;
   private MapSettings settings;
+  private InputFileCache inputFileCache = new InputFileCache();
 
   @Before
   public void prepare() throws Exception {
-    fs = new DefaultFileSystem(temp.newFolder().toPath());
+    fs = new SonarLintFileSystem(mock(AbstractAnalysisConfiguration.class), inputFileCache);
     settings = new MapSettings();
-    optimizer = new SensorOptimizer(fs, new ActiveRulesBuilder().build(), settings.asConfig());
+    optimizer = new SensorOptimizer(fs, mock(ActiveRules.class), settings.asConfig());
   }
 
   @Test
@@ -68,7 +74,7 @@ public class SensorOptimizerTest {
       .onlyOnLanguages("java", "php");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    fs.add(new TestInputFileBuilder("foo", "src/Foo.java").setLanguage("java").build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage("java").build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 
@@ -78,10 +84,10 @@ public class SensorOptimizerTest {
       .onlyOnFileType(InputFile.Type.MAIN);
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    fs.add(new TestInputFileBuilder("foo", "tests/FooTest.java").setType(InputFile.Type.TEST).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("tests/FooTest.java").setType(InputFile.Type.TEST).build());
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    fs.add(new TestInputFileBuilder("foo", "src/Foo.java").setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 
@@ -92,11 +98,11 @@ public class SensorOptimizerTest {
       .onlyOnFileType(InputFile.Type.MAIN);
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    fs.add(new TestInputFileBuilder("foo", "tests/FooTest.java").setLanguage("java").setType(InputFile.Type.TEST).build());
-    fs.add(new TestInputFileBuilder("foo", "src/Foo.cbl").setLanguage("cobol").setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("tests/FooTest.java").setLanguage("java").setType(InputFile.Type.TEST).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.cbl").setLanguage("cobol").setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    fs.add(new TestInputFileBuilder("foo", "src/Foo.java").setLanguage("java").setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage("java").setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 
@@ -106,21 +112,20 @@ public class SensorOptimizerTest {
       .createIssuesForRuleRepositories("squid");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    ActiveRules activeRules = new ActiveRulesBuilder()
-      .addRule(new NewActiveRule.Builder()
-        .setRuleKey(RuleKey.of("repo1", "foo")).build())
-      .build();
+    ActiveRule ruleAnotherRepo = mock(ActiveRule.class);
+    when(ruleAnotherRepo.ruleKey()).thenReturn(RuleKey.of("repo1", "foo"));
+    ActiveRules activeRules = new DefaultActiveRules(asList(ruleAnotherRepo));
     optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
 
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    activeRules = new ActiveRulesBuilder()
-      .addRule(new NewActiveRule.Builder()
-        .setRuleKey(RuleKey.of("repo1", "foo")).build())
-      .addRule(new NewActiveRule.Builder()
-        .setRuleKey(RuleKey.of("squid", "rule")).build())
-      .build();
+    ActiveRule ruleSquid = mock(ActiveRule.class);
+    when(ruleSquid.ruleKey()).thenReturn(RuleKey.of("squid", "rule"));
+
+    activeRules = new DefaultActiveRules(asList(ruleSquid, ruleAnotherRepo));
+
     optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
+
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 

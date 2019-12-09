@@ -45,8 +45,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.TestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
@@ -389,7 +389,7 @@ public class StandaloneIssueMediumTest {
       + "    print \"Hello\"\n"
       + "    print \"world!\" # NOSONAR\n"
       + "\n", StandardCharsets.UTF_8);
-    ClientInputFile inputFile = new TestClientInputFile(file.toPath(), "foo.py", false, StandardCharsets.UTF_8, null);
+    ClientInputFile inputFile = new OnDiskTestClientInputFile(file.toPath(), "foo.py", false, StandardCharsets.UTF_8, null);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
@@ -408,6 +408,7 @@ public class StandaloneIssueMediumTest {
         + "  public void foo() {\n"
         + "    int x;\n"
         + "    System.out.println(\"Foo\");\n"
+        + "    // TODO full line issue\n"
         + "  }\n"
         + "}",
       false);
@@ -419,10 +420,12 @@ public class StandaloneIssueMediumTest {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"),
-      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
+      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+        tuple("squid:S1220", null, null, null, null, "Foo.java", "MINOR"),
+        tuple("squid:S1481", 3, 8, 3, 9, "Foo.java", "MINOR"),
+        tuple("squid:S106", 4, 4, 4, 14, "Foo.java", "MAJOR"),
+        tuple("squid:S1135", 5, 0, 5, 27, "Foo.java", "INFO"));
   }
 
   // SLCORE-251
@@ -757,7 +760,7 @@ public class StandaloneIssueMediumTest {
       false);
     File unexistingPath = new File(baseDir, "missing.bin");
     assertThat(unexistingPath).doesNotExist();
-    ClientInputFile inputFile2 = new TestClientInputFile(unexistingPath.toPath(), "missing.bin", false, StandardCharsets.UTF_8, null);
+    ClientInputFile inputFile2 = new OnDiskTestClientInputFile(unexistingPath.toPath(), "missing.bin", false, StandardCharsets.UTF_8, null);
 
     final List<Issue> issues = new ArrayList<>();
     final List<String> logs = new ArrayList<>();
@@ -778,7 +781,7 @@ public class StandaloneIssueMediumTest {
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
-    return new TestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
+    return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

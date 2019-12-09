@@ -24,17 +24,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
-import org.sonarsource.sonarlint.core.TestClientInputFile;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFilterableIssue;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssuePattern;
 
@@ -45,9 +43,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class EnforceIssuesFilterTest {
-
-  @Rule
-  public TemporaryFolder tempFolder = new TemporaryFolder();
 
   private IssueInclusionPatternInitializer exclusionPatternInitializer;
   private EnforceIssuesFilter ignoreFilter;
@@ -105,7 +100,7 @@ public class EnforceIssuesFilterTest {
   }
 
   private InputComponent createComponentWithPath(String path) {
-    return new SonarLintInputFile(new TestClientInputFile(Paths.get(path), path, false, StandardCharsets.UTF_8),
+    return new SonarLintInputFile(new OnDiskTestClientInputFile(Paths.get(path), path, false, StandardCharsets.UTF_8),
       f -> mock(Metadata.class));
   }
 
@@ -143,7 +138,7 @@ public class EnforceIssuesFilterTest {
     when(matching.matchRule(ruleKey)).thenReturn(true);
     when(matching.matchFile(path)).thenReturn(true);
     when(exclusionPatternInitializer.getMulticriteriaPatterns()).thenReturn(ImmutableList.of(matching));
-    when(issue.getComponent()).thenReturn(TestInputFileBuilder.newDefaultInputProject("foo", tempFolder.newFolder()));
+    when(issue.getComponent()).thenReturn(new SonarLintInputProject());
 
     ignoreFilter = new EnforceIssuesFilter(exclusionPatternInitializer);
     assertThat(ignoreFilter.accept(issue, chain)).isFalse();

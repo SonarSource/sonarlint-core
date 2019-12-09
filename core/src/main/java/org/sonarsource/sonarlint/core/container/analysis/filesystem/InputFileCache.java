@@ -25,13 +25,12 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
-import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @SonarLintSide
-public class InputPathCache extends DefaultFileSystem.Cache {
+public class InputFileCache implements FileSystem.Index {
 
   private final Set<InputFile> inputFileCache = new LinkedHashSet<>();
   private final SetMultimap<String, InputFile> filesByNameCache = LinkedHashMultimap.create();
@@ -43,7 +42,6 @@ public class InputPathCache extends DefaultFileSystem.Cache {
     return inputFileCache;
   }
 
-  @Override
   public void doAdd(InputFile inputFile) {
     if (inputFile.language() != null) {
       languages.add(inputFile.language());
@@ -55,7 +53,7 @@ public class InputPathCache extends DefaultFileSystem.Cache {
 
   @Override
   public InputFile inputFile(String relativePath) {
-    return null;
+    throw new UnsupportedOperationException("inputFile(String relativePath)");
   }
 
   @Override
@@ -68,7 +66,6 @@ public class InputPathCache extends DefaultFileSystem.Cache {
     return filesByExtensionCache.get(extension);
   }
 
-  @Override
   protected SortedSet<String> languages() {
     return languages;
   }

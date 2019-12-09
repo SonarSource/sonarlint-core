@@ -20,46 +20,32 @@
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import org.picocontainer.injectors.ProviderAdapter;
-import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.batch.rule.internal.NewRule;
-import org.sonar.api.batch.rule.internal.RulesBuilder;
-import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
-import org.sonar.api.server.rule.RulesDefinition.Param;
-import org.sonar.markdown.Markdown;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 
-public class StandaloneRulesProvider extends ProviderAdapter {
-  private Rules singleton = null;
+public class StandaloneSonarLintRulesProvider extends ProviderAdapter {
+  private SonarLintRules singleton = null;
 
-  public Rules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
+  public SonarLintRules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
     if (singleton == null) {
       singleton = createRules(pluginRulesLoader);
     }
     return singleton;
   }
 
-  private static Rules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
-    RulesBuilder builder = new RulesBuilder();
+  private static SonarLintRules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
+    SonarLintRules rules = new SonarLintRules();
 
     for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
-        if (ruleDef.type() == RuleType.SECURITY_HOTSPOT) {
+        if (ruleDef.type() == RuleType.SECURITY_HOTSPOT || ruleDef.template()) {
           continue;
         }
-        NewRule newRule = builder.add(RuleKey.of(ruleDef.repository().key(), ruleDef.key()))
-          .setInternalKey(ruleDef.internalKey())
-          .setDescription(ruleDef.htmlDescription() != null ? ruleDef.htmlDescription() : Markdown.convertToHtml(ruleDef.markdownDescription()))
-          .setSeverity(ruleDef.severity())
-          .setType(ruleDef.type() != null ? ruleDef.type().toString() : null)
-          .setName(ruleDef.name());
-        for (Param p : ruleDef.params()) {
-          newRule.addParam(p.key())
-            .setDescription(p.description());
-        }
+        rules.add(new StandaloneRule(ruleDef));
       }
     }
 
-    return builder.build();
+    return rules;
   }
 }

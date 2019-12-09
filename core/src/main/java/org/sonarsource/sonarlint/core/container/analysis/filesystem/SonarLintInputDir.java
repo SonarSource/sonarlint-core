@@ -20,19 +20,19 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Path;
-import org.sonar.api.batch.fs.internal.DefaultInputDir;
+import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.utils.PathUtils;
 
 /**
  * This is a simple placeholder. Issues on directories will be reported as project level issues.
  */
-public class SonarLintInputDir extends DefaultInputDir {
+public class SonarLintInputDir implements InputDir {
 
   private final Path path;
 
   public SonarLintInputDir(Path path) {
-    super(null, null);
     this.path = path;
   }
 
@@ -59,6 +59,11 @@ public class SonarLintInputDir extends DefaultInputDir {
   @Override
   public String key() {
     return absolutePath();
+  }
+
+  @Override
+  public URI uri() {
+    return path.toUri();
   }
 
   @Override

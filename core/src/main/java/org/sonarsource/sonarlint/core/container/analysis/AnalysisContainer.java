@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLangu
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
@@ -91,7 +91,7 @@ public class AnalysisContainer extends ComponentContainer {
       new AnalysisConfigurationProvider(),
 
       // file system
-      InputPathCache.class,
+      InputFileCache.class,
       InputFileBuilder.class,
       FileMetadata.class,
       LanguageDetection.class,
@@ -130,7 +130,7 @@ public class AnalysisContainer extends ComponentContainer {
   protected void doAfterStart() {
     LOG.debug("Start analysis");
     // Don't initialize Sensors before the FS is indexed
-    getComponentByType(SonarLintFileSystem.class).index();
+    getComponentByType(FileIndexer.class).index();
     getComponentByType(SensorsExecutor.class).execute();
   }
 

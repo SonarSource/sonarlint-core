@@ -25,11 +25,10 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.sonar.api.batch.fs.InputFile.Type;
-import org.sonar.api.config.internal.ConfigurationBridge;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
@@ -48,7 +47,7 @@ public class StorageFileExclusions {
     MapSettings settings = new MapSettings();
     settings.addProperties(globalProps.getProperties());
     settings.addProperties(projectConfig.getProperties());
-    ExclusionFilters exclusionFilters = new ExclusionFilters(new ConfigurationBridge(settings));
+    ExclusionFilters exclusionFilters = new ExclusionFilters(settings.asConfig());
     exclusionFilters.prepare();
 
     List<G> excluded = new ArrayList<>();

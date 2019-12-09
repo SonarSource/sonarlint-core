@@ -55,7 +55,7 @@ public class TestUtils {
   }
 
   public static ClientInputFile createInputFile(final Path path, String relativePath, final boolean isTest, final Charset encoding) {
-    return new TestClientInputFile(path, relativePath, isTest, encoding);
+    return new OnDiskTestClientInputFile(path, relativePath, isTest, encoding);
   }
 
 }

@@ -29,8 +29,6 @@ import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.config.internal.MapSettings;
-import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.Version;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
@@ -54,7 +52,7 @@ public class ExtensionInstallerTests {
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
   private static final Configuration CONFIG = new MapSettings().asConfig();
-  private static final SonarRuntime RUNTIME = SonarRuntimeImpl.forSonarLint(Version.create(8, 0));
+  private static final SonarRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0));
   private ExtensionInstaller underTest;
   private PluginRepository pluginRepository;
   private PluginVersionChecker pluginVersionChecker;

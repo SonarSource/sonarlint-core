@@ -29,8 +29,6 @@ import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFile.Status;
-import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
-import org.sonar.api.batch.fs.internal.FilenamePredicate;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
 
 /**
@@ -58,7 +56,7 @@ public class DefaultFilePredicates implements FilePredicates {
 
   @Override
   public FilePredicate hasAbsolutePath(String s) {
-    return new AbsolutePathPredicate(s);
+    throw new UnsupportedOperationException("hasAbsolutePath");
   }
 
   /**
@@ -66,7 +64,7 @@ public class DefaultFilePredicates implements FilePredicates {
    */
   @Override
   public FilePredicate hasRelativePath(String s) {
-    return new RelativePathPredicate(s);
+    throw new UnsupportedOperationException("hasRelativePath");
   }
 
   @Override
@@ -106,19 +104,13 @@ public class DefaultFilePredicates implements FilePredicates {
 
   @Override
   public FilePredicate hasPath(String s) {
-    File file = new File(s);
-    if (file.isAbsolute()) {
-      return hasAbsolutePath(s);
-    }
-    return hasRelativePath(s);
+    throw new UnsupportedOperationException("hasPath");
   }
 
   @Override
   public FilePredicate is(File ioFile) {
-    if (ioFile.isAbsolute()) {
-      return hasAbsolutePath(ioFile.getAbsolutePath());
-    }
-    return hasRelativePath(ioFile.getPath());
+    // Needed for SonarCFamily
+    return hasURI(ioFile.toURI());
   }
 
   @Override
@@ -196,7 +188,7 @@ public class DefaultFilePredicates implements FilePredicates {
 
   @Override
   public FilePredicate hasStatus(Status status) {
-    return new StatusPredicate(status);
+    throw new UnsupportedOperationException("hasStatus");
   }
 
   @Override

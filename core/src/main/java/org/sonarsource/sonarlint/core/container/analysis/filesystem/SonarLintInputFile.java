@@ -36,8 +36,6 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.fs.internal.DefaultTextPointer;
-import org.sonar.api.batch.fs.internal.DefaultTextRange;
 import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
@@ -75,12 +73,14 @@ public class SonarLintInputFile implements InputFile {
     return relativePath;
   }
 
-  public void setLanguage(@Nullable String language) {
+  public SonarLintInputFile setLanguage(@Nullable String language) {
     this.language = language;
+    return this;
   }
 
-  public void setType(Type type) {
+  public SonarLintInputFile setType(Type type) {
     this.type = type;
+    return this;
   }
 
   @CheckForNull
@@ -192,13 +192,13 @@ public class SonarLintInputFile implements InputFile {
   @Override
   public int lines() {
     checkMetadata();
-    return metadata.lines;
+    return metadata.lines();
   }
 
   @Override
   public boolean isEmpty() {
     checkMetadata();
-    return metadata.lastValidOffset == 0;
+    return metadata.lastValidOffset() == 0;
   }
 
   @Override
@@ -234,11 +234,11 @@ public class SonarLintInputFile implements InputFile {
   }
 
   private int lineLength(int line) {
-    return lastValidGlobalOffsetForLine(line) - metadata.originalLineOffsets[line - 1];
+    return lastValidGlobalOffsetForLine(line) - metadata.originalLineOffsets()[line - 1];
   }
 
   private int lastValidGlobalOffsetForLine(int line) {
-    return line < this.metadata.lines ? (metadata.originalLineOffsets[line] - 1) : metadata.lastValidOffset;
+    return line < this.metadata.lines() ? (metadata.originalLineOffsets()[line] - 1) : metadata.lastValidOffset();
   }
 
   public void noSonarAt(Set<Integer> noSonarLines) {

@@ -42,7 +42,6 @@ public interface ClientInputFile {
   /**
    * Flag an input file as test file. Analyzers may apply different rules on test files.
    */
-  @CheckForNull
   boolean isTest();
 
   /**

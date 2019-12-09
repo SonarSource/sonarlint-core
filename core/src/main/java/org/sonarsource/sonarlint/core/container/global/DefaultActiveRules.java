@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.container.global;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +38,7 @@ public class DefaultActiveRules implements ActiveRules {
 
   public DefaultActiveRules(Collection<ActiveRule> activeRules) {
     allActiveRules = activeRules;
-    for (ActiveRule r : activeRules) {
+    for (ActiveRule r : allActiveRules) {
       if (r.internalKey() != null) {
         activeRulesByRepositoryAndInternalKey.computeIfAbsent(r.ruleKey().repository(), x -> new HashMap<>()).put(r.internalKey(), r);
       }

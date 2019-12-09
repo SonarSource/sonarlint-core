@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.TestClientInputFile;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 
@@ -57,7 +57,7 @@ public class InputFileBuilderTest {
 
     Path path = temp.getRoot().toPath().resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
-    ClientInputFile file = new TestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1);
+    ClientInputFile file = new OnDiskTestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1);
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     SonarLintInputFile inputFile = builder.create(file);
@@ -78,7 +78,7 @@ public class InputFileBuilderTest {
   public void testCreateWithLanguageSet() throws IOException {
     Path path = temp.getRoot().toPath().resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
-    ClientInputFile file = new TestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, "cpp");
+    ClientInputFile file = new OnDiskTestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, "cpp");
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     SonarLintInputFile inputFile = builder.create(file);
@@ -90,7 +90,7 @@ public class InputFileBuilderTest {
   @Test
   public void testCreate_lazy_error() throws IOException {
     when(langDetection.language(any(InputFile.class))).thenReturn("java");
-    ClientInputFile file = new TestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
+    ClientInputFile file = new OnDiskTestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
 
     InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     SonarLintInputFile slFile = builder.create(file);

@@ -32,7 +32,7 @@
 
   <properties>
     <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
-    <sonarqube.version>7.9</sonarqube.version>
+    <sonarqube.version>8.0</sonarqube.version>
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
     <grpc.version>1.22.0</grpc.version>

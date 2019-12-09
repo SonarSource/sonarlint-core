@@ -22,37 +22,42 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.InputFile.Status;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
+import org.sonar.api.batch.fs.InputFile.Type;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class DefaultFilePredicatesTest {
+class DefaultFilePredicatesTests {
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+  private InputFile javaFile;
+  private FilePredicates predicates;
 
-  DefaultInputFile javaFile;
-  FilePredicates predicates;
+  @TempDir
+  Path baseDir;
 
-  @Before
+  @BeforeEach
   public void before() throws IOException {
     predicates = new DefaultFilePredicates();
-    javaFile = new TestInputFileBuilder("foo", "src/main/java/struts/Action.java")
-      .setModuleBaseDir(temp.newFolder().toPath())
-      .setLanguage("java")
-      .setStatus(Status.SAME)
-      .build();
+    Path filePath = baseDir.resolve("src/main/java/struts/Action.java");
+    Files.createDirectories(filePath.getParent());
+    Files.write(filePath, "foo".getBytes(StandardCharsets.UTF_8));
+    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(filePath, "src/main/java/struts/Action.java", false, StandardCharsets.UTF_8, "java");
+    javaFile = new SonarLintInputFile(clientInputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8))
+      .setType(Type.MAIN)
+      .setLanguage("java");
   }
 
   @Test
@@ -94,26 +99,8 @@ public class DefaultFilePredicatesTest {
   }
 
   @Test
-  public void has_relative_path() {
-    assertThat(predicates.hasRelativePath("src/main/java/struts/Action.java").apply(javaFile)).isTrue();
-    assertThat(predicates.hasRelativePath("src/main/java/struts/Other.java").apply(javaFile)).isFalse();
-
-    // path is normalized
-    assertThat(predicates.hasRelativePath("src/main/java/../java/struts/Action.java").apply(javaFile)).isTrue();
-
-    assertThat(predicates.hasRelativePath("src\\main\\java\\struts\\Action.java").apply(javaFile)).isTrue();
-    assertThat(predicates.hasRelativePath("src\\main\\java\\struts\\Other.java").apply(javaFile)).isFalse();
-    assertThat(predicates.hasRelativePath("src\\main\\java\\struts\\..\\struts\\Action.java").apply(javaFile)).isTrue();
-  }
-
-  @Test
-  public void has_absolute_path() throws Exception {
-    String path = javaFile.file().getAbsolutePath();
-    assertThat(predicates.hasAbsolutePath(path).apply(javaFile)).isTrue();
-    assertThat(predicates.hasAbsolutePath(path.replaceAll("/", "\\\\")).apply(javaFile)).isTrue();
-
-    assertThat(predicates.hasAbsolutePath(temp.newFile().getAbsolutePath()).apply(javaFile)).isFalse();
-    assertThat(predicates.hasAbsolutePath("src/main/java/struts/Action.java").apply(javaFile)).isFalse();
+  public void has_relative_path_unsupported() {
+    assertThrows(UnsupportedOperationException.class, () -> predicates.hasRelativePath("src/main/java/struts/Action.java").apply(javaFile));
   }
 
   @Test
@@ -121,15 +108,15 @@ public class DefaultFilePredicatesTest {
     URI uri = javaFile.uri();
     assertThat(predicates.hasURI(uri).apply(javaFile)).isTrue();
 
-    assertThat(predicates.hasURI(temp.newFile().toURI()).apply(javaFile)).isFalse();
+    assertThat(predicates.hasURI(baseDir.resolve("another.php").toUri()).apply(javaFile)).isFalse();
   }
 
   @Test
   public void has_name() throws IOException {
-    String fileName = javaFile.path().getFileName().toString();
+    String fileName = javaFile.filename();
     assertThat(predicates.hasFilename(fileName).apply(javaFile)).isTrue();
 
-    assertThat(predicates.hasFilename(temp.newFile().toPath().getFileName().toString()).apply(javaFile)).isFalse();
+    assertThat(predicates.hasFilename("another.php").apply(javaFile)).isFalse();
     assertThat(predicates.hasFilename("Action.php").apply(javaFile)).isFalse();
   }
 
@@ -138,7 +125,6 @@ public class DefaultFilePredicatesTest {
     String extension = "java";
     assertThat(predicates.hasExtension(extension).apply(javaFile)).isTrue();
 
-    assertThat(predicates.hasFilename(temp.newFile().toPath().getFileName().toString()).apply(javaFile)).isFalse();
     assertThat(predicates.hasExtension("php").apply(javaFile)).isFalse();
     assertThat(predicates.hasExtension("").apply(javaFile)).isFalse();
 
@@ -146,33 +132,13 @@ public class DefaultFilePredicatesTest {
 
   @Test
   public void has_path() throws Exception {
-    // is relative path
-    assertThat(predicates.hasPath("src/main/java/struts/Action.java").apply(javaFile)).isTrue();
-    assertThat(predicates.hasPath("src/main/java/struts/Other.java").apply(javaFile)).isFalse();
-
-    // is absolute path
-    String path = javaFile.file().getAbsolutePath();
-    assertThat(predicates.hasAbsolutePath(path).apply(javaFile)).isTrue();
-    assertThat(predicates.hasPath(temp.newFile().getAbsolutePath()).apply(javaFile)).isFalse();
+    assertThrows(UnsupportedOperationException.class, () -> predicates.hasPath("src/main/java/struts/Action.java").apply(javaFile));
   }
 
   @Test
   public void is_file() throws Exception {
-    // relative file
-    assertThat(predicates.is(new File(javaFile.relativePath())).apply(javaFile)).isTrue();
-
-    // absolute file
     assertThat(predicates.is(javaFile.file()).apply(javaFile)).isTrue();
-    assertThat(predicates.is(javaFile.file().getAbsoluteFile()).apply(javaFile)).isTrue();
-    assertThat(predicates.is(new File(javaFile.file().toURI())).apply(javaFile)).isTrue();
-    assertThat(predicates.is(temp.newFile()).apply(javaFile)).isFalse();
-
-    // Note: do not add assertion on javaFile.file().getCanonicalFile()
-    // because canonical != absolute in Windows, for example:
-    // absolute: C:\Users\JANOSG~1\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
-    // canonical: C:\Users\Janos
-    // Gyerik\AppData\Local\Temp\junit1053330119976304712\junit3234139318557055197\src\main\java\struts\Action.java
-    // To make both work, InputFile implementations would have to support multiple representations, which makes little sense
+    assertThat(predicates.is(new File("foo.php")).apply(javaFile)).isFalse();
   }
 
   @Test
@@ -199,8 +165,12 @@ public class DefaultFilePredicatesTest {
   @Test
   public void has_status() {
     assertThat(predicates.hasAnyStatus().apply(javaFile)).isTrue();
-    assertThat(predicates.hasStatus(InputFile.Status.SAME).apply(javaFile)).isTrue();
-    assertThat(predicates.hasStatus(InputFile.Status.ADDED).apply(javaFile)).isFalse();
+    try {
+      predicates.hasStatus(InputFile.Status.SAME).apply(javaFile);
+      fail("Expected exception");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(UnsupportedOperationException.class);
+    }
   }
 
   @Test

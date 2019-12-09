@@ -17,25 +17,37 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis.filesystem;
+package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import org.junit.Test;
-import org.sonar.api.batch.fs.FilePredicate;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
+import javax.annotation.CheckForNull;
+import org.sonar.api.batch.rule.RuleParam;
+import org.sonar.api.server.rule.RulesDefinition.Param;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class StandaloneRuleParam implements RuleParam {
 
-public class AdditionalFilePredicatesTest {
+  private final String key;
+  private final String description;
+  private final String defaultValue;
 
-  @Test
-  public void key() {
-    FilePredicate predicate = new AdditionalFilePredicates.KeyPredicate("struts:Action.java");
-
-    DefaultInputFile inputFile = new TestInputFileBuilder("struts", "Action.java").build();
-    assertThat(predicate.apply(inputFile)).isTrue();
-
-    inputFile = new TestInputFileBuilder("struts", "Filter.java").build();
-    assertThat(predicate.apply(inputFile)).isFalse();
+  public StandaloneRuleParam(Param param) {
+    this.key = param.key();
+    this.description = param.description();
+    this.defaultValue = param.defaultValue();
   }
+
+  @Override
+  public String key() {
+    return key;
+  }
+
+  @Override
+  public String description() {
+    return description;
+  }
+
+  @CheckForNull
+  public String defaultValue() {
+    return defaultValue;
+  }
+
 }

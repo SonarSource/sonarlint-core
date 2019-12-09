@@ -17,33 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis.filesystem;
+package org.sonarsource.sonarlint.core.container.analysis;
 
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.AbstractFilePredicate;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import javax.annotation.CheckForNull;
+import org.sonar.api.batch.rule.Rule;
+import org.sonar.api.rules.RuleType;
 
-/**
- * Additional {@link org.sonar.api.batch.fs.FilePredicate}s that are
- * not published in public API
- */
-class AdditionalFilePredicates {
+public interface SonarLintRule extends Rule {
 
-  private AdditionalFilePredicates() {
-    // only static inner classes
-  }
-
-  static class KeyPredicate extends AbstractFilePredicate {
-    private final String key;
-
-    KeyPredicate(String key) {
-      this.key = key;
-    }
-
-    @Override
-    public boolean apply(InputFile f) {
-      return key.equals(((DefaultInputFile) f).key());
-    }
-  }
+  @CheckForNull
+  RuleType type();
 
 }
