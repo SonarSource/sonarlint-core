@@ -193,7 +193,7 @@ public class OrganizationTest extends AbstractConnectedTest {
   public void verifyExtendedDescription() {
     updateGlobal();
 
-    String ruleKey = "squid:S106";
+    String ruleKey = ItUtils.javaVersion.equals("LATEST_RELEASE") ? "java:S106" : "squid:S106";
 
     assertThat(engineOnTestOrg.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
     assertThat(engineOnDefaultOrg.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();

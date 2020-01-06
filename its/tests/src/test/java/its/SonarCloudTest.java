@@ -281,28 +281,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void semanticErrorJava() throws IOException {
-    String fileContent = "package its;public class MyTest {int a;int a;}";
-    Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
-    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
-
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), testFile.toString()), issueListener, null, null);
-
-    assertThat(results.failedAnalysisFiles()).hasSize(1);
-  }
-
-  @Test
   public void globalUpdate() {
     updateGlobal();
 
     assertThat(engine.getState()).isEqualTo(State.UPDATED);
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
-    assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
+    assertThat(engine.getRuleDetails("java:S106").getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNull();
   }
@@ -318,7 +303,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() {
-    String ruleKey = "squid:S106";
+    String ruleKey = "java:S106";
 
     String extendedDescription = "my dummy extended description";
 
@@ -415,8 +400,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
-      tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
-      tuple("squid:S1228", null));
+      tuple("java:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
+      tuple("java:S1228", null));
   }
 
   @Test
@@ -491,10 +476,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
     // Toggle a rule to ensure quality profile date is changed
     SearchWsResponse response = adminWsClient.qualityProfiles().search(new SearchWsRequest().setOrganizationKey(SONARCLOUD_ORGANIZATION).setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    adminWsClient.qualityProfiles().deactivateRule(profileKey, "squid:S1228");
+    adminWsClient.qualityProfiles().deactivateRule(profileKey, "java:S1228");
     adminWsClient.qualityProfiles().activateRule(ActivateRuleWsRequest.builder()
       .setKey(profileKey)
-      .setRuleKey("squid:S1228")
+      .setRuleKey("java:S1228")
       .build());
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
