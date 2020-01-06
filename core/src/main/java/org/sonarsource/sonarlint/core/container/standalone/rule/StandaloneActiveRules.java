@@ -24,16 +24,21 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
 
 import static java.util.stream.Collectors.toList;
 
 public class StandaloneActiveRules {
+  private static final Logger LOG = Loggers.get(StandaloneActiveRules.class);
+
   private Map<String, StandaloneRule> rulesByKey;
 
   public StandaloneActiveRules(List<StandaloneRule> rules) {
@@ -45,14 +50,44 @@ public class StandaloneActiveRules {
 
     filteredActiveRules.addAll(rulesByKey.values().stream()
       .filter(StandaloneRule::isActiveByDefault)
-      .filter(r -> !excludedRules.contains(r.getKey()))
+      .filter(isExcludedByConfiguration(excludedRules))
       .collect(Collectors.toList()));
     filteredActiveRules.addAll(rulesByKey.values().stream()
       .filter(r -> !r.isActiveByDefault())
-      .filter(r -> includedRules.contains(r.getKey()))
+      .filter(isIncludedByConfiguration(includedRules))
       .collect(Collectors.toList()));
 
     return new DefaultActiveRules(filteredActiveRules.stream().map(StandaloneActiveRuleAdapter::new).collect(toList()));
+  }
+
+  private static Predicate<? super StandaloneRule> isExcludedByConfiguration(Set<String> excludedRules) {
+    return r -> {
+      if (excludedRules.contains(r.getKey())) {
+        return false;
+      }
+      for (RuleKey deprecatedKey : r.getDeprecatedKeys()) {
+        if (excludedRules.contains(deprecatedKey.toString())) {
+          LOG.warn("Rule '{}' was excluded using its deprecated key '{}'. Please fix your configuration.", r.key(), deprecatedKey);
+          return false;
+        }
+      }
+      return true;
+    };
+  }
+
+  private static Predicate<? super StandaloneRule> isIncludedByConfiguration(Set<String> includedRules) {
+    return r -> {
+      if (includedRules.contains(r.getKey())) {
+        return true;
+      }
+      for (RuleKey deprecatedKey : r.getDeprecatedKeys()) {
+        if (includedRules.contains(deprecatedKey.toString())) {
+          LOG.warn("Rule '{}' was included using its deprecated key '{}'. Please fix your configuration.", r.key(), deprecatedKey);
+          return true;
+        }
+      }
+      return false;
+    };
   }
 
   boolean isActiveByDefault(RuleKey ruleKey) {

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
 import org.sonar.api.batch.rule.RuleParam;
@@ -50,6 +51,7 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
   private boolean isActiveByDefault;
   private final String languageKey;
   private final String[] tags;
+  private Set<RuleKey> deprecatedKeys;
 
   public StandaloneRule(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key());
@@ -61,6 +63,7 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
     this.isActiveByDefault = rule.activatedByDefault();
     this.languageKey = rule.repository().language();
     this.tags = rule.tags().toArray(new String[0]);
+    this.deprecatedKeys = rule.deprecatedRuleKeys();
 
     Map<String, StandaloneRuleParam> builder = new HashMap<>();
     for (Param param : rule.params()) {
@@ -157,5 +160,9 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
   @Override
   public String getExtendedDescription() {
     return "";
+  }
+
+  public Set<RuleKey> getDeprecatedKeys() {
+    return deprecatedKeys;
   }
 }
