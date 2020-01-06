@@ -218,9 +218,9 @@ public class ConnectedIssueMediumTest {
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("java:S1481", 3, inputFile.getPath(), "MAJOR"));
   }
 
   @Test
@@ -235,7 +235,7 @@ public class ConnectedIssueMediumTest {
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S2187", 1, inputFile.getPath(), "MAJOR"));
+      tuple("java:S2187", 1, inputFile.getPath(), "MAJOR"));
   }
 
   @Test
@@ -251,9 +251,9 @@ public class ConnectedIssueMediumTest {
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("java:S1481", 3, inputFile.getPath(), "MAJOR"));
   }
 
   @Test

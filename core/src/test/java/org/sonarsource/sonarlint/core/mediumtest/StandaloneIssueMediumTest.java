@@ -68,6 +68,8 @@ public class StandaloneIssueMediumTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
+
+  private static final String A_JAVA_FILE_PATH = "Foo.java";
   private static StandaloneSonarLintEngineImpl sonarlint;
   private File baseDir;
   // commercial plugins might not be available
@@ -148,8 +150,8 @@ public class StandaloneIssueMediumTest {
         .build(),
       issues::add, null,
       null);
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("javascript:UnusedVariable", 2, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("javascript:UnusedVariable", 2, "foo.js"));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);
@@ -181,8 +183,8 @@ public class StandaloneIssueMediumTest {
       issues::add, null,
       null);
     assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
-      .extracting("startLine", "inputFile.path").containsOnly(
-        tuple(2, inputFile.getPath()));
+      .extracting(Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+        tuple(2, "foo.js"));
 
     // Change globals using analysis property
     issues.clear();
@@ -196,8 +198,8 @@ public class StandaloneIssueMediumTest {
       issues::add, null,
       null);
     assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
-      .extracting("startLine", "inputFile.path").containsOnly(
-        tuple(3, inputFile.getPath()));
+      .extracting(Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+        tuple(3, "foo.js"));
   }
 
   @Test
@@ -222,8 +224,8 @@ public class StandaloneIssueMediumTest {
       .addInputFile(inputFile)
       .build(), issues::add, null,
       null);
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("typescript:S1764", 2, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("typescript:S1764", 2, "foo.ts"));
 
   }
 
@@ -241,10 +243,10 @@ public class StandaloneIssueMediumTest {
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null);
-    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
-      tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
-      tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
-      tuple("xoo:HasTag", 2, 12, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
+      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
+      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
   }
 
   @Test
@@ -261,10 +263,10 @@ public class StandaloneIssueMediumTest {
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null);
-    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
-      tuple("xoo:HasTag", 1, 9, inputFile.getPath()),
-      tuple("xoo:HasTag", 2, 6, inputFile.getPath()),
-      tuple("xoo:HasTag", 2, 12, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
+      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
+      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
   }
 
   @Test
@@ -301,8 +303,8 @@ public class StandaloneIssueMediumTest {
         .putExtraProperty("sonar.cfamily.build-wrapper-output", baseDir.getAbsolutePath())
         .build(),
       issues::add, null, null);
-    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
-      tuple("c:S3805", 1, 0, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("c:S3805", 1, 0, "foo.c"));
   }
 
   @Test
@@ -321,8 +323,8 @@ public class StandaloneIssueMediumTest {
         .build(),
       issues::add, null, null);
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
-    assertThat(issues).extracting("ruleKey", "startLine", "startLineOffset", "inputFile.path").containsOnly(
-      tuple("xoo:HasTag", 2, 6, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("xoo:HasTag", 2, 6, "foo.xoo"));
   }
 
   @Test
@@ -358,8 +360,8 @@ public class StandaloneIssueMediumTest {
       .addInputFile(inputFile)
       .build(), issues::add,
       null, null);
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("php:S1172", 2, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("php:S1172", 2, "foo.php"));
   }
 
   @Test
@@ -376,8 +378,8 @@ public class StandaloneIssueMediumTest {
       .addInputFile(inputFile)
       .build(), issues::add,
       null, null);
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
 
   // SLCORE-162
@@ -397,13 +399,13 @@ public class StandaloneIssueMediumTest {
       .addInputFile(inputFile)
       .build(), issues::add,
       null, null);
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("python:PrintStatementUsage", 2, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
 
   @Test
   public void simpleJava() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -422,10 +424,10 @@ public class StandaloneIssueMediumTest {
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
       i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-        tuple("squid:S1220", null, null, null, null, "Foo.java", "MINOR"),
-        tuple("squid:S1481", 3, 8, 3, 9, "Foo.java", "MINOR"),
-        tuple("squid:S106", 4, 4, 4, 14, "Foo.java", "MAJOR"),
-        tuple("squid:S1135", 5, 0, 5, 27, "Foo.java", "INFO"));
+        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, "MINOR"),
+        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, "MINOR"),
+        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, "MAJOR"),
+        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, "INFO"));
   }
 
   // SLCORE-251
@@ -500,15 +502,15 @@ public class StandaloneIssueMediumTest {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S3421", 6, inputFile.getPath(), "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S3421", 6, "pom.xml", "MINOR"));
   }
 
   @Test
   public void supportJavaSuppressWarning() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
-        + "  @SuppressWarnings(\"squid:S106\")\n"
+        + "  @SuppressWarnings(\"java:S106\")\n"
         + "  public void foo() {\n"
         + "    int x;\n"
         + "    System.out.println(\"Foo\");\n"
@@ -524,9 +526,9 @@ public class StandaloneIssueMediumTest {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 4, inputFile.getPath(), "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
   }
 
   @Test
@@ -543,16 +545,16 @@ public class StandaloneIssueMediumTest {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("squid:S106", 5, inputFile.getPath()),
-      tuple("squid:S1220", null, inputFile.getPath()),
-      tuple("squid:UnusedPrivateMethod", 8, inputFile.getPath()),
-      tuple("squid:S1186", 8, inputFile.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, "src/Foo.java"),
+      tuple("java:S1220", null, "src/Foo.java"),
+      tuple("java:S1144", 8, "src/Foo.java"),
+      tuple("java:S1186", 8, "src/Foo.java"));
   }
 
   @Test
   public void simpleJavaWithExcludedRules() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -561,7 +563,7 @@ public class StandaloneIssueMediumTest {
         + "}",
       false);
 
-    final Collection<RuleKey> excludedRules = singleton(new RuleKey("squid", "S106"));
+    final Collection<RuleKey> excludedRules = singleton(new RuleKey("java", "S106"));
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
@@ -571,14 +573,72 @@ public class StandaloneIssueMediumTest {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
+      tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
+  }
+
+  @Test
+  public void simpleJavaWithExcludedRulesUsingDeprecatedKey() throws Exception {
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final Collection<RuleKey> excludedRules = singleton(new RuleKey("squid", "S106"));
+    List<String> logs = new ArrayList<>();
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .addExcludedRules(excludedRules)
+        .build(),
+      issues::add, (msg, lvl) -> logs.add(msg), null);
+
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
+      tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
+
+    assertThat(logs).contains("Rule 'java:S106' was excluded using its deprecated key 'squid:S106'. Please fix your configuration.");
   }
 
   @Test
   public void simpleJavaWithIncludedRules() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
+      "import java.util.Optional;\n"
+        + "public class Foo {\n"
+        + "  public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\" + name.isPresent());\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final Collection<RuleKey> includedRules = singleton(new RuleKey("java", "S3553"));
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .addIncludedRules(includedRules)
+        .build(),
+      issues::add, null, null);
+
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S3553", 3, A_JAVA_FILE_PATH, "MAJOR"),
+      tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+  }
+
+  @Test
+  public void simpleJavaWithIncludedRulesUsingDeprecatedKey() throws Exception {
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
         + "  public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way\n"
@@ -589,6 +649,7 @@ public class StandaloneIssueMediumTest {
       false);
 
     final Collection<RuleKey> includedRules = singleton(new RuleKey("squid", "S3553"));
+    List<String> logs = new ArrayList<>();
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
@@ -596,13 +657,15 @@ public class StandaloneIssueMediumTest {
         .addInputFile(inputFile)
         .addIncludedRules(includedRules)
         .build(),
-      issues::add, null, null);
+      issues::add, (msg, lvl) -> logs.add(msg), null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S3553", 3, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S106", 5, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 4, inputFile.getPath(), "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S3553", 3, A_JAVA_FILE_PATH, "MAJOR"),
+      tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+
+    assertThat(logs).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
   }
 
   @Test
@@ -613,7 +676,7 @@ public class StandaloneIssueMediumTest {
         + "}",
       false);
 
-    final Collection<RuleKey> includedRules = singleton(new RuleKey("squid", "S1228"));
+    final Collection<RuleKey> includedRules = singleton(new RuleKey("java", "S1228"));
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
@@ -623,17 +686,17 @@ public class StandaloneIssueMediumTest {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S2094", 2, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1228", null, null, "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, Issue::getSeverity).containsOnly(
+      tuple("java:S2094", 2, "foo/Foo.java", "MINOR"),
+      tuple("java:S1228", null, null, "MINOR"));
   }
 
   @Test
   public void simpleJavaWithIncludedAndExcludedRules() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
-        + "  public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way\n"
+        + "  public void foo(Optional<String> name) {  // for squid:S3553, not in Sonar Way\n"
         + "    int x;\n"
         + "    System.out.println(\"Foo\" + name.isPresent());\n"
         + "  }\n"
@@ -653,10 +716,10 @@ public class StandaloneIssueMediumTest {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 5, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 4, inputFile.getPath(), "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+      tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
   }
 
   @Test
@@ -668,7 +731,7 @@ public class StandaloneIssueMediumTest {
       "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
       "</testsuite>", StandardCharsets.UTF_8);
 
-    ClientInputFile inputFile = prepareInputFile("Foo.java",
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -696,16 +759,16 @@ public class StandaloneIssueMediumTest {
 
     assertThat(results.indexedFileCount()).isEqualTo(2);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath()),
-      tuple("squid:S1220", null, inputFile.getPath()),
-      tuple("squid:S1481", 3, inputFile.getPath()),
-      tuple("squid:S2187", 1, inputFileTest.getPath()));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 4, A_JAVA_FILE_PATH),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH),
+      tuple("java:S1481", 3, A_JAVA_FILE_PATH),
+      tuple("java:S2187", 1, "FooTest.java"));
   }
 
   @Test
   public void concurrentAnalysis() throws Throwable {
-    final ClientInputFile inputFile = prepareInputFile("Foo.java",
+    final ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -714,8 +777,6 @@ public class StandaloneIssueMediumTest {
         + "  }\n"
         + "}",
       false);
-
-    final Path workDir = temp.newFolder().toPath();
 
     int parallelExecutions = 4;
 
@@ -749,7 +810,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void lazy_init_file_metadata() throws Exception {
-    final ClientInputFile inputFile1 = prepareInputFile("Foo.java",
+    final ClientInputFile inputFile1 = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
