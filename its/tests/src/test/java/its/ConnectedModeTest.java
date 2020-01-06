@@ -106,6 +106,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
 
+  private static String javaRuleKey(String key) {
+    return ItUtils.javaVersion.equals("LATEST_RELEASE") ? ("java:" + key) : ("squid:" + key);
+  }
+
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .setSonarVersion(SONAR_VERSION)
@@ -305,9 +309,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJava() throws IOException {
-    // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
-
     String fileContent = "pac kage its; public class MyTest { }";
     Path testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -323,9 +324,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJavascript() throws IOException {
-    // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
-
     String fileContent = "asd asd";
     Path testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -340,24 +338,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void semanticErrorJava() throws IOException {
-    // since SONARJAVA-2657
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 7));
-
-    String fileContent = "package its;public class MyTest {int a;int a;}";
-    Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
-    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
-
-    updateGlobal();
-    updateProject(PROJECT_KEY_JAVA);
-
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
-
-    assertThat(results.failedAnalysisFiles()).hasSize(1);
-  }
-
-  @Test
   public void globalUpdate() {
     updateGlobal();
 
@@ -365,7 +345,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
-    assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
+    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
@@ -383,14 +363,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void verifyExtendedDescription() {
     updateGlobal();
 
-    String ruleKey = "squid:S106";
-
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
+    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getExtendedDescription()).isEmpty();
 
     String extendedDescription = "my dummy extended description";
 
     WsRequest request = new PostRequest("/api/rules/update")
-      .setParam("key", ruleKey)
+      .setParam("key", javaRuleKey("S106"))
       .setParam("markdown_note", extendedDescription);
     try (WsResponse response = adminWsClient.wsConnector().call(request)) {
       assertThat(response.code()).isEqualTo(200);
@@ -398,7 +376,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     updateGlobal();
 
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getExtendedDescription()).isEqualTo(extendedDescription);
   }
 
   @Test
@@ -502,8 +480,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
-      tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
-      tuple("squid:S1228", null));
+      tuple(javaRuleKey("S106"), Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
+      tuple(javaRuleKey("S1228"), null));
   }
 
   @Test
@@ -579,7 +557,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("name", "myrule")
       .setParam("markdown_description", "my_rule_description")
       .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
-      .setParam("template_key", "squid:S2253")
+      .setParam("template_key", javaRuleKey("S2253"))
       .setParam("severity", "MAJOR");
     try (WsResponse response = adminWsClient.wsConnector().call(request)) {
       assertTrue(response.isSuccessful());
@@ -587,9 +565,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
       .setParam("key", qp.getKey())
-      .setParam("rule", "squid:myrule");
+      .setParam("rule", javaRuleKey("myrule"));
     try (WsResponse response = adminWsClient.wsConnector().call(request)) {
-      assertTrue(response.isSuccessful());
+      assertTrue("Unable to activate custom rule", response.isSuccessful());
     }
 
     try {
@@ -605,14 +583,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       assertThat(issueListener.getIssues()).hasSize(3);
 
-      assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("my_rule_description");
+      assertThat(engine.getRuleDetails(javaRuleKey("myrule")).getHtmlDescription()).contains("my_rule_description");
 
     } finally {
 
       request = new PostRequest("/api/rules/delete")
-        .setParam("key", "squid:myrule");
+        .setParam("key", javaRuleKey("myrule"));
       try (WsResponse response = adminWsClient.wsConnector().call(request)) {
-        assertTrue(response.isSuccessful());
+        assertTrue("Unable to delete custom rule", response.isSuccessful());
       }
     }
   }
@@ -706,7 +684,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Activate a new rule
     SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "key", profileKey, "rule", "squid:S1228");
+    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "key", profileKey, "rule", javaRuleKey("S1228"));
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
