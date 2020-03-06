@@ -129,7 +129,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisC() throws Exception {
-    ORCHESTRATOR.activateLicense();
     updateGlobal();
     updateProject(PROJECT_KEY_C);
     SaveIssueListener issueListener = new SaveIssueListener();
@@ -164,7 +163,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisCobol() throws Exception {
-    ORCHESTRATOR.activateLicense();
     updateGlobal();
     updateProject(PROJECT_KEY_COBOL);
     SaveIssueListener issueListener = new SaveIssueListener();
