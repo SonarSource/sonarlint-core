@@ -284,6 +284,7 @@
             <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <minimizeJar>true</minimizeJar>
+              <shadeSourcesContent>true</shadeSourcesContent>
               <artifactSet>
                 <excludes>
                   <exclude>${project.groupId}:sonarlint-client-api</exclude>
@@ -312,30 +313,17 @@
                     <exclude>META-INF/NOTICE*</exclude>
                     <exclude>LICENSE*</exclude>
                     <exclude>NOTICE*</exclude>
+                    <exclude>*.proto</exclude>
                   </excludes>
-                </filter>
-                <filter>
-                  <artifact>org.sonarsource.sonarlint.core:sonarlint-core</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
                 </filter>
                 <filter>
                   <artifact>org.sonarsource.sonarqube:sonar-plugin-api</artifact>
                   <includes>
                     <include>**</include>
                   </includes>
-                </filter>
-                <filter>
-                  <artifact>org.sonarsource.sonarqube:sonar-ws</artifact>
                   <excludes>
-                    <exclude>*.proto</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <artifact>org.sonarsource.sonarqube:sonar-scanner-protocol</artifact>
-                  <excludes>
-                    <exclude>*.proto</exclude>
+                    <exclude>**/JsonWriter.class</exclude>
+                    <exclude>**/internal/google/gson/**</exclude>
                   </excludes>
                 </filter>
               </filters>
