@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import java.util.Collections;
 import java.util.Set;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
@@ -31,10 +30,12 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.Language;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.core.plugin.Version;
 
 public class ExtensionInstaller {
 
@@ -49,8 +50,9 @@ public class ExtensionInstaller {
   /**
    * Standalone mode
    */
-  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker) {
-    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, Collections.emptySet());
+  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
+    StandaloneGlobalConfiguration standaloneGlobalConfig) {
+    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, standaloneGlobalConfig.getEnabledLanguages());
   }
 
   /**

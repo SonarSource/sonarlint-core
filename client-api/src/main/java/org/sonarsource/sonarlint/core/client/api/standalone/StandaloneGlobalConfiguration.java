@@ -21,10 +21,16 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.Language;
 
 /**
  * To use in standalone mode please provide list of plugin URLs.  
@@ -33,10 +39,12 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfigurat
 public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final List<URL> pluginUrls;
+  private final EnumSet<Language> enabledLanguages;
 
   private StandaloneGlobalConfiguration(Builder builder) {
     super(builder);
     this.pluginUrls = builder.pluginUrls;
+    this.enabledLanguages = builder.enabledLanguages;
   }
 
   public static Builder builder() {
@@ -47,8 +55,13 @@ public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
     return Collections.unmodifiableList(pluginUrls);
   }
 
+  public Set<Language> getEnabledLanguages() {
+    return enabledLanguages;
+  }
+
   public static final class Builder extends AbstractBuilder<Builder> {
     private List<URL> pluginUrls = new ArrayList<>();
+    private EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
 
     private Builder() {
     }
@@ -60,6 +73,16 @@ public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
 
     public Builder addPlugin(URL pluginUrl) {
       this.pluginUrls.add(pluginUrl);
+      return this;
+    }
+
+    public Builder addEnabledLanguage(Language language) {
+      enabledLanguages.add(language);
+      return this;
+    }
+
+    public Builder addEnabledLanguages(Language... languages) {
+      enabledLanguages.addAll(Arrays.asList(languages));
       return this;
     }
 

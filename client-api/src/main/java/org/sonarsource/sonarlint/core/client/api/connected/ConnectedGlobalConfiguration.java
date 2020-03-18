@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -39,7 +40,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final String serverId;
   private final Path storageRoot;
-  private final Set<Language> enabledLanguages;
+  private final EnumSet<Language> enabledLanguages;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
@@ -67,7 +68,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   public static final class Builder extends AbstractBuilder<Builder> {
     private String serverId;
     private Path storageRoot;
-    private Set<Language> enabledLanguages = new HashSet<>();
+    private EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
 
     private Builder() {
     }

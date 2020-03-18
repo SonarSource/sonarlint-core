@@ -198,7 +198,6 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.update(config(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JS.getPluginKey());
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.TS.getPluginKey());
 
     engine.updateProject(config(), PROJECT_KEY_TYPESCRIPT, null);
     SaveIssueListener issueListenerTs = new SaveIssueListener();
