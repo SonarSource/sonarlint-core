@@ -21,30 +21,34 @@ package org.sonarsource.sonarlint.core.util;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import javax.annotation.CheckForNull;
 
 public class ReversePathTree {
-  private final Node root = new Node();
+  private final OptimizedNode root = new OptimizedNode();
 
   public void index(Path path) {
-    Node currentNode = root;
+    OptimizedNode currentNode = root;
 
     for (int i = path.getNameCount() - 1; i >= 0; i--) {
-      currentNode = currentNode.children.computeIfAbsent(path.getName(i).toString(), e -> new Node());
+      currentNode = currentNode.computeChildrenIfAbsent(path.getName(i));
     }
     currentNode.terminal = true;
   }
 
   public Match findLongestSuffixMatches(Path path) {
-    Node currentNode = root;
+    OptimizedNode currentNode = root;
     int matchLen = 0;
 
     while (matchLen < path.getNameCount()) {
-      String nextEl = path.getName(path.getNameCount() - matchLen - 1).toString();
-      Node nextNode = currentNode.children.get(nextEl);
+      Path nextEl = path.getName(path.getNameCount() - matchLen - 1);
+      OptimizedNode nextNode = currentNode.getChild(nextEl);
       if (nextNode == null) {
         break;
       }
@@ -55,7 +59,7 @@ public class ReversePathTree {
     return collectAllPrefixes(currentNode, matchLen);
   }
 
-  private static Match collectAllPrefixes(Node node, int matchLen) {
+  private static Match collectAllPrefixes(OptimizedNode node, int matchLen) {
     List<Path> paths = new ArrayList<>();
     if (matchLen > 0) {
       collectPrefixes(node, Paths.get(""), paths);
@@ -63,20 +67,67 @@ public class ReversePathTree {
     return new Match(paths, matchLen);
   }
 
-  private static void collectPrefixes(Node node, Path currentPath, List<Path> paths) {
+  private static void collectPrefixes(OptimizedNode node, Path currentPath, List<Path> paths) {
     if (node.terminal) {
       paths.add(currentPath);
     }
 
-    for (Map.Entry<String, Node> child : node.children.entrySet()) {
-      Path childPath = Paths.get(child.getKey()).resolve(currentPath);
+    for (Map.Entry<Path, OptimizedNode> child : node.childrenEntrySet()) {
+      Path childPath = child.getKey().resolve(currentPath);
       collectPrefixes(child.getValue(), childPath, paths);
     }
   }
 
-  private static class Node {
+  /**
+   * Since it is very common that a node will have only one child, we save memory by lazily creating a children LinkedHashMap only when a second item is added.
+   */
+  private static class OptimizedNode {
     boolean terminal = false;
-    Map<String, Node> children = new LinkedHashMap<>();
+    Path singleChildKey = null;
+    OptimizedNode singleChildValue;
+    Map<Path, OptimizedNode> children = null;
+
+    public OptimizedNode computeChildrenIfAbsent(Path name) {
+      if (name.equals(singleChildKey)) {
+        return singleChildValue;
+      }
+      if (singleChildKey == null && children == null) {
+        singleChildKey = name;
+        singleChildValue = new OptimizedNode();
+        return singleChildValue;
+      } else if (children == null) {
+        children = new LinkedHashMap<>();
+        children.put(singleChildKey, singleChildValue);
+        OptimizedNode value = new OptimizedNode();
+        children.put(name, value);
+        singleChildKey = null;
+        singleChildValue = null;
+        return value;
+      } else {
+        return children.computeIfAbsent(name, e -> new OptimizedNode());
+      }
+    }
+
+    public Set<Map.Entry<Path, OptimizedNode>> childrenEntrySet() {
+      if (singleChildKey == null && children == null) {
+        return Collections.emptySet();
+      } else if (children == null) {
+        return Collections.singleton(new AbstractMap.SimpleEntry<Path, OptimizedNode>(singleChildKey, singleChildValue));
+      } else {
+        return children.entrySet();
+      }
+    }
+
+    @CheckForNull
+    public OptimizedNode getChild(Path name) {
+      if (singleChildKey == null && children == null) {
+        return null;
+      } else if (children == null) {
+        return singleChildKey.equals(name) ? singleChildValue : null;
+      } else {
+        return children.get(name);
+      }
+    }
   }
 
   public static class Match {
