@@ -28,14 +28,12 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.Language;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
-import org.sonarsource.sonarlint.core.plugin.Version;
 
 public class ExtensionInstaller {
 
@@ -47,29 +45,13 @@ public class ExtensionInstaller {
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  /**
-   * Standalone mode
-   */
   public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
-    StandaloneGlobalConfiguration standaloneGlobalConfig) {
-    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, standaloneGlobalConfig.getEnabledLanguages());
-  }
-
-  /**
-   * Connected mode
-   */
-  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
-    ConnectedGlobalConfiguration connectedGlobalConfig) {
-    this(sonarRuntime, pluginRepository, bootConfiguration, pluginVersionChecker, connectedGlobalConfig.getEnabledLanguages());
-  }
-
-  private ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
-    Set<Language> enabledLanguages) {
+    AbstractGlobalConfiguration globalConfig) {
     this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;
     this.bootConfiguration = bootConfiguration;
     this.pluginVersionChecker = pluginVersionChecker;
-    this.enabledLanguages = enabledLanguages;
+    this.enabledLanguages = globalConfig.getEnabledLanguages();
   }
 
   public ExtensionInstaller install(ComponentContainer container, boolean global) {

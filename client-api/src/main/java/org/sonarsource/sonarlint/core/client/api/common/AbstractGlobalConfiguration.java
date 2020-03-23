@@ -20,9 +20,12 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -40,11 +43,13 @@ public abstract class AbstractGlobalConfiguration {
   private final LogOutput logOutput;
   private final Path sonarLintUserHome;
   private final Path workDir;
+  private final EnumSet<Language> enabledLanguages;
   private final Map<String, String> extraProperties;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
+    this.enabledLanguages = builder.enabledLanguages;
     this.logOutput = builder.logOutput;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
   }
@@ -61,6 +66,10 @@ public abstract class AbstractGlobalConfiguration {
     return workDir;
   }
 
+  public Set<Language> getEnabledLanguages() {
+    return enabledLanguages;
+  }
+
   @CheckForNull
   public LogOutput getLogOutput() {
     return logOutput;
@@ -70,6 +79,7 @@ public abstract class AbstractGlobalConfiguration {
     private LogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
+    private EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
@@ -101,6 +111,21 @@ public abstract class AbstractGlobalConfiguration {
       return (G) this;
     }
 
+    /**
+     * Explicitly enable a {@link Language}
+     */
+    public G addEnabledLanguage(Language language) {
+      enabledLanguages.add(language);
+      return (G) this;
+    }
+
+    /**
+     * Explicitly enable several {@link Language}s
+     */
+    public G addEnabledLanguages(Language... languages) {
+      enabledLanguages.addAll(Arrays.asList(languages));
+      return (G) this;
+    }
   }
 
 }
