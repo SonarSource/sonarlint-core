@@ -27,6 +27,7 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,6 +44,7 @@ public class StandaloneGlobalConfigurationTest {
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
+    assertThat(config.getEnabledLanguages()).isEmpty();
   }
 
   @Test
@@ -78,5 +80,14 @@ public class StandaloneGlobalConfigurationTest {
       .addPlugins(plugin2, plugin3)
       .build();
     assertThat(config.getPluginUrls()).containsExactly(plugin1, plugin2, plugin3);
+  }
+
+  @Test
+  public void configureLanguages() throws Exception {
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+      .addEnabledLanguage(Language.JAVA)
+      .addEnabledLanguages(Language.JS, Language.TS)
+      .build();
+    assertThat(config.getEnabledLanguages()).containsExactly(Language.JAVA, Language.JS, Language.TS);
   }
 }

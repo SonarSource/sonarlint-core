@@ -42,7 +42,7 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.ZipUtils;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.Language;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;

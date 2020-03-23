@@ -41,10 +41,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
@@ -198,7 +198,6 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.update(config(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JS.getPluginKey());
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.TS.getPluginKey());
 
     engine.updateProject(config(), PROJECT_KEY_TYPESCRIPT, null);
     SaveIssueListener issueListenerTs = new SaveIssueListener();
