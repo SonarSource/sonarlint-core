@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -127,7 +129,8 @@ public class FileMatcherTest {
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq/news"));
   }
 
-  // @Disabled("Only used to investigate performance issues like SLE-344")
+  @Disabled("Only used to investigate performance issues like SLE-344")
+  @Ignore
   @Test
   public void performance_test() throws Exception {
     int depthFactor = 10;
