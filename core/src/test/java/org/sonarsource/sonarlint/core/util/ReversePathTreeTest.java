@@ -46,7 +46,7 @@ public class ReversePathTreeTest {
     ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("src/main/java/File.java"));
 
     assertThat(match.matchLen()).isEqualTo(4);
-    assertThat(match.matchPrefixes()).containsExactly(Paths.get("project1"), Paths.get("project2"));
+    assertThat(match.matchPrefixes()).containsExactlyInAnyOrder(Paths.get("project1"), Paths.get("project2"));
   }
 
   @Test
