@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginCacheLoader {
 
-  private static final String IMPLEMENTED_SQ_API = "8.1";
+  private static final String IMPLEMENTED_SQ_API = "8.2";
 
   private static final Logger LOG = Loggers.get(PluginCacheLoader.class);
 
