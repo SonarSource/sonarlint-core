@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.util.ReversePathTree;
 
@@ -33,12 +35,14 @@ import static java.util.Collections.reverseOrder;
 
 public class FileMatcher {
 
-  public Result match(List<Path> sqRelativePaths, List<Path> ideRelativePaths) {
+  public Result match(List<Path> serverRelativePaths, List<Path> ideRelativePaths) {
     ReversePathTree reversePathTree = new ReversePathTree();
 
     Map<Result, Double> resultScores = new LinkedHashMap<>();
 
-    sqRelativePaths.forEach(reversePathTree::index);
+    // No need to index server files if no ide path ends with the same filename
+    Set<Path> ideFilenames = ideRelativePaths.stream().map(idePath -> idePath.getFileName()).collect(Collectors.toSet());
+    serverRelativePaths.stream().filter(sqPath -> ideFilenames.contains(sqPath.getFileName())).forEach(reversePathTree::index);
 
     for (Path ide : ideRelativePaths) {
       ReversePathTree.Match match = reversePathTree.findLongestSuffixMatches(ide);
