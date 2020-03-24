@@ -41,8 +41,8 @@ import org.mockito.ArgumentMatchers;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.ZipUtils;
 import org.sonar.api.utils.log.LogTesterJUnit5;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
@@ -134,7 +134,7 @@ class PluginCacheLoaderTests {
     when(pluginVersionChecker.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
 
     assertThat(underTest.load()).hasSize(0);
-    assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' needs plugin API 99.9 while SonarLint supports only up to 8.1. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' needs plugin API 99.9 while SonarLint supports only up to 8.2. Skip loading it.");
   }
 
   @Test
