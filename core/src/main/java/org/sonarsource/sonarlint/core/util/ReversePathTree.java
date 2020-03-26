@@ -29,26 +29,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class ReversePathTree {
-  private final OptimizedNode root = new OptimizedNode();
+  private final Node root = new MultipleChildrenNode();
 
   public void index(Path path) {
-    OptimizedNode currentNode = root;
+    Node parent = null;
+    Node currentNode = root;
+    Path currentNodePath = null;
 
     for (int i = path.getNameCount() - 1; i >= 0; i--) {
-      currentNode = currentNode.computeChildrenIfAbsent(path.getName(i));
+      Path childNodePath = path.getName(i);
+      Node[] result = currentNode.computeChildrenIfAbsent(parent, currentNodePath, childNodePath);
+      parent = result[0];
+      currentNode = result[1];
+      currentNodePath = childNodePath;
     }
-    currentNode.terminal = true;
+
+    currentNode.setTerminal(true);
   }
 
   public Match findLongestSuffixMatches(Path path) {
-    OptimizedNode currentNode = root;
+    Node currentNode = root;
     int matchLen = 0;
 
     while (matchLen < path.getNameCount()) {
       Path nextEl = path.getName(path.getNameCount() - matchLen - 1);
-      OptimizedNode nextNode = currentNode.getChild(nextEl);
+      Node nextNode = currentNode.getChild(nextEl);
       if (nextNode == null) {
         break;
       }
@@ -59,7 +67,7 @@ public class ReversePathTree {
     return collectAllPrefixes(currentNode, matchLen);
   }
 
-  private static Match collectAllPrefixes(OptimizedNode node, int matchLen) {
+  private static Match collectAllPrefixes(Node node, int matchLen) {
     List<Path> paths = new ArrayList<>();
     if (matchLen > 0) {
       collectPrefixes(node, Paths.get(""), paths);
@@ -67,67 +75,118 @@ public class ReversePathTree {
     return new Match(paths, matchLen);
   }
 
-  private static void collectPrefixes(OptimizedNode node, Path currentPath, List<Path> paths) {
-    if (node.terminal) {
+  private static void collectPrefixes(Node node, Path currentPath, List<Path> paths) {
+    if (node.isTerminal()) {
       paths.add(currentPath);
     }
 
-    for (Map.Entry<Path, OptimizedNode> child : node.childrenEntrySet()) {
+    for (Map.Entry<Path, Node> child : node.childrenEntrySet()) {
       Path childPath = child.getKey().resolve(currentPath);
       collectPrefixes(child.getValue(), childPath, paths);
     }
   }
 
   /**
-   * Since it is very common that a node will have only one child, we save memory by lazily creating a children LinkedHashMap only when a second item is added.
+   * Since it is very common that a node will have only one child, we save memory by lazily creating a children HashMap only when a second item is added.
    */
-  private static class OptimizedNode {
-    boolean terminal = false;
-    Path singleChildKey = null;
-    OptimizedNode singleChildValue;
-    Map<Path, OptimizedNode> children = null;
+  private static interface Node {
+    Node[] computeChildrenIfAbsent(Node parent, Path currentNodePath, Path childNodePath);
 
-    public OptimizedNode computeChildrenIfAbsent(Path name) {
-      if (name.equals(singleChildKey)) {
-        return singleChildValue;
+    Set<Map.Entry<Path, Node>> childrenEntrySet();
+
+    Node getChild(Path name);
+
+    void setTerminal(boolean b);
+
+    boolean isTerminal();
+
+    void put(Path path, Node node);
+  }
+
+  private abstract static class AbstractNode implements Node {
+    private boolean terminal;
+
+    @Override
+    public final boolean isTerminal() {
+      return terminal;
+    }
+
+    @Override
+    public final void setTerminal(boolean b) {
+      this.terminal = b;
+    }
+  }
+
+  private static class SingleChildNode extends AbstractNode {
+    @Nullable
+    private Path singleChildKey;
+    @Nullable
+    private Node singleChildValue;
+
+    @Override
+    public Node[] computeChildrenIfAbsent(Node parent, Path currentNodePath, Path childNodePath) {
+      if (singleChildKey == null) {
+        put(childNodePath, new SingleChildNode());
+        return new Node[] {this, singleChildValue};
       }
-      if (singleChildKey == null && children == null) {
-        singleChildKey = name;
-        singleChildValue = new OptimizedNode();
-        return singleChildValue;
-      } else if (children == null) {
-        children = new HashMap<>();
-        children.put(singleChildKey, singleChildValue);
-        OptimizedNode value = new OptimizedNode();
-        children.put(name, value);
-        singleChildKey = null;
-        singleChildValue = null;
-        return value;
+      if (childNodePath.equals(singleChildKey)) {
+        return new Node[] {this, singleChildValue};
+      }
+      SingleChildNode child = new SingleChildNode();
+      MultipleChildrenNode replacement = new MultipleChildrenNode();
+      replacement.put(singleChildKey, singleChildValue);
+      replacement.put(childNodePath, child);
+      parent.put(currentNodePath, replacement);
+      return new Node[] {replacement, child};
+    }
+
+    @Override
+    public Set<Map.Entry<Path, Node>> childrenEntrySet() {
+      if (singleChildKey == null) {
+        return Collections.emptySet();
       } else {
-        return children.computeIfAbsent(name, e -> new OptimizedNode());
+        return Collections.singleton(new AbstractMap.SimpleEntry<Path, Node>(singleChildKey, singleChildValue));
       }
     }
 
-    public Set<Map.Entry<Path, OptimizedNode>> childrenEntrySet() {
-      if (singleChildKey == null && children == null) {
-        return Collections.emptySet();
-      } else if (children == null) {
-        return Collections.singleton(new AbstractMap.SimpleEntry<Path, OptimizedNode>(singleChildKey, singleChildValue));
-      } else {
-        return children.entrySet();
-      }
+    @Override
+    public void put(Path path, Node node) {
+      this.singleChildKey = path;
+      this.singleChildValue = node;
+    }
+
+    @Override
+    @CheckForNull
+    public Node getChild(Path name) {
+      return name.equals(singleChildKey) ? singleChildValue : null;
+    }
+  }
+
+  private static class MultipleChildrenNode extends AbstractNode {
+
+    private final Map<Path, Node> children = new HashMap<>();
+
+    @Override
+    public Node[] computeChildrenIfAbsent(Node parent, Path currentNodePath, Path childNodePath) {
+      return new Node[] {this, children.computeIfAbsent(childNodePath, e -> new SingleChildNode())};
+    }
+
+    @Override
+    public Set<Map.Entry<Path, Node>> childrenEntrySet() {
+      return children.entrySet();
     }
 
     @CheckForNull
-    public OptimizedNode getChild(Path name) {
-      if (singleChildKey == null && children == null) {
-        return null;
-      } else if (children == null) {
-        return singleChildKey.equals(name) ? singleChildValue : null;
-      } else {
-        return children.get(name);
-      }
+    @Override
+    public Node getChild(Path name) {
+      return children.get(name);
     }
+
+    @Override
+    public void put(Path path, Node node) {
+      children.put(path, node);
+    }
+
   }
 
   public static class Match {

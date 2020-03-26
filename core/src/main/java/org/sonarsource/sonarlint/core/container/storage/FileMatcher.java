@@ -41,7 +41,7 @@ public class FileMatcher {
     Map<Result, Double> resultScores = new LinkedHashMap<>();
 
     // No need to index server files if no ide path ends with the same filename
-    Set<Path> ideFilenames = ideRelativePaths.stream().map(idePath -> idePath.getFileName()).collect(Collectors.toSet());
+    Set<Path> ideFilenames = ideRelativePaths.stream().map(Path::getFileName).collect(Collectors.toSet());
     serverRelativePaths.stream().filter(sqPath -> ideFilenames.contains(sqPath.getFileName())).forEach(reversePathTree::index);
 
     for (Path ide : ideRelativePaths) {
