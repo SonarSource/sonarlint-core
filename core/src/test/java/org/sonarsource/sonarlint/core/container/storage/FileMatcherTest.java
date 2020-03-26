@@ -21,10 +21,15 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -122,6 +127,77 @@ public class FileMatcherTest {
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub"));
     // sq/news is preferred to sq/products because of lexicographic order
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq/news"));
+  }
+
+  @Disabled("Only used to investigate performance issues like SLCORE-266")
+  @Ignore
+  @Test
+  public void performance_test_worst_case() throws Exception {
+    int depthFactor = 10;
+    int sqNbPerFolder = 10;
+    int sqDepth = 5;
+    int ideNbPerFolder = 10;
+    int ideDepth = 3;
+    List<Path> idePaths = generateChildren(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"), ideNbPerFolder, depthFactor, ideDepth * depthFactor);
+    System.out.println("IDE file count: " + idePaths.size());
+    assertThat(idePaths).hasSize((int) Math.pow(ideNbPerFolder, ideDepth + 1));
+    List<Path> sqPaths = generateChildren(Paths.get("sq/src/main/java/com/mycompany/myapp/foo/bar"), sqNbPerFolder, depthFactor, sqDepth * depthFactor);
+    System.out.println("SQ file count: " + sqPaths.size());
+    assertThat(sqPaths).hasSize((int) Math.pow(sqNbPerFolder, sqDepth + 1));
+    Instant start = Instant.now();
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    System.out.println(Duration.between(start, Instant.now()).toMillis() + "ms ellapsed");
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"));
+    // sq/folder0/[...]/folder0 is preferred to other sq/folderx because of lexicographic order
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get(
+      "sq/src/main/java/com/mycompany/myapp/foo/bar/folder0/extra49/extra48/extra47/extra46/extra45/extra44/extra43/extra42/extra41/folder0/extra39/extra38/extra37/extra36/extra35/extra34/extra33/extra32/extra31"));
+  }
+
+  @Disabled("Only used to investigate performance issues like SLCORE-266")
+  @Ignore
+  @Test
+  public void performance_test_only_index_files_with_same_filename() throws Exception {
+    int depthFactor = 10;
+    int sqNbPerFolder = 10;
+    int sqDepth = 5;
+    // IDE contains only paths with filename 'file1.txt'
+    int ideNbPerFolder = 1;
+    int ideDepth = 3;
+    performance_test(depthFactor, sqNbPerFolder, sqDepth, ideNbPerFolder, ideDepth);
+  }
+
+  private void performance_test(int depthFactor, int sqNbPerFolder, int sqDepth, int ideNbPerFolder, int ideDepth) {
+    List<Path> idePaths = generateChildren(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"), ideNbPerFolder, depthFactor, ideDepth * depthFactor);
+    System.out.println("IDE file count: " + idePaths.size());
+    assertThat(idePaths).hasSize((int) Math.pow(ideNbPerFolder, ideDepth + 1));
+    List<Path> sqPaths = generateChildren(Paths.get("sq/src/main/java/com/mycompany/myapp/foo/bar"), sqNbPerFolder, depthFactor, sqDepth * depthFactor);
+    System.out.println("SQ file count: " + sqPaths.size());
+    assertThat(sqPaths).hasSize((int) Math.pow(sqNbPerFolder, sqDepth + 1));
+    Instant start = Instant.now();
+    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    System.out.println(Duration.between(start, Instant.now()).toMillis() + "ms ellapsed");
+    assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"));
+    // sq/folder0/[...]/folder0 is preferred to other sq/folderx because of lexicographic order
+    assertThat(match.sqPrefix()).isEqualTo(Paths.get(
+      "sq/src/main/java/com/mycompany/myapp/foo/bar/folder0/extra49/extra48/extra47/extra46/extra45/extra44/extra43/extra42/extra41/folder0/extra39/extra38/extra37/extra36/extra35/extra34/extra33/extra32/extra31"));
+  }
+
+  private List<Path> generateChildren(Path parent, int count, int everyDepth, int depth) {
+    List<Path> result = new ArrayList<>();
+    if (depth == 0) {
+      for (int i = 0; i < count; i++) {
+        result.add(parent.resolve("file" + i + ".txt"));
+      }
+    } else if (depth % everyDepth == 0) {
+      for (int i = 0; i < count; i++) {
+        Path current = parent.resolve("folder" + i);
+        result.addAll(generateChildren(current, count, everyDepth, depth - 1));
+      }
+    } else {
+      Path current = parent.resolve("extra" + depth);
+      result.addAll(generateChildren(current, count, everyDepth, depth - 1));
+    }
+    return result;
   }
 
   @Test

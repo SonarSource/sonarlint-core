@@ -28,6 +28,16 @@ public class ReversePathTreeTest {
   private ReversePathTree tree = new ReversePathTree();
 
   @Test
+  public void should_return_matching_prefix() {
+    tree.index(Paths.get("A/src/main/java/File.java"));
+
+    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("B/src/main/java/File.java"));
+
+    assertThat(match.matchLen()).isEqualTo(4);
+    assertThat(match.matchPrefixes()).containsExactly(Paths.get("A"));
+  }
+
+  @Test
   public void should_return_matching_prefixes() {
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
@@ -36,7 +46,7 @@ public class ReversePathTreeTest {
     ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("src/main/java/File.java"));
 
     assertThat(match.matchLen()).isEqualTo(4);
-    assertThat(match.matchPrefixes()).containsExactly(Paths.get("project1"), Paths.get("project2"));
+    assertThat(match.matchPrefixes()).containsExactlyInAnyOrder(Paths.get("project1"), Paths.get("project2"));
   }
 
   @Test
