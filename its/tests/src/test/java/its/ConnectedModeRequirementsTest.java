@@ -154,7 +154,9 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.stop(false);
 
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-    assertThat(logs).contains("Code analyzer 'SonarJava' is excluded in this version of SonarLint. Skip loading it.");
+    String javaDescription = ItUtils.javaVersion.compareTo("6.3") < 0 ? "SonarJava" : "Java Code Quality and Security";
+    String expectedLog = String.format("Code analyzer '%s' is excluded in this version of SonarLint. Skip loading it.", javaDescription);
+    assertThat(logs).contains(expectedLog);
     assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.JAVA.getPluginKey());
   }
 
