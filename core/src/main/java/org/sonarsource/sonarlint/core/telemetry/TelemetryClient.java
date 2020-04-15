@@ -78,8 +78,10 @@ public class TelemetryClient {
     OffsetDateTime systemTime = OffsetDateTime.now();
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
+    String os = System.getProperty("os.name");
+    String jre = System.getProperty("java.version");
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
-      usesConnectedMode, usesSonarCloud, systemTime, data.installTime(), analyzers);
+      usesConnectedMode, usesSonarCloud, systemTime, data.installTime(), os, jre, analyzers);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
