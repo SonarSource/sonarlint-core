@@ -108,11 +108,11 @@ class TelemetryPayload {
     return connectedModeSonarcloud;
   }
 
-  public String getOs() {
+  public String os() {
     return os;
   }
 
-  public String getJre() {
+  public String jre() {
     return jre;
   }
 
