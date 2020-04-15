@@ -55,11 +55,17 @@ class TelemetryPayload {
   @SerializedName("install_time")
   private final OffsetDateTime installTime;
 
+  @SerializedName("os")
+  private final String os;
+
+  @SerializedName("jre")
+  private final String jre;
+
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
   TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
-    OffsetDateTime systemTime, OffsetDateTime installTime, TelemetryAnalyzerPerformancePayload[] analyses) {
+    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -69,6 +75,8 @@ class TelemetryPayload {
     this.connectedModeSonarcloud = connectedModeSonarcloud;
     this.systemTime = systemTime;
     this.installTime = installTime;
+    this.os = os;
+    this.jre = jre;
     this.analyses = analyses;
   }
 
@@ -98,6 +106,14 @@ class TelemetryPayload {
 
   public boolean connectedModeSonarcloud() {
     return connectedModeSonarcloud;
+  }
+
+  public String getOs() {
+    return os;
+  }
+
+  public String getJre() {
+    return jre;
   }
 
   public OffsetDateTime systemTime() {
