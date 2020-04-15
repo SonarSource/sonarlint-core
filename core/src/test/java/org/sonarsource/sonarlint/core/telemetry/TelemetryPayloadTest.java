@@ -60,6 +60,8 @@ public class TelemetryPayloadTest {
     assertThat(m.version()).isEqualTo("2.4");
     assertThat(m.connectedMode()).isTrue();
     assertThat(m.analyses()).hasSize(1);
+    assertThat(m.os()).isEqualTo("Windows 10");
+    assertThat(m.jre()).isEqualTo("1.8.0");
     assertThat(m.connectedModeSonarcloud()).isTrue();
     assertThat(m.systemTime()).isEqualTo(systemTime);
   }
