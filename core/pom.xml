@@ -269,9 +269,59 @@
               <stripVersion>true</stripVersion>
             </configuration>
           </execution>
+          <execution>
+            <id>copy-sonar-plugins</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.sonarsource.java</groupId>
+                  <artifactId>sonar-java-plugin</artifactId>
+                  <version>6.0.0.20538</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.sonarqube</groupId>
+                  <artifactId>sonar-xoo-plugin</artifactId>
+                  <version>${sonarqube.version}</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.javascript</groupId>
+                  <artifactId>sonar-javascript-plugin</artifactId>
+                  <version>4.0.0.5862</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.php</groupId>
+                  <artifactId>sonar-php-plugin</artifactId>
+                  <version>2.12.0.2871</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.python</groupId>
+                  <artifactId>sonar-python-plugin</artifactId>
+                  <version>1.9.1.2080</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.typescript</groupId>
+                  <artifactId>sonar-typescript-plugin</artifactId>
+                  <version>1.5.0.2122</version>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <stripVersion>false</stripVersion>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -373,63 +423,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-sonar-plugins</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.sonarsource.java</groupId>
-                  <artifactId>sonar-java-plugin</artifactId>
-                  <version>6.0.0.20538</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.sonarqube</groupId>
-                  <artifactId>sonar-xoo-plugin</artifactId>
-                  <version>${sonarqube.version}</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.javascript</groupId>
-                  <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>4.0.0.5862</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.php</groupId>
-                  <artifactId>sonar-php-plugin</artifactId>
-                  <version>2.12.0.2871</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.python</groupId>
-                  <artifactId>sonar-python-plugin</artifactId>
-                  <version>1.9.1.2080</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.typescript</groupId>
-                  <artifactId>sonar-typescript-plugin</artifactId>
-                  <version>1.5.0.2122</version>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <stripVersion>false</stripVersion>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <configuration>
           <archive>
@@ -437,9 +430,9 @@
               <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
               <Bundle-Name>${project.name} Source</Bundle-Name>
               <Bundle-SymbolicName>${project.groupId}.${project.artifactId}.source</Bundle-SymbolicName>
-              <Bundle-Vendor>${organization.name}</Bundle-Vendor>
+              <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
               <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-              <Eclipse-SourceBundle>${project.groupId}.${artifactId};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
+              <Eclipse-SourceBundle>${project.groupId}.${project.artifactId};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
             </manifestEntries>
           </archive>
         </configuration>
