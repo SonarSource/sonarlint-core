@@ -46,7 +46,8 @@ public enum Language {
   HTML("web", "web"),
   XML("xml", "xml"),
   // For ITs
-  XOO("xoo", "xoo");
+  XOO("xoo", "xoo"),
+  FOO("foo", "foo");
 
   private String languageKey;
   private String pluginKey;
