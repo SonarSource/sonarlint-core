@@ -21,3 +21,4 @@ web=3.0.0.1411
 xml=2.0.1.2020
 # Only used by ITs
 xoo=1.0
+foo=1.0
