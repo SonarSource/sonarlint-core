@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
+import java.util.List;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.RuleParam;
+import org.sonar.api.server.rule.RuleParamType;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 
 public class StandaloneRuleParam implements RuleParam {
@@ -28,11 +30,16 @@ public class StandaloneRuleParam implements RuleParam {
   private final String key;
   private final String description;
   private final String defaultValue;
+  private final StandaloneRuleParamType type;
+  private final List<String> possibleValues;
 
   public StandaloneRuleParam(Param param) {
     this.key = param.key();
     this.description = param.description();
     this.defaultValue = param.defaultValue();
+    RuleParamType apiType = param.type();
+    this.type = StandaloneRuleParamType.from(apiType);
+    this.possibleValues = apiType.values();
   }
 
   @Override
@@ -50,4 +57,11 @@ public class StandaloneRuleParam implements RuleParam {
     return defaultValue;
   }
 
+  public StandaloneRuleParamType type() {
+    return type;
+  }
+
+  public List<String> possibleValues() {
+    return possibleValues;
+  }
 }
