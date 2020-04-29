@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +38,14 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleParam;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleParamType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -79,6 +84,29 @@ public class StandaloneTest {
   @Before
   public void prepareBasedir() throws Exception {
     baseDir = temp.newFolder();
+  }
+
+  @Test
+  public void checkRuleParameters() throws Exception {
+    Collection<RuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
+    assertThat(ruleDetails).hasSize(1);
+    RuleDetails incRule = ruleDetails.iterator().next();
+    assertThat(incRule).isInstanceOf(StandaloneRule.class);
+    StandaloneRule castRule = (StandaloneRule) incRule;
+    assertThat(castRule.params()).hasSize(7);
+    assertRuleHasParam(castRule, "stringParam", StandaloneRuleParamType.STRING);
+    assertRuleHasParam(castRule, "textParam", StandaloneRuleParamType.TEXT);
+    assertRuleHasParam(castRule, "boolParam", StandaloneRuleParamType.BOOLEAN);
+    assertRuleHasParam(castRule, "intParam", StandaloneRuleParamType.INTEGER);
+    assertRuleHasParam(castRule, "floatParam", StandaloneRuleParamType.FLOAT);
+    assertRuleHasParam(castRule, "enumParam", StandaloneRuleParamType.SINGLE_SELECT_LIST);
+    assertRuleHasParam(castRule, "enumListParam", StandaloneRuleParamType.MULTI_SELECT_LIST);
+  }
+
+  private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType) {
+    assertThat(rule.param(paramKey)).isNotNull()
+      .extracting(StandaloneRuleParam::type)
+      .containsExactly(expectedType);
   }
 
   @Test
