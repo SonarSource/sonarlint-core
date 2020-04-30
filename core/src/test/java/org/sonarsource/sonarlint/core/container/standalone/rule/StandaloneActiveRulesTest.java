@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
+import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
@@ -48,9 +50,11 @@ public class StandaloneActiveRulesTest {
       mockActiveRule(INACTIVE_RULE, false),
       mockActiveRule(INACTIVE_INCLUDED_RULE, false)));
 
-    Set<String> excluded = Collections.singleton(new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE).toString());
+    String activeRuleKey = new RuleKey(REPOSITORY, ACTIVE_EXCLUDED_RULE).toString();
+    Set<String> excluded = Collections.singleton(activeRuleKey);
     Set<String> included = Collections.singleton(new RuleKey(REPOSITORY, INACTIVE_INCLUDED_RULE).toString());
-    underTest = standaloneActiveRules.filtered(excluded, included);
+    Map<String, Map<String, String>> params = Collections.emptyMap();
+    underTest = standaloneActiveRules.filtered(excluded, included, params);
   }
 
   @Test

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -145,7 +146,9 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       .map(RuleKey::toString)
       .filter(r -> !excludedRules.contains(r))
       .collect(Collectors.toSet());
-    analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules));
+    Map<String, Map<String, String>> ruleParameters = new HashMap<>();
+    configuration.ruleParameters().forEach((k, v) -> ruleParameters.put(k.toString(), v));
+    analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules, ruleParameters));
     analysisContainer.add(SensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);

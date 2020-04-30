@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
@@ -31,12 +33,14 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
 
   private final Collection<RuleKey> excludedRules;
   private final Collection<RuleKey> includedRules;
+  private final Map<RuleKey, Map<String, String>> ruleParameters;
   private final String toString;
 
   private StandaloneAnalysisConfiguration(Builder builder) {
     super(builder);
     this.excludedRules = builder.excludedRules;
     this.includedRules = builder.includedRules;
+    this.ruleParameters = builder.ruleParameters;
     this.toString = generateToString();
   }
 
@@ -52,6 +56,10 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
     return includedRules;
   }
 
+  public Map<RuleKey, Map<String, String>> ruleParameters() {
+    return ruleParameters;
+  }
+
   @Override
   public String toString() {
     return toString;
@@ -63,14 +71,16 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
     generateToStringCommon(sb);
     sb.append("  excludedRules: ").append(excludedRules).append("\n");
     sb.append("  includedRules: ").append(includedRules).append("\n");
+    sb.append("  ruleParameters: ").append(ruleParameters).append("\n");
     generateToStringInputFiles(sb);
     sb.append("]\n");
     return sb.toString();
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
-    private Collection<RuleKey> excludedRules = new ArrayList<>();
-    private Collection<RuleKey> includedRules = new ArrayList<>();
+    private final Collection<RuleKey> excludedRules = new ArrayList<>();
+    private final Collection<RuleKey> includedRules = new ArrayList<>();
+    private final Map<RuleKey, Map<String, String>> ruleParameters = new LinkedHashMap<>();
 
     private Builder() {
     }
@@ -102,6 +112,21 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
 
     public Builder addIncludedRule(RuleKey includedRule) {
       this.includedRules.add(includedRule);
+      return this;
+    }
+
+    public Builder addRuleParameter(RuleKey rule, String parameterKey, String parameterValue) {
+      this.ruleParameters.computeIfAbsent(rule, k -> new LinkedHashMap<>()).put(parameterKey, parameterValue);
+      return this;
+    }
+
+    public Builder addRuleParameters(RuleKey rule, Map<String, String> parameters) {
+      parameters.forEach((k, v) -> this.addRuleParameter(rule, k, v));
+      return this;
+    }
+
+    public Builder addRuleParameters(Map<RuleKey, Map<String, String>> parameters) {
+      parameters.forEach(this::addRuleParameters);
       return this;
     }
 

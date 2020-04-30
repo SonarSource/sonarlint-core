@@ -45,7 +45,7 @@ public class StandaloneActiveRules {
     rulesByKey = rules.stream().collect(Collectors.toMap(r -> r.key().toString(), r -> r));
   }
 
-  public ActiveRules filtered(Set<String> excludedRules, Set<String> includedRules) {
+  public ActiveRules filtered(Set<String> excludedRules, Set<String> includedRules, Map<String, Map<String, String>> params) {
     Collection<StandaloneRule> filteredActiveRules = new ArrayList<>();
 
     filteredActiveRules.addAll(rulesByKey.values().stream()
@@ -57,7 +57,11 @@ public class StandaloneActiveRules {
       .filter(isIncludedByConfiguration(includedRules))
       .collect(Collectors.toList()));
 
-    return new DefaultActiveRules(filteredActiveRules.stream().map(StandaloneActiveRuleAdapter::new).collect(toList()));
+    return new DefaultActiveRules(
+      filteredActiveRules.stream()
+        .map(r -> new StandaloneActiveRuleAdapter(r, params.get(r.getKey())))
+        .collect(toList())
+    );
   }
 
   private static Predicate<? super StandaloneRule> isExcludedByConfiguration(Set<String> excludedRules) {

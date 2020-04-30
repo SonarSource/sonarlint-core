@@ -54,6 +54,14 @@ public class StandaloneAnalysisConfigurationTest {
     Path baseDir = temp.newFolder().toPath();
     Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
     Collection<RuleKey> includedRules = Arrays.asList(new RuleKey("javascript", "S2424"), new RuleKey("javascript", "S1442"));
+    Map<String, String> squidS5Parameters = new HashMap<>();
+    squidS5Parameters.put("s5param1", "s5value1");
+    squidS5Parameters.put("s5param2", "s5value2");
+    Map<String, String> squidS6Parameters = new HashMap<>();
+    squidS6Parameters.put("s6param1", "s6value1");
+    squidS6Parameters.put("s6param2", "s6value2");
+    Map<RuleKey, Map<String, String>> ruleParameters = new HashMap<>();
+    ruleParameters.put(RuleKey.parse("squid:S6"), squidS6Parameters);
     StandaloneAnalysisConfiguration config = StandaloneAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
@@ -67,12 +75,16 @@ public class StandaloneAnalysisConfigurationTest {
       .addIncludedRules(includedRules)
       .addIncludedRule(RuleKey.parse("squid:I1"))
       .addIncludedRules(RuleKey.parse("squid:I2"), RuleKey.parse("squid:I3"))
+      .addRuleParameter(RuleKey.parse("squid:S4"), "param1", "value1")
+      .addRuleParameters(RuleKey.parse("squid:S5"), squidS5Parameters)
+      .addRuleParameters(ruleParameters)
       .build();
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar, sonar.foo=bar}\n" +
       "  excludedRules: [squid:S1135, squid:S1181, squid:S1, squid:S2, squid:S3]\n" +
       "  includedRules: [javascript:S2424, javascript:S1442, squid:I1, squid:I2, squid:I3]\n" +
+      "  ruleParameters: {squid:S4={param1=value1}, squid:S5={s5param1=s5value1, s5param2=s5value2}, squid:S6={s6param1=s6value1, s6param2=s6value2}}\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
       "    " + srcFile2.toUri().toString() + " (UTF-8) [java]\n" +
@@ -84,5 +96,6 @@ public class StandaloneAnalysisConfigurationTest {
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"), entry("sonar.foo", "bar"));
     assertThat(config.excludedRules()).extracting(RuleKey::toString).containsExactly("squid:S1135", "squid:S1181", "squid:S1", "squid:S2", "squid:S3");
     assertThat(config.includedRules()).extracting(RuleKey::toString).containsExactly("javascript:S2424", "javascript:S1442", "squid:I1", "squid:I2", "squid:I3");
+    assertThat(config.ruleParameters()).containsKeys(RuleKey.parse("squid:S4"), RuleKey.parse("squid:S5"), RuleKey.parse("squid:S6"));
   }
 }
