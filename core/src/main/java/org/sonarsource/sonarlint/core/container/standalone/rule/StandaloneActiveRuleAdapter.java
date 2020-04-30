@@ -19,19 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
+import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.rule.RuleKey;
-
-import static java.util.stream.Collectors.toMap;
 
 public class StandaloneActiveRuleAdapter implements ActiveRule {
 
   private final StandaloneRule rule;
+  private final Map<String, String> params;
 
-  public StandaloneActiveRuleAdapter(StandaloneRule rule) {
+  public StandaloneActiveRuleAdapter(StandaloneRule rule, @Nullable Map<String, String> params) {
     this.rule = rule;
+    this.params = new HashMap<>();
+    rule.params().stream()
+      .map(p -> (StandaloneRuleParam) p)
+      .filter(p -> p.defaultValue() != null)
+      .forEach(p -> this.params.put(p.key(), p.defaultValue()));
+    if(params != null) {
+      this.params.putAll(params);
+    }
   }
 
   @Override
@@ -51,14 +59,12 @@ public class StandaloneActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String param(String key) {
-    return rule.param(key).defaultValue();
+    return params.get(key);
   }
 
   @Override
   public Map<String, String> params() {
-    return rule.params().stream()
-      .filter(p -> ((StandaloneRuleParam) p).defaultValue() != null)
-      .collect(toMap(RuleParam::key, p -> ((StandaloneRuleParam) p).defaultValue()));
+    return params;
   }
 
   @Override
