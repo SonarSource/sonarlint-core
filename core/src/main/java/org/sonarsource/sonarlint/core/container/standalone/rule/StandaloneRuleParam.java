@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.RuleParam;
@@ -39,7 +40,7 @@ public class StandaloneRuleParam implements RuleParam {
     this.defaultValue = param.defaultValue();
     RuleParamType apiType = param.type();
     this.type = StandaloneRuleParamType.from(apiType);
-    this.possibleValues = apiType.values();
+    this.possibleValues = Collections.unmodifiableList(apiType.values());
   }
 
   @Override

@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -99,14 +100,15 @@ public class StandaloneTest {
     assertRuleHasParam(castRule, "boolParam", StandaloneRuleParamType.BOOLEAN);
     assertRuleHasParam(castRule, "intParam", StandaloneRuleParamType.INTEGER);
     assertRuleHasParam(castRule, "floatParam", StandaloneRuleParamType.FLOAT);
-    assertRuleHasParam(castRule, "enumParam", StandaloneRuleParamType.SINGLE_SELECT_LIST);
-    assertRuleHasParam(castRule, "enumListParam", StandaloneRuleParamType.MULTI_SELECT_LIST);
+    assertRuleHasParam(castRule, "enumParam", StandaloneRuleParamType.SINGLE_SELECT_LIST, "enum1", "enum2", "enum3");
+    assertRuleHasParam(castRule, "enumListParam", StandaloneRuleParamType.MULTI_SELECT_LIST, "list1", "list2", "list3");
   }
 
-  private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType) {
+  private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType,
+      String... possibleValues) {
     assertThat(rule.param(paramKey)).isNotNull()
-      .extracting(StandaloneRuleParam::type)
-      .containsExactly(expectedType);
+      .extracting(StandaloneRuleParam::type, StandaloneRuleParam::possibleValues)
+      .containsExactly(expectedType, Arrays.asList(possibleValues));
   }
 
   @Test
@@ -119,7 +121,7 @@ public class StandaloneTest {
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
-      issue -> issues.add(issue), null, null);
+      issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 0"));
 
