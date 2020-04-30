@@ -54,7 +54,7 @@ public class GlobalSensor implements Sensor {
     if (activeGlobalRule != null) {
       Stream.of("stringParam", "textParam", "intParam", "boolParam", "floatParam", "enumParam", "enumListParam")
         .map(k -> Arrays.asList(k, activeGlobalRule.param(k)))
-        .forEach(kv -> LOGGER.error("Param {} has value {}", kv.get(0), kv.get(1)));
+        .forEach(kv -> LOGGER.info("Param {} has value {}", kv.get(0), kv.get(1)));
     } else {
       LOGGER.error("Rule is not active");
     }

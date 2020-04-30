@@ -37,7 +37,6 @@ public final class GlobalRulesDefinition implements RulesDefinition {
       .setHtmlDescription("Increment message after every analysis");
     rule.createParam("stringParam")
       .setType(RuleParamType.STRING)
-      .setDefaultValue("string parameter")
       .setDescription("A string parameter");
     rule.createParam("textParam")
       .setType(RuleParamType.TEXT)
