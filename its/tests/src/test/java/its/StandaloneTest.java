@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -40,6 +41,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -88,7 +90,7 @@ public class StandaloneTest {
   }
 
   @Test
-  public void checkRuleParameters() throws Exception {
+  public void checkRuleParameterDeclarations() throws Exception {
     Collection<RuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
     RuleDetails incRule = ruleDetails.iterator().next();
@@ -125,15 +127,40 @@ public class StandaloneTest {
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 0"));
 
+    // Default parameter values
+    assertThat(logs).containsSubsequence(
+      "Param stringParam has value null",
+      "Param textParam has value text\nparameter",
+      "Param intParam has value 42",
+      "Param boolParam has value true",
+      "Param floatParam has value 3.14159265358",
+      "Param enumParam has value enum1",
+      "Param enumListParam has value list1,list2"
+    );
+
     issues.clear();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
+        .addRuleParameter(RuleKey.parse("global:inc"), "stringParam", "polop")
+        .addRuleParameter(RuleKey.parse("global:inc"), "textParam", "")
+        .addRuleParameter(RuleKey.parse("unknown:rule"), "unknown", "parameter")
         .build(),
-      issue -> issues.add(issue), null, null);
+      issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 1"));
+
+    // Overridden parameter values
+    assertThat(logs).contains(
+      "Param stringParam has value polop",
+      "Param textParam has value ",
+      "Param intParam has value 42",
+      "Param boolParam has value true",
+      "Param floatParam has value 3.14159265358",
+      "Param enumParam has value enum1",
+      "Param enumListParam has value list1,list2"
+    );
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
