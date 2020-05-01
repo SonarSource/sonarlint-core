@@ -62,6 +62,9 @@ public final class GlobalRulesDefinition implements RulesDefinition {
       .setType(RuleParamType.multipleListOfValues("list1", "list2", "list3"))
       .setDefaultValue("list1,list2")
       .setDescription("An enum list parameter");
+    rule.createParam("multipleIntegersParam")
+      .setType(RuleParamType.parse("INTEGER,multiple=true,values=\"80,120,160\""))
+      .setDescription("An enum list of integers");
 
     repository.done();
   }
