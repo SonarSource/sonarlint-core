@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -96,14 +95,15 @@ public class StandaloneTest {
     RuleDetails incRule = ruleDetails.iterator().next();
     assertThat(incRule).isInstanceOf(StandaloneRule.class);
     StandaloneRule castRule = (StandaloneRule) incRule;
-    assertThat(castRule.params()).hasSize(7);
+    assertThat(castRule.params()).hasSize(8);
     assertRuleHasParam(castRule, "stringParam", StandaloneRuleParamType.STRING);
     assertRuleHasParam(castRule, "textParam", StandaloneRuleParamType.TEXT);
     assertRuleHasParam(castRule, "boolParam", StandaloneRuleParamType.BOOLEAN);
     assertRuleHasParam(castRule, "intParam", StandaloneRuleParamType.INTEGER);
     assertRuleHasParam(castRule, "floatParam", StandaloneRuleParamType.FLOAT);
-    assertRuleHasParam(castRule, "enumParam", StandaloneRuleParamType.SINGLE_SELECT_LIST, "enum1", "enum2", "enum3");
-    assertRuleHasParam(castRule, "enumListParam", StandaloneRuleParamType.MULTI_SELECT_LIST, "list1", "list2", "list3");
+    assertRuleHasParam(castRule, "enumParam", StandaloneRuleParamType.STRING, "enum1", "enum2", "enum3");
+    assertRuleHasParam(castRule, "enumListParam", StandaloneRuleParamType.STRING, "list1", "list2", "list3");
+    assertRuleHasParam(castRule, "multipleIntegersParam", StandaloneRuleParamType.INTEGER, "80", "120", "160");
   }
 
   private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType,
@@ -135,7 +135,8 @@ public class StandaloneTest {
       "Param boolParam has value true",
       "Param floatParam has value 3.14159265358",
       "Param enumParam has value enum1",
-      "Param enumListParam has value list1,list2"
+      "Param enumListParam has value list1,list2",
+      "Param multipleIntegersParam has value null"
     );
 
     issues.clear();
@@ -145,6 +146,7 @@ public class StandaloneTest {
         .addInputFile(inputFile)
         .addRuleParameter(RuleKey.parse("global:inc"), "stringParam", "polop")
         .addRuleParameter(RuleKey.parse("global:inc"), "textParam", "")
+        .addRuleParameter(RuleKey.parse("global:inc"), "multipleIntegersParam", "80,160")
         .addRuleParameter(RuleKey.parse("unknown:rule"), "unknown", "parameter")
         .build(),
       issues::add, null, null);
@@ -159,7 +161,8 @@ public class StandaloneTest {
       "Param boolParam has value true",
       "Param floatParam has value 3.14159265358",
       "Param enumParam has value enum1",
-      "Param enumListParam has value list1,list2"
+      "Param enumListParam has value list1,list2",
+      "Param multipleIntegersParam has value 80,160"
     );
   }
 

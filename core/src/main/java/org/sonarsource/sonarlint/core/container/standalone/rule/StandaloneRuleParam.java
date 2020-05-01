@@ -32,6 +32,7 @@ public class StandaloneRuleParam implements RuleParam {
   private final String description;
   private final String defaultValue;
   private final StandaloneRuleParamType type;
+  private final boolean multiple;
   private final List<String> possibleValues;
 
   public StandaloneRuleParam(Param param) {
@@ -40,6 +41,7 @@ public class StandaloneRuleParam implements RuleParam {
     this.defaultValue = param.defaultValue();
     RuleParamType apiType = param.type();
     this.type = StandaloneRuleParamType.from(apiType);
+    this.multiple = apiType.multiple();
     this.possibleValues = Collections.unmodifiableList(apiType.values());
   }
 
@@ -60,6 +62,10 @@ public class StandaloneRuleParam implements RuleParam {
 
   public StandaloneRuleParamType type() {
     return type;
+  }
+
+  public boolean multiple() {
+    return multiple;
   }
 
   public List<String> possibleValues() {

@@ -52,7 +52,7 @@ public class GlobalSensor implements Sensor {
     RuleKey globalRuleKey = RuleKey.of(GlobalRulesDefinition.KEY, GlobalRulesDefinition.RULE_KEY);
     ActiveRule activeGlobalRule = context.activeRules().find(globalRuleKey);
     if (activeGlobalRule != null) {
-      Stream.of("stringParam", "textParam", "intParam", "boolParam", "floatParam", "enumParam", "enumListParam")
+      Stream.of("stringParam", "textParam", "intParam", "boolParam", "floatParam", "enumParam", "enumListParam", "multipleIntegersParam")
         .map(k -> Arrays.asList(k, activeGlobalRule.param(k)))
         .forEach(kv -> LOGGER.info("Param {} has value {}", kv.get(0), kv.get(1)));
     } else {

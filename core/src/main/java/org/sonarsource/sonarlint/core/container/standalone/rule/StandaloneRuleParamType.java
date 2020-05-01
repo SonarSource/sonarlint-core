@@ -26,17 +26,13 @@ public enum StandaloneRuleParamType {
   /**
    * Keep in sync with constants in {@link RuleParamType}
    */
-  STRING, TEXT, BOOLEAN, INTEGER, FLOAT, SINGLE_SELECT_LIST, MULTI_SELECT_LIST;
+  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
 
   static StandaloneRuleParamType from(RuleParamType apiType) {
-    if (apiType.multiple()) {
-      return MULTI_SELECT_LIST;
-    } else {
-      try {
-        return valueOf(apiType.type());
-      } catch(IllegalArgumentException unknownType) {
-        return STRING;
-      }
+    try {
+      return valueOf(apiType.type());
+    } catch(IllegalArgumentException unknownType) {
+      return STRING;
     }
   }
 }
