@@ -37,34 +37,42 @@ public final class GlobalRulesDefinition implements RulesDefinition {
       .setHtmlDescription("Increment message after every analysis");
     rule.createParam("stringParam")
       .setType(RuleParamType.STRING)
-      .setDescription("A string parameter");
+      .setName("String parameter")
+      .setDescription("An example of string parameter");
     rule.createParam("textParam")
       .setType(RuleParamType.TEXT)
       .setDefaultValue("text\nparameter")
-      .setDescription("A text parameter");
+      .setName("Text parameter")
+      .setDescription("An example of text parameter");
     rule.createParam("intParam")
       .setType(RuleParamType.INTEGER)
       .setDefaultValue("42")
-      .setDescription("An int parameter");
+      .setName("Int parameter")
+      .setDescription("An example of int parameter");
     rule.createParam("boolParam")
       .setType(RuleParamType.BOOLEAN)
       .setDefaultValue("true")
-      .setDescription("A boolean parameter");
+      .setName("Boolean parameter")
+      .setDescription("An example boolean parameter");
     rule.createParam("floatParam")
       .setType(RuleParamType.FLOAT)
       .setDefaultValue("3.14159265358")
-      .setDescription("A float parameter");
+      .setName("Float parameter")
+      .setDescription("An example float parameter");
     rule.createParam("enumParam")
       .setType(RuleParamType.singleListOfValues("enum1", "enum2", "enum3"))
       .setDefaultValue("enum1")
-      .setDescription("An enum parameter");
+      .setName("Enum parameter")
+      .setDescription("An example enum parameter");
     rule.createParam("enumListParam")
       .setType(RuleParamType.multipleListOfValues("list1", "list2", "list3"))
       .setDefaultValue("list1,list2")
-      .setDescription("An enum list parameter");
+      .setName("Enum list parameter")
+      .setDescription("An example enum list parameter");
     rule.createParam("multipleIntegersParam")
       .setType(RuleParamType.parse("INTEGER,multiple=true,values=\"80,120,160\""))
-      .setDescription("An enum list of integers");
+      .setName("Enum list of integers")
+      .setDescription("An example enum list of integers");
 
     repository.done();
   }

@@ -29,6 +29,7 @@ import org.sonar.api.server.rule.RulesDefinition.Param;
 public class StandaloneRuleParam implements RuleParam {
 
   private final String key;
+  private final String name;
   private final String description;
   private final String defaultValue;
   private final StandaloneRuleParamType type;
@@ -37,6 +38,7 @@ public class StandaloneRuleParam implements RuleParam {
 
   public StandaloneRuleParam(Param param) {
     this.key = param.key();
+    this.name = param.name();
     this.description = param.description();
     this.defaultValue = param.defaultValue();
     RuleParamType apiType = param.type();
@@ -48,6 +50,10 @@ public class StandaloneRuleParam implements RuleParam {
   @Override
   public String key() {
     return key;
+  }
+
+  public String name() {
+    return name;
   }
 
   @Override
