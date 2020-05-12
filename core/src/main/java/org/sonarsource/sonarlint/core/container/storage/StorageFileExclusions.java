@@ -28,7 +28,7 @@ import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.container.analysis.ExclusionFilters;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.container.global.MapConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
@@ -44,10 +44,10 @@ public class StorageFileExclusions {
   public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
     ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectBinding.projectKey());
-    MapSettings settings = new MapSettings();
-    settings.addProperties(globalProps.getProperties());
-    settings.addProperties(projectConfig.getProperties());
-    ExclusionFilters exclusionFilters = new ExclusionFilters(settings.asConfig());
+    MapConfiguration configuration = new MapConfiguration();
+    configuration.addProperties(globalProps.getProperties());
+    configuration.addProperties(projectConfig.getProperties());
+    ExclusionFilters exclusionFilters = new ExclusionFilters(configuration);
     exclusionFilters.prepare();
 
     List<G> excluded = new ArrayList<>();

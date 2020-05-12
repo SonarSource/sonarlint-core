@@ -22,9 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected;
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.container.global.MapConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -36,10 +35,9 @@ public class DefaultServerTest {
   public void shouldLoadServerProperties() {
     SonarRuntime runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    Settings settings = new MapSettings();
+    MapConfiguration settings = new MapConfiguration();
     settings.setProperty(CoreProperties.SERVER_ID, "123");
     settings.setProperty(CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000");
-    settings.setProperty(CoreProperties.PERMANENT_SERVER_ID, "abcde");
 
     DefaultServer metadata = new DefaultServer(settings, runtime);
 
@@ -54,7 +52,7 @@ public class DefaultServerTest {
   public void coverageUnusedMethods() {
     SonarRuntime runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    DefaultServer metadata = new DefaultServer(new MapSettings(), runtime);
+    DefaultServer metadata = new DefaultServer(new MapConfiguration(), runtime);
     assertThat(metadata.getStartedAt()).isNull();
     assertThat(metadata.getRootDir()).isNull();
     assertThat(metadata.getContextPath()).isNull();

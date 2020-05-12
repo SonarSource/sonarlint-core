@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.container.global;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
-public class GlobalSettings extends MapSettings {
+public class GlobalConfiguration extends MapConfiguration {
 
-  public GlobalSettings(AbstractGlobalConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public GlobalConfiguration(AbstractGlobalConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     addProperties(config.extraProperties());
   }

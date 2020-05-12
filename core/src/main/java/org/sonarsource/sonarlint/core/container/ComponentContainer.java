@@ -35,6 +35,7 @@ import org.picocontainer.behaviors.OptInCaching;
 import org.picocontainer.lifecycle.ReflectionLifecycleStrategy;
 import org.picocontainer.monitors.NullComponentMonitor;
 import org.sonar.api.config.PropertyDefinitions;
+import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -84,7 +85,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
     this.parent = null;
     this.pico = picoContainer;
     this.componentKeys = new PicoComponentKeys();
-    propertyDefinitions = new PropertyDefinitions();
+    propertyDefinitions = new PropertyDefinitions(System2.INSTANCE);
     addSingleton(propertyDefinitions);
     addSingleton(this);
   }

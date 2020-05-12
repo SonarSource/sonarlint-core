@@ -19,12 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import org.sonar.api.config.Encryption;
+import java.util.Collections;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -32,28 +28,26 @@ import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
-public class MutableAnalysisSettings extends Settings {
+public class MutableAnalysisConfiguration extends ServerConfigurationProvider.ServerConfiguration {
   private static final String C_SUFFIXES_KEY = "sonar.c.file.suffixes";
   private static final String CPP_SUFFIXES_KEY = "sonar.cpp.file.suffixes";
   private static final String OBJC_SUFFIXES_KEY = "sonar.objc.file.suffixes";
   private static final String DISABLED_SUFFIX = "disabled";
 
-  private final Map<String, String> properties = new HashMap<>();
-
   /**
    * Standalone mode
    */
-  public MutableAnalysisSettings(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions, new Encryption(null));
+  public MutableAnalysisConfiguration(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig, PropertyDefinitions propertyDefinitions) {
+    super(propertyDefinitions, Collections.emptyMap());
     addPropertiesInOrder(globalConfig, analysisConfig);
   }
 
   /**
    * Connected mode
    */
-  public MutableAnalysisSettings(StorageReader storage, AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig,
+  public MutableAnalysisConfiguration(StorageReader storage, AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig,
     PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions, new Encryption(null));
+    super(propertyDefinitions, Collections.emptyMap());
     GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
     if (analysisConfig instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) analysisConfig).projectKey() != null) {
@@ -77,23 +71,4 @@ public class MutableAnalysisSettings extends Settings {
     }
   }
 
-  @Override
-  protected Optional<String> get(String key) {
-    return Optional.ofNullable(properties.get(key));
-  }
-
-  @Override
-  protected void set(String key, String value) {
-    properties.put(key, value);
-  }
-
-  @Override
-  protected void remove(String key) {
-    properties.remove(key);
-  }
-
-  @Override
-  public Map<String, String> getProperties() {
-    return properties;
-  }
 }

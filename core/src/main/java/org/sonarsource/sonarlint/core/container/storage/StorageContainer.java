@@ -35,9 +35,8 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvider;
+import org.sonarsource.sonarlint.core.container.global.GlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
-import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
@@ -99,8 +98,7 @@ public class StorageContainer extends ComponentContainer {
 
       // needed during analysis (immutable)
       UriReader.class,
-      GlobalSettings.class,
-      new GlobalConfigurationProvider(),
+      GlobalConfiguration.class,
       ExtensionInstaller.class,
       new StorageRulesProvider(),
       new StorageQProfilesProvider(),

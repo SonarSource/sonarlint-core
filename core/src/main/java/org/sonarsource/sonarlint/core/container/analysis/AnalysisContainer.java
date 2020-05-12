@@ -87,8 +87,7 @@ public class AnalysisContainer extends ComponentContainer {
       Languages.class,
       DefaultLanguagesRepository.class,
 
-      MutableAnalysisSettings.class,
-      new AnalysisConfigurationProvider(),
+      MutableAnalysisConfiguration.class,
 
       // file system
       InputFileCache.class,

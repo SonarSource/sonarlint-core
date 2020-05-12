@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.junit.Test;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.container.global.MapConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,11 +40,11 @@ public class DefaultSensorDescriptorTest {
     assertThat(descriptor.name()).isEqualTo("Foo");
     assertThat(descriptor.languages()).containsOnly("java");
     assertThat(descriptor.type()).isEqualTo(InputFile.Type.MAIN);
-    MapSettings settings = new MapSettings();
+    MapConfiguration settings = new MapConfiguration();
     settings.setProperty("sonar.foo.reportPath", "foo");
-    assertThat(descriptor.configurationPredicate().test(settings.asConfig())).isFalse();
+    assertThat(descriptor.configurationPredicate().test(settings)).isFalse();
     settings.setProperty("sonar.foo.reportPath2", "foo");
-    assertThat(descriptor.configurationPredicate().test(settings.asConfig())).isTrue();
+    assertThat(descriptor.configurationPredicate().test(settings)).isTrue();
     assertThat(descriptor.ruleRepositories()).containsOnly("squid-java");
   }
 

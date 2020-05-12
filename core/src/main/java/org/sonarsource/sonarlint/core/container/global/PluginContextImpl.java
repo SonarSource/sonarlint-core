@@ -29,7 +29,7 @@ public class PluginContextImpl extends Plugin.Context {
 
   private PluginContextImpl(Builder builder) {
     super(builder.sonarRuntime);
-    this.bootConfiguration = builder.bootConfiguration != null ? builder.bootConfiguration : new MapSettings().asConfig();
+    this.bootConfiguration = builder.bootConfiguration != null ? builder.bootConfiguration : new MapConfiguration();
   }
 
   @Override

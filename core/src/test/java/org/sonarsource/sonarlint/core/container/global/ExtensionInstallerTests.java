@@ -52,7 +52,7 @@ public class ExtensionInstallerTests {
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
-  private static final Configuration CONFIG = new MapSettings().asConfig();
+  private static final Configuration CONFIG = new MapConfiguration();
   private static final SonarRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0));
   private ExtensionInstaller underTest;
   private PluginRepository pluginRepository;

@@ -25,23 +25,23 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.config.Settings;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.platform.Server;
 import org.sonar.api.utils.log.Loggers;
 
 public class DefaultServer extends Server {
 
-  private Settings settings;
+  private Configuration configuration;
   private SonarRuntime runtime;
 
-  public DefaultServer(Settings settings, SonarRuntime runtime) {
-    this.settings = settings;
+  public DefaultServer(Configuration configuration, SonarRuntime runtime) {
+    this.configuration = configuration;
     this.runtime = runtime;
   }
 
   @Override
   public String getId() {
-    return settings.getString(CoreProperties.SERVER_ID);
+    return configuration.get(CoreProperties.SERVER_ID).orElseThrow(() -> new IllegalStateException("missing server id"));
   }
 
   @Override
@@ -51,7 +51,7 @@ public class DefaultServer extends Server {
 
   @Override
   public Date getStartedAt() {
-    String dateString = settings.getString(CoreProperties.SERVER_STARTTIME);
+    String dateString = configuration.get(CoreProperties.SERVER_STARTTIME).orElse(null);
     if (dateString != null) {
       try {
         return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").parse(dateString);
@@ -95,6 +95,6 @@ public class DefaultServer extends Server {
 
   @Override
   public String getPermanentServerId() {
-    return settings.getString(CoreProperties.PERMANENT_SERVER_ID);
+    return getId();
   }
 }

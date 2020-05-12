@@ -19,14 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.config.Encryption;
+import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
+import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -35,9 +39,11 @@ import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang.StringUtils.trim;
+
 /**
- * Can't put {@link ServerConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
- *
+ * Can't put {@link ServerConfiguration} directly in pico since it would conflict with {@link MutableAnalysisConfiguration}.
  */
 public class ServerConfigurationProvider {
 
@@ -47,7 +53,7 @@ public class ServerConfigurationProvider {
    * Connected mode
    */
   public ServerConfigurationProvider(StorageReader storage, ConnectedAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, config, propertyDefinitions));
+    this.serverConfig = new ServerConfiguration(storage, config, propertyDefinitions);
   }
 
   /**
@@ -59,21 +65,22 @@ public class ServerConfigurationProvider {
 
   // For testing
   public ServerConfigurationProvider(Map<String, String> properties) {
-    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(properties));
+    this.serverConfig = new ServerConfiguration(new PropertyDefinitions(System2.INSTANCE), properties);
   }
 
-  public static class ServerConfiguration extends Settings {
+  public static class ServerConfiguration implements Configuration {
 
+    private final PropertyDefinitions definitions;
     private final Map<String, String> properties = new HashMap<>();
 
     // For testing
-    private ServerConfiguration(Map<String, String> properties) {
-      super(new PropertyDefinitions(), new Encryption(null));
+    protected ServerConfiguration(PropertyDefinitions propertyDefinitions, Map<String, String> properties) {
+      this.definitions = propertyDefinitions;
       this.properties.putAll(properties);
     }
 
     private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-      super(propertyDefinitions, new Encryption(null));
+      this.definitions = propertyDefinitions;
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalProperties();
         addProperties(globalProps.getPropertiesMap());
@@ -84,24 +91,84 @@ public class ServerConfigurationProvider {
       }
     }
 
-    @Override
-    protected Optional<String> get(String key) {
-      return Optional.ofNullable(properties.get(key));
+    public void addProperties(Map<String, String> props) {
+      for (Map.Entry<String, String> entry : props.entrySet()) {
+        setProperty(entry.getKey(), entry.getValue());
+      }
+    }
+
+    protected ServerConfiguration setProperty(String key, @Nullable String value) {
+      String validKey = definitions.validKey(key);
+      if (value == null) {
+        properties.remove(validKey);
+      } else {
+        properties.put(validKey, trim(value));
+      }
+      return this;
     }
 
     @Override
-    protected void set(String key, String value) {
-      properties.put(key, value);
+    public Optional<String> get(String key) {
+      return Optional.ofNullable(getString(key));
+    }
+
+    private String getString(String key) {
+      String effectiveKey = definitions.validKey(key);
+      Optional<String> value = getRawString(effectiveKey);
+      if (!value.isPresent()) {
+        // default values cannot be encrypted, so return value as-is.
+        return getDefaultValue(effectiveKey);
+      }
+      return value.get();
+    }
+
+    private Optional<String> getRawString(String key) {
+      return Optional.ofNullable(properties.get(definitions.validKey(requireNonNull(key))));
+    }
+
+    @CheckForNull
+    public String getDefaultValue(String key) {
+      return definitions.getDefaultValue(key);
     }
 
     @Override
-    protected void remove(String key) {
-      properties.remove(key);
+    public boolean hasKey(String key) {
+      return getRawString(key).isPresent();
     }
 
     @Override
-    public Map<String, String> getProperties() {
-      return properties;
+    public String[] getStringArray(String key) {
+      String effectiveKey = definitions.validKey(key);
+      Optional<PropertyDefinition> def = getDefinition(effectiveKey);
+      if ((def.isPresent()) && (def.get().multiValues())) {
+        String value = getString(key);
+        if (value == null) {
+          return ArrayUtils.EMPTY_STRING_ARRAY;
+        }
+
+        return Arrays.stream(value.split(",", -1)).map(String::trim)
+          .map(s -> s.replace("%2C", ","))
+          .toArray(String[]::new);
+      }
+
+      return getStringArrayBySeparator(key, ",");
+    }
+
+    protected Optional<PropertyDefinition> getDefinition(String effectiveKey) {
+      return Optional.ofNullable(definitions.get(effectiveKey));
+    }
+
+    private String[] getStringArrayBySeparator(String key, String separator) {
+      String value = getString(key);
+      if (value != null) {
+        String[] strings = StringUtils.splitByWholeSeparator(value, separator);
+        String[] result = new String[strings.length];
+        for (int index = 0; index < strings.length; index++) {
+          result[index] = trim(strings[index]);
+        }
+        return result;
+      }
+      return ArrayUtils.EMPTY_STRING_ARRAY;
     }
   }
 

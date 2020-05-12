@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfigur
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.container.global.MapConfiguration;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,14 +51,14 @@ public class SensorOptimizerTest {
 
   private FileSystem fs;
   private SensorOptimizer optimizer;
-  private MapSettings settings;
+  private MapConfiguration settings;
   private InputFileCache inputFileCache = new InputFileCache();
 
   @Before
   public void prepare() throws Exception {
     fs = new SonarLintFileSystem(mock(AbstractAnalysisConfiguration.class), inputFileCache);
-    settings = new MapSettings();
-    optimizer = new SensorOptimizer(fs, mock(ActiveRules.class), settings.asConfig());
+    settings = new MapConfiguration();
+    optimizer = new SensorOptimizer(fs, mock(ActiveRules.class), settings);
   }
 
   @Test
@@ -115,7 +115,7 @@ public class SensorOptimizerTest {
     ActiveRule ruleAnotherRepo = mock(ActiveRule.class);
     when(ruleAnotherRepo.ruleKey()).thenReturn(RuleKey.of("repo1", "foo"));
     ActiveRules activeRules = new DefaultActiveRules(asList(ruleAnotherRepo));
-    optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
+    optimizer = new SensorOptimizer(fs, activeRules, settings);
 
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
@@ -124,7 +124,7 @@ public class SensorOptimizerTest {
 
     activeRules = new DefaultActiveRules(asList(ruleSquid, ruleAnotherRepo));
 
-    optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
+    optimizer = new SensorOptimizer(fs, activeRules, settings);
 
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
