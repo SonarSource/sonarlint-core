@@ -57,9 +57,9 @@ public class TelemetryClient {
   void upload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     try {
       sendPost(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud));
-    } catch (Exception e) {
+    } catch (Throwable catchEmAll) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.error("Failed to upload telemetry data", e);
+        LOG.error("Failed to upload telemetry data", catchEmAll);
       }
     }
   }
@@ -67,9 +67,9 @@ public class TelemetryClient {
   void optOut(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     try {
       sendDelete(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud));
-    } catch (Exception e) {
+    } catch (Throwable catchEmAll) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.error("Failed to upload telemetry opt-out", e);
+        LOG.error("Failed to upload telemetry opt-out", catchEmAll);
       }
     }
   }

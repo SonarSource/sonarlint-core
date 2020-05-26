@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.io.IOError;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -86,6 +87,12 @@ public class TelemetryClientTest {
   public void should_not_crash_when_cannot_opt_out() {
     when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new RuntimeException());
     client.optOut(new TelemetryData(), true, true);
+  }
+
+  @Test
+  public void should_not_crash_when_error_is_thrown() {
+    when(http.post(any(PostRequest.class), anyString())).thenThrow(new IOError(new RuntimeException()));
+    client.upload(new TelemetryData(), true, true);
   }
 
   @Test
