@@ -26,7 +26,6 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 
@@ -42,26 +41,11 @@ public final class PluginManifest {
   public static final String SONAR_VERSION_ATTRIBUTE = "Sonar-Version";
   public static final String DEPENDENCIES_ATTRIBUTE = "Plugin-Dependencies";
   public static final String REQUIRE_PLUGINS_ATTRIBUTE = "Plugin-RequirePlugins";
-
-  /**
-   * @since 0.3
-   */
   public static final String USE_CHILD_FIRST_CLASSLOADER = "Plugin-ChildFirstClassLoader";
-
-  /**
-   * @since 1.1
-   */
   public static final String BASE_PLUGIN = "Plugin-Base";
-
-  /**
-   * @since 1.3
-   */
   public static final String IMPLEMENTATION_BUILD = "Implementation-Build";
-
-  /**
-   * @since 1.16
-   */
   public static final String SONARLINT_SUPPORTED = "SonarLint-Supported";
+  public static final String JRE_MIN_VERSION = "Jre-Min-Version";
 
   private String key;
   private String name;
@@ -74,6 +58,7 @@ public final class PluginManifest {
   private String implementationBuild;
   private String[] requirePlugins;
   private Boolean sonarLintSupported;
+  private String jreMinVersion;
 
   /**
    * Load the manifest from a JAR file.
@@ -121,6 +106,7 @@ public final class PluginManifest {
 
     String requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
     this.requirePlugins = StringUtils.split(StringUtils.defaultString(requires), ',');
+    this.jreMinVersion = attributes.getValue(JRE_MIN_VERSION);
   }
 
   public String getKey() {
@@ -141,16 +127,10 @@ public final class PluginManifest {
     return this;
   }
 
-  /**
-   * @since 3.5
-   */
   public String[] getRequirePlugins() {
     return requirePlugins != null ? requirePlugins.clone() : null;
   }
 
-  /**
-   * @since 3.5
-   */
   public PluginManifest setRequirePlugins(@Nullable String[] requirePlugins) {
     this.requirePlugins = requirePlugins != null ? requirePlugins.clone() : null;
     return this;
@@ -192,64 +172,50 @@ public final class PluginManifest {
     return this;
   }
 
-  /**
-   * @since 0.3
-   */
   public boolean isUseChildFirstClassLoader() {
     return useChildFirstClassLoader;
   }
 
-  /**
-   * @since 0.3
-   */
   public PluginManifest setUseChildFirstClassLoader(boolean useChildFirstClassLoader) {
     this.useChildFirstClassLoader = useChildFirstClassLoader;
     return this;
   }
 
-  /**
-   * @since 1.1
-   */
   public String getBasePlugin() {
     return basePlugin;
   }
 
-  /**
-   * @since 1.1
-   */
   public PluginManifest setBasePlugin(String key) {
     this.basePlugin = key;
     return this;
   }
 
-  /**
-   * @since 1.16
-   */
   @CheckForNull
   public Boolean isSonarLintSupported() {
     return sonarLintSupported;
   }
 
-  /**
-   * @since 1.16
-   */
   public PluginManifest setSonarLintSupported(Boolean sonarLintSupported) {
     this.sonarLintSupported = sonarLintSupported;
     return this;
   }
 
-  /**
-   * @since 1.3
-   */
   public String getImplementationBuild() {
     return implementationBuild;
   }
 
-  /**
-   * @since 1.3
-   */
   public PluginManifest setImplementationBuild(String implementationBuild) {
     this.implementationBuild = implementationBuild;
+    return this;
+  }
+
+  @CheckForNull
+  public String getJreMinVersion() {
+    return jreMinVersion;
+  }
+
+  public PluginManifest setJreMinVersion(String jreMinVersion) {
+    this.jreMinVersion = jreMinVersion;
     return this;
   }
 

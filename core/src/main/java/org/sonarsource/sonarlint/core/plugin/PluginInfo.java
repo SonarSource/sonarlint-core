@@ -119,6 +119,9 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   private final Set<RequiredPlugin> requiredPlugins = new HashSet<>();
 
+  @CheckForNull
+  private Version jreMinVersion;
+
   public PluginInfo(String key) {
     requireNonNull(key, "Plugin key is missing from manifest");
     this.key = key;
@@ -186,6 +189,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return requiredPlugins;
   }
 
+  @CheckForNull
+  public Version getJreMinVersion() {
+    return jreMinVersion;
+  }
+
   public PluginInfo setName(@Nullable String name) {
     this.name = MoreObjects.firstNonNull(name, this.key);
     return this;
@@ -237,6 +245,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   public PluginInfo addRequiredPlugin(RequiredPlugin p) {
     this.requiredPlugins.add(p);
+    return this;
+  }
+
+  private PluginInfo setMinimalJreVersion(@Nullable Version jreMinVersion) {
+    this.jreMinVersion = jreMinVersion;
     return this;
   }
 
@@ -314,7 +327,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
     info.setMainClass(manifest.getMainClass());
     info.setVersion(Version.create(manifest.getVersion()));
 
-    // optional fields
     String minSqVersion = manifest.getSonarVersion();
     if (minSqVersion != null) {
       info.setMinimalSqVersion(Version.create(minSqVersion));
@@ -328,6 +340,10 @@ public class PluginInfo implements Comparable<PluginInfo> {
       for (String s : requiredPlugins) {
         info.addRequiredPlugin(RequiredPlugin.parse(s));
       }
+    }
+    String jreMinVersion = manifest.getJreMinVersion();
+    if (jreMinVersion != null) {
+      info.setMinimalJreVersion(Version.create(jreMinVersion));
     }
     return info;
   }

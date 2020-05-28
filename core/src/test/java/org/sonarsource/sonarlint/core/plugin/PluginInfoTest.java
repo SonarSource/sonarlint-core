@@ -154,6 +154,7 @@ public class PluginInfoTest {
     assertThat(pluginInfo.getImplementationBuild()).isNull();
     assertThat(pluginInfo.getMinimalSqVersion()).isNull();
     assertThat(pluginInfo.getRequiredPlugins()).isEmpty();
+    assertThat(pluginInfo.getJreMinVersion()).isNull();
   }
 
   @Test
@@ -167,6 +168,7 @@ public class PluginInfoTest {
     manifest.setSonarVersion("4.5.1");
     manifest.setRequirePlugins(new String[] {"java:2.0", "pmd:1.3"});
     manifest.setImplementationBuild("SHA1");
+    manifest.setJreMinVersion("11");
 
     Path jarFile = temp.newFile().toPath();
     PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
@@ -175,6 +177,7 @@ public class PluginInfoTest {
     assertThat(pluginInfo.getImplementationBuild()).isEqualTo("SHA1");
     assertThat(pluginInfo.getMinimalSqVersion().getName()).isEqualTo("4.5.1");
     assertThat(pluginInfo.getRequiredPlugins()).extracting("key").containsOnly("java", "pmd");
+    assertThat(pluginInfo.getJreMinVersion().getName()).isEqualTo("11");
   }
 
   @Test
