@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -42,14 +43,16 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
@@ -103,11 +106,6 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
   }
 
-  private ConnectedSonarLintEngine createEngine() {
-    return createEngine(b -> {
-    });
-  }
-
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
@@ -134,7 +132,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
     engine.update(config(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), Language.TS.getPluginKey(),
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), Language.TS.getPluginKey(),
       CUSTOM_JS_PLUGIN_KEY);
   }
 
@@ -142,22 +140,24 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void dontFailIfMissingBasePlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
     engine.update(config(), null);
-    assertThat(logs).contains("Code analyzer 'JavaScript Custom Rules Plugin' is transitively excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(CUSTOM_JS_PLUGIN_KEY);
+    assertThat(logs).contains("Plugin 'JavaScript Custom Rules Plugin' dependency on 'javascript' is unsatisfied. Skip loading it.");
+    assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
+      .contains(tuple(CUSTOM_JS_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("javascript"))));
   }
 
   @Test
   public void dontLoadExcludedPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
     engine.update(config(), null);
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JAVA.getPluginKey());
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
     engine.stop(false);
 
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     String javaDescription = ItUtils.javaVersion.compareTo("6.3") < 0 ? "SonarJava" : "Java Code Quality and Security";
-    String expectedLog = String.format("Code analyzer '%s' is excluded in this version of SonarLint. Skip loading it.", javaDescription);
+    String expectedLog = String.format("Plugin '%s' is excluded because language 'java' is not enabled. Skip loading it.", javaDescription);
     assertThat(logs).contains(expectedLog);
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.JAVA.getPluginKey());
+    assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
+      .contains(tuple(Language.JAVA.getPluginKey(), Optional.of(new SkipReason.LanguageNotEnabled("java"))));
   }
 
   // SLCORE-259
@@ -165,9 +165,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void analysisJavascriptWithoutTypescript() throws Exception {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(config(), null);
-    assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JS.getPluginKey());
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).doesNotContain(Language.TS.getPluginKey());
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.TS.getPluginKey());
 
     engine.updateProject(config(), PROJECT_KEY_JAVASCRIPT, null);
     SaveIssueListener issueListener = new SaveIssueListener();
@@ -199,7 +198,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
       .addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(config(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
-    assertThat(engine.getLoadedAnalyzers().stream().map(LoadedAnalyzer::key)).contains(Language.JS.getPluginKey());
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
 
     engine.updateProject(config(), PROJECT_KEY_TYPESCRIPT, null);
     SaveIssueListener issueListenerTs = new SaveIssueListener();

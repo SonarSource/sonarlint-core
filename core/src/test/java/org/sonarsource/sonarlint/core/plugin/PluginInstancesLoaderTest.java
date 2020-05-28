@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
-public class PluginLoaderTest {
+public class PluginInstancesLoaderTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -47,7 +47,7 @@ public class PluginLoaderTest {
   public JUnitTempFolder tempFolder = new JUnitTempFolder();
 
   PluginClassloaderFactory classloaderFactory = mock(PluginClassloaderFactory.class);
-  PluginLoader loader = new PluginLoader(new FakePluginExploder(), classloaderFactory, tempFolder);
+  PluginInstancesLoader loader = new PluginInstancesLoader(new FakePluginExploder(), classloaderFactory, tempFolder);
 
   @Test
   public void instantiate_plugin_entry_point() {
@@ -68,7 +68,7 @@ public class PluginLoaderTest {
       loader.instantiatePluginClasses(ImmutableMap.of(def, getClass().getClassLoader()));
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e).hasMessage("Fail to instantiate class [org.sonarsource.sonarlint.core.plugin.PluginLoaderTest$IncorrectPlugin] of plugin [fake]");
+      assertThat(e).hasMessage("Fail to instantiate class [org.sonarsource.sonarlint.core.plugin.PluginInstancesLoaderTest$IncorrectPlugin] of plugin [fake]");
     }
   }
 
@@ -164,7 +164,7 @@ public class PluginLoaderTest {
   }
 
   /**
-   * Does not unzip jar file. It directly returns the JAR file defined on PluginInfo.
+   * Does not unzip jar file. It directly returns the JAR file defined on PluginDetails.
    */
   private static class FakePluginExploder extends PluginJarExploder {
     @Override

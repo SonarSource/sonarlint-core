@@ -36,6 +36,7 @@ import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
 import org.sonarlint.daemon.model.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -73,6 +74,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
     for (URL pluginPath : analyzers) {
       builder.addPlugin(pluginPath);
     }
+    builder.addEnabledLanguage(Language.JS);
 
     builder.setLogOutput(logOutput);
     builder.setSonarLintUserHome(Utils.getStandaloneHome());

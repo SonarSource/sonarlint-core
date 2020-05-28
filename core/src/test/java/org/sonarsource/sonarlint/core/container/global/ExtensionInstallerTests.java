@@ -71,7 +71,7 @@ public class ExtensionInstallerTests {
   public void install_sonarlint_extensions_for_compatible_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
-    when(pluginRepository.getPluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
     underTest.install(container, false);
 
@@ -84,7 +84,7 @@ public class ExtensionInstallerTests {
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
-    when(pluginRepository.getPluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
     underTest.install(container, false);
 
@@ -97,7 +97,7 @@ public class ExtensionInstallerTests {
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn(null);
 
-    when(pluginRepository.getPluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
     underTest.install(container, false);
 
@@ -110,7 +110,7 @@ public class ExtensionInstallerTests {
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
-    when(pluginRepository.getPluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
 
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
@@ -127,7 +127,7 @@ public class ExtensionInstallerTests {
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
-    when(pluginRepository.getPluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
 
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
@@ -146,7 +146,7 @@ public class ExtensionInstallerTests {
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
-    when(pluginRepository.getPluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
 
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, StandaloneGlobalConfiguration.builder()

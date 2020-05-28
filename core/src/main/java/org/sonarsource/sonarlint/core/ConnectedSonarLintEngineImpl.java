@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -40,7 +41,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
@@ -185,8 +185,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
-    return withReadLock(() -> getHandler().getAnalyzers());
+  public Collection<PluginDetails> getPluginDetails() {
+    return withReadLock(() -> getHandler().getPluginDetails());
   }
 
   @Override

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
@@ -34,6 +35,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 
 import static java.util.Objects.requireNonNull;
 
@@ -122,6 +124,9 @@ public class PluginInfo implements Comparable<PluginInfo> {
   @CheckForNull
   private Version jreMinVersion;
 
+  @CheckForNull
+  private SkipReason skipReason;
+
   public PluginInfo(String key) {
     requireNonNull(key, "Plugin key is missing from manifest");
     this.key = key;
@@ -194,6 +199,14 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return jreMinVersion;
   }
 
+  public Optional<SkipReason> getSkipReason() {
+    return Optional.ofNullable(skipReason);
+  }
+
+  public boolean isSkipped() {
+    return skipReason != null;
+  }
+
   public PluginInfo setName(@Nullable String name) {
     this.name = MoreObjects.firstNonNull(name, this.key);
     return this;
@@ -251,6 +264,10 @@ public class PluginInfo implements Comparable<PluginInfo> {
   private PluginInfo setMinimalJreVersion(@Nullable Version jreMinVersion) {
     this.jreMinVersion = jreMinVersion;
     return this;
+  }
+
+  public void setSkipReason(@Nullable SkipReason skipReason) {
+    this.skipReason = skipReason;
   }
 
   /**

@@ -32,13 +32,13 @@ import static org.mockito.Mockito.when;
 
 public class PluginRepositoryTest {
   private PluginRepository pluginRepository;
-  private PluginCacheLoader cacheLoader;
-  private PluginLoader loader;
+  private PluginInfosLoader cacheLoader;
+  private PluginInstancesLoader loader;
 
   @Before
   public void setup() {
-    cacheLoader = mock(PluginCacheLoader.class);
-    loader = mock(PluginLoader.class);
+    cacheLoader = mock(PluginInfosLoader.class);
+    loader = mock(PluginInstancesLoader.class);
     pluginRepository = new PluginRepository(cacheLoader, loader);
   }
 
@@ -65,9 +65,9 @@ public class PluginRepositoryTest {
     verify(loader).load(infos);
     verify(cacheLoader).load();
 
-    assertThat(pluginRepository.getLoadedAnalyzers()).hasSize(1);
+    assertThat(pluginRepository.getPluginDetails()).hasSize(1);
     assertThat(pluginRepository.getPluginInfo("key")).isEqualTo(info);
-    assertThat(pluginRepository.getPluginInfos()).containsExactly(info);
+    assertThat(pluginRepository.getActivePluginInfos()).containsExactly(info);
     assertThat(pluginRepository.getPluginInstance("key")).isEqualTo(plugin);
     assertThat(pluginRepository.hasPlugin("key")).isTrue();
   }

@@ -68,6 +68,10 @@ public enum Language {
     return Stream.of(values()).filter(l -> l.getLanguageKey().equals(languageKey)).map(Language::getPluginKey).findFirst();
   }
 
+  public static Optional<Language> getLanguageByPluginKey(String pluginKey) {
+    return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).findFirst();
+  }
+
   public static boolean containsPlugin(String pluginKey) {
     return Stream.of(values()).anyMatch(l -> l.getPluginKey().equals(pluginKey));
   }

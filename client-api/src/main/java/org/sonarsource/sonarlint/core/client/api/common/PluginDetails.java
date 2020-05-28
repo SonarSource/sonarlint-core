@@ -17,16 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.client.api.common;
 
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 
-public interface LoadedAnalyzer {
+public interface PluginDetails {
   String key();
 
   String name();
 
   @CheckForNull
   String version();
+
+  Optional<SkipReason> skipReason();
 
 }

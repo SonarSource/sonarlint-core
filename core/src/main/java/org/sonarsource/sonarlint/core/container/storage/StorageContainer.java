@@ -43,10 +43,10 @@ import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.PluginLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
@@ -77,9 +77,9 @@ public class StorageContainer extends ComponentContainer {
 
       // plugins
       PluginRepository.class,
-      PluginCacheLoader.class,
+      PluginInfosLoader.class,
       PluginVersionChecker.class,
-      PluginLoader.class,
+      PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       StoragePluginIndexProvider.class,
@@ -140,7 +140,7 @@ public class StorageContainer extends ComponentContainer {
 
   protected void installPlugins() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
