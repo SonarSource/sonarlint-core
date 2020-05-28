@@ -28,12 +28,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
@@ -89,8 +89,8 @@ public class StorageContainerHandler {
     return globalUpdateStatusReader.get();
   }
 
-  public Collection<LoadedAnalyzer> getAnalyzers() {
-    return pluginRepository.getLoadedAnalyzers();
+  public Collection<PluginDetails> getPluginDetails() {
+    return pluginRepository.getPluginDetails();
   }
 
   public ProjectStorageStatus getProjectStorageStatus(String projectKey) {

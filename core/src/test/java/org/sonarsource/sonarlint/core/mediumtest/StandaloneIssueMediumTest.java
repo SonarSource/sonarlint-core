@@ -48,6 +48,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -106,6 +107,7 @@ public class StandaloneIssueMediumTest {
       .addPlugin(PluginLocator.getPythonPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
       .addPlugin(PluginLocator.getTypeScriptPluginUrl())
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> System.out.println(msg))
       .setExtraProperties(extraProperties);

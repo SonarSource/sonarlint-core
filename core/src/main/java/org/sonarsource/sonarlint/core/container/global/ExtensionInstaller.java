@@ -57,7 +57,7 @@ public class ExtensionInstaller {
   public ExtensionInstaller install(ComponentContainer container, boolean global) {
 
     // plugin extensions
-    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
       Plugin.Context context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)

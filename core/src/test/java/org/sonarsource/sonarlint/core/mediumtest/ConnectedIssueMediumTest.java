@@ -157,7 +157,7 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void testContainerInfo() {
-    assertThat(sonarlint.getLoadedAnalyzers()).extracting("key").containsOnly("java", "javascript");
+    assertThat(sonarlint.getPluginDetails()).extracting("key").containsOnly("java", "javascript");
     assertThat(sonarlint.allProjectsByKey().keySet()).containsOnly("test-project", "test-project-2");
   }
 

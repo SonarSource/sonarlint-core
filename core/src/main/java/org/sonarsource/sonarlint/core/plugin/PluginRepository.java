@@ -27,7 +27,7 @@ import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 
 import static java.util.Objects.requireNonNull;
@@ -38,31 +38,33 @@ import static java.util.Objects.requireNonNull;
 public class PluginRepository implements Startable {
   private static final Logger LOG = Loggers.get(PluginRepository.class);
 
-  private final PluginCacheLoader cacheLoader;
-  private final PluginLoader loader;
+  private final PluginInfosLoader pluginInfosLoader;
+  private final PluginInstancesLoader pluginInstancesLoader;
 
   private Map<String, Plugin> pluginInstancesByKeys;
   private Map<String, PluginInfo> infosByKeys;
 
-  public PluginRepository(PluginCacheLoader cacheLoader, PluginLoader loader) {
-    this.cacheLoader = cacheLoader;
-    this.loader = loader;
+  public PluginRepository(PluginInfosLoader pluginInfosLoader, PluginInstancesLoader pluginInstancesLoader) {
+    this.pluginInfosLoader = pluginInfosLoader;
+    this.pluginInstancesLoader = pluginInstancesLoader;
   }
 
   @Override
   public void start() {
-    infosByKeys = new HashMap<>(cacheLoader.load());
-    pluginInstancesByKeys = new HashMap<>(loader.load(infosByKeys));
+    infosByKeys = new HashMap<>(pluginInfosLoader.load());
+    Map<String, PluginInfo> nonSkippedPlugins = infosByKeys.entrySet().stream().filter(e -> !e.getValue().isSkipped())
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    pluginInstancesByKeys = new HashMap<>(pluginInstancesLoader.load(nonSkippedPlugins));
 
-    logPlugins();
+    logPlugins(nonSkippedPlugins);
   }
 
-  private void logPlugins() {
-    if (infosByKeys.isEmpty()) {
+  private static void logPlugins(Map<String, PluginInfo> nonSkippedPlugins) {
+    if (nonSkippedPlugins.isEmpty()) {
       LOG.debug("No plugins loaded");
     } else {
       LOG.debug("Plugins:");
-      for (PluginInfo p : infosByKeys.values()) {
+      for (PluginInfo p : nonSkippedPlugins.values()) {
         LOG.debug("  * {} {} ({})", p.getName(), p.getVersion(), p.getKey());
       }
     }
@@ -71,25 +73,25 @@ public class PluginRepository implements Startable {
   @Override
   public void stop() {
     // close plugin classloaders
-    loader.unload(pluginInstancesByKeys.values());
+    pluginInstancesLoader.unload(pluginInstancesByKeys.values());
 
     pluginInstancesByKeys.clear();
     infosByKeys.clear();
   }
 
-  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+  public Collection<PluginDetails> getPluginDetails() {
     return infosByKeys.values().stream()
-      .map(PluginRepository::pluginInfoToLoadedAnalyzer)
+      .map(PluginRepository::pluginInfoToPluginDetails)
       .collect(Collectors.toList());
   }
 
-  private static LoadedAnalyzer pluginInfoToLoadedAnalyzer(PluginInfo p) {
+  private static PluginDetails pluginInfoToPluginDetails(PluginInfo p) {
     String version = p.getVersion() != null ? p.getVersion().toString() : null;
-    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), version);
+    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), version, p.getSkipReason().orElse(null));
   }
 
-  public Collection<PluginInfo> getPluginInfos() {
-    return infosByKeys.values();
+  public Collection<PluginInfo> getActivePluginInfos() {
+    return infosByKeys.values().stream().filter(p -> !p.isSkipped()).collect(Collectors.toList());
   }
 
   public PluginInfo getPluginInfo(String key) {

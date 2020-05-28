@@ -51,9 +51,9 @@ import static org.apache.commons.lang.StringUtils.isNotEmpty;
  * </p>
  * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.Plugin}.
  */
-public class PluginLoader {
+public class PluginInstancesLoader {
 
-  private static final Logger LOG = Loggers.get(PluginLoader.class);
+  private static final Logger LOG = Loggers.get(PluginInstancesLoader.class);
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
   private static final String SLF4J_ADAPTER_JAR_NAME = "sonarlint-slf4j-sonar-log";
@@ -62,7 +62,7 @@ public class PluginLoader {
   private final PluginClassloaderFactory classloaderFactory;
   private final TempFolder tempFolder;
 
-  public PluginLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory, TempFolder tempFolder) {
+  public PluginInstancesLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory, TempFolder tempFolder) {
     this.jarExploder = jarExploder;
     this.classloaderFactory = classloaderFactory;
     this.tempFolder = tempFolder;
@@ -112,7 +112,7 @@ public class PluginLoader {
   }
 
   private File extractSlf4jAdapterJar() {
-    InputStream jarInputStream = PluginLoader.class.getResourceAsStream("/" + SLF4J_ADAPTER_JAR_NAME + ".jar");
+    InputStream jarInputStream = PluginInstancesLoader.class.getResourceAsStream("/" + SLF4J_ADAPTER_JAR_NAME + ".jar");
     try {
       File extractedJar = tempFolder.newFile(SLF4J_ADAPTER_JAR_NAME, ".jar");
       FileUtils.copyInputStreamToFile(jarInputStream, extractedJar);

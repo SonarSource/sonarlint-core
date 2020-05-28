@@ -39,6 +39,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -68,10 +69,10 @@ public class StandaloneTest {
     globalProps.put("sonar.global.label", "It works");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(new File("../plugins/global-extension-plugin/target/global-extension-plugin.jar").toURI().toURL())
+      .addEnabledLanguage(Language.XOO)
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))
-      .setExtraProperties(globalProps)
-      .build();
+      .setExtraProperties(globalProps).build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
     assertThat(logs).containsOnlyOnce("Start Global Extension It works");
@@ -107,7 +108,7 @@ public class StandaloneTest {
   }
 
   private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType,
-      String... possibleValues) {
+    String... possibleValues) {
     assertThat(rule.param(paramKey)).isNotNull()
       .extracting(StandaloneRuleParam::type, StandaloneRuleParam::possibleValues)
       .containsExactly(expectedType, Arrays.asList(possibleValues));
@@ -136,8 +137,7 @@ public class StandaloneTest {
       "Param floatParam has value 3.14159265358",
       "Param enumParam has value enum1",
       "Param enumListParam has value list1,list2",
-      "Param multipleIntegersParam has value null"
-    );
+      "Param multipleIntegersParam has value null");
 
     issues.clear();
     sonarlint.analyze(
@@ -162,8 +162,7 @@ public class StandaloneTest {
       "Param floatParam has value 3.14159265358",
       "Param enumParam has value enum1",
       "Param enumListParam has value list1,list2",
-      "Param multipleIntegersParam has value 80,160"
-    );
+      "Param multipleIntegersParam has value 80,160");
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {

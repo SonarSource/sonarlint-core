@@ -34,11 +34,11 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
@@ -55,10 +55,10 @@ import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.PluginLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -84,8 +84,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       StandalonePluginIndex.class,
       PluginRepository.class,
       PluginVersionChecker.class,
-      PluginCacheLoader.class,
-      PluginLoader.class,
+      PluginInfosLoader.class,
+      PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       GlobalSettings.class,
@@ -122,7 +122,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   private void installPlugins() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
@@ -156,9 +156,9 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return defaultAnalysisResult;
   }
 
-  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+  public Collection<PluginDetails> getPluginDetails() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    return pluginRepository.getLoadedAnalyzers();
+    return pluginRepository.getPluginDetails();
   }
 
   @CheckForNull

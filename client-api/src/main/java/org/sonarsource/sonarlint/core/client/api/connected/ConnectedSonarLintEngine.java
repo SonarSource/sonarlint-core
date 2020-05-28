@@ -26,6 +26,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -186,7 +187,7 @@ public interface ConnectedSonarLintEngine {
    * Get information about the analyzers that are currently loaded.
    * Should only be called when engine is started.
    */
-  Collection<LoadedAnalyzer> getLoadedAnalyzers();
+  Collection<PluginDetails> getPluginDetails();
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
