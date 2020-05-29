@@ -144,4 +144,47 @@ public interface SkipReason {
 
   }
 
+  class UnsatisfiedJreRequirement implements SkipReason {
+    private final String currentVersion;
+    private final String minVersion;
+
+    public UnsatisfiedJreRequirement(String currentVersion, String minVersion) {
+      this.currentVersion = currentVersion;
+      this.minVersion = minVersion;
+    }
+
+    public String getCurrentVersion() {
+      return currentVersion;
+    }
+
+    public String getMinVersion() {
+      return minVersion;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(currentVersion, minVersion);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof UnsatisfiedJreRequirement)) {
+        return false;
+      }
+      UnsatisfiedJreRequirement other = (UnsatisfiedJreRequirement) obj;
+      return Objects.equals(currentVersion, other.currentVersion) && Objects.equals(minVersion, other.minVersion);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      builder.append("UnsatisfiedJreRequirement [currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion).append("]");
+      return builder.toString();
+    }
+
+  }
+
 }

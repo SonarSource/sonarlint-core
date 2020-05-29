@@ -23,8 +23,10 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
@@ -47,11 +49,14 @@ public class PluginInfosLoader {
   private final PluginIndex pluginIndex;
   private final Set<Language> enabledLanguages;
   private final PluginVersionChecker pluginVersionChecker;
+  private final System2 system2;
 
-  public PluginInfosLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration) {
+  public PluginInfosLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration,
+    System2 system2) {
     this.pluginVersionChecker = pluginVersionChecker;
     this.pluginCache = pluginCache;
     this.pluginIndex = pluginIndex;
+    this.system2 = system2;
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
@@ -69,7 +74,7 @@ public class PluginInfosLoader {
       PluginInfo info = PluginInfo.create(jarFilePath);
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if (sonarLintSupported == null || !sonarLintSupported.booleanValue()) {
-        LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
+        LOG.debug("Plugin '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
         continue;
       }
       checkIfSkippedAndPopulateReason(info);
@@ -98,10 +103,20 @@ public class PluginInfosLoader {
       info.setSkipReason(SkipReason.IncompatiblePluginApi.INSTANCE);
       return;
     }
-    String minVersion = pluginVersionChecker.getMinimumVersion(pluginKey);
-    if (minVersion != null && !pluginVersionChecker.isVersionSupported(pluginKey, info.getVersion())) {
-      LOG.debug("Code analyzer '{}' version '{}' is not supported (minimal version is '{}'). Skip loading it.", info.getName(), info.getVersion(), minVersion);
-      info.setSkipReason(new SkipReason.IncompatiblePluginVersion(minVersion));
+    String pluginMinVersion = pluginVersionChecker.getMinimumVersion(pluginKey);
+    if (pluginMinVersion != null && !pluginVersionChecker.isVersionSupported(pluginKey, info.getVersion())) {
+      LOG.debug("Plugin '{}' version '{}' is not supported (minimal version is '{}'). Skip loading it.", info.getName(), info.getVersion(), pluginMinVersion);
+      info.setSkipReason(new SkipReason.IncompatiblePluginVersion(pluginMinVersion));
+      return;
+    }
+    Version jreMinVersion = info.getJreMinVersion();
+    String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
+    if (jreMinVersion != null) {
+      Version jreCurrentVersion = Version.create(javaSpecVersion);
+      if (jreCurrentVersion.compareTo(jreMinVersion) < 0) {
+        LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", info.getName(), jreMinVersion, jreCurrentVersion);
+        info.setSkipReason(new SkipReason.UnsatisfiedJreRequirement(jreCurrentVersion.toString(), jreMinVersion.toString()));
+      }
     }
   }
 
