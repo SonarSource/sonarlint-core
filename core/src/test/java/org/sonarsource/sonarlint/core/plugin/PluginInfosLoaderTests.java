@@ -37,8 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.ArgumentMatchers;
 import org.sonar.api.utils.MessageException;
+import org.sonar.api.utils.System2;
 import org.sonar.api.utils.ZipUtils;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
@@ -55,10 +55,10 @@ import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 class PluginInfosLoaderTests {
@@ -76,18 +76,21 @@ class PluginInfosLoaderTests {
   private PluginVersionChecker pluginVersionChecker;
   private Set<Language> enabledLanguages;
 
+  private System2 system2;
+
   @BeforeEach
   public void prepare() {
     pluginIndex = mock(PluginIndex.class);
     pluginCache = mock(PluginCache.class);
-    pluginVersionChecker = mock(PluginVersionChecker.class);
+    system2 = mock(System2.class);
+    pluginVersionChecker = spy(new PluginVersionChecker());
     ConnectedGlobalConfiguration configuration = mock(ConnectedGlobalConfiguration.class);
     enabledLanguages = new HashSet<>();
     when(configuration.getEnabledLanguages()).thenReturn(enabledLanguages);
-    underTest = new PluginInfosLoader(pluginVersionChecker, pluginCache, pluginIndex, configuration);
+    underTest = new PluginInfosLoader(pluginVersionChecker, pluginCache, pluginIndex, configuration, system2);
 
-    when(pluginVersionChecker.isVersionSupported(any(), ArgumentMatchers.<String>any())).thenThrow(new IllegalStateException("Non specified behavior"));
-    when(pluginVersionChecker.isVersionSupported(any(), ArgumentMatchers.<Version>any())).thenThrow(new IllegalStateException("Non specified behavior"));
+    when(system2.property("java.specification.version")).thenReturn(System.getProperty("java.specification.version"));
+    doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(FAKE_PLUGIN_KEY);
   }
 
   @Test
@@ -131,10 +134,8 @@ class PluginInfosLoaderTests {
 
   @Test
   public void load_plugin_skip_unsupported_plugins_api_version(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "99.9", null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "99.9", null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(false).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
-    when(pluginVersionChecker.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, SkipReason.IncompatiblePluginApi.INSTANCE));
@@ -143,41 +144,38 @@ class PluginInfosLoaderTests {
 
   @Test
   public void load_plugin_skip_unsupported_plugins_version(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(false).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
     when(pluginVersionChecker.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.IncompatiblePluginVersion("2.0")));
-    assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' version '1.0' is not supported (minimal version is '2.0'). Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' version '1.0' is not supported (minimal version is '2.0'). Skip loading it.");
   }
 
   @Test
   public void load_plugin_skip_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, null, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
 
     assertThat(underTest.load()).hasSize(0);
-    assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' is not compatible with SonarLint. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' is not compatible with SonarLint. Skip loading it.");
   }
 
   @Test
   public void load_plugin_skip_explicitely_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, false, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, false, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
 
     assertThat(underTest.load()).hasSize(0);
-    assertThat(logsWithoutStartStop()).contains("Code analyzer 'pluginkey' is not compatible with SonarLint. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' is not compatible with SonarLint. Skip loading it.");
   }
 
   @Test
   public void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
+
     enabledLanguages.add(Language.TS);
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -187,9 +185,8 @@ class PluginInfosLoaderTests {
 
   @Test
   public void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, Language.JS.getPluginKey()));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")));
@@ -198,27 +195,42 @@ class PluginInfosLoaderTests {
 
   @Test
   public void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, Language.JS.getPluginKey()));
-    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
+    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeBasePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
-    // Ensure base plugin is skipped
-    doReturn(false).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
-    when(pluginVersionChecker.getMinimumVersion(eq(Language.JS.getPluginKey()))).thenReturn("2.0");
+
+    // Ensure base plugin is skipped because of min version
+    doReturn("2.0").when(pluginVersionChecker).getMinimumVersion(eq(Language.JS.getPluginKey()));
     enabledLanguages.add(Language.JS);
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")),
+      .containsOnly(
+        tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")),
         tuple("javascript", true, new SkipReason.IncompatiblePluginVersion("2.0")));
     assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' dependency on 'javascript' is unsatisfied. Skip loading it.");
   }
 
   @Test
+  public void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
+    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeBasePlugin));
+
+    // Ensure base plugin is not skipped
+    doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(eq(Language.JS.getPluginKey()));
+    enabledLanguages.add(Language.JS);
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(
+        tuple("pluginkey", false, null),
+        tuple("javascript", false, null));
+  }
+
+  @Test
   public void load_plugin_skip_plugins_having_missing_required_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, "required2:1.0"));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "required2:1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")));
@@ -228,9 +240,8 @@ class PluginInfosLoaderTests {
   @Test
   public void load_plugin_ignore_license_plugin_dependency(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, "license:1.0"));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "license:1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", false, null));
@@ -240,13 +251,12 @@ class PluginInfosLoaderTests {
   @Test
   public void load_plugin_skip_plugins_having_skipped_required_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, "required2:1.0"));
-    PluginReference fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0, true, null, null));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "required2:1.0"));
+    PluginReference fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeDepPlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
-    // Ensure dep plugin is skipped
-    doReturn(false).when(pluginVersionChecker).isVersionSupported(eq("required2"), eq(Version.create(V1_0)));
-    when(pluginVersionChecker.getMinimumVersion("required2")).thenReturn("2.0");
+
+    // Ensure dep plugin is skipped because of min version
+    doReturn("2.0").when(pluginVersionChecker).getMinimumVersion("required2");
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")),
@@ -258,24 +268,51 @@ class PluginInfosLoaderTests {
   @Test
   public void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar",
-      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, Language.TS.getPluginKey() + ":1.0"));
+      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null, Language.TS.getPluginKey() + ":1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
     enabledLanguages.add(Language.JS);
 
-    assertThat(underTest.load()).as(logsWithoutStartStop().collect(Collectors.joining("\n"))).hasSize(1);
+    assertThat(underTest.load().values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
+      .extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple(Language.JS.getPluginKey(), false, null));
   }
 
   @Test
   public void load_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "7.9", "basePluginKey"));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "7.9", null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
-    doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(FAKE_PLUGIN_KEY), eq(Version.create(V1_0)));
 
-    assertThat(underTest.load()).as(logsWithoutStartStop().collect(Collectors.joining("\n"))).hasSize(1);
+    assertThat(underTest.load().values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
+      .extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple(FAKE_PLUGIN_KEY, false, null));
   }
 
-  private void createPluginManifest(Path path, String pluginKey, String version, Boolean sonarlintSupported, @Nullable String sqApiVersion, @Nullable String basePlugin,
+  @Test
+  public void load_plugin_skip_plugins_having_unsatisfied_jre(@TempDir Path storage) throws IOException {
+    when(system2.property("java.specification.version")).thenReturn("1.8");
+
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "11", null));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin));
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedJreRequirement("1.8", "11")));
+    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires JRE 11 while current is 1.8. Skip loading it.");
+  }
+
+  @Test
+  public void load_plugin_having_satisfied_jre(@TempDir Path storage) throws IOException {
+    when(system2.property("java.specification.version")).thenReturn("1.8");
+
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "1.7", null));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin));
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("pluginkey", false, null));
+  }
+
+  private void createPluginManifest(Path path, String pluginKey, String version, Boolean sonarlintSupported, @Nullable String sqApiVersion, @Nullable String jreMinVersion,
+    @Nullable String basePlugin,
     String... requirePlugins) {
     Path manifestPath = path.resolve(JarFile.MANIFEST_NAME);
     try {
@@ -289,6 +326,9 @@ class PluginInfosLoaderTests {
       }
       if (sqApiVersion != null) {
         manifest.getMainAttributes().putValue(PluginManifest.SONAR_VERSION_ATTRIBUTE, sqApiVersion);
+      }
+      if (jreMinVersion != null) {
+        manifest.getMainAttributes().putValue(PluginManifest.JRE_MIN_VERSION, jreMinVersion);
       }
       if (basePlugin != null) {
         manifest.getMainAttributes().putValue(PluginManifest.BASE_PLUGIN, basePlugin);
