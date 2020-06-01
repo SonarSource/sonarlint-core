@@ -23,21 +23,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 
+import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class ConnectedGlobalConfigurationTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class ConnectedGlobalConfigurationTests {
 
   @Test
-  public void testDefaults() {
+  void testDefaults() {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .build();
     assertThat(config.getServerId()).isNull();
@@ -48,7 +45,7 @@ public class ConnectedGlobalConfigurationTest {
   }
 
   @Test
-  public void extraProps() throws Exception {
+  void extraProps() throws Exception {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
@@ -58,10 +55,10 @@ public class ConnectedGlobalConfigurationTest {
   }
 
   @Test
-  public void overrideDirs() throws Exception {
-    Path sonarUserHome = temp.newFolder().toPath();
-    Path storage = temp.newFolder().toPath();
-    Path work = temp.newFolder().toPath();
+  void overrideDirs(@TempDir Path temp) throws Exception {
+    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
+    Path storage = createDirectory(temp.resolve("storage"));
+    Path work = createDirectory(temp.resolve("work"));
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setStorageRoot(storage)
@@ -73,7 +70,7 @@ public class ConnectedGlobalConfigurationTest {
   }
 
   @Test
-  public void enableLanguages() {
+  void enableLanguages() {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .addEnabledLanguages(Language.JAVA, Language.ABAP)
       .addEnabledLanguage(Language.C)
@@ -82,7 +79,7 @@ public class ConnectedGlobalConfigurationTest {
   }
 
   @Test
-  public void configureServerId() throws Exception {
+  void configureServerId() throws Exception {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId("myServer")
       .build();
@@ -90,7 +87,7 @@ public class ConnectedGlobalConfigurationTest {
   }
 
   @Test
-  public void validateServerId() throws Exception {
+  void validateServerId() throws Exception {
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder();
     expectFailure(builder, "");
     expectFailure(builder, null);

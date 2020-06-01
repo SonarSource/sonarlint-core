@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ProjectBindingTest {
+class ProjectBindingTests {
   @Test
-  public void should_assign_all_parameters_in_constructor() {
+  void should_assign_all_parameters_in_constructor() {
     ProjectBinding projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
     assertThat(projectBinding.projectKey()).isEqualTo("key");
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("sqPrefix");
@@ -33,7 +33,7 @@ public class ProjectBindingTest {
   }
 
   @Test
-  public void equals_and_hashCode_should_use_all_fields() {
+  void equals_and_hashCode_should_use_all_fields() {
     ProjectBinding projectBinding1 = new ProjectBinding("key", "sqPrefix", "localPrefix");
     ProjectBinding projectBinding2 = new ProjectBinding("key1", "sqPrefix", "localPrefix");
     ProjectBinding projectBinding3 = new ProjectBinding("key", "sqPrefix1", "localPrefix");

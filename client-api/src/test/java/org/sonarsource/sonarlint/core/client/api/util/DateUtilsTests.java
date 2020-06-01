@@ -22,14 +22,14 @@ package org.sonarsource.sonarlint.core.client.api.util;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DateUtilsTest {
+class DateUtilsTests {
 
   @Test
-  public void testAge() {
+  void testAge() {
     assertThat(DateUtils.toAge(System.currentTimeMillis() - 100)).isEqualTo("few seconds ago");
     assertThat(DateUtils.toAge(System.currentTimeMillis() - 65_000)).isEqualTo("1 minute ago");
     assertThat(DateUtils.toAge(System.currentTimeMillis() - 3_600_000 - 100_000)).isEqualTo("1 hour ago");

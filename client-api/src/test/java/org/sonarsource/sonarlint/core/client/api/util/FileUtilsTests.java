@@ -26,15 +26,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -42,33 +42,29 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class FileUtilsTest {
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+class FileUtilsTests {
 
   @Test
-  public void moveDir_should_rename_a_dir() throws IOException {
-    File oldDir = temporaryFolder.newFolder();
-    assertThat(oldDir.isDirectory()).isTrue();
+  void moveDir_should_rename_a_dir(@TempDir Path temp) throws IOException {
+    Path oldDir = createDirectory(temp.resolve("oldDir"));
+    assertThat(oldDir.toFile().isDirectory()).isTrue();
 
-    File newDir = new File(temporaryFolder.getRoot(), "new dir");
-    assertThat(newDir.isDirectory()).isFalse();
+    Path newDir = temp.resolve("new dir");
+    assertThat(newDir.toFile().isDirectory()).isFalse();
 
-    FileUtils.moveDir(oldDir.toPath(), newDir.toPath());
+    FileUtils.moveDir(oldDir, newDir);
     assertThat(oldDir).doesNotExist();
     assertThat(newDir).exists().isDirectory();
   }
 
   @Test
-  public void moveDir_non_atomic() throws IOException {
-    File oldDir = temporaryFolder.newFolder();
-    File foo = new File(oldDir, "foo");
-    foo.mkdirs();
-    new File(foo, "foo.txt").createNewFile();
+  void moveDir_non_atomic(@TempDir Path temp) throws IOException {
+    Path oldDir = createDirectory(temp.resolve("oldDir"));
+    Path foo = oldDir.resolve("foo");
+    Files.createDirectories(foo);
+    new File(foo.toFile(), "foo.txt").createNewFile();
 
-    File newDir = temporaryFolder.newFolder();
-
-    Path destPath = newDir.toPath();
+    Path destPath = createDirectory(temp.resolve("newDir"));
 
     Path destMock = mock(Path.class, RETURNS_DEEP_STUBS);
     // Make the dest path look like it doesn't belong to the same FileSystem
@@ -80,58 +76,56 @@ public class FileUtilsTest {
       };
     });
 
-    FileUtils.moveDir(oldDir.toPath(), destMock);
+    FileUtils.moveDir(oldDir, destMock);
     assertThat(oldDir).doesNotExist();
-    assertThat(new File(newDir, "foo/foo.txt")).exists();
+    assertThat(new File(destPath.toFile(), "foo/foo.txt")).exists();
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void moveDir_should_fail_to_replace_nonempty_destination() throws IOException {
-    File oldDir = temporaryFolder.newFolder();
-    assertThat(oldDir.isDirectory()).isTrue();
+  @Test
+  void moveDir_should_fail_to_replace_nonempty_destination(@TempDir Path temp) throws IOException {
+    Path oldDir = createDirectory(temp.resolve("oldDir"));
+    assertThat(oldDir.toFile()).isDirectory();
 
-    File newDir = temporaryFolder.newFolder();
-    assertThat(newDir.isDirectory()).isTrue();
+    Path newDir = createDirectory(temp.resolve("newDir"));
+    assertThat(newDir.toFile()).isDirectory();
 
     File fileInDir = createNewFile(newDir, "dummy");
-    assertThat(fileInDir.isFile()).isTrue();
+    assertThat(fileInDir).isFile();
 
-    FileUtils.moveDir(oldDir.toPath(), newDir.toPath());
+    assertThrows(IllegalStateException.class, () -> {
+      FileUtils.moveDir(oldDir, newDir);
+    });
   }
 
   @Test
-  public void deleteRecursively() throws IOException {
-    File dir = temporaryFolder.newFolder();
-    assertThat(dir.isDirectory()).isTrue();
-
+  void deleteRecursively(@TempDir Path dir) throws IOException {
     File fileInDir = createNewFile(dir, "dummy");
-    assertThat(fileInDir.isFile()).isTrue();
+    assertThat(fileInDir).isFile();
 
-    FileUtils.deleteRecursively(dir.toPath());
-    assertThat(dir.isDirectory()).isFalse();
-    assertThat(fileInDir.isFile()).isFalse();
+    FileUtils.deleteRecursively(dir);
+    assertThat(fileInDir).doesNotExist();
+    assertThat(dir).doesNotExist();
   }
 
   @Test
-  public void deleteRecursively_should_ignore_nonexistent_dir() throws IOException {
-    File dir = new File(temporaryFolder.newFolder(), "nonexistent");
-    assertThat(dir.exists()).isFalse();
+  void deleteRecursively_should_ignore_nonexistent_dir(@TempDir Path temp) throws IOException {
+    File dir = new File(temp.toFile(), "nonexistent");
+    assertThat(dir).doesNotExist();
 
     FileUtils.deleteRecursively(dir.toPath());
   }
 
   @Test
-  public void deleteRecursively_should_delete_file() throws IOException {
-    File file = temporaryFolder.newFile();
+  void deleteRecursively_should_delete_file(@TempDir Path temp) throws IOException {
+    File file = createNewFile(temp, "foo.txt");
     assertThat(file.isFile()).isTrue();
 
     FileUtils.deleteRecursively(file.toPath());
-    assertThat(file.exists()).isFalse();
+    assertThat(file).doesNotExist();
   }
 
   @Test
-  public void deleteRecursively_should_delete_deeply_nested_dirs() throws IOException {
-    Path basedir = temporaryFolder.getRoot().toPath();
+  void deleteRecursively_should_delete_deeply_nested_dirs(@TempDir Path basedir) throws IOException {
     Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
     assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
     FileUtils.mkdirs(deeplyNestedDir);
@@ -141,88 +135,87 @@ public class FileUtilsTest {
   }
 
   @Test
-  public void allRelativePathsForFilesInTree_should_find_all_files() {
-    Path basedir = temporaryFolder.getRoot().toPath();
+  void allRelativePathsForFilesInTree_should_find_all_files(@TempDir Path basedir) {
     Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
     assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
     FileUtils.mkdirs(deeplyNestedDir);
     FileUtils.mkdirs(basedir.resolve(".git").resolve("refs"));
     FileUtils.mkdirs(basedir.resolve("a").resolve(".config"));
 
-    createNewFile(basedir.toFile(), ".gitignore");
-    createNewFile(basedir.resolve(".git/refs").toFile(), "HEAD");
-    createNewFile(basedir.resolve("a").toFile(), "a.txt");
-    createNewFile(basedir.resolve("a/.config").toFile(), "test");
-    createNewFile(basedir.resolve("a/b").toFile(), "b.txt");
-    createNewFile(basedir.resolve("a/b/c").toFile(), "c.txt");
+    createNewFile(basedir, ".gitignore");
+    createNewFile(basedir.resolve(".git/refs"), "HEAD");
+    createNewFile(basedir.resolve("a"), "a.txt");
+    createNewFile(basedir.resolve("a/.config"), "test");
+    createNewFile(basedir.resolve("a/b"), "b.txt");
+    createNewFile(basedir.resolve("a/b/c"), "c.txt");
 
     Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(basedir);
     assertThat(relativePaths).containsExactlyInAnyOrder(
       "a/a.txt",
       "a/b/b.txt",
-      "a/b/c/c.txt"
-    );
+      "a/b/c/c.txt");
   }
 
   @Test
-  public void allRelativePathsForFilesInTree_should_handle_non_existing_dir() {
-    Path basedir = temporaryFolder.getRoot().toPath();
+  void allRelativePathsForFilesInTree_should_handle_non_existing_dir(@TempDir Path basedir) {
     Path deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
-    assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
+    assertThat(deeplyNestedDir).doesNotExist();
 
     Collection<String> relativePaths = FileUtils.allRelativePathsForFilesInTree(deeplyNestedDir);
     assertThat(relativePaths).isEmpty();
   }
 
   @Test
-  public void mkdirs() {
-    Path deeplyNestedDir = temporaryFolder.getRoot().toPath().resolve("a").resolve("b").resolve("c");
-    assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
+  void mkdirs(@TempDir Path temp) {
+    Path deeplyNestedDir = temp.resolve("a").resolve("b").resolve("c");
+    assertThat(deeplyNestedDir).doesNotExist();
     if (deeplyNestedDir.toFile().mkdir()) {
       throw new IllegalStateException("creating nested dir should have failed");
     }
 
     FileUtils.mkdirs(deeplyNestedDir);
-    assertThat(deeplyNestedDir.toFile().isDirectory()).isTrue();
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void mkdirs_should_fail_if_destination_is_a_file() throws IOException {
-    File file = temporaryFolder.newFile();
-    FileUtils.mkdirs(file.toPath());
+    assertThat(deeplyNestedDir).isDirectory();
   }
 
   @Test
-  public void toSonarQubePath_should_return_slash_separated_path() {
+  void mkdirs_should_fail_if_destination_is_a_file(@TempDir Path temp) throws IOException {
+    Path file = createNewFile(temp, "foo").toPath();
+    assertThrows(IllegalStateException.class, () -> {
+      FileUtils.mkdirs(file);
+    });
+  }
+
+  @Test
+  void toSonarQubePath_should_return_slash_separated_path() {
     Path path = Paths.get("some").resolve("relative").resolve("path");
     assertThat(FileUtils.toSonarQubePath(path.toString())).isEqualTo("some/relative/path");
   }
 
   @Test
-  public void replaceDir_should_replace_content_of_dir() throws IOException {
-    File oldDir = temporaryFolder.newFolder();
-    assertThat(oldDir.isDirectory()).isTrue();
+  void replaceDir_should_replace_content_of_dir(@TempDir Path temp) throws IOException {
+    Path oldDir = createDirectory(temp.resolve("oldDir"));
+    assertThat(oldDir).isDirectory();
 
     File oldFileInDir = createNewFile(oldDir, "dummy");
-    assertThat(oldFileInDir.isFile()).isTrue();
+    assertThat(oldFileInDir).isFile();
 
-    File newFileInDir = new File(oldDir, "new file");
-    assertThat(newFileInDir.isFile()).isFalse();
-    FileUtils.replaceDir(temp -> createNewFile(temp.toFile(), newFileInDir.getName()), oldDir.toPath(), temporaryFolder.newFolder().toPath());
+    File newFileInDir = new File(oldDir.toFile(), "new file");
+    assertThat(newFileInDir).doesNotExist();
+    FileUtils.replaceDir(tmp -> createNewFile(tmp, newFileInDir.getName()), oldDir, Files.createTempDirectory(temp, "workDir"));
 
-    assertThat(oldFileInDir.isFile()).isFalse();
-    assertThat(newFileInDir.isFile()).isTrue();
+    assertThat(oldFileInDir).doesNotExist();
+    assertThat(newFileInDir).isFile();
   }
 
   @Test
-  public void always_retry_at_least_once() throws IOException {
+  void always_retry_at_least_once() throws IOException {
     FileUtils.IORunnable runnable = mock(FileUtils.IORunnable.class);
     FileUtils.retry(runnable, 0);
     verify(runnable, times(1)).run();
   }
 
   @Test
-  public void retry_on_failure() throws IOException {
+  void retry_on_failure() throws IOException {
     int[] count = {0};
     FileUtils.IORunnable throwOnce = () -> {
       count[0]++;
@@ -234,8 +227,8 @@ public class FileUtilsTest {
     assertThat(count[0]).isEqualTo(2);
   }
 
-  private File createNewFile(File basedir, String filename) {
-    Path path = basedir.toPath().resolve(filename);
+  private File createNewFile(Path basedir, String filename) {
+    Path path = basedir.resolve(filename);
     try {
       return Files.createFile(path).toFile();
     } catch (IOException e) {

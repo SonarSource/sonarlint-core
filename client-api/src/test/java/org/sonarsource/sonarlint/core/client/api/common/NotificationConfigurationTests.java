@@ -19,17 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
 import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
 
-public class NotificationConfigurationTest {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
+class NotificationConfigurationTests {
   @Test
-  public void testGetters() {
+  void testGetters() {
     SonarQubeNotificationListener listener = mock(SonarQubeNotificationListener.class);
     LastNotificationTime lastNotificationTime = mock(LastNotificationTime.class);
     String projectKey = "key";

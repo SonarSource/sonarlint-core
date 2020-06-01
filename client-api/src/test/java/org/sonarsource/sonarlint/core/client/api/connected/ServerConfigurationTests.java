@@ -24,16 +24,16 @@ import java.net.Proxy;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-public class ServerConfigurationTest {
+class ServerConfigurationTests {
 
   @Test
-  public void builder_url_mandatory() {
+  void builder_url_mandatory() {
     try {
       ServerConfiguration.builder().build();
       fail("Expected exception");
@@ -43,7 +43,7 @@ public class ServerConfigurationTest {
   }
 
   @Test
-  public void builder_user_agent_mandatory() {
+  void builder_user_agent_mandatory() {
     try {
       ServerConfiguration.builder()
         .url("http://foo")
@@ -55,7 +55,7 @@ public class ServerConfigurationTest {
   }
 
   @Test
-  public void equals_hash() {
+  void equals_hash() {
     ServerConfiguration config1 = ServerConfiguration.builder()
       .url("http://foo")
       .userAgent("agent")
@@ -89,7 +89,7 @@ public class ServerConfigurationTest {
   }
 
   @Test
-  public void minimal_builder() {
+  void minimal_builder() {
     ServerConfiguration config = ServerConfiguration.builder()
       .url("http://foo")
       .userAgent("agent")
@@ -99,7 +99,7 @@ public class ServerConfigurationTest {
   }
 
   @Test
-  public void max_builder() {
+  void max_builder() {
     Proxy proxy = mock(Proxy.class);
     X509TrustManager trustManager = mock(X509TrustManager.class);
     SSLSocketFactory socketFactory = mock(SSLSocketFactory.class);
@@ -130,7 +130,7 @@ public class ServerConfigurationTest {
   }
 
   @Test
-  public void use_token() {
+  void use_token() {
     ServerConfiguration config = ServerConfiguration.builder()
       .url("http://foo")
       .userAgent("agent")

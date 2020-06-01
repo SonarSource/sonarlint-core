@@ -19,15 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.junit.*;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class RuleKeyTest {
+class RuleKeyTests {
 
   @Test
-  public void test_ruleKey_accessors() {
+  void test_ruleKey_accessors() {
     String repository = "squid";
     String rule = "1181";
 
@@ -38,7 +38,7 @@ public class RuleKeyTest {
   }
 
   @Test
-  public void ruleKey_is_hashable() {
+  void ruleKey_is_hashable() {
     String repository = "squid";
     String rule = "1181";
 
@@ -54,7 +54,7 @@ public class RuleKeyTest {
   }
 
   @Test
-  public void ruleKey_equals_to_its_parsed_from_toString() {
+  void ruleKey_equals_to_its_parsed_from_toString() {
     String repository = "squid";
     String rule = "1181";
 
@@ -63,8 +63,10 @@ public class RuleKeyTest {
     assertThat(ruleKey2).isEqualTo(ruleKey1);
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void parse_throws_for_illegal_format() {
-    RuleKey.parse("foo");
+  @Test
+  void parse_throws_for_illegal_format() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      RuleKey.parse("foo");
+    });
   }
 }

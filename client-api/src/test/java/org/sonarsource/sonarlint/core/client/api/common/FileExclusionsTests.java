@@ -22,15 +22,15 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import java.io.File;
 import java.util.Collections;
 import java.util.Set;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FileExclusionsTest {
+class FileExclusionsTests {
   FileExclusions fileExclusions;
 
-  @Before
+  @BeforeEach
   public void before() {
     Set<String> glob = Collections.singleton("**/*.js");
     Set<String> files = Collections.singleton(new File("dir/file.java").getAbsolutePath());
@@ -39,26 +39,26 @@ public class FileExclusionsTest {
   }
 
   @Test
-  public void should_exclude_with_glob_relative_path() {
+  void should_exclude_with_glob_relative_path() {
     assertThat(fileExclusions.test(new File("dir2/file.js").getAbsolutePath())).isTrue();
     assertThat(fileExclusions.test(new File("dir2/file.java").getAbsolutePath())).isFalse();
 
   }
 
   @Test
-  public void should_exclude_with_glob_absolute_path() {
+  void should_exclude_with_glob_absolute_path() {
     assertThat(fileExclusions.test(new File("/absolute/dir/file.js").getAbsolutePath())).isTrue();
     assertThat(fileExclusions.test(new File("/absolute/dir/file.java").getAbsolutePath())).isFalse();
   }
 
   @Test
-  public void should_exclude_with_file() {
+  void should_exclude_with_file() {
     assertThat(fileExclusions.test(new File("dir/file2.java").getAbsolutePath())).isFalse();
     assertThat(fileExclusions.test(new File("dir/file.java").getAbsolutePath())).isTrue();
   }
 
   @Test
-  public void should_exclude_with_dir() {
+  void should_exclude_with_dir() {
     assertThat(fileExclusions.test(new File("dir/class2.java").getAbsolutePath())).isFalse();
     assertThat(fileExclusions.test("src/class.java")).isTrue();
   }
