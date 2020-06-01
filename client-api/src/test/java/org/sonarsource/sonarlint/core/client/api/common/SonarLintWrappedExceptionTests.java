@@ -19,16 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.exceptions.MessageException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SonarLintWrappedExceptionTest {
+class SonarLintWrappedExceptionTests {
 
   @Test
-  public void wrap() {
+  void wrap() {
     try {
       throw SonarLintWrappedException.wrap(new MyCustomException("Foo"));
     } catch (Exception e) {
@@ -55,7 +55,7 @@ public class SonarLintWrappedExceptionTest {
   }
 
   @Test
-  public void extractMessageException() {
+  void extractMessageException() {
     MessageException e = new MessageException("a");
     Exception a = new IllegalStateException("a", new IllegalStateException("b", e));
     assertThat(SonarLintWrappedException.wrap(a)).isEqualTo(e);

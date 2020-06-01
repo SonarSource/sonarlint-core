@@ -17,15 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.client.api.exceptions;
 
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class SonarLintExceptionTest {
+import java.io.IOException;
 
+import org.junit.jupiter.api.Test;
+
+class StorageExceptionTests {
   @Test
-  public void testWrapException() {
-
+  void withCauseAndMessage() {
+    IOException cause = new IOException("cause");
+    StorageException ex = new StorageException("msg", cause);
+    assertThat(ex.getCause()).isEqualTo(cause);
+    assertThat(ex.getMessage()).isEqualTo("msg");
+    assertThat(ex.getStackTrace()).isNotEmpty();
   }
 
+  @Test
+  void withNoStack() {
+    StorageException ex = new StorageException("msg", false);
+    assertThat(ex.getCause()).isNull();
+    assertThat(ex.getMessage()).isEqualTo("msg");
+    assertThat(ex.getStackTrace()).isEmpty();
+  }
 }

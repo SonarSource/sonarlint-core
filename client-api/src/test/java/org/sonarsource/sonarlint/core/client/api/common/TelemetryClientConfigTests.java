@@ -19,27 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.nio.file.Paths;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Proxy.Type;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager.SONARLINT_USER_HOME_ENV;
 
-public class SonarLintPathManagerTest {
-  @Rule
-  public final EnvironmentVariables env = new EnvironmentVariables();
-
+class TelemetryClientConfigTests {
   @Test
-  public void env_setting_should_override_default_home() {
-    String customHome = "/custom/home";
-    env.set(SONARLINT_USER_HOME_ENV, customHome);
-    assertThat(SonarLintPathManager.home()).isEqualTo(Paths.get(customHome));
-  }
+  void testClientConfig() {
+    Proxy proxy = new Proxy(Type.SOCKS, new InetSocketAddress(1234));
+    TelemetryClientConfig config = new TelemetryClientConfig.Builder()
+      .proxyPassword("password")
+      .proxyLogin("proxyLogin")
+      .userAgent("agent")
+      .proxy(proxy)
+      .build();
 
-  @Test
-  public void default_home_should_be_in_user_home() {
-    assertThat(SonarLintPathManager.home()).isEqualTo(Paths.get(System.getProperty("user.home")).resolve(".sonarlint"));
+    assertThat(config.proxy()).isEqualTo(proxy);
+    assertThat(config.proxyLogin()).isEqualTo("proxyLogin");
+    assertThat(config.proxyPassword()).isEqualTo("password");
+    assertThat(config.userAgent()).isEqualTo("agent");
+
   }
 }

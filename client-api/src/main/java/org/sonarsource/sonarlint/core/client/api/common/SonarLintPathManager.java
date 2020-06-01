@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.annotation.Nullable;
 
 public class SonarLintPathManager {
 
@@ -31,9 +32,12 @@ public class SonarLintPathManager {
   }
 
   public static Path home() {
-    String path = System.getenv(SONARLINT_USER_HOME_ENV);
-    if (path != null) {
-      return Paths.get(path);
+    return home(System.getenv(SONARLINT_USER_HOME_ENV));
+  }
+
+  static Path home(@Nullable String slHome) {
+    if (slHome != null) {
+      return Paths.get(slHome);
     }
     return Paths.get(System.getProperty("user.home")).resolve(".sonarlint");
   }

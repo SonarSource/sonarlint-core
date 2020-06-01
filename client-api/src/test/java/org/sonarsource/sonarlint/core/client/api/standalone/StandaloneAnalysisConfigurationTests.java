@@ -25,33 +25,30 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
+import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class StandaloneAnalysisConfigurationTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class StandaloneAnalysisConfigurationTests {
 
   @Test
-  public void testToString_and_getters() throws Exception {
+  void testToString_and_getters(@TempDir Path temp) throws Exception {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
-    final Path srcFile1 = temp.newFile().toPath();
-    final Path srcFile2 = temp.newFile().toPath();
-    final Path srcFile3 = temp.newFile().toPath();
-    ClientInputFile inputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile1, false, StandardCharsets.UTF_8, null);
-    ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp.getRoot().toPath(), srcFile2, false, StandardCharsets.UTF_8, "java");
-    ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile3, true, null, "php");
-    Path baseDir = temp.newFolder().toPath();
+    final Path srcFile1 = createDirectory(temp.resolve("src1"));
+    final Path srcFile2 = createDirectory(temp.resolve("src2"));
+    final Path srcFile3 = createDirectory(temp.resolve("src3"));
+    ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
+    ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, "java");
+    ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, "php");
+    Path baseDir = createDirectory(temp.resolve("baseDir"));
     Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
     Collection<RuleKey> includedRules = Arrays.asList(new RuleKey("javascript", "S2424"), new RuleKey("javascript", "S1442"));
     Map<String, String> squidS5Parameters = new HashMap<>();

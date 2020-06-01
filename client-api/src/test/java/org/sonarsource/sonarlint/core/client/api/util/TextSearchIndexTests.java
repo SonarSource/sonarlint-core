@@ -19,22 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.client.api.util;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TextSearchIndexTest {
+class TextSearchIndexTests {
   private TextSearchIndex<String> index;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     index = new TextSearchIndex<>();
   }
 
   @Test
-  public void testTokenizer() {
+  void testTokenizer() {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
 
@@ -43,7 +43,7 @@ public class TextSearchIndexTest {
   }
 
   @Test
-  public void testSearch() {
+  void testSearch() {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
 
@@ -57,7 +57,7 @@ public class TextSearchIndexTest {
   }
 
   @Test
-  public void testSearchNoTerms() {
+  void testSearchNoTerms() {
     assertThat(index.size()).isEqualTo(0);
     assertThat(index.isEmpty()).isTrue();
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
@@ -70,7 +70,7 @@ public class TextSearchIndexTest {
   }
 
   @Test
-  public void clear() {
+  void clear() {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
 
@@ -84,14 +84,16 @@ public class TextSearchIndexTest {
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void cantIndexTwice() {
+  @Test
+  void cantIndexTwice() {
     index.index("o1", "a");
-    index.index("o1", "b");
+    assertThrows(IllegalArgumentException.class, () -> {
+      index.index("o1", "b");
+    });
   }
 
   @Test
-  public void testMultiTermPositionalSearch() {
+  void testMultiTermPositionalSearch() {
     index.index("o1", "org.sonarsource.sonarlint.intellij:sonarlint-intellij SonarLint Intellij");
     index.index("o2", "org.codehaus.sonar-plugins:sonar-scm-jazzrtc-plugin Jazz RTC SCM Plugin");
 
@@ -105,7 +107,7 @@ public class TextSearchIndexTest {
   }
 
   @Test
-  public void testScoringPartialTermMatch() {
+  void testScoringPartialTermMatch() {
     index.index("o1", "org.codehaus.sonar-plugins");
     index.index("o2", "or.codehaus.sonar-plugins");
     index.index("o3", "org.codehau.sonar-plugins");
@@ -115,7 +117,7 @@ public class TextSearchIndexTest {
   }
 
   @Test
-  public void testNoMultipleMatchesSameObj() {
+  void testNoMultipleMatchesSameObj() {
     index.index("o1", "or.codehau.or.codehau.or.codehau");
     index.index("o2", "or.codehaus.sonar-plugins");
     index.index("o3", "org.codehau.sonar-plugins");
@@ -125,7 +127,7 @@ public class TextSearchIndexTest {
   }
 
   @Test
-  public void testMatchSingleTerm() {
+  void testMatchSingleTerm() {
     index.index("o1", "mod1");
     index.index("o2", "mod10");
     index.index("o3", "mod103");

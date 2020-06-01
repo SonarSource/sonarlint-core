@@ -23,32 +23,29 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
+import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class ConnectedAnalysisConfigurationTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class ConnectedAnalysisConfigurationTests {
 
   @Test
-  public void testToString() throws Exception {
+  void testToString(@TempDir Path temp) throws Exception {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
-    final Path srcFile1 = temp.newFile().toPath();
-    final Path srcFile2 = temp.newFile().toPath();
+    final Path srcFile1 = createDirectory(temp.resolve("src1"));
+    final Path srcFile2 = createDirectory(temp.resolve("src2"));
 
-    ClientInputFile inputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile1, false, StandardCharsets.UTF_8, null);
-    ClientInputFile testInputFile = new TestClientInputFile(temp.getRoot().toPath(), srcFile2, true, StandardCharsets.UTF_8, null);
+    ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
+    ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile2, true, StandardCharsets.UTF_8, null);
 
-    Path baseDir = temp.newFolder().toPath();
+    Path baseDir = createDirectory(temp.resolve("baseDir"));
     ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("foo")
       .setBaseDir(baseDir)

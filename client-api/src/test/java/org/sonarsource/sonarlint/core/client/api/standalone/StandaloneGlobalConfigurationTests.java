@@ -24,20 +24,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 
+import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class StandaloneGlobalConfigurationTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class StandaloneGlobalConfigurationTests {
 
   @Test
-  public void testDefaults() {
+  void testDefaults() {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .build();
     assertThat(config.getPluginUrls()).isEmpty();
@@ -48,7 +45,7 @@ public class StandaloneGlobalConfigurationTest {
   }
 
   @Test
-  public void extraProps() throws Exception {
+  void extraProps() throws Exception {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
@@ -58,10 +55,9 @@ public class StandaloneGlobalConfigurationTest {
   }
 
   @Test
-  public void overrideDirs() throws Exception {
-    Path sonarUserHome = temp.newFolder().toPath();
-    Path storage = temp.newFolder().toPath();
-    Path work = temp.newFolder().toPath();
+  void overrideDirs(@TempDir Path temp) throws Exception {
+    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
+    Path work = createDirectory(temp.resolve("work"));
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setWorkDir(work)
@@ -71,7 +67,7 @@ public class StandaloneGlobalConfigurationTest {
   }
 
   @Test
-  public void configurePlugins() throws Exception {
+  void configurePlugins() throws Exception {
     URL plugin1 = new URL("file://plugin1.jar");
     URL plugin2 = new URL("file://plugin2.jar");
     URL plugin3 = new URL("file://plugin3.jar");
@@ -83,7 +79,7 @@ public class StandaloneGlobalConfigurationTest {
   }
 
   @Test
-  public void configureLanguages() throws Exception {
+  void configureLanguages() throws Exception {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)
