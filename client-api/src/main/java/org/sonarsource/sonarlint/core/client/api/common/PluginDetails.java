@@ -30,6 +30,9 @@ public interface PluginDetails {
   @CheckForNull
   String version();
 
+  /**
+   * Why the plugin was skipped. Empty if the plugin was loaded.
+   */
   Optional<SkipReason> skipReason();
 
 }

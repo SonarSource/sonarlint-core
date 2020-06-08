@@ -19,7 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public interface SkipReason {
 
@@ -33,20 +36,20 @@ public interface SkipReason {
 
   }
 
-  class LanguageNotEnabled implements SkipReason {
-    private final String languageKey;
+  class LanguagesNotEnabled implements SkipReason {
+    private final Set<Language> languages;
 
-    public LanguageNotEnabled(String notEnabledLanguageKey) {
-      this.languageKey = notEnabledLanguageKey;
+    public LanguagesNotEnabled(Collection<Language> languages) {
+      this.languages = new LinkedHashSet<>(languages);
     }
 
-    public String getNotEnabledLanguageKey() {
-      return languageKey;
+    public Set<Language> getNotEnabledLanguages() {
+      return languages;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(languageKey);
+      return Objects.hash(languages);
     }
 
     @Override
@@ -54,17 +57,17 @@ public interface SkipReason {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof LanguageNotEnabled)) {
+      if (!(obj instanceof LanguagesNotEnabled)) {
         return false;
       }
-      LanguageNotEnabled other = (LanguageNotEnabled) obj;
-      return Objects.equals(languageKey, other.languageKey);
+      LanguagesNotEnabled other = (LanguagesNotEnabled) obj;
+      return Objects.equals(languages, other.languages);
     }
 
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
-      builder.append("LanguageNotEnabled [languageKey=").append(languageKey).append("]");
+      builder.append("LanguagesNotEnabled [languages=").append(languages).append("]");
       return builder.toString();
     }
 

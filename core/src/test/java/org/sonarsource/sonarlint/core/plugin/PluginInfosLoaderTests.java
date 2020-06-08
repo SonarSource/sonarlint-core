@@ -94,7 +94,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_no_plugins() {
+  void load_no_plugins() {
     underTest.load();
 
     assertThat(logTester.logs()).contains("Load plugins");
@@ -102,7 +102,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_fail_if_missing_storage() {
+  void load_plugin_fail_if_missing_storage() {
     when(pluginIndex.references()).thenReturn(singletonList(new PluginIndex.PluginReference("abcd", "sonarjs.jar")));
     when(pluginCache.get("sonarjs.jar", "abcd")).thenReturn(null);
 
@@ -112,7 +112,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_fail_if_missing_jar(@TempDir Path storage) {
+  void load_plugin_fail_if_missing_jar(@TempDir Path storage) {
     when(pluginIndex.references()).thenReturn(singletonList(new PluginIndex.PluginReference("abcd", "sonarjs.jar")));
     when(pluginCache.get("sonarjs.jar", "abcd")).thenReturn(storage.resolve("sonarjs.jar"));
 
@@ -123,7 +123,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_fail_if_corrupted_jar(@TempDir Path storage) throws IOException {
+  void load_plugin_fail_if_corrupted_jar(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar");
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
@@ -133,7 +133,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_unsupported_plugins_api_version(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_unsupported_plugins_api_version(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "99.9", null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
@@ -143,7 +143,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_unsupported_plugins_version(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_unsupported_plugins_version(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     when(pluginVersionChecker.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
@@ -154,7 +154,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, null, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
@@ -163,7 +163,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_explicitely_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_explicitely_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, false, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
@@ -172,19 +172,44 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     enabledLanguages.add(Language.TS);
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("javascript", true, new SkipReason.LanguageNotEnabled("js")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'javascript' is excluded because language 'js' is not enabled. Skip loading it.");
+      .containsOnly(tuple("javascript", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.JS)))));
+    assertThat(logsWithoutStartStop()).contains("Plugin 'javascript' is excluded because language 'JS' is not enabled. Skip loading it.");
   }
 
   @Test
-  public void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_not_enabled_languages_multiple(@TempDir Path storage) throws IOException {
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0, true, null, null, null));
+    when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
+    doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(eq(Language.C.getPluginKey()));
+
+    enabledLanguages.add(Language.JS);
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.C, Language.CPP, Language.OBJC)))));
+    assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,CPP,OBJC' are enabled. Skip loading it.");
+  }
+
+  @Test
+  void load_plugin_load_even_if_only_one_language_enabled(@TempDir Path storage) throws IOException {
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0, true, null, null, null));
+    when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
+    doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(eq(Language.C.getPluginKey()));
+
+    enabledLanguages.add(Language.CPP);
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("cpp", false, null));
+  }
+
+  @Test
+  void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
@@ -194,7 +219,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
     PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeBasePlugin));
@@ -211,7 +236,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
+  void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
     PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeBasePlugin));
@@ -227,7 +252,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_plugins_having_missing_required_plugin(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_plugins_having_missing_required_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "required2:1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
@@ -238,7 +263,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_ignore_license_plugin_dependency(@TempDir Path storage) throws IOException {
+  void load_plugin_ignore_license_plugin_dependency(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "license:1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
@@ -249,7 +274,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_plugins_having_skipped_required_plugin(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_plugins_having_skipped_required_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "required2:1.0"));
     PluginReference fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0, true, null, null, null));
@@ -266,7 +291,7 @@ class PluginInfosLoaderTests {
 
   // SLCORE-259
   @Test
-  public void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
+  void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar",
       path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null, Language.TS.getPluginKey() + ":1.0"));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
@@ -279,7 +304,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin(@TempDir Path storage) throws IOException {
+  void load_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "7.9", null, null));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
@@ -289,7 +314,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_skip_plugins_having_unsatisfied_jre(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_plugins_having_unsatisfied_jre(@TempDir Path storage) throws IOException {
     when(system2.property("java.specification.version")).thenReturn("1.8");
 
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "11", null));
@@ -301,7 +326,7 @@ class PluginInfosLoaderTests {
   }
 
   @Test
-  public void load_plugin_having_satisfied_jre(@TempDir Path storage) throws IOException {
+  void load_plugin_having_satisfied_jre(@TempDir Path storage) throws IOException {
     when(system2.property("java.specification.version")).thenReturn("1.8");
 
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "1.7", null));
