@@ -19,7 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public enum Language {
@@ -68,8 +71,8 @@ public enum Language {
     return Stream.of(values()).filter(l -> l.getLanguageKey().equals(languageKey)).map(Language::getPluginKey).findFirst();
   }
 
-  public static Optional<Language> getLanguageByPluginKey(String pluginKey) {
-    return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).findFirst();
+  public static Set<Language> getLanguagesByPluginKey(String pluginKey) {
+    return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   public static boolean containsPlugin(String pluginKey) {

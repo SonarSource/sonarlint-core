@@ -24,8 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -92,10 +92,16 @@ public class PluginInfosLoader {
 
   private void checkIfSkippedAndPopulateReason(PluginInfo info) {
     String pluginKey = info.getKey();
-    Optional<Language> language = Language.getLanguageByPluginKey(pluginKey);
-    if (language.isPresent() && !enabledLanguages.contains(language.get())) {
-      LOG.debug("Plugin '{}' is excluded because language '{}' is not enabled. Skip loading it.", info.getName(), language.get().getLanguageKey());
-      info.setSkipReason(new SkipReason.LanguageNotEnabled(language.get().getLanguageKey()));
+    Set<Language> languages = Language.getLanguagesByPluginKey(pluginKey);
+    if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
+      if (languages.size() > 1) {
+        LOG.debug("Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.", info.getName(),
+          languages.stream().map(Language::toString).collect(Collectors.joining(",")));
+      } else {
+        LOG.debug("Plugin '{}' is excluded because language '{}' is not enabled. Skip loading it.", info.getName(),
+          languages.iterator().next());
+      }
+      info.setSkipReason(new SkipReason.LanguagesNotEnabled(languages));
       return;
     }
     if (!info.isCompatibleWith(IMPLEMENTED_SQ_API)) {

@@ -22,29 +22,30 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.IncompatiblePluginApi;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.IncompatiblePluginVersion;
-import org.sonarsource.sonarlint.core.client.api.common.SkipReason.LanguageNotEnabled;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason.LanguagesNotEnabled;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedDependency;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedJreRequirement;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SkipReasonTests {
 
   @Test
   void testLanguageNotEnabled() {
-    SkipReason.LanguageNotEnabled underTest = new LanguageNotEnabled("foo");
+    SkipReason.LanguagesNotEnabled underTest = new LanguagesNotEnabled(asList(Language.JAVA));
     // Getters
-    assertThat(underTest.getNotEnabledLanguageKey()).isEqualTo("foo");
+    assertThat(underTest.getNotEnabledLanguages()).containsExactly(Language.JAVA);
     // Equals
     assertThat(underTest).isEqualTo(underTest);
     assertThat(underTest).isNotEqualTo(IncompatiblePluginApi.INSTANCE);
-    assertThat(underTest).isNotEqualTo(new LanguageNotEnabled("bar"));
-    assertThat(underTest).isEqualTo(new LanguageNotEnabled("foo"));
+    assertThat(underTest).isNotEqualTo(new LanguagesNotEnabled(asList(Language.JS)));
+    assertThat(underTest).isEqualTo(new LanguagesNotEnabled(asList(Language.JAVA)));
     // HashCode
     assertThat(underTest).hasSameHashCodeAs(underTest);
-    assertThat(underTest).hasSameHashCodeAs(new LanguageNotEnabled("foo"));
+    assertThat(underTest).hasSameHashCodeAs(new LanguagesNotEnabled(asList(Language.JAVA)));
     // To String
-    assertThat(underTest.toString()).isEqualTo("LanguageNotEnabled [languageKey=foo]");
+    assertThat(underTest.toString()).isEqualTo("LanguagesNotEnabled [languages=[JAVA]]");
   }
 
   @Test
