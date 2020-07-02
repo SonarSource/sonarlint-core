@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -40,16 +41,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
-import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
-import org.sonarsource.sonarlint.core.container.standalone.rule.DefaultStandaloneRuleParam;
-import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleParamType;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -94,24 +93,24 @@ public class StandaloneTest {
   public void checkRuleParameterDeclarations() throws Exception {
     Collection<StandaloneRuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
-    RuleDetails incRule = ruleDetails.iterator().next();
-    assertThat(incRule).isInstanceOf(StandaloneRule.class);
-    StandaloneRule castRule = (StandaloneRule) incRule;
-    assertThat(castRule.params()).hasSize(8);
-    assertRuleHasParam(castRule, "stringParam", StandaloneRuleParamType.STRING);
-    assertRuleHasParam(castRule, "textParam", StandaloneRuleParamType.TEXT);
-    assertRuleHasParam(castRule, "boolParam", StandaloneRuleParamType.BOOLEAN);
-    assertRuleHasParam(castRule, "intParam", StandaloneRuleParamType.INTEGER);
-    assertRuleHasParam(castRule, "floatParam", StandaloneRuleParamType.FLOAT);
-    assertRuleHasParam(castRule, "enumParam", StandaloneRuleParamType.STRING, "enum1", "enum2", "enum3");
-    assertRuleHasParam(castRule, "enumListParam", StandaloneRuleParamType.STRING, "list1", "list2", "list3");
-    assertRuleHasParam(castRule, "multipleIntegersParam", StandaloneRuleParamType.INTEGER, "80", "120", "160");
+    StandaloneRuleDetails incRule = ruleDetails.iterator().next();
+    assertThat(incRule.paramDetails()).hasSize(8);
+    assertRuleHasParam(incRule, "stringParam", StandaloneRuleParamType.STRING);
+    assertRuleHasParam(incRule, "textParam", StandaloneRuleParamType.TEXT);
+    assertRuleHasParam(incRule, "boolParam", StandaloneRuleParamType.BOOLEAN);
+    assertRuleHasParam(incRule, "intParam", StandaloneRuleParamType.INTEGER);
+    assertRuleHasParam(incRule, "floatParam", StandaloneRuleParamType.FLOAT);
+    assertRuleHasParam(incRule, "enumParam", StandaloneRuleParamType.STRING, "enum1", "enum2", "enum3");
+    assertRuleHasParam(incRule, "enumListParam", StandaloneRuleParamType.STRING, "list1", "list2", "list3");
+    assertRuleHasParam(incRule, "multipleIntegersParam", StandaloneRuleParamType.INTEGER, "80", "120", "160");
   }
 
-  private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType,
+  private static void assertRuleHasParam(StandaloneRuleDetails rule, String paramKey, StandaloneRuleParamType expectedType,
     String... possibleValues) {
-    assertThat(rule.param(paramKey)).isNotNull()
-      .extracting(DefaultStandaloneRuleParam::type, DefaultStandaloneRuleParam::possibleValues)
+    Optional<StandaloneRuleParam> param = rule.paramDetails().stream().filter(p -> p.key().equals(paramKey)).findFirst();
+    assertThat(param).isNotEmpty();
+    assertThat(param.get())
+      .extracting(StandaloneRuleParam::type, StandaloneRuleParam::possibleValues)
       .containsExactly(expectedType, Arrays.asList(possibleValues));
   }
 
