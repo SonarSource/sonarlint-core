@@ -34,7 +34,7 @@ public class StandaloneActiveRuleAdapter implements ActiveRule {
     this.rule = rule;
     this.params = new HashMap<>();
     rule.params().stream()
-      .map(p -> (StandaloneRuleParam) p)
+      .map(p -> (DefaultStandaloneRuleParam) p)
       .filter(p -> p.defaultValue() != null)
       .forEach(p -> this.params.put(p.key(), p.defaultValue()));
     if(params != null) {

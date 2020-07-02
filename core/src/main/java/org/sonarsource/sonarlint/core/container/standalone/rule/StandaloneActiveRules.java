@@ -31,7 +31,7 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
 
 import static java.util.stream.Collectors.toList;
@@ -60,8 +60,7 @@ public class StandaloneActiveRules {
     return new DefaultActiveRules(
       filteredActiveRules.stream()
         .map(r -> new StandaloneActiveRuleAdapter(r, params.get(r.getKey())))
-        .collect(toList())
-    );
+        .collect(toList()));
   }
 
   private static Predicate<? super StandaloneRule> isExcludedByConfiguration(Set<String> excludedRules) {
@@ -99,12 +98,12 @@ public class StandaloneActiveRules {
   }
 
   @CheckForNull
-  public RuleDetails ruleDetails(String ruleKeyStr) {
+  public StandaloneRuleDetails ruleDetails(String ruleKeyStr) {
     return rulesByKey.get(ruleKeyStr);
   }
 
-  public Collection<RuleDetails> allRuleDetails() {
-    return rulesByKey.values().stream().map(r -> (RuleDetails) r).collect(toList());
+  public Collection<StandaloneRuleDetails> allRuleDetails() {
+    return rulesByKey.values().stream().map(r -> (StandaloneRuleDetails) r).collect(toList());
   }
 
   public Collection<String> getActiveRuleKeys() {

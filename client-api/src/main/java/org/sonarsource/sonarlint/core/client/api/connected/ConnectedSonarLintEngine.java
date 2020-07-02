@@ -26,12 +26,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -61,14 +59,15 @@ public interface ConnectedSonarLintEngine {
   void removeStateListener(StateListener listener);
 
   /**
-   * Return rule details.
-   *
-   * @param ruleKey See {@link Issue#getRuleKey()}
-   * @return Rule details
-   * @throws IllegalArgumentException if ruleKey is unknown
-   * @since 1.2
+   * Return global rule details (not specific to any quality profile).
    */
-  RuleDetails getRuleDetails(String ruleKey);
+  ConnectedRuleDetails getRuleDetails(String ruleKey);
+
+  /**
+   * Return rule details with specifics for a given project (severity can have been overriden in the quality profile).
+   * @param projectKey is null, the default QP will be considered
+   */
+  ConnectedRuleDetails getActiveRuleDetails(@Nullable String projectKey, String ruleKey);
 
   /**
    * Trigger an analysis

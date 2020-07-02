@@ -23,7 +23,6 @@ import io.grpc.stub.StreamObserver;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import org.sonarlint.daemon.Daemon;
@@ -31,12 +30,12 @@ import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
 import org.sonarlint.daemon.model.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
@@ -212,7 +211,6 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
         .setLanguage(ruleDetails.getLanguageKey())
         .setSeverity(ruleDetails.getSeverity())
         .setHtmlDescription(ruleDetails.getHtmlDescription())
-        .addAllTags(Arrays.asList(ruleDetails.getTags()))
         .build());
       response.onCompleted();
     } catch (Exception e) {

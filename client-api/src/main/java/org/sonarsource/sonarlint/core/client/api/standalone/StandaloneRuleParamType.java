@@ -17,27 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import javax.annotation.CheckForNull;
+public enum StandaloneRuleParamType {
 
-/**
- * @since 1.2
- */
-public interface RuleDetails {
-
-  String getKey();
-
-  String getName();
-
-  @CheckForNull
-  String getHtmlDescription();
-
-  String getLanguageKey();
-
-  String getSeverity();
-
-  @CheckForNull
-  String getType();
+  /**
+   * Keep in sync with constants in org.sonar.api.server.rule.RuleParamType
+   */
+  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
 
 }

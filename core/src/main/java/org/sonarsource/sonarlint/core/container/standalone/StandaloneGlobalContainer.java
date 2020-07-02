@@ -35,12 +35,12 @@ import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -162,7 +162,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   @CheckForNull
-  public RuleDetails getRuleDetails(String ruleKeyStr) {
+  public StandaloneRuleDetails getRuleDetails(String ruleKeyStr) {
     return standaloneActiveRules.ruleDetails(ruleKeyStr);
   }
 
@@ -170,7 +170,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return standaloneActiveRules.getActiveRuleKeys();
   }
 
-  public Collection<RuleDetails> getAllRuleDetails() {
+  public Collection<StandaloneRuleDetails> getAllRuleDetails() {
     return standaloneActiveRules.allRuleDetails();
   }
 

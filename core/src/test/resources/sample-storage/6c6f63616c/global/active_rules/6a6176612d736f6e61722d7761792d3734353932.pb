@@ -825,10 +825,10 @@ java:S1244
 
 java:S3422
 javaS3422MAJOR
-"
+$
 
-java:S1481
-javaS1481MAJOR
+java:S1481
+javaS1481BLOCKER
 %
 
 java:S1217

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import org.sonar.api.server.rule.RuleParamType;
+import java.util.List;
+import javax.annotation.CheckForNull;
 
-public enum StandaloneRuleParamType {
+public interface StandaloneRuleParam {
 
-  /**
-   * Keep in sync with constants in {@link RuleParamType}
-   */
-  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
+  String key();
 
-  static StandaloneRuleParamType from(RuleParamType apiType) {
-    try {
-      return valueOf(apiType.type());
-    } catch(IllegalArgumentException unknownType) {
-      return STRING;
-    }
-  }
+  String name();
+
+  String description();
+
+  @CheckForNull
+  String defaultValue();
+
+  StandaloneRuleParamType type();
+
+  boolean multiple();
+
+  List<String> possibleValues();
 }

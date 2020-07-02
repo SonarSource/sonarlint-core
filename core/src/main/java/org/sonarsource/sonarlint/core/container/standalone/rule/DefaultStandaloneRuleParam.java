@@ -25,8 +25,10 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.server.rule.RuleParamType;
 import org.sonar.api.server.rule.RulesDefinition.Param;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
 
-public class StandaloneRuleParam implements RuleParam {
+public class DefaultStandaloneRuleParam implements RuleParam, StandaloneRuleParam {
 
   private final String key;
   private final String name;
@@ -36,15 +38,23 @@ public class StandaloneRuleParam implements RuleParam {
   private final boolean multiple;
   private final List<String> possibleValues;
 
-  public StandaloneRuleParam(Param param) {
+  public DefaultStandaloneRuleParam(Param param) {
     this.key = param.key();
     this.name = param.name();
     this.description = param.description();
     this.defaultValue = param.defaultValue();
     RuleParamType apiType = param.type();
-    this.type = StandaloneRuleParamType.from(apiType);
+    this.type = from(apiType);
     this.multiple = apiType.multiple();
     this.possibleValues = Collections.unmodifiableList(apiType.values());
+  }
+
+  private static StandaloneRuleParamType from(RuleParamType apiType) {
+    try {
+      return StandaloneRuleParamType.valueOf(apiType.type());
+    } catch (IllegalArgumentException unknownType) {
+      return StandaloneRuleParamType.STRING;
+    }
   }
 
   @Override
@@ -61,19 +71,23 @@ public class StandaloneRuleParam implements RuleParam {
     return description;
   }
 
+  @Override
   @CheckForNull
   public String defaultValue() {
     return defaultValue;
   }
 
+  @Override
   public StandaloneRuleParamType type() {
     return type;
   }
 
+  @Override
   public boolean multiple() {
     return multiple;
   }
 
+  @Override
   public List<String> possibleValues() {
     return possibleValues;
   }

@@ -27,12 +27,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
@@ -45,11 +47,13 @@ import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpd
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
-  private final StorageRuleDetailsReader storageRuleDetailsReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
   private final PluginRepository pluginRepository;
   private final ProjectStorageStatusReader projectStorageStatusReader;
@@ -60,11 +64,10 @@ public class StorageContainerHandler {
   private final IssueStoreReader issueStoreReader;
   private final PartialUpdaterFactory partialUpdaterFactory;
 
-  public StorageContainerHandler(StorageAnalyzer storageAnalyzer, StorageRuleDetailsReader storageRuleDetailsReader, GlobalUpdateStatusReader globalUpdateStatusReader,
+  public StorageContainerHandler(StorageAnalyzer storageAnalyzer, GlobalUpdateStatusReader globalUpdateStatusReader,
     PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader, AllProjectReader allProjectReader, StoragePaths storagePaths,
     StorageReader storageReader, StorageFileExclusions storageExclusions, IssueStoreReader issueStoreReader, PartialUpdaterFactory partialUpdaterFactory) {
     this.storageAnalyzer = storageAnalyzer;
-    this.storageRuleDetailsReader = storageRuleDetailsReader;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
     this.pluginRepository = pluginRepository;
     this.projectStorageStatusReader = projectStorageStatusReader;
@@ -81,8 +84,44 @@ public class StorageContainerHandler {
     return storageAnalyzer.analyze(globalExtensionContainer, configuration, issueListener, progress);
   }
 
-  public RuleDetails getRuleDetails(String ruleKeyStr) {
-    return storageRuleDetailsReader.apply(ruleKeyStr);
+  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr) {
+    return getRuleDetailsWithSeverity(ruleKeyStr, null);
+  }
+
+  private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
+    Sonarlint.Rules.Rule rule = readRule(ruleKeyStr);
+    String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
+
+    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), overridenSeverity != null ? overridenSeverity : rule.getSeverity(), type, rule.getLang(),
+      rule.getHtmlNote());
+  }
+
+  private Sonarlint.Rules.Rule readRule(String ruleKeyStr) {
+    Sonarlint.Rules rulesFromStorage = storageReader.readRules();
+    RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
+    Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
+    if (rule == null) {
+      throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
+    }
+    return rule;
+  }
+
+  public ConnectedRuleDetails getRuleDetails(@Nullable String projectKey, String ruleKeyStr) {
+    QProfiles qProfiles = storageReader.readQProfiles();
+    Map<String, String> qProfilesByLanguage;
+    if (projectKey == null) {
+      qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
+    } else {
+      qProfilesByLanguage = storageReader.readProjectConfig(projectKey).getQprofilePerLanguageMap();
+    }
+    for (String qProfileKey : qProfilesByLanguage.values()) {
+      Sonarlint.ActiveRules activeRulesFromStorage = storageReader.readActiveRules(qProfileKey);
+      if (activeRulesFromStorage.getActiveRulesByKeyMap().containsKey(ruleKeyStr)) {
+        ActiveRule ar = activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
+        return getRuleDetailsWithSeverity(ruleKeyStr, ar.getSeverity());
+      }
+    }
+    throw new IllegalArgumentException("Unable to find active rule with key " + ruleKeyStr);
   }
 
   public GlobalStorageStatus getGlobalStorageStatus() {

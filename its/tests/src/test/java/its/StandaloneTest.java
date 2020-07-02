@@ -46,8 +46,9 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
-import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleParam;
+import org.sonarsource.sonarlint.core.container.standalone.rule.DefaultStandaloneRuleParam;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleParamType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,7 +92,7 @@ public class StandaloneTest {
 
   @Test
   public void checkRuleParameterDeclarations() throws Exception {
-    Collection<RuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
+    Collection<StandaloneRuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
     RuleDetails incRule = ruleDetails.iterator().next();
     assertThat(incRule).isInstanceOf(StandaloneRule.class);
@@ -110,7 +111,7 @@ public class StandaloneTest {
   private static void assertRuleHasParam(StandaloneRule rule, String paramKey, StandaloneRuleParamType expectedType,
     String... possibleValues) {
     assertThat(rule.param(paramKey)).isNotNull()
-      .extracting(StandaloneRuleParam::type, StandaloneRuleParam::possibleValues)
+      .extracting(DefaultStandaloneRuleParam::type, DefaultStandaloneRuleParam::possibleValues)
       .containsExactly(expectedType, Arrays.asList(possibleValues));
   }
 

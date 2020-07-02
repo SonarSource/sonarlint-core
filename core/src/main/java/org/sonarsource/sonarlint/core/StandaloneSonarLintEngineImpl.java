@@ -26,15 +26,15 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -72,12 +72,12 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   }
 
   @Override
-  public Optional<RuleDetails> getRuleDetails(String ruleKey) {
+  public Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey) {
     return Optional.ofNullable(globalContainer.getRuleDetails(ruleKey));
   }
 
   @Override
-  public Collection<RuleDetails> getAllRuleDetails() {
+  public Collection<StandaloneRuleDetails> getAllRuleDetails() {
     return globalContainer.getAllRuleDetails();
   }
 
