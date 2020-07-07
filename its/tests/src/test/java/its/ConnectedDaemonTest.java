@@ -164,7 +164,7 @@ public class ConnectedDaemonTest {
     ClientCall<Void, LogEvent> call = getLogs(logs, channel);
     Iterator<Issue> issues = sonarlint.analyze(createAnalysisConfig(PROJECT_KEY_JAVASCRIPT));
 
-    assertThat(issues).hasSize(1);
+    assertThat(issues).toIterable().hasSize(1);
     call.cancel(null, null);
 
     channel.shutdownNow();
