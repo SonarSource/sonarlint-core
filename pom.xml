@@ -31,8 +31,8 @@
   </modules>
 
   <properties>
-    <!-- Don't forget to also update PluginCacheLoader::IMPLEMENTED_SQ_API -->
-    <sonarqube.version>8.2.0.32929</sonarqube.version>
+    <!-- Don't forget to also update PluginInfosLoader::IMPLEMENTED_SQ_API -->
+    <sonarqube.version>8.4.0.35506</sonarqube.version>
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
     <grpc.version>1.22.0</grpc.version>

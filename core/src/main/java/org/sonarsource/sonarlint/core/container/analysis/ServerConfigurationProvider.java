@@ -19,17 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
+import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -62,18 +60,16 @@ public class ServerConfigurationProvider {
     this.serverConfig = new ConfigurationBridge(new ServerConfiguration(properties));
   }
 
-  public static class ServerConfiguration extends Settings {
-
-    private final Map<String, String> properties = new HashMap<>();
+  public static class ServerConfiguration extends MapSettings {
 
     // For testing
     private ServerConfiguration(Map<String, String> properties) {
-      super(new PropertyDefinitions(), new Encryption(null));
-      this.properties.putAll(properties);
+      super(new PropertyDefinitions(System2.INSTANCE));
+      addProperties(properties);
     }
 
     private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-      super(propertyDefinitions, new Encryption(null));
+      super(propertyDefinitions);
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalProperties();
         addProperties(globalProps.getPropertiesMap());
@@ -84,25 +80,6 @@ public class ServerConfigurationProvider {
       }
     }
 
-    @Override
-    protected Optional<String> get(String key) {
-      return Optional.ofNullable(properties.get(key));
-    }
-
-    @Override
-    protected void set(String key, String value) {
-      properties.put(key, value);
-    }
-
-    @Override
-    protected void remove(String key) {
-      properties.remove(key);
-    }
-
-    @Override
-    public Map<String, String> getProperties() {
-      return properties;
-    }
   }
 
   public Configuration getServerConfig() {

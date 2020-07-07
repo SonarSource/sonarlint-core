@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import java.util.Date;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.batch.fs.InputComponent;
@@ -60,11 +59,6 @@ public class DefaultFilterableIssue implements FilterableIssue {
   @Override
   public Integer line() {
     return rawIssue.getStartLine();
-  }
-
-  @Override
-  public Date creationDate() {
-    return new Date();
   }
 
   @Override
