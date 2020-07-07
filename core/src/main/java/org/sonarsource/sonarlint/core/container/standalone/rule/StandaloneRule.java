@@ -33,13 +33,14 @@ import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 
 import static java.util.stream.Collectors.toList;
 
 @Immutable
-public class StandaloneRule implements SonarLintRule, RuleDetails {
+public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
 
   private final RuleKey key;
   private final String name;
@@ -47,7 +48,7 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
   private final RuleType type;
   private final String description;
   private final String internalKey;
-  private final Map<String, StandaloneRuleParam> params;
+  private final Map<String, DefaultStandaloneRuleParam> params;
   private boolean isActiveByDefault;
   private final String languageKey;
   private final String[] tags;
@@ -65,9 +66,9 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
     this.tags = rule.tags().toArray(new String[0]);
     this.deprecatedKeys = rule.deprecatedRuleKeys();
 
-    Map<String, StandaloneRuleParam> builder = new HashMap<>();
+    Map<String, DefaultStandaloneRuleParam> builder = new HashMap<>();
     for (Param param : rule.params()) {
-      builder.put(param.key(), new StandaloneRuleParam(param));
+      builder.put(param.key(), new DefaultStandaloneRuleParam(param));
     }
     params = Collections.unmodifiableMap(builder);
   }
@@ -109,13 +110,18 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
   }
 
   @Override
-  public StandaloneRuleParam param(String paramKey) {
+  public DefaultStandaloneRuleParam param(String paramKey) {
     return params.get(paramKey);
   }
 
   @Override
   public Collection<RuleParam> params() {
-    return params.values().stream().map(r -> (RuleParam) r).collect(toList());
+    return params.values().stream().map(p -> (RuleParam) p).collect(toList());
+  }
+
+  @Override
+  public Collection<StandaloneRuleParam> paramDetails() {
+    return params.values().stream().map(p -> (StandaloneRuleParam) p).collect(toList());
   }
 
   public boolean isActiveByDefault() {
@@ -155,11 +161,6 @@ public class StandaloneRule implements SonarLintRule, RuleDetails {
   @Override
   public String[] getTags() {
     return tags;
-  }
-
-  @Override
-  public String getExtendedDescription() {
-    return "";
   }
 
   public Set<RuleKey> getDeprecatedKeys() {

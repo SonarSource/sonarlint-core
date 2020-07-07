@@ -17,27 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 
-/**
- * @since 1.2
- */
-public interface RuleDetails {
+public interface ConnectedRuleDetails extends RuleDetails {
 
-  String getKey();
-
-  String getName();
-
-  @CheckForNull
-  String getHtmlDescription();
-
-  String getLanguageKey();
-
-  String getSeverity();
-
-  @CheckForNull
-  String getType();
+  String getExtendedDescription();
 
 }

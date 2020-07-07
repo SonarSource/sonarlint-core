@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static java.util.Collections.singleton;
@@ -131,7 +132,7 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaScript() throws Exception {
 
-    RuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
+    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
@@ -206,7 +207,7 @@ public class StandaloneIssueMediumTest {
 
   @Test
   public void simpleTypeScript() throws Exception {
-    RuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
+    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
     assertThat(ruleDetails.getLanguageKey()).isEqualTo("ts");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");

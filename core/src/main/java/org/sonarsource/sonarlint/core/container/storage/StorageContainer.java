@@ -43,9 +43,9 @@ import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
+import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
@@ -90,7 +90,6 @@ public class StorageContainer extends ComponentContainer {
       IssueStoreReader.class,
       GlobalUpdateStatusReader.class,
       ProjectStorageStatusReader.class,
-      StorageRuleDetailsReader.class,
       IssueStoreFactory.class,
 
       // analysis

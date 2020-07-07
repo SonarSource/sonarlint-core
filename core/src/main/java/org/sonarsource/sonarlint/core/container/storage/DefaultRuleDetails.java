@@ -17,37 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.container.storage;
 
-import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 
 @Immutable
-public class DefaultRuleDetails implements RuleDetails {
+public class DefaultRuleDetails implements ConnectedRuleDetails {
 
   private final String key;
   private final String languageKey;
-  private final Set<String> tags;
   private final String name;
   private final String htmlDescription;
   private final String severity;
   private final String type;
   private final String extendedDescription;
-  private final boolean activeByDefault;
 
-  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, String languageKey, Set<String> tags,
-    String extendedDescription, boolean activeByDefault) {
+  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, String languageKey, String extendedDescription) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
     this.severity = severity;
     this.type = type;
     this.languageKey = languageKey;
-    this.tags = tags;
     this.extendedDescription = extendedDescription;
-    this.activeByDefault = activeByDefault;
   }
 
   @Override
@@ -81,17 +75,8 @@ public class DefaultRuleDetails implements RuleDetails {
   }
 
   @Override
-  public String[] getTags() {
-    return tags.toArray(new String[0]);
-  }
-
-  @Override
   public String getExtendedDescription() {
     return extendedDescription;
   }
 
-  @Override
-  public boolean isActiveByDefault() {
-    return activeByDefault;
-  }
 }

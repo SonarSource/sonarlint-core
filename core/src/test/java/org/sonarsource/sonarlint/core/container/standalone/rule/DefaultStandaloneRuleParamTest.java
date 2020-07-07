@@ -26,6 +26,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.server.rule.RuleParamType;
 import org.sonar.api.server.rule.RulesDefinition;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -34,9 +35,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(Parameterized.class)
-public class StandaloneRuleParamTest {
+public class DefaultStandaloneRuleParamTest {
 
-  @Parameters(name="Plugin API {0} => Client API {1}, multiple={2}, values={3}")
+  @Parameters(name = "Plugin API {0} => Client API {1}, multiple={2}, values={3}")
   public static Iterable<Object[]> data() {
     return asList(new Object[][] {
       {RuleParamType.STRING,
@@ -67,7 +68,7 @@ public class StandaloneRuleParamTest {
   private final boolean expectedMultiple;
   private final List<String> expectedValues;
 
-  public StandaloneRuleParamTest(RuleParamType apiType, StandaloneRuleParamType expectedType, boolean expectedMultiple, List<String> expectedValues) {
+  public DefaultStandaloneRuleParamTest(RuleParamType apiType, StandaloneRuleParamType expectedType, boolean expectedMultiple, List<String> expectedValues) {
     this.apiType = apiType;
     this.expectedType = expectedType;
     this.expectedMultiple = expectedMultiple;
@@ -78,7 +79,7 @@ public class StandaloneRuleParamTest {
   public void shouldConvertApiType() {
     RulesDefinition.Param apiParam = mock(RulesDefinition.Param.class);
     when(apiParam.type()).thenReturn(apiType);
-    StandaloneRuleParam param = new StandaloneRuleParam(apiParam);
+    DefaultStandaloneRuleParam param = new DefaultStandaloneRuleParam(apiParam);
     assertThat(param.type()).isEqualTo(expectedType);
     assertThat(param.multiple()).isEqualTo(expectedMultiple);
     assertThat(param.possibleValues()).isEqualTo(expectedValues);

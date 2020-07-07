@@ -36,13 +36,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
+import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -56,6 +57,7 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
@@ -179,10 +181,17 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  public void unknowRuleKey() {
+    assertThrows(SonarLintException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
+    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
+    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
+  }
+
+  @Test
   public void simpleJavaScriptUnbinded() throws Exception {
 
     String ruleKey = "javascript:UnusedVariable";
-    RuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
+    ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
     assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
@@ -220,7 +229,7 @@ public class ConnectedIssueMediumTest {
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
       tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
   }
 
   @Test
@@ -242,6 +251,9 @@ public class ConnectedIssueMediumTest {
   public void simpleJavaBinded() throws Exception {
     ClientInputFile inputFile = prepareJavaInputFile();
 
+    // Severity of java:S1481 changed to BLOCKER in the quality profile
+    assertThat(sonarlint.getRuleDetails("java:S1481").getSeverity()).isEqualTo("MAJOR");
+    assertThat(sonarlint.getActiveRuleDetails("java:S1481", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setProjectKey(JAVA_MODULE_KEY)
@@ -253,7 +265,7 @@ public class ConnectedIssueMediumTest {
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
       tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
   }
 
   @Test

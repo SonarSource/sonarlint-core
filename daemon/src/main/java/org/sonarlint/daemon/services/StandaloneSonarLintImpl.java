@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq;
@@ -150,7 +151,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   @Override
   public void getRuleDetails(RuleKey key, StreamObserver<RuleDetails> response) {
     try {
-      org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(key.getKey()).get();
+      StandaloneRuleDetails ruleDetails = engine.getRuleDetails(key.getKey()).get();
       response.onNext(RuleDetails.newBuilder()
         .setKey(ruleDetails.getKey())
         .setName(ruleDetails.getName())
