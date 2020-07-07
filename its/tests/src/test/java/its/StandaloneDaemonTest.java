@@ -101,7 +101,7 @@ public class StandaloneDaemonTest {
         System.out.println("ITERATION: " + i);
         Iterator<Issue> issues = sonarlint.analyze(analysisConfig);
 
-        assertThat(issues).hasSize(1);
+        assertThat(issues).toIterable().hasSize(1);
         // Give some time for logs to come
         Thread.sleep(500);
         List<String> logsLines = logs.getLogsAndClear();
