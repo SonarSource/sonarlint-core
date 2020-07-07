@@ -185,8 +185,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public ConnectedRuleDetails getActiveRuleDetails(@Nullable String projectKey, String ruleKey) {
-    return withReadLock(() -> getHandler().getRuleDetails(projectKey, ruleKey));
+  public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
+    return withReadLock(() -> getHandler().getRuleDetails(ruleKey, projectKey));
   }
 
   @Override

@@ -64,10 +64,10 @@ public interface ConnectedSonarLintEngine {
   ConnectedRuleDetails getRuleDetails(String ruleKey);
 
   /**
-   * Return rule details with specifics for a given project (severity can have been overriden in the quality profile).
-   * @param projectKey is null, the default QP will be considered
+   * Return rule details in the context of a given project (severity may have been overriden in the quality profile).
+   * @param projectKey if null, the default QP will be considered
    */
-  ConnectedRuleDetails getActiveRuleDetails(@Nullable String projectKey, String ruleKey);
+  ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey);
 
   /**
    * Trigger an analysis

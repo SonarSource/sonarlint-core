@@ -106,7 +106,7 @@ public class StorageContainerHandler {
     return rule;
   }
 
-  public ConnectedRuleDetails getRuleDetails(@Nullable String projectKey, String ruleKeyStr) {
+  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
     QProfiles qProfiles = storageReader.readQProfiles();
     Map<String, String> qProfilesByLanguage;
     if (projectKey == null) {

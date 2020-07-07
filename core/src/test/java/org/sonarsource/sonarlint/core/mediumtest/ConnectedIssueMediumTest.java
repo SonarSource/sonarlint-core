@@ -183,8 +183,8 @@ public class ConnectedIssueMediumTest {
   @Test
   public void unknowRuleKey() {
     assertThrows(SonarLintException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
-    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails(null, "not_found"), "Invalid active rule key: not_found");
-    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails(JAVA_MODULE_KEY, "not_found"), "Invalid active rule key: not_found");
+    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
+    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
   }
 
   @Test
@@ -253,7 +253,7 @@ public class ConnectedIssueMediumTest {
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
     assertThat(sonarlint.getRuleDetails("java:S1481").getSeverity()).isEqualTo("MAJOR");
-    assertThat(sonarlint.getActiveRuleDetails(JAVA_MODULE_KEY, "java:S1481").getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails("java:S1481", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setProjectKey(JAVA_MODULE_KEY)
