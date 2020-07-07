@@ -31,12 +31,12 @@ import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
 import org.sonarlint.daemon.model.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.daemon.proto.ConnectedSonarLintGrpc;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.ConnectedAnalysisReq;
@@ -51,7 +51,7 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState.State;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 
-import static org.apache.commons.lang.StringUtils.trimToNull;
+import static com.google.common.base.Strings.emptyToNull;
 
 public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
   private final Daemon daemon;
@@ -97,7 +97,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
 
       Path baseDir = Paths.get(requestConfig.getBaseDir());
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
+        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), emptyToNull(f.getLanguage())));
       }
 
       ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()

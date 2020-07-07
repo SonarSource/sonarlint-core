@@ -20,12 +20,14 @@
 package org.sonarlint.daemon.model;
 
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang.StringUtils;
+import java.util.Locale;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Severity;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue.Type;
+
+import static com.google.common.base.Strings.nullToEmpty;
 
 public class ProxyIssueListener implements IssueListener {
   private final StreamObserver<Issue> observer;
@@ -60,7 +62,7 @@ public class ProxyIssueListener implements IssueListener {
 
     Type type = Type.CODE_SMELL;
     if (issue.getType() != null) {
-      switch (StringUtils.lowerCase(issue.getType())) {
+      switch (nullToEmpty(issue.getType()).toLowerCase(Locale.ENGLISH)) {
         case "bug":
           type = Type.BUG;
           break;

@@ -53,7 +53,7 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.RuleKey;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 import org.sonarsource.sonarlint.daemon.proto.StandaloneSonarLintGrpc;
 
-import static org.apache.commons.lang.StringUtils.trimToNull;
+import static com.google.common.base.Strings.emptyToNull;
 
 public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneSonarLintImplBase {
   private final ProxyLogOutput logOutput;
@@ -94,7 +94,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
 
       Path baseDir = Paths.get(requestConfig.getBaseDir());
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
+        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), emptyToNull(f.getLanguage())));
       }
 
       StandaloneAnalysisConfiguration config = StandaloneAnalysisConfiguration.builder()
