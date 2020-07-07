@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.StorageState.State;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Void;
 
-import static org.apache.commons.lang.StringUtils.trimToNull;
+import static com.google.common.base.Strings.emptyToNull;
 
 public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSonarLintImplBase {
   private final Daemon daemon;
@@ -96,7 +96,7 @@ public class ConnectedSonarLintImpl extends ConnectedSonarLintGrpc.ConnectedSona
 
       Path baseDir = Paths.get(requestConfig.getBaseDir());
       for (InputFile f : requestFiles) {
-        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), trimToNull(f.getLanguage())));
+        files.add(new DefaultClientInputFile(baseDir, Paths.get(f.getPath()), f.getIsTest(), Charset.forName(f.getCharset()), f.getUserObject(), emptyToNull(f.getLanguage())));
       }
 
       ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
