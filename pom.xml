@@ -25,8 +25,6 @@
   <modules>
     <module>client-api</module>
     <module>core</module>
-    <module>daemon</module>
-    <module>daemon-protocol</module>
     <module>slf4j-sonar-log</module>
   </modules>
 
@@ -35,7 +33,6 @@
     <sonarqube.version>8.4.0.35506</sonarqube.version>
     <sonar-ws.version>6.7</sonar-ws.version>
     <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
-    <grpc.version>1.22.0</grpc.version>
     <protobuf.version>3.12.2</protobuf.version>
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
@@ -43,33 +40,31 @@
     <junit.version>4.12</junit.version>
     <junit.jupiter.version>5.6.2</junit.jupiter.version>
     <junit.vintage.version>5.6.2</junit.vintage.version>
-    <!-- Release: enable publication to Bintray -->
-    <artifactsToPublish>${project.groupId}:sonarlint-daemon:zip:windows</artifactsToPublish>
     <jarsigner.skip>true</jarsigner.skip>
   </properties>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-  			<groupId>org.junit.jupiter</groupId>
-  			<artifactId>junit-jupiter-api</artifactId>
-  			<version>${junit.jupiter.version}</version>
-  		</dependency>
-  		<dependency>
-  			<groupId>junit</groupId>
-  			<artifactId>junit</artifactId>
-  			<version>${junit.version}</version>
-  		</dependency>
-  		<dependency>
-  			<groupId>org.junit.jupiter</groupId>
-  			<artifactId>junit-jupiter-engine</artifactId>
-  			<version>${junit.jupiter.version}</version>
-  		</dependency>
-  		<dependency>
-  			<groupId>org.junit.vintage</groupId>
-  			<artifactId>junit-vintage-engine</artifactId>
-  			<version>${junit.vintage.version}</version>
-  		</dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.jupiter.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${junit.jupiter.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit.vintage.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>

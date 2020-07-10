@@ -34,6 +34,7 @@ stages:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
         MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
         commonMavenArguments: -B -Pdeploy-sonarsource -Dmaven.test.skip=true
+        fixedBranch: $[replace(variables['Build.SourceBranch'], 'refs/heads/', '')]
       steps:
       - checkout: self
         fetchDepth: 1
@@ -58,20 +59,6 @@ stages:
       - template: update-maven-version-steps.yml
         parameters:
           mavenSettingsFilePath: $(mavenSettings.secureFilePath)
-      - task: PythonScript@0
-        name: fixBranchName
-        displayName: 'Compute short branch name for buildInfo'
-        inputs:
-          scriptSource: 'inline'
-          script: |
-            branch = "$(Build.SourceBranch)"
-            refPrefix = "refs/heads/"
-            if branch.startswith(refPrefix):
-              fixedBranch = branch[len(refPrefix):]
-            else:
-              fixedBranch = branch
-            # Workaround for https://github.com/Microsoft/azure-pipelines-agent/issues/838
-            print("##vso[task.setvariable variable=fixedBranch;isOutput=true]" + fixedBranch)
       - task: Maven@3
         displayName: 'Run Maven deploy and sign'
         condition: ne(variables['Build.Reason'], 'PullRequest')
@@ -79,7 +66,7 @@ stages:
           ARTIFACTORY_DEPLOY_USERNAME: $(ARTIFACTORY_DEPLOY_USERNAME)
           ARTIFACTORY_DEPLOY_PASSWORD: $(ARTIFACTORY_DEPLOY_PASSWORD)
           GIT_SHA1: $(Build.SourceVersion)
-          GITHUB_BRANCH: $(fixBranchName.fixedBranch)
+          GITHUB_BRANCH: $(fixedBranch)
         inputs:
           goals: 'deploy'
           options: >-

@@ -24,7 +24,6 @@ import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.tools.ItUtils;
-import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
-import org.sonarqube.ws.client.WsClient;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -73,15 +71,11 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Rule
-  public SonarlintDaemon daemon = new SonarlintDaemon();
-
-  @Rule
   public SonarlintProject clientTools = new SonarlintProject();
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
-  private static WsClient adminWsClient;
   private static Path sonarUserHome;
   private ConnectedSonarLintEngine engine;
   private List<String> logs = new ArrayList<>();
