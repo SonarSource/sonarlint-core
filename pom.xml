@@ -13,6 +13,7 @@
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
   <description>Library used by SonarLint flavors (Eclipse, IntelliJ, VSCode...)</description>
+  <inceptionYear>2016</inceptionYear>
   <organization>
     <name>SonarSource</name>
     <url>http://www.sonarsource.com/</url>
