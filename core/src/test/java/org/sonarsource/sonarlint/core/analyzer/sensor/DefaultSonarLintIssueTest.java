@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.TestInputFileBuilder;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputDir;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 
+import static org.apache.commons.lang.StringUtils.repeat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
@@ -75,6 +76,40 @@ public class DefaultSonarLintIssueTest {
     assertThatExceptionOfType(UnsupportedOperationException.class)
       .isThrownBy(() -> issue.gap())
       .withMessage("No gap in SonarLint");
+
+    issue.save();
+
+    verify(storage).store(issue);
+  }
+
+  @Test
+  public void replace_null_characters() {
+    SensorStorage storage = mock(SensorStorage.class);
+    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(new DefaultSonarLintIssueLocation()
+        .on(inputFile)
+        .message("Wrong \u0000 use of NULL\u0000"))
+      .forRule(RuleKey.of("repo", "rule"));
+
+    assertThat(issue.primaryLocation().message()).isEqualTo("Wrong [NULL] use of NULL[NULL]");
+
+    issue.save();
+
+    verify(storage).store(issue);
+  }
+
+  @Test
+  public void truncate_and_trim() {
+    SensorStorage storage = mock(SensorStorage.class);
+    String prefix = "prefix: ";
+    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(new DefaultSonarLintIssueLocation()
+        .on(inputFile)
+        .message("   " + prefix + repeat("a", 4000)))
+      .forRule(RuleKey.of("repo", "rule"));
+
+    String ellipse = "...";
+    assertThat(issue.primaryLocation().message()).isEqualTo(prefix + repeat("a", 4000 - prefix.length() - ellipse.length()) + ellipse);
 
     issue.save();
 
