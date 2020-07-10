@@ -26,6 +26,9 @@ import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang.StringUtils.abbreviate;
+import static org.apache.commons.lang.StringUtils.replace;
+import static org.apache.commons.lang.StringUtils.trimToEmpty;
 
 public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLocation {
 
@@ -50,8 +53,12 @@ public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLoc
 
   @Override
   public DefaultSonarLintIssueLocation message(String message) {
-    this.message = message;
+    this.message = abbreviate(trimToEmpty(sanitizeNulls(message)), MESSAGE_MAX_SIZE);
     return this;
+  }
+
+  private static String sanitizeNulls(String message) {
+    return replace(message, "\u0000", "[NULL]");
   }
 
   @Override
