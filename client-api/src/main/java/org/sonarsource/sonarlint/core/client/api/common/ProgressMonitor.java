@@ -51,17 +51,10 @@ public abstract class ProgressMonitor {
   }
   
   /**
-   * Marks the section of the task as not cancelable 
+   * Execute a section of code that can't be canceled
    */
-  public void startNonCancelableSection() {
-    
-  }
-
-  /**
-   * It's possible to cancel the task from now on
-   */
-  public void finishNonCancelableSection() {
-    
+  public void executeNonCancelableSection(Runnable nonCancelable) {
+    nonCancelable.run();
   }
   
 }
