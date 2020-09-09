@@ -57,6 +57,8 @@ class TelemetryUtils {
       case "h++":
       case "ipp":
         return "cfamily";
+      case "cls":
+        return "objectscript";  
       case "java":
       case "php":
         return fileExtensionLow;
