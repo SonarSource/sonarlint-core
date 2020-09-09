@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import java.util.List;
-
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.plugin.Version;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class GlobalStorageUpdateChecker {
@@ -50,15 +47,14 @@ public class GlobalStorageUpdateChecker {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
 
     progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
-    ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
-    Version serverVersion = Version.create(serverStatus.getVersion());
+    statusChecker.checkVersionAndStatus();
     // Currently with don't check server version change since it is unlikely to have impact on SL
 
     progress.setProgressAndCheckCancel("Checking global properties", 0.3f);
-    globalSettingsUpdateChecker.checkForUpdates(serverVersion, result);
+    globalSettingsUpdateChecker.checkForUpdates(result);
 
     progress.setProgressAndCheckCancel("Checking plugins", 0.5f);
-    List<SonarAnalyzer> pluginList = pluginListDownloader.downloadPluginList(serverVersion);
+    List<SonarAnalyzer> pluginList = pluginListDownloader.downloadPluginList();
     pluginsUpdateChecker.checkForUpdates(result, pluginList);
 
     progress.setProgressAndCheckCancel("Checking quality profiles", 0.7f);

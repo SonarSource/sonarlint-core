@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,10 +23,11 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
 import its.tools.ItUtils;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -37,12 +38,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.organization.CreateWsRequest;
+import org.sonarqube.ws.client.project.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -61,6 +62,7 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   private static WsClient adminWsClient;
   private static final String ORGANIZATION = "test-org";
+  private static final String ORGANIZATION_NAME = "Test Org";
   private static final String PROJECT_KEY_JAVA = "sample-java";
 
   @ClassRule
@@ -69,16 +71,8 @@ public class OrganizationTest extends AbstractConnectedTest {
   static {
     OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
       .setSonarVersion(SONAR_VERSION)
-      .setServerProperty("sonar.sonarcloud.enabled", "true");
-
-    boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
-    if (atLeast67) {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
-    } else {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
-    }
+      .setServerProperty("sonar.sonarcloud.enabled", "true")
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
     ORCHESTRATOR = orchestratorBuilder
       .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
       .build();
@@ -96,25 +90,25 @@ public class OrganizationTest extends AbstractConnectedTest {
   private ConnectedSonarLintEngine engineOnDefaultOrg;
 
   @BeforeClass
-  public static void prepare() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3));
+  public static void prepare() throws IOException {
     adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
     sonarUserHome = temp.newFolder().toPath();
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    adminWsClient.users().create(org.sonarqube.ws.client.user.CreateRequest.builder()
+      .setLogin(SONARLINT_USER)
+      .setPassword(SONARLINT_PWD)
+      .setName("SonarLint")
+      .build());
 
     enableOrganizationsSupport();
     createOrganization();
 
-    ORCHESTRATOR.getServer().adminWsClient().post("/api/projects/create",
-      "key", PROJECT_KEY_JAVA,
-      "name", "Sample Java",
-      "organization", ORGANIZATION);
+    adminWsClient.projects()
+      .create(CreateRequest.builder()
+        .setKey(PROJECT_KEY_JAVA)
+        .setName("Sample Java")
+        .setOrganization(ORGANIZATION)
+        .build());
   }
 
   @Before
@@ -159,10 +153,12 @@ public class OrganizationTest extends AbstractConnectedTest {
   public void downloadModules() {
     updateGlobal();
     assertThat(engineOnTestOrg.allProjectsByKey()).hasSize(1);
-    ORCHESTRATOR.getServer().adminWsClient().post("/api/projects/create",
-      "key", "foo-bar",
-      "name", "Foo",
-      "organization", ORGANIZATION);
+    adminWsClient.projects()
+      .create(CreateRequest.builder()
+        .setKey("foo-bar")
+        .setName("Foo")
+        .setOrganization(ORGANIZATION)
+        .build());
     // Project in default org is not visible
     ORCHESTRATOR.getServer().provisionProject("foo-bar2", "Foo");
     assertThat(engineOnTestOrg.downloadAllProjects(getServerConfigForOrg(ORGANIZATION), null)).hasSize(2).containsKeys("foo-bar", PROJECT_KEY_JAVA);
@@ -172,15 +168,32 @@ public class OrganizationTest extends AbstractConnectedTest {
   public void downloadOrganizations() {
     WsHelper helper = new WsHelperImpl();
     List<RemoteOrganization> organizations = helper.listOrganizations(getServerConfigForOrg(null), null);
-    assertThat(organizations).hasSize(2);
+    assertThat(organizations).extracting(RemoteOrganization::getKey).hasSize(2);
+  }
+
+  @Test
+  public void downloadUserOrganizations() {
+    // 'member' WS parameter was introduced in 7.0
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(7, 0));
+    WsHelper helper = new WsHelperImpl();
+    List<RemoteOrganization> organizations = helper.listUserOrganizations(getServerConfigForOrg(null), null);
+    assertThat(organizations).extracting(RemoteOrganization::getKey).hasSize(1);
+  }
+
+  @Test
+  public void getOrganization() {
+    WsHelper helper = new WsHelperImpl();
+    Optional<RemoteOrganization> org = helper.getOrganization(getServerConfigForOrg(null), ORGANIZATION, null);
+    assertThat(org).isPresent();
+    assertThat(org.get().getKey()).isEqualTo(ORGANIZATION);
+    assertThat(org.get().getName()).isEqualTo(ORGANIZATION_NAME);
   }
 
   @Test
   public void verifyExtendedDescription() {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     updateGlobal();
 
-    String ruleKey = "squid:S106";
+    String ruleKey = ItUtils.javaVersion.equals("LATEST_RELEASE") ? "java:S106" : "squid:S106";
 
     assertThat(engineOnTestOrg.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
     assertThat(engineOnDefaultOrg.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
@@ -202,7 +215,6 @@ public class OrganizationTest extends AbstractConnectedTest {
 
   @Test
   public void updateModuleInOrga() {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 4));
     engineOnTestOrg.update(getServerConfigForOrg(ORGANIZATION), null);
     engineOnTestOrg.updateProject(getServerConfigForOrg(ORGANIZATION), PROJECT_KEY_JAVA, null);
   }
@@ -226,6 +238,6 @@ public class OrganizationTest extends AbstractConnectedTest {
   }
 
   private static void createOrganization() {
-    adminWsClient.organizations().create(new CreateWsRequest.Builder().setKey(ORGANIZATION).setName(ORGANIZATION).build());
+    adminWsClient.organizations().create(new CreateWsRequest.Builder().setKey(ORGANIZATION).setName(ORGANIZATION_NAME).build());
   }
 }

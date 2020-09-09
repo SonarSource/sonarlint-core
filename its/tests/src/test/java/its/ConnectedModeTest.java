@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,11 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
+import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -54,7 +54,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.services.PropertyCreateQuery;
 import org.sonar.wsclient.services.PropertyDeleteQuery;
@@ -72,6 +71,7 @@ import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
 import org.sonarqube.ws.client.setting.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
@@ -103,53 +103,46 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_WEB = "sample-web";
   private static final String PROJECT_KEY_KOTLIN = "sample-kotlin";
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
+  private static final String PROJECT_KEY_SCALA = "sample-scala";
+  private static final String PROJECT_KEY_XML = "sample-xml";
+
+  private static String javaRuleKey(String key) {
+    return ItUtils.javaVersion.equals("LATEST_RELEASE") ? ("java:" + key) : ("squid:" + key);
+  }
 
   @ClassRule
-  public static ExternalResource resource = new ExternalResource() {
-    @Override
-    protected void before() {
-      OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-        .setSonarVersion(SONAR_VERSION);
-
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
-        .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", "LATEST_RELEASE"))
-        // TODO update kotlin and ruby version once they are released
-        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", "1.2.0.1568"))
-        .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", "1.2.0.1568"))
-        .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", "LATEST_RELEASE"))
-        .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
-        .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
-        .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
-        .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"));
-
-      ORCHESTRATOR = orchestratorBuilder.build();
-      ORCHESTRATOR.start();
-    }
-
-    @Override
-    protected void after() {
-      ORCHESTRATOR.stop();
-    }
-
-  };
-
-  public static Orchestrator ORCHESTRATOR;
+  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
+    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", ItUtils.pythonVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
+    // With recent version of SonarJS, SonarTS is required
+    .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", ItUtils.kotlinVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", ItUtils.rubyVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", ItUtils.scalaVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", ItUtils.webVersion))
+    .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", ItUtils.xmlVersion))
+    .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+    .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
+    .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-custom.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"))
+    .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -194,6 +187,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_RUBY, "Sample Ruby");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_SCALA, "Sample Scala");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_XML, "Sample XML");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -207,10 +202,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_RUBY, "ruby", "SonarLint IT Ruby");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
-    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean package"));
+    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean compile"));
 
     prepareRedirectServer();
   }
@@ -253,7 +250,21 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput((msg, level) -> logs.add(msg))
+      .addEnabledLanguage(Language.JAVA)
+      .addEnabledLanguage(Language.PHP)
+      .addEnabledLanguage(Language.JS)
+      .addEnabledLanguage(Language.PYTHON)
+      .addEnabledLanguage(Language.HTML)
+      .addEnabledLanguage(Language.RUBY)
+      .addEnabledLanguage(Language.KOTLIN)
+      .addEnabledLanguage(Language.SCALA)
+      .addEnabledLanguage(Language.XML)
+      // Needed to have the global extension plugin loaded
+      .addEnabledLanguage(Language.XOO)
+      .setLogOutput((msg, level) -> {
+        logs.add(msg);
+        System.out.println(msg);
+      })
       .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
@@ -277,10 +288,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadProjects() {
     updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(13);
+    assertThat(engine.allProjectsByKey()).hasSize(15);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(14).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allProjectsByKey()).hasSize(14).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -298,9 +309,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJava() throws IOException {
-    // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
-
     String fileContent = "pac kage its; public class MyTest { }";
     Path testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -316,9 +324,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJavascript() throws IOException {
-    // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 0));
-
     String fileContent = "asd asd";
     Path testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
@@ -333,24 +338,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void semanticErrorJava() throws IOException {
-    // older versions of plugins don't report errors
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
-
-    String fileContent = "package its;public class MyTest {int a;int a;}";
-    Path testFile = temp.newFile("MyTestSemanticError.java").toPath();
-    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
-
-    updateGlobal();
-    updateProject(PROJECT_KEY_JAVA);
-
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
-
-    assertThat(results.failedAnalysisFiles()).hasSize(1);
-  }
-
-  @Test
   public void globalUpdate() {
     updateGlobal();
 
@@ -358,7 +345,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
-    assertThat(engine.getRuleDetails("squid:S106").getHtmlDescription()).contains("When logging a message there are");
+    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
@@ -376,21 +363,20 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void verifyExtendedDescription() {
     updateGlobal();
 
-    String ruleKey = "squid:S106";
-
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEmpty();
+    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getExtendedDescription()).isEmpty();
 
     String extendedDescription = "my dummy extended description";
 
     WsRequest request = new PostRequest("/api/rules/update")
-      .setParam("key", ruleKey)
+      .setParam("key", javaRuleKey("S106"))
       .setParam("markdown_note", extendedDescription);
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertThat(response.code()).isEqualTo(200);
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertThat(response.code()).isEqualTo(200);
+    }
 
     updateGlobal();
 
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getExtendedDescription()).isEqualTo(extendedDescription);
   }
 
   @Test
@@ -405,8 +391,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascriptWithCustomRules() throws Exception {
-    // SonarJS that runs on older versions does not report this correctly
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 2));
+    // old SonarJS versions does not report this correctly
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThan(6, 7));
 
     updateGlobal();
     updateProject(PROJECT_KEY_JAVASCRIPT_CUSTOM);
@@ -414,8 +400,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT_CUSTOM, PROJECT_KEY_JAVASCRIPT_CUSTOM, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
-      tuple("custom:S1", 3),
-      tuple("custom:S1", 7));
+      tuple("custom-javascript-repo:S1", 3),
+      tuple("custom-javascript-repo:S1", 7));
   }
 
   @Test
@@ -494,8 +480,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
-      tuple("squid:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
-      tuple("squid:S1228", null));
+      tuple(javaRuleKey("S106"), Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
+      tuple(javaRuleKey("S1228"), null));
   }
 
   @Test
@@ -571,16 +557,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("name", "myrule")
       .setParam("markdown_description", "my_rule_description")
       .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
-      .setParam("template_key", "squid:S2253")
+      .setParam("template_key", javaRuleKey("S2253"))
       .setParam("severity", "MAJOR");
-    WsResponse response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertTrue(response.isSuccessful());
+    }
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
-      .setParam("profile_key", qp.getKey())
-      .setParam("rule_key", "squid:myrule");
-    response = adminWsClient.wsConnector().call(request);
-    assertTrue(response.isSuccessful());
+      .setParam("key", qp.getKey())
+      .setParam("rule", javaRuleKey("myrule"));
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      assertTrue("Unable to activate custom rule", response.isSuccessful());
+    }
 
     try {
 
@@ -595,14 +583,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       assertThat(issueListener.getIssues()).hasSize(3);
 
-      assertThat(engine.getRuleDetails("squid:myrule").getHtmlDescription()).contains("my_rule_description");
+      assertThat(engine.getRuleDetails(javaRuleKey("myrule")).getHtmlDescription()).contains("my_rule_description");
 
     } finally {
 
       request = new PostRequest("/api/rules/delete")
-        .setParam("key", "squid:myrule");
-      response = adminWsClient.wsConnector().call(request);
-      assertTrue(response.isSuccessful());
+        .setParam("key", javaRuleKey("myrule"));
+      try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+        assertTrue("Unable to delete custom rule", response.isSuccessful());
+      }
     }
   }
 
@@ -642,12 +631,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
+    assertThat(issueListener.getIssues()).isEmpty();
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
+    issueListener.clear();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -693,7 +684,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Activate a new rule
     SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "profile_key", profileKey, "rule_key", "squid:S1228");
+    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "key", profileKey, "rule", javaRuleKey("S1228"));
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
@@ -731,6 +722,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void getProject() throws Exception {
+    WsHelper helper = new WsHelperImpl();
+    assertThat(helper.getProject(getServerConfig(), "foo", null)).isNotPresent();
+    assertThat(helper.getProject(getServerConfig(), PROJECT_KEY_RUBY, null)).isPresent();
+  }
+
+  @Test
   public void analysisRuby() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_RUBY);
@@ -747,6 +745,26 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_KOTLIN, PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisScala() throws Exception {
+    updateGlobal();
+    updateProject(PROJECT_KEY_SCALA);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_SCALA, PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisXml() throws Exception {
+    updateGlobal();
+    updateProject(PROJECT_KEY_XML);
+
+    SaveIssueListener issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -43,14 +43,14 @@ public class IssueStoreReader {
     this.storagePaths = storagePaths;
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String localFilePath) {
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
     Sonarlint.ProjectConfiguration projectConfiguration = storageReader.readProjectConfig(projectBinding.projectKey());
 
     if (projectConfiguration == null) {
       throw new IllegalStateException("project not in storage: " + projectBinding.projectKey());
     }
 
-    String sqPath = issueStorePaths.localPathToSqPath(projectBinding, localFilePath);
+    String sqPath = issueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
@@ -60,7 +60,7 @@ public class IssueStoreReader {
     List<Sonarlint.ServerIssue> loadedIssues = issueStore.load(sqPath);
 
     return loadedIssues.stream()
-      .map(pbIssue -> IssueStorePaths.toApiIssue(pbIssue, localFilePath))
+      .map(pbIssue -> IssueStorePaths.toApiIssue(pbIssue, ideFilePath))
       .collect(Collectors.toList());
   }
 }

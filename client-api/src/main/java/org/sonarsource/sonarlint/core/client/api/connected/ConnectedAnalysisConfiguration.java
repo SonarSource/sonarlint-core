@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,24 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.nio.file.Path;
-import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 
 @Immutable
-public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfiguration {
+public class ConnectedAnalysisConfiguration extends AbstractAnalysisConfiguration {
 
   private final String projectKey;
   private final String toString;
 
-  public ConnectedAnalysisConfiguration(@Nullable String projectKey, Path baseDir, Path workDir, Iterable<ClientInputFile> inputFiles, Map<String, String> extraProperties) {
-    super(baseDir, workDir, inputFiles, extraProperties);
-    this.projectKey = projectKey;
+  public ConnectedAnalysisConfiguration(Builder builder) {
+    super(builder);
+    this.projectKey = builder.projectKey;
     this.toString = generateString();
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   @CheckForNull
@@ -55,21 +56,26 @@ public class ConnectedAnalysisConfiguration extends StandaloneAnalysisConfigurat
     if (projectKey != null) {
       sb.append("  projectKey: ").append(projectKey).append("\n");
     }
-    sb.append("  baseDir: ").append(baseDir()).append("\n");
-    sb.append("  workDir: ").append(workDir()).append("\n");
-    sb.append("  extraProperties: ").append(extraProperties()).append("\n");
-    sb.append("  inputFiles: [\n");
-    for (ClientInputFile inputFile : inputFiles()) {
-      sb.append("    ").append(inputFile.uri());
-      sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
-      if (inputFile.isTest()) {
-        sb.append(" [test]");
-      }
-      sb.append("\n");
-    }
-    sb.append("  ]\n");
+    generateToStringCommon(sb);
+    generateToStringInputFiles(sb);
     sb.append("]\n");
     return sb.toString();
+  }
+
+  public static final class Builder extends AbstractBuilder<Builder> {
+    private String projectKey;
+
+    private Builder() {
+    }
+
+    public Builder setProjectKey(@Nullable String projectKey) {
+      this.projectKey = projectKey;
+      return this;
+    }
+
+    public ConnectedAnalysisConfiguration build() {
+      return new ConnectedAnalysisConfiguration(this);
+    }
   }
 
 }

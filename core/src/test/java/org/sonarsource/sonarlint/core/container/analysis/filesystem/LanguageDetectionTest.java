@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,10 +26,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.utils.MessageException;
+import org.sonarsource.sonarlint.core.TestInputFileBuilder;
 
 import static junit.framework.Assert.fail;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,7 +101,7 @@ public class LanguageDetectionTest {
 
   private InputFile newInputFile(String path) throws IOException {
     File basedir = temp.newFolder();
-    return new TestInputFileBuilder("foo", path).setModuleBaseDir(basedir.toPath()).build();
+    return new TestInputFileBuilder(path).setBaseDir(basedir.toPath()).build();
   }
 
   static class MockLanguage implements Language {

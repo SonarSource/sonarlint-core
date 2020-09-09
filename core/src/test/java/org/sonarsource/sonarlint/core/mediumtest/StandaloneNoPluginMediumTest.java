@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -71,12 +69,18 @@ public class StandaloneNoPluginMediumTest {
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
     AnalysisResults results = sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
       i -> {
       }, null, null);
 
     assertThat(results.indexedFileCount()).isEqualTo(1);
     assertThat(logs.get(Level.WARN)).contains("No analyzers installed");
+
+    assertThat(sonarlint.getAllRuleDetails()).isEmpty();
+    assertThat(sonarlint.getAllLanguagesNameByKey()).isEmpty();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,31 +21,39 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.SortedSet;
 import java.util.stream.StreamSupport;
+import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
+import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 
-public class SonarLintFileSystem extends DefaultFileSystem {
+public class SonarLintFileSystem implements FileSystem {
 
   private static final Logger LOG = Loggers.get(SonarLintFileSystem.class);
 
-  private FileIndexer indexer;
   private final DefaultFilePredicates filePredicates;
+  private final Path baseDir;
+  private Charset encoding;
 
-  public SonarLintFileSystem(StandaloneAnalysisConfiguration analysisConfiguration, InputPathCache moduleInputFileCache, FileIndexer indexer) {
-    super(analysisConfiguration.baseDir(), moduleInputFileCache);
-    this.indexer = indexer;
+  private final InputFileCache inputFileCache;
+
+  public SonarLintFileSystem(AbstractAnalysisConfiguration analysisConfiguration, InputFileCache inputFileCache) {
+    this.inputFileCache = inputFileCache;
+    this.baseDir = analysisConfiguration.baseDir();
     this.filePredicates = new DefaultFilePredicates();
-    setWorkDir(analysisConfiguration.workDir());
   }
 
-  public void index() {
-    indexer.index(this);
+  @Override
+  public File workDir() {
+    LOG.warn("No workDir in SonarLint");
+    return baseDir();
   }
 
   @Override
@@ -59,19 +67,82 @@ public class SonarLintFileSystem extends DefaultFileSystem {
   }
 
   @Override
-  public DefaultFileSystem setEncoding(Charset c) {
+  public File baseDir() {
+    return baseDir.toFile();
+  }
+
+  private SonarLintFileSystem setEncoding(Charset c) {
     LOG.debug("Setting filesystem encoding: " + c);
-    return super.setEncoding(c);
+    this.encoding = c;
+    return this;
   }
 
   @Override
   public Charset encoding() {
-    if (super.encoding() == null) {
+    if (encoding == null) {
       setEncoding(StreamSupport.stream(inputFiles().spliterator(), false)
         .map(InputFile::charset)
         .findFirst()
         .orElse(Charset.defaultCharset()));
     }
-    return super.encoding();
+    return encoding;
   }
+
+  @Override
+  public InputFile inputFile(FilePredicate predicate) {
+    Iterable<InputFile> files = inputFiles(predicate);
+    Iterator<InputFile> iterator = files.iterator();
+    if (!iterator.hasNext()) {
+      return null;
+    }
+    InputFile first = iterator.next();
+    if (!iterator.hasNext()) {
+      return first;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("expected one element but was: <" + first);
+    for (int i = 0; i < 4 && iterator.hasNext(); i++) {
+      sb.append(", " + iterator.next());
+    }
+    if (iterator.hasNext()) {
+      sb.append(", ...");
+    }
+    sb.append('>');
+
+    throw new IllegalArgumentException(sb.toString());
+
+  }
+
+  public Iterable<InputFile> inputFiles() {
+    return inputFiles(filePredicates.all());
+  }
+
+  @Override
+  public Iterable<InputFile> inputFiles(FilePredicate predicate) {
+    return OptimizedFilePredicateAdapter.create(predicate).get(inputFileCache);
+  }
+
+  @Override
+  public boolean hasFiles(FilePredicate predicate) {
+    return inputFiles(predicate).iterator().hasNext();
+  }
+
+  @Override
+  public Iterable<File> files(FilePredicate predicate) {
+    return () -> StreamSupport.stream(inputFiles(predicate).spliterator(), false)
+      .map(InputFile::file)
+      .iterator();
+  }
+
+  @Override
+  public SortedSet<String> languages() {
+    return inputFileCache.languages();
+  }
+
+  @Override
+  public File resolvePath(String path) {
+    throw new UnsupportedOperationException("resolvePath");
+  }
+
 }

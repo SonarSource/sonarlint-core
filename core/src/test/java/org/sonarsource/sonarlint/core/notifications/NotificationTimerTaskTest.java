@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.notifications;
 
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentMatchers;
+import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
+import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
@@ -27,36 +39,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.ZonedDateTime;
-import java.util.Collections;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
-import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
-
 public class NotificationTimerTaskTest {
-  @Mock
-  private SonarQubeNotificationListener listener;
-  @Mock
-  private NotificationChecker notificationChecker;
-  @Mock
-  private NotificationCheckerFactory notificationCheckerFactory;
-  @Mock
-  private LastNotificationTime notificationTime;
+  private SonarQubeNotificationListener listener = mock(SonarQubeNotificationListener.class);
+  private NotificationChecker notificationChecker = mock(NotificationChecker.class);
+  private NotificationCheckerFactory notificationCheckerFactory = mock(NotificationCheckerFactory.class);
+  private LastNotificationTime notificationTime = mock(LastNotificationTime.class);
 
   private ZonedDateTime time = ZonedDateTime.now();
   private NotificationTimerTask timerTask;
 
   @Before
   public void setup() {
-    MockitoAnnotations.initMocks(this);
     when(notificationTime.get()).thenReturn(time);
     when(notificationCheckerFactory.create(any())).thenReturn(notificationChecker);
     timerTask = new NotificationTimerTask(notificationCheckerFactory);
@@ -108,7 +101,7 @@ public class NotificationTimerTaskTest {
     verify(notificationCheckerFactory, times(1)).create(any(ServerConfiguration.class));
     verify(notificationChecker).request(ArgumentMatchers.argThat(map -> {
       ZonedDateTime time = map.values().iterator().next();
-      return time.isAfter(ZonedDateTime.now().minusHours(25)) && time.isBefore(ZonedDateTime.now().minusHours(23));
+      return ChronoUnit.MINUTES.between(ZonedDateTime.now().minusDays(1), time) == 0;
     }));
 
     verify(listener).handle(notif);

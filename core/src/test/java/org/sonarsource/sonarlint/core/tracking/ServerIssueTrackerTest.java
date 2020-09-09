@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,11 +37,11 @@ public class ServerIssueTrackerTest {
   private ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
   private ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
   private ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-  private ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(CachingIssueTracker.class));
+  private ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
 
   @Test
   public void should_get_issues_from_engine_without_downloading() {
-    ServerIssueTracker tracker = new ServerIssueTracker(mock(Logger.class), mock(CachingIssueTracker.class));
+    ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
     tracker.update(engine, projectBinding, Collections.singleton(filePath));
     verify(engine).getServerIssues(projectBinding, filePath);
     verifyNoMoreInteractions(engine);

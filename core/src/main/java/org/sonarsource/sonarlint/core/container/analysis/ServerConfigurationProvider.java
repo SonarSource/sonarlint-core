@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -40,19 +41,34 @@ public class ServerConfigurationProvider {
 
   private Configuration serverConfig;
 
-  public ServerConfigurationProvider(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ServerConfiguration(storage, config, propertyDefinitions).asConfig();
+  /**
+   * Connected mode
+   */
+  public ServerConfigurationProvider(StorageReader storage, ConnectedAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, config, propertyDefinitions));
   }
 
+  /**
+   * Standalone mode
+   */
   public ServerConfigurationProvider(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ServerConfiguration(null, config, propertyDefinitions).asConfig();
+    this.serverConfig = new EmptyConfiguration();
+  }
+
+  // For testing
+  public ServerConfigurationProvider(Map<String, String> properties) {
+    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(properties));
   }
 
   public static class ServerConfiguration extends MapSettings {
 
-    private final Map<String, String> properties = new HashMap<>();
+    // For testing
+    private ServerConfiguration(Map<String, String> properties) {
+      super(new PropertyDefinitions(System2.INSTANCE));
+      addProperties(properties);
+    }
 
-    private ServerConfiguration(@Nullable StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions);
       if (storage != null) {
         GlobalProperties globalProps = storage.readGlobalProperties();
@@ -64,25 +80,6 @@ public class ServerConfigurationProvider {
       }
     }
 
-    @Override
-    protected Optional<String> get(String key) {
-      return Optional.ofNullable(properties.get(key));
-    }
-
-    @Override
-    protected void set(String key, String value) {
-      properties.put(key, value);
-    }
-
-    @Override
-    protected void remove(String key) {
-      properties.remove(key);
-    }
-
-    @Override
-    public Map<String, String> getProperties() {
-      return properties;
-    }
   }
 
   public Configuration getServerConfig() {

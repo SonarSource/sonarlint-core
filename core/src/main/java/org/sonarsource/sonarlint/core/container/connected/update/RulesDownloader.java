@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,9 +23,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.CheckForNull;
+import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.rule.RuleKey;
 import org.sonarqube.ws.Common.RuleType;
 import org.sonarqube.ws.Rules.Active.Param;
@@ -43,6 +45,8 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
+
 public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
@@ -54,28 +58,38 @@ public class RulesDownloader {
   }
 
   public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
+
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
-    fetchRulesAndActiveRules(rulesBuilder, activeRulesBuildersByQProfile, progress);
+
+    for (int i = 0; i < Severity.values().length; i++) {
+      Severity severity = Severity.values()[i];
+      progress.setProgressAndCheckCancel("Loading severity '" + severity.name().toLowerCase(Locale.US) + "'",
+        i / (float) Severity.values().length);
+      ProgressWrapper severityProgress = progress.subProgress(i / (float) Severity.values().length,
+        (i + 1) / (float) Severity.values().length, severity.name().toLowerCase(Locale.US));
+      fetchRulesAndActiveRules(rulesBuilder, severity.name(), activeRulesBuildersByQProfile, severityProgress);
+    }
     Path activeRulesDir = destDir.resolve(StoragePaths.ACTIVE_RULES_FOLDER);
     FileUtils.mkdirs(activeRulesDir);
     for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(StoragePaths.encodeForFs(entry.getKey()) + ".pb"));
+      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(encodeForFs(entry.getKey()) + ".pb"));
     }
 
     ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StoragePaths.RULES_PB));
   }
 
-  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, ProgressWrapper progress) {
+  private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, String severity, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, ProgressWrapper progress) {
     int page = 0;
     int pageSize = 500;
     int loaded = 0;
 
     while (true) {
       page++;
-      SearchResponse response = loadFromStream(wsClient.get(getUrl(page, pageSize)));
+      SearchResponse response = loadFromStream(wsClient.get(getUrl(severity, page, pageSize)));
       if (response.getTotal() > 10_000) {
-        throw new IllegalStateException("Found more than 10000 rules in the SonarQube server, which is not supported by SonarLint.");
+        throw new IllegalStateException(
+          String.format("Found more than 10000 rules for severity '%s' in the SonarQube server, which is not supported by SonarLint.", severity));
       }
       readPage(rulesBuilder, activeRulesBuildersByQProfile, response);
       loaded += response.getPs();
@@ -87,12 +101,12 @@ public class RulesDownloader {
     }
   }
 
-  private String getUrl(int page, int pageSize) {
+  private String getUrl(String severity, int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
-    if (wsClient.getOrganizationKey() != null) {
-      builder.append("&organization=").append(StringUtils.urlEncode(wsClient.getOrganizationKey()));
-    }
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
+    builder.append("&severities=").append(severity);
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();

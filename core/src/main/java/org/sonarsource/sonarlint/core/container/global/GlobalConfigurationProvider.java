@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.global;
 
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.core.container.analysis.ConfigurationBridge;
 
 public class GlobalConfigurationProvider extends ProviderAdapter {
 
@@ -28,7 +29,7 @@ public class GlobalConfigurationProvider extends ProviderAdapter {
 
   public Configuration provide(GlobalSettings settings) {
     if (globalConfig == null) {
-      this.globalConfig = settings.asConfig();
+      this.globalConfig = new ConfigurationBridge(settings);
     }
     return globalConfig;
   }

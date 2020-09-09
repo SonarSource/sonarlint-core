@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,23 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Collections;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -78,23 +75,25 @@ public class ConnectedEmptyStorageMediumTest {
       sonarlint.allProjectsByKey();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
     try {
       sonarlint.getRuleDetails("rule");
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
     try {
       sonarlint.analyze(
-        new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Collections.<ClientInputFile>emptyList(), ImmutableMap.<String, String>of()),
+        ConnectedAnalysisConfiguration.builder()
+          .setBaseDir(baseDir.toPath())
+          .build(),
         mock(IssueListener.class), null, null);
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
   }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,24 +20,27 @@
 package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.internal.ApiVersion;
-import org.sonar.api.internal.SonarRuntimeImpl;
+import org.sonar.api.resources.Language;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -46,14 +49,16 @@ import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvid
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
+import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.PluginLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -63,6 +68,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private GlobalExtensionContainer globalExtensionContainer;
+  private List<Language> languages;
 
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
@@ -73,20 +79,20 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version version = ApiVersion.load(System2.INSTANCE);
+    Version version = MetadataLoader.loadVersion(System2.INSTANCE);
     add(
       StandalonePluginIndex.class,
       PluginRepository.class,
       PluginVersionChecker.class,
-      PluginCacheLoader.class,
-      PluginLoader.class,
+      PluginInfosLoader.class,
+      PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       GlobalSettings.class,
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
       new SonarQubeVersion(version),
-      SonarRuntimeImpl.forSonarLint(version),
+      new SonarLintRuntimeImpl(version),
 
       new GlobalTempFolderProvider(),
       UriReader.class,
@@ -116,7 +122,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   private void installPlugins() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
@@ -127,6 +133,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     container.execute();
     rules = container.getRules();
     standaloneActiveRules = container.getStandaloneActiveRules();
+    languages = container.getLanguages();
   }
 
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
@@ -134,13 +141,14 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
-    // TODO configuration should be set directly with Strings
     Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(Collectors.toSet());
     Set<String> includedRules = configuration.includedRules().stream()
       .map(RuleKey::toString)
       .filter(r -> !excludedRules.contains(r))
       .collect(Collectors.toSet());
-    analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules));
+    Map<String, Map<String, String>> ruleParameters = new HashMap<>();
+    configuration.ruleParameters().forEach((k, v) -> ruleParameters.put(k.toString(), v));
+    analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules, ruleParameters));
     analysisContainer.add(SensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
@@ -148,22 +156,25 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return defaultAnalysisResult;
   }
 
-  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+  public Collection<PluginDetails> getPluginDetails() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    return pluginRepository.getLoadedAnalyzers();
+    return pluginRepository.getPluginDetails();
   }
 
-  public RuleDetails getRuleDetails(String ruleKeyStr) {
+  @CheckForNull
+  public StandaloneRuleDetails getRuleDetails(String ruleKeyStr) {
     return standaloneActiveRules.ruleDetails(ruleKeyStr);
   }
 
   public Collection<String> getActiveRuleKeys() {
-    return standaloneActiveRules.activeRulesByDefault().stream()
-      .map(rule -> rule.ruleKey().toString())
-      .collect(Collectors.toList());
+    return standaloneActiveRules.getActiveRuleKeys();
   }
 
-  public Collection<RuleDetails> getAllRuleDetails() {
+  public Collection<StandaloneRuleDetails> getAllRuleDetails() {
     return standaloneActiveRules.allRuleDetails();
+  }
+
+  public Map<String, String> getAllLanguagesNameByKey() {
+    return languages.stream().collect(Collectors.toMap(Language::getKey, Language::getName));
   }
 }

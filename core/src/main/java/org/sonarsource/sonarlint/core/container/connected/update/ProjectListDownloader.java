@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,45 +19,34 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import com.google.gson.Gson;
-import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Path;
 import org.sonarqube.ws.WsComponents;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 public class ProjectListDownloader {
+
+  private static final String PROJECT_SEARCH_URL = "api/components/search.protobuf?qualifiers=TRK";
   private final SonarLintWsClient wsClient;
 
   public ProjectListDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
-  public void fetchTo(Path dest, String serverVersion, ProgressWrapper progress) {
-    if (Version.create(serverVersion).compareToIgnoreQualifier(Version.create("6.3")) >= 0) {
-      fetchProjectListAfter6dot3(dest, progress);
-    } else {
-      fetchProjectListBefore6dot3(dest);
-    }
-  }
-
-  private void fetchProjectListAfter6dot3(Path dest, ProgressWrapper progress) {
+  public void fetchTo(Path dest, ProgressWrapper progress) {
     ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
     Builder projectBuilder = ProjectList.Project.newBuilder();
 
-    String baseUrl = "api/components/search.protobuf?qualifiers=TRK";
-    if (wsClient.getOrganizationKey() != null) {
-      baseUrl += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
-    }
-    SonarLintWsClient.getPaginated(wsClient, baseUrl,
+    StringBuilder searchUrl = new StringBuilder();
+    searchUrl.append(PROJECT_SEARCH_URL);
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+    SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
       WsComponents.SearchWsResponse::parseFrom,
       WsComponents.SearchWsResponse::getPaging,
       WsComponents.SearchWsResponse::getComponentsList,
@@ -72,33 +61,6 @@ public class ProjectListDownloader {
       progress);
 
     ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
-  }
-
-  private void fetchProjectListBefore6dot3(Path dest) {
-    try (WsResponse response = wsClient.get("api/projects/index?format=json")) {
-      try (Reader contentReader = response.contentReader()) {
-        DefaultModule[] results = new Gson().fromJson(contentReader, DefaultModule[].class);
-
-        ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
-        Builder projectBuilder = ProjectList.Project.newBuilder();
-        for (DefaultModule project : results) {
-          projectBuilder.clear();
-          projectListBuilder.putProjectsByKey(project.k, projectBuilder
-            .setKey(project.k)
-            .setName(project.nm)
-            .build());
-        }
-        ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
-      } catch (IOException e) {
-        throw new IllegalStateException("Failed to load module list", e);
-      }
-    }
-  }
-
-  private static class DefaultModule {
-    String k;
-    String nm;
-    String qu;
   }
 
 }

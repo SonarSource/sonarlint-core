@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -51,8 +51,8 @@ public class IssueStorePaths {
   }
 
   @CheckForNull
-  public String localPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, ProjectBinding projectBinding, String localFilePath) {
-    String sqFilePath = localPathToSqPath(projectBinding, localFilePath);
+  public String idePathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, ProjectBinding projectBinding, String ideFilePath) {
+    String sqFilePath = idePathToSqPath(projectBinding, ideFilePath);
 
     if (sqFilePath == null) {
       return null;
@@ -61,8 +61,8 @@ public class IssueStorePaths {
   }
 
   @CheckForNull
-  public String localPathToSqPath(ProjectBinding projectBinding, String localFilePath) {
-    if (!localFilePath.startsWith(projectBinding.idePathPrefix())) {
+  public String idePathToSqPath(ProjectBinding projectBinding, String ideFilePath) {
+    if (!ideFilePath.startsWith(projectBinding.idePathPrefix())) {
       return null;
     }
     int localPrefixLen = projectBinding.idePathPrefix().length();
@@ -73,7 +73,7 @@ public class IssueStorePaths {
     if (!sqPathPrefix.isEmpty()) {
       sqPathPrefix = sqPathPrefix + "/";
     }
-    return sqPathPrefix + localFilePath.substring(localPrefixLen);
+    return sqPathPrefix + ideFilePath.substring(localPrefixLen);
   }
 
   public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue, Sonarlint.ProjectConfiguration projectConfiguration) {
@@ -114,13 +114,13 @@ public class IssueStorePaths {
     return modulePath + filePath;
   }
 
-  public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String localPath) {
+  public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String idePath) {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setChecksum(pbIssue.getChecksum());
     issue.setModuleKey(pbIssue.getModuleKey());
     issue.setLine(pbIssue.getLine());
-    issue.setFilePath(localPath);
+    issue.setFilePath(idePath);
     issue.setManualSeverity(pbIssue.getManualSeverity());
     issue.setMessage(pbIssue.getMsg());
     issue.setSeverity(pbIssue.getSeverity());

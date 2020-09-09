@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.Is
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 public class GlobalSettingsUpdateChecker {
@@ -59,8 +58,8 @@ public class GlobalSettingsUpdateChecker {
     this.globalPropertiesDownloader = globalPropertiesDownloader;
   }
 
-  public void checkForUpdates(Version serverVersion, DefaultStorageUpdateCheckResult result) {
-    GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalSettings(serverVersion);
+  public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
+    GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalSettings();
     GlobalProperties storageGlobalProperties = storageReader.readGlobalProperties();
     MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties.getPropertiesMap()), filter(serverGlobalProperties.getPropertiesMap()));
     if (!propDiff.areEqual()) {

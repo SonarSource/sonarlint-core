@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.List;
-import javax.annotation.CheckForNull;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
@@ -55,9 +55,14 @@ public interface WsHelper {
 
   /**
    * Get an organization.
-   * @returns null if the organization is not found
+   * @return null if the organization is not found
    * @since 3.5
    */
-  @CheckForNull
-  RemoteOrganization getOrganization(ServerConfiguration serverConfig, String organizationKey, ProgressMonitor monitor);
+  Optional<RemoteOrganization> getOrganization(ServerConfiguration serverConfig, String organizationKey, ProgressMonitor monitor);
+
+  /**
+   * Get a project.
+   * @since 4.0
+   */
+  Optional<RemoteProject> getProject(ServerConfiguration serverConfig, String projectKey, ProgressMonitor monitor);
 }

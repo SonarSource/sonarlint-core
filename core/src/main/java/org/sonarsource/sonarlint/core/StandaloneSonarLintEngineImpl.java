@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,19 +20,21 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -70,12 +72,12 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   }
 
   @Override
-  public RuleDetails getRuleDetails(String ruleKey) {
-    return globalContainer.getRuleDetails(ruleKey);
+  public Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey) {
+    return Optional.ofNullable(globalContainer.getRuleDetails(ruleKey));
   }
 
   @Override
-  public Collection<RuleDetails> getAllRuleDetails() {
+  public Collection<StandaloneRuleDetails> getAllRuleDetails() {
     return globalContainer.getAllRuleDetails();
   }
 
@@ -120,11 +122,22 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   }
 
   @Override
-  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
+  public Collection<PluginDetails> getPluginDetails() {
     setLogging(null);
     rwl.readLock().lock();
     try {
-      return globalContainer.getLoadedAnalyzers();
+      return globalContainer.getPluginDetails();
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
+
+  @Override
+  public Map<String, String> getAllLanguagesNameByKey() {
+    setLogging(null);
+    rwl.readLock().lock();
+    try {
+      return globalContainer.getAllLanguagesNameByKey();
     } finally {
       rwl.readLock().unlock();
     }

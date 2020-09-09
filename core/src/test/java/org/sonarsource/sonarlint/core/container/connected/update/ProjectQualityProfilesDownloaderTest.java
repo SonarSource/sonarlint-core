@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,6 @@ import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
-import org.sonarsource.sonarlint.core.plugin.Version;
 
 import static org.mockito.Mockito.when;
 
@@ -42,14 +41,6 @@ public class ProjectQualityProfilesDownloaderTest {
     when(wsClient.get("/api/qualityprofiles/search.protobuf?project=key")).thenThrow(NotFoundException.class);
 
     exception.expect(ProjectNotFoundException.class);
-    underTest.fetchModuleQualityProfiles("key",  Version.create("6.5"));
-  }
-
-  @Test
-  public void not_found_before_65() {
-    when(wsClient.get("/api/qualityprofiles/search.protobuf?projectKey=key")).thenThrow(NotFoundException.class);
-
-    exception.expect(ProjectNotFoundException.class);
-    underTest.fetchModuleQualityProfiles("key", Version.create("6.4"));
+    underTest.fetchModuleQualityProfiles("key");
   }
 }

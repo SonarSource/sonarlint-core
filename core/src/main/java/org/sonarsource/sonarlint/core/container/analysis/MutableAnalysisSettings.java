@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.internal.MapSettings;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
@@ -36,49 +34,41 @@ public class MutableAnalysisSettings extends MapSettings {
   private static final String OBJC_SUFFIXES_KEY = "sonar.objc.file.suffixes";
   private static final String DISABLED_SUFFIX = "disabled";
 
-  private final Map<String, String> properties = new HashMap<>();
-
-  public MutableAnalysisSettings(StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  /**
+   * Standalone mode
+   */
+  public MutableAnalysisSettings(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
-    addDefaultProperties();
-    addProperties(config.extraProperties());
+    addPropertiesInOrder(globalConfig, analysisConfig);
   }
 
-  public MutableAnalysisSettings(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+  /**
+   * Connected mode
+   */
+  public MutableAnalysisSettings(StorageReader storage, AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig,
+    PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     GlobalProperties globalProps = storage.readGlobalProperties();
     addProperties(globalProps.getPropertiesMap());
-    if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).projectKey() != null) {
-      ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).projectKey());
+    if (analysisConfig instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) analysisConfig).projectKey() != null) {
+      ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) analysisConfig).projectKey());
       addProperties(projectConfig.getPropertiesMap());
     }
-    addDefaultProperties();
-    addProperties(config.extraProperties());
+    addPropertiesInOrder(globalConfig, analysisConfig);
   }
 
-  private void addDefaultProperties() {
-    setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
-    setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);
-    setProperty(OBJC_SUFFIXES_KEY, DISABLED_SUFFIX);
+  private void addPropertiesInOrder(AbstractGlobalConfiguration globalConfig, AbstractAnalysisConfiguration analysisConfig) {
+    addProperties(globalConfig.extraProperties());
+    addDefaultProperties(analysisConfig);
+    addProperties(analysisConfig.extraProperties());
   }
 
-  @Override
-  protected Optional<String> get(String key) {
-    return Optional.ofNullable(properties.get(key));
+  private void addDefaultProperties(AbstractAnalysisConfiguration config) {
+    if (!config.extraProperties().containsKey("sonar.cfamily.build-wrapper-output")) {
+      setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
+      setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);
+      setProperty(OBJC_SUFFIXES_KEY, DISABLED_SUFFIX);
+    }
   }
 
-  @Override
-  protected void set(String key, String value) {
-    properties.put(key, value);
-  }
-
-  @Override
-  protected void remove(String key) {
-    properties.remove(key);
-  }
-
-  @Override
-  public Map<String, String> getProperties() {
-    return properties;
-  }
 }

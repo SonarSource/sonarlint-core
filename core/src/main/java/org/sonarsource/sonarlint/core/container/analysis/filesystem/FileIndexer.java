@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,13 +29,14 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
 
 /**
- * Index input files into {@link InputPathCache}.
+ * Index input files into {@link InputFileCache}.
  */
 @SonarLintSide
 public class FileIndexer {
@@ -43,58 +44,68 @@ public class FileIndexer {
   private static final Logger LOG = Loggers.get(FileIndexer.class);
 
   private final InputFileBuilder inputFileBuilder;
-  private final StandaloneAnalysisConfiguration analysisConfiguration;
+  private final AbstractAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
   private final InputFileFilter[] filters;
+  private final IssueExclusionsLoader issueExclusionsLoader;
+  private final InputFileCache inputFileCache;
 
   private ProgressReport progressReport;
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
-    DefaultAnalysisResult analysisResult,
+  public FileIndexer(InputFileCache inputFileCache, InputFileBuilder inputFileBuilder, AbstractAnalysisConfiguration analysisConfiguration,
+    DefaultAnalysisResult analysisResult, IssueExclusionsLoader issueExclusionsLoader,
     InputFileFilter[] filters) {
+    this.inputFileCache = inputFileCache;
     this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
     this.analysisResult = analysisResult;
+    this.issueExclusionsLoader = issueExclusionsLoader;
     this.filters = filters;
   }
 
-  public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
-    DefaultAnalysisResult analysisResult) {
-    this(inputFileBuilder, analysisConfiguration, analysisResult, new InputFileFilter[0]);
+  public FileIndexer(InputFileCache inputFileCache, InputFileBuilder inputFileBuilder, AbstractAnalysisConfiguration analysisConfiguration,
+    DefaultAnalysisResult analysisResult, IssueExclusionsLoader issueExclusionsLoader) {
+    this(inputFileCache, inputFileBuilder, analysisConfiguration, analysisResult, issueExclusionsLoader, new InputFileFilter[0]);
   }
 
-  void index(SonarLintFileSystem fileSystem) {
+  public void index() {
     progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
     progressReport.start("Index files");
 
     Progress progress = new Progress();
 
     try {
-      indexFiles(fileSystem, progress, analysisConfiguration.inputFiles());
+      indexFiles(inputFileCache, progress, analysisConfiguration.inputFiles());
     } catch (Exception e) {
       progressReport.stop(null);
       throw e;
     }
-    progressReport.stop(progress.count() + " files indexed");
-    analysisResult.setIndexedFileCount(progress.count());
+    int totalIndexed = progress.count();
+    progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
+    analysisResult.setIndexedFileCount(totalIndexed);
   }
 
-  private void indexFiles(SonarLintFileSystem fileSystem, Progress progress, Iterable<ClientInputFile> inputFiles) {
+  private static String pluralizeFiles(int count) {
+    return count == 1 ? "file" : "files";
+  }
+
+  private void indexFiles(InputFileCache inputFileCache, Progress progress, Iterable<ClientInputFile> inputFiles) {
     for (ClientInputFile file : inputFiles) {
-      indexFile(fileSystem, progress, file);
+      indexFile(inputFileCache, progress, file);
     }
   }
 
-  private void indexFile(SonarLintFileSystem fileSystem, Progress progress, ClientInputFile file) {
+  private void indexFile(InputFileCache inputFileCache, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
     if (accept(inputFile)) {
       analysisResult.setLanguageForFile(file, inputFile.language());
-      indexFile(fileSystem, progress, inputFile);
+      indexFile(inputFileCache, progress, inputFile);
+      issueExclusionsLoader.addMulticriteriaPatterns(inputFile);
     }
   }
 
-  private void indexFile(final SonarLintFileSystem fs, final Progress status, final SonarLintInputFile inputFile) {
-    fs.add(inputFile);
+  private void indexFile(final InputFileCache inputFileCache, final Progress status, final SonarLintInputFile inputFile) {
+    inputFileCache.doAdd(inputFile);
     status.markAsIndexed(inputFile);
   }
 

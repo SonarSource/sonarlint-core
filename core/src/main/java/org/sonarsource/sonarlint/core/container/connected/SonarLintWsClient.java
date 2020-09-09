@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,9 +28,13 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.CheckForNull;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
@@ -102,7 +106,7 @@ public class SonarLintWsClient {
     WsResponse response = client.call(request);
     long duration = System2.INSTANCE.now() - startTime;
     if (LOG.isDebugEnabled()) {
-      LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+      LOG.debug("{} {} {} | response time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
     }
     return response;
   }
@@ -116,7 +120,7 @@ public class SonarLintWsClient {
     WsResponse response = client.call(request);
     long duration = System2.INSTANCE.now() - startTime;
     if (LOG.isDebugEnabled()) {
-      LOG.debug("{} {} {} | time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+      LOG.debug("{} {} {} | response time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
     }
     return response;
   }
@@ -166,52 +170,83 @@ public class SonarLintWsClient {
     return userAgent;
   }
 
-  @CheckForNull
-  public String getOrganizationKey() {
-    return organizationKey;
+  public Optional<String> getOrganizationKey() {
+    return Optional.ofNullable(organizationKey);
   }
 
   // static to allow mocking SonarLintWsClient while still using this method
   /**
    * @param responseParser ProtoBuf parser
    * @param getPaging extract {@link Paging} from the protobuf message
-   * @param responseConsummer consume the protobuf message and return <code>true</code> if some elements where present (or <code>false</code> is response is empty)
    */
   public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress) {
-    int page = 0;
-    boolean stop = false;
-    int loaded = 0;
+    AtomicInteger page = new AtomicInteger(0);
+    AtomicBoolean stop = new AtomicBoolean(false);
+    AtomicInteger loaded = new AtomicInteger(0);
     do {
-      page++;
+      page.incrementAndGet();
       String url = baseUrl + (baseUrl.contains("?") ? "&" : "?") + "ps=" + PAGE_SIZE + "&p=" + page;
-      WsResponse response = client.get(url);
-      try (InputStream stream = response.contentStream()) {
-        G protoBufResponse = responseParser.apply(stream);
-        List<F> items = itemExtractor.apply(protoBufResponse);
-        for (F item : items) {
-          itemConsumer.accept(item);
-          loaded++;
-        }
-        boolean isEmpty = items.isEmpty();
-        Paging paging = getPaging.apply(protoBufResponse);
-        // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
-        stop = isEmpty || (paging.getTotal() > 0 && page * PAGE_SIZE >= paging.getTotal());
-        if (!stop && limitToTwentyPages && page >= MAX_PAGES) {
-          stop = true;
-          LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
-        }
+      SonarLintWsClient.consumeTimed(
+        () -> client.get(url),
+        response -> processPage(baseUrl, responseParser, getPaging, itemExtractor, itemConsumer, limitToTwentyPages, progress, page, stop, loaded, response),
+        duration -> LOG.debug("Page downloaded in {}ms", duration));
+    } while (!stop.get());
+  }
 
-        progress.setProgressAndCheckCancel("Page " + page, loaded / (float) paging.getTotal());
-      } catch (IOException e) {
-        throw new IllegalStateException("Failed to process paginated WS", e);
-      }
-    } while (!stop);
+  private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging, Function<G, List<F>> itemExtractor,
+    Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded, WsResponse response)
+    throws IOException {
+    G protoBufResponse = responseParser.apply(response.contentStream());
+    List<F> items = itemExtractor.apply(protoBufResponse);
+    for (F item : items) {
+      itemConsumer.accept(item);
+      loaded.incrementAndGet();
+    }
+    boolean isEmpty = items.isEmpty();
+    Paging paging = getPaging.apply(protoBufResponse);
+    // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
+    stop.set(isEmpty || (paging.getTotal() > 0 && page.get() * PAGE_SIZE >= paging.getTotal()));
+    if (!stop.get() && limitToTwentyPages && page.get() >= MAX_PAGES) {
+      stop.set(true);
+      LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
+    }
+
+    progress.setProgressAndCheckCancel("Page " + page, loaded.get() / (float) paging.getTotal());
   }
 
   @FunctionalInterface
   public interface CheckedFunction<T, R> {
     R apply(T t) throws IOException;
+  }
+
+  public static <G> G processTimed(Supplier<WsResponse> responseSupplier, IOFunction<WsResponse, G> responseProcessor, LongConsumer durationConsummer) {
+    long startTime = System2.INSTANCE.now();
+    G result;
+    try (WsResponse response = responseSupplier.get()) {
+      result = responseProcessor.apply(response);
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
+    durationConsummer.accept(System2.INSTANCE.now() - startTime);
+    return result;
+  }
+
+  public static void consumeTimed(Supplier<WsResponse> responseSupplier, IOConsummer<WsResponse> responseConsumer, LongConsumer durationConsummer) {
+    processTimed(responseSupplier, r -> {
+      responseConsumer.accept(r);
+      return null;
+    }, durationConsummer);
+  }
+
+  @FunctionalInterface
+  public interface IOFunction<T, R> {
+    R apply(T t) throws IOException;
+  }
+
+  @FunctionalInterface
+  public interface IOConsummer<T> {
+    void accept(T t) throws IOException;
   }
 
 }

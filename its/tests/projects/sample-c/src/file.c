@@ -1,0 +1,2 @@
+#import "foo.h" // Noncompliant
+

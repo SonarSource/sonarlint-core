@@ -1,6 +1,6 @@
 /*
  * Example Plugin with global extension
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,21 @@
  */
 package org.sonarsource.plugins.example;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 public class GlobalSensor implements Sensor {
+
+  private static final Logger LOGGER = Loggers.get(GlobalSensor.class);
 
   private GlobalExtension globalExtension;
 
@@ -42,10 +49,19 @@ public class GlobalSensor implements Sensor {
 
   @Override
   public void execute(final SensorContext context) {
+    RuleKey globalRuleKey = RuleKey.of(GlobalRulesDefinition.KEY, GlobalRulesDefinition.RULE_KEY);
+    ActiveRule activeGlobalRule = context.activeRules().find(globalRuleKey);
+    if (activeGlobalRule != null) {
+      Stream.of("stringParam", "textParam", "intParam", "boolParam", "floatParam", "enumParam", "enumListParam", "multipleIntegersParam")
+        .map(k -> Arrays.asList(k, activeGlobalRule.param(k)))
+        .forEach(kv -> LOGGER.info("Param {} has value {}", kv.get(0), kv.get(1)));
+    } else {
+      LOGGER.error("Rule is not active");
+    }
     for (InputFile f : context.fileSystem().inputFiles(context.fileSystem().predicates().all())) {
       NewIssue newIssue = context.newIssue();
       newIssue
-        .forRule(RuleKey.of(GlobalRulesDefinition.KEY, GlobalRulesDefinition.RULE_KEY))
+        .forRule(globalRuleKey)
         .at(newIssue.newLocation().on(f).message("Issue number " + globalExtension.getAndInc()))
         .save();
     }

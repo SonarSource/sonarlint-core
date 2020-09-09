@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,20 +24,16 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ClientInputFileTests {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class ClientInputFileTests {
 
   @Test
-  public void testDefaults() throws IOException {
-    Path path = temp.newFile("Foo.java").toPath();
+  void testDefaults(@TempDir Path tempDir) throws IOException {
+    Path path = tempDir.resolve("Foo.java");
     ClientInputFile underTest = new ClientInputFile() {
 
       @Override

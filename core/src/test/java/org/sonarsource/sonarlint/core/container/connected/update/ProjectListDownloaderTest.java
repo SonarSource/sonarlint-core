@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.File;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -39,20 +40,6 @@ public class ProjectListDownloaderTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void update_modules_before_6_dot_3() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    WsClientTestUtils.addReaderResponse(wsClient, "api/projects/index?format=json", "/update/all_projects.json");
-
-    File tempDir = temp.newFolder();
-
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchTo(tempDir.toPath(), "6.2", new ProgressWrapper(null));
-
-    ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
-    assertThat(moduleList.getProjectsByKeyMap()).hasSize(1559);
-  }
-
-  @Test
   public void update_modules_after_6_dot_3() throws Exception {
 
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
@@ -61,7 +48,7 @@ public class ProjectListDownloaderTest {
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
@@ -71,13 +58,13 @@ public class ProjectListDownloaderTest {
   public void update_modules_after_6_dot_3_with_org() throws Exception {
 
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    when(wsClient.getOrganizationKey()).thenReturn("myOrg");
+    when(wsClient.getOrganizationKey()).thenReturn(Optional.of("myOrg"));
     WsClientTestUtils.addStreamResponse(wsClient, "api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
 
     File tempDir = temp.newFolder();
 
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(wsClient);
-    moduleListUpdate.fetchTo(tempDir.toPath(), "6.3", new ProgressWrapper(null));
+    moduleListUpdate.fetchTo(tempDir.toPath(), new ProgressWrapper(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.toPath().resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);

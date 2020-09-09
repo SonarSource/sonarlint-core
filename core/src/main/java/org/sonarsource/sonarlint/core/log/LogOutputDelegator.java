@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,16 +35,13 @@ public class LogOutputDelegator {
     }
   }
 
-  public void logError(String msg, Throwable t) {
+  public void log(String formattedMessage, Level level, Throwable t) {
+    log(formattedMessage, level);
+
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
-
-    LogOutput output = target.get();
-    if (output != null) {
-      output.log(msg, Level.ERROR);
-      output.log(sw.toString(), Level.ERROR);
-    }
+    log(sw.toString(), level);
   }
 
   public void setTarget(@Nullable LogOutput target) {

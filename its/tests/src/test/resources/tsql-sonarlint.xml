@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT TSQL</name>
+  <language>tsql</language>
+  <rules>
+    <rule>
+      <repositoryKey>tsql</repositoryKey>
+      <!-- "NULL" should not be compared directly -->
+      <key>S2527</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

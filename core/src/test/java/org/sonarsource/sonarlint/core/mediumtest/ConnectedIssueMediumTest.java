@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
@@ -39,12 +36,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
+import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -58,8 +57,10 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedIssueMediumTest {
 
@@ -82,7 +83,7 @@ public class ConnectedIssueMediumTest {
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
     FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-    Files.move(tmpStorage.resolve("local"), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)));
+    Files.move(tmpStorage.resolve(encodeForFs("local")), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)));
     PluginCache cache = PluginCache.create(pluginCache);
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -115,6 +116,7 @@ public class ConnectedIssueMediumTest {
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
+      .addEnabledLanguages(Language.JAVA, Language.JS)
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
@@ -122,7 +124,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(name);
+    Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(StoragePaths.encodeForFs(name));
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
@@ -157,18 +159,17 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void testContainerInfo() {
-    assertThat(sonarlint.getLoadedAnalyzers()).extracting("key").containsOnly("java", "javascript");
+    assertThat(sonarlint.getPluginDetails()).extracting("key").containsOnly("java", "javascript");
     assertThat(sonarlint.allProjectsByKey().keySet()).containsOnly("test-project", "test-project-2");
   }
 
   @Test
   public void testStaleProject() throws IOException {
     assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
-    ConnectedAnalysisConfiguration config = new ConnectedAnalysisConfiguration("stale_module",
-      baseDir.toPath(),
-      temp.newFolder().toPath(),
-      Collections.<ClientInputFile>emptyList(),
-      ImmutableMap.<String, String>of());
+    ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+      .setProjectKey("stale_module")
+      .setBaseDir(baseDir.toPath())
+      .build();
 
     try {
       sonarlint.analyze(config, createNoOpIssueListener(), null, null);
@@ -180,13 +181,20 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  public void unknowRuleKey() {
+    assertThrows(SonarLintException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
+    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
+    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
+  }
+
+  @Test
   public void simpleJavaScriptUnbinded() throws Exception {
 
     String ruleKey = "javascript:UnusedVariable";
-    RuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
+    ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
-    assertThat(ruleDetails.getLanguage()).isEqualTo("js");
+    assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
@@ -197,8 +205,11 @@ public class ConnectedIssueMediumTest {
       + "}", false);
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
-      new StoreIssueListener(issues), null, null);
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
+      new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple(ruleKey, 2, inputFile.getPath()));
 
@@ -209,13 +220,16 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
   }
 
   @Test
@@ -223,26 +237,35 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaTestInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S2187", 1, inputFile.getPath(), "MAJOR"));
+      tuple("java:S2187", 1, inputFile.getPath(), "MAJOR"));
   }
 
   @Test
   public void simpleJavaBinded() throws Exception {
     ClientInputFile inputFile = prepareJavaInputFile();
 
+    // Severity of java:S1481 changed to BLOCKER in the quality profile
+    assertThat(sonarlint.getRuleDetails("java:S1481").getSeverity()).isEqualTo("MAJOR");
+    assertThat(sonarlint.getActiveRuleDetails("java:S1481", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      new ConnectedAnalysisConfiguration(JAVA_MODULE_KEY, baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setProjectKey(JAVA_MODULE_KEY)
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("squid:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("squid:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("squid:S1481", 3, inputFile.getPath(), "MAJOR"));
+      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
+      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
+      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
   }
 
   @Test
@@ -250,8 +273,11 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      new ConnectedAnalysisConfiguration("test-project", baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of()),
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+      .setProjectKey("test-project")
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();

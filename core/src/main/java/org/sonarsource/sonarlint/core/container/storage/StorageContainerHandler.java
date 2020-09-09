@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,13 +27,15 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
@@ -45,12 +47,13 @@ import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpd
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.ReversePathTree;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
-  private final StorageRuleDetailsReader storageRuleDetailsReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
   private final PluginRepository pluginRepository;
   private final ProjectStorageStatusReader projectStorageStatusReader;
@@ -61,11 +64,10 @@ public class StorageContainerHandler {
   private final IssueStoreReader issueStoreReader;
   private final PartialUpdaterFactory partialUpdaterFactory;
 
-  public StorageContainerHandler(StorageAnalyzer storageAnalyzer, StorageRuleDetailsReader storageRuleDetailsReader, GlobalUpdateStatusReader globalUpdateStatusReader,
+  public StorageContainerHandler(StorageAnalyzer storageAnalyzer, GlobalUpdateStatusReader globalUpdateStatusReader,
     PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader, AllProjectReader allProjectReader, StoragePaths storagePaths,
     StorageReader storageReader, StorageFileExclusions storageExclusions, IssueStoreReader issueStoreReader, PartialUpdaterFactory partialUpdaterFactory) {
     this.storageAnalyzer = storageAnalyzer;
-    this.storageRuleDetailsReader = storageRuleDetailsReader;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
     this.pluginRepository = pluginRepository;
     this.projectStorageStatusReader = projectStorageStatusReader;
@@ -82,16 +84,52 @@ public class StorageContainerHandler {
     return storageAnalyzer.analyze(globalExtensionContainer, configuration, issueListener, progress);
   }
 
-  public RuleDetails getRuleDetails(String ruleKeyStr) {
-    return storageRuleDetailsReader.apply(ruleKeyStr);
+  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr) {
+    return getRuleDetailsWithSeverity(ruleKeyStr, null);
+  }
+
+  private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
+    Sonarlint.Rules.Rule rule = readRule(ruleKeyStr);
+    String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
+
+    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), overridenSeverity != null ? overridenSeverity : rule.getSeverity(), type, rule.getLang(),
+      rule.getHtmlNote());
+  }
+
+  private Sonarlint.Rules.Rule readRule(String ruleKeyStr) {
+    Sonarlint.Rules rulesFromStorage = storageReader.readRules();
+    RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
+    Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
+    if (rule == null) {
+      throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
+    }
+    return rule;
+  }
+
+  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
+    QProfiles qProfiles = storageReader.readQProfiles();
+    Map<String, String> qProfilesByLanguage;
+    if (projectKey == null) {
+      qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
+    } else {
+      qProfilesByLanguage = storageReader.readProjectConfig(projectKey).getQprofilePerLanguageMap();
+    }
+    for (String qProfileKey : qProfilesByLanguage.values()) {
+      Sonarlint.ActiveRules activeRulesFromStorage = storageReader.readActiveRules(qProfileKey);
+      if (activeRulesFromStorage.getActiveRulesByKeyMap().containsKey(ruleKeyStr)) {
+        ActiveRule ar = activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
+        return getRuleDetailsWithSeverity(ruleKeyStr, ar.getSeverity());
+      }
+    }
+    throw new IllegalArgumentException("Unable to find active rule with key " + ruleKeyStr);
   }
 
   public GlobalStorageStatus getGlobalStorageStatus() {
     return globalUpdateStatusReader.get();
   }
 
-  public Collection<LoadedAnalyzer> getAnalyzers() {
-    return pluginRepository.getLoadedAnalyzers();
+  public Collection<PluginDetails> getPluginDetails() {
+    return pluginRepository.getPluginDetails();
   }
 
   public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
@@ -102,19 +140,19 @@ public class StorageContainerHandler {
     return allProjectReader.get();
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath) {
-    return issueStoreReader.getServerIssues(projectBinding, filePath);
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
+    return issueStoreReader.getServerIssues(projectBinding, ideFilePath);
   }
 
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
-    return storageExclusions.getExcludedFiles(projectBinding, files, filePathExtractor, testFilePredicate);
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
+    return storageExclusions.getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
     PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, filePath);
-    return getServerIssues(projectBinding, filePath);
+    updater.updateFileIssues(projectBinding, configuration, ideFilePath);
+    return getServerIssues(projectBinding, ideFilePath);
   }
 
   public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
@@ -123,8 +161,8 @@ public class StorageContainerHandler {
     updater.updateFileIssues(projectKey, configuration);
   }
 
-  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths) {
-    List<Path> localPathList = localFilePaths.stream()
+  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
+    List<Path> idePathList = ideFilePaths.stream()
       .map(Paths::get)
       .collect(Collectors.toList());
     List<Path> sqPathList = storageReader.readProjectComponents(projectKey)
@@ -132,10 +170,10 @@ public class StorageContainerHandler {
       .map(Paths::get)
       .collect(Collectors.toList());
 
-    FileMatcher fileMatcher = new FileMatcher(new ReversePathTree());
-    FileMatcher.Result match = fileMatcher.match(sqPathList, localPathList);
-    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.mostCommonSqPrefix().toString()),
-      FilenameUtils.separatorsToUnix(match.mostCommonLocalPrefix().toString()));
+    FileMatcher fileMatcher = new FileMatcher();
+    FileMatcher.Result match = fileMatcher.match(sqPathList, idePathList);
+    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.sqPrefix().toString()),
+      FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
 
   }
 

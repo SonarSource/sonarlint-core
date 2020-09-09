@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 public class GlobalSettings extends MapSettings {

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,20 +23,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sonarqube.ws.WsComponents;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectFileListDownloader {
-  private static final String BASE_PATH = "api/components/tree.protobuf?qualifiers=FIL&";
+  private static final String BASE_PATH = "api/components/tree.protobuf?qualifiers=FIL,UTS&";
   private final SonarLintWsClient wsClient;
 
   public ProjectFileListDownloader(SonarLintWsClient wsClient) {
     this.wsClient = wsClient;
   }
 
-  public List<String> get(Version serverVersion, String projectKey, ProgressWrapper progress) {
-    String path = buildPath(serverVersion, projectKey);
+  public List<String> get(String projectKey, ProgressWrapper progress) {
+    String path = buildPath(projectKey);
     List<String> files = new ArrayList<>();
 
     SonarLintWsClient.getPaginated(wsClient, path,
@@ -47,18 +46,11 @@ public class ProjectFileListDownloader {
     return files;
   }
 
-  private static String getComponentKeyParam(Version serverVersion) {
-    if (serverVersion.compareTo(Version.create("6.4")) > 0) {
-      return "component";
-    }
-    return "baseComponentKey";
-  }
-
-  private String buildPath(Version serverVersion, String projectKey) {
-    String path = BASE_PATH + getComponentKeyParam(serverVersion) + "=" + projectKey;
-    if (wsClient.getOrganizationKey() != null) {
-      path += "&organization=" + StringUtils.urlEncode(wsClient.getOrganizationKey());
-    }
-    return path;
+  private String buildPath(String projectKey) {
+    StringBuilder url = new StringBuilder();
+    url.append(BASE_PATH);
+    url.append("component=").append(StringUtils.urlEncode(projectKey));
+    wsClient.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    return url.toString();
   }
 }

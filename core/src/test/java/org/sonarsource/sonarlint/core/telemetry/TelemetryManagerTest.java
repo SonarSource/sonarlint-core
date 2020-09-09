@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,17 +25,40 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import org.junit.*;
+import java.util.function.Supplier;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class TelemetryManagerTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
+  private Supplier<Boolean> usesConnectedModeSupplier = () -> true;
+  private Supplier<Boolean> usesSonarCloudSupplier = () -> true;
   private TelemetryClient client;
+  private Path storagePath;
+  private TelemetryManager manager;
+  private TelemetryStorage storage;
+
+  @Before
+  public void setUp() throws IOException {
+    client = mock(TelemetryClient.class);
+    storagePath = temp.newFile().toPath();
+    storage = new TelemetryStorage(storagePath);
+    manager = new TelemetryManager(storagePath, mock(TelemetryClient.class), usesConnectedModeSupplier, usesSonarCloudSupplier);
+  }
 
   private TelemetryManager stubbedTelemetryManager(TelemetryData data) throws IOException {
     TelemetryStorage storage = mock(TelemetryStorage.class);
@@ -45,9 +68,7 @@ public class TelemetryManagerTest {
 
   private TelemetryManager stubbedTelemetryManager(TelemetryStorage storage) throws IOException {
     Path path = temp.newFile().toPath();
-    client = mock(TelemetryClient.class);
-
-    return new TelemetryManager(path, client) {
+    return new TelemetryManager(path, client, usesConnectedModeSupplier, usesSonarCloudSupplier) {
       @Override
       TelemetryStorage newTelemetryStorage(Path ignored) {
         return storage;
@@ -57,7 +78,7 @@ public class TelemetryManagerTest {
 
   @Test
   public void should_be_enabled_by_default() throws IOException {
-    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryClient.class)).isEnabled()).isTrue();
+    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryClient.class), mock(Supplier.class), mock(Supplier.class)).isEnabled()).isTrue();
   }
 
   @Test
@@ -82,14 +103,6 @@ public class TelemetryManagerTest {
   }
 
   @Test
-  public void usedConnectedMode_should_trigger_save_once_per_day() throws IOException {
-    TelemetryStorage storage = mockTelemetryStorage();
-    TelemetryManager manager = stubbedTelemetryManager(storage);
-    manager.usedConnectedMode(true, true);
-    verify(storage).trySave(any(TelemetryData.class));
-  }
-
-  @Test
   public void stop_should_trigger_save_and_upload_once_per_day() throws IOException {
     TelemetryStorage storage = mockTelemetryStorage();
     TelemetryManager manager = stubbedTelemetryManager(storage);
@@ -97,7 +110,7 @@ public class TelemetryManagerTest {
 
     // once during lazy save, twice during lazy upload
     verify(storage, times(3)).trySave(any(TelemetryData.class));
-    verify(client).upload(any(TelemetryData.class));
+    verify(client).upload(any(TelemetryData.class), anyBoolean(), anyBoolean());
   }
 
   @Test
@@ -107,7 +120,7 @@ public class TelemetryManagerTest {
     manager.enable();
     manager.enable();
 
-    verify(client).upload(any(TelemetryData.class));
+    verify(client).upload(any(TelemetryData.class), anyBoolean(), anyBoolean());
     verifyNoMoreInteractions(client);
   }
 
@@ -117,7 +130,7 @@ public class TelemetryManagerTest {
     TelemetryManager manager = stubbedTelemetryManager(storage);
     manager.disable();
 
-    verify(client).optOut(any(TelemetryData.class));
+    verify(client).optOut(any(TelemetryData.class), eq(true), eq(true));
     verifyNoMoreInteractions(client);
   }
 
@@ -129,18 +142,19 @@ public class TelemetryManagerTest {
     data.setUsedAnalysis("java", 1000);
     assertThat(data.analyzers()).isNotEmpty();
     assertThat(data.lastUploadTime()).isNull();
+
     manager.uploadLazily();
 
-    // should reset performance after upload
+    // should reset performance and usage of connected mode after upload
     assertThat(data.analyzers()).isEmpty();
 
     LocalDateTime lastUploadTime = data.lastUploadTime();
     assertThat(lastUploadTime).isNotNull();
 
     manager.uploadLazily();
-    assertThat(data.lastUploadTime()).isEqualTo(lastUploadTime);
 
-    verify(client).upload(any(TelemetryData.class));
+    assertThat(data.lastUploadTime()).isEqualTo(lastUploadTime);
+    verify(client).upload(any(TelemetryData.class), eq(true), eq(true));
     verifyNoMoreInteractions(client);
   }
 
@@ -157,16 +171,13 @@ public class TelemetryManagerTest {
 
     manager.uploadLazily();
 
-    verify(client, times(2)).upload(any(TelemetryData.class));
+    verify(client, times(2)).upload(any(TelemetryData.class), eq(true), eq(true));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  public void enable_should_not_wipe_out_more_recent_data() throws IOException {
-    Path path = temp.newFile().toPath();
-    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
-
-    TelemetryStorage storage = new TelemetryStorage(path);
+  public void enable_should_not_wipe_out_more_recent_data() {
+    TelemetryStorage storage = new TelemetryStorage(storagePath);
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
@@ -181,11 +192,7 @@ public class TelemetryManagerTest {
   }
 
   @Test
-  public void disable_should_not_wipe_out_more_recent_data() throws IOException {
-    Path path = temp.newFile().toPath();
-    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
-
-    TelemetryStorage storage = new TelemetryStorage(path);
+  public void disable_should_not_wipe_out_more_recent_data() {
     TelemetryData data = createAndSaveSampleData(storage);
     data.setEnabled(true);
     storage.trySave(data);
@@ -203,10 +210,6 @@ public class TelemetryManagerTest {
 
   @Test
   public void reporting_analysis_done_should_not_wipe_out_more_recent_data() throws IOException {
-    Path path = temp.newFile().toPath();
-    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
-
-    TelemetryStorage storage = new TelemetryStorage(path);
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
@@ -220,13 +223,9 @@ public class TelemetryManagerTest {
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).isEmpty();
   }
-  
+
   @Test
   public void reporting_analysis_on_single_file() throws IOException {
-    Path path = temp.newFile().toPath();
-    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
-
-    TelemetryStorage storage = new TelemetryStorage(path);
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
@@ -240,13 +239,9 @@ public class TelemetryManagerTest {
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).containsKey("java");
   }
-  
+
   @Test
   public void reporting_analysis_on_language() throws IOException {
-    Path path = temp.newFile().toPath();
-    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
-
-    TelemetryStorage storage = new TelemetryStorage(path);
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
@@ -259,28 +254,6 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).containsKey("java");
-  }
-
-  @Test
-  public void usedConnectedMode_should_not_wipe_out_more_recent_data() throws IOException {
-    Path path = temp.newFile().toPath();
-    TelemetryManager manager = new TelemetryManager(path, mock(TelemetryClient.class));
-
-    TelemetryStorage storage = new TelemetryStorage(path);
-    TelemetryData data = createAndSaveSampleData(storage);
-
-    // note: the manager hasn't seen the saved data
-    manager.usedConnectedMode(true, true);
-
-    TelemetryData reloaded = storage.tryLoad();
-    assertThat(reloaded.enabled()).isTrue();
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
-    assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
-    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
-    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
-    assertThat(reloaded.usedConnectedMode()).isNotEqualTo(data.usedConnectedMode());
-    assertThat(reloaded.usedSonarcloud()).isNotEqualTo(data.usedSonarcloud());
-
   }
 
   private TelemetryData createAndSaveSampleData(TelemetryStorage storage) {

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>4.0-SNAPSHOT</version>
+    <version>4.14-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-core-its-tests</artifactId>
   <name>SonarLint Core - ITs - Tests</name>
@@ -16,24 +16,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-okhttp</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-daemon-protocol</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-daemon</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-ws</artifactId>
       <version>${sonar-ws.version}</version>
@@ -42,25 +24,7 @@
     <dependency>
       <groupId>org.sonarsource.orchestrator</groupId>
       <artifactId>sonar-orchestrator</artifactId>
-      <version>3.21.0.1721</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.lingala.zip4j</groupId>
-      <artifactId>zip4j</artifactId>
-      <version>1.3.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.jayway.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-      <version>1.7.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-exec</artifactId>
-      <version>1.3</version>
+      <version>3.26.0.2111</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -74,69 +38,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sonarsource.license</groupId>
-      <artifactId>sonar-dev-license-plugin</artifactId>
-      <!-- Should be the same version than in Orchestrator builder in the test suite -->
-      <version>3.2.0.1163</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>9.4.7.v20170914</version>
+      <version>9.4.17.v20190418</version>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.sonarsource.java</groupId>
-                  <artifactId>sonar-java-plugin</artifactId>
-                  <version>3.11</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.javascript</groupId>
-                  <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>2.11</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.php</groupId>
-                  <artifactId>sonar-php-plugin</artifactId>
-                  <version>2.8</version>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.squareup.okio</groupId>
-        <artifactId>okio</artifactId>
-        <version>1.12.0</version>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>26.0-android</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

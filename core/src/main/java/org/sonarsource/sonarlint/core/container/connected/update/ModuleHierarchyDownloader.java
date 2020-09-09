@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -32,12 +30,10 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.Component;
-import org.sonarqube.ws.WsComponents.ShowWsResponse;
+import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
@@ -54,14 +50,12 @@ public class ModuleHierarchyDownloader {
    * It returns the relative paths to the given root module for all its sub projects.
    *
    * @param projectKey project for which the hierarchy will be returned.
-   * @return Mapping of moduleKey -> relativePath from given module
+   * @return Mapping of moduleKey -&gt; relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(Version serverVersion, String projectKey, ProgressWrapper progress) {
+  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&" +
-        getComponentKeyParam(serverVersion)
-        + "=" + StringUtils.urlEncode(projectKey),
+    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
       WsComponents.TreeWsResponse::parseFrom,
       WsComponents.TreeWsResponse::getPaging,
       WsComponents.TreeWsResponse::getComponentsList,
@@ -70,12 +64,12 @@ public class ModuleHierarchyDownloader {
       progress);
 
     // doesn't include root
-    Map<String, Component> modulesById = modules.stream().collect(Collectors.toMap(Component::getId, Function.identity()));
+    Map<String, Component> modulesByKey = modules.stream().collect(Collectors.toMap(Component::getKey, Function.identity()));
 
     // component -> ancestorComponent. Doesn't include root
     Map<Component, Component> ancestors = new HashMap<>();
     for (Component c : modules) {
-      ancestors.put(c, modulesById.get(fetchAncestorId(c.getId())));
+      ancestors.put(c, modulesByKey.get(fetchAncestorKey(c.getKey())));
     }
 
     // module key -> path from root project base directory
@@ -84,13 +78,6 @@ public class ModuleHierarchyDownloader {
     modules.forEach(c -> modulesWithPath.put(c.getKey(), findPathFromRoot(c, ancestors)));
 
     return modulesWithPath;
-  }
-
-  private static String getComponentKeyParam(Version serverVersion) {
-    if (serverVersion.compareTo(Version.create("6.4")) > 0) {
-      return "component";
-    }
-    return "baseComponentKey";
   }
 
   private static String findPathFromRoot(Component component, Map<Component, Component> ancestors) {
@@ -106,13 +93,10 @@ public class ModuleHierarchyDownloader {
   }
 
   @CheckForNull
-  private String fetchAncestorId(String moduleId) {
-    try (WsResponse response = wsClient.get("api/components/show.protobuf?id=" + StringUtils.urlEncode(moduleId))) {
-      InputStream stream = response.contentStream();
-      ShowWsResponse showResponse = WsComponents.ShowWsResponse.parseFrom(stream);
-      return showResponse.getAncestorsList().stream().map(Component::getId).findFirst().orElse(null);
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load module hierarchy", e);
-    }
+  private String fetchAncestorKey(String moduleKey) {
+    return WsHelperImpl
+      .fetchComponent(wsClient, moduleKey)
+      .flatMap(r -> r.getAncestorsList().stream().map(Component::getKey).findFirst())
+      .orElse(null);
   }
 }

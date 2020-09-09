@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -59,6 +59,23 @@ public class StringUtils {
 
   public static boolean isEmpty(@Nullable String str) {
     return str == null || str.isEmpty();
+  }
+
+  public static boolean isNotEmpty(String str) {
+    return !StringUtils.isEmpty(str);
+  }
+
+  public static boolean isBlank(@Nullable String str) {
+    int strLen;
+    if (str == null || (strLen = str.length()) == 0) {
+      return true;
+    }
+    for (int i = 0; i < strLen; i++) {
+      if (!Character.isWhitespace(str.charAt(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public static String md5(String s) {

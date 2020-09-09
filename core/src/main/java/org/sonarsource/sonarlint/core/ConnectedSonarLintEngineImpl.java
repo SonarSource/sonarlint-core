@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,15 +32,15 @@ import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
@@ -127,8 +127,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       LOG.debug(e.getMessage(), e);
       changeState(State.NEED_UPDATE);
     } catch (RuntimeException e) {
+      LOG.error("Unable to start the SonarLint engine", e);
       changeState(State.UNKNOW);
-      throw SonarLintWrappedException.wrap(e);
     } finally {
       rwl.writeLock().unlock();
     }
@@ -146,9 +146,9 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
-    setLogging(logOutput);
     return withReadLock(() -> {
       try {
+        setLogging(logOutput);
         return getHandler().analyze(storageContainer.getGlobalExtensionContainer(), configuration, issueListener, new ProgressWrapper(monitor));
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.wrap(e);
@@ -180,13 +180,18 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public RuleDetails getRuleDetails(String ruleKey) {
+  public ConnectedRuleDetails getRuleDetails(String ruleKey) {
     return withReadLock(() -> getHandler().getRuleDetails(ruleKey));
   }
 
   @Override
-  public Collection<LoadedAnalyzer> getLoadedAnalyzers() {
-    return withReadLock(() -> getHandler().getAnalyzers());
+  public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
+    return withReadLock(() -> getHandler().getRuleDetails(ruleKey, projectKey));
+  }
+
+  @Override
+  public Collection<PluginDetails> getPluginDetails() {
+    return withReadLock(() -> getHandler().getPluginDetails());
   }
 
   @Override
@@ -217,25 +222,25 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   private void checkUpdateStatus() {
     if (state != State.UPDATED) {
-      throw new GlobalUpdateRequiredException("Please update server '" + globalConfig.getServerId() + "'");
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
     }
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath) {
-    return withReadLock(() -> getHandler().getServerIssues(projectBinding, filePath));
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
+    return withReadLock(() -> getHandler().getServerIssues(projectBinding, ideFilePath));
   }
 
   @Override
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate) {
-    return withReadLock(() -> getHandler().getExcludedFiles(projectBinding, files, filePathExtractor, testFilePredicate));
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
+    return withReadLock(() -> getHandler().getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate));
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String filePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(serverConfig, projectBinding, filePath);
+      return getHandler().downloadServerIssues(serverConfig, projectBinding, ideFilePath);
     });
   }
 
@@ -248,8 +253,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> localFilePaths) {
-    return withReadLock(() -> getHandler().calculatePathPrefixes(projectKey, localFilePaths));
+  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
+    return withReadLock(() -> getHandler().calculatePathPrefixes(projectKey, ideFilePaths));
   }
 
   @Override

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,44 +40,48 @@ public class TelemetryClient {
   private final TelemetryClientConfig clientConfig;
   private final String product;
   private final String version;
+  private final String ideVersion;
 
-  public TelemetryClient(TelemetryClientConfig clientConfig, String product, String version) {
-    this(clientConfig, product, version, new TelemetryHttpFactory());
+  public TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, String ideVersion) {
+    this(clientConfig, product, version, ideVersion, new TelemetryHttpFactory());
   }
 
-  TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, TelemetryHttpFactory httpFactory) {
+  TelemetryClient(TelemetryClientConfig clientConfig, String product, String version, String ideVersion, TelemetryHttpFactory httpFactory) {
     this.clientConfig = clientConfig;
     this.product = product;
     this.version = version;
+    this.ideVersion = ideVersion;
     this.httpFactory = httpFactory;
   }
 
-  void upload(TelemetryData data) {
+  void upload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     try {
-      sendPost(httpFactory.buildClient(clientConfig), createPayload(data));
-    } catch (Exception e) {
+      sendPost(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud));
+    } catch (Throwable catchEmAll) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.error("Failed to upload telemetry data", e);
+        LOG.error("Failed to upload telemetry data", catchEmAll);
       }
     }
   }
 
-  void optOut(TelemetryData data) {
+  void optOut(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     try {
-      sendDelete(httpFactory.buildClient(clientConfig), createPayload(data));
-    } catch (Exception e) {
+      sendDelete(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud));
+    } catch (Throwable catchEmAll) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.error("Failed to upload telemetry opt-out", e);
+        LOG.error("Failed to upload telemetry opt-out", catchEmAll);
       }
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryData data) {
+  private TelemetryPayload createPayload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud) {
     OffsetDateTime systemTime = OffsetDateTime.now();
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
-    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version,
-      data.usedConnectedMode(), data.usedSonarcloud(), systemTime, data.installTime(), analyzers);
+    String os = System.getProperty("os.name");
+    String jre = System.getProperty("java.version");
+    return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
+      usesConnectedMode, usesSonarCloud, systemTime, data.installTime(), os, jre, analyzers);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {

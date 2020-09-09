@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -102,36 +102,6 @@ public class TelemetryDataTest {
     data.setLastUseDate(LocalDate.now().minusDays(1));
     data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(2);
-  }
-
-  @Test
-  public void mergeFrom_should_overwrite_usedConnectedMode_if_set() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    data1.setUsedConnectedMode(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedConnectedMode()).isTrue();
-
-    data1.setUsedConnectedMode(false);
-    data2.setUsedConnectedMode(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedConnectedMode()).isTrue();
-  }
-  
-  @Test
-  public void mergeFrom_should_overwrite_usedSonarcloud_if_set() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    data1.setUsedSonarcloud(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedSonarcloud()).isTrue();
-
-    data1.setUsedSonarcloud(false);
-    data2.setUsedSonarcloud(true);
-    data1.mergeFrom(data2);
-    assertThat(data1.usedSonarcloud()).isTrue();
   }
 
   @Test

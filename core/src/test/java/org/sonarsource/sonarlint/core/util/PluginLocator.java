@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,8 +28,8 @@ import java.nio.file.Paths;
 
 public class PluginLocator {
 
-  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-5.7.0.15470.jar";
-  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "5a2bd8a7984aacdca7622b1bf970ada2";
+  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-6.0.0.20538.jar";
+  public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "eb27aea472a0d7d91ed529086ce8ee1c";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-4.0.0.5862.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "cc8ad346e85db9d3735898b533d37d34";
   public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";
@@ -51,11 +51,7 @@ public class PluginLocator {
   }
 
   public static URL getCppPluginUrl() {
-    return getPluginUrl("sonar-cfamily-plugin-5.0.0.9359.jar");
-  }
-
-  public static URL getLicensePluginUrl() {
-    return getPluginUrl("sonar-license-plugin-3.3.0.1341.jar");
+    return getPluginUrl("sonar-cfamily-plugin-6.3.0.11371.jar");
   }
 
   public static URL getTypeScriptPluginUrl() {

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileList
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
@@ -64,19 +63,17 @@ public class ProjectStorageUpdateExecutor {
 
   public void update(String projectKey, ProgressWrapper progress) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
-    Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
 
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration);
-      updateComponents(serverVersion, projectKey, temp, projectConfiguration, progress);
+      updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
 
   private ProjectConfiguration updateConfiguration(String projectKey, GlobalProperties globalProps, Path temp, ProgressWrapper progress) {
-    Version serverVersion = Version.create(storageReader.readServerInfos().getVersion());
-    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(serverVersion, projectKey, globalProps, progress);
+    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, globalProps, progress);
     final Set<String> qProfileKeys = storageReader.readQProfiles().getQprofilesByKeyMap().keySet();
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
@@ -89,15 +86,15 @@ public class ProjectStorageUpdateExecutor {
     return projectConfiguration;
   }
 
-  void updateComponents(Version serverVersion, String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
-    List<String> sqFiles = projectFileListDownloader.get(serverVersion, projectKey, progress);
+  void updateComponents(String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
+    List<String> sqFiles = projectFileListDownloader.get(projectKey, progress);
     Sonarlint.ProjectComponents.Builder componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
     Map<String, String> modulePathByKey = projectConfiguration.getModulePathByKeyMap();
     for (String fileKey : sqFiles) {
       int idx = StringUtils.lastIndexOf(fileKey, ":");
       String moduleKey = fileKey.substring(0, idx);
-      String relativePath = fileKey.substring(idx+1);
+      String relativePath = fileKey.substring(idx + 1);
       String prefix = modulePathByKey.getOrDefault(moduleKey, "");
       if (!prefix.isEmpty()) {
         prefix = prefix + "/";

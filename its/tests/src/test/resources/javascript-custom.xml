@@ -5,7 +5,7 @@
   <rules>
     <rule>
       <!-- Forbidden function should not be used (foo, bar) -->
-      <repositoryKey>custom</repositoryKey>
+      <repositoryKey>custom-javascript-repo</repositoryKey>
       <key>S1</key>
       <priority>MAJOR</priority>
     </rule>

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.utils.PathUtils;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class SonarLintInputDirTest {
   private SonarLintInputDir inputDir;
@@ -45,7 +44,6 @@ public class SonarLintInputDirTest {
     assertThat(inputDir.file()).isEqualTo(path.toFile());
     assertThat(inputDir.key()).isEqualTo(PathUtils.canonicalPath(path.toFile()));
     assertThat(inputDir.isFile()).isFalse();
-    assertThat(inputDir.moduleKey()).isNull();
     assertThat(inputDir.path()).isEqualTo(path);
     assertThat(inputDir.relativePath()).isEqualTo(inputDir.absolutePath());
     assertThat(inputDir.toString()).isEqualTo("[path=" + path + "]");

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import java.net.HttpURLConnection;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 
@@ -65,12 +63,12 @@ public class ServerVersionAndStatusCheckerTest {
 
     ValidationResult validateStatusAndVersion = checker.validateStatusAndVersion();
     assertThat(validateStatusAndVersion.success()).isFalse();
-    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
+    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 6.7");
   }
 
   @Test
   public void failWhenIncompatibleVersion() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"4.5\",\"status\": \"UP\"}");
+    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6\",\"status\": \"UP\"}");
 
     ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
 
@@ -78,53 +76,7 @@ public class ServerVersionAndStatusCheckerTest {
       checker.checkVersionAndStatus();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
-    }
-  }
-
-  @Test
-  public void fallbackOnDeprecatedWs_if_404() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMockWithResponse("api/server/version", "4.5");
-    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_NOT_FOUND, "");
-
-    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
-
-    try {
-      checker.checkVersionAndStatus();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 4.5. Version should be greater or equal to 5.6");
-    }
-  }
-
-  @Test
-  public void report_original_error_if_fallback_failed() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_NOT_FOUND, "Not found");
-    WsClientTestUtils.addFailedResponse(wsClient, "api/server/version", HttpURLConnection.HTTP_UNAUTHORIZED, "Unauthorized");
-
-    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
-
-    try {
-      checker.checkVersionAndStatus();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(NotFoundException.class).hasMessage("Error 404 on api/system/status");
-    }
-  }
-
-  @Test
-  public void no_fallback_if_not_404() throws Exception {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    WsClientTestUtils.addFailedResponse(wsClient, "api/system/status", HttpURLConnection.HTTP_UNAUTHORIZED, "Not authorized");
-
-    ServerVersionAndStatusChecker checker = new ServerVersionAndStatusChecker(wsClient);
-
-    try {
-      checker.checkVersionAndStatus();
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isExactlyInstanceOf(IllegalStateException.class).hasMessage("Not authorized. Please check server credentials.");
+      assertThat(e).isExactlyInstanceOf(UnsupportedServerException.class).hasMessage("SonarQube server has version 5.6. Version should be greater or equal to 6.7");
     }
   }
 

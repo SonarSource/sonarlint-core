@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,9 +26,9 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
@@ -76,13 +76,13 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
       Version serverVersion = Version.create(serverStatus.getVersion());
-      
+
       progress.setProgressAndCheckCancel("Fetching list of code analyzers", 0.12f);
-      List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList(serverVersion);
+      List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList();
       ProtobufUtil.writeToFile(serverStatus, temp.resolve(StoragePaths.SERVER_INFO_PB));
 
       progress.setProgressAndCheckCancel("Fetching global properties", 0.15f);
-      globalSettingsDownloader.fetchGlobalSettingsTo(serverVersion, temp);
+      globalSettingsDownloader.fetchGlobalSettingsTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
       pluginReferenceDownloader.fetchPluginsTo(serverVersion, temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
@@ -94,7 +94,7 @@ public class GlobalStorageUpdateExecutor {
       qualityProfilesDownloader.fetchQualityProfilesTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
-      projectListDownloader.fetchTo(temp, serverStatus.getVersion(), progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
+      projectListDownloader.fetchTo(temp, progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
       progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);

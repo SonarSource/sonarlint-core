@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.sonar.api.CoreProperties;
@@ -136,22 +137,28 @@ public class FileMetadata {
    */
   Metadata readMetadata(File file, Charset encoding) {
     InputStream stream = streamFile(file);
-    return readMetadata(stream, encoding, file.toURI());
+    return readMetadata(stream, encoding, file.toURI(), null);
   }
 
   /**
    * Compute hash of an inputStream ignoring line ends differences.
    * Maximum performance is needed.
    */
-  public Metadata readMetadata(InputStream stream, Charset encoding, URI fileUri) {
+  public Metadata readMetadata(InputStream stream, Charset encoding, URI fileUri, @Nullable CharHandler otherHandler) {
     LineCounter lineCounter = new LineCounter(fileUri, encoding);
     LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
     try (Reader reader = new BufferedReader(new InputStreamReader(stream, encoding))) {
-      read(reader, lineCounter, lineOffsetCounter);
+      CharHandler[] handlers;
+      if (otherHandler != null) {
+        handlers = new CharHandler[] {lineCounter, lineOffsetCounter, otherHandler};
+      } else {
+        handlers = new CharHandler[] {lineCounter, lineOffsetCounter};
+      }
+      read(reader, handlers);
     } catch (IOException e) {
       throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", fileUri, encoding), e);
     }
-    return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets(), lineOffsetCounter.getLastValidOffset());
+    return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets().stream().mapToInt(i -> i).toArray(), lineOffsetCounter.getLastValidOffset());
   }
 
   private static InputStream streamFile(File file) {
@@ -211,14 +218,26 @@ public class FileMetadata {
   }
 
   public static class Metadata {
-    final int lines;
-    final int[] originalLineOffsets;
-    final int lastValidOffset;
+    private final int lines;
+    private final int[] originalLineOffsets;
+    private final int lastValidOffset;
 
-    private Metadata(int lines, List<Integer> originalLineOffsets, int lastValidOffset) {
+    public Metadata(int lines, int[] originalLineOffsets, int lastValidOffset) {
       this.lines = lines;
-      this.originalLineOffsets = originalLineOffsets.stream().mapToInt(i -> i).toArray();
+      this.originalLineOffsets = originalLineOffsets;
       this.lastValidOffset = lastValidOffset;
+    }
+
+    public int lines() {
+      return lines;
+    }
+
+    public int[] originalLineOffsets() {
+      return originalLineOffsets;
+    }
+
+    public int lastValidOffset() {
+      return lastValidOffset;
     }
   }
 }

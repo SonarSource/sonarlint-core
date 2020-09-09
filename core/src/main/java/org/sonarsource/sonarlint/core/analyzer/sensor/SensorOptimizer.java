@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.rule.ActiveRules;
-import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;

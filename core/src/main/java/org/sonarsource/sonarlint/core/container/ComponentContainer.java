@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,6 +35,7 @@ import org.picocontainer.behaviors.OptInCaching;
 import org.picocontainer.lifecycle.ReflectionLifecycleStrategy;
 import org.picocontainer.monitors.NullComponentMonitor;
 import org.sonar.api.config.PropertyDefinitions;
+import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -71,7 +72,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
   ComponentContainer parent;
   MutablePicoContainer pico;
   PropertyDefinitions propertyDefinitions;
-  ComponentKeys componentKeys;
+  PicoComponentKeys componentKeys;
 
   /**
    * Create root container
@@ -83,8 +84,8 @@ public class ComponentContainer implements ContainerPopulator.Container {
   protected ComponentContainer(MutablePicoContainer picoContainer) {
     this.parent = null;
     this.pico = picoContainer;
-    this.componentKeys = new ComponentKeys();
-    propertyDefinitions = new PropertyDefinitions();
+    this.componentKeys = new PicoComponentKeys();
+    propertyDefinitions = new PropertyDefinitions(System2.INSTANCE);
     addSingleton(propertyDefinitions);
     addSingleton(this);
   }
@@ -96,7 +97,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
     this.parent = parent;
     this.pico = parent.makeChildContainer();
     this.propertyDefinitions = parent.propertyDefinitions;
-    this.componentKeys = new ComponentKeys();
+    this.componentKeys = new PicoComponentKeys();
     addSingleton(this);
   }
 
@@ -204,20 +205,12 @@ public class ComponentContainer implements ContainerPopulator.Container {
   }
 
   public ComponentContainer addSingleton(Object component) {
-    return addComponent(component, true);
-  }
-
-  /**
-   * @param singleton return always the same instance if true, else a new instance
-   *                  is returned each time the component is requested
-   */
-  public ComponentContainer addComponent(Object component, boolean singleton) {
     Object key = componentKeys.of(component);
     if (component instanceof ComponentAdapter) {
       pico.addAdapter((ComponentAdapter) component);
     } else {
       try {
-        pico.as(singleton ? Characteristics.CACHE : Characteristics.NO_CACHE).addComponent(key, component);
+        pico.as(Characteristics.CACHE).addComponent(key, component);
       } catch (Throwable t) {
         throw new IllegalStateException("Unable to register component " + getName(component), t);
       }

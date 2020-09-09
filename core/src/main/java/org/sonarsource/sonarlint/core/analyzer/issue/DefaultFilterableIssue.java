@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import java.util.Date;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.batch.fs.InputComponent;
@@ -29,17 +28,17 @@ import org.sonar.api.scan.issue.filter.FilterableIssue;
 
 public class DefaultFilterableIssue implements FilterableIssue {
   private final DefaultClientIssue rawIssue;
-  private final InputComponent inputComponent;
+  private final InputComponent component;
 
-  public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent inputComponent) {
+  public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent component) {
     this.rawIssue = rawIssue;
-    this.inputComponent = inputComponent;
+    this.component = component;
 
   }
 
   @Override
   public String componentKey() {
-    return inputComponent.key();
+    return component.key();
   }
 
   @Override
@@ -63,11 +62,6 @@ public class DefaultFilterableIssue implements FilterableIssue {
   }
 
   @Override
-  public Date creationDate() {
-    return new Date();
-  }
-
-  @Override
   public String projectKey() {
     throw unsupported();
   }
@@ -86,8 +80,8 @@ public class DefaultFilterableIssue implements FilterableIssue {
     throw unsupported();
   }
 
-  public InputComponent getInputComponent() {
-    return inputComponent;
+  public InputComponent getComponent() {
+    return component;
   }
 
   @Override

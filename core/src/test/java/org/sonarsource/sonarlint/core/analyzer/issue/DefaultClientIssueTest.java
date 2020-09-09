@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,11 +26,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.fs.internal.DefaultTextPointer;
-import org.sonar.api.batch.fs.internal.DefaultTextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

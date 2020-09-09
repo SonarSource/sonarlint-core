@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,9 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-/**
- * {@link org.apache.logging.log4j.message.ParameterFormatter}
- */
 public class MessageFormat {
   /**
    * Prefix for recursion.

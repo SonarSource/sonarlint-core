@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,6 @@ import org.sonar.api.batch.DependsUpon;
 import org.sonar.api.batch.Phase;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
-import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
 import org.sonar.api.utils.log.Logger;

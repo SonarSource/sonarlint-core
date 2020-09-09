@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,14 +20,15 @@
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
 
 /**
  * Entry point for SonarLint in standalone mode.
@@ -43,22 +44,27 @@ public interface StandaloneSonarLintEngine {
    * @throws IllegalArgumentException if ruleKey is unknown
    * @since 1.2
    */
-  RuleDetails getRuleDetails(String ruleKey);
+  Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey);
 
   /**
-   * Return rule details of all available rules.
+   * Return rule details of all available rules for SonarLint standalone mode. For now, excluding hotspots and rule templates.
    */
-  Collection<RuleDetails> getAllRuleDetails();
+  Collection<StandaloneRuleDetails> getAllRuleDetails();
 
   /**
    * Get information about the analyzers that are currently loaded.
    * Should only be called when engine is started.
    */
-  Collection<LoadedAnalyzer> getLoadedAnalyzers();
+  Collection<PluginDetails> getPluginDetails();
 
   /**
    * Trigger an analysis
    */
   AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
+
+  /**
+   * @since 4.5
+   */
+  Map<String, String> getAllLanguagesNameByKey();
 
 }

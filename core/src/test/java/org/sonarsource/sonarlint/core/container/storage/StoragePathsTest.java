@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,17 @@ package org.sonarsource.sonarlint.core.container.storage;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonar.api.internal.apachecommons.lang.StringUtils.repeat;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class StoragePathsTest {
   @Test
   public void encode_paths_for_fs() {
-    assertThat(StoragePaths.encodeForFs("my/string%to encode**")).isEqualTo("my%2Fstring%25to+encode%2A%2A");
+    assertThat(encodeForFs("my/string%to encode**")).isEqualTo("6d792f737472696e6725746f20656e636f64652a2a");
+    assertThat(encodeForFs("AU-TpxcA-iU5OvuD2FLz").toLowerCase()).isNotEqualTo(encodeForFs("AU-TpxcA-iU5OvuD2FLZ"));
+    assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000))).hasSize(255);
+    assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000)))
+      .isNotEqualTo(encodeForFs("too_long_for_most_fs" + repeat("a", 1000) + "2"));
   }
+
 }

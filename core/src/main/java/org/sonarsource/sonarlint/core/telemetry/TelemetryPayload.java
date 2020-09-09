@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,31 +40,43 @@ class TelemetryPayload {
   @SerializedName("sonarlint_product")
   private final String product;
 
+  @SerializedName("ide_version")
+  private final String ideVersion;
+
   @SerializedName("connected_mode_used")
   private final boolean connectedMode;
 
   @SerializedName("connected_mode_sonarcloud")
   private final boolean connectedModeSonarcloud;
-  
+
   @SerializedName("system_time")
   private final OffsetDateTime systemTime;
 
   @SerializedName("install_time")
   private final OffsetDateTime installTime;
 
+  @SerializedName("os")
+  private final String os;
+
+  @SerializedName("jre")
+  private final String jre;
+
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
-  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, boolean connectedMode, boolean connectedModeSonarcloud,
-    OffsetDateTime systemTime, OffsetDateTime installTime, TelemetryAnalyzerPerformancePayload[] analyses) {
+  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
+    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
     this.version = version;
+    this.ideVersion = ideVersion;
     this.connectedMode = connectedMode;
     this.connectedModeSonarcloud = connectedModeSonarcloud;
     this.systemTime = systemTime;
     this.installTime = installTime;
+    this.os = os;
+    this.jre = jre;
     this.analyses = analyses;
   }
 
@@ -91,9 +103,17 @@ class TelemetryPayload {
   public boolean connectedMode() {
     return connectedMode;
   }
-  
+
   public boolean connectedModeSonarcloud() {
     return connectedModeSonarcloud;
+  }
+
+  public String os() {
+    return os;
+  }
+
+  public String jre() {
+    return jre;
   }
 
   public OffsetDateTime systemTime() {

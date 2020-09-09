@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,18 +28,14 @@ import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GlobalSettingsUpdateCheckerTest {
 
-  private static final Version SQ_VERSION = Version.create("6.3");
   private GlobalSettingsUpdateChecker checker;
   private StorageReader storageReader;
   private SettingsDownloader globalPropertiesDownloader;
@@ -53,7 +49,7 @@ public class GlobalSettingsUpdateCheckerTest {
     globalPropertiesDownloader = mock(SettingsDownloader.class);
 
     when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
-    when(globalPropertiesDownloader.fetchGlobalSettings(any(Version.class))).thenReturn(GlobalProperties.newBuilder().build());
+    when(globalPropertiesDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().build());
 
     checker = new GlobalSettingsUpdateChecker(storageReader, globalPropertiesDownloader);
   }
@@ -67,7 +63,7 @@ public class GlobalSettingsUpdateCheckerTest {
   @Test
   public void testNoChanges() {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
@@ -75,10 +71,10 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void ignore_unused_props() {
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION)).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.foo", "value").build());
+    when(globalPropertiesDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.foo", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
@@ -87,10 +83,10 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void addedProp() {
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION)).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.test.inclusions", "value").build());
+    when(globalPropertiesDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.test.inclusions", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -99,10 +95,10 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void addedPropObfuscateSecured() {
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION)).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.java.license.secured", "value").build());
+    when(globalPropertiesDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.java.license.secured", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -111,11 +107,11 @@ public class GlobalSettingsUpdateCheckerTest {
 
   @Test
   public void addedPropAbbreviateValue() {
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION))
+    when(globalPropertiesDownloader.fetchGlobalSettings())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.enforce.allFiles", StringUtils.repeat("abcde", 10)).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -127,7 +123,7 @@ public class GlobalSettingsUpdateCheckerTest {
     when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -137,10 +133,10 @@ public class GlobalSettingsUpdateCheckerTest {
   @Test
   public void changedProp() {
     when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "old").build());
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION)).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "new").build());
+    when(globalPropertiesDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "new").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -151,11 +147,11 @@ public class GlobalSettingsUpdateCheckerTest {
   public void changedPropDiffAbbreviateEnd() {
     when(storageReader.readGlobalProperties())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION))
+    when(globalPropertiesDownloader.fetchGlobalSettings())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "four,five,six,seven,eight").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -166,11 +162,11 @@ public class GlobalSettingsUpdateCheckerTest {
   public void changedPropDiffAbbreviateBeginEnd() {
     when(storageReader.readGlobalProperties())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
-    when(globalPropertiesDownloader.fetchGlobalSettings(SQ_VERSION))
+    when(globalPropertiesDownloader.fetchGlobalSettings())
       .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,four,five,six,seven,eight").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(SQ_VERSION, result);
+    checker.checkForUpdates(result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");

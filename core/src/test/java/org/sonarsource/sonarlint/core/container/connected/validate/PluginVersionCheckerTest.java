@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,20 +40,14 @@ public class PluginVersionCheckerTest {
 
   @Test
   public void test() throws IOException {
-    assertThat(checker.getMinimumVersion("java")).isEqualTo("5.1");
+    assertThat(checker.getMinimumVersion("java")).isEqualTo("5.1.0.13090");
     assertThat(checker.getMinimumVersion("unknown")).isNull();
   }
 
   @Test
-  public void testStreamSupport() {
-    assertThat(checker.getMinimumStreamSupportVersion("java")).isEqualTo("4.7");
-    assertThat(checker.getMinimumStreamSupportVersion("unknown")).isNull();
-  }
-
-  @Test
   public void isVersionSupported() {
-    assertThat(checker.isVersionSupported("java", "5.1")).isTrue();
-    assertThat(checker.isVersionSupported("java", "3.9")).isFalse();
+    assertThat(checker.isVersionSupported("java", "5.1.0.13090")).isTrue();
+    assertThat(checker.isVersionSupported("java", "3.9.0.13090")).isFalse();
     assertThat(checker.isVersionSupported("unknown", "4.0")).isTrue();
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
@@ -34,6 +35,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 
 import static java.util.Objects.requireNonNull;
 
@@ -119,6 +121,12 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   private final Set<RequiredPlugin> requiredPlugins = new HashSet<>();
 
+  @CheckForNull
+  private Version jreMinVersion;
+
+  @CheckForNull
+  private SkipReason skipReason;
+
   public PluginInfo(String key) {
     requireNonNull(key, "Plugin key is missing from manifest");
     this.key = key;
@@ -186,6 +194,19 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return requiredPlugins;
   }
 
+  @CheckForNull
+  public Version getJreMinVersion() {
+    return jreMinVersion;
+  }
+
+  public Optional<SkipReason> getSkipReason() {
+    return Optional.ofNullable(skipReason);
+  }
+
+  public boolean isSkipped() {
+    return skipReason != null;
+  }
+
   public PluginInfo setName(@Nullable String name) {
     this.name = MoreObjects.firstNonNull(name, this.key);
     return this;
@@ -230,7 +251,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return this;
   }
 
-  public PluginInfo setSonarLintSupported(Boolean sonarLintSupported) {
+  public PluginInfo setSonarLintSupported(@Nullable Boolean sonarLintSupported) {
     this.sonarLintSupported = sonarLintSupported;
     return this;
   }
@@ -238,6 +259,15 @@ public class PluginInfo implements Comparable<PluginInfo> {
   public PluginInfo addRequiredPlugin(RequiredPlugin p) {
     this.requiredPlugins.add(p);
     return this;
+  }
+
+  private PluginInfo setMinimalJreVersion(@Nullable Version jreMinVersion) {
+    this.jreMinVersion = jreMinVersion;
+    return this;
+  }
+
+  public void setSkipReason(@Nullable SkipReason skipReason) {
+    this.skipReason = skipReason;
   }
 
   /**
@@ -314,7 +344,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
     info.setMainClass(manifest.getMainClass());
     info.setVersion(Version.create(manifest.getVersion()));
 
-    // optional fields
     String minSqVersion = manifest.getSonarVersion();
     if (minSqVersion != null) {
       info.setMinimalSqVersion(Version.create(minSqVersion));
@@ -328,6 +357,10 @@ public class PluginInfo implements Comparable<PluginInfo> {
       for (String s : requiredPlugins) {
         info.addRequiredPlugin(RequiredPlugin.parse(s));
       }
+    }
+    String jreMinVersion = manifest.getJreMinVersion();
+    if (jreMinVersion != null) {
+      info.setMinimalJreVersion(Version.create(jreMinVersion));
     }
     return info;
   }

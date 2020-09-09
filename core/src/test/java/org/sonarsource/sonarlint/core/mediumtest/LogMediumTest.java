@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -86,7 +84,10 @@ public class LogMediumTest {
   }
 
   private StandaloneAnalysisConfiguration createConfig(ClientInputFile inputFile) throws IOException {
-    return new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.<String, String>of());
+    return StandaloneAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build();
   }
 
   /**

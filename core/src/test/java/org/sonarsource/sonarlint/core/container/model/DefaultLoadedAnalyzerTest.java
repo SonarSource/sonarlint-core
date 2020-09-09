@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,17 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultLoadedAnalyzerTest {
   @Test
   public void testRoundTrip() {
-    DefaultLoadedAnalyzer analyzer = new DefaultLoadedAnalyzer("key", "name", "version", false);
+    DefaultLoadedAnalyzer analyzer = new DefaultLoadedAnalyzer("key", "name", "version", SkipReason.IncompatiblePluginApi.INSTANCE);
     assertThat(analyzer.key()).isEqualTo("key");
     assertThat(analyzer.name()).isEqualTo("name");
     assertThat(analyzer.version()).isEqualTo("version");
-    assertThat(analyzer.supportsContentStream()).isFalse();
+    assertThat(analyzer.skipReason()).containsInstanceOf(SkipReason.IncompatiblePluginApi.class);
   }
 }

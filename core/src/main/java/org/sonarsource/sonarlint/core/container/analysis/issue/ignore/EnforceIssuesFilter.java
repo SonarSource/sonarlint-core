@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,40 +19,57 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis.issue.ignore;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFilterableIssue;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssuePattern;
 
 public class EnforceIssuesFilter implements IssueFilter {
 
-  private IssueInclusionPatternInitializer patternInitializer;
-
   private static final Logger LOG = Loggers.get(EnforceIssuesFilter.class);
 
+  private final List<IssuePattern> multicriteriaPatterns;
+
   public EnforceIssuesFilter(IssueInclusionPatternInitializer patternInitializer) {
-    this.patternInitializer = patternInitializer;
+    this.multicriteriaPatterns = Collections.unmodifiableList(new ArrayList<>(patternInitializer.getMulticriteriaPatterns()));
   }
 
   @Override
   public boolean accept(FilterableIssue issue, IssueFilterChain chain) {
-    InputComponent inputComponent = ((DefaultFilterableIssue) issue).getInputComponent();
+    boolean atLeastOneRuleMatched = false;
+    boolean atLeastOnePatternFullyMatched = false;
+    IssuePattern matchingPattern = null;
 
-    for (IssuePattern pattern : patternInitializer.getMulticriteriaPatterns()) {
-      if (pattern.getRulePattern().match(issue.ruleKey().toString())
-        && inputComponent.isFile()
-        && !pattern.getPathPattern().match((InputFile) inputComponent)) {
-        LOG.debug("Issue {} ignored by enforce pattern {}", issue, pattern);
-        return false;
+    for (IssuePattern pattern : multicriteriaPatterns) {
+      if (pattern.matchRule(issue.ruleKey())) {
+        atLeastOneRuleMatched = true;
+        InputComponent component = ((DefaultFilterableIssue) issue).getComponent();
+        if (component.isFile()) {
+          SonarLintInputFile file = (SonarLintInputFile) component;
+          if (pattern.matchFile(file.relativePath())) {
+            atLeastOnePatternFullyMatched = true;
+            matchingPattern = pattern;
+          }
+        }
       }
     }
 
-    return chain.accept(issue);
+    if (atLeastOneRuleMatched) {
+      if (atLeastOnePatternFullyMatched) {
+        LOG.debug("Issue {} enforced by pattern {}", issue, matchingPattern);
+      }
+      return atLeastOnePatternFullyMatched;
+    } else {
+      return chain.accept(issue);
+    }
   }
 }

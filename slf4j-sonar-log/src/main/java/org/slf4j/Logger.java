@@ -1,6 +1,6 @@
 /*
  * SonarLint slf4j log adaptor
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 package org.slf4j;
 
 /**
@@ -40,7 +39,7 @@ package org.slf4j;
  *     oldT = t;        
  *     t = temperature;
  *     <span style="color:green">logger.debug("Temperature set to {}. Old temperature was {}.", t, oldT);</span>
- *     if(temperature.intValue() > 50) {
+ *     if(temperature.intValue() &gt; 50) {
  *       <span style="color:green">logger.info("Temperature has risen above 50 degrees.");</span>
  *     }
  *   }

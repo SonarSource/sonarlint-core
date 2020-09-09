@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,9 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
 import its.tools.ItUtils;
-import its.tools.SonarlintDaemon;
 import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.wsclient.user.UserParameters;
-import org.sonarqube.ws.client.WsClient;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -65,16 +62,8 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   static {
     OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-      .setSonarVersion(SONAR_VERSION);
-
-    boolean atLeast67 = ItUtils.isLatestOrDev(SONAR_VERSION) || Version.create(SONAR_VERSION).isGreaterThanOrEquals(6, 7);
-    if (atLeast67) {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "LATEST_RELEASE"));
-    } else {
-      orchestratorBuilder
-        .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", "4.15.0.12310"));
-    }
+      .setSonarVersion(SONAR_VERSION)
+      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
     ORCHESTRATOR = orchestratorBuilder.build();
   }
 
@@ -82,15 +71,11 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Rule
-  public SonarlintDaemon daemon = new SonarlintDaemon();
-
-  @Rule
   public SonarlintProject clientTools = new SonarlintProject();
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
-  private static WsClient adminWsClient;
   private static Path sonarUserHome;
   private ConnectedSonarLintEngine engine;
   private List<String> logs = new ArrayList<>();
@@ -177,11 +162,12 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
       .map(f -> new TestClientInputFile(projectDir, f, false, StandardCharsets.UTF_8))
       .collect(Collectors.toList());
 
-    return new ConnectedAnalysisConfiguration(projectKey,
-      projectDir,
-      t.newFolder().toPath(),
-      filesToAnalyze,
-      toMap(properties));
+    return ConnectedAnalysisConfiguration.builder()
+      .setProjectKey(projectKey)
+      .setBaseDir(projectDir)
+      .addInputFiles(filesToAnalyze)
+      .putAllExtraProperties(toMap(properties))
+      .build();
   }
 
   private static void analyzeMavenProject(String projectDirName) {

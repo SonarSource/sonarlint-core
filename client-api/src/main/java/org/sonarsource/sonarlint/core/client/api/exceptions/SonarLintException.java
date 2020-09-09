@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,17 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
+import javax.annotation.Nullable;
+
 public class SonarLintException extends RuntimeException {
 
   public SonarLintException() {
     super();
   }
 
-  public SonarLintException(String msg, Throwable cause) {
+  public SonarLintException(String msg, @Nullable Throwable cause) {
     super(msg, cause);
   }
 
-  public SonarLintException(String msg, Throwable cause, boolean withStackTrace) {
+  public SonarLintException(String msg, @Nullable Throwable cause, boolean withStackTrace) {
     super(msg, cause, !withStackTrace, withStackTrace);
   }
 }

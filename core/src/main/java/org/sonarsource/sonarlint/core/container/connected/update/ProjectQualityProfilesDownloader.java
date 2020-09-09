@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,19 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.QualityProfiles;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
-import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectQualityProfilesDownloader {
+
+  private static final Logger LOG = Loggers.get(ProjectQualityProfilesDownloader.class);
 
   private final SonarLintWsClient wsClient;
 
@@ -39,25 +40,20 @@ public class ProjectQualityProfilesDownloader {
     this.wsClient = wsClient;
   }
 
-  public List<QualityProfile> fetchModuleQualityProfiles(String projectKey, Version serverVersion) {
+  public List<QualityProfile> fetchModuleQualityProfiles(String projectKey) {
     SearchWsResponse qpResponse;
-    String param;
-    if (serverVersion.compareToIgnoreQualifier(Version.create("6.5")) >= 0) {
-      param = "project";
-    } else {
-      param = "projectKey";
-    }
-    String baseUrl = "/api/qualityprofiles/search.protobuf?" + param + "=" + StringUtils.urlEncode(projectKey);
-    String organizationKey = wsClient.getOrganizationKey();
-    if (organizationKey != null) {
-      baseUrl += "&organization=" + StringUtils.urlEncode(organizationKey);
-    }
-    try (InputStream contentStream = wsClient.get(baseUrl).contentStream()) {
-      qpResponse = QualityProfiles.SearchWsResponse.parseFrom(contentStream);
+    StringBuilder url = new StringBuilder();
+    url.append("/api/qualityprofiles/search.protobuf?project=");
+    url.append(StringUtils.urlEncode(projectKey));
+    wsClient.getOrganizationKey()
+      .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    try {
+      qpResponse = SonarLintWsClient.processTimed(
+        () -> wsClient.get(url.toString()),
+        response -> QualityProfiles.SearchWsResponse.parseFrom(response.contentStream()),
+        duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
     } catch (NotFoundException e) {
-      throw new ProjectNotFoundException(projectKey, organizationKey);
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load project quality profiles", e);
+      throw new ProjectNotFoundException(projectKey, wsClient.getOrganizationKey().orElse(null));
     }
     return qpResponse.getProfilesList();
   }

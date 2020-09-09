@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -47,6 +47,7 @@ public class PluginManifestTest {
     assertThat(manifest.getVersion().length()).isGreaterThan(1);
     assertThat(manifest.isUseChildFirstClassLoader()).isFalse();
     assertThat(manifest.getImplementationBuild()).isNotEmpty();
+    assertThat(manifest.getJreMinVersion()).isNull();
   }
 
   @Test
@@ -65,6 +66,7 @@ public class PluginManifestTest {
     manifest.setUseChildFirstClassLoader(false);
     manifest.setBasePlugin("newBasePlugin");
     manifest.setImplementationBuild("newImplementationBuild");
+    manifest.setJreMinVersion("1.8");
 
     assertThat(manifest.getName()).isEqualTo("newName");
     assertThat(manifest.getRequirePlugins()).hasSize(2);
@@ -73,16 +75,35 @@ public class PluginManifestTest {
     assertThat(manifest.isUseChildFirstClassLoader()).isFalse();
     assertThat(manifest.getBasePlugin()).isEqualTo("newBasePlugin");
     assertThat(manifest.getImplementationBuild()).isEqualTo("newImplementationBuild");
+    assertThat(manifest.getJreMinVersion()).isEqualTo("1.8");
   }
 
   @Test
   public void should_add_requires_plugins() throws URISyntaxException, IOException {
-    URL jar = getClass().getResource("/plugin-with-require-plugins.jar");
+    URL jar = getClass().getResource("plugin-with-require-plugins.jar");
 
     PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
 
     assertThat(manifest.getRequirePlugins()).hasSize(2);
     assertThat(manifest.getRequirePlugins()[0]).isEqualTo("scm:1.0");
     assertThat(manifest.getRequirePlugins()[1]).isEqualTo("fake:1.1");
+  }
+
+  @Test
+  public void should_parse_jre_min_version() throws URISyntaxException, IOException {
+    URL jar = getClass().getResource("plugin-with-jre-min.jar");
+
+    PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
+
+    assertThat(manifest.getJreMinVersion()).isEqualTo("11");
+  }
+
+  @Test
+  public void should_default_jre_min_version_to_null() throws URISyntaxException, IOException {
+    URL jar = getClass().getResource("plugin-without-jre-min.jar");
+
+    PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
+
+    assertThat(manifest.getJreMinVersion()).isNull();
   }
 }

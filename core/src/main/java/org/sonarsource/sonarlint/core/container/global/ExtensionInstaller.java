@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,20 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import java.util.List;
-import org.sonar.api.ExtensionProvider;
+import java.util.Set;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.internal.PluginContextImpl;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 
@@ -43,17 +42,22 @@ public class ExtensionInstaller {
   private final SonarRuntime sonarRuntime;
   private final PluginRepository pluginRepository;
   private final Configuration bootConfiguration;
+  private final PluginVersionChecker pluginVersionChecker;
+  private final Set<Language> enabledLanguages;
 
-  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration) {
+  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
+    AbstractGlobalConfiguration globalConfig) {
     this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;
     this.bootConfiguration = bootConfiguration;
+    this.pluginVersionChecker = pluginVersionChecker;
+    this.enabledLanguages = globalConfig.getEnabledLanguages();
   }
 
   public ExtensionInstaller install(ComponentContainer container, boolean global) {
 
     // plugin extensions
-    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
       Plugin.Context context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)
@@ -62,23 +66,10 @@ public class ExtensionInstaller {
       plugin.define(context);
       loadExtensions(container, pluginInfo, context, global);
     }
-    if (!global) {
-      List<ExtensionProvider> providers = container.getComponentsByType(ExtensionProvider.class);
-      for (ExtensionProvider provider : providers) {
-        Object object = provider.provide();
-        if (object instanceof Iterable) {
-          for (Object extension : (Iterable) object) {
-            container.addExtension(null, extension);
-          }
-        } else {
-          container.addExtension(null, object);
-        }
-      }
-    }
     return this;
   }
 
-  private static void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context, boolean global) {
+  private void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context, boolean global) {
     Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
     boolean isExplicitlySonarLintCompatible = isSlPluginOrNull != null && isSlPluginOrNull.booleanValue();
     if (global && !isExplicitlySonarLintCompatible) {
@@ -92,23 +83,23 @@ public class ExtensionInstaller {
         if (isSonarLintSide(extension) && (isGlobal(extension) == global) && onlySonarSourceSensor(pluginInfo, extension)) {
           container.addExtension(pluginInfo, extension);
         }
-      } else if (!blacklisted(extension) && ExtensionUtils.isScannerSide(extension)) {
-        // Here we have whitelisted extensions of whitelisted plugins
-        container.addExtension(pluginInfo, extension);
       } else {
         LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
       }
     }
   }
 
-  private static boolean onlySonarSourceSensor(PluginInfo pluginInfo, Object extension) {
-    return PluginCacheLoader.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension);
+  private boolean onlySonarSourceSensor(PluginInfo pluginInfo, Object extension) {
+    // SLCORE-259
+    if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
+      LOG.debug("TypeScript sensor excluded");
+      return false;
+    }
+    return pluginVersionChecker.getMinimumVersion(pluginInfo.getKey()) != null || isNotSensor(extension);
   }
 
   private static boolean isSonarLintSide(Object extension) {
-    return ExtensionUtils.isSonarLintSide(extension)
-      // FIXME Waiting for InputFileFilter to be annotated @SonarLintSide
-      || ExtensionUtils.isType(extension, InputFileFilter.class);
+    return ExtensionUtils.isSonarLintSide(extension);
   }
 
   /**
@@ -121,17 +112,6 @@ public class ExtensionInstaller {
 
   private static boolean isNotSensor(Object extension) {
     return !ExtensionUtils.isType(extension, Sensor.class);
-  }
-
-  private static boolean blacklisted(Object extension) {
-    String className = className(extension);
-    return className.contains("JaCoCo")
-      || className.contains("Surefire")
-      || className.contains("Coverage")
-      || className.contains("COV")
-      || className.contains("PhpUnit")
-      || className.contains("XUnit")
-      || className.contains("Pylint");
   }
 
   private static String className(Object extension) {

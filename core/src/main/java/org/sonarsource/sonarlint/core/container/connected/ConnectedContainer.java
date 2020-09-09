@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,16 +29,16 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
+import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
@@ -118,7 +118,7 @@ public class ConnectedContainer extends ComponentContainer {
   public void updateProject(String projectKey, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
-      throw new GlobalUpdateRequiredException("Please update server first");
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
     }
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, progress);
   }

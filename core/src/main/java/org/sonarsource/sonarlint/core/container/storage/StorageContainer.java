@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
-import org.sonar.api.internal.ApiVersion;
-import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
@@ -41,12 +39,14 @@ import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvid
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
+import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.PluginLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
+import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 
@@ -64,7 +64,7 @@ public class StorageContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version version = ApiVersion.load(System2.INSTANCE);
+    Version version = MetadataLoader.loadVersion(System2.INSTANCE);
     add(
       StorageContainerHandler.class,
       PartialUpdaterFactory.class,
@@ -77,9 +77,9 @@ public class StorageContainer extends ComponentContainer {
 
       // plugins
       PluginRepository.class,
-      PluginCacheLoader.class,
+      PluginInfosLoader.class,
       PluginVersionChecker.class,
-      PluginLoader.class,
+      PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       StoragePluginIndexProvider.class,
@@ -90,7 +90,6 @@ public class StorageContainer extends ComponentContainer {
       IssueStoreReader.class,
       GlobalUpdateStatusReader.class,
       ProjectStorageStatusReader.class,
-      StorageRuleDetailsReader.class,
       IssueStoreFactory.class,
 
       // analysis
@@ -104,9 +103,9 @@ public class StorageContainer extends ComponentContainer {
       ExtensionInstaller.class,
       new StorageRulesProvider(),
       new StorageQProfilesProvider(),
-      new SonarQubeRulesProvider(),
+      new SonarLintRulesProvider(),
       new SonarQubeVersion(version),
-      SonarRuntimeImpl.forSonarLint(version),
+      new SonarLintRuntimeImpl(version),
       System2.INSTANCE);
   }
 
@@ -140,7 +139,7 @@ public class StorageContainer extends ComponentContainer {
 
   protected void installPlugins() {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
+    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }

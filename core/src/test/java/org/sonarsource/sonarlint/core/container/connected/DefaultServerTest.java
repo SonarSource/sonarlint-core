@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,9 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected;
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.config.Settings;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -36,10 +35,9 @@ public class DefaultServerTest {
   public void shouldLoadServerProperties() {
     SonarRuntime runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    Settings settings = new MapSettings();
+    MapSettings settings = new MapSettings();
     settings.setProperty(CoreProperties.SERVER_ID, "123");
     settings.setProperty(CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000");
-    settings.setProperty(CoreProperties.PERMANENT_SERVER_ID, "abcde");
 
     DefaultServer metadata = new DefaultServer(settings, runtime);
 
@@ -47,7 +45,7 @@ public class DefaultServerTest {
     assertThat(metadata.getVersion()).isEqualTo("2.2");
     assertThat(metadata.getStartedAt()).isNotNull();
     assertThat(metadata.getURL()).isNull();
-    assertThat(metadata.getPermanentServerId()).isEqualTo("abcde");
+    assertThat(metadata.getPermanentServerId()).isEqualTo("123");
   }
 
   @Test

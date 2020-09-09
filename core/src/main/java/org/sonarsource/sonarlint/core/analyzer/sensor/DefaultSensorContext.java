@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,23 +30,24 @@ import org.sonar.api.batch.sensor.code.NewSignificantCode;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.error.NewAnalysisError;
-import org.sonar.api.batch.sensor.error.internal.DefaultAnalysisError;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewExternalIssue;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
+import org.sonar.api.batch.sensor.rule.NewAdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.config.Settings;
+import org.sonar.api.scanner.fs.InputProject;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
-import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewExternalIssue;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class DefaultSensorContext implements SensorContext {
@@ -55,21 +56,20 @@ public class DefaultSensorContext implements SensorContext {
   private static final NoOpNewSymbolTable NO_OP_NEW_SYMBOL_TABLE = new NoOpNewSymbolTable();
   private static final NoOpNewCpdTokens NO_OP_NEW_CPD_TOKENS = new NoOpNewCpdTokens();
   private static final NoOpNewCoverage NO_OP_NEW_COVERAGE = new NoOpNewCoverage();
-  private static final NoOpNewExternalIssue NO_OP_NEW_EXTERNAL_ISSUE = new NoOpNewExternalIssue();
   private static final NoOpNewSignificantCode NO_OP_NEW_SIGNIFICANT_CODE = new NoOpNewSignificantCode();
 
   private final Settings settings;
   private final FileSystem fs;
   private final ActiveRules activeRules;
   private final SensorStorage sensorStorage;
-  private final InputModule module;
+  private final SonarLintInputProject project;
   private final SonarRuntime sqRuntime;
   private final ProgressWrapper progress;
   private final Configuration config;
 
-  public DefaultSensorContext(InputModule module, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
+  public DefaultSensorContext(SonarLintInputProject project, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
     SonarRuntime sqRuntime, ProgressWrapper progress) {
-    this.module = module;
+    this.project = project;
     this.settings = settings;
     this.config = config;
     this.fs = fs;
@@ -106,7 +106,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewIssue newIssue() {
-    return new DefaultSonarLintIssue(sensorStorage);
+    return new DefaultSonarLintIssue(project, fs.baseDir().toPath(), sensorStorage);
   }
 
   @Override
@@ -121,7 +121,12 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public InputModule module() {
-    return module;
+    return project;
+  }
+
+  @Override
+  public InputProject project() {
+    return project;
   }
 
   @Override
@@ -166,12 +171,21 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewExternalIssue newExternalIssue() {
-    return NO_OP_NEW_EXTERNAL_ISSUE;
+    throw unsupported();
   }
 
   @Override
   public NewSignificantCode newSignificantCode() {
     return NO_OP_NEW_SIGNIFICANT_CODE;
+  }
+
+  @Override
+  public NewAdHocRule newAdHocRule() {
+    throw unsupported();
+  }
+
+  private static UnsupportedOperationException unsupported() {
+    return new UnsupportedOperationException("Not supported in SonarLint");
   }
 
 }

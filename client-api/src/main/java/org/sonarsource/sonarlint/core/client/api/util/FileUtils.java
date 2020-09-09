@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,10 +26,16 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.DosFileAttributes;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -132,6 +138,62 @@ public class FileUtils {
     } catch (IOException e) {
       throw new IllegalStateException("Unable to delete directory " + path, e);
     }
+  }
+
+  private static boolean isHidden(Path path) {
+    return isHiddenByWindows(path) || isDotFile(path);
+  }
+
+  private static boolean isHiddenByWindows(Path path) {
+    return WINDOWS && hasWindowsHiddenAttribute(path);
+  }
+
+  private static boolean hasWindowsHiddenAttribute(Path path) {
+    try {
+      DosFileAttributes dosFileAttributes = Files.readAttributes(path, DosFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+      return dosFileAttributes.isHidden();
+    } catch (UnsupportedOperationException | IOException e) {
+      return path.toFile().isHidden();
+    }
+  }
+
+  private static boolean isDotFile(Path path) {
+    return path.getFileName().toString().startsWith(".");
+  }
+
+  public static Collection<String> allRelativePathsForFilesInTree(Path dir) {
+    if (!dir.toFile().exists()) {
+      return Collections.emptySet();
+    }
+    Set<String> paths = new HashSet<>();
+    try {
+      Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+          if (!isHidden(file)) {
+            retry(() -> paths.add(toSonarQubePath(dir.relativize(file).toString())));
+          }
+          return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+          if (isHidden(dir)) {
+            return FileVisitResult.SKIP_SUBTREE;
+          } else {
+            return FileVisitResult.CONTINUE;
+          }
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+          return FileVisitResult.CONTINUE;
+        }
+      });
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to list files in directory " + dir, e);
+    }
+    return paths;
   }
 
   /**

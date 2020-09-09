@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,23 +30,24 @@ import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestPlanBuilder;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
-import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorStorage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
+import org.sonarsource.sonarlint.core.analyzer.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputModule;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.EnforceIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.SonarLintNoSonarFilter;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -69,7 +70,7 @@ public class AnalysisContainer extends ComponentContainer {
   private void addCoreComponents() {
     add(
       progress,
-      new SonarLintInputModule(),
+      SonarLintInputProject.class,
       NoOpFileLinesContextFactory.class,
 
       // temp
@@ -90,7 +91,7 @@ public class AnalysisContainer extends ComponentContainer {
       new AnalysisConfigurationProvider(),
 
       // file system
-      InputPathCache.class,
+      InputFileCache.class,
       InputFileBuilder.class,
       FileMetadata.class,
       LanguageDetection.class,
@@ -103,11 +104,12 @@ public class AnalysisContainer extends ComponentContainer {
       IgnoreIssuesFilter.class,
       IssueExclusionPatternInitializer.class,
       IssueInclusionPatternInitializer.class,
+      IssueExclusionsLoader.class,
 
       SensorOptimizer.class,
 
       DefaultSensorContext.class,
-      DefaultSensorStorage.class,
+      SonarLintSensorStorage.class,
       IssueFilters.class,
 
       // rules
@@ -128,7 +130,7 @@ public class AnalysisContainer extends ComponentContainer {
   protected void doAfterStart() {
     LOG.debug("Start analysis");
     // Don't initialize Sensors before the FS is indexed
-    getComponentByType(SonarLintFileSystem.class).index();
+    getComponentByType(FileIndexer.class).index();
     getComponentByType(SensorsExecutor.class).execute();
   }
 

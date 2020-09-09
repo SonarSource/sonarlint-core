@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,6 @@ import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.TreeWsResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,15 +55,15 @@ public class ModuleHierarchyDownloaderTest {
     WsClientTestUtils
       .addStreamResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1",
         "/update/tree.pb");
-    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=AVeumyM5SDj1uJJMtck2",
+    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot%3Amodule1",
       "/update/show_module1.pb");
-    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=AVeumyM5SDj1uJJMtck3",
+    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot%3Amodule1%3Amodule11",
       "/update/show_module1_module11.pb");
-    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=AVeumyM5SDj1uJJMtck6",
+    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot%3Amodule1%3Amodule12",
       "/update/show_module1_module12.pb");
-    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=AVeumyM5SDj1uJJMtck9",
+    WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot%3Amodule2",
       "/update/show_module2.pb");
-    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy(Version.create("7.0"), "testRoot", new ProgressWrapper(null));
+    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));
     assertThat(fetchModuleHierarchy).contains(
       entry("testRoot", ""),
       entry("testRoot:module1", "module1"),
@@ -81,13 +80,13 @@ public class ModuleHierarchyDownloaderTest {
       responseBuilder.addComponents(Component.newBuilder()
         .setId("id" + i)
         .setKey("testRoot" + i));
-      WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=id" + i, "/update/show_module1.pb");
+      WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot" + i, "/update/show_module1.pb");
     }
 
     WsClientTestUtils
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", responseBuilder.build());
 
-    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy(Version.create("7.0"), "testRoot", new ProgressWrapper(null));
+    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));
     assertThat(fetchModuleHierarchy).hasSize(PAGE_SIZE + 1 /* root module */);
   }
 
@@ -99,7 +98,7 @@ public class ModuleHierarchyDownloaderTest {
       responseBuilder.addComponents(Component.newBuilder()
         .setId("id" + i)
         .setKey("testRoot" + i));
-      WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=id" + i, "/update/show_module1.pb");
+      WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot" + i, "/update/show_module1.pb");
     }
 
     WsClientTestUtils
@@ -111,12 +110,12 @@ public class ModuleHierarchyDownloaderTest {
       responseBuilder.addComponents(Component.newBuilder()
         .setId("id" + i)
         .setKey("testRoot" + i));
-      WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?id=id" + i, "/update/show_module1.pb");
+      WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot" + i, "/update/show_module1.pb");
     }
     WsClientTestUtils
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=2", responseBuilder.build());
 
-    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy(Version.create("7.0"), "testRoot", new ProgressWrapper(null));
+    Map<String, String> fetchModuleHierarchy = downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));
     assertThat(fetchModuleHierarchy).hasSize(501 + 1);
   }
 
@@ -127,7 +126,7 @@ public class ModuleHierarchyDownloaderTest {
     downloader = new ModuleHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
     exception.expectMessage("Error 503");
-    downloader.fetchModuleHierarchy(Version.create("7.0"), "testRoot", new ProgressWrapper(null));
+    downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));
   }
 
   @Test
@@ -137,7 +136,7 @@ public class ModuleHierarchyDownloaderTest {
       .addResponse(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", "invalid response stream");
     downloader = new ModuleHierarchyDownloader(wsClient);
     exception.expect(IllegalStateException.class);
-    exception.expectMessage("Failed to process paginated WS");
-    downloader.fetchModuleHierarchy(Version.create("7.0"), "testRoot", new ProgressWrapper(null));
+    exception.expectMessage(" While parsing a protocol message, the input ended unexpectedly in the middle of a field.");
+    downloader.fetchModuleHierarchy("testRoot", new ProgressWrapper(null));
   }
 }

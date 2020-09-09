@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -63,20 +62,21 @@ public class AbstractConnectedTest {
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
     final Path baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
     final Path path = baseDir.resolve(filePath);
-    return new ConnectedAnalysisConfiguration(projectKey,
-      new File("projects/" + projectDir).toPath().toAbsolutePath(),
-      t.newFolder().toPath(),
-      Collections.singletonList(new TestClientInputFile(baseDir, path, false, StandardCharsets.UTF_8)),
-      toMap(properties));
+    return ConnectedAnalysisConfiguration.builder()
+      .setProjectKey(projectKey)
+      .setBaseDir(new File("projects/" + projectDir).toPath().toAbsolutePath())
+      .addInputFile(new TestClientInputFile(baseDir, path, false, StandardCharsets.UTF_8))
+      .putAllExtraProperties(toMap(properties))
+      .build();
   }
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
     final Path path = Paths.get(absoluteFilePath).toAbsolutePath();
-    return new ConnectedAnalysisConfiguration(projectKey,
-      path.getParent(),
-      t.newFolder().toPath(),
-      Collections.singletonList(new TestClientInputFile(path.getParent(), path, false, StandardCharsets.UTF_8)),
-      Collections.emptyMap());
+    return ConnectedAnalysisConfiguration.builder()
+      .setProjectKey(projectKey)
+      .setBaseDir(path.getParent())
+      .addInputFile(new TestClientInputFile(path.getParent(), path, false, StandardCharsets.UTF_8))
+      .build();
   }
 
   static Map<String, String> toMap(String[] keyValues) {

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 package its;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -27,9 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -39,10 +40,15 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -63,10 +69,10 @@ public class StandaloneTest {
     globalProps.put("sonar.global.label", "It works");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(new File("../plugins/global-extension-plugin/target/global-extension-plugin.jar").toURI().toURL())
+      .addEnabledLanguage(Language.XOO)
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))
-      .setExtraProperties(globalProps)
-      .build();
+      .setExtraProperties(globalProps).build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
     assertThat(logs).containsOnlyOnce("Start Global Extension It works");
@@ -84,20 +90,79 @@ public class StandaloneTest {
   }
 
   @Test
+  public void checkRuleParameterDeclarations() throws Exception {
+    Collection<StandaloneRuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
+    assertThat(ruleDetails).hasSize(1);
+    StandaloneRuleDetails incRule = ruleDetails.iterator().next();
+    assertThat(incRule.paramDetails()).hasSize(8);
+    assertRuleHasParam(incRule, "stringParam", StandaloneRuleParamType.STRING);
+    assertRuleHasParam(incRule, "textParam", StandaloneRuleParamType.TEXT);
+    assertRuleHasParam(incRule, "boolParam", StandaloneRuleParamType.BOOLEAN);
+    assertRuleHasParam(incRule, "intParam", StandaloneRuleParamType.INTEGER);
+    assertRuleHasParam(incRule, "floatParam", StandaloneRuleParamType.FLOAT);
+    assertRuleHasParam(incRule, "enumParam", StandaloneRuleParamType.STRING, "enum1", "enum2", "enum3");
+    assertRuleHasParam(incRule, "enumListParam", StandaloneRuleParamType.STRING, "list1", "list2", "list3");
+    assertRuleHasParam(incRule, "multipleIntegersParam", StandaloneRuleParamType.INTEGER, "80", "120", "160");
+  }
+
+  private static void assertRuleHasParam(StandaloneRuleDetails rule, String paramKey, StandaloneRuleParamType expectedType,
+    String... possibleValues) {
+    Optional<StandaloneRuleParam> param = rule.paramDetails().stream().filter(p -> p.key().equals(paramKey)).findFirst();
+    assertThat(param).isNotEmpty();
+    assertThat(param.get())
+      .extracting(StandaloneRuleParam::type, StandaloneRuleParam::possibleValues)
+      .containsExactly(expectedType, Arrays.asList(possibleValues));
+  }
+
+  @Test
   public void globalExtension() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.glob", "foo", false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 0"));
 
+    // Default parameter values
+    assertThat(logs).containsSubsequence(
+      "Param stringParam has value null",
+      "Param textParam has value text\nparameter",
+      "Param intParam has value 42",
+      "Param boolParam has value true",
+      "Param floatParam has value 3.14159265358",
+      "Param enumParam has value enum1",
+      "Param enumListParam has value list1,list2",
+      "Param multipleIntegersParam has value null");
+
     issues.clear();
     sonarlint.analyze(
-      new StandaloneAnalysisConfiguration(baseDir.toPath(), temp.newFolder().toPath(), Arrays.asList(inputFile), ImmutableMap.of()), issue -> issues.add(issue), null, null);
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .addRuleParameter(RuleKey.parse("global:inc"), "stringParam", "polop")
+        .addRuleParameter(RuleKey.parse("global:inc"), "textParam", "")
+        .addRuleParameter(RuleKey.parse("global:inc"), "multipleIntegersParam", "80,160")
+        .addRuleParameter(RuleKey.parse("unknown:rule"), "unknown", "parameter")
+        .build(),
+      issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
       tuple("global:inc", inputFile.getPath(), "Issue number 1"));
+
+    // Overridden parameter values
+    assertThat(logs).contains(
+      "Param stringParam has value polop",
+      "Param textParam has value ",
+      "Param intParam has value 42",
+      "Param boolParam has value true",
+      "Param floatParam has value 3.14159265358",
+      "Param enumParam has value enum1",
+      "Param enumListParam has value list1,list2",
+      "Param multipleIntegersParam has value 80,160");
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {

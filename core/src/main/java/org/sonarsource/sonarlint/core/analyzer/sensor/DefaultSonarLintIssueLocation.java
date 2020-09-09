@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,15 +20,28 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import com.google.common.base.Preconditions;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
+import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 
-/**
- * Override default implementation to not cast as DefaultInputFile
- */
-public class DefaultSonarLintIssueLocation extends DefaultIssueLocation {
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang.StringUtils.abbreviate;
+import static org.apache.commons.lang.StringUtils.replace;
+import static org.apache.commons.lang.StringUtils.trimToEmpty;
 
+public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLocation {
+
+  private InputComponent component;
   private TextRange textRange;
+  private String message;
+
+  @Override
+  public DefaultSonarLintIssueLocation on(InputComponent component) {
+    requireNonNull(component, "Component can't be null");
+    this.component = component;
+    return this;
+  }
 
   @Override
   public DefaultSonarLintIssueLocation at(TextRange location) {
@@ -39,8 +52,28 @@ public class DefaultSonarLintIssueLocation extends DefaultIssueLocation {
   }
 
   @Override
+  public DefaultSonarLintIssueLocation message(String message) {
+    this.message = abbreviate(trimToEmpty(sanitizeNulls(message)), MESSAGE_MAX_SIZE);
+    return this;
+  }
+
+  private static String sanitizeNulls(String message) {
+    return replace(message, "\u0000", "[NULL]");
+  }
+
+  @Override
+  public InputComponent inputComponent() {
+    return this.component;
+  }
+
+  @Override
   public TextRange textRange() {
     return textRange;
+  }
+
+  @Override
+  public String message() {
+    return this.message;
   }
 
 }

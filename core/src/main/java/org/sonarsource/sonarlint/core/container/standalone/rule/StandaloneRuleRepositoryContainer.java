@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
+import java.util.List;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.config.internal.MapSettings;
-import org.sonar.api.profiles.XMLProfileParser;
+import org.sonar.api.resources.Language;
 import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonar.api.server.rule.RulesDefinitionXmlLoader;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 
@@ -32,6 +31,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private Context ruleDefinitions;
+  private List<Language> languages;
 
   public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
     super(parent);
@@ -45,14 +45,9 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   private void addCoreComponents() {
     add(StandaloneRuleDefinitionsLoader.class,
-      new StandaloneRulesProvider(),
-      RuleFinderCompatibility.class,
-      RulesDefinitionXmlLoader.class,
-      XMLProfileParser.class,
+      new StandaloneSonarLintRulesProvider(),
       StandaloneActiveRulesProvider.class,
-      // for cfamily plugin
-      new MapSettings(),
-      new StandaloneRuleConfigurationProvider());
+      new EmptyConfiguration());
   }
 
   private void addPluginExtensions() {
@@ -65,6 +60,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
     standaloneActiveRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
     StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
+    languages = getComponentsByType(Language.class);
   }
 
   public Rules getRules() {
@@ -77,5 +73,9 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   public Context getRulesDefinitions() {
     return ruleDefinitions;
+  }
+
+  public List<Language> getLanguages() {
+    return languages;
   }
 }

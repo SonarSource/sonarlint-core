@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,61 +19,55 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import java.util.Collections;
+import java.util.Map;
+import org.junit.Before;
+import org.junit.Test;
+import org.sonar.api.Plugin;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.sonar.api.Plugin;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-
 public class PluginRepositoryTest {
   private PluginRepository pluginRepository;
-  private PluginCacheLoader cacheLoader;
-  private PluginLoader loader;
-  private PluginVersionChecker versionChecker;
+  private PluginInfosLoader cacheLoader;
+  private PluginInstancesLoader loader;
 
   @Before
   public void setup() {
-    cacheLoader = mock(PluginCacheLoader.class);
-    loader = mock(PluginLoader.class);
-    versionChecker = mock(PluginVersionChecker.class);
-    pluginRepository = new PluginRepository(cacheLoader, loader, versionChecker);
+    cacheLoader = mock(PluginInfosLoader.class);
+    loader = mock(PluginInstancesLoader.class);
+    pluginRepository = new PluginRepository(cacheLoader, loader);
   }
 
   @Test
   public void testRepo() {
     PluginInfo info = new PluginInfo("key");
     info.setVersion(Version.create("2.0"));
-    test(info, true);
+    test(info);
   }
 
   @Test
   public void testAnalyzerWithoutVersion() {
     PluginInfo info = new PluginInfo("key");
-    test(info, false);
+    test(info);
   }
 
-  private void test(PluginInfo info, boolean assertSupportsStream) {
+  private void test(PluginInfo info) {
     Plugin plugin = mock(Plugin.class);
     Map<String, PluginInfo> infos = Collections.singletonMap("key", info);
     when(cacheLoader.load()).thenReturn(infos);
     when(loader.load(infos)).thenReturn(Collections.singletonMap("key", plugin));
-    when(versionChecker.getMinimumStreamSupportVersion("key")).thenReturn("1.0");
     pluginRepository.start();
 
     verify(loader).load(infos);
     verify(cacheLoader).load();
 
-    assertThat(pluginRepository.getLoadedAnalyzers()).hasSize(1);
-    assertThat(pluginRepository.getLoadedAnalyzers().iterator().next().supportsContentStream()).isEqualTo(assertSupportsStream);
+    assertThat(pluginRepository.getPluginDetails()).hasSize(1);
     assertThat(pluginRepository.getPluginInfo("key")).isEqualTo(info);
-    assertThat(pluginRepository.getPluginInfos()).containsExactly(info);
+    assertThat(pluginRepository.getActivePluginInfos()).containsExactly(info);
     assertThat(pluginRepository.getPluginInstance("key")).isEqualTo(plugin);
     assertThat(pluginRepository.hasPlugin("key")).isTrue();
   }

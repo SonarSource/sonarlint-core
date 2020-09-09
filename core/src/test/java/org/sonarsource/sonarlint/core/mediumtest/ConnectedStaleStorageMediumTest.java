@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,25 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Date;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -46,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedStaleStorageMediumTest {
   @ClassRule
@@ -58,7 +56,7 @@ public class ConnectedStaleStorageMediumTest {
   public static void prepare() throws Exception {
     String storageId = "localhost";
     Path slHome = temp.newFolder().toPath();
-    storage = slHome.resolve("storage").resolve(storageId);
+    storage = slHome.resolve("storage").resolve(encodeForFs(storageId));
 
     config = ConnectedGlobalConfiguration.builder()
       .setServerId(storageId)
@@ -93,23 +91,25 @@ public class ConnectedStaleStorageMediumTest {
       sonarlint.allProjectsByKey();
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
     try {
       sonarlint.getRuleDetails("rule");
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
 
     try {
       sonarlint.analyze(
-        new ConnectedAnalysisConfiguration(null, baseDir.toPath(), temp.newFolder().toPath(), Collections.<ClientInputFile>emptyList(), ImmutableMap.<String, String>of()),
+        ConnectedAnalysisConfiguration.builder()
+          .setBaseDir(baseDir.toPath())
+          .build(),
         mock(IssueListener.class), null, null);
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).isInstanceOf(GlobalUpdateRequiredException.class).hasMessage("Please update server 'localhost'");
+      assertThat(e).isInstanceOf(GlobalStorageUpdateRequiredException.class).hasMessage("Storage of server 'localhost' requires an update");
     }
   }
 }

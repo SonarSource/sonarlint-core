@@ -1,6 +1,6 @@
 /*
  * SonarLint slf4j log adaptor
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -247,7 +247,7 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public void warn(String msg, Throwable t) {
-    SONAR_LOGGER.warn(msg);
+    SONAR_LOGGER.warn(msg, t);
   }
 
   @Override

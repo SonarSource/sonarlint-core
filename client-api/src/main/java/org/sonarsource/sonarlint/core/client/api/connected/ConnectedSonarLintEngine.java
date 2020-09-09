@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Client API
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,14 +27,13 @@ import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
@@ -60,14 +59,15 @@ public interface ConnectedSonarLintEngine {
   void removeStateListener(StateListener listener);
 
   /**
-   * Return rule details.
-   *
-   * @param ruleKey See {@link Issue#getRuleKey()}
-   * @return Rule details
-   * @throws IllegalArgumentException if ruleKey is unknown
-   * @since 1.2
+   * Return global rule details (not specific to any quality profile).
    */
-  RuleDetails getRuleDetails(String ruleKey);
+  ConnectedRuleDetails getRuleDetails(String ruleKey);
+
+  /**
+   * Return rule details in the context of a given project (severity may have been overriden in the quality profile).
+   * @param projectKey if null, the default QP will be considered
+   */
+  ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey);
 
   /**
    * Trigger an analysis
@@ -147,7 +147,7 @@ public interface ConnectedSonarLintEngine {
   /**
    * Check server to see if global storage need updates.
    *
-   * @throws GlobalUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
+   * @throws GlobalStorageUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
    * @throws DownloadException             if it fails to download
    * @since 2.6
    */
@@ -186,8 +186,17 @@ public interface ConnectedSonarLintEngine {
    * Get information about the analyzers that are currently loaded.
    * Should only be called when engine is started.
    */
-  Collection<LoadedAnalyzer> getLoadedAnalyzers();
+  Collection<PluginDetails> getPluginDetails();
 
-  <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> filePathExtractor, Predicate<G> testFilePredicate);
+  /**
+   * Get a list of files that are excluded from analysis, out of the provided files.
+   *
+   * @param projectBinding    Specifies the binding to which the files belong.
+   * @param files             The files that will be process to detect which ones are excluded from analysis
+   * @param ideFilePathExtractor Provides a IDE path of each file. The path will be processes using the binding prefixes.
+   * @param testFilePredicate Indicates whether a file is a test file.
+   * @return The list of files that are excluded from analysis.
+   */
+  <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate);
 
 }

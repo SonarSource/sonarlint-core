@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,15 +26,18 @@ import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 
 public class InputFileBuilder {
   private static final Logger LOG = Loggers.get(InputFileBuilder.class);
   private final LanguageDetection langDetection;
   private final FileMetadata fileMetadata;
+  private final IssueExclusionsLoader exclusionsScanner;
 
-  public InputFileBuilder(LanguageDetection langDetection, FileMetadata fileMetadata) {
+  public InputFileBuilder(LanguageDetection langDetection, FileMetadata fileMetadata, IssueExclusionsLoader exclusionsScanner) {
     this.langDetection = langDetection;
     this.fileMetadata = fileMetadata;
+    this.exclusionsScanner = exclusionsScanner;
   }
 
   LanguageDetection langDetection() {
@@ -51,7 +54,7 @@ public class InputFileBuilder {
       } catch (IOException e) {
         throw new IllegalStateException("Failed to open a stream on file: " + f.uri(), e);
       }
-      return fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), f.uri());
+      return fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), f.uri(), exclusionsScanner.createCharHandlerFor(f));
     });
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     if (inputFile.language() != null) {

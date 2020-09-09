@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,8 +31,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,7 +50,7 @@ public class PersistentIssueTrackerCacheTest {
     private final Map<String, Collection<Trackable>> cache = new HashMap<>();
 
     StubIssueStore() throws IOException {
-      super(temporaryFolder.newFolder().toPath(), temporaryFolder.newFolder().toPath(), mock(Logger.class));
+      super(temporaryFolder.newFolder().toPath(), temporaryFolder.newFolder().toPath());
     }
 
     @Override
@@ -81,7 +81,7 @@ public class PersistentIssueTrackerCacheTest {
   @Before
   public void setUp() throws IOException {
     stubIssueStore = new StubIssueStore();
-    cache = new PersistentIssueTrackerCache(stubIssueStore, mock(Logger.class));
+    cache = new PersistentIssueTrackerCache(stubIssueStore);
   }
 
   @Test
@@ -166,7 +166,7 @@ public class PersistentIssueTrackerCacheTest {
     String file = "nonexistent";
     IssueStore store = mock(IssueStore.class);
     when(store.read(file)).thenThrow(new IOException("failed to read from store"));
-    IssueTrackerCache cache = new PersistentIssueTrackerCache(store, mock(Logger.class));
+    IssueTrackerCache cache = new PersistentIssueTrackerCache(store);
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
     verify(store).read(file);
   }
@@ -179,7 +179,7 @@ public class PersistentIssueTrackerCacheTest {
     IssueStore store = mock(IssueStore.class);
     doThrow(new IOException("failed to write to store")).when(store).save(file, trackables);
 
-    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store, mock(Logger.class));
+    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store);
     cache.put(file, trackables);
     cache.flushAll();
     verify(store).save(file, trackables);
@@ -189,7 +189,7 @@ public class PersistentIssueTrackerCacheTest {
   public void put_should_crash_on_io_failures_during_store_write() throws IOException {
     IssueStore store = mock(IssueStore.class);
     doThrow(new IOException("failed to write to store")).when(store).save(anyString(), any());
-    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store, mock(Logger.class));
+    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store);
     for (int i = 0; i < PersistentIssueTrackerCache.MAX_ENTRIES + 1; i++) {
       cache.put("dummy" + i, Collections.emptyList());
     }

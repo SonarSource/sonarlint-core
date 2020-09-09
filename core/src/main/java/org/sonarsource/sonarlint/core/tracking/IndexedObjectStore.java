@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
@@ -38,7 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
  * @param <V> type of the value to store
  */
 class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
-  private final Logger logger;
+  private static final Logger LOGGER = Loggers.get(IndexedObjectStore.class);
 
   private final StoreIndex<K> index;
   private final PathMapper<K> pathMapper;
@@ -46,13 +48,12 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
   private final Writer<V> writer;
   private final StoreKeyValidator<K> validator;
 
-  IndexedObjectStore(StoreIndex<K> index, PathMapper<K> pathMapper, Reader<V> reader, Writer<V> writer, StoreKeyValidator<K> validator, Logger logger) {
+  IndexedObjectStore(StoreIndex<K> index, PathMapper<K> pathMapper, Reader<V> reader, Writer<V> writer, StoreKeyValidator<K> validator) {
     this.index = index;
     this.pathMapper = pathMapper;
     this.reader = reader;
     this.writer = writer;
     this.validator = validator;
-    this.logger = logger;
   }
 
   @Override
@@ -85,11 +86,11 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
           delete(k);
         } catch (IOException e) {
           Path path = pathMapper.apply(k);
-          logger.error(String.format("failed to delete file '%s' for invalidated key '%s'", path, k), e);
+          LOGGER.error(String.format("failed to delete file '%s' for invalidated key '%s'", path, k), e);
         }
       }
     }
-    logger.debug(String.format("%d entries removed from the store", counter));
+    LOGGER.debug(String.format("%d entries removed from the store", counter));
   }
 
   @Override

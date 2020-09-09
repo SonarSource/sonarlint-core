@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,61 +19,47 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.picocontainer.ComponentLifecycle;
-import org.picocontainer.PicoContainer;
+import java.io.File;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.api.utils.internal.DefaultTempFolder;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 
-public class AnalysisTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
-  static final String TMP_NAME = ".sonartmp";
-  private DefaultTempFolder projectTempFolder;
-  private boolean started = false;
+public class AnalysisTempFolderProvider extends ProviderAdapter {
 
-  public TempFolder provide(StandaloneAnalysisConfiguration analysisConfig) {
-    if (projectTempFolder == null) {
-      Path workingDir = analysisConfig.workDir();
-      Path tempDir = workingDir.normalize().resolve(TMP_NAME);
-      try {
-        Files.deleteIfExists(tempDir);
-        Files.createDirectories(tempDir);
-      } catch (IOException e) {
-        throw new IllegalStateException("Unable to create root temp directory " + tempDir, e);
-      }
+  private final NoTempFilesDuringAnalysis instance = new NoTempFilesDuringAnalysis();
 
-      projectTempFolder = new DefaultTempFolder(tempDir.toFile(), true);
+  public TempFolder provide() {
+    return instance;
+  }
+
+  private static class NoTempFilesDuringAnalysis implements TempFolder {
+
+    @Override
+    public File newDir() {
+      throw throwUOEFolder();
     }
-    return projectTempFolder;
-  }
 
-  @Override
-  public void start(PicoContainer container) {
-    started = true;
-  }
-
-  @Override
-  public void stop(PicoContainer container) {
-    if (projectTempFolder != null) {
-      projectTempFolder.stop();
+    @Override
+    public File newDir(String name) {
+      throw throwUOEFolder();
     }
-  }
 
-  @Override
-  public void dispose(PicoContainer container) {
-    // nothing to do
-  }
+    private static UnsupportedOperationException throwUOEFolder() {
+      return new UnsupportedOperationException("Don't create temp folders during analysis");
+    }
 
-  @Override
-  public boolean componentHasLifecycle() {
-    return true;
-  }
+    @Override
+    public File newFile() {
+      throw throwUOEFiles();
+    }
 
-  @Override
-  public boolean isStarted() {
-    return started;
+    private static UnsupportedOperationException throwUOEFiles() {
+      return new UnsupportedOperationException("Don't create temp files during analysis");
+    }
+
+    @Override
+    public File newFile(String prefix, String suffix) {
+      throw throwUOEFiles();
+    }
+
   }
 }
