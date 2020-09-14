@@ -125,6 +125,9 @@ public class PluginInfo implements Comparable<PluginInfo> {
   private Version jreMinVersion;
 
   @CheckForNull
+  private Version nodeJsMinVersion;
+
+  @CheckForNull
   private SkipReason skipReason;
 
   public PluginInfo(String key) {
@@ -199,6 +202,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return jreMinVersion;
   }
 
+  @CheckForNull
+  public Version getNodeJsMinVersion() {
+    return nodeJsMinVersion;
+  }
+
   public Optional<SkipReason> getSkipReason() {
     return Optional.ofNullable(skipReason);
   }
@@ -263,6 +271,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   private PluginInfo setMinimalJreVersion(@Nullable Version jreMinVersion) {
     this.jreMinVersion = jreMinVersion;
+    return this;
+  }
+
+  private PluginInfo setMinimalNodeJsVersion(@Nullable Version nodeJsMinVersion) {
+    this.nodeJsMinVersion = nodeJsMinVersion;
     return this;
   }
 
@@ -361,6 +374,10 @@ public class PluginInfo implements Comparable<PluginInfo> {
     String jreMinVersion = manifest.getJreMinVersion();
     if (jreMinVersion != null) {
       info.setMinimalJreVersion(Version.create(jreMinVersion));
+    }
+    String nodejsMinVersion = manifest.getNodeJsMinVersion();
+    if (nodejsMinVersion != null) {
+      info.setMinimalNodeJsVersion(Version.create(nodejsMinVersion));
     }
     return info;
   }

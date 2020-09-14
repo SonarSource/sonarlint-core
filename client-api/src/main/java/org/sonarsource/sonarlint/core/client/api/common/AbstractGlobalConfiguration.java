@@ -45,6 +45,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Path workDir;
   private final EnumSet<Language> enabledLanguages;
   private final Map<String, String> extraProperties;
+  private final Path nodejsPath;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
@@ -52,6 +53,7 @@ public abstract class AbstractGlobalConfiguration {
     this.enabledLanguages = builder.enabledLanguages;
     this.logOutput = builder.logOutput;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
+    this.nodejsPath = builder.nodejsPath;
   }
 
   public Map<String, String> extraProperties() {
@@ -75,12 +77,18 @@ public abstract class AbstractGlobalConfiguration {
     return logOutput;
   }
 
+  @CheckForNull
+  public Path getNodejsPath() {
+    return nodejsPath;
+  }
+
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
     private LogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
     private EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
+    private Path nodejsPath;
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
@@ -124,6 +132,14 @@ public abstract class AbstractGlobalConfiguration {
      */
     public G addEnabledLanguages(Language... languages) {
       enabledLanguages.addAll(Arrays.asList(languages));
+      return (G) this;
+    }
+
+    /**
+     * Set the location of the nodejs executable used by some analyzers. If null, node will be searched in the PATH.
+     */
+    public G setNodeJsPath(@Nullable Path nodejsPath) {
+      this.nodejsPath = nodejsPath;
       return (G) this;
     }
   }

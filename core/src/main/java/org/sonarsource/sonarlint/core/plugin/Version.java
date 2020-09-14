@@ -163,4 +163,8 @@ public class Version implements Comparable<Version> {
   public boolean isCompatibleWith(Version version) {
     return this.removeQualifier().equals(version.removeQualifier());
   }
+
+  public boolean satisfiesMinRequirement(Version minRequirement) {
+    return this.compareToIgnoreQualifier(minRequirement) >= 0;
+  }
 }

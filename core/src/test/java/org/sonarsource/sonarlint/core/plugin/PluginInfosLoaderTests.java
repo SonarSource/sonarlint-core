@@ -32,7 +32,6 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,9 +42,11 @@ import org.sonar.api.utils.ZipUtils;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
+import org.sonarsource.sonarlint.core.container.global.NodeJsHelper;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
@@ -78,6 +79,8 @@ class PluginInfosLoaderTests {
 
   private System2 system2;
 
+  private NodeJsHelper nodeJsHelper;
+
   @BeforeEach
   public void prepare() {
     pluginIndex = mock(PluginIndex.class);
@@ -87,7 +90,8 @@ class PluginInfosLoaderTests {
     ConnectedGlobalConfiguration configuration = mock(ConnectedGlobalConfiguration.class);
     enabledLanguages = new HashSet<>();
     when(configuration.getEnabledLanguages()).thenReturn(enabledLanguages);
-    underTest = new PluginInfosLoader(pluginVersionChecker, pluginCache, pluginIndex, configuration, system2);
+    nodeJsHelper = mock(NodeJsHelper.class);
+    underTest = new PluginInfosLoader(pluginVersionChecker, pluginCache, pluginIndex, configuration, system2, nodeJsHelper);
 
     when(system2.property("java.specification.version")).thenReturn(System.getProperty("java.specification.version"));
     doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(FAKE_PLUGIN_KEY);
@@ -134,7 +138,8 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_unsupported_plugins_api_version(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "99.9", null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0,
+      withSonarLintSupported(true), withSqApiVersion("99.9")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -144,7 +149,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_unsupported_plugins_version(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     when(pluginVersionChecker.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
 
@@ -155,7 +160,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, null, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load()).hasSize(0);
@@ -164,7 +169,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_explicitely_unsupported_by_sonarlint(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, false, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(false)));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load()).hasSize(0);
@@ -173,7 +178,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     enabledLanguages.add(Language.TS);
@@ -185,7 +190,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages_multiple(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0, true, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(eq(Language.C.getPluginKey()));
 
@@ -198,7 +203,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_load_even_if_only_one_language_enabled(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0, true, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(eq(Language.C.getPluginKey()));
 
@@ -210,7 +215,8 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withBasePlugin(Language.JS.getPluginKey())));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -220,8 +226,10 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
-    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withBasePlugin(Language.JS.getPluginKey())));
+    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar",
+      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeBasePlugin));
 
     // Ensure base plugin is skipped because of min version
@@ -237,8 +245,10 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, Language.JS.getPluginKey()));
-    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withBasePlugin(Language.JS.getPluginKey())));
+    PluginReference fakeBasePlugin = fakePlugin(storage, "base.jar",
+      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeBasePlugin));
 
     // Ensure base plugin is not skipped
@@ -254,7 +264,7 @@ class PluginInfosLoaderTests {
   @Test
   void load_plugin_skip_plugins_having_missing_required_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "required2:1.0"));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withRequiredPlugins("required2:1.0")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -265,7 +275,7 @@ class PluginInfosLoaderTests {
   @Test
   void load_plugin_ignore_license_plugin_dependency(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "license:1.0"));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withRequiredPlugins("license:1.0")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -276,8 +286,8 @@ class PluginInfosLoaderTests {
   @Test
   void load_plugin_skip_plugins_having_skipped_required_plugin(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, null, null, "required2:1.0"));
-    PluginReference fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0, true, null, null, null));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withRequiredPlugins("required2:1.0")));
+    PluginReference fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin, fakeDepPlugin));
 
     // Ensure dep plugin is skipped because of min version
@@ -293,7 +303,7 @@ class PluginInfosLoaderTests {
   @Test
   void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar",
-      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, true, null, null, null, Language.TS.getPluginKey() + ":1.0"));
+      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true), withRequiredPlugins(Language.TS.getPluginKey() + ":1.0")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
     enabledLanguages.add(Language.JS);
@@ -305,7 +315,8 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, "7.9", null, null));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withSqApiVersion("7.9")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load().values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
@@ -317,28 +328,76 @@ class PluginInfosLoaderTests {
   void load_plugin_skip_plugins_having_unsatisfied_jre(@TempDir Path storage) throws IOException {
     when(system2.property("java.specification.version")).thenReturn("1.8");
 
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "11", null));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withJreMinVersion("11")));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedJreRequirement("1.8", "11")));
+      .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.8", "11")));
     assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires JRE 11 while current is 1.8. Skip loading it.");
   }
 
   @Test
-  void load_plugin_having_satisfied_jre(@TempDir Path storage) throws IOException {
-    when(system2.property("java.specification.version")).thenReturn("1.8");
+  void load_plugin_having_satisfied_nodejs(@TempDir Path storage) throws IOException {
+    when(nodeJsHelper.getNodeJsVersion()).thenReturn(Version.create("10.1.3"));
 
-    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, true, null, "1.7", null));
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("10.1.2")));
     when(pluginIndex.references()).thenReturn(asList(fakePlugin));
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", false, null));
   }
 
-  private void createPluginManifest(Path path, String pluginKey, String version, Boolean sonarlintSupported, @Nullable String sqApiVersion, @Nullable String jreMinVersion,
-    @Nullable String basePlugin,
-    String... requirePlugins) {
+  @Test
+  void load_plugin_having_satisfied_nodejs_nightly(@TempDir Path storage) throws IOException {
+    when(nodeJsHelper.getNodeJsVersion()).thenReturn(Version.create("15.0.0-nightly20200921039c274dde"));
+
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("15.0.0")));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin));
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("pluginkey", false, null));
+  }
+
+  @Test
+  void load_plugin_skip_plugins_having_unsatisfied_nodejs_version(@TempDir Path storage) throws IOException {
+    when(nodeJsHelper.getNodeJsVersion()).thenReturn(Version.create("10.1.1"));
+
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("10.1.2")));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin));
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, "10.1.1", "10.1.2")));
+    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires Node.js 10.1.2 while current is 10.1.1. Skip loading it.");
+  }
+
+  @Test
+  void load_plugin_skip_plugins_having_unsatisfied_nodejs(@TempDir Path storage) throws IOException {
+    when(nodeJsHelper.getNodeJsVersion()).thenReturn(null);
+
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("10.1.2")));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin));
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, "10.1.2")));
+    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires Node.js 10.1.2. Skip loading it.");
+  }
+
+  @Test
+  void load_plugin_having_satisfied_jre(@TempDir Path storage) throws IOException {
+    when(system2.property("java.specification.version")).thenReturn("1.8");
+
+    PluginReference fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withJreMinVersion("1.7")));
+    when(pluginIndex.references()).thenReturn(asList(fakePlugin));
+
+    assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
+      .containsOnly(tuple("pluginkey", false, null));
+  }
+
+  private void createPluginManifest(Path path, String pluginKey, String version, Consumer<Attributes>... manifestAttributesPopulators) {
     Path manifestPath = path.resolve(JarFile.MANIFEST_NAME);
     try {
       Files.createDirectories(manifestPath.getParent());
@@ -346,27 +405,37 @@ class PluginInfosLoaderTests {
       manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
       manifest.getMainAttributes().putValue(PluginManifest.KEY_ATTRIBUTE, pluginKey);
       manifest.getMainAttributes().putValue(PluginManifest.VERSION_ATTRIBUTE, version);
-      if (sonarlintSupported != null) {
-        manifest.getMainAttributes().putValue(PluginManifest.SONARLINT_SUPPORTED, String.valueOf(sonarlintSupported));
-      }
-      if (sqApiVersion != null) {
-        manifest.getMainAttributes().putValue(PluginManifest.SONAR_VERSION_ATTRIBUTE, sqApiVersion);
-      }
-      if (jreMinVersion != null) {
-        manifest.getMainAttributes().putValue(PluginManifest.JRE_MIN_VERSION, jreMinVersion);
-      }
-      if (basePlugin != null) {
-        manifest.getMainAttributes().putValue(PluginManifest.BASE_PLUGIN, basePlugin);
-      }
-      if (requirePlugins.length > 0) {
-        manifest.getMainAttributes().putValue(PluginManifest.REQUIRE_PLUGINS_ATTRIBUTE, Stream.of(requirePlugins).collect(joining(",")));
-      }
+      Stream.of(manifestAttributesPopulators).forEach(p -> p.accept(manifest.getMainAttributes()));
       try (OutputStream fos = Files.newOutputStream(manifestPath, StandardOpenOption.CREATE_NEW)) {
         manifest.write(fos);
       }
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  private Consumer<Attributes> withSonarLintSupported(boolean value) {
+    return a -> a.putValue(PluginManifest.SONARLINT_SUPPORTED, String.valueOf(value));
+  }
+
+  private Consumer<Attributes> withSqApiVersion(String sqApiVersion) {
+    return a -> a.putValue(PluginManifest.SONAR_VERSION_ATTRIBUTE, sqApiVersion);
+  }
+
+  private Consumer<Attributes> withJreMinVersion(String jreMinVersion) {
+    return a -> a.putValue(PluginManifest.JRE_MIN_VERSION, jreMinVersion);
+  }
+
+  private Consumer<Attributes> withNodejsMinVersion(String nodeMinVersion) {
+    return a -> a.putValue(PluginManifest.NODEJS_MIN_VERSION, nodeMinVersion);
+  }
+
+  private Consumer<Attributes> withBasePlugin(String basePlugin) {
+    return a -> a.putValue(PluginManifest.BASE_PLUGIN, basePlugin);
+  }
+
+  private Consumer<Attributes> withRequiredPlugins(String... requirePlugins) {
+    return a -> a.putValue(PluginManifest.REQUIRE_PLUGINS_ATTRIBUTE, Stream.of(requirePlugins).collect(joining(",")));
   }
 
   private PluginIndex.PluginReference fakePlugin(Path storage, String filename, Consumer<Path>... populators) throws IOException {

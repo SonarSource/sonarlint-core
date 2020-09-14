@@ -33,8 +33,10 @@ import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
+import org.sonarsource.sonarlint.core.container.global.NodeJsHelper;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo.RequiredPlugin;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -50,13 +52,15 @@ public class PluginInfosLoader {
   private final Set<Language> enabledLanguages;
   private final PluginVersionChecker pluginVersionChecker;
   private final System2 system2;
+  private final NodeJsHelper nodeJsHelper;
 
   public PluginInfosLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration,
-    System2 system2) {
+    System2 system2, NodeJsHelper nodeJsHelper) {
     this.pluginVersionChecker = pluginVersionChecker;
     this.pluginCache = pluginCache;
     this.pluginIndex = pluginIndex;
     this.system2 = system2;
+    this.nodeJsHelper = nodeJsHelper;
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
@@ -119,9 +123,21 @@ public class PluginInfosLoader {
     String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     if (jreMinVersion != null) {
       Version jreCurrentVersion = Version.create(javaSpecVersion);
-      if (jreCurrentVersion.compareTo(jreMinVersion) < 0) {
+      if (!jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
         LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", info.getName(), jreMinVersion, jreCurrentVersion);
-        info.setSkipReason(new SkipReason.UnsatisfiedJreRequirement(jreCurrentVersion.toString(), jreMinVersion.toString()));
+        info.setSkipReason(
+          new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
+      }
+    }
+    Version nodeMinVersion = info.getNodeJsMinVersion();
+    if (nodeMinVersion != null) {
+      Version nodeCurrentVersion = nodeJsHelper.getNodeJsVersion();
+      if (nodeCurrentVersion == null) {
+        LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", info.getName(), nodeMinVersion);
+        info.setSkipReason(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, nodeMinVersion.toString()));
+      } else if (!nodeCurrentVersion.satisfiesMinRequirement(nodeMinVersion)) {
+        LOG.debug("Plugin '{}' requires Node.js {} while current is {}. Skip loading it.", info.getName(), nodeMinVersion, nodeCurrentVersion);
+        info.setSkipReason(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, nodeCurrentVersion.toString(), nodeMinVersion.toString()));
       }
     }
   }

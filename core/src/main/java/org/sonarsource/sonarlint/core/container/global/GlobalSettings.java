@@ -19,14 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
+import java.nio.file.Path;
+import org.sonar.api.Startable;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
-public class GlobalSettings extends MapSettings {
+public class GlobalSettings extends MapSettings implements Startable {
 
-  public GlobalSettings(AbstractGlobalConfiguration config, PropertyDefinitions propertyDefinitions) {
+  private static final String NODE_EXECUTABLE_PROPERTY = "sonar.nodejs.executable";
+  private final NodeJsHelper nodeJsHelper;
+
+  public GlobalSettings(AbstractGlobalConfiguration config, PropertyDefinitions propertyDefinitions, NodeJsHelper nodeJsHelper) {
     super(propertyDefinitions);
+    this.nodeJsHelper = nodeJsHelper;
     addProperties(config.extraProperties());
+  }
+
+  @Override
+  public void start() {
+    Path nodejsPath = nodeJsHelper.getNodeJsPath();
+    if (nodejsPath != null) {
+      setProperty(NODE_EXECUTABLE_PROPERTY, nodejsPath.toString());
+    }
+  }
+
+  @Override
+  public void stop() {
+    // Nothing to do
   }
 
 }
