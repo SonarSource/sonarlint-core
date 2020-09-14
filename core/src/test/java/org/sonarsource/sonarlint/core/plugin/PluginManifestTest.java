@@ -48,6 +48,7 @@ public class PluginManifestTest {
     assertThat(manifest.isUseChildFirstClassLoader()).isFalse();
     assertThat(manifest.getImplementationBuild()).isNotEmpty();
     assertThat(manifest.getJreMinVersion()).isNull();
+    assertThat(manifest.getNodeJsMinVersion()).isNull();
   }
 
   @Test
@@ -67,6 +68,7 @@ public class PluginManifestTest {
     manifest.setBasePlugin("newBasePlugin");
     manifest.setImplementationBuild("newImplementationBuild");
     manifest.setJreMinVersion("1.8");
+    manifest.setNodeJsMinVersion("12.18.3");
 
     assertThat(manifest.getName()).isEqualTo("newName");
     assertThat(manifest.getRequirePlugins()).hasSize(2);
@@ -76,6 +78,7 @@ public class PluginManifestTest {
     assertThat(manifest.getBasePlugin()).isEqualTo("newBasePlugin");
     assertThat(manifest.getImplementationBuild()).isEqualTo("newImplementationBuild");
     assertThat(manifest.getJreMinVersion()).isEqualTo("1.8");
+    assertThat(manifest.getNodeJsMinVersion()).isEqualTo("12.18.3");
   }
 
   @Test
@@ -105,5 +108,14 @@ public class PluginManifestTest {
     PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
 
     assertThat(manifest.getJreMinVersion()).isNull();
+  }
+
+  @Test
+  public void should_parse_nodejs_min_version() throws URISyntaxException, IOException {
+    URL jar = getClass().getResource("plugin-with-nodejs-min.jar");
+
+    PluginManifest manifest = new PluginManifest(Paths.get(jar.toURI()));
+
+    assertThat(manifest.getNodeJsMinVersion()).isEqualTo("12.18.3");
   }
 }

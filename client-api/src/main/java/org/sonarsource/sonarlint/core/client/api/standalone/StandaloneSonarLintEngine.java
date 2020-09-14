@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
+import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 /**
  * Entry point for SonarLint in standalone mode.
  */
-public interface StandaloneSonarLintEngine {
+public interface StandaloneSonarLintEngine extends SonarLintEngine {
 
   void stop();
 
@@ -50,12 +50,6 @@ public interface StandaloneSonarLintEngine {
    * Return rule details of all available rules for SonarLint standalone mode. For now, excluding hotspots and rule templates.
    */
   Collection<StandaloneRuleDetails> getAllRuleDetails();
-
-  /**
-   * Get information about the analyzers that are currently loaded.
-   * Should only be called when engine is started.
-   */
-  Collection<PluginDetails> getPluginDetails();
 
   /**
    * Trigger an analysis

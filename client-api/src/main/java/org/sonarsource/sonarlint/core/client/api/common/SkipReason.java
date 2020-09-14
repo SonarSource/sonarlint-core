@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public interface SkipReason {
 
@@ -147,15 +149,27 @@ public interface SkipReason {
 
   }
 
-  class UnsatisfiedJreRequirement implements SkipReason {
+  class UnsatisfiedRuntimeRequirement implements SkipReason {
+    public enum RuntimeRequirement {
+      JRE,
+      NODEJS
+    }
+
+    private final RuntimeRequirement runtime;
     private final String currentVersion;
     private final String minVersion;
 
-    public UnsatisfiedJreRequirement(String currentVersion, String minVersion) {
+    public UnsatisfiedRuntimeRequirement(RuntimeRequirement runtime, @Nullable String currentVersion, String minVersion) {
+      this.runtime = runtime;
       this.currentVersion = currentVersion;
       this.minVersion = minVersion;
     }
 
+    public RuntimeRequirement getRuntime() {
+      return runtime;
+    }
+
+    @CheckForNull
     public String getCurrentVersion() {
       return currentVersion;
     }
@@ -166,7 +180,7 @@ public interface SkipReason {
 
     @Override
     public int hashCode() {
-      return Objects.hash(currentVersion, minVersion);
+      return Objects.hash(runtime, currentVersion, minVersion);
     }
 
     @Override
@@ -174,17 +188,18 @@ public interface SkipReason {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof UnsatisfiedJreRequirement)) {
+      if (!(obj instanceof UnsatisfiedRuntimeRequirement)) {
         return false;
       }
-      UnsatisfiedJreRequirement other = (UnsatisfiedJreRequirement) obj;
-      return Objects.equals(currentVersion, other.currentVersion) && Objects.equals(minVersion, other.minVersion);
+      UnsatisfiedRuntimeRequirement other = (UnsatisfiedRuntimeRequirement) obj;
+      return runtime == other.runtime && Objects.equals(currentVersion, other.currentVersion) && Objects.equals(minVersion, other.minVersion);
     }
 
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
-      builder.append("UnsatisfiedJreRequirement [currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion).append("]");
+      builder.append("UnsatisfiedRuntimeRequirement [runtime=").append(runtime).append(", currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion)
+        .append("]");
       return builder.toString();
     }
 

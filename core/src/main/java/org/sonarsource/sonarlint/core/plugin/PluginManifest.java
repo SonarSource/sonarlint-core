@@ -46,6 +46,7 @@ public final class PluginManifest {
   public static final String IMPLEMENTATION_BUILD = "Implementation-Build";
   public static final String SONARLINT_SUPPORTED = "SonarLint-Supported";
   public static final String JRE_MIN_VERSION = "Jre-Min-Version";
+  public static final String NODEJS_MIN_VERSION = "NodeJs-Min-Version";
 
   private String key;
   private String name;
@@ -59,6 +60,7 @@ public final class PluginManifest {
   private String[] requirePlugins;
   private Boolean sonarLintSupported;
   private String jreMinVersion;
+  private String nodeJsMinVersion;
 
   /**
    * Load the manifest from a JAR file.
@@ -107,6 +109,7 @@ public final class PluginManifest {
     String requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
     this.requirePlugins = StringUtils.split(StringUtils.defaultString(requires), ',');
     this.jreMinVersion = attributes.getValue(JRE_MIN_VERSION);
+    this.nodeJsMinVersion = attributes.getValue(NODEJS_MIN_VERSION);
   }
 
   public String getKey() {
@@ -216,6 +219,16 @@ public final class PluginManifest {
 
   public PluginManifest setJreMinVersion(String jreMinVersion) {
     this.jreMinVersion = jreMinVersion;
+    return this;
+  }
+
+  @CheckForNull
+  public String getNodeJsMinVersion() {
+    return nodeJsMinVersion;
+  }
+
+  public PluginManifest setNodeJsMinVersion(String nodeJsMinVersion) {
+    this.nodeJsMinVersion = nodeJsMinVersion;
     return this;
   }
 

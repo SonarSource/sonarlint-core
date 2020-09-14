@@ -24,7 +24,8 @@ import org.sonarsource.sonarlint.core.client.api.common.SkipReason.IncompatibleP
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.IncompatiblePluginVersion;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.LanguagesNotEnabled;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedDependency;
-import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedJreRequirement;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,22 +84,24 @@ class SkipReasonTests {
   }
 
   @Test
-  void testUnsatisfiedJreRequirement() {
-    SkipReason.UnsatisfiedJreRequirement underTest = new UnsatisfiedJreRequirement("1.0", "2.0");
+  void testUnsatisfiedRuntimeRequirementEqualsHashCode() {
+    SkipReason.UnsatisfiedRuntimeRequirement underTest = new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.0", "2.0");
     // Getters
     assertThat(underTest.getMinVersion()).isEqualTo("2.0");
     assertThat(underTest.getCurrentVersion()).isEqualTo("1.0");
     // Equals
-    assertThat(underTest).isEqualTo(underTest);
-    assertThat(underTest).isNotEqualTo(IncompatiblePluginApi.INSTANCE);
-    assertThat(underTest).isNotEqualTo(new UnsatisfiedJreRequirement("1.0", "1.0"));
-    assertThat(underTest).isNotEqualTo(new UnsatisfiedJreRequirement("2.0", "1.0"));
-    assertThat(underTest).isEqualTo(new UnsatisfiedJreRequirement("1.0", "2.0"));
-    // HashCode
-    assertThat(underTest).hasSameHashCodeAs(underTest);
-    assertThat(underTest).hasSameHashCodeAs(new UnsatisfiedJreRequirement("1.0", "2.0"));
+    assertThat(underTest)
+      .isEqualTo(underTest)
+      .isNotEqualTo(IncompatiblePluginApi.INSTANCE)
+      .isNotEqualTo(new UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, "1.0", "2.0"))
+      .isNotEqualTo(new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.0", "1.0"))
+      .isNotEqualTo(new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "2.0", "1.0"))
+      .isEqualTo(new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.0", "2.0"))
+      // HashCode
+      .hasSameHashCodeAs(underTest)
+      .hasSameHashCodeAs(new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.0", "2.0"));
     // To String
-    assertThat(underTest.toString()).isEqualTo("UnsatisfiedJreRequirement [currentVersion=1.0, minVersion=2.0]");
+    assertThat(underTest.toString()).isEqualTo("UnsatisfiedRuntimeRequirement [runtime=JRE, currentVersion=1.0, minVersion=2.0]");
   }
 
 }
