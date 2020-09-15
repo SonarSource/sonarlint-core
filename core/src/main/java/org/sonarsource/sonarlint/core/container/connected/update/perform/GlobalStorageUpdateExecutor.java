@@ -96,21 +96,22 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
       projectListDownloader.fetchTo(temp, progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
-      progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
 
-      StorageStatus storageStatus = StorageStatus.newBuilder()
-        .setStorageVersion(StoragePaths.STORAGE_VERSION)
-        .setClientUserAgent(wsClient.getUserAgent())
-        .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
-        .setUpdateTimestamp(new Date().getTime())
-        .build();
-      ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
+      progress.executeNonCancelableSection(() -> {
+        StorageStatus storageStatus = StorageStatus.newBuilder()
+          .setStorageVersion(StoragePaths.STORAGE_VERSION)
+          .setClientUserAgent(wsClient.getUserAgent())
+          .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
+          .setUpdateTimestamp(new Date().getTime())
+          .build();
+        ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
 
-      Path dest = storageManager.getGlobalStorageRoot();
-      FileUtils.deleteRecursively(dest);
-      FileUtils.mkdirs(dest.getParent());
-      FileUtils.moveDir(temp, dest);
+        Path dest = storageManager.getGlobalStorageRoot();
+        FileUtils.deleteRecursively(dest);
+        FileUtils.mkdirs(dest.getParent());
+        FileUtils.moveDir(temp, dest);
+      });
       return analyzers;
     } catch (RuntimeException e) {
       try {

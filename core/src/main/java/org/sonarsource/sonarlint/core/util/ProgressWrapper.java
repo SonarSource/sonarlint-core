@@ -78,12 +78,8 @@ public class ProgressWrapper {
     handler.setFraction(offset + fraction * factor);
   }
 
-  public void finishNonCancelableSection() {
-    handler.finishNonCancelableSection();
-  }
-
-  public void startNonCancelableSection() {
-    handler.startNonCancelableSection();
+  public void executeNonCancelableSection(Runnable r) {
+    handler.executeNonCancelableSection(r);
   }
 
   private static class NoOpProgressMonitor extends ProgressMonitor {

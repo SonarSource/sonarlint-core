@@ -53,11 +53,10 @@ public class ProgressWrapperTest {
 
   @Test
   public void testCancelSection() {
-    progress.finishNonCancelableSection();
-    progress.startNonCancelableSection();
+    Runnable r = mock(Runnable.class);
+    progress.executeNonCancelableSection(r);
 
-    verify(monitor).finishNonCancelableSection();
-    verify(monitor).startNonCancelableSection();
+    verify(monitor).executeNonCancelableSection(r);
   }
 
   @Test(expected = CanceledException.class)
