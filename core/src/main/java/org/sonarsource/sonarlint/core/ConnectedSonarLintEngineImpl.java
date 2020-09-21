@@ -68,7 +68,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   private StorageContainer storageContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final List<StateListener> stateListeners = new CopyOnWriteArrayList<>();
-  private volatile State state = State.UNKNOW;
+  private volatile State state = State.UNKNOWN;
   private LogOutput logOutput = null;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
@@ -128,7 +128,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       changeState(State.NEED_UPDATE);
     } catch (RuntimeException e) {
       LOG.error("Unable to start the SonarLint engine", e);
-      changeState(State.UNKNOW);
+      changeState(State.UNKNOWN);
     } finally {
       rwl.writeLock().unlock();
     }
@@ -304,7 +304,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       throw SonarLintWrappedException.wrap(e);
     } finally {
       this.storageContainer = null;
-      changeState(State.UNKNOW);
+      changeState(State.UNKNOWN);
       rwl.writeLock().unlock();
     }
   }

@@ -126,7 +126,7 @@ public class BrokenStorageBrokenPluginMediumTest {
 
   @Test
   public void broken_startup() throws Exception {
-    assertThat(sonarlint.getState()).isEqualTo(ConnectedSonarLintEngine.State.UNKNOW);
+    assertThat(sonarlint.getState()).isEqualTo(ConnectedSonarLintEngine.State.UNKNOWN);
 
     ClientInputFile inputFile = prepareJavaInputFile();
 

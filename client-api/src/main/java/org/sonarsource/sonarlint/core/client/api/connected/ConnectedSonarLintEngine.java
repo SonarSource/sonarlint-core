@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerExc
 public interface ConnectedSonarLintEngine extends SonarLintEngine {
 
   enum State {
-    UNKNOW,
+    UNKNOWN,
     UPDATING,
     NEVER_UPDATED,
     NEED_UPDATE,
