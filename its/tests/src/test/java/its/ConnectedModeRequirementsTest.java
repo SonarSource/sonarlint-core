@@ -40,7 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.user.UserParameters;
+import org.sonarqube.ws.client.user.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
@@ -89,12 +89,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public static void prepare() throws Exception {
     sonarUserHome = temp.newFolder().toPath();
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    newAdminWsClient(ORCHESTRATOR).users().create(CreateRequest.builder().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint").build());
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_TYPESCRIPT, "Sample Typescript");
