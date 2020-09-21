@@ -27,13 +27,12 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.resources.Language;
-import org.sonar.api.resources.Languages;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.TestInputFileBuilder;
+import org.sonarsource.sonarlint.core.container.global.MapSettings;
 
-import static junit.framework.Assert.fail;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.spy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class LanguageDetectionTest {
 
@@ -53,50 +52,39 @@ public class LanguageDetectionTest {
 
   @Test
   public void search_by_file_extension() throws Exception {
-    LanguagesRepository languages = new DefaultLanguagesRepository(new Languages(new MockLanguage("java", "java", "jav"), new MockLanguage("cobol", "cbl", "cob")));
-    LanguageDetection detection = new LanguageDetection(languages);
+    LanguageDetection detection = new LanguageDetection(new MapSettings().asConfig());
 
-    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo("java");
-    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo("java");
-    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo("java");
-    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo("java");
-    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo("java");
+    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
+    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
 
-    assertThat(detection.language(newInputFile("abc.cbl"))).isEqualTo("cobol");
-    assertThat(detection.language(newInputFile("abc.CBL"))).isEqualTo("cobol");
+    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.ABAP);
+    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.ABAP);
 
-    assertThat(detection.language(newInputFile("abc.php"))).isNull();
-    assertThat(detection.language(newInputFile("abc"))).isNull();
+    assertThat(detection.language(newInputFile("abc.truc"))).isNull();
+    assertThat(detection.language(newInputFile("abap"))).isNull();
   }
 
   @Test
   public void should_not_fail_if_no_language() throws Exception {
-    LanguageDetection detection = spy(new LanguageDetection(new DefaultLanguagesRepository(new Languages())));
-    assertThat(detection.language(newInputFile("Foo.java"))).isNull();
-  }
-
-  @Test
-  public void plugin_can_declare_a_file_extension_twice_for_case_sensitivity() throws Exception {
-    LanguagesRepository languages = new DefaultLanguagesRepository(new Languages(new MockLanguage("abap", "abap", "ABAP")));
-
-    LanguageDetection detection = new LanguageDetection(languages);
-    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo("abap");
+    LanguageDetection detection = new LanguageDetection(new MapSettings().asConfig());
+    assertThat(detection.language(newInputFile("Foo.blabla"))).isNull();
   }
 
   @Test
   public void fail_if_conflicting_language_suffix() throws Exception {
-    LanguagesRepository languages = new DefaultLanguagesRepository(new Languages(new MockLanguage("xml", "xhtml"), new MockLanguage("web", "xhtml")));
-    LanguageDetection detection = new LanguageDetection(languages);
-    try {
-      detection.language(newInputFile("abc.xhtml"));
-      fail();
-    } catch (MessageException e) {
-      assertThat(e.getMessage())
-        .contains("Language of file 'file://")
-        .contains("abc.xhtml' can not be decided as the file matches patterns of both ")
-        .contains("web: **/*.xhtml")
-        .contains("xml: **/*.xhtml");
-    }
+    MapSettings settings = new MapSettings();
+    settings.setProperty(org.sonarsource.sonarlint.core.client.api.common.Language.XML.getFileSuffixesPropKey(), "xhtml");
+    settings.setProperty(org.sonarsource.sonarlint.core.client.api.common.Language.HTML.getFileSuffixesPropKey(), "xhtml");
+    LanguageDetection detection = new LanguageDetection(settings.asConfig());
+    MessageException e = assertThrows(MessageException.class, () -> detection.language(newInputFile("abc.xhtml")));
+    assertThat(e.getMessage())
+      .contains("Language of file 'file://")
+      .contains("abc.xhtml' can not be decided as the file extension matches both ")
+      .contains("HTML: xhtml")
+      .contains("XML: xhtml");
   }
 
   private InputFile newInputFile(String path) throws IOException {

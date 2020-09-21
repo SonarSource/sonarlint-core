@@ -68,8 +68,9 @@ public abstract class AbstractAnalysisConfiguration {
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
-      if (inputFile.language() != null) {
-        sb.append(" [" + inputFile.language() + "]");
+      Language language = inputFile.language();
+      if (language != null) {
+        sb.append(" [" + language.getLanguageKey() + "]");
       }
       sb.append("\n");
     }

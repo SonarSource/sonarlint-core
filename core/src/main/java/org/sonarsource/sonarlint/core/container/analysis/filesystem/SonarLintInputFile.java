@@ -37,6 +37,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.utils.PathUtils;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 
@@ -44,7 +45,7 @@ public class SonarLintInputFile implements InputFile {
 
   private final ClientInputFile clientInputFile;
   private final String relativePath;
-  private String language;
+  private Language language;
   private Type type;
   private Metadata metadata;
   private final Function<SonarLintInputFile, Metadata> metadataGenerator;
@@ -73,7 +74,7 @@ public class SonarLintInputFile implements InputFile {
     return relativePath;
   }
 
-  public SonarLintInputFile setLanguage(@Nullable String language) {
+  public SonarLintInputFile setLanguage(@Nullable Language language) {
     this.language = language;
     return this;
   }
@@ -86,6 +87,11 @@ public class SonarLintInputFile implements InputFile {
   @CheckForNull
   @Override
   public String language() {
+    return language != null ? language.getLanguageKey() : null;
+  }
+
+  @CheckForNull
+  public Language getLanguage() {
     return language;
   }
 

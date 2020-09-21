@@ -23,6 +23,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -31,8 +32,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -64,7 +65,9 @@ public class StandaloneNoPluginMediumTest {
   }
 
   @Test
-  public void dont_fail_if_no_plugin() throws Exception {
+  public void dont_fail_and_detect_language_even_if_no_plugin() throws Exception {
+
+    assertThat(sonarlint.getPluginDetails()).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
@@ -77,15 +80,14 @@ public class StandaloneNoPluginMediumTest {
       }, null, null);
 
     assertThat(results.indexedFileCount()).isEqualTo(1);
-    assertThat(logs.get(Level.WARN)).contains("No analyzers installed");
+    assertThat(results.languagePerFile()).containsEntry(inputFile, Language.JS);
 
     assertThat(sonarlint.getAllRuleDetails()).isEmpty();
-    assertThat(sonarlint.getAllLanguagesNameByKey()).isEmpty();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.Collection;
 import java.util.Map;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 public interface AnalysisResults {
 
@@ -40,6 +41,6 @@ public interface AnalysisResults {
    * Detected languages for each file.
    * The values in the map can be null if no language was detected for some files.
    */
-  Map<ClientInputFile, String> languagePerFile();
+  Map<ClientInputFile, Language> languagePerFile();
 
 }

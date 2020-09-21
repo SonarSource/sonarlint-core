@@ -46,7 +46,7 @@ class SkipReasonTests {
     assertThat(underTest).hasSameHashCodeAs(underTest);
     assertThat(underTest).hasSameHashCodeAs(new LanguagesNotEnabled(asList(Language.JAVA)));
     // To String
-    assertThat(underTest.toString()).isEqualTo("LanguagesNotEnabled [languages=[JAVA]]");
+    assertThat(underTest.toString()).isEqualTo("LanguagesNotEnabled [languages=[Java]]");
   }
 
   @Test

@@ -31,6 +31,7 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.TestInputFileBuilder;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
@@ -74,7 +75,7 @@ public class SensorOptimizerTest {
       .onlyOnLanguages("java", "php");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage("java").build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage(Language.JAVA).build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 
@@ -98,11 +99,11 @@ public class SensorOptimizerTest {
       .onlyOnFileType(InputFile.Type.MAIN);
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("tests/FooTest.java").setLanguage("java").setType(InputFile.Type.TEST).build());
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.cbl").setLanguage("cobol").setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("tests/FooTest.java").setLanguage(Language.JAVA).setType(InputFile.Type.TEST).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.cbl").setLanguage(Language.COBOL).setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage("java").setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage(Language.JAVA).setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 

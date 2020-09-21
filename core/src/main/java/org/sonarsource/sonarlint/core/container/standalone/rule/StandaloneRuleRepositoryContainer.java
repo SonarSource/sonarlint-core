@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import java.util.List;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.resources.Language;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
@@ -31,7 +29,6 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private Context ruleDefinitions;
-  private List<Language> languages;
 
   public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
     super(parent);
@@ -60,7 +57,6 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
     standaloneActiveRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
     StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
-    languages = getComponentsByType(Language.class);
   }
 
   public Rules getRules() {
@@ -73,9 +69,5 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   public Context getRulesDefinitions() {
     return ruleDefinitions;
-  }
-
-  public List<Language> getLanguages() {
-    return languages;
   }
 }

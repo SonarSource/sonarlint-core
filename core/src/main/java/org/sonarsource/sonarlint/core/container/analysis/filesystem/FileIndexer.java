@@ -98,7 +98,7 @@ public class FileIndexer {
   private void indexFile(InputFileCache inputFileCache, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
     if (accept(inputFile)) {
-      analysisResult.setLanguageForFile(file, inputFile.language());
+      analysisResult.setLanguageForFile(file, inputFile.getLanguage());
       indexFile(inputFileCache, progress, inputFile);
       issueExclusionsLoader.addMulticriteriaPatterns(inputFile);
     }

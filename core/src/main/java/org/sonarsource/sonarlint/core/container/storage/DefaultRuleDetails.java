@@ -21,26 +21,27 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 
 @Immutable
 public class DefaultRuleDetails implements ConnectedRuleDetails {
 
   private final String key;
-  private final String languageKey;
+  private final Language language;
   private final String name;
   private final String htmlDescription;
   private final String severity;
   private final String type;
   private final String extendedDescription;
 
-  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, String languageKey, String extendedDescription) {
+  public DefaultRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, Language language, String extendedDescription) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
     this.severity = severity;
     this.type = type;
-    this.languageKey = languageKey;
+    this.language = language;
     this.extendedDescription = extendedDescription;
   }
 
@@ -60,8 +61,8 @@ public class DefaultRuleDetails implements ConnectedRuleDetails {
   }
 
   @Override
-  public String getLanguageKey() {
-    return languageKey;
+  public Language getLanguage() {
+    return language;
   }
 
   @Override

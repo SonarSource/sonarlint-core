@@ -35,6 +35,7 @@ import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -54,10 +55,10 @@ class DefaultFilePredicatesTests {
     Path filePath = baseDir.resolve("src/main/java/struts/Action.java");
     Files.createDirectories(filePath.getParent());
     Files.write(filePath, "foo".getBytes(StandardCharsets.UTF_8));
-    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(filePath, "src/main/java/struts/Action.java", false, StandardCharsets.UTF_8, "java");
+    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(filePath, "src/main/java/struts/Action.java", false, StandardCharsets.UTF_8, Language.JAVA);
     javaFile = new SonarLintInputFile(clientInputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8))
       .setType(Type.MAIN)
-      .setLanguage("java");
+      .setLanguage(Language.JAVA);
   }
 
   @Test

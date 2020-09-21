@@ -150,7 +150,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     String javaDescription = ItUtils.javaVersion.compareTo("6.3") < 0 ? "SonarJava" : "Java Code Quality and Security";
-    String expectedLog = String.format("Plugin '%s' is excluded because language 'JAVA' is not enabled. Skip loading it.", javaDescription);
+    String expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
     assertThat(logs).contains(expectedLog);
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
       .contains(tuple(Language.JAVA.getPluginKey(), Optional.of(new SkipReason.LanguagesNotEnabled(asList(Language.JAVA)))));

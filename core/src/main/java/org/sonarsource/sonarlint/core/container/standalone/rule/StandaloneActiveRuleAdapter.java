@@ -37,7 +37,7 @@ public class StandaloneActiveRuleAdapter implements ActiveRule {
       .map(p -> (DefaultStandaloneRuleParam) p)
       .filter(p -> p.defaultValue() != null)
       .forEach(p -> this.params.put(p.key(), p.defaultValue()));
-    if(params != null) {
+    if (params != null) {
       this.params.putAll(params);
     }
   }
@@ -54,7 +54,7 @@ public class StandaloneActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String language() {
-    return rule.getLanguageKey();
+    return rule.getLanguage().getLanguageKey();
   }
 
   @Override

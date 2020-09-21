@@ -185,7 +185,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("javascript", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.JS)))));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'javascript' is excluded because language 'JS' is not enabled. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Plugin 'javascript' is excluded because language 'JavaScript' is not enabled. Skip loading it.");
   }
 
   @Test
@@ -198,7 +198,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.C, Language.CPP, Language.OBJC)))));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,CPP,OBJC' are enabled. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,C++,Objective-C' are enabled. Skip loading it.");
   }
 
   @Test

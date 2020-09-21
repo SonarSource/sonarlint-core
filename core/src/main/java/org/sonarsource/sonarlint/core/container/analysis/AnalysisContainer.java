@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
@@ -85,7 +84,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       // lang
       Languages.class,
-      DefaultLanguagesRepository.class,
 
       MutableAnalysisSettings.class,
       new AnalysisConfigurationProvider(),
