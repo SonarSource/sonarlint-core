@@ -134,7 +134,7 @@ public class StandaloneIssueMediumTest {
 
     StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
-    assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
+    assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
@@ -209,7 +209,7 @@ public class StandaloneIssueMediumTest {
   public void simpleTypeScript() throws Exception {
     StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
-    assertThat(ruleDetails.getLanguageKey()).isEqualTo("ts");
+    assertThat(ruleDetails.getLanguage()).isEqualTo(Language.TS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
     assertThat(ruleDetails.getTags()).containsOnly("cert");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
@@ -276,7 +276,7 @@ public class StandaloneIssueMediumTest {
   public void simpleC() throws Exception {
     assumeTrue(COMMERCIAL_ENABLED);
     ClientInputFile inputFile = prepareInputFile("foo.c", "#import \"foo.h\"\n"
-      + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, "c");
+      + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, Language.C);
 
     FileUtils.write(
       new File(baseDir, "build-wrapper-dump.json"),
@@ -344,7 +344,7 @@ public class StandaloneIssueMediumTest {
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null);
-    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, "xoo"));
+    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.XOO));
   }
 
   @Test
@@ -444,24 +444,23 @@ public class StandaloneIssueMediumTest {
   @Test
   public void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
-    List<Map.Entry<String, String>> ossLanguages = Arrays.asList(
-      entry("java", "Java"),
-      entry("js", "JavaScript"),
-      entry("php", "PHP"),
-      entry("py", "Python"),
-      entry("ts", "TypeScript"),
-      entry("xoo", "Xoo"),
-      entry("xoo2", "Xoo2"));
+    List<Language> ossLanguages = Arrays.asList(
+      Language.JAVA,
+      Language.JS,
+      Language.PHP,
+      Language.PYTHON,
+      Language.TS,
+      Language.XOO);
 
     if (COMMERCIAL_ENABLED) {
-      List<Map.Entry<String, String>> commercialLanguages = Arrays.asList(
-        entry("c", "C"),
-        entry("cpp", "C++"),
-        entry("objc", "Objective-C"));
-      assertThat(sonarlint.getAllLanguagesNameByKey()).containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
-        .toArray(Map.Entry[]::new));
+      List<Language> commercialLanguages = Arrays.asList(
+        Language.C,
+        Language.CPP,
+        Language.OBJC);
+      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage)).containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
+        .toArray(Language[]::new));
     } else {
-      assertThat(sonarlint.getAllLanguagesNameByKey()).containsOnly(ossLanguages.toArray(new Map.Entry[0]));
+      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage)).containsOnly(ossLanguages.toArray(new Language[0]));
     }
 
     assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
@@ -842,7 +841,7 @@ public class StandaloneIssueMediumTest {
     assertThat(logs).doesNotContain("Initializing metadata of file " + inputFile2.uri());
   }
 
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable Language language) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
     return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);

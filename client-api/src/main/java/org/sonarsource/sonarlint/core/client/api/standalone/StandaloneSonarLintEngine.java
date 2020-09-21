@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
@@ -55,10 +54,5 @@ public interface StandaloneSonarLintEngine extends SonarLintEngine {
    * Trigger an analysis
    */
   AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
-
-  /**
-   * @since 4.5
-   */
-  Map<String, String> getAllLanguagesNameByKey();
 
 }

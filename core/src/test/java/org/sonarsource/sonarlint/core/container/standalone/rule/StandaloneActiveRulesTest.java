@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
-import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 import static java.util.Arrays.asList;
@@ -35,7 +35,6 @@ import static org.mockito.Mockito.when;
 public class StandaloneActiveRulesTest {
 
   private static final String REPOSITORY = "squid";
-  private static final String LANGUAGE = "java";
 
   private static final String INACTIVE_RULE = "INACTIVE_RULE";
   private static final String INACTIVE_INCLUDED_RULE = "INACTIVE_INCLUDED_RULE";
@@ -80,7 +79,7 @@ public class StandaloneActiveRulesTest {
 
   @Test
   public void findByLanguage_omits_excluded_rule_and_includes_included_rule() {
-    assertThat(underTest.findByLanguage(LANGUAGE).stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_RULE, INACTIVE_INCLUDED_RULE);
+    assertThat(underTest.findByLanguage(Language.JAVA.getLanguageKey()).stream().map(r -> r.ruleKey().rule())).containsExactlyInAnyOrder(ACTIVE_RULE, INACTIVE_INCLUDED_RULE);
   }
 
   @Test
@@ -99,7 +98,7 @@ public class StandaloneActiveRulesTest {
     org.sonar.api.rule.RuleKey ruleKey = org.sonar.api.rule.RuleKey.of(REPOSITORY, rule);
     when(activeRule.key()).thenReturn(ruleKey);
     when(activeRule.getKey()).thenReturn(ruleKey.toString());
-    when(activeRule.getLanguageKey()).thenReturn(LANGUAGE);
+    when(activeRule.getLanguage()).thenReturn(Language.JAVA);
     when(activeRule.internalKey()).thenReturn(rule);
     when(activeRule.isActiveByDefault()).thenReturn(activeByDefault);
     return activeRule;

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.standalone.rule;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 
 public class StandaloneSonarLintRulesProvider extends ProviderAdapter {
@@ -38,6 +39,9 @@ public class StandaloneSonarLintRulesProvider extends ProviderAdapter {
     SonarLintRules rules = new SonarLintRules();
 
     for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
+      if (!Language.forKey(repoDef.language()).isPresent()) {
+        continue;
+      }
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
         if (ruleDef.type() == RuleType.SECURITY_HOTSPOT || ruleDef.template()) {
           continue;

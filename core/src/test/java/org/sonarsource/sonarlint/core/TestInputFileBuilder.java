@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.utils.PathUtils;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
@@ -53,7 +54,7 @@ public class TestInputFileBuilder {
   private final String relativePath;
   @CheckForNull
   private Path baseDir;
-  private String language;
+  private Language language;
   private InputFile.Type type = InputFile.Type.MAIN;
   private int lines = -1;
   private int[] originalLineStartOffsets = new int[0];
@@ -88,7 +89,7 @@ public class TestInputFileBuilder {
     return this;
   }
 
-  public TestInputFileBuilder setLanguage(@Nullable String language) {
+  public TestInputFileBuilder setLanguage(@Nullable Language language) {
     this.language = language;
     return this;
   }

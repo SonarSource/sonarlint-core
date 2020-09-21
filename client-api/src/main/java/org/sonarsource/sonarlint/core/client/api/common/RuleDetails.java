@@ -33,7 +33,7 @@ public interface RuleDetails {
   @CheckForNull
   String getHtmlDescription();
 
-  String getLanguageKey();
+  Language getLanguage();
 
   String getSeverity();
 

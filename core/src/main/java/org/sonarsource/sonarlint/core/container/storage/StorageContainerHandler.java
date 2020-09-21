@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -92,7 +93,8 @@ public class StorageContainerHandler {
     Sonarlint.Rules.Rule rule = readRule(ruleKeyStr);
     String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
 
-    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), overridenSeverity != null ? overridenSeverity : rule.getSeverity(), type, rule.getLang(),
+    Language language = Language.forKey(rule.getLang()).orElseThrow(() -> new IllegalArgumentException("Unknown language for rule " + ruleKeyStr + ": " + rule.getLang()));
+    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), overridenSeverity != null ? overridenSeverity : rule.getSeverity(), type, language,
       rule.getHtmlNote());
   }
 

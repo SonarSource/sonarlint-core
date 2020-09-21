@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,7 +28,6 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.resources.Language;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
@@ -69,7 +67,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private GlobalExtensionContainer globalExtensionContainer;
-  private List<Language> languages;
 
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
@@ -135,7 +132,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     container.execute();
     rules = container.getRules();
     standaloneActiveRules = container.getStandaloneActiveRules();
-    languages = container.getLanguages();
   }
 
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
@@ -176,7 +172,4 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return standaloneActiveRules.allRuleDetails();
   }
 
-  public Map<String, String> getAllLanguagesNameByKey() {
-    return languages.stream().collect(Collectors.toMap(Language::getKey, Language::getName));
-  }
 }

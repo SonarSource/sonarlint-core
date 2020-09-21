@@ -123,6 +123,7 @@ public class StandaloneTest {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
+        .putExtraProperty("sonar.xoo.file.suffixes", "glob")
         .build(),
       issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
@@ -144,6 +145,7 @@ public class StandaloneTest {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
+        .putExtraProperty("sonar.xoo.file.suffixes", "glob")
         .addRuleParameter(RuleKey.parse("global:inc"), "stringParam", "polop")
         .addRuleParameter(RuleKey.parse("global:inc"), "textParam", "")
         .addRuleParameter(RuleKey.parse("global:inc"), "multipleIntegersParam", "80,160")

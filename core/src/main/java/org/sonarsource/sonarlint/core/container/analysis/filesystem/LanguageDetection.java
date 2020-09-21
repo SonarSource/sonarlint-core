@@ -20,19 +20,21 @@
 package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Map.Entry;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Detect language of a source file based on its suffix and configured patterns.
@@ -44,42 +46,30 @@ public class LanguageDetection {
   /**
    * Lower-case extension -> languages
    */
-  private final Map<String, SonarLintPathPattern[]> patternsByLanguage = new LinkedHashMap<>();
-  private final List<String> languagesToConsider = new ArrayList<>();
+  private final Map<Language, String[]> extensionsByLanguage = new LinkedHashMap<>();
 
-  public LanguageDetection(LanguagesRepository languages) {
-    for (Language language : languages.all()) {
-      String[] patterns = language.fileSuffixes().toArray(new String[language.fileSuffixes().size()]);
-      for (int i = 0; i < patterns.length; i++) {
-        String suffix = patterns[i];
-        String extension = sanitizeExtension(suffix);
-        patterns[i] = new StringBuilder().append("**/*.").append(extension).toString();
+  public LanguageDetection(Configuration config) {
+    for (Language language : Language.values()) {
+      String[] extensions = config.hasKey(language.getFileSuffixesPropKey()) ? config.getStringArray(language.getFileSuffixesPropKey()) : language.getDefaultFileSuffixes();
+      for (int i = 0; i < extensions.length; i++) {
+        String suffix = extensions[i];
+        extensions[i] = sanitizeExtension(suffix);
       }
-      SonarLintPathPattern[] defaultLanguagePatterns = SonarLintPathPattern.create(patterns);
-      patternsByLanguage.put(language.key(), defaultLanguagePatterns);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Declared extensions of language {} were converted to {}", language, getDetails(language.key()));
-      }
+      extensionsByLanguage.put(language, extensions);
     }
-
-    languagesToConsider.addAll(patternsByLanguage.keySet());
-  }
-
-  Map<String, SonarLintPathPattern[]> patternsByLanguage() {
-    return patternsByLanguage;
   }
 
   @CheckForNull
-  String language(InputFile inputFile) {
-    String detectedLanguage = null;
-    for (String languageKey : languagesToConsider) {
-      if (isCandidateForLanguage(inputFile, languageKey)) {
+  Language language(InputFile inputFile) {
+    Language detectedLanguage = null;
+    for (Entry<Language, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
+      if (isCandidateForLanguage(inputFile, languagePatterns.getValue())) {
         if (detectedLanguage == null) {
-          detectedLanguage = languageKey;
+          detectedLanguage = languagePatterns.getKey();
         } else {
           // Language was already forced by another pattern
-          throw MessageException.of(MessageFormat.format("Language of file ''{0}'' can not be decided as the file matches patterns of both {1} and {2}",
-            inputFile.uri(), getDetails(detectedLanguage), getDetails(languageKey)));
+          throw MessageException.of(MessageFormat.format("Language of file ''{0}'' can not be decided as the file extension matches both {1} and {2}",
+            inputFile.uri(), getDetails(detectedLanguage), getDetails(languagePatterns.getKey())));
         }
       }
     }
@@ -90,23 +80,19 @@ public class LanguageDetection {
     return null;
   }
 
-  private boolean isCandidateForLanguage(InputFile inputFile, String languageKey) {
-    SonarLintPathPattern[] patterns = patternsByLanguage.get(languageKey);
-    if (patterns != null) {
-      for (SonarLintPathPattern pathPattern : patterns) {
-        if (pathPattern.match(inputFile, false)) {
-          return true;
-        }
+  private static boolean isCandidateForLanguage(InputFile inputFile, String[] extensions) {
+    for (String extension : extensions) {
+      if (inputFile.filename().toLowerCase(Locale.ENGLISH).endsWith("." + extension)) {
+        return true;
       }
     }
     return false;
   }
 
-  private String getDetails(String detectedLanguage) {
+  private String getDetails(Language detectedLanguage) {
     return detectedLanguage + ": "
-      + Arrays.stream(patternsByLanguage.get(detectedLanguage))
-        .map(SonarLintPathPattern::toString)
-        .collect(Collectors.joining(","));
+      + Arrays.stream(extensionsByLanguage.get(detectedLanguage))
+        .collect(joining(","));
   }
 
   static String sanitizeExtension(String suffix) {
