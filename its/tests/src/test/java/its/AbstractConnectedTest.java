@@ -21,6 +21,7 @@ package its;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.sonar.orchestrator.Orchestrator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,11 +32,14 @@ import java.util.List;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
+import org.sonarqube.ws.client.HttpConnector;
+import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 
-public class AbstractConnectedTest {
+public abstract class AbstractConnectedTest {
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
 
@@ -57,6 +61,14 @@ public class AbstractConnectedTest {
     public void clear() {
       issues.clear();
     }
+  }
+
+  protected static WsClient newAdminWsClient(Orchestrator orchestrator) {
+    com.sonar.orchestrator.container.Server server = orchestrator.getServer();
+    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
+      .url(server.getUrl())
+      .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
+      .build());
   }
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {

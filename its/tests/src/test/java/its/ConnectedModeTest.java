@@ -55,20 +55,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.services.PropertyCreateQuery;
-import org.sonar.wsclient.services.PropertyDeleteQuery;
-import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
 import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
-import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
+import org.sonarqube.ws.client.qualityprofile.ActivateRuleWsRequest;
 import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
+import org.sonarqube.ws.client.setting.ResetRequest;
 import org.sonarqube.ws.client.setting.SetRequest;
+import org.sonarqube.ws.client.user.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
@@ -167,12 +165,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     removeGroupPermission("anyone", "scan");
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    adminWsClient.users().create(CreateRequest.builder().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint").build());
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
@@ -276,8 +269,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @After
   public void stop() {
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
+    adminWsClient.settings().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
+    adminWsClient.settings().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -684,7 +677,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Activate a new rule
     SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "key", profileKey, "rule", javaRuleKey("S1228"));
+    adminWsClient.qualityProfiles().activateRule(ActivateRuleWsRequest.builder().setKey(profileKey).setRuleKey(javaRuleKey("S1228")).build());
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
@@ -769,29 +762,19 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      adminWsClient.settings().set(SetRequest.builder()
-        .setKey(key)
-        .setValues(Collections.singletonList(value))
-        .setComponent(moduleKey)
-        .build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient()
-        .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
-    }
+    adminWsClient.settings().set(SetRequest.builder()
+      .setKey(key)
+      .setValues(Collections.singletonList(value))
+      .setComponent(moduleKey)
+      .build());
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      adminWsClient.settings().set(SetRequest.builder()
-        .setKey(key)
-        .setValue(value)
-        .setComponent(moduleKey)
-        .build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient()
-        .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
-    }
+    adminWsClient.settings().set(SetRequest.builder()
+      .setKey(key)
+      .setValue(value)
+      .setComponent(moduleKey)
+      .build());
   }
 
   private void updateProject(String projectKey) {
@@ -820,11 +803,4 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setPermission(permission));
   }
 
-  public static WsClient newAdminWsClient(Orchestrator orchestrator) {
-    com.sonar.orchestrator.container.Server server = orchestrator.getServer();
-    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
-      .url(server.getUrl())
-      .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
-      .build());
-  }
 }

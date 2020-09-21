@@ -20,7 +20,6 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.tools.ItUtils;
@@ -41,7 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.user.UserParameters;
+import org.sonarqube.ws.client.user.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -58,14 +57,10 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR;
-
-  static {
-    OrchestratorBuilder orchestratorBuilder = Orchestrator.builderEnv()
-      .setSonarVersion(SONAR_VERSION)
-      .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion));
-    ORCHESTRATOR = orchestratorBuilder.build();
-  }
+  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
+    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
+    .build();
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -77,17 +72,13 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   public ExpectedException exception = ExpectedException.none();
 
   private static Path sonarUserHome;
+
   private ConnectedSonarLintEngine engine;
   private List<String> logs = new ArrayList<>();
 
   @BeforeClass
   public static void prepare() {
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    newAdminWsClient(ORCHESTRATOR).users().create(CreateRequest.builder().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint").build());
 
     // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
     analyzeMavenProject("multi-modules-sample");

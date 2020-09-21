@@ -38,10 +38,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.services.PropertyCreateQuery;
-import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
+import org.sonarqube.ws.client.setting.SetRequest;
+import org.sonarqube.ws.client.user.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -85,14 +85,13 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
+    adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
     sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
+    adminWsClient.users().create(CreateRequest.builder().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint").build());
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_C, "Sample C");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
