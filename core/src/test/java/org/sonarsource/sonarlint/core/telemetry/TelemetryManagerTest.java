@@ -30,11 +30,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -225,27 +226,11 @@ public class TelemetryManagerTest {
   }
 
   @Test
-  public void reporting_analysis_on_single_file() throws IOException {
-    TelemetryData data = createAndSaveSampleData(storage);
-
-    // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleFile("java", 1000);
-
-    TelemetryData reloaded = storage.tryLoad();
-    assertThat(reloaded.enabled()).isTrue();
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
-    assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
-    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
-    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
-    assertThat(reloaded.analyzers()).containsKey("java");
-  }
-
-  @Test
   public void reporting_analysis_on_language() throws IOException {
     TelemetryData data = createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleLanguage("java", 1000);
+    manager.analysisDoneOnSingleLanguage(Language.JAVA, 1000);
 
     TelemetryData reloaded = storage.tryLoad();
     assertThat(reloaded.enabled()).isTrue();
