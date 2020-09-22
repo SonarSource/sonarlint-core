@@ -25,50 +25,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
 
 class TelemetryUtils {
 
   private TelemetryUtils() {
     // utility class, forbidden constructor
-  }
-
-  static String getLanguage(@Nullable String fileExtension) {
-    if (fileExtension == null) {
-      return "others";
-    }
-    String fileExtensionLow = fileExtension.toLowerCase(Locale.US);
-    switch (fileExtensionLow) {
-      case "cpp":
-      case "c":
-      case "h":
-      case "m":
-      case "cc":
-      case "cxx":
-      case "c++":
-      case "hh":
-      case "hpp":
-      case "hxx":
-      case "h++":
-      case "ipp":
-        return "cfamily";
-      case "java":
-      case "php":
-        return fileExtensionLow;
-      case "ts":
-        return "typescript";
-      case "js":
-        return "javascript";
-      case "py":
-        return "python";
-      default:
-        return "others";
-    }
   }
 
   /**

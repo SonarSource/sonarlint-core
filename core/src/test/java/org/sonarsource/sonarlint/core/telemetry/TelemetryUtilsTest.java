@@ -19,10 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,8 +26,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
 public class TelemetryUtilsTest {
   @Test
@@ -42,38 +41,6 @@ public class TelemetryUtilsTest {
   @Test
   public void dayChanged_should_return_true_if_older() {
     assertThat(dayChanged(LocalDate.now().minusDays(1))).isTrue();
-  }
-
-  @Test
-  public void should_get_language_from_extension() {
-    assertThat(TelemetryUtils.getLanguage("js")).isEqualTo("javascript");
-    assertThat(TelemetryUtils.getLanguage("java")).isEqualTo("java");
-    assertThat(TelemetryUtils.getLanguage("c")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("m")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("cpp")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("cxx")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("c++")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("hh")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("hpp")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("hxx")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("h++")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("ipp")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("h")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("cpp")).isEqualTo("cfamily");
-    assertThat(TelemetryUtils.getLanguage("ts")).isEqualTo("typescript");
-    assertThat(TelemetryUtils.getLanguage("py")).isEqualTo("python");
-    assertThat(TelemetryUtils.getLanguage("php")).isEqualTo("php");
-    assertThat(TelemetryUtils.getLanguage("unknown")).isEqualTo("others");
-  }
-
-  @Test
-  public void language_from_extension_should_be_case_insensitive() {
-    assertThat(TelemetryUtils.getLanguage("JS")).isEqualTo("javascript");
-  }
-
-  @Test
-  public void language_from_extension_should_be_nullable() {
-    assertThat(TelemetryUtils.getLanguage(null)).isEqualTo("others");
   }
 
   @Test
