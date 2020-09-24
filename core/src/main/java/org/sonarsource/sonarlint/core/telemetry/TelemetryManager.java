@@ -32,7 +32,7 @@ import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged
  */
 public class TelemetryManager {
 
-  public static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
+  public static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com";
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
