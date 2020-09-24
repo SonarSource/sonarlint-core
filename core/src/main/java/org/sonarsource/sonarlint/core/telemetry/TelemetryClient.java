@@ -35,7 +35,7 @@ public class TelemetryClient {
 
   private static final Logger LOG = Loggers.get(TelemetryClient.class);
 
-  private static final String TELEMETRY_PATH = "telemetry";
+  private static final String TELEMETRY_PATH = "sonarlint";
 
   private final TelemetryHttpFactory httpFactory;
   private final TelemetryClientConfig clientConfig;
