@@ -34,9 +34,9 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfigurat
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.container.global.NodeJsHelper;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo.RequiredPlugin;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -49,19 +49,17 @@ public class PluginInfosLoader {
 
   private final PluginCache pluginCache;
   private final PluginIndex pluginIndex;
-  private final Set<Language> enabledLanguages;
   private final PluginVersionChecker pluginVersionChecker;
   private final System2 system2;
-  private final NodeJsHelper nodeJsHelper;
+  private final AbstractGlobalConfiguration globalConfiguration;
 
   public PluginInfosLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration,
-    System2 system2, NodeJsHelper nodeJsHelper) {
+    System2 system2) {
     this.pluginVersionChecker = pluginVersionChecker;
     this.pluginCache = pluginCache;
     this.pluginIndex = pluginIndex;
+    this.globalConfiguration = globalConfiguration;
     this.system2 = system2;
-    this.nodeJsHelper = nodeJsHelper;
-    this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
   public Map<String, PluginInfo> load() {
@@ -97,7 +95,7 @@ public class PluginInfosLoader {
   private void checkIfSkippedAndPopulateReason(PluginInfo info) {
     String pluginKey = info.getKey();
     Set<Language> languages = Language.getLanguagesByPluginKey(pluginKey);
-    if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
+    if (!languages.isEmpty() && globalConfiguration.getEnabledLanguages().stream().noneMatch(languages::contains)) {
       if (languages.size() > 1) {
         LOG.debug("Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.", info.getName(),
           languages.stream().map(Language::toString).collect(Collectors.joining(",")));
@@ -131,7 +129,7 @@ public class PluginInfosLoader {
     }
     Version nodeMinVersion = info.getNodeJsMinVersion();
     if (nodeMinVersion != null) {
-      Version nodeCurrentVersion = nodeJsHelper.getNodeJsVersion();
+      Version nodeCurrentVersion = globalConfiguration.getNodeJsVersion();
       if (nodeCurrentVersion == null) {
         LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", info.getName(), nodeMinVersion);
         info.setSkipReason(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, nodeMinVersion.toString()));
