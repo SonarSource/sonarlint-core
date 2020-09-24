@@ -45,7 +45,8 @@ public abstract class AbstractGlobalConfiguration {
   private final Path workDir;
   private final EnumSet<Language> enabledLanguages;
   private final Map<String, String> extraProperties;
-  private final Path nodejsPath;
+  private final Path nodeJsPath;
+  private final Version nodeJsVersion;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
@@ -53,7 +54,8 @@ public abstract class AbstractGlobalConfiguration {
     this.enabledLanguages = builder.enabledLanguages;
     this.logOutput = builder.logOutput;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
-    this.nodejsPath = builder.nodejsPath;
+    this.nodeJsPath = builder.nodeJsPath;
+    this.nodeJsVersion = builder.nodeJsVersion;
   }
 
   public Map<String, String> extraProperties() {
@@ -78,8 +80,13 @@ public abstract class AbstractGlobalConfiguration {
   }
 
   @CheckForNull
-  public Path getNodejsPath() {
-    return nodejsPath;
+  public Path getNodeJsPath() {
+    return nodeJsPath;
+  }
+
+  @CheckForNull
+  public Version getNodeJsVersion() {
+    return nodeJsVersion;
   }
 
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
@@ -88,7 +95,8 @@ public abstract class AbstractGlobalConfiguration {
     private Path workDir;
     private EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
-    private Path nodejsPath;
+    private Path nodeJsPath;
+    private Version nodeJsVersion;
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
@@ -136,10 +144,11 @@ public abstract class AbstractGlobalConfiguration {
     }
 
     /**
-     * Set the location of the nodejs executable used by some analyzers. If null, node will be searched in the PATH.
+     * Set the location of the nodejs executable used by some analyzers.
      */
-    public G setNodeJsPath(@Nullable Path nodejsPath) {
-      this.nodejsPath = nodejsPath;
+    public G setNodeJs(Path nodeJsPath, Version nodeJsVersion) {
+      this.nodeJsPath = nodeJsPath;
+      this.nodeJsVersion = nodeJsVersion;
       return (G) this;
     }
   }

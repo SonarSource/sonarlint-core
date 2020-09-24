@@ -36,6 +36,7 @@ import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static java.util.Objects.requireNonNull;
 

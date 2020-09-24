@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.ZipUtils;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static com.google.common.collect.Ordering.natural;
 import static org.assertj.core.api.Assertions.assertThat;

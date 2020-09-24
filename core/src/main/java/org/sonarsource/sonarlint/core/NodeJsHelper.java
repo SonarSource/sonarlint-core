@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,46 +27,42 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
-import org.sonar.api.Startable;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
-import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
-public class NodeJsHelper implements Startable {
+public class NodeJsHelper {
 
   private static final Logger LOG = Loggers.get(NodeJsHelper.class);
   private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(-.*)?)");
   private final System2 system2;
-  private final AbstractGlobalConfiguration config;
   private final Path pathHelperLocationOnMac;
   private final CommandExecutor commandExecutor;
 
-  private Path nodeJsPath;
+  private Path detectedNodePath;
   private Version nodeJsVersion;
 
-  public NodeJsHelper(AbstractGlobalConfiguration config, System2 system2) {
-    this(config, system2, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create());
+  public NodeJsHelper() {
+    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create());
   }
 
   // For testing
-  NodeJsHelper(AbstractGlobalConfiguration config, System2 system2, Path pathHelperLocationOnMac, CommandExecutor commandExecutor) {
-    this.config = config;
+  NodeJsHelper(System2 system2, Path pathHelperLocationOnMac, CommandExecutor commandExecutor) {
     this.system2 = system2;
     this.pathHelperLocationOnMac = pathHelperLocationOnMac;
     this.commandExecutor = commandExecutor;
   }
 
-  @Override
-  public void start() {
-    nodeJsPath = locateNode(config);
-    if (nodeJsPath != null) {
+  public void detect(@Nullable Path configuredNodejsPath) {
+    detectedNodePath = locateNode(configuredNodejsPath);
+    if (detectedNodePath != null) {
       LOG.debug("Checking node version...");
-      Command command = Command.create(nodeJsPath.toString()).addArgument("-v");
+      Command command = Command.create(detectedNodePath.toString()).addArgument("-v");
       String nodeVersionStr = runSimpleCommand(command);
       if (nodeVersionStr != null) {
         Matcher matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
@@ -86,7 +82,7 @@ public class NodeJsHelper implements Startable {
 
   @CheckForNull
   public Path getNodeJsPath() {
-    return nodeJsPath;
+    return detectedNodePath;
   }
 
   @CheckForNull
@@ -95,8 +91,7 @@ public class NodeJsHelper implements Startable {
   }
 
   @CheckForNull
-  private Path locateNode(AbstractGlobalConfiguration config) {
-    Path configuredNodejsPath = config.getNodejsPath();
+  private Path locateNode(@Nullable Path configuredNodejsPath) {
     if (configuredNodejsPath != null) {
       LOG.debug("Node.js path provided by configuration: {}", configuredNodejsPath);
       return configuredNodejsPath;
@@ -163,11 +158,6 @@ public class NodeJsHelper implements Startable {
       return null;
     }
     return stdOut.get(0);
-  }
-
-  @Override
-  public void stop() {
-    // Nothing to do
   }
 
 }

@@ -40,13 +40,13 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.ZipUtils;
 import org.sonar.api.utils.log.LogTesterJUnit5;
+import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.container.global.NodeJsHelper;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
@@ -76,10 +76,8 @@ class PluginInfosLoaderTests {
   private PluginCache pluginCache;
   private PluginVersionChecker pluginVersionChecker;
   private Set<Language> enabledLanguages;
-
   private System2 system2;
-
-  private NodeJsHelper nodeJsHelper;
+  private AbstractGlobalConfiguration globalConfig;
 
   @BeforeEach
   public void prepare() {
@@ -87,11 +85,10 @@ class PluginInfosLoaderTests {
     pluginCache = mock(PluginCache.class);
     system2 = mock(System2.class);
     pluginVersionChecker = spy(new PluginVersionChecker());
-    ConnectedGlobalConfiguration configuration = mock(ConnectedGlobalConfiguration.class);
+    globalConfig = mock(AbstractGlobalConfiguration.class);
     enabledLanguages = new HashSet<>();
-    when(configuration.getEnabledLanguages()).thenReturn(enabledLanguages);
-    nodeJsHelper = mock(NodeJsHelper.class);
-    underTest = new PluginInfosLoader(pluginVersionChecker, pluginCache, pluginIndex, configuration, system2, nodeJsHelper);
+    when(globalConfig.getEnabledLanguages()).thenReturn(enabledLanguages);
+    underTest = new PluginInfosLoader(pluginVersionChecker, pluginCache, pluginIndex, globalConfig, system2);
 
     when(system2.property("java.specification.version")).thenReturn(System.getProperty("java.specification.version"));
     doReturn(V1_0).when(pluginVersionChecker).getMinimumVersion(FAKE_PLUGIN_KEY);
@@ -338,7 +335,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_having_satisfied_nodejs(@TempDir Path storage) throws IOException {
-    when(nodeJsHelper.getNodeJsVersion()).thenReturn(Version.create("10.1.3"));
+    when(globalConfig.getNodeJsVersion()).thenReturn(Version.create("10.1.3"));
 
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("10.1.2")));
@@ -350,7 +347,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_having_satisfied_nodejs_nightly(@TempDir Path storage) throws IOException {
-    when(nodeJsHelper.getNodeJsVersion()).thenReturn(Version.create("15.0.0-nightly20200921039c274dde"));
+    when(globalConfig.getNodeJsVersion()).thenReturn(Version.create("15.0.0-nightly20200921039c274dde"));
 
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("15.0.0")));
@@ -362,7 +359,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_nodejs_version(@TempDir Path storage) throws IOException {
-    when(nodeJsHelper.getNodeJsVersion()).thenReturn(Version.create("10.1.1"));
+    when(globalConfig.getNodeJsVersion()).thenReturn(Version.create("10.1.1"));
 
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("10.1.2")));
@@ -375,7 +372,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_nodejs(@TempDir Path storage) throws IOException {
-    when(nodeJsHelper.getNodeJsVersion()).thenReturn(null);
+    when(globalConfig.getNodeJsVersion()).thenReturn(null);
 
     PluginReference fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withNodejsMinVersion("10.1.2")));

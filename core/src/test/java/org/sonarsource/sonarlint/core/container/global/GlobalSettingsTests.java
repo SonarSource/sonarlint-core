@@ -41,17 +41,14 @@ class GlobalSettingsTests {
 
   @Test
   void setNodePathPropertyForSonarJS() {
-    NodeJsHelper nodeJsHelper = mock(NodeJsHelper.class);
-    GlobalSettings underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE), nodeJsHelper);
+    GlobalSettings underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE));
     assertThat(underTest.get("sonar.nodejs.executable")).isEmpty();
 
-    underTest.start();
-    assertThat(underTest.get("sonar.nodejs.executable")).isEmpty();
+    Path providedNodePath = Paths.get("foo/bar/node");
+    when(globalConfiguration.getNodeJsPath()).thenReturn(providedNodePath);
 
-    Path detectedNodePath = Paths.get("foo/bar/node");
-    when(nodeJsHelper.getNodeJsPath()).thenReturn(detectedNodePath);
-    underTest.start();
-    assertThat(underTest.get("sonar.nodejs.executable")).contains(detectedNodePath.toString());
+    underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE));
+    assertThat(underTest.get("sonar.nodejs.executable")).contains(providedNodePath.toString());
   }
 
 }

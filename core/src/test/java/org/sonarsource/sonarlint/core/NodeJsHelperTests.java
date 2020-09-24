@@ -17,13 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,8 +42,8 @@ import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
-import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -60,10 +59,7 @@ class NodeJsHelperTests {
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
-  private AbstractGlobalConfiguration globalConfiguration = mock(AbstractGlobalConfiguration.class);
   private System2 system2 = mock(System2.class);
-
-  private HashMap<String, String> extraProps = new HashMap<>();
 
   private CommandExecutor commandExecutor;
 
@@ -71,7 +67,6 @@ class NodeJsHelperTests {
 
   @BeforeEach
   public void prepare() {
-    when(globalConfiguration.extraProperties()).thenReturn(extraProps);
     commandExecutor = mock(CommandExecutor.class);
     when(commandExecutor.execute(any(), any(), any(), anyLong())).thenAnswer(new Answer<Integer>() {
 
@@ -92,12 +87,11 @@ class NodeJsHelperTests {
 
   @Test
   void usePropertyWhenProvidedToResolveNodePath() throws IOException {
-    when(globalConfiguration.getNodejsPath()).thenReturn(FAKE_NODE_PATH);
 
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
@@ -111,12 +105,11 @@ class NodeJsHelperTests {
 
   @Test
   void supportNightlyBuilds() throws IOException {
-    when(globalConfiguration.getNodejsPath()).thenReturn(FAKE_NODE_PATH);
 
     registerNodeVersionAnswer("v15.0.0-nightly20200921039c274dde");
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
@@ -130,15 +123,13 @@ class NodeJsHelperTests {
 
   @Test
   void ignoreCommandExecutionError() throws IOException {
-    when(globalConfiguration.getNodejsPath()).thenReturn(FAKE_NODE_PATH);
-
     registeredCommandAnswers.put(c -> true, (stdOut, stdErr) -> {
       stdErr.consumeLine("error");
       return -1;
     });
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
@@ -152,12 +143,11 @@ class NodeJsHelperTests {
 
   @Test
   void handleErrorDuringVersionCheck() throws IOException {
-    when(globalConfiguration.getNodejsPath()).thenReturn(FAKE_NODE_PATH);
 
     registerNodeVersionAnswer("wrong_version");
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
@@ -175,8 +165,8 @@ class NodeJsHelperTests {
     registerWhichAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
@@ -198,8 +188,8 @@ class NodeJsHelperTests {
       return -1;
     });
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
@@ -217,8 +207,8 @@ class NodeJsHelperTests {
     registerWhereAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, null, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
@@ -244,8 +234,8 @@ class NodeJsHelperTests {
     // Need a true file since we are checking if file exists
     Path fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, fakePathHelper, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
@@ -272,8 +262,8 @@ class NodeJsHelperTests {
     // Need a true file since we are checking if file exists
     Path fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, fakePathHelper, commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
@@ -298,8 +288,8 @@ class NodeJsHelperTests {
     registerWhichAnswerIfPathIsSet(FAKE_NODE_PATH.toString(), System.getenv("PATH"));
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2, Paths.get("not_exists"), commandExecutor);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor);
+    underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
@@ -316,10 +306,8 @@ class NodeJsHelperTests {
 
   @Test
   void logWhenUnableToGetNodeVersion() {
-    when(globalConfiguration.getNodejsPath()).thenReturn(Paths.get("not_node"));
-
-    NodeJsHelper underTest = new NodeJsHelper(globalConfiguration, system2);
-    underTest.start();
+    NodeJsHelper underTest = new NodeJsHelper();
+    underTest.detect(Paths.get("not_node"));
 
     assertThat(logTester.logs(LoggerLevel.DEBUG)).anyMatch(s -> s.startsWith("Unable to execute the command"));
     assertThat(underTest.getNodeJsVersion()).isNull();
