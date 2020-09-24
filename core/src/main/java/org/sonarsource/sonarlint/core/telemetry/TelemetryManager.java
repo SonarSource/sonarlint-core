@@ -39,10 +39,13 @@ public class TelemetryManager {
   private final TelemetryStorage storage;
   private final Supplier<Boolean> usesConnectedModeSupplier;
   private final Supplier<Boolean> usesSonarCloudSupplier;
+  private final Supplier<String> nodeVersionSupplier;
   private final TelemetryData data;
   private final TelemetryClient client;
 
-  public TelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedModeSupplier, Supplier<Boolean> usesSonarCloudSupplier) {
+  public TelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedModeSupplier, Supplier<Boolean> usesSonarCloudSupplier,
+    Supplier<String> nodeVersionSupplier) {
+    this.nodeVersionSupplier = nodeVersionSupplier;
     this.storage = newTelemetryStorage(path);
     this.usesConnectedModeSupplier = usesConnectedModeSupplier;
     this.usesSonarCloudSupplier = usesSonarCloudSupplier;
@@ -72,7 +75,7 @@ public class TelemetryManager {
     tryMerge();
     data.setEnabled(false);
     saveNow();
-    client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get());
+    client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
   }
 
   /**
@@ -94,7 +97,7 @@ public class TelemetryManager {
 
     data.setLastUploadTime();
     saveNow();
-    client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get());
+    client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
 
     data.clearAnalyzers();
     saveNow();

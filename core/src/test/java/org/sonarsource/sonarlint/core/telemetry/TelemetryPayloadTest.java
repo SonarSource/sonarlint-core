@@ -38,7 +38,8 @@ public class TelemetryPayloadTest {
     distrib.put("0-300", BigDecimal.valueOf(9.90));
     distrib.put("1000-2000", BigDecimal.valueOf(90.10));
     perf[0] = new TelemetryAnalyzerPerformancePayload("java", distrib);
-    TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", true, true, systemTime, installTime, "Windows 10", "1.8.0", perf);
+    TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
+      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf);
     String s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -51,8 +52,9 @@ public class TelemetryPayloadTest {
       + "\"system_time\":\"2017-11-10T12:02:14.984+02:00\","
       + "\"install_time\":\"2017-11-10T12:01:14.984+02:00\","
       + "\"os\":\"Windows 10\","
-      + "\"jre\":\"1.8.0\""
-      + ",\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}]}");
+      + "\"jre\":\"1.8.0\","
+      + "\"nodejs\":\"10.5.2\","
+      + "\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}]}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);
@@ -62,6 +64,7 @@ public class TelemetryPayloadTest {
     assertThat(m.analyses()).hasSize(1);
     assertThat(m.os()).isEqualTo("Windows 10");
     assertThat(m.jre()).isEqualTo("1.8.0");
+    assertThat(m.nodejs()).isEqualTo("10.5.2");
     assertThat(m.connectedModeSonarcloud()).isTrue();
     assertThat(m.systemTime()).isEqualTo(systemTime);
   }

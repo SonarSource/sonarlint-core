@@ -48,6 +48,7 @@ public class TelemetryManagerTest {
 
   private Supplier<Boolean> usesConnectedModeSupplier = () -> true;
   private Supplier<Boolean> usesSonarCloudSupplier = () -> true;
+  private Supplier<String> nodeVersionSupplier = () -> "10.5.2";
   private TelemetryClient client;
   private Path storagePath;
   private TelemetryManager manager;
@@ -58,7 +59,7 @@ public class TelemetryManagerTest {
     client = mock(TelemetryClient.class);
     storagePath = temp.newFile().toPath();
     storage = new TelemetryStorage(storagePath);
-    manager = new TelemetryManager(storagePath, mock(TelemetryClient.class), usesConnectedModeSupplier, usesSonarCloudSupplier);
+    manager = new TelemetryManager(storagePath, mock(TelemetryClient.class), usesConnectedModeSupplier, usesSonarCloudSupplier, nodeVersionSupplier);
   }
 
   private TelemetryManager stubbedTelemetryManager(TelemetryData data) throws IOException {
@@ -69,7 +70,7 @@ public class TelemetryManagerTest {
 
   private TelemetryManager stubbedTelemetryManager(TelemetryStorage storage) throws IOException {
     Path path = temp.newFile().toPath();
-    return new TelemetryManager(path, client, usesConnectedModeSupplier, usesSonarCloudSupplier) {
+    return new TelemetryManager(path, client, usesConnectedModeSupplier, usesSonarCloudSupplier, nodeVersionSupplier) {
       @Override
       TelemetryStorage newTelemetryStorage(Path ignored) {
         return storage;
@@ -79,7 +80,7 @@ public class TelemetryManagerTest {
 
   @Test
   public void should_be_enabled_by_default() throws IOException {
-    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryClient.class), mock(Supplier.class), mock(Supplier.class)).isEnabled()).isTrue();
+    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryClient.class), mock(Supplier.class), mock(Supplier.class), mock(Supplier.class)).isEnabled()).isTrue();
   }
 
   @Test
@@ -111,7 +112,7 @@ public class TelemetryManagerTest {
 
     // once during lazy save, twice during lazy upload
     verify(storage, times(3)).trySave(any(TelemetryData.class));
-    verify(client).upload(any(TelemetryData.class), anyBoolean(), anyBoolean());
+    verify(client).upload(any(TelemetryData.class), anyBoolean(), anyBoolean(), eq("10.5.2"));
   }
 
   @Test
@@ -121,7 +122,7 @@ public class TelemetryManagerTest {
     manager.enable();
     manager.enable();
 
-    verify(client).upload(any(TelemetryData.class), anyBoolean(), anyBoolean());
+    verify(client).upload(any(TelemetryData.class), anyBoolean(), anyBoolean(), eq("10.5.2"));
     verifyNoMoreInteractions(client);
   }
 
@@ -131,7 +132,7 @@ public class TelemetryManagerTest {
     TelemetryManager manager = stubbedTelemetryManager(storage);
     manager.disable();
 
-    verify(client).optOut(any(TelemetryData.class), eq(true), eq(true));
+    verify(client).optOut(any(TelemetryData.class), eq(true), eq(true), eq("10.5.2"));
     verifyNoMoreInteractions(client);
   }
 
@@ -155,7 +156,7 @@ public class TelemetryManagerTest {
     manager.uploadLazily();
 
     assertThat(data.lastUploadTime()).isEqualTo(lastUploadTime);
-    verify(client).upload(any(TelemetryData.class), eq(true), eq(true));
+    verify(client).upload(any(TelemetryData.class), eq(true), eq(true), eq("10.5.2"));
     verifyNoMoreInteractions(client);
   }
 
@@ -172,7 +173,7 @@ public class TelemetryManagerTest {
 
     manager.uploadLazily();
 
-    verify(client, times(2)).upload(any(TelemetryData.class), eq(true), eq(true));
+    verify(client, times(2)).upload(any(TelemetryData.class), eq(true), eq(true), eq("10.5.2"));
     verifyNoMoreInteractions(client);
   }
 

@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import java.time.OffsetDateTime;
+import javax.annotation.Nullable;
 
 /**
  * Models the usage data uploaded
@@ -61,11 +62,14 @@ class TelemetryPayload {
   @SerializedName("jre")
   private final String jre;
 
+  @SerializedName("nodejs")
+  private final String nodejs;
+
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
   TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
-    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, TelemetryAnalyzerPerformancePayload[] analyses) {
+    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs, TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -77,6 +81,7 @@ class TelemetryPayload {
     this.installTime = installTime;
     this.os = os;
     this.jre = jre;
+    this.nodejs = nodejs;
     this.analyses = analyses;
   }
 
@@ -114,6 +119,10 @@ class TelemetryPayload {
 
   public String jre() {
     return jre;
+  }
+
+  public String nodejs() {
+    return nodejs;
   }
 
   public OffsetDateTime systemTime() {
