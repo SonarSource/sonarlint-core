@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,12 +40,12 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
@@ -60,16 +61,17 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetail
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-public class StandaloneIssueMediumTest {
+class StandaloneIssueMediumTests {
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
+  private static Path sonarlintUserHome;
+  private static Path fakeTypeScriptProjectPath;
 
   private static final String A_JAVA_FILE_PATH = "Foo.java";
   private static StandaloneSonarLintEngineImpl sonarlint;
@@ -78,11 +80,11 @@ public class StandaloneIssueMediumTest {
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    Path sonarlintUserHome = temp.newFolder().toPath();
+  @BeforeAll
+  static void prepare(@TempDir Path temp) throws Exception {
+    sonarlintUserHome = temp.resolve("home");
+    fakeTypeScriptProjectPath = temp.resolve("ts");
 
-    Path fakeTypeScriptProjectPath = temp.newFolder().toPath();
     Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
     FileUtils.write(packagejson.toFile(), "{"
       + "\"devDependencies\": {\n" +
@@ -101,16 +103,19 @@ public class StandaloneIssueMediumTest {
     extraProperties.put("sonar.typescript.internal.typescriptLocation", fakeTypeScriptProjectPath.resolve("node_modules").toString());
     // See test sonarjs_should_honor_global_and_analysis_level_properties
     extraProperties.put("sonar.javascript.globals", "GLOBAL1");
+
+    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
     StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
       .addPlugin(PluginLocator.getPythonPluginUrl())
       .addPlugin(PluginLocator.getXooPluginUrl())
-      .addPlugin(PluginLocator.getTypeScriptPluginUrl())
       .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
       .setSonarLintUserHome(sonarlintUserHome)
-      .setLogOutput((msg, level) -> System.out.println(msg))
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
 
     if (COMMERCIAL_ENABLED) {
@@ -119,20 +124,20 @@ public class StandaloneIssueMediumTest {
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
   }
 
-  @AfterClass
-  public static void stop() {
+  @AfterAll
+  static void stop() throws IOException {
     sonarlint.stop();
   }
 
-  @Before
-  public void prepareBasedir() throws Exception {
-    baseDir = temp.newFolder();
+  @BeforeEach
+  void prepareBasedir(@TempDir Path temp) throws Exception {
+    baseDir = Files.createTempDirectory(temp, "baseDir").toFile();
   }
 
   @Test
-  public void simpleJavaScript() throws Exception {
+  void simpleJavaScript() throws Exception {
 
-    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:UnusedVariable").get();
+    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:S1481").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
@@ -154,7 +159,7 @@ public class StandaloneIssueMediumTest {
       issues::add, null,
       null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("javascript:UnusedVariable", 2, "foo.js"));
+      tuple("javascript:S1481", 2, "foo.js"));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);
@@ -169,7 +174,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void sonarjs_should_honor_global_and_analysis_level_properties() throws Exception {
+  void sonarjs_should_honor_global_and_analysis_level_properties() throws Exception {
     String content = "function foo() {\n"
       + "  console.log(LOCAL1); // Noncompliant\n"
       + "  console.log(GLOBAL1); // GLOBAL1 defined as global varibale in global settings\n"
@@ -206,12 +211,12 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleTypeScript() throws Exception {
+  void simpleTypeScript() throws Exception {
     StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.TS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
-    assertThat(ruleDetails.getTags()).containsOnly("cert");
+    assertThat(ruleDetails.getTags()).isEmpty();
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
 
     final File tsConfig = new File(baseDir, "tsconfig.json");
@@ -233,7 +238,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void fileEncoding() throws IOException {
+  void fileEncoding() throws IOException {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
       + "  var xoo1, xoo2;\n"
       + "  var xoo; //NOSONAR\n"
@@ -253,7 +258,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleXoo() throws Exception {
+  void simpleXoo() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
       + "  var xoo1, xoo2;\n"
       + "  var xoo; //NOSONAR\n"
@@ -273,7 +278,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleC() throws Exception {
+  void simpleC() throws Exception {
     assumeTrue(COMMERCIAL_ENABLED);
     ClientInputFile inputFile = prepareInputFile("foo.c", "#import \"foo.h\"\n"
       + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, Language.C);
@@ -311,7 +316,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void analysisErrors() throws Exception {
+  void analysisErrors() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
       + "  var xoo;\n"
       + "  var y; //NOSONAR\n"
@@ -331,7 +336,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void returnLanguagePerFile() throws IOException {
+  void returnLanguagePerFile() throws IOException {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
       + "  var xoo;\n"
       + "  var y; //NOSONAR\n"
@@ -348,7 +353,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simplePhp() throws Exception {
+  void simplePhp() throws Exception {
 
     ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
       + "function writeMsg($fname) {\n"
@@ -368,7 +373,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simplePython() throws Exception {
+  void simplePython() throws Exception {
 
     ClientInputFile inputFile = prepareInputFile("foo.py", "def my_function(name):\n"
       + "    print \"Hello\"\n"
@@ -387,7 +392,7 @@ public class StandaloneIssueMediumTest {
 
   // SLCORE-162
   @Test
-  public void useRelativePathToEvaluatePathPatterns() throws Exception {
+  void useRelativePathToEvaluatePathPatterns() throws Exception {
 
     final File file = new File(baseDir, "foo.tmp"); // Temporary file doesn't have the correct file suffix
     FileUtils.write(file, "def my_function(name):\n"
@@ -407,7 +412,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJava() throws Exception {
+  void simpleJava() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -435,14 +440,14 @@ public class StandaloneIssueMediumTest {
 
   // SLCORE-251
   @Test
-  public void noRuleTemplates() throws Exception {
+  void noRuleTemplates() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("python:XPath", "xoo:xoo-template");
     assertThat(sonarlint.getRuleDetails("python:XPath")).isEmpty();
     assertThat(sonarlint.getRuleDetails("xoo:xoo-template")).isEmpty();
   }
 
   @Test
-  public void simpleJavaNoHotspots() throws Exception {
+  void simpleJavaNoHotspots() throws Exception {
     assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
     List<Language> ossLanguages = Arrays.asList(
       Language.JAVA,
@@ -457,10 +462,11 @@ public class StandaloneIssueMediumTest {
         Language.C,
         Language.CPP,
         Language.OBJC);
-      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage)).containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
-        .toArray(Language[]::new));
+      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage).collect(toSet()))
+        .containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
+          .toArray(Language[]::new));
     } else {
-      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage)).containsOnly(ossLanguages.toArray(new Language[0]));
+      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage).collect(toSet())).containsOnly(ossLanguages.toArray(new Language[0]));
     }
 
     assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
@@ -486,7 +492,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaPomXml() throws Exception {
+  void simpleJavaPomXml() throws Exception {
     ClientInputFile inputFile = prepareInputFile("pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<project>\n"
@@ -509,7 +515,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void supportJavaSuppressWarning() throws Exception {
+  void supportJavaSuppressWarning() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  @SuppressWarnings(\"java:S106\")\n"
@@ -534,7 +540,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithBytecode() throws Exception {
+  void simpleJavaWithBytecode() throws Exception {
     Path projectWithByteCode = new File("src/test/projects/java-with-bytecode").getAbsoluteFile().toPath();
     ClientInputFile inputFile = TestUtils.createInputFile(projectWithByteCode.resolve("src/Foo.java"), "src/Foo.java", false);
 
@@ -555,7 +561,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithExcludedRules() throws Exception {
+  void simpleJavaWithExcludedRules() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -581,7 +587,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithExcludedRulesUsingDeprecatedKey() throws Exception {
+  void simpleJavaWithExcludedRulesUsingDeprecatedKey() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -610,7 +616,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithIncludedRules() throws Exception {
+  void simpleJavaWithIncludedRules() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
@@ -639,7 +645,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithIncludedRulesUsingDeprecatedKey() throws Exception {
+  void simpleJavaWithIncludedRulesUsingDeprecatedKey() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
@@ -671,7 +677,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithIssueOnDir() throws Exception {
+  void simpleJavaWithIssueOnDir() throws Exception {
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
       "package foo;\n"
         + "public class Foo {\n"
@@ -694,7 +700,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void simpleJavaWithIncludedAndExcludedRules() throws Exception {
+  void simpleJavaWithIncludedAndExcludedRules() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
@@ -725,7 +731,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void testJavaSurefireDontCrashAnalysis() throws Exception {
+  void testJavaSurefireDontCrashAnalysis() throws Exception {
 
     File surefireReport = new File(baseDir, "reports/TEST-FooTest.xml");
     FileUtils.write(surefireReport, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -769,7 +775,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void concurrentAnalysis() throws Throwable {
+  void concurrentAnalysis() throws Throwable {
     final ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -811,7 +817,7 @@ public class StandaloneIssueMediumTest {
   }
 
   @Test
-  public void lazy_init_file_metadata() throws Exception {
+  void lazy_init_file_metadata() throws Exception {
     final ClientInputFile inputFile1 = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -837,8 +843,9 @@ public class StandaloneIssueMediumTest {
 
     assertThat(analysisResults.failedAnalysisFiles()).isEmpty();
     assertThat(analysisResults.indexedFileCount()).isEqualTo(2);
-    assertThat(logs).contains("Initializing metadata of file " + inputFile1.uri());
-    assertThat(logs).doesNotContain("Initializing metadata of file " + inputFile2.uri());
+    assertThat(logs)
+      .contains("Initializing metadata of file " + inputFile1.uri())
+      .doesNotContain("Initializing metadata of file " + inputFile2.uri());
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable Language language) throws IOException {

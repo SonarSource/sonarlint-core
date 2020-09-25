@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -111,12 +112,16 @@ public class ConnectedIssueMediumTest {
     writeProjectStatus(tmpStorage, "stale_module", "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
+    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setServerId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS)
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
@@ -190,18 +195,17 @@ public class ConnectedIssueMediumTest {
   @Test
   public void simpleJavaScriptUnbinded() throws Exception {
 
-    String ruleKey = "javascript:UnusedVariable";
+    String ruleKey = "javascript:S1135";
     ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
-    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
+    assertThat(ruleDetails.getName()).isEqualTo("\"TODO\" tags should be handled");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
-    assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
-    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
+    assertThat(ruleDetails.getSeverity()).isEqualTo("INFO");
+    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "<code>TODO</code> tags are commonly used");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
-      + "  var x;\n"
-      + "  var y; //NOSONAR\n"
+      + "  var x; //TODO\n"
       + "}", false);
 
     final List<Issue> issues = new ArrayList<>();
@@ -212,7 +216,6 @@ public class ConnectedIssueMediumTest {
       new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple(ruleKey, 2, inputFile.getPath()));
-
   }
 
   @Test

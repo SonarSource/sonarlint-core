@@ -30,8 +30,8 @@ public class PluginLocator {
 
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-6.0.0.20538.jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "eb27aea472a0d7d91ed529086ce8ee1c";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-4.0.0.5862.jar";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "cc8ad346e85db9d3735898b533d37d34";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-6.5.0.13383.jar";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
   public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";
 
   public static URL getJavaPluginUrl() {
@@ -52,10 +52,6 @@ public class PluginLocator {
 
   public static URL getCppPluginUrl() {
     return getPluginUrl("sonar-cfamily-plugin-6.3.0.11371.jar");
-  }
-
-  public static URL getTypeScriptPluginUrl() {
-    return getPluginUrl("sonar-typescript-plugin-1.5.0.2122.jar");
   }
 
   public static URL getXooPluginUrl() {
