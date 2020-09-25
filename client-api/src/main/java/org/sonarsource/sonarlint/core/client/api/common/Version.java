@@ -19,62 +19,53 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.apache.commons.lang.StringUtils;
+import java.util.Arrays;
 
 public class Version implements Comparable<Version> {
 
-  private String normalizedMajor = normalizePart("0");
-  private String normalizedMinor = normalizePart("0");
-  private String normalizedPatch = normalizePart("0");
-  private String normalizedPatch2 = normalizePart("0");
-  private String major = "0";
-  private String minor = "0";
-  private String patch = "0";
-  private String patch2 = "0";
-  private String qualifier;
-  private String name;
+  private final String name;
+  private final String nameWithoutQualifier;
+  private final int[] numbers;
+  private final String qualifier;
 
   private Version(String version) {
-    this.name = StringUtils.trimToEmpty(version);
-    this.qualifier = StringUtils.substringAfter(this.name, "-");
-    String numbers = StringUtils.substringBefore(this.name, "-");
-    String[] split = StringUtils.split(numbers, '.');
-    if (split.length >= 1) {
-      major = split[0];
-      normalizedMajor = normalizePart(major);
+    this.name = version.trim();
+    int qualifierPosition = name.indexOf("-");
+    if (qualifierPosition != -1) {
+      this.qualifier = name.substring(qualifierPosition + 1);
+      this.nameWithoutQualifier = name.substring(0, qualifierPosition);
+    } else {
+      this.qualifier = "";
+      this.nameWithoutQualifier = this.name;
     }
-    if (split.length >= 2) {
-      minor = split[1];
-      normalizedMinor = normalizePart(minor);
-    }
-    if (split.length >= 3) {
-      patch = split[2];
-      normalizedPatch = normalizePart(patch);
-    }
-    if (split.length >= 4) {
-      patch2 = split[3];
-      normalizedPatch2 = normalizePart(patch2);
+    final String split[] = this.nameWithoutQualifier.split("\\.");
+    numbers = new int[split.length];
+    for (int i = 0; i < split.length; i++) {
+      numbers[i] = Integer.valueOf(split[i]);
     }
   }
 
-  private static String normalizePart(String part) {
-    return StringUtils.leftPad(part, 4, '0');
+  private Version(String name, String nameWithoutQualifier, int[] numbers, String qualifier) {
+    this.name = name;
+    this.nameWithoutQualifier = nameWithoutQualifier;
+    this.numbers = Arrays.copyOf(numbers, numbers.length);
+    this.qualifier = qualifier;
   }
 
-  public String getMajor() {
-    return major;
+  public int getMajor() {
+    return numbers.length > 0 ? numbers[0] : 0;
   }
 
-  public String getMinor() {
-    return minor;
+  public int getMinor() {
+    return numbers.length > 1 ? numbers[1] : 0;
   }
 
-  public String getPatch() {
-    return patch;
+  public int getPatch() {
+    return numbers.length > 2 ? numbers[2] : 0;
   }
 
-  public String getPatch2() {
-    return patch2;
+  public int getBuild() {
+    return numbers.length > 3 ? numbers[3] : 0;
   }
 
   public String getName() {
@@ -94,19 +85,19 @@ public class Version implements Comparable<Version> {
       return false;
     }
     Version other = (Version) o;
-    return normalizedMajor.equals(other.normalizedMajor)
-      && normalizedMinor.equals(other.normalizedMinor)
-      && normalizedPatch.equals(other.normalizedPatch)
-      && normalizedPatch2.equals(other.normalizedPatch2)
+    return getMajor() == other.getMajor()
+      && getMinor() == other.getMinor()
+      && getPatch() == other.getPatch()
+      && getBuild() == other.getBuild()
       && qualifier.equals(other.qualifier);
   }
 
   @Override
   public int hashCode() {
-    int result = normalizedMajor.hashCode();
-    result = 31 * result + normalizedMinor.hashCode();
-    result = 31 * result + normalizedPatch.hashCode();
-    result = 31 * result + normalizedPatch2.hashCode();
+    int result = Integer.hashCode(getMajor());
+    result = 31 * result + Integer.hashCode(getMinor());
+    result = 31 * result + Integer.hashCode(getPatch());
+    result = 31 * result + Integer.hashCode(getBuild());
     result = 31 * result + qualifier.hashCode();
     return result;
   }
@@ -127,17 +118,16 @@ public class Version implements Comparable<Version> {
   }
 
   public int compareToIgnoreQualifier(Version other) {
-    int c = normalizedMajor.compareTo(other.normalizedMajor);
-    if (c == 0) {
-      c = normalizedMinor.compareTo(other.normalizedMinor);
-      if (c == 0) {
-        c = normalizedPatch.compareTo(other.normalizedPatch);
-        if (c == 0) {
-          c = normalizedPatch2.compareTo(other.normalizedPatch2);
-        }
+    int maxNumbers = Math.max(numbers.length, other.numbers.length);
+    int[] myNumbers = Arrays.copyOf(numbers, maxNumbers);
+    int[] otherNumbers = Arrays.copyOf(other.numbers, maxNumbers);
+    for (int i = 0; i < maxNumbers; i++) {
+      int compare = Integer.compare(myNumbers[i], otherNumbers[i]);
+      if (compare != 0) {
+        return compare;
       }
     }
-    return c;
+    return 0;
   }
 
   @Override
@@ -149,12 +139,8 @@ public class Version implements Comparable<Version> {
     return new Version(version);
   }
 
-  public static boolean isSnapshot(String version) {
-    return StringUtils.endsWith(version, "SNAPSHOT");
-  }
-
   public Version removeQualifier() {
-    return new Version(StringUtils.substringBefore(this.toString(), "-"));
+    return new Version(nameWithoutQualifier, nameWithoutQualifier, numbers, "");
   }
 
   /**

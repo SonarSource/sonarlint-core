@@ -28,20 +28,20 @@ class VersionTests {
   @Test
   void test_fields_of_snapshot_versions() {
     Version version = Version.create("1.2.3-SNAPSHOT");
-    assertThat(version.getMajor()).isEqualTo("1");
-    assertThat(version.getMinor()).isEqualTo("2");
-    assertThat(version.getPatch()).isEqualTo("3");
-    assertThat(version.getPatch2()).isEqualTo("0");
+    assertThat(version.getMajor()).isEqualTo(1);
+    assertThat(version.getMinor()).isEqualTo(2);
+    assertThat(version.getPatch()).isEqualTo(3);
+    assertThat(version.getBuild()).isEqualTo(0);
     assertThat(version.getQualifier()).isEqualTo("SNAPSHOT");
   }
 
   @Test
   void test_fields_of_releases() {
     Version version = Version.create("1.2");
-    assertThat(version.getMajor()).isEqualTo("1");
-    assertThat(version.getMinor()).isEqualTo("2");
-    assertThat(version.getPatch()).isEqualTo("0");
-    assertThat(version.getPatch2()).isEqualTo("0");
+    assertThat(version.getMajor()).isEqualTo(1);
+    assertThat(version.getMinor()).isEqualTo(2);
+    assertThat(version.getPatch()).isEqualTo(0);
+    assertThat(version.getBuild()).isEqualTo(0);
     assertThat(version.getQualifier()).isEmpty();
   }
 
@@ -118,18 +118,18 @@ class VersionTests {
 
     assertThat(version.getName()).isEqualTo("1.10.2");
     assertThat(version).hasToString("1.10.2");
-    assertThat(version.getMajor()).isEqualTo("1");
-    assertThat(version.getMinor()).isEqualTo("10");
-    assertThat(version.getPatch()).isEqualTo("2");
-    assertThat(version.getPatch2()).isEqualTo("0");
+    assertThat(version.getMajor()).isEqualTo(1);
+    assertThat(version.getMinor()).isEqualTo(10);
+    assertThat(version.getPatch()).isEqualTo(2);
+    assertThat(version.getBuild()).isEqualTo(0);
   }
 
   @Test
   void testPatchFieldsEquals() {
     Version version = Version.create("1.2.3.4");
 
-    assertThat(version.getPatch()).isEqualTo("3");
-    assertThat(version.getPatch2()).isEqualTo("4");
+    assertThat(version.getPatch()).isEqualTo(3);
+    assertThat(version.getBuild()).isEqualTo(4);
 
     assertThat(version)
       .isEqualTo(version)
@@ -141,9 +141,9 @@ class VersionTests {
   void removeQualifier() {
     Version version = Version.create("1.2.3-SNAPSHOT").removeQualifier();
 
-    assertThat(version.getMajor()).isEqualTo("1");
-    assertThat(version.getMinor()).isEqualTo("2");
-    assertThat(version.getPatch()).isEqualTo("3");
+    assertThat(version.getMajor()).isEqualTo(1);
+    assertThat(version.getMinor()).isEqualTo(2);
+    assertThat(version.getPatch()).isEqualTo(3);
     assertThat(version.getQualifier()).isEmpty();
   }
 }
