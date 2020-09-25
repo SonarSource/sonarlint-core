@@ -42,6 +42,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.user.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
@@ -103,13 +104,16 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
+    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
       .setServerId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> {
         logs.add(msg);
-        System.out.println(msg);
-      });
+      })
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion());
     configurator.accept(builder);
     return new ConnectedSonarLintEngineImpl(builder.build());
   }
