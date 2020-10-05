@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,6 @@ import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,11 +59,11 @@ class NodeJsHelperTests {
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
-  private System2 system2 = mock(System2.class);
+  private final System2 system2 = mock(System2.class);
 
   private CommandExecutor commandExecutor;
 
-  private Map<Predicate<Command>, BiFunction<StreamConsumer, StreamConsumer, Integer>> registeredCommandAnswers = new LinkedHashMap<>();
+  private final Map<Predicate<Command>, BiFunction<StreamConsumer, StreamConsumer, Integer>> registeredCommandAnswers = new LinkedHashMap<>();
 
   @BeforeEach
   public void prepare() {
@@ -143,7 +143,6 @@ class NodeJsHelperTests {
 
   @Test
   void handleErrorDuringVersionCheck() throws IOException {
-
     registerNodeVersionAnswer("wrong_version");
 
     NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
@@ -201,6 +200,24 @@ class NodeJsHelperTests {
   }
 
   @Test
+  void handleEmptyResponseDuringPathCheck() throws IOException {
+    when(system2.isOsWindows()).thenReturn(true);
+
+    registerWhereAnswer();
+
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(null);
+
+    assertThat(logTester.logs()).containsExactly(
+      "Looking for node in the PATH",
+      "Execute command 'where node'...",
+      "Command 'where node' exited with 0",
+      "Unable to locate node");
+    assertThat(underTest.getNodeJsPath()).isNull();
+    assertThat(underTest.getNodeJsVersion()).isNull();
+  }
+
+  @Test
   void useWhereOnWindowsToResolveNodePath() throws IOException {
     when(system2.isOsWindows()).thenReturn(true);
 
@@ -214,6 +231,34 @@ class NodeJsHelperTests {
       "Looking for node in the PATH",
       "Execute command 'where node'...",
       "Command 'where node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Found node at " + FAKE_NODE_PATH.toString(),
+      "Checking node version...",
+      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
+      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Detected node version: 10.5.4");
+    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+  }
+
+  // SLCORE-281
+  @Test
+  void whereOnWindowsCanReturnMultipleCandidates() throws IOException {
+    when(system2.isOsWindows()).thenReturn(true);
+
+    Path fake_node_path2 = Paths.get("foo2/node");
+
+    registerWhereAnswer(FAKE_NODE_PATH.toString(), fake_node_path2.toString());
+    registerNodeVersionAnswer("v10.5.4");
+
+    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    underTest.detect(null);
+
+    assertThat(logTester.logs()).containsExactly(
+      "Looking for node in the PATH",
+      "Execute command 'where node'...",
+      "Command 'where node' exited with 0\nstdout: "
+        + FAKE_NODE_PATH.toString() + "\n" + fake_node_path2
+          .toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
@@ -314,7 +359,7 @@ class NodeJsHelperTests {
   }
 
   private void registerNodeVersionAnswer(String version) {
-    registeredCommandAnswers.put(c -> c.toString().endsWith("node -v"), (stdOut, stdErr) -> {
+    registeredCommandAnswers.put(c -> c.toString().endsWith(FAKE_NODE_PATH.toString() + " -v"), (stdOut, stdErr) -> {
       stdOut.consumeLine(version);
       return 0;
     });
@@ -334,9 +379,9 @@ class NodeJsHelperTests {
     });
   }
 
-  private void registerWhereAnswer(String whereOutput) {
+  private void registerWhereAnswer(String... whereOutput) {
     registeredCommandAnswers.put(c -> c.toString().endsWith("where node"), (stdOut, stdErr) -> {
-      stdOut.consumeLine(whereOutput);
+      Stream.of(whereOutput).forEach(l -> stdOut.consumeLine(l));
       return 0;
     });
   }
