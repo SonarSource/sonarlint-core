@@ -175,14 +175,14 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
-    PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true)));
+    PluginReference fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, Language.PHP.getPluginKey(), V1_0, withSonarLintSupported(true)));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     enabledLanguages.add(Language.TS);
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("javascript", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.JS)))));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'javascript' is excluded because language 'JavaScript' is not enabled. Skip loading it.");
+      .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.PHP)))));
+    assertThat(logsWithoutStartStop()).contains("Plugin 'php' is excluded because language 'PHP' is not enabled. Skip loading it.");
   }
 
   @Test
@@ -300,7 +300,7 @@ class PluginInfosLoaderTests {
   @Test
   void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
     PluginReference fakePlugin = fakePlugin(storage, "sonarjs.jar",
-      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true), withRequiredPlugins(Language.TS.getPluginKey() + ":1.0")));
+      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withSonarLintSupported(true), withRequiredPlugins("typescript:1.0")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
     doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
     enabledLanguages.add(Language.JS);

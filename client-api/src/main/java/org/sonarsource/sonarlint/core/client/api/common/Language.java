@@ -49,7 +49,8 @@ public enum Language {
   SCALA("scala", "sonarscala", "Scala", new String[] {".scala"}, "sonar.scala.file.suffixes"),
   SWIFT("swift", "swift", "Swift", new String[] {".swift"}, "sonar.swift.file.suffixes"),
   TSQL("tsql", "tsql", "T-SQL", new String[] {".tsql"}, "sonar.tsql.file.suffixes"),
-  TS("ts", "typescript", "TypeScript", new String[] {".ts", ".tsx"}, "sonar.typescript.file.suffixes"),
+  TS("ts", "javascript", "TypeScript", new String[] {".ts", ".tsx"},
+    "sonar.typescript.file.suffixes"),
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
   XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
   // For ITs
