@@ -154,7 +154,7 @@ public class NodeJsHelper {
       msg.append("\nstderr: ").append(String.join("\n", stdErr));
     }
     LOG.debug(msg.toString());
-    if (exitCode != 0 || stdOut.size() != 1) {
+    if (exitCode != 0 || stdOut.isEmpty()) {
       return null;
     }
     return stdOut.get(0);
