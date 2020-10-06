@@ -109,17 +109,10 @@ public class WsHelperImpl implements WsHelper {
   }
 
   @Override
-  public List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
-    SonarLintWsClient client = createClient(serverConfig);
-    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-    return listOrganizations(client, serverChecker, false, new ProgressWrapper(monitor));
-  }
-
-  @Override
   public List<RemoteOrganization> listUserOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
     SonarLintWsClient client = createClient(serverConfig);
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-    return listOrganizations(client, serverChecker, true, new ProgressWrapper(monitor));
+    return listUserOrganizations(client, serverChecker, new ProgressWrapper(monitor));
   }
 
   @Override
@@ -157,10 +150,10 @@ public class WsHelperImpl implements WsHelper {
     }
   }
 
-  static List<RemoteOrganization> listOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, boolean memberOnly, ProgressWrapper progress) {
+  static List<RemoteOrganization> listUserOrganizations(SonarLintWsClient client, ServerVersionAndStatusChecker serverChecker, ProgressWrapper progress) {
     try {
       checkServer(serverChecker, progress);
-      return fetchOrganizations(client, memberOnly, progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
+      return fetchUserOrganizations(client, progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
@@ -179,12 +172,8 @@ public class WsHelperImpl implements WsHelper {
       .findFirst();
   }
 
-  private static List<RemoteOrganization> fetchOrganizations(SonarLintWsClient client, boolean memberOnly, ProgressWrapper progress) {
-    String url = "api/organizations/search.protobuf";
-    if (memberOnly) {
-      url += "?member=true";
-    }
-
+  private static List<RemoteOrganization> fetchUserOrganizations(SonarLintWsClient client, ProgressWrapper progress) {
+    String url = "api/organizations/search.protobuf?member=true";
     return getPaginatedOrganizations(client, url, progress);
   }
 
