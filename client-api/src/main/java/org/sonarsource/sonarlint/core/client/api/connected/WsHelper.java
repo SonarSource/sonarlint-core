@@ -43,11 +43,6 @@ public interface WsHelper {
   String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force);
 
   /**
-   * Returns the list of remote organizations
-   */
-  List<RemoteOrganization> listOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
-
-  /**
    * Returns the list of remote organizations where the user is a member.
    * @since 3.5
    */

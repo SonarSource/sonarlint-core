@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
@@ -66,6 +67,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
@@ -508,9 +510,18 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadOrganizations() throws Exception {
+  public void downloadUserOrganizations() throws Exception {
     WsHelper helper = new WsHelperImpl();
     assertThat(helper.listUserOrganizations(getServerConfig(), null)).hasSize(1);
+  }
+
+  @Test
+  public void getOrganization() {
+    WsHelper helper = new WsHelperImpl();
+    Optional<RemoteOrganization> org = helper.getOrganization(getServerConfigForOrg(null), SONARCLOUD_ORGANIZATION, null);
+    assertThat(org).isPresent();
+    assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
+    assertThat(org.get().getName()).isEqualTo("SonarLint IT Tests");
   }
 
   @Test
@@ -560,6 +571,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
+  @Test
+  public void testConnection() {
+    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(SONARCLOUD_ORGANIZATION)).success()).isTrue();
+    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(null)).success()).isTrue();
+    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg("not-exists")).success()).isFalse();
+  }
+
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(SetRequest.builder()
       .setKey(key)
@@ -585,12 +603,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private ServerConfiguration getServerConfig() {
-    return ServerConfiguration.builder()
-      .url(SONARCLOUD_STAGING_URL)
-      .userAgent("SonarLint ITs")
-      .organizationKey(SONARCLOUD_ORGANIZATION)
-      .credentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD)
-      .build();
+    return getServerConfigForOrg(SONARCLOUD_ORGANIZATION);
   }
 
   public static WsClient newAdminWsClient() {
@@ -598,5 +611,15 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .url(SONARCLOUD_STAGING_URL)
       .credentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD)
       .build());
+  }
+
+  private ServerConfiguration getServerConfigForOrg(@Nullable String orgKey) {
+    return ServerConfiguration.builder()
+      .url(SONARCLOUD_STAGING_URL)
+      .organizationKey(orgKey)
+      .userAgent("SonarLint ITs")
+      .credentials(SONARCLOUD_USER,
+        SONARCLOUD_PASSWORD)
+      .build();
   }
 }

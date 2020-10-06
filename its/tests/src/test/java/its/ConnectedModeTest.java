@@ -78,7 +78,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -705,21 +704,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
-  }
-
-  @Test
-  public void downloadOrganizations() throws Exception {
-    WsHelper helper = new WsHelperImpl();
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      assertThat(helper.listOrganizations(getServerConfig(), null)).hasSize(1);
-    } else {
-      try {
-        helper.listOrganizations(getServerConfig(), null);
-        fail("Expected exception");
-      } catch (Exception e) {
-        assertThat(e).isInstanceOf(UnsupportedServerException.class);
-      }
-    }
   }
 
   @Test
