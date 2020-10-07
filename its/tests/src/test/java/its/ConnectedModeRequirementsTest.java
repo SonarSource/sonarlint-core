@@ -59,6 +59,7 @@ import static org.junit.Assert.fail;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
   private static final String CUSTOM_JS_PLUGIN_KEY = "custom";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
@@ -84,7 +85,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private List<String> logs = new ArrayList<>();
+  private final List<String> logs = new ArrayList<>();
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -132,8 +133,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
     engine.update(config(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), Language.TS.getPluginKey(),
-      CUSTOM_JS_PLUGIN_KEY);
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
+      .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JS_PLUGIN_KEY);
   }
 
   @Test
@@ -165,8 +166,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void analysisJavascriptWithoutTypescript() throws Exception {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(config(), null);
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.TS.getPluginKey());
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
 
     engine.updateProject(config(), PROJECT_KEY_JAVASCRIPT, null);
     SaveIssueListener issueListener = new SaveIssueListener();

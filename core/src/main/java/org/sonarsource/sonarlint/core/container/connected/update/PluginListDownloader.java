@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -35,6 +35,8 @@ import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class PluginListDownloader {
+
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private static final Logger LOG = Loggers.get(PluginListDownloader.class);
 
@@ -69,11 +71,16 @@ public class PluginListDownloader {
   }
 
   private boolean providesAtLeastOneEnabledLanguage(String pluginKey) {
+    // Special case for old TS plugin
+    if (OLD_SONARTS_PLUGIN_KEY.equals(pluginKey)) {
+      return enabledLanguages.contains(Language.TS);
+    }
     return enabledLanguages.stream().anyMatch(language -> pluginKey.equals(language.getPluginKey()));
   }
 
   private static boolean isKnownSonarSourceAnalyzer(String pluginKey) {
-    return Language.containsPlugin(pluginKey);
+    // Special case for old TS plugin
+    return OLD_SONARTS_PLUGIN_KEY.equals(pluginKey) || Language.containsPlugin(pluginKey);
   }
 
   private void checkMinVersion(DefaultSonarAnalyzer analyzer) {

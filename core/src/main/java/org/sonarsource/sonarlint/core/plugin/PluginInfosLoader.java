@@ -43,6 +43,8 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginInfosLoader {
 
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
+
   private static final String IMPLEMENTED_SQ_API = "8.4";
 
   private static final Logger LOG = Loggers.get(PluginInfosLoader.class);
@@ -145,9 +147,11 @@ public class PluginInfosLoader {
       if ("license".equals(required.getKey())) {
         continue;
       }
-      if (Language.JS.getPluginKey().equals(info.getKey()) && Language.TS.getPluginKey().equals(required.getKey())) {
+      if (Language.JS.getPluginKey().equals(info.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey())) {
         // Workaround for SLCORE-259
         // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
+        // Note: The dependency was removed in SonarJS 6.3 but we should still keep the workaround as long as we want to support older
+        // versions
         continue;
       }
       PluginInfo depInfo = infosByKey.get(required.getKey());

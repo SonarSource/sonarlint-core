@@ -19,13 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -55,6 +57,14 @@ public class PluginListDownloaderTest {
     "      \"version\": \"3.4 (build 5828)\"\n" +
     "    },\n" +
     "    {\n" +
+    "      \"key\": \"typescript\",\n" +
+    "      \"filename\": \"sonar-typescript-plugin-1.2.3.4.jar\",\n" +
+    "      \"sonarLintSupported\": true,\n" +
+    "      \"hash\": \"123456789\",\n" +
+    "      \"version\": \"1.2.3\"\n" +
+    "    },\n" +
+    "    {\n"
+    +
     "      \"key\": \"java\",\n" +
     "      \"filename\": \"sonar-java-plugin-4.0.0.1234.jar\",\n" +
     "      \"sonarLintSupported\": true,\n" +
@@ -63,19 +73,19 @@ public class PluginListDownloaderTest {
     "    } ]}";
 
   private SonarLintWsClient wsClient;
-  private PluginVersionChecker pluginVersionChecker = mock(PluginVersionChecker.class);
-  private ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
+  private final PluginVersionChecker pluginVersionChecker = mock(PluginVersionChecker.class);
+  private final ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
 
   @Before
   public void setUp() {
     when(pluginVersionChecker.getMinimumVersion(anyString())).thenReturn("1.0");
     when(pluginVersionChecker.isVersionSupported(anyString(), anyString())).thenReturn(true);
     when(pluginVersionChecker.isVersionSupported(eq("javascript"), anyString())).thenReturn(false);
-    when(globalConfig.getEnabledLanguages()).thenReturn(Collections.singleton(Language.JS));
   }
 
   @Test
-  public void testParsing() {
+  public void testParsing_typescript_disabled() {
+    when(globalConfig.getEnabledLanguages()).thenReturn(Collections.singleton(Language.JS));
     wsClient = WsClientTestUtils.createMockWithResponse("/api/plugins/installed", RESPONSE_67);
     List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList();
     assertThat(pluginList)
@@ -86,6 +96,26 @@ public class PluginListDownloaderTest {
         // Not part of enabled languages
         tuple("java", "sonar-java-plugin-4.0.0.1234.jar", "foobar", "4.0.0.1234", false, true),
         // Enabled language
-        tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true, false));
+        tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true, false),
+        // TS disabled
+        tuple("typescript", "sonar-typescript-plugin-1.2.3.4.jar", "123456789", "1.2.3.4", false, true));
+  }
+
+  @Test
+  public void testParsing_typescript_enabled() {
+    when(globalConfig.getEnabledLanguages()).thenReturn(new HashSet<>(Arrays.asList(Language.JS, Language.TS)));
+    wsClient = WsClientTestUtils.createMockWithResponse("/api/plugins/installed", RESPONSE_67);
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, wsClient, pluginVersionChecker).downloadPluginList();
+    assertThat(pluginList)
+      .extracting(SonarAnalyzer::key, SonarAnalyzer::filename, SonarAnalyzer::hash, SonarAnalyzer::version, SonarAnalyzer::sonarlintCompatible, SonarAnalyzer::versionSupported)
+      .containsOnly(
+        // Don't have the sonarlint-supported flag
+        tuple("branch", "sonar-branch-plugin-1.1.0.879.jar", "064d334d27aa14aab6e39315428ee3cf", "1.1.0.879", false, true),
+        // Not part of enabled languages
+        tuple("java", "sonar-java-plugin-4.0.0.1234.jar", "foobar", "4.0.0.1234", false, true),
+        // Enabled language
+        tuple("javascript", "sonar-javascript-plugin-3.4.0.5828.jar", "d136fdb31fe38c3d780650f7228a49fa", "3.4.0.5828", true, false),
+        // TS disabled
+        tuple("typescript", "sonar-typescript-plugin-1.2.3.4.jar", "123456789", "1.2.3.4", true, true));
   }
 }
