@@ -38,7 +38,7 @@
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>3.14.2</okhttp.version>
-    <junit.version>4.12</junit.version>
+    <junit.version>4.13.1</junit.version>
     <junit.jupiter.version>5.7.0</junit.jupiter.version>
     <junit.vintage.version>5.7.0</junit.vintage.version>
     <jarsigner.skip>true</jarsigner.skip>
