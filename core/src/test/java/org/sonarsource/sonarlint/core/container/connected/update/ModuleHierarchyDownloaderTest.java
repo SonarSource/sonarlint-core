@@ -26,8 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonarqube.ws.Common.Paging;
-import org.sonarqube.ws.WsComponents.Component;
-import org.sonarqube.ws.WsComponents.TreeWsResponse;
+import org.sonarqube.ws.Components.Component;
+import org.sonarqube.ws.Components.TreeWsResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -78,7 +78,6 @@ public class ModuleHierarchyDownloaderTest {
       .setPaging(Paging.newBuilder().setTotal(PAGE_SIZE));
     for (int i = 0; i < PAGE_SIZE; i++) {
       responseBuilder.addComponents(Component.newBuilder()
-        .setId("id" + i)
         .setKey("testRoot" + i));
       WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot" + i, "/update/show_module1.pb");
     }
@@ -96,7 +95,6 @@ public class ModuleHierarchyDownloaderTest {
       .setPaging(Paging.newBuilder().setPageIndex(1).setTotal(501));
     for (int i = 0; i < PAGE_SIZE; i++) {
       responseBuilder.addComponents(Component.newBuilder()
-        .setId("id" + i)
         .setKey("testRoot" + i));
       WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot" + i, "/update/show_module1.pb");
     }
@@ -108,7 +106,6 @@ public class ModuleHierarchyDownloaderTest {
       .setPaging(Paging.newBuilder().setPageIndex(2).setTotal(501));
     for (int i = 501; i < 502; i++) {
       responseBuilder.addComponents(Component.newBuilder()
-        .setId("id" + i)
         .setKey("testRoot" + i));
       WsClientTestUtils.addStreamResponse(wsClient, "api/components/show.protobuf?component=testRoot" + i, "/update/show_module1.pb");
     }

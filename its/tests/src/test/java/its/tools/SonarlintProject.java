@@ -19,46 +19,13 @@
  */
 package its.tools;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class SonarlintProject extends ExternalResource {
-  private Path project;
-
-  /**
-   * Copies project to a temporary location and returns its root path.
-   */
-  public Path deployProject(String location) throws IOException {
-    Path originalLoc = Paths.get("projects").resolve(location);
-    String projectName = originalLoc.getFileName().toString();
-
-    if (!Files.isDirectory(originalLoc)) {
-      throw new IllegalArgumentException("Couldn't find project directory: " + originalLoc.toAbsolutePath().toString());
-    }
-
-    cleanProject();
-    project = Files.createTempDirectory(projectName);
-    FileUtils.copyDirectory(originalLoc.toFile(), project.toFile());
-    return project;
-  }
-
-  private void cleanProject() {
-    if (project != null) {
-      FileUtils.deleteQuietly(project.toFile());
-      project = null;
-    }
-  }
-
-  @Override
-  protected void after() {
-    cleanProject();
-  }
 
   public List<Path> collectAllFiles(Path path) throws IOException {
     InputFileFinder fileFinder = new InputFileFinder(null);

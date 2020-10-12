@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,18 +54,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarqube.ws.client.qualityprofile.ActivateRuleWsRequest;
-import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
-import org.sonarqube.ws.client.setting.ResetRequest;
-import org.sonarqube.ws.client.setting.SetRequest;
-import org.sonarqube.ws.client.user.CreateRequest;
+import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
+import org.sonarqube.ws.client.qualityprofiles.ActivateRuleRequest;
+import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
+import org.sonarqube.ws.client.settings.ResetRequest;
+import org.sonarqube.ws.client.settings.SetRequest;
+import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
@@ -80,6 +79,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 
 import static its.tools.ItUtils.SONAR_VERSION;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -160,12 +160,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
+    adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
 
-    adminWsClient.users().create(CreateRequest.builder().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint").build());
+    adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
@@ -275,8 +275,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @After
   public void stop() {
-    adminWsClient.settings().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").build());
-    adminWsClient.settings().reset(ResetRequest.builder().setKeys("sonar.java.file.suffixes").setComponent(PROJECT_KEY_JAVA).build());
+    adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
+    adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")).setComponent(PROJECT_KEY_JAVA));
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -539,11 +539,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisTemplateRule() throws Exception {
-    SearchWsRequest searchReq = new SearchWsRequest();
+    SearchRequest searchReq = new SearchRequest();
     searchReq.setQualityProfile("SonarLint IT Java");
-    searchReq.setProjectKey(PROJECT_KEY_JAVA);
-    searchReq.setDefaults(false);
-    SearchWsResponse search = adminWsClient.qualityProfiles().search(searchReq);
+    searchReq.setProject(PROJECT_KEY_JAVA);
+    searchReq.setDefaults("false");
+    SearchWsResponse search = adminWsClient.qualityprofiles().search(searchReq);
     QualityProfile qp = null;
     for (QualityProfile q : search.getProfilesList()) {
       if (q.getName().equals("SonarLint IT Java")) {
@@ -682,9 +682,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // Change a global setting that *is* in the whitelist
     setSettingsMultiValue(null, "sonar.inclusions", "**/*");
     // Activate a new rule
-    SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
+    SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityprofiles().search(new SearchRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    adminWsClient.qualityProfiles().activateRule(ActivateRuleWsRequest.builder().setKey(profileKey).setRuleKey(javaRuleKey("S1228")).build());
+    adminWsClient.qualityprofiles().activateRule(new ActivateRuleRequest().setKey(profileKey).setRule(javaRuleKey("S1228")));
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
@@ -707,7 +707,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void getProject() throws Exception {
+  public void getProject() {
     WsHelper helper = new WsHelperImpl();
     assertThat(helper.getProject(getServerConfig(), "foo", null)).isNotPresent();
     assertThat(helper.getProject(getServerConfig(), PROJECT_KEY_RUBY, null)).isPresent();
@@ -754,19 +754,17 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
-    adminWsClient.settings().set(SetRequest.builder()
+    adminWsClient.settings().set(new SetRequest()
       .setKey(key)
-      .setValues(Collections.singletonList(value))
-      .setComponent(moduleKey)
-      .build());
+      .setValues(singletonList(value))
+      .setComponent(moduleKey));
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    adminWsClient.settings().set(SetRequest.builder()
+    adminWsClient.settings().set(new SetRequest()
       .setKey(key)
       .setValue(value)
-      .setComponent(moduleKey)
-      .build());
+      .setComponent(moduleKey));
   }
 
   private void updateProject(String projectKey) {
@@ -790,7 +788,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
+    adminWsClient.permissions().removeGroup(new RemoveGroupRequest()
       .setGroupName(groupName)
       .setPermission(permission));
   }

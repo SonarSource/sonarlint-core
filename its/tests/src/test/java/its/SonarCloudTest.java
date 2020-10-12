@@ -46,19 +46,20 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
+import org.sonarqube.ws.MediaTypes;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.qualityprofile.ActivateRuleWsRequest;
-import org.sonarqube.ws.client.qualityprofile.AddProjectRequest;
-import org.sonarqube.ws.client.qualityprofile.RestoreWsRequest;
-import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
-import org.sonarqube.ws.client.setting.ResetRequest;
-import org.sonarqube.ws.client.setting.SetRequest;
+import org.sonarqube.ws.client.qualityprofiles.ActivateRuleRequest;
+import org.sonarqube.ws.client.qualityprofiles.AddProjectRequest;
+import org.sonarqube.ws.client.qualityprofiles.DeactivateRuleRequest;
+import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
+import org.sonarqube.ws.client.settings.ResetRequest;
+import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
@@ -166,34 +167,33 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @AfterClass
   public static void cleanup() {
-    adminWsClient.projects().bulkDelete(org.sonarqube.ws.client.project.SearchWsRequest.builder()
-      .setQuery("-" + randomPositiveInt)
-      .setOrganization(SONARCLOUD_ORGANIZATION)
-      .build());
+    adminWsClient.projects().bulkDelete(new org.sonarqube.ws.client.projects.BulkDeleteRequest()
+      .setQ("-" + randomPositiveInt)
+      .setOrganization(SONARCLOUD_ORGANIZATION));
   }
 
   private static void associateProjectToQualityProfile(String projectKey, String language, String profileName) {
-    adminWsClient.qualityProfiles().addProject(AddProjectRequest.builder()
-      .setProjectKey(projectKey(projectKey))
+    adminWsClient.qualityprofiles().addProject(new AddProjectRequest()
+      .setProject(projectKey(projectKey))
       .setLanguage(language)
       .setQualityProfile(profileName)
-      .setOrganization(SONARCLOUD_ORGANIZATION)
-      .build());
+      .setOrganization(SONARCLOUD_ORGANIZATION));
   }
 
   private static void restoreProfile(String profile) {
-    adminWsClient.qualityProfiles().restoreProfile(RestoreWsRequest.builder()
-      .setBackup(Paths.get("src/test/resources/" + profile).toFile())
-      .setOrganization(SONARCLOUD_ORGANIZATION)
-      .build());
+    File backupFile = new File("src/test/resources/" + profile);
+    // XXX can't use RestoreRequest because of a bug
+    PostRequest request = new PostRequest("api/qualityprofiles/restore");
+    request.setParam("organization", SONARCLOUD_ORGANIZATION);
+    request.setPart("backup", new PostRequest.Part(MediaTypes.XML, backupFile));
+    adminWsClient.wsConnector().call(request);
   }
 
   private static void provisionProject(String key, String name) {
-    adminWsClient.projects().create(org.sonarqube.ws.client.project.CreateRequest.builder()
-      .setKey(projectKey(key))
+    adminWsClient.projects().create(new org.sonarqube.ws.client.projects.CreateRequest()
+      .setProject(projectKey(key))
       .setName(name)
-      .setOrganization(SONARCLOUD_ORGANIZATION)
-      .build());
+      .setOrganization(SONARCLOUD_ORGANIZATION));
   }
 
   private static String projectKey(String key) {
@@ -201,7 +201,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Before
-  public void start() {
+  public void start() throws IOException {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -237,10 +237,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @After
   public void stop() {
-    adminWsClient.settings().reset(ResetRequest.builder()
-      .setKeys("sonar.java.file.suffixes")
-      .setComponent(projectKey(PROJECT_KEY_JAVA))
-      .build());
+    adminWsClient.settings().reset(new ResetRequest()
+      .setKeys(Collections.singletonList("sonar.java.file.suffixes"))
+      .setComponent(projectKey(PROJECT_KEY_JAVA)));
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -481,13 +480,14 @@ public class SonarCloudTest extends AbstractConnectedTest {
     assertThat(result.needUpdate()).isFalse();
 
     // Toggle a rule to ensure quality profile date is changed
-    SearchWsResponse response = adminWsClient.qualityProfiles().search(new SearchWsRequest().setOrganizationKey(SONARCLOUD_ORGANIZATION).setLanguage("java"));
+    SearchWsResponse response = adminWsClient.qualityprofiles().search(new SearchRequest().setOrganization(SONARCLOUD_ORGANIZATION).setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    adminWsClient.qualityProfiles().deactivateRule(profileKey, "java:S1228");
-    adminWsClient.qualityProfiles().activateRule(ActivateRuleWsRequest.builder()
+    adminWsClient.qualityprofiles().deactivateRule(new DeactivateRuleRequest()
       .setKey(profileKey)
-      .setRuleKey("java:S1228")
-      .build());
+      .setRule("java:S1228"));
+    adminWsClient.qualityprofiles().activateRule(new ActivateRuleRequest()
+      .setKey(profileKey)
+      .setRule("java:S1228"));
 
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
     assertThat(result.needUpdate()).isTrue();
@@ -510,7 +510,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadUserOrganizations() throws Exception {
+  public void downloadUserOrganizations() {
     WsHelper helper = new WsHelperImpl();
     assertThat(helper.listUserOrganizations(getServerConfig(), null)).hasSize(1);
   }
@@ -525,7 +525,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void getProject() throws Exception {
+  public void getProject() {
     WsHelper helper = new WsHelperImpl();
     assertThat(helper.getProject(getServerConfig(), projectKey("foo"), null)).isNotPresent();
     assertThat(helper.getProject(getServerConfig(), projectKey(PROJECT_KEY_RUBY), null)).isPresent();
@@ -579,19 +579,17 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
-    adminWsClient.settings().set(SetRequest.builder()
+    adminWsClient.settings().set(new SetRequest()
       .setKey(key)
       .setValues(Collections.singletonList(value))
-      .setComponent(moduleKey)
-      .build());
+      .setComponent(moduleKey));
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    adminWsClient.settings().set(SetRequest.builder()
+    adminWsClient.settings().set(new SetRequest()
       .setKey(key)
       .setValue(value)
-      .setComponent(moduleKey)
-      .build());
+      .setComponent(moduleKey));
   }
 
   private void updateProject(String projectKey) {

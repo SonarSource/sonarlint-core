@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import org.sonarqube.ws.WsComponents.ShowWsResponse;
+import org.sonarqube.ws.Components.ShowWsResponse;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 
