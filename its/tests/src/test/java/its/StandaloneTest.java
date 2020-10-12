@@ -90,7 +90,7 @@ public class StandaloneTest {
   }
 
   @Test
-  public void checkRuleParameterDeclarations() throws Exception {
+  public void checkRuleParameterDeclarations() {
     Collection<StandaloneRuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
     StandaloneRuleDetails incRule = ruleDetails.iterator().next();

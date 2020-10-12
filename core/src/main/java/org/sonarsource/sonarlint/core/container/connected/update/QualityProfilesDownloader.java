@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.nio.file.Path;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.QualityProfiles;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarqube.ws.Qualityprofiles;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -56,7 +56,7 @@ public class QualityProfilesDownloader {
     SonarLintWsClient.consumeTimed(
       () -> wsClient.get(searchUrl.toString()),
       response -> {
-        SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(response.contentStream());
+        SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.contentStream());
         for (QualityProfile qp : qpResponse.getProfilesList()) {
           QProfile.Builder qpBuilder = QProfile.newBuilder();
           qpBuilder.setKey(qp.getKey());

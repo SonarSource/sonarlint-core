@@ -39,9 +39,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarqube.ws.client.setting.SetRequest;
-import org.sonarqube.ws.client.user.CreateRequest;
+import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
+import org.sonarqube.ws.client.settings.SetRequest;
+import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -86,12 +86,12 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
+    adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
 
-    adminWsClient.users().create(CreateRequest.builder().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint").build());
+    adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_C, "Sample C");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
@@ -207,7 +207,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
+    adminWsClient.permissions().removeGroup(new RemoveGroupRequest()
       .setGroupName(groupName)
       .setPermission(permission));
   }
