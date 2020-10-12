@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.sonarqube.ws.WsComponents;
+import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -39,9 +39,9 @@ public class ProjectFileListDownloader {
     List<String> files = new ArrayList<>();
 
     SonarLintWsClient.getPaginated(wsClient, path,
-      WsComponents.TreeWsResponse::parseFrom,
-      WsComponents.TreeWsResponse::getPaging,
-      WsComponents.TreeWsResponse::getComponentsList,
+      Components.TreeWsResponse::parseFrom,
+      Components.TreeWsResponse::getPaging,
+      Components.TreeWsResponse::getComponentsList,
       component -> files.add(component.getKey()), false, progress);
     return files;
   }

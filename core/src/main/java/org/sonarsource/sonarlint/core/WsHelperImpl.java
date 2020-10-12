@@ -28,8 +28,8 @@ import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Organizations;
-import org.sonarqube.ws.WsComponents;
-import org.sonarqube.ws.WsComponents.ShowWsResponse;
+import org.sonarqube.ws.Components;
+import org.sonarqube.ws.Components.ShowWsResponse;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
@@ -134,7 +134,7 @@ public class WsHelperImpl implements WsHelper {
       () -> client.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey)),
       response -> {
         if (response.isSuccessful()) {
-          return Optional.of(WsComponents.ShowWsResponse.parseFrom(response.contentStream()));
+          return Optional.of(Components.ShowWsResponse.parseFrom(response.contentStream()));
         }
         return Optional.empty();
       },

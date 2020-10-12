@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import org.sonarqube.ws.WsComponents;
-import org.sonarqube.ws.WsComponents.Component;
+import org.sonarqube.ws.Components;
+import org.sonarqube.ws.Components.Component;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -56,9 +56,9 @@ public class ModuleHierarchyDownloader {
     List<Component> modules = new ArrayList<>();
 
     SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
-      WsComponents.TreeWsResponse::parseFrom,
-      WsComponents.TreeWsResponse::getPaging,
-      WsComponents.TreeWsResponse::getComponentsList,
+      Components.TreeWsResponse::parseFrom,
+      Components.TreeWsResponse::getPaging,
+      Components.TreeWsResponse::getComponentsList,
       modules::add,
       true,
       progress);

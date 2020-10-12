@@ -42,15 +42,10 @@
       <artifactId>jetty-server</artifactId>
       <version>9.4.17.v20190418</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>26.0-android</version>
+    </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>26.0-android</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 </project>

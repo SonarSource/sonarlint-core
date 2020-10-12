@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
-import org.sonarqube.ws.WsComponents;
+import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -47,9 +47,9 @@ public class ProjectListDownloader {
     wsClient.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
     SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
-      WsComponents.SearchWsResponse::parseFrom,
-      WsComponents.SearchWsResponse::getPaging,
-      WsComponents.SearchWsResponse::getComponentsList,
+      Components.SearchWsResponse::parseFrom,
+      Components.SearchWsResponse::getPaging,
+      Components.SearchWsResponse::getComponentsList,
       project -> {
         projectBuilder.clear();
         projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
