@@ -35,12 +35,6 @@ public class GlobalSensor implements Sensor {
 
   private static final Logger LOGGER = Loggers.get(GlobalSensor.class);
 
-  private GlobalExtension globalExtension;
-
-  public GlobalSensor(GlobalExtension globalExtension) {
-    this.globalExtension = globalExtension;
-  }
-
   @Override
   public void describe(final SensorDescriptor descriptor) {
     descriptor.name("Global")
@@ -62,7 +56,7 @@ public class GlobalSensor implements Sensor {
       NewIssue newIssue = context.newIssue();
       newIssue
         .forRule(globalRuleKey)
-        .at(newIssue.newLocation().on(f).message("Issue number " + globalExtension.getAndInc()))
+        .at(newIssue.newLocation().on(f).message("Issue number " + GlobalExtension.getInstance().getAndInc()))
         .save();
     }
   }
