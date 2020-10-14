@@ -30,13 +30,19 @@ import static org.sonarsource.api.sonarlint.SonarLintSide.MULTIPLE_ANALYSES;
 @SonarLintSide(lifespan = MULTIPLE_ANALYSES)
 public class GlobalExtension implements Startable {
 
+  public static GlobalExtension getInstance() {
+    return instance;
+  }
+
   private static final Logger LOG = Loggers.get(GlobalExtension.class);
+  private static GlobalExtension instance;
 
   private int counter;
 
   private final Configuration config;
 
   public GlobalExtension(Configuration config) {
+    instance = this;
     this.config = config;
   }
 
