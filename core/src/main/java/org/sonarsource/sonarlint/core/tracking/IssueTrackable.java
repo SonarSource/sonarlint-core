@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import javax.annotation.Nullable;
+
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;

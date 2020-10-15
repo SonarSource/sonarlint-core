@@ -31,6 +31,8 @@ import org.sonarqube.ws.Organizations;
 import org.sonarqube.ws.Components;
 import org.sonarqube.ws.Components.ShowWsResponse;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
+import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
@@ -42,6 +44,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.connected.vulnerability.SecurityHotspotsService;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -127,6 +130,12 @@ public class WsHelperImpl implements WsHelper {
     SonarLintWsClient client = createClient(serverConfig);
     return fetchComponent(client, projectKey)
       .map(DefaultRemoteProject::new);
+  }
+
+  @Override
+  public Optional<RemoteHotspot> getHotspot(ServerConfiguration serverConfig, GetSecurityHotspotRequestParams requestParams) {
+    SecurityHotspotsService service = new SecurityHotspotsService(createClient(serverConfig));
+    return service.fetch(requestParams);
   }
 
   public static Optional<ShowWsResponse> fetchComponent(SonarLintWsClient client, String componentKey) {

@@ -60,4 +60,6 @@ public interface WsHelper {
    * @since 4.0
    */
   Optional<RemoteProject> getProject(ServerConfiguration serverConfig, String projectKey, ProgressMonitor monitor);
+
+  Optional<RemoteHotspot> getHotspot(ServerConfiguration serverConfig, GetSecurityHotspotRequestParams requestParams);
 }
