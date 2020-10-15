@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.client.api.common;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class TextRange {
+
   private final Integer startLine;
   private final Integer startLineOffset;
   private final Integer endLine;
@@ -31,7 +33,7 @@ public class TextRange {
     this(line, null, null, null);
   }
 
-  public TextRange(Integer startLine, Integer startLineOffset, Integer endLine, Integer endLineOffset) {
+  public TextRange(Integer startLine, @Nullable Integer startLineOffset, @Nullable Integer endLine, @Nullable Integer endLineOffset) {
     this.startLine = startLine;
     this.startLineOffset = startLineOffset;
     this.endLine = endLine;

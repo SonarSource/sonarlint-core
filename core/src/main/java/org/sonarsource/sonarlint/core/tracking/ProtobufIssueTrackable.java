@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Issues.Issue;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
