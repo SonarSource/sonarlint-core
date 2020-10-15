@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+public class GetSecurityHotspotRequestParams {
+  public final String hotspotKey;
+  public final String projectKey;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TextRangeTest {
-  @Test
-  public void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
-    int line = 7;
-    TextRange lineOnlyTextRange = new TextRange(line);
-    assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
-    assertThat(lineOnlyTextRange.getStartLineOffset()).isNull();
-    assertThat(lineOnlyTextRange.getEndLine()).isNull();
-    assertThat(lineOnlyTextRange.getEndLineOffset()).isNull();
+  public GetSecurityHotspotRequestParams(String hotspotKey, String projectKey) {
+    this.hotspotKey = hotspotKey;
+    this.projectKey = projectKey;
   }
 }

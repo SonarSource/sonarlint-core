@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 

@@ -19,6 +19,8 @@
  */
 package its;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Parser;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
@@ -36,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -54,6 +57,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.PostRequest;
@@ -71,12 +75,17 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
+import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
+import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.container.connected.vulnerability.SecurityHotspotsService;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
@@ -160,10 +169,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     sonarUserHome = temp.newFolder().toPath();
-
-    removeGroupPermission("anyone", "scan");
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -295,6 +301,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void updateNoAuth() {
+    adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     try {
       engine.update(ServerConfiguration.builder()
         .url(ORCHESTRATOR.getServer().getUrl())
@@ -303,6 +310,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
+    }
+    finally {
+      adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("false"));
     }
   }
 
@@ -465,6 +475,35 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       assertThat(issueListener.getIssues()).hasSize(1);
       assertThat(issueListener.getIssues().get(0).getType()).isEqualTo("VULNERABILITY");
     }
+  }
+
+  @Test
+  public void canFetchHotspot() throws InvalidProtocolBufferException {
+    assumeTrue("SonarQube should support opening security hotspots",
+      ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6));
+
+    analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
+    SonarLintWsClient slClient = new SonarLintWsClient(getServerConfig());
+    SecurityHotspotsService securityHotspotsService = new SecurityHotspotsService(slClient);
+
+    Optional<RemoteHotspot> remoteHotspot = securityHotspotsService.fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(slClient, PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
+
+    assertThat(remoteHotspot).isNotEmpty();
+    RemoteHotspot actualHotspot = remoteHotspot.get();
+    assertThat(actualHotspot.message).isEqualTo("Make sure using this hardcoded IP address is safe here.");
+    assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
+    assertThat(actualHotspot.textRange).isEqualToComparingFieldByField(new TextRange(5, 14, 5, 29));
+    assertThat(actualHotspot.author).isEmpty();
+    assertThat(actualHotspot.status).isEqualTo(RemoteHotspot.Status.TO_REVIEW);
+    assertThat(actualHotspot.resolution).isNull();
+    assertThat(actualHotspot.rule.key).isEqualTo("java:S1313");
+
+  }
+
+  private String getFirstHotspotKey(SonarLintWsClient client, String projectKey) throws InvalidProtocolBufferException {
+    org.sonarsource.sonarlint.core.util.ws.WsResponse wsResponse = client.get("/api/hotspots/search.protobuf?projectKey=" + projectKey);
+    Parser<Hotspots.SearchWsResponse> parser = Hotspots.SearchWsResponse.parser();
+    return parser.parseFrom(wsResponse.contentStream()).getHotspots(0).getKey();
   }
 
   @Test
@@ -791,6 +830,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     adminWsClient.permissions().removeGroup(new RemoveGroupRequest()
       .setGroupName(groupName)
       .setPermission(permission));
+  }
+
+  private static void analyzeMavenProject(String projectDirName) {
+    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    Path pom = projectDir.resolve("pom.xml");
+    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile()).setCleanPackageSonarGoals());
   }
 
 }
