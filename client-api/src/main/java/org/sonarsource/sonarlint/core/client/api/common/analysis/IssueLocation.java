@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+
 import javax.annotation.CheckForNull;
 
 public interface IssueLocation {
@@ -30,17 +32,32 @@ public interface IssueLocation {
   ClientInputFile getInputFile();
 
   @CheckForNull
-  Integer getStartLine();
-
-  @CheckForNull
-  Integer getEndLine();
-
-  @CheckForNull
-  Integer getStartLineOffset();
-
-  @CheckForNull
-  Integer getEndLineOffset();
+  TextRange getTextRange();
 
   @CheckForNull
   String getMessage();
+
+  @CheckForNull
+  default Integer getStartLine() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getStartLine() : null;
+  }
+
+  @CheckForNull
+  default Integer getStartLineOffset() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getStartLineOffset() : null;
+  }
+
+  @CheckForNull
+  default Integer getEndLine() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getEndLine() : null;
+  }
+
+  @CheckForNull
+  default Integer getEndLineOffset() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getEndLineOffset() : null;
+  }
 }
