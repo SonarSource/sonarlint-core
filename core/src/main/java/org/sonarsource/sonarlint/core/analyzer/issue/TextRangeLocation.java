@@ -20,34 +20,27 @@
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import javax.annotation.Nullable;
+
 import org.sonar.api.batch.fs.TextRange;
 
 abstract class TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
 
-  final TextRange textRange;
+  final TextRange originalTextRange;
+  private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
 
-  TextRangeLocation(@Nullable TextRange textRange) {
-    this.textRange = textRange;
+  TextRangeLocation(@Nullable TextRange originalTextRange) {
+    this.originalTextRange = originalTextRange;
+    this.textRange = originalTextRange != null ?
+      new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+        originalTextRange.start().line(),
+        originalTextRange.start().lineOffset(),
+        originalTextRange.end().line(),
+        originalTextRange.end().lineOffset())
+      : null;
   }
 
   @Override
-  public Integer getStartLineOffset() {
-    return textRange != null ? textRange.start().lineOffset() : null;
+  public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
+    return textRange;
   }
-
-  @Override
-  public Integer getStartLine() {
-    return textRange != null ? textRange.start().line() : null;
-  }
-
-  @Override
-  public Integer getEndLineOffset() {
-    return textRange != null ? textRange.end().lineOffset() : null;
-  }
-
-  @Override
-  public Integer getEndLine() {
-    return textRange != null ? textRange.end().line() : null;
-  }
-
 }

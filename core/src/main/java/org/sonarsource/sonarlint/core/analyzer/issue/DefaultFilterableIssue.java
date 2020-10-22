@@ -33,7 +33,6 @@ public class DefaultFilterableIssue implements FilterableIssue {
   public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent component) {
     this.rawIssue = rawIssue;
     this.component = component;
-
   }
 
   @Override
@@ -86,7 +85,7 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public TextRange textRange() {
-    return rawIssue.textRange;
+    return rawIssue.originalTextRange;
   }
 
 }
