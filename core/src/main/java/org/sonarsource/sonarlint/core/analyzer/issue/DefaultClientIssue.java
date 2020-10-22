@@ -91,8 +91,9 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     sb.append("[");
     sb.append("rule=").append(activeRule.ruleKey());
     sb.append(", severity=").append(severity);
-    if (textRange != null) {
-      sb.append(", line=").append(textRange.start().line());
+    Integer startLine = getStartLine();
+    if (startLine != null) {
+      sb.append(", line=").append(startLine);
     }
     if (clientInputFile != null) {
       sb.append(", file=").append(clientInputFile.uri());
