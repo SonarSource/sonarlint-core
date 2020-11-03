@@ -61,7 +61,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>29.0-jre</version>
+      <version>30.0-jre</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -110,7 +110,7 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.11</version>
+      <version>1.15</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -152,13 +152,13 @@
     <dependency>
       <groupId>com.github.stefanbirkner</groupId>
       <artifactId>system-rules</artifactId>
-      <version>1.16.0</version>
+      <version>1.19.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.0.1</version>
+      <version>4.0.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
