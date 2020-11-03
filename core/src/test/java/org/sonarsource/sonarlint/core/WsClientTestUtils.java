@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static java.util.Objects.requireNonNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +49,12 @@ public class WsClientTestUtils {
     SonarLintWsClient wsClient = mock(SonarLintWsClient.class);
     when(wsClient.getUserAgent()).thenReturn("UT");
     return wsClient;
+  }
+
+  public static void addStreamResponse(SonarLintWsClient wsClient, String response) {
+    WsResponse wsResponse = mock(WsResponse.class);
+    when(wsClient.get(any())).thenReturn(wsResponse);
+    when(wsResponse.contentStream()).thenReturn(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)));
   }
 
   public static SonarLintWsClient addResponse(SonarLintWsClient wsClient, String url, String response) {

@@ -85,7 +85,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.connected.vulnerability.SecurityHotspotsService;
+import org.sonarsource.sonarlint.core.container.connected.hotspot.SecurityHotspotsService;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
