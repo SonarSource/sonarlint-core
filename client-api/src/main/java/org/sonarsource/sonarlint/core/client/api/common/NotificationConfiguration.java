@@ -19,18 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 
 public class NotificationConfiguration {
-  private ServerNotificationListener listener;
-  private LastNotificationTime lastNotificationTime;
-  private String projectKey;
-  private ServerConfiguration serverConfiguration;
+  private final ServerNotificationListener listener;
+  private final LastNotificationTime lastNotificationTime;
+  private final String projectKey;
+  private final Supplier<ServerConfiguration> serverConfiguration;
 
   public NotificationConfiguration(ServerNotificationListener listener, LastNotificationTime lastNotificationTime,
-    String projectKey, ServerConfiguration serverConfiguration) {
+    String projectKey, Supplier<ServerConfiguration> serverConfiguration) {
     this.listener = listener;
     this.lastNotificationTime = lastNotificationTime;
     this.projectKey = projectKey;
@@ -49,7 +50,7 @@ public class NotificationConfiguration {
     return projectKey;
   }
 
-  public ServerConfiguration serverConfiguration() {
+  public Supplier<ServerConfiguration> serverConfiguration() {
     return serverConfiguration;
   }
 }
