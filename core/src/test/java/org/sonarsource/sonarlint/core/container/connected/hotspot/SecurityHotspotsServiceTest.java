@@ -68,6 +68,13 @@ public class SecurityHotspotsServiceTest {
   }
 
   @Test
+  public void it_should_urlencode_the_hotspot_and_project_keys_when_fetching_hotspot_details() {
+    service.fetch(new GetSecurityHotspotRequestParams("hot/spot", "pro/ject"));
+
+    verify(wsClient).get("/api/hotspots/show.protobuf?projectKey=pro%2Fject&hotspot=hot%2Fspot");
+  }
+
+  @Test
   public void it_should_parse_the_response() throws InvalidProtocolBufferException {
     WsClientTestUtils.addStreamResponse(this.wsClient, "response");
 
