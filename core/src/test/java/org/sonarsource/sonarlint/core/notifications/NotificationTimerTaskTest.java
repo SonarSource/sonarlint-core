@@ -28,8 +28,8 @@ import org.mockito.ArgumentMatchers;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class NotificationTimerTaskTest {
-  private SonarQubeNotificationListener listener = mock(SonarQubeNotificationListener.class);
+  private ServerNotificationListener listener = mock(ServerNotificationListener.class);
   private NotificationChecker notificationChecker = mock(NotificationChecker.class);
   private NotificationCheckerFactory notificationCheckerFactory = mock(NotificationCheckerFactory.class);
   private LastNotificationTime notificationTime = mock(LastNotificationTime.class);
@@ -88,7 +88,7 @@ public class NotificationTimerTaskTest {
     when(notificationTime.get()).thenReturn(ZonedDateTime.now().minusDays(30));
 
     // return one notification for our project
-    SonarQubeNotification notif = mock(SonarQubeNotification.class);
+    ServerNotification notif = mock(ServerNotification.class);
     when(notif.projectKey()).thenReturn("myproject");
     when(notificationChecker.request(anyMap())).thenReturn(Collections.singletonList(notif));
 
@@ -110,7 +110,7 @@ public class NotificationTimerTaskTest {
   @Test
   public void testSingleProjectWithNotifications() {
     // return one notification for our project
-    SonarQubeNotification notif = mock(SonarQubeNotification.class);
+    ServerNotification notif = mock(ServerNotification.class);
     when(notif.projectKey()).thenReturn("myproject");
     when(notificationChecker.request(Collections.singletonMap("myproject", time))).thenReturn(Collections.singletonList(notif));
 
@@ -129,7 +129,7 @@ public class NotificationTimerTaskTest {
   @Test
   public void testRepeatedProject() {
     // return one notification for our project
-    SonarQubeNotification notif = mock(SonarQubeNotification.class);
+    ServerNotification notif = mock(ServerNotification.class);
     when(notif.projectKey()).thenReturn("myproject");
     when(notificationChecker.request(Collections.singletonMap("myproject", time))).thenReturn(Collections.singletonList(notif));
 

@@ -32,7 +32,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
@@ -66,7 +66,7 @@ public class NotificationCheckerTest {
     SonarLintWsClient client = WsClientTestUtils.createMockWithResponse(expectedUrl, VALID_RESPONSE);
 
     NotificationChecker checker = new NotificationChecker(client);
-    List<SonarQubeNotification> notifications = checker.request(Collections.singletonMap("myproject", timestamp));
+    List<ServerNotification> notifications = checker.request(Collections.singletonMap("myproject", timestamp));
 
     assertThat(notifications.size()).isEqualTo(2);
     assertThat(notifications.get(0).category()).isEqualTo("QUALITY_GATE");
@@ -84,7 +84,7 @@ public class NotificationCheckerTest {
     SonarLintWsClient client = WsClientTestUtils.createMockWithResponse(expectedUrl, INVALID_RESPONSE);
 
     NotificationChecker checker = new NotificationChecker(client);
-    List<SonarQubeNotification> notifications = checker.request(Collections.singletonMap("myproject", timestamp));
+    List<ServerNotification> notifications = checker.request(Collections.singletonMap("myproject", timestamp));
     assertThat(notifications).isEmpty();
   }
 
@@ -124,7 +124,7 @@ public class NotificationCheckerTest {
     WsClientTestUtils.addFailedResponse(client, expectedUrl, 404, "failed");
 
     NotificationChecker checker = new NotificationChecker(client);
-    List<SonarQubeNotification> notifications = checker.request(Collections.singletonMap("myproject", timestamp));
+    List<ServerNotification> notifications = checker.request(Collections.singletonMap("myproject", timestamp));
     assertThat(notifications).isEmpty();
   }
 }

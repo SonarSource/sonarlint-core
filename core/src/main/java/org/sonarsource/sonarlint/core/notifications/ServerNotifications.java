@@ -25,13 +25,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 
-public class SonarQubeNotifications {
+public class ServerNotifications {
   static final int DELAY = 60_000;
   private static final Object LOCK = new Object();
 
-  private static SonarQubeNotifications singleton;
+  private static ServerNotifications singleton;
 
   private final List<NotificationConfiguration> configuredNotifications = new CopyOnWriteArrayList<>();
 
@@ -39,19 +39,19 @@ public class SonarQubeNotifications {
   private NotificationTimerTask task;
   private final NotificationCheckerFactory checkerFactory;
 
-  SonarQubeNotifications(Timer timer, NotificationTimerTask task, NotificationCheckerFactory checkerFactory) {
+  ServerNotifications(Timer timer, NotificationTimerTask task, NotificationCheckerFactory checkerFactory) {
     this.timer = timer;
     this.task = task;
     this.checkerFactory = checkerFactory;
     this.timer.scheduleAtFixedRate(task, DELAY, DELAY);
   }
   
-  public static SonarQubeNotifications get() {
+  public static ServerNotifications get() {
     synchronized (LOCK) {
       if (singleton == null) {
         Timer timer = new Timer("Notifications timer", true);
         NotificationTimerTask timerTask = new NotificationTimerTask();
-        singleton = new SonarQubeNotifications(timer, timerTask, new NotificationCheckerFactory());
+        singleton = new ServerNotifications(timer, timerTask, new NotificationCheckerFactory());
       }
       return singleton;
     }
@@ -68,7 +68,7 @@ public class SonarQubeNotifications {
   /**
    * Removes any previously registered projects attached to a listener
    */
-  public void remove(SonarQubeNotificationListener listener) {
+  public void remove(ServerNotificationListener listener) {
     configuredNotifications.removeIf(p -> p.listener().equals(listener));
     task.setProjects(configuredNotifications);
   }

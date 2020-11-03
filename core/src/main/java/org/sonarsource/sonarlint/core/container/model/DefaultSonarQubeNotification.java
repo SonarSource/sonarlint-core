@@ -23,10 +23,10 @@ import java.time.ZonedDateTime;
 
 import javax.annotation.concurrent.Immutable;
 
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 
 @Immutable
-public class DefaultSonarQubeNotification implements SonarQubeNotification {
+public class DefaultSonarQubeNotification implements ServerNotification {
   private final String category;
   private final String message;
   private final String link;

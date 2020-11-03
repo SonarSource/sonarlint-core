@@ -33,9 +33,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 
-public class SonarQubeNotificationsTest {
+public class ServerNotificationsTest {
   private NotificationCheckerFactory checkerFactory;
   private NotificationChecker checker;
   private NotificationTimerTask timerTask;
@@ -53,15 +53,15 @@ public class SonarQubeNotificationsTest {
   
   @Test
   public void testSingleton() {
-    assertThat(SonarQubeNotifications.get()).isEqualTo(SonarQubeNotifications.get());
-    SonarQubeNotifications.get().stop();
+    assertThat(ServerNotifications.get()).isEqualTo(ServerNotifications.get());
+    ServerNotifications.get().stop();
   }
 
   @Test
   public void testRegistration() {
-    SonarQubeNotificationListener listener = mock(SonarQubeNotificationListener.class);
+    ServerNotificationListener listener = mock(ServerNotificationListener.class);
     when(config.listener()).thenReturn(listener);
-    SonarQubeNotifications notifications = new SonarQubeNotifications(timer, timerTask, checkerFactory);
+    ServerNotifications notifications = new ServerNotifications(timer, timerTask, checkerFactory);
 
     notifications.register(config);
     notifications.remove(listener);
@@ -69,12 +69,12 @@ public class SonarQubeNotificationsTest {
     verify(timerTask, times(2)).setProjects(anyCollection());
 
     verifyNoMoreInteractions(timerTask);
-    verify(timer).scheduleAtFixedRate(timerTask, SonarQubeNotifications.DELAY, SonarQubeNotifications.DELAY);
+    verify(timer).scheduleAtFixedRate(timerTask, ServerNotifications.DELAY, ServerNotifications.DELAY);
   }
 
   @Test
   public void testStop() {
-    SonarQubeNotifications notifications = new SonarQubeNotifications(timer, timerTask, checkerFactory);
+    ServerNotifications notifications = new ServerNotifications(timer, timerTask, checkerFactory);
     notifications.stop();
     verify(timer).cancel();
   }
@@ -85,7 +85,7 @@ public class SonarQubeNotificationsTest {
     when(checkerFactory.create(serverConfig)).thenReturn(checker);
     when(checker.isSupported()).thenReturn(true);
 
-    SonarQubeNotifications notifications = new SonarQubeNotifications(timer, timerTask, checkerFactory);
+    ServerNotifications notifications = new ServerNotifications(timer, timerTask, checkerFactory);
     assertThat(notifications.isSupported(serverConfig)).isTrue();
   }
 

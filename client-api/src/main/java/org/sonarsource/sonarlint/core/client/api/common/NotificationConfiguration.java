@@ -20,16 +20,16 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
 
 public class NotificationConfiguration {
-  private SonarQubeNotificationListener listener;
+  private ServerNotificationListener listener;
   private LastNotificationTime lastNotificationTime;
   private String projectKey;
   private ServerConfiguration serverConfiguration;
 
-  public NotificationConfiguration(SonarQubeNotificationListener listener, LastNotificationTime lastNotificationTime,
+  public NotificationConfiguration(ServerNotificationListener listener, LastNotificationTime lastNotificationTime,
     String projectKey, ServerConfiguration serverConfiguration) {
     this.listener = listener;
     this.lastNotificationTime = lastNotificationTime;
@@ -37,7 +37,7 @@ public class NotificationConfiguration {
     this.serverConfiguration = serverConfiguration;
   }
 
-  public SonarQubeNotificationListener listener() {
+  public ServerNotificationListener listener() {
     return listener;
   }
 

@@ -19,16 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.notifications;
 
-import java.time.ZonedDateTime;
-
-public interface SonarQubeNotification {
-  String category();
-
-  String message();
-
-  String link();
-
-  String projectKey();
-  
-  ZonedDateTime time();
+public interface ServerNotificationListener {
+  void handle(ServerNotification notification);
 }

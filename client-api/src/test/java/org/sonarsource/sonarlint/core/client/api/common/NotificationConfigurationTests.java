@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotificationListener;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 class NotificationConfigurationTests {
   @Test
   void testGetters() {
-    SonarQubeNotificationListener listener = mock(SonarQubeNotificationListener.class);
+    ServerNotificationListener listener = mock(ServerNotificationListener.class);
     LastNotificationTime lastNotificationTime = mock(LastNotificationTime.class);
     String projectKey = "key";
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
