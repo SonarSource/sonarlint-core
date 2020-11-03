@@ -94,7 +94,7 @@ class NotificationTimerTask extends TimerTask {
   }
 
   private Map<ServerConfiguration, List<NotificationConfiguration>> groupByServer() {
-    return configuredProjects.stream().collect(Collectors.groupingBy(NotificationConfiguration::serverConfiguration));
+    return configuredProjects.stream().collect(Collectors.groupingBy(n -> n.serverConfiguration().get()));
   }
 
 }

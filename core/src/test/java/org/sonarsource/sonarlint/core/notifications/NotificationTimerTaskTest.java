@@ -40,12 +40,12 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class NotificationTimerTaskTest {
-  private ServerNotificationListener listener = mock(ServerNotificationListener.class);
-  private NotificationChecker notificationChecker = mock(NotificationChecker.class);
-  private NotificationCheckerFactory notificationCheckerFactory = mock(NotificationCheckerFactory.class);
-  private LastNotificationTime notificationTime = mock(LastNotificationTime.class);
+  private final ServerNotificationListener listener = mock(ServerNotificationListener.class);
+  private final NotificationChecker notificationChecker = mock(NotificationChecker.class);
+  private final NotificationCheckerFactory notificationCheckerFactory = mock(NotificationCheckerFactory.class);
+  private final LastNotificationTime notificationTime = mock(LastNotificationTime.class);
 
-  private ZonedDateTime time = ZonedDateTime.now();
+  private final ZonedDateTime time = ZonedDateTime.now();
   private NotificationTimerTask timerTask;
 
   @Before
@@ -162,7 +162,7 @@ public class NotificationTimerTaskTest {
 
     when(project.listener()).thenReturn(listener);
     when(project.projectKey()).thenReturn(key);
-    when(project.serverConfiguration()).thenReturn(config);
+    when(project.serverConfiguration()).thenReturn(() -> config);
     when(project.lastNotificationTime()).thenReturn(notificationTime);
     return project;
   }

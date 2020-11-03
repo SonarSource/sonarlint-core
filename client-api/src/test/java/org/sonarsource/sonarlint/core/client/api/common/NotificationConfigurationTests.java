@@ -34,12 +34,12 @@ class NotificationConfigurationTests {
     LastNotificationTime lastNotificationTime = mock(LastNotificationTime.class);
     String projectKey = "key";
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-    NotificationConfiguration configuration = new NotificationConfiguration(listener, lastNotificationTime, projectKey, serverConfiguration);
+    NotificationConfiguration configuration = new NotificationConfiguration(listener, lastNotificationTime, projectKey, () -> serverConfiguration);
 
     assertThat(configuration.lastNotificationTime()).isEqualTo(lastNotificationTime);
     assertThat(configuration.listener()).isEqualTo(listener);
     assertThat(configuration.projectKey()).isEqualTo(projectKey);
-    assertThat(configuration.serverConfiguration()).isEqualTo(serverConfiguration);
+    assertThat(configuration.serverConfiguration().get()).isEqualTo(serverConfiguration);
 
   }
 }
