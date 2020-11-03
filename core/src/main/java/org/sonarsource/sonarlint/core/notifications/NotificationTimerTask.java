@@ -33,7 +33,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 
 class NotificationTimerTask extends TimerTask {
   // merge with most recent time
@@ -75,9 +75,9 @@ class NotificationTimerTask extends TimerTask {
         .collect(Collectors.toMap(NotificationConfiguration::projectKey, NotificationTimerTask::getLastNotificationTime, MERGE_TIMES));
 
       NotificationChecker notificationChecker = checkerFactory.create(serverConfiguration);
-      List<SonarQubeNotification> notifications = notificationChecker.request(request);
+      List<ServerNotification> notifications = notificationChecker.request(request);
 
-      for (SonarQubeNotification n : notifications) {
+      for (ServerNotification n : notifications) {
         Stream<NotificationConfiguration> matchingConfStream = configs.stream();
         if (n.projectKey() != null) {
           matchingConfStream = matchingConfStream.filter(c -> c.projectKey().equals(n.projectKey()));

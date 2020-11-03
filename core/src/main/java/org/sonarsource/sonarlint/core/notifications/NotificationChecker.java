@@ -32,7 +32,7 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.utils.DateUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarQubeNotification;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -59,7 +59,7 @@ class NotificationChecker {
    * Returns an empty list if an error occurred making the request or parsing the response.
    */
   @CheckForNull
-  public List<SonarQubeNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
+  public List<ServerNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
     String path = getWsPath(projectTimestamps);
     WsResponse wsResponse = wsClient.rawGet(path);
     if (!wsResponse.isSuccessful()) {
@@ -97,8 +97,8 @@ class NotificationChecker {
     return builder.toString();
   }
 
-  private static List<SonarQubeNotification> parseResponse(String contents) {
-    List<SonarQubeNotification> notifications = new ArrayList<>();
+  private static List<ServerNotification> parseResponse(String contents) {
+    List<ServerNotification> notifications = new ArrayList<>();
 
     try {
       JsonParser parser = new JsonParser();
