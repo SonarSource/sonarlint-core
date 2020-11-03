@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import java.util.Optional;
@@ -76,8 +77,8 @@ public class SecurityHotspotsService {
 
   private static String getUrl(String hotspotKey, String projectKey) {
     return HOTSPOTS_API_URL
-      + "?projectKey=" + projectKey
-      + "&hotspot=" + hotspotKey;
+      + "?projectKey=" + StringUtils.urlEncode(projectKey)
+      + "&hotspot=" + StringUtils.urlEncode(hotspotKey);
 
   }
 
