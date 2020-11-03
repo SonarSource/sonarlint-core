@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.container.connected.vulnerability.SecurityHotspotsService;
+import org.sonarsource.sonarlint.core.container.connected.hotspot.SecurityHotspotsService;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;

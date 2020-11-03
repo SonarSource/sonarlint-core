@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.vulnerability;
+package org.sonarsource.sonarlint.core.container.connected.hotspot;
 
 import com.google.protobuf.Parser;
 import org.sonar.api.utils.log.Logger;
@@ -36,15 +36,20 @@ public class SecurityHotspotsService {
   private static final Logger LOG = Loggers.get(SecurityHotspotsService.class);
 
   private static final String HOTSPOTS_API_URL = "/api/hotspots/show.protobuf";
+  private final Parser<Hotspots.ShowWsResponse> parser;
 
   public SecurityHotspotsService(SonarLintWsClient client) {
+    this(client, Hotspots.ShowWsResponse.parser());
+  }
+
+  public SecurityHotspotsService(SonarLintWsClient client, Parser<Hotspots.ShowWsResponse> parser) {
     this.client = client;
+    this.parser = parser;
   }
 
   public Optional<RemoteHotspot> fetch(GetSecurityHotspotRequestParams params) {
     try {
       WsResponse wsResponse = client.get(getUrl(params.hotspotKey, params.projectKey));
-      Parser<Hotspots.ShowWsResponse> parser = Hotspots.ShowWsResponse.parser();
       Hotspots.ShowWsResponse response = parser.parseFrom(wsResponse.contentStream());
       return Optional.of(adapt(response));
     } catch (Exception e) {
