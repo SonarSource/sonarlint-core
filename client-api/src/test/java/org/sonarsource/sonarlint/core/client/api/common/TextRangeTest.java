@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2020 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TextRangeTest {
+class TextRangeTest {
   @Test
-  public void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
+  void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
     int line = 7;
     TextRange lineOnlyTextRange = new TextRange(line);
     assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
