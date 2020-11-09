@@ -82,7 +82,7 @@ public class TelemetryHttpClient {
     String jre = System.getProperty("java.version");
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
-      attributesProvider.devNotificationsDisabled(), data.getDevNotificationsCount(), analyzers);
+      attributesProvider.devNotificationsDisabled(), data.getDevNotificationsCount(), data.getDevNotificationsClicked(), analyzers);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {

@@ -281,7 +281,7 @@ public class TelemetryManagerTest {
   }
 
   @Test
-  public void reporting_received_dev_notifications() throws IOException {
+  public void accumulate_received_dev_notifications() throws IOException {
     createAndSaveSampleData(storage);
 
     TelemetryLocalStorage data = storage.tryLoad();
@@ -301,6 +301,22 @@ public class TelemetryManagerTest {
     assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10 + 3);
   }
 
+  @Test
+  public void accumulate_clicked_dev_notifications() throws IOException {
+    createAndSaveSampleData(storage);
+
+    TelemetryLocalStorage data = storage.tryLoad();
+
+    // note: the manager hasn't seen the saved data
+    manager.devNotificationsClicked();
+    manager.devNotificationsClicked();
+
+    TelemetryLocalStorage reloaded = storage.tryLoad();
+
+    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
+    assertThat(reloaded.getDevNotificationsClicked()).isEqualTo(5 + 2);
+  }
+
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
@@ -309,6 +325,7 @@ public class TelemetryManagerTest {
       data.setLastUploadTime(LocalDateTime.now().minusDays(2));
       data.setNumUseDays(5);
       data.setDevNotificationsCount(10);
+      data.setDevNotificationsClicked(5);
     });
   }
 

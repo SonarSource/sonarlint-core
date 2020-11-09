@@ -107,6 +107,10 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementDevNotificationsCount);
   }
 
+  public void devNotificationsClicked() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementDevNotificationsClicked);
+  }
+
   /**
    * Save and upload lazily telemetry data.
    */
