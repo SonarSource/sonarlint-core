@@ -36,11 +36,10 @@ public class TelemetryManager {
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
-  private final TelemetryStorage storage;
+  private final TelemetryLocalStorageManager storage;
   private final Supplier<Boolean> usesConnectedModeSupplier;
   private final Supplier<Boolean> usesSonarCloudSupplier;
   private final Supplier<String> nodeVersionSupplier;
-  private final TelemetryData data;
   private final TelemetryClient client;
 
   public TelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedModeSupplier, Supplier<Boolean> usesSonarCloudSupplier,
@@ -49,22 +48,21 @@ public class TelemetryManager {
     this.storage = newTelemetryStorage(path);
     this.usesConnectedModeSupplier = usesConnectedModeSupplier;
     this.usesSonarCloudSupplier = usesSonarCloudSupplier;
-    this.data = storage.tryLoad();
     this.client = client;
   }
 
-  TelemetryStorage newTelemetryStorage(Path path) {
-    return new TelemetryStorage(path);
+  TelemetryLocalStorageManager newTelemetryStorage(Path path) {
+    return new TelemetryLocalStorageManager(path);
   }
 
   public boolean isEnabled() {
-    return data.enabled();
+    return storage.tryLoad().enabled();
   }
 
   public void enable() {
-    tryMerge();
-    data.setEnabled(true);
-    saveNow();
+    storage.tryUpdateAtomically(data -> {
+      data.setEnabled(true);
+    });
     uploadLazily();
   }
 
@@ -72,10 +70,10 @@ public class TelemetryManager {
    * Disable telemetry (opt-out).
    */
   public void disable() {
-    tryMerge();
-    data.setEnabled(false);
-    saveNow();
-    client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
+    storage.tryUpdateAtomically(data -> {
+      data.setEnabled(false);
+      client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
+    });
   }
 
   /**
@@ -85,59 +83,37 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   public void uploadLazily() {
-    if (!dayChanged(data.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
+    TelemetryLocalStorage readData = storage.tryLoad();
+    if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
 
-    tryMerge();
-
-    if (!dayChanged(data.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
-      return;
-    }
-
-    data.setLastUploadTime();
-    saveNow();
-    client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
-
-    data.clearAnalyzers();
-    saveNow();
+    storage.tryUpdateAtomically(data -> {
+      client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
+      data.setLastUploadTime();
+      data.clearAnalyzers();
+    });
   }
 
   public void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
-    if (language == null) {
-      data.setUsedAnalysis("others", analysisTimeMs);
-    } else {
-      data.setUsedAnalysis(language.getLanguageKey(), analysisTimeMs);
-    }
-    mergeAndSave();
+    storage.tryUpdateAtomically(data -> {
+      if (language == null) {
+        data.setUsedAnalysis("others", analysisTimeMs);
+      } else {
+        data.setUsedAnalysis(language.getLanguageKey(), analysisTimeMs);
+      }
+    });
   }
 
   public void analysisDoneOnMultipleFiles() {
-    data.setUsedAnalysis();
-    mergeAndSave();
+    storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
   }
 
   /**
    * Save and upload lazily telemetry data.
    */
   public void stop() {
-    saveNow();
     uploadLazily();
   }
 
-  private void mergeAndSave() {
-    tryMerge();
-    saveNow();
-  }
-
-  private void tryMerge() {
-    TelemetryData existing = storage.tryLoad();
-    if (existing != null) {
-      data.mergeFrom(existing);
-    }
-  }
-
-  private void saveNow() {
-    storage.trySave(data);
-  }
 }
