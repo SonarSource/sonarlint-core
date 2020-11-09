@@ -19,23 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
-import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
+import java.util.Optional;
 
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryManager.TELEMETRY_ENDPOINT;
+/**
+ * Telemetry attributes provided by the client (IDE) at the time the telemetry ping is sent. *
+ */
+public interface TelemetryClientAttributesProvider {
 
-class TelemetryHttpFactory {
-  private static final int TELEMETRY_TIMEOUT = 30_000;
+  /**
+   * At least one project in the IDE is bound to a SQ server or SC
+   */
+  boolean usesConnectedMode();
 
-  HttpConnector buildClient(TelemetryClientConfig clientConfig) {
-    return HttpConnector.newBuilder().url(TELEMETRY_ENDPOINT)
-      .userAgent(clientConfig.userAgent())
-      .proxy(clientConfig.proxy())
-      .proxyCredentials(clientConfig.proxyLogin(), clientConfig.proxyPassword())
-      .readTimeoutMilliseconds(TELEMETRY_TIMEOUT)
-      .connectTimeoutMilliseconds(TELEMETRY_TIMEOUT)
-      .setSSLSocketFactory(clientConfig.sslSocketFactory())
-      .setTrustManager(clientConfig.trustManager())
-      .build();
-  }
+  /**
+   * At least one project in the IDE is bound to SC
+   */
+  boolean useSonarCloud();
+
+  /**
+   * Node.js version used by analyzers (detected or configured by the user).
+   * @return empty if no node present/detected/configured
+   */
+  Optional<String> nodeVersion();
+
+  /**
+   * Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
+   */
+  boolean devNotificationsDisabled();
+
 }

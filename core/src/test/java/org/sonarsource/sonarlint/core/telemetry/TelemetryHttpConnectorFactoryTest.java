@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 
-public class TelemetryHttpFactoryTest {
+public class TelemetryHttpConnectorFactoryTest {
 
   @Test
   public void testFactory() {
@@ -36,7 +36,7 @@ public class TelemetryHttpFactoryTest {
     TelemetryClientConfig config = TelemetryClientConfig.builder()
       .proxy(proxy)
       .build();
-    HttpConnector httpConnector = new TelemetryHttpFactory().buildClient(config);
+    HttpConnector httpConnector = new TelemetryHttpConnectorFactory().buildClient(config);
     assertThat(httpConnector).isNotNull();
     assertThat(httpConnector.okHttpClient().proxy()).isEqualTo(proxy);
 

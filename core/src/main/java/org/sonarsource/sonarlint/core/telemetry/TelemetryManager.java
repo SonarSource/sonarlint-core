@@ -20,14 +20,13 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
 /**
- * Manage telemetry data, in memory and persistent storage, and stateful telemetry actions.
+ * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
  */
 public class TelemetryManager {
@@ -37,17 +36,12 @@ public class TelemetryManager {
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
   private final TelemetryLocalStorageManager storage;
-  private final Supplier<Boolean> usesConnectedModeSupplier;
-  private final Supplier<Boolean> usesSonarCloudSupplier;
-  private final Supplier<String> nodeVersionSupplier;
-  private final TelemetryClient client;
+  private final TelemetryHttpClient client;
+  private final TelemetryClientAttributesProvider attributesProvider;
 
-  public TelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedModeSupplier, Supplier<Boolean> usesSonarCloudSupplier,
-    Supplier<String> nodeVersionSupplier) {
-    this.nodeVersionSupplier = nodeVersionSupplier;
+  public TelemetryManager(Path path, TelemetryHttpClient client, TelemetryClientAttributesProvider attributesProvider) {
     this.storage = newTelemetryStorage(path);
-    this.usesConnectedModeSupplier = usesConnectedModeSupplier;
-    this.usesSonarCloudSupplier = usesSonarCloudSupplier;
+    this.attributesProvider = attributesProvider;
     this.client = client;
   }
 
@@ -72,7 +66,7 @@ public class TelemetryManager {
   public void disable() {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
-      client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
+      client.optOut(data, attributesProvider);
     });
   }
 
@@ -89,7 +83,7 @@ public class TelemetryManager {
     }
 
     storage.tryUpdateAtomically(data -> {
-      client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get(), nodeVersionSupplier.get());
+      client.upload(data, attributesProvider);
       data.setLastUploadTime();
       data.clearAnalyzers();
     });
