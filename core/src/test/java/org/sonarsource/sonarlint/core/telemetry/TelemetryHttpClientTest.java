@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.io.IOError;
+import java.util.Optional;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,8 +42,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TelemetryClientTest {
-  private TelemetryClient client;
+public class TelemetryHttpClientTest {
+  private TelemetryHttpClient client;
   private HttpConnector http;
 
   @Rule
@@ -51,12 +52,36 @@ public class TelemetryClientTest {
   @Rule
   public LogTester logTester = new LogTester();
 
+  private final TelemetryClientAttributesProvider attributes = new TelemetryClientAttributesProvider() {
+
+    @Override
+    public boolean usesConnectedMode() {
+      return true;
+    }
+
+    @Override
+    public boolean useSonarCloud() {
+      return true;
+    }
+
+    @Override
+    public Optional<String> nodeVersion() {
+      return Optional.empty();
+    }
+
+    @Override
+    public boolean devNotificationsDisabled() {
+      return true;
+    }
+
+  };
+
   @Before
   public void setUp() {
     http = mock(HttpConnector.class, RETURNS_DEEP_STUBS);
-    TelemetryHttpFactory httpFactory = mock(TelemetryHttpFactory.class, RETURNS_DEEP_STUBS);
+    TelemetryHttpConnectorFactory httpFactory = mock(TelemetryHttpConnectorFactory.class, RETURNS_DEEP_STUBS);
     when(httpFactory.buildClient(any(TelemetryClientConfig.class))).thenReturn(http);
-    client = new TelemetryClient(mock(TelemetryClientConfig.class), "product", "version", "ideversion", httpFactory);
+    client = new TelemetryHttpClient(mock(TelemetryClientConfig.class), "product", "version", "ideversion", httpFactory);
   }
 
   @AfterClass
@@ -67,39 +92,39 @@ public class TelemetryClientTest {
 
   @Test
   public void opt_out() {
-    client.optOut(new TelemetryLocalStorage(), true, true, null);
+    client.optOut(new TelemetryLocalStorage(), attributes);
     verify(http).delete(any(DeleteRequest.class), Mockito.anyString());
   }
 
   @Test
   public void upload() {
-    client.upload(new TelemetryLocalStorage(), true, true, null);
+    client.upload(new TelemetryLocalStorage(), attributes);
     verify(http).post(any(PostRequest.class), Mockito.anyString());
   }
 
   @Test
   public void should_not_crash_when_cannot_upload() {
     when(http.post(any(PostRequest.class), anyString())).thenThrow(new RuntimeException());
-    client.upload(new TelemetryLocalStorage(), true, true, null);
+    client.upload(new TelemetryLocalStorage(), attributes);
   }
 
   @Test
   public void should_not_crash_when_cannot_opt_out() {
     when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new RuntimeException());
-    client.optOut(new TelemetryLocalStorage(), true, true, null);
+    client.optOut(new TelemetryLocalStorage(), attributes);
   }
 
   @Test
   public void should_not_crash_when_error_is_thrown() {
     when(http.post(any(PostRequest.class), anyString())).thenThrow(new IOError(new RuntimeException()));
-    client.upload(new TelemetryLocalStorage(), true, true, null);
+    client.upload(new TelemetryLocalStorage(), attributes);
   }
 
   @Test
   public void failed_upload_should_log_if_debug() {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     when(http.post(any(PostRequest.class), anyString())).thenThrow(new IllegalStateException("msg"));
-    client.upload(new TelemetryLocalStorage(), true, true, null);
+    client.upload(new TelemetryLocalStorage(), attributes);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry data");
   }
 
@@ -107,7 +132,7 @@ public class TelemetryClientTest {
   public void failed_optout_should_log_if_debug() {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     when(http.delete(any(DeleteRequest.class), anyString())).thenThrow(new IllegalStateException("msg"));
-    client.optOut(new TelemetryLocalStorage(), true, true, null);
+    client.optOut(new TelemetryLocalStorage(), attributes);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry opt-out");
   }
 }

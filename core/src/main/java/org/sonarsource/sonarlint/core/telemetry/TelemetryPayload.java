@@ -68,8 +68,12 @@ class TelemetryPayload {
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
+  @SerializedName("dev_notifications_disabled")
+  private final boolean devNotificationsDisabled;
+
   TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
-    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs, TelemetryAnalyzerPerformancePayload[] analyses) {
+    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs, boolean devNotificationsDisabled,
+    TelemetryAnalyzerPerformancePayload[] analyses) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -82,6 +86,7 @@ class TelemetryPayload {
     this.os = os;
     this.jre = jre;
     this.nodejs = nodejs;
+    this.devNotificationsDisabled = devNotificationsDisabled;
     this.analyses = analyses;
   }
 
@@ -127,6 +132,10 @@ class TelemetryPayload {
 
   public OffsetDateTime systemTime() {
     return systemTime;
+  }
+
+  public boolean devNotificationsDisabled() {
+    return devNotificationsDisabled;
   }
 
   public String toJson() {

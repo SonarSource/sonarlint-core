@@ -25,8 +25,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -50,20 +49,40 @@ public class TelemetryManagerTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
-  private final Supplier<Boolean> usesConnectedModeSupplier = () -> true;
-  private final Supplier<Boolean> usesSonarCloudSupplier = () -> true;
-  private final Supplier<String> nodeVersionSupplier = () -> "10.5.2";
-  private TelemetryClient client;
+  private final TelemetryClientAttributesProvider attributes = new TelemetryClientAttributesProvider() {
+
+    @Override
+    public boolean usesConnectedMode() {
+      return true;
+    }
+
+    @Override
+    public boolean useSonarCloud() {
+      return true;
+    }
+
+    @Override
+    public Optional<String> nodeVersion() {
+      return Optional.of("10.5.2");
+    }
+
+    @Override
+    public boolean devNotificationsDisabled() {
+      return true;
+    }
+
+  };
+  private TelemetryHttpClient client;
   private Path storagePath;
   private TelemetryManager manager;
   private TelemetryLocalStorageManager storage;
 
   @Before
   public void setUp() throws IOException {
-    client = mock(TelemetryClient.class);
+    client = mock(TelemetryHttpClient.class);
     storagePath = temp.newFile().toPath();
     storage = new TelemetryLocalStorageManager(storagePath);
-    manager = new TelemetryManager(storagePath, client, usesConnectedModeSupplier, usesSonarCloudSupplier, nodeVersionSupplier);
+    manager = new TelemetryManager(storagePath, client, attributes);
   }
 
   private TelemetryManager stubbedTelemetryManager(TelemetryLocalStorage data) throws IOException {
@@ -74,7 +93,7 @@ public class TelemetryManagerTest {
 
   private TelemetryManager stubbedTelemetryManager(TelemetryLocalStorageManager storage) throws IOException {
     Path path = temp.newFile().toPath();
-    return new TelemetryManager(path, client, usesConnectedModeSupplier, usesSonarCloudSupplier, nodeVersionSupplier) {
+    return new TelemetryManager(path, client, attributes) {
       @Override
       TelemetryLocalStorageManager newTelemetryStorage(Path ignored) {
         return storage;
@@ -84,7 +103,7 @@ public class TelemetryManagerTest {
 
   @Test
   public void should_be_enabled_by_default() throws IOException {
-    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryClient.class), mock(Supplier.class), mock(Supplier.class), mock(Supplier.class)).isEnabled()).isTrue();
+    assertThat(new TelemetryManager(temp.newFile().toPath(), mock(TelemetryHttpClient.class), mock(TelemetryClientAttributesProvider.class)).isEnabled()).isTrue();
   }
 
   @Test
@@ -117,7 +136,7 @@ public class TelemetryManagerTest {
     manager.stop();
     manager.stop();
 
-    verify(client).upload(any(TelemetryLocalStorage.class), anyBoolean(), anyBoolean(), eq("10.5.2"));
+    verify(client).upload(any(TelemetryLocalStorage.class), eq(attributes));
     verifyNoMoreInteractions(client);
   }
 
@@ -126,7 +145,7 @@ public class TelemetryManagerTest {
     manager.enable();
     manager.enable();
 
-    verify(client).upload(any(TelemetryLocalStorage.class), anyBoolean(), anyBoolean(), eq("10.5.2"));
+    verify(client).upload(any(TelemetryLocalStorage.class), eq(attributes));
     verifyNoMoreInteractions(client);
   }
 
@@ -136,7 +155,7 @@ public class TelemetryManagerTest {
     TelemetryManager manager = stubbedTelemetryManager(storage);
     manager.disable();
 
-    verify(client).optOut(any(TelemetryLocalStorage.class), eq(true), eq(true), eq("10.5.2"));
+    verify(client).optOut(any(TelemetryLocalStorage.class), eq(attributes));
     verifyNoMoreInteractions(client);
   }
 
@@ -163,7 +182,7 @@ public class TelemetryManagerTest {
     reloaded = storage.tryLoad();
 
     assertThat(reloaded.lastUploadTime()).isEqualTo(lastUploadTime);
-    verify(client).upload(any(TelemetryLocalStorage.class), eq(true), eq(true), eq("10.5.2"));
+    verify(client).upload(any(TelemetryLocalStorage.class), eq(attributes));
     verifyNoMoreInteractions(client);
   }
 
@@ -181,7 +200,7 @@ public class TelemetryManagerTest {
 
     manager.uploadLazily();
 
-    verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(true), eq(true), eq("10.5.2"));
+    verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(attributes));
     verifyNoMoreInteractions(client);
   }
 
