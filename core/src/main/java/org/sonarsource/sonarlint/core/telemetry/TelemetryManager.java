@@ -85,7 +85,7 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(data -> {
       client.upload(data, attributesProvider);
       data.setLastUploadTime();
-      data.clearAnalyzers();
+      data.clearAfterPing();
     });
   }
 
@@ -101,6 +101,10 @@ public class TelemetryManager {
 
   public void analysisDoneOnMultipleFiles() {
     storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
+  }
+
+  public void devNotificationsReceived() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementDevNotificationsCount);
   }
 
   /**

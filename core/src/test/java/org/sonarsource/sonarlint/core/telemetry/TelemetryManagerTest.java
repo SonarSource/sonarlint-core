@@ -206,7 +206,6 @@ public class TelemetryManagerTest {
 
   @Test
   public void enable_should_not_wipe_out_more_recent_data() {
-    TelemetryLocalStorageManager storage = new TelemetryLocalStorageManager(storagePath);
     createAndSaveSampleData(storage);
 
     TelemetryLocalStorage data = storage.tryLoad();
@@ -240,6 +239,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
+    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10);
   }
 
   @Test
@@ -258,6 +258,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).isEmpty();
+    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10);
   }
 
   @Test
@@ -276,6 +277,28 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).containsKey("java");
+    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10);
+  }
+
+  @Test
+  public void reporting_received_dev_notifications() throws IOException {
+    createAndSaveSampleData(storage);
+
+    TelemetryLocalStorage data = storage.tryLoad();
+
+    // note: the manager hasn't seen the saved data
+    manager.devNotificationsReceived();
+    manager.devNotificationsReceived();
+    manager.devNotificationsReceived();
+
+    TelemetryLocalStorage reloaded = storage.tryLoad();
+    assertThat(reloaded.enabled()).isEqualTo(data.enabled());
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
+    assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
+    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
+    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
+    assertThat(reloaded.analyzers()).isEmpty();
+    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10 + 3);
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
@@ -285,6 +308,7 @@ public class TelemetryManagerTest {
       data.setLastUseDate(LocalDate.now().minusDays(3));
       data.setLastUploadTime(LocalDateTime.now().minusDays(2));
       data.setNumUseDays(5);
+      data.setDevNotificationsCount(10);
     });
   }
 

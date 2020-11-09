@@ -39,6 +39,7 @@ class TelemetryLocalStorage {
   private long numUseDays;
   private boolean enabled;
   private Map<String, TelemetryAnalyzerPerformance> analyzers;
+  private int devNotificationsCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -94,8 +95,9 @@ class TelemetryLocalStorage {
     this.numUseDays = numUseDays;
   }
 
-  void clearAnalyzers() {
+  void clearAfterPing() {
     this.analyzers = new LinkedHashMap<>();
+    this.devNotificationsCount = 0;
   }
 
   long numUseDays() {
@@ -175,5 +177,17 @@ class TelemetryLocalStorage {
     }
 
     return data;
+  }
+
+  public void incrementDevNotificationsCount() {
+    this.devNotificationsCount++;
+  }
+
+  public int getDevNotificationsCount() {
+    return devNotificationsCount;
+  }
+
+  public void setDevNotificationsCount(int devNotificationsCount) {
+    this.devNotificationsCount = devNotificationsCount;
   }
 }
