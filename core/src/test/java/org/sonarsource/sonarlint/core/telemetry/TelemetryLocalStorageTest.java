@@ -19,23 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.isOlder;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryData.validateAndMigrate;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 
-public class TelemetryDataTest {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.isOlder;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.validateAndMigrate;
+
+public class TelemetryLocalStorageTest {
   @Test
   public void usedAnalysis_should_increment_num_days_on_first_run() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isEqualTo(0);
 
     data.setUsedAnalysis();
@@ -44,7 +43,7 @@ public class TelemetryDataTest {
 
   @Test
   public void usedAnalysis_should_not_increment_num_days_on_same_day() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isEqualTo(0);
 
     data.setUsedAnalysis();
@@ -56,7 +55,7 @@ public class TelemetryDataTest {
 
   @Test
   public void usedAnalysis_with_duration_should_register_analyzer_performance() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isEqualTo(0);
     assertThat(data.analyzers()).hasSize(0);
 
@@ -90,7 +89,7 @@ public class TelemetryDataTest {
 
   @Test
   public void usedAnalysis_should_increment_num_days_when_day_changed() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isEqualTo(0);
 
     data.setUsedAnalysis();
@@ -127,79 +126,8 @@ public class TelemetryDataTest {
   }
 
   @Test
-  public void mergeFrom_should_overwrite_lastUseDate_if_newer() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    LocalDate date = LocalDate.now();
-
-    data1.setLastUseDate(date);
-    data1.mergeFrom(data2);
-    assertThat(data1.lastUseDate()).isEqualTo(date);
-
-    data1.setLastUseDate(null);
-    data2.setLastUseDate(date);
-    data1.mergeFrom(data2);
-    assertThat(data1.lastUseDate()).isEqualTo(date);
-
-    data1.setLastUseDate(date.minusDays(1));
-    data2.setLastUseDate(date);
-    data1.mergeFrom(data2);
-    assertThat(data1.lastUseDate()).isEqualTo(date);
-  }
-
-  @Test
-  public void mergeFrom_should_overwrite_lastUploadTime_if_newer() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    LocalDateTime date = LocalDateTime.now();
-
-    data1.setLastUploadTime(date);
-    data1.mergeFrom(data2);
-    assertThat(data1.lastUploadTime()).isEqualTo(date);
-
-    data1.setLastUploadTime(null);
-    data2.setLastUploadTime(date);
-    data1.mergeFrom(data2);
-    assertThat(data1.lastUploadTime()).isEqualTo(date);
-
-    data1.setLastUploadTime(date.minusDays(1));
-    data2.setLastUploadTime(date);
-    data1.mergeFrom(data2);
-    assertThat(data1.lastUploadTime()).isEqualTo(date);
-  }
-
-  @Test
-  public void mergeFrom_should_overwrite_numUseDays_if_greater() {
-    TelemetryData data1 = new TelemetryData();
-    TelemetryData data2 = new TelemetryData();
-
-    long numUseDays = 3;
-    OffsetDateTime now = OffsetDateTime.now();
-    data2.setNumUseDays(numUseDays);
-    data2.setInstallTime(now);
-
-    data1.mergeFrom(data2);
-    assertThat(data1.numUseDays()).isEqualTo(numUseDays);
-    assertThat(data1.installTime()).isEqualTo(now);
-
-    data1.setNumUseDays(numUseDays - 1);
-    data1.setInstallTime(now.minusDays(1));
-    data1.mergeFrom(data2);
-    assertThat(data1.numUseDays()).isEqualTo(numUseDays);
-    assertThat(data1.installTime()).isEqualTo(now);
-
-    data1.setNumUseDays(numUseDays);
-    data1.setInstallTime(now.plusDays(1));
-    data1.mergeFrom(data2);
-    assertThat(data1.numUseDays()).isEqualTo(numUseDays);
-    assertThat(data1.installTime()).isAfter(now);
-  }
-
-  @Test
   public void validate_should_reset_installTime_if_in_future() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     OffsetDateTime now = OffsetDateTime.now();
 
     assertThat(validateAndMigrate(data).installTime()).is(within3SecOfNow);
@@ -208,19 +136,19 @@ public class TelemetryDataTest {
     assertThat(validateAndMigrate(data).installTime()).is(within3SecOfNow);
   }
 
-  private Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
+  private final Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
     OffsetDateTime now = OffsetDateTime.now();
     return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
   }, "within3Sec");
 
-  private Condition<OffsetDateTime> about5DaysAgo = new Condition<>(p -> {
+  private final Condition<OffsetDateTime> about5DaysAgo = new Condition<>(p -> {
     OffsetDateTime fiveDaysAgo = OffsetDateTime.now().minusDays(5);
     return Math.abs(p.until(fiveDaysAgo, ChronoUnit.SECONDS)) < 3;
   }, "about5DaysAgo");
 
   @Test
   public void validate_should_reset_lastUseDate_if_in_future() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     LocalDate today = LocalDate.now();
 
     data.setLastUseDate(today.plusDays(1));
@@ -229,14 +157,14 @@ public class TelemetryDataTest {
 
   @Test
   public void should_migrate_installDate() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     data.setInstallDate(LocalDate.now().minusDays(5));
     assertThat(data.validateAndMigrate(data).installTime()).is(about5DaysAgo);
   }
 
   @Test
   public void validate_should_reset_lastUseDate_if_before_installTime() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     OffsetDateTime now = OffsetDateTime.now();
 
     data.setInstallTime(now);
@@ -246,17 +174,17 @@ public class TelemetryDataTest {
 
   @Test
   public void validate_should_reset_numDays_if_lastUseDate_unset() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     data.setNumUseDays(3);
 
-    TelemetryData valid = validateAndMigrate(data);
+    TelemetryLocalStorage valid = validateAndMigrate(data);
     assertThat(valid.lastUseDate()).isNull();
     assertThat(valid.numUseDays()).isEqualTo(0);
   }
 
   @Test
   public void validate_should_fix_numDays_if_incorrect() {
-    TelemetryData data = new TelemetryData();
+    TelemetryLocalStorage data = new TelemetryLocalStorage();
     OffsetDateTime installTime = OffsetDateTime.now().minusDays(10);
     LocalDate lastUseDate = installTime.plusDays(3).toLocalDate();
     data.setInstallTime(installTime);
@@ -265,7 +193,7 @@ public class TelemetryDataTest {
     long numUseDays = installTime.toLocalDate().until(lastUseDate, ChronoUnit.DAYS) + 1;
     data.setNumUseDays(numUseDays * 2);
 
-    TelemetryData valid = validateAndMigrate(data);
+    TelemetryLocalStorage valid = validateAndMigrate(data);
     assertThat(valid.numUseDays()).isEqualTo(numUseDays);
     assertThat(valid.installTime()).isEqualTo(installTime);
     assertThat(valid.lastUseDate()).isEqualTo(lastUseDate);

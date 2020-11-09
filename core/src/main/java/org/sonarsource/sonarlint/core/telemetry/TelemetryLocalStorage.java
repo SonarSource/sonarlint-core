@@ -19,19 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-class TelemetryData {
+import static java.time.temporal.ChronoUnit.DAYS;
+
+class TelemetryLocalStorage {
   @Deprecated
   private LocalDate installDate;
   private LocalDate lastUseDate;
@@ -41,7 +40,7 @@ class TelemetryData {
   private boolean enabled;
   private Map<String, TelemetryAnalyzerPerformance> analyzers;
 
-  TelemetryData() {
+  TelemetryLocalStorage() {
     enabled = true;
     installTime = OffsetDateTime.now();
     analyzers = new LinkedHashMap<>();
@@ -134,27 +133,6 @@ class TelemetryData {
     analyzer.registerAnalysis(analysisTimeMs);
   }
 
-  /**
-   * Merge from existing telemetry data to avoid overwriting values
-   * that might be more up to date than the current instance.
-   *
-   * @param other existing telemetry data to merge from
-   */
-  void mergeFrom(TelemetryData other) {
-    if (isOlder(lastUseDate, other.lastUseDate)) {
-      lastUseDate = other.lastUseDate;
-    }
-
-    if (other.numUseDays > numUseDays) {
-      numUseDays = other.numUseDays;
-      installTime = other.installTime;
-    }
-
-    if (isOlder(lastUploadDateTime, other.lastUploadDateTime)) {
-      lastUploadDateTime = other.lastUploadDateTime;
-    }
-  }
-
   static boolean isOlder(@Nullable LocalDate first, @Nullable LocalDate second) {
     return first == null || (second != null && first.isBefore(second));
   }
@@ -163,7 +141,7 @@ class TelemetryData {
     return first == null || (second != null && first.isBefore(second));
   }
 
-  static TelemetryData validateAndMigrate(TelemetryData data) {
+  static TelemetryLocalStorage validateAndMigrate(TelemetryLocalStorage data) {
     LocalDate today = LocalDate.now();
 
     // migrate deprecated installDate

@@ -55,7 +55,7 @@ public class TelemetryClient {
     this.httpFactory = httpFactory;
   }
 
-  void upload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud, @Nullable String nodejsVersion) {
+  void upload(TelemetryLocalStorage data, boolean usesConnectedMode, boolean usesSonarCloud, @Nullable String nodejsVersion) {
     try {
       sendPost(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud, nodejsVersion));
     } catch (Throwable catchEmAll) {
@@ -65,7 +65,7 @@ public class TelemetryClient {
     }
   }
 
-  void optOut(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud, @Nullable String nodejsVersion) {
+  void optOut(TelemetryLocalStorage data, boolean usesConnectedMode, boolean usesSonarCloud, @Nullable String nodejsVersion) {
     try {
       sendDelete(httpFactory.buildClient(clientConfig), createPayload(data, usesConnectedMode, usesSonarCloud, nodejsVersion));
     } catch (Throwable catchEmAll) {
@@ -75,7 +75,7 @@ public class TelemetryClient {
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryData data, boolean usesConnectedMode, boolean usesSonarCloud, @Nullable String nodejsVersion) {
+  private TelemetryPayload createPayload(TelemetryLocalStorage data, boolean usesConnectedMode, boolean usesSonarCloud, @Nullable String nodejsVersion) {
     OffsetDateTime systemTime = OffsetDateTime.now();
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
