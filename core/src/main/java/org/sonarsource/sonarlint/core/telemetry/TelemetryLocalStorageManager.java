@@ -67,6 +67,9 @@ class TelemetryLocalStorageManager {
 
   private TelemetryLocalStorage read(Gson gson, FileChannel fileChannel) throws IOException {
     try {
+      if (fileChannel.size() == 0) {
+        return new TelemetryLocalStorage();
+      }
       final ByteBuffer buf = ByteBuffer.allocate((int) fileChannel.size());
       fileChannel.read(buf);
       byte[] decoded = Base64.getDecoder().decode(buf.array());
