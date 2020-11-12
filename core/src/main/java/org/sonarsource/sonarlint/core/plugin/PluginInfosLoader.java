@@ -45,7 +45,7 @@ public class PluginInfosLoader {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  private static final String IMPLEMENTED_SQ_API = "8.4";
+  private static final String IMPLEMENTED_SQ_API = "8.5";
 
   private static final Logger LOG = Loggers.get(PluginInfosLoader.class);
 
