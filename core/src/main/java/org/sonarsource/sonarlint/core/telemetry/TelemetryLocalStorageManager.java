@@ -47,25 +47,31 @@ class TelemetryLocalStorageManager {
     this.path = path;
   }
 
+  void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
+    try {
+      updateAtomically(updater);
+    } catch (Exception e) {
+      if (SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.error("Error updating telemetry data", e);
+        throw new IllegalStateException(e);
+      }
+    }
+  }
+
   private void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
     Gson gson = createGson();
     Files.createDirectories(path.getParent());
     try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
       FileLock lock = fileChannel.lock()) {
-      TelemetryLocalStorage newData = read(gson, fileChannel);
+      TelemetryLocalStorage newData = readAtomically(gson, fileChannel);
 
       updater.accept(newData);
 
-      fileChannel.truncate(0);
-
-      String newJson = gson.toJson(newData);
-      byte[] encoded = Base64.getEncoder().encode(newJson.getBytes(StandardCharsets.UTF_8));
-
-      fileChannel.write(ByteBuffer.wrap(encoded));
+      writeAtomically(gson, fileChannel, newData);
     }
   }
 
-  private TelemetryLocalStorage read(Gson gson, FileChannel fileChannel) throws IOException {
+  private TelemetryLocalStorage readAtomically(Gson gson, FileChannel fileChannel) throws IOException {
     try {
       if (fileChannel.size() == 0) {
         return new TelemetryLocalStorage();
@@ -86,37 +92,21 @@ class TelemetryLocalStorageManager {
     }
   }
 
-  void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
-    try {
-      updateAtomically(updater);
-    } catch (Exception e) {
-      if (SonarLintUtils.isInternalDebugEnabled()) {
-        LOG.error("Error updating telemetry data", e);
-        throw new IllegalStateException(e);
-      }
-    }
+  private void writeAtomically(Gson gson, FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
+    fileChannel.truncate(0);
+
+    String newJson = gson.toJson(newData);
+    byte[] encoded = Base64.getEncoder().encode(newJson.getBytes(StandardCharsets.UTF_8));
+
+    fileChannel.write(ByteBuffer.wrap(encoded));
   }
 
-  private static Gson createGson() {
-    return new GsonBuilder()
-      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
-      .create();
-  }
-
-  private TelemetryLocalStorage load() throws IOException {
-    Gson gson = createGson();
-    byte[] bytes = Files.readAllBytes(path);
-    byte[] decoded = Base64.getDecoder().decode(bytes);
-    String json = new String(decoded, StandardCharsets.UTF_8);
-    return TelemetryLocalStorage.validateAndMigrate(gson.fromJson(json, TelemetryLocalStorage.class));
-  }
-
-  TelemetryLocalStorage tryLoad() {
+  TelemetryLocalStorage tryRead() {
     try {
       if (!Files.exists(path)) {
         return new TelemetryLocalStorage();
       }
-      return load();
+      return read();
     } catch (Exception e) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Error loading telemetry data", e);
@@ -125,4 +115,19 @@ class TelemetryLocalStorageManager {
       return new TelemetryLocalStorage();
     }
   }
+
+  private TelemetryLocalStorage read() throws IOException {
+    Gson gson = createGson();
+    byte[] bytes = Files.readAllBytes(path);
+    byte[] decoded = Base64.getDecoder().decode(bytes);
+    String json = new String(decoded, StandardCharsets.UTF_8);
+    return TelemetryLocalStorage.validateAndMigrate(gson.fromJson(json, TelemetryLocalStorage.class));
+  }
+
+  private static Gson createGson() {
+    return new GsonBuilder()
+      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
+      .create();
+  }
+
 }
