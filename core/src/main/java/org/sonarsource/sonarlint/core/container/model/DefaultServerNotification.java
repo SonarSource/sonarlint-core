@@ -26,14 +26,14 @@ import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 
 @Immutable
-public class DefaultSonarQubeNotification implements ServerNotification {
+public class DefaultServerNotification implements ServerNotification {
   private final String category;
   private final String message;
   private final String link;
   private final String projectKey;
   private final ZonedDateTime time;
 
-  public DefaultSonarQubeNotification(String category, String message, String link, String projectKey, ZonedDateTime time) {
+  public DefaultServerNotification(String category, String message, String link, String projectKey, ZonedDateTime time) {
     this.category = category;
     this.message = message;
     this.link = link;

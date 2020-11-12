@@ -34,7 +34,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.model.DefaultSonarQubeNotification;
+import org.sonarsource.sonarlint.core.container.model.DefaultServerNotification;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
@@ -113,7 +113,7 @@ class NotificationChecker {
         String projectKey = getOrFail(event, "project");
         String dateTime = getOrFail(event, "date");
         ZonedDateTime time = ZonedDateTime.parse(dateTime, TIME_FORMATTER);
-        notifications.add(new DefaultSonarQubeNotification(category, message, link, projectKey, time));
+        notifications.add(new DefaultServerNotification(category, message, link, projectKey, time));
       }
 
     } catch (Exception e) {

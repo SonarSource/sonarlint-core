@@ -50,7 +50,7 @@ public class TelemetryManager {
   }
 
   public boolean isEnabled() {
-    return storage.tryLoad().enabled();
+    return storage.tryRead().enabled();
   }
 
   public void enable() {
@@ -77,7 +77,7 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   public void uploadLazily() {
-    TelemetryLocalStorage readData = storage.tryLoad();
+    TelemetryLocalStorage readData = storage.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
