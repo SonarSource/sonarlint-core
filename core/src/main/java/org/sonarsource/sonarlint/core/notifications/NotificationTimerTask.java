@@ -89,7 +89,7 @@ class NotificationTimerTask extends TimerTask {
         });
       }
     } catch (Exception e) {
-      LOG.warn("Failed to request SonarQube events to " + serverConfiguration.getUrl(), e);
+      LOG.warn("Failed to request server notifications from " + serverConfiguration.getUrl(), e);
     }
   }
 
