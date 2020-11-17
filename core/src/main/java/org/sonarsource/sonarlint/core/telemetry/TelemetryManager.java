@@ -103,12 +103,12 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
   }
 
-  public void devNotificationsReceived() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementDevNotificationsCount);
+  public void devNotificationsReceived(String eventType) {
+    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsCount(eventType));
   }
 
-  public void devNotificationsClicked() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementDevNotificationsClicked);
+  public void devNotificationsClicked(String eventType) {
+    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
   }
 
   /**

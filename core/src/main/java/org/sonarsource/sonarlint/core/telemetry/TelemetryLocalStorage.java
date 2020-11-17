@@ -38,14 +38,14 @@ class TelemetryLocalStorage {
   private OffsetDateTime installTime;
   private long numUseDays;
   private boolean enabled;
-  private Map<String, TelemetryAnalyzerPerformance> analyzers;
-  private int devNotificationsCount;
-  private int devNotificationsClicked;
+  private final Map<String, TelemetryAnalyzerPerformance> analyzers;
+  private final Map<String, TelemetryNotificationsCounter> notificationsCountersByEventType;
 
   TelemetryLocalStorage() {
     enabled = true;
     installTime = OffsetDateTime.now();
     analyzers = new LinkedHashMap<>();
+    notificationsCountersByEventType = new LinkedHashMap<>();
   }
 
   @Deprecated
@@ -79,6 +79,10 @@ class TelemetryLocalStorage {
     return analyzers;
   }
 
+  public Map<String, TelemetryNotificationsCounter> notifications() {
+    return notificationsCountersByEventType;
+  }
+
   void setLastUploadTime() {
     setLastUploadTime(LocalDateTime.now());
   }
@@ -97,9 +101,8 @@ class TelemetryLocalStorage {
   }
 
   void clearAfterPing() {
-    this.analyzers = new LinkedHashMap<>();
-    this.devNotificationsCount = 0;
-    this.devNotificationsClicked = 0;
+    this.analyzers.clear();
+    this.notificationsCountersByEventType.clear();
   }
 
   long numUseDays() {
@@ -162,7 +165,7 @@ class TelemetryLocalStorage {
     LocalDate lastUseDate = data.lastUseDate();
     if (lastUseDate == null) {
       data.setNumUseDays(0);
-      data.analyzers = new LinkedHashMap<>();
+      data.analyzers.clear();
       return data;
     }
 
@@ -181,28 +184,13 @@ class TelemetryLocalStorage {
     return data;
   }
 
-  public void incrementDevNotificationsCount() {
-    this.devNotificationsCount++;
+  public void incrementDevNotificationsCount(String eventType) {
+    this.notificationsCountersByEventType.computeIfAbsent(eventType, k -> new TelemetryNotificationsCounter()).incrementDevNotificationsCount();
   }
 
-  public void incrementDevNotificationsClicked() {
+  public void incrementDevNotificationsClicked(String eventType) {
     setUsedAnalysis();
-    this.devNotificationsClicked++;
+    this.notificationsCountersByEventType.computeIfAbsent(eventType, k -> new TelemetryNotificationsCounter()).incrementDevNotificationsClicked();
   }
 
-  public int getDevNotificationsCount() {
-    return devNotificationsCount;
-  }
-
-  public void setDevNotificationsCount(int devNotificationsCount) {
-    this.devNotificationsCount = devNotificationsCount;
-  }
-
-  public int getDevNotificationsClicked() {
-    return devNotificationsClicked;
-  }
-
-  public void setDevNotificationsClicked(int devNotificationsClicked) {
-    this.devNotificationsClicked = devNotificationsClicked;
-  }
 }

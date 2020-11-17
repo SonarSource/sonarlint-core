@@ -26,6 +26,9 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
 import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
 import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
 import org.sonarsource.sonarlint.core.util.ws.PostRequest;
@@ -78,11 +81,12 @@ public class TelemetryHttpClient {
     OffsetDateTime systemTime = OffsetDateTime.now();
     long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
+    TelemetryNotificationsPayload notifications = TelemetryUtils.toPayload(attributesProvider.devNotificationsDisabled(), data.notifications());
     String os = System.getProperty("os.name");
     String jre = System.getProperty("java.version");
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
-      attributesProvider.devNotificationsDisabled(), data.getDevNotificationsCount(), data.getDevNotificationsClicked(), analyzers);
+      analyzers, notifications);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
