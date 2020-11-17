@@ -46,6 +46,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class TelemetryManagerTest {
+  private static final int DEFAULT_NOTIF_CLICKED = 5;
+
+  private static final int DEFAULT_NOTIF_COUNT = 10;
+
+  private static final String FOO_EVENT = "foo_event";
+
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
@@ -239,7 +245,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
-    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10);
+    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(10);
   }
 
   @Test
@@ -258,7 +264,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).isEmpty();
-    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10);
+    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(10);
   }
 
   @Test
@@ -277,7 +283,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).containsKey("java");
-    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10);
+    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(10);
   }
 
   @Test
@@ -287,9 +293,9 @@ public class TelemetryManagerTest {
     TelemetryLocalStorage data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
-    manager.devNotificationsReceived();
-    manager.devNotificationsReceived();
-    manager.devNotificationsReceived();
+    manager.devNotificationsReceived(FOO_EVENT);
+    manager.devNotificationsReceived(FOO_EVENT);
+    manager.devNotificationsReceived(FOO_EVENT);
 
     TelemetryLocalStorage reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isEqualTo(data.enabled());
@@ -298,7 +304,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
     assertThat(reloaded.analyzers()).isEmpty();
-    assertThat(reloaded.getDevNotificationsCount()).isEqualTo(10 + 3);
+    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(DEFAULT_NOTIF_COUNT + 3);
   }
 
   @Test
@@ -308,13 +314,13 @@ public class TelemetryManagerTest {
     TelemetryLocalStorage data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
-    manager.devNotificationsClicked();
-    manager.devNotificationsClicked();
+    manager.devNotificationsClicked(FOO_EVENT);
+    manager.devNotificationsClicked(FOO_EVENT);
 
     TelemetryLocalStorage reloaded = storage.tryRead();
 
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
-    assertThat(reloaded.getDevNotificationsClicked()).isEqualTo(5 + 2);
+    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsClicked()).isEqualTo(DEFAULT_NOTIF_CLICKED + 2);
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
@@ -324,8 +330,7 @@ public class TelemetryManagerTest {
       data.setLastUseDate(LocalDate.now().minusDays(3));
       data.setLastUploadTime(LocalDateTime.now().minusDays(2));
       data.setNumUseDays(5);
-      data.setDevNotificationsCount(10);
-      data.setDevNotificationsClicked(5);
+      data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
     });
   }
 

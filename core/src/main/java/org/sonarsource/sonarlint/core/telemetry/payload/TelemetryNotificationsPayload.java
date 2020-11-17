@@ -17,33 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
-
-import java.math.BigDecimal;
-import java.util.Map;
+package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
+import java.util.Map;
 
-public class TelemetryAnalyzerPerformancePayload {
-  private String language;
+public class TelemetryNotificationsPayload {
+  private boolean disabled;
 
-  @SerializedName("rate_per_duration")
-  private Map<String, BigDecimal> distribution;
+  @SerializedName("count_by_type")
+  private Map<String, TelemetryNotificationsCounterPayload> counters;
 
-  public TelemetryAnalyzerPerformancePayload() {
+  public TelemetryNotificationsPayload() {
   }
 
-  public TelemetryAnalyzerPerformancePayload(String language, Map<String, BigDecimal> distribution) {
-    this.language = language;
-    this.distribution = distribution;
+  public TelemetryNotificationsPayload(boolean disabled, Map<String, TelemetryNotificationsCounterPayload> counters) {
+    this.disabled = disabled;
+    this.counters = counters;
   }
 
-  public String language() {
-    return language;
+  public boolean disabled() {
+    return disabled;
   }
 
-  public Map<String, BigDecimal> distribution() {
-    return distribution;
+  public Map<String, TelemetryNotificationsCounterPayload> counters() {
+    return counters;
   }
 
 }

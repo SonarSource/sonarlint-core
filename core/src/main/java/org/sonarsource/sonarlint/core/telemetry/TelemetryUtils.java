@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsCounterPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 
 class TelemetryUtils {
 
@@ -73,6 +76,16 @@ class TelemetryUtils {
     return new TelemetryAnalyzerPerformancePayload(language, distribution);
   }
 
+  static TelemetryNotificationsPayload toPayload(boolean devNotificationsDisabled, Map<String, TelemetryNotificationsCounter> notifications) {
+    return new TelemetryNotificationsPayload(devNotificationsDisabled, toNotifPayload(notifications));
+  }
+
+  private static Map<String, TelemetryNotificationsCounterPayload> toNotifPayload(Map<String, TelemetryNotificationsCounter> notifications) {
+    return notifications.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> {
+      return new TelemetryNotificationsCounterPayload(e.getValue().getDevNotificationsCount(), e.getValue().getDevNotificationsClicked());
+    }));
+  }
+
   /**
    * Check if "now" is a different day than the reference, and some hours have elapsed.
    *
@@ -91,4 +104,5 @@ class TelemetryUtils {
       throw new IllegalStateException(String.format("Duplicate key %s", u));
     };
   }
+
 }

@@ -17,11 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -38,8 +39,12 @@ public class TelemetryPayloadTest {
     distrib.put("0-300", BigDecimal.valueOf(9.90));
     distrib.put("1000-2000", BigDecimal.valueOf(90.10));
     perf[0] = new TelemetryAnalyzerPerformancePayload("java", distrib);
+    Map<String, TelemetryNotificationsCounterPayload> counters = new HashMap<>();
+    counters.put("QUALITY_GATE", new TelemetryNotificationsCounterPayload(5, 3));
+    counters.put("NEW_ISSUES", new TelemetryNotificationsCounterPayload(10, 1));
+    TelemetryNotificationsPayload notifPayload = new TelemetryNotificationsPayload(true, counters);
     TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
-      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", true, 3, 2, perf);
+      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload);
     String s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -55,9 +60,7 @@ public class TelemetryPayloadTest {
       + "\"jre\":\"1.8.0\","
       + "\"nodejs\":\"10.5.2\","
       + "\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}],"
-      + "\"dev_notifications_disabled\":true,"
-      + "\"dev_notifications_received\":3,"
-      + "\"dev_notifications_clicked\":2}");
+      + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}}}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);
@@ -70,8 +73,7 @@ public class TelemetryPayloadTest {
     assertThat(m.nodejs()).isEqualTo("10.5.2");
     assertThat(m.connectedModeSonarcloud()).isTrue();
     assertThat(m.systemTime()).isEqualTo(systemTime);
-    assertThat(m.devNotificationsDisabled()).isTrue();
-    assertThat(m.devNotificationsReceived()).isEqualTo(3);
-    assertThat(m.devNotificationsClicked()).isEqualTo(2);
+    assertThat(m.notifications().disabled()).isTrue();
+    assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
   }
 }

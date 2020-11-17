@@ -17,18 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import java.time.OffsetDateTime;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
 
 /**
  * Models the usage data uploaded
  */
-class TelemetryPayload {
+public class TelemetryPayload {
   @SerializedName("days_since_installation")
   private final long daysSinceInstallation;
 
@@ -68,19 +69,12 @@ class TelemetryPayload {
   @SerializedName("analyses")
   private final TelemetryAnalyzerPerformancePayload[] analyses;
 
-  @SerializedName("dev_notifications_disabled")
-  private final boolean devNotificationsDisabled;
+  @SerializedName("server_notifications")
+  private final TelemetryNotificationsPayload notifications;
 
-  @SerializedName("dev_notifications_received")
-  private final int devNotificationsReceived;
-
-  @SerializedName("dev_notifications_clicked")
-  private final int devNotificationsClicked;
-
-  TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
-    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs, boolean devNotificationsDisabled, int devNotificationsReceived,
-    int devNotificationsClicked,
-    TelemetryAnalyzerPerformancePayload[] analyses) {
+  public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
+    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
+    TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -93,10 +87,8 @@ class TelemetryPayload {
     this.os = os;
     this.jre = jre;
     this.nodejs = nodejs;
-    this.devNotificationsDisabled = devNotificationsDisabled;
-    this.devNotificationsReceived = devNotificationsReceived;
-    this.devNotificationsClicked = devNotificationsClicked;
     this.analyses = analyses;
+    this.notifications = notifications;
   }
 
   public long daysSinceInstallation() {
@@ -143,16 +135,8 @@ class TelemetryPayload {
     return systemTime;
   }
 
-  public boolean devNotificationsDisabled() {
-    return devNotificationsDisabled;
-  }
-
-  public int devNotificationsReceived() {
-    return devNotificationsReceived;
-  }
-
-  public int devNotificationsClicked() {
-    return devNotificationsClicked;
+  public TelemetryNotificationsPayload notifications() {
+    return notifications;
   }
 
   public String toJson() {
