@@ -301,11 +301,16 @@
                   <includes>
                     <include>org.apache.**</include>
                     <include>com.google.common.**</include>
+                    <include>com.google.errorprone.**</include>
+                    <include>com.google.j2objc.**</include>
+                    <include>org.checkerframework.**</include>
                     <include>com.google.gson.**</include>
                     <include>org.picocontainer.**</include>
                     <include>okhttp3.**</include>
                     <include>okio.**</include>
-                    <include>org.sonarqube.ws.**</include>
+                    <include>kotlin.**</include>
+                    <include>org.jetbrains.**</include>
+                    <include>org.sonarqube.ws.**</include>                    
                   </includes>
                 </relocation>
               </relocations>
