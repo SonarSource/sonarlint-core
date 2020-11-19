@@ -308,8 +308,6 @@
                     <include>org.picocontainer.**</include>
                     <include>okhttp3.**</include>
                     <include>okio.**</include>
-                    <include>kotlin.**</include>
-                    <include>org.jetbrains.**</include>
                     <include>org.sonarqube.ws.**</include>                    
                   </includes>
                 </relocation>
