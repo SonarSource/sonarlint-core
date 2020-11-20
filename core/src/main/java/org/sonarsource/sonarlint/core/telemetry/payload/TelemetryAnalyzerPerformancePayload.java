@@ -24,13 +24,10 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 public class TelemetryAnalyzerPerformancePayload {
-  private String language;
+  private final String language;
 
   @SerializedName("rate_per_duration")
-  private Map<String, BigDecimal> distribution;
-
-  public TelemetryAnalyzerPerformancePayload() {
-  }
+  private final Map<String, BigDecimal> distribution;
 
   public TelemetryAnalyzerPerformancePayload(String language, Map<String, BigDecimal> distribution) {
     this.language = language;
