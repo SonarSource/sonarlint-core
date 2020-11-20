@@ -72,9 +72,12 @@ public class TelemetryPayload {
   @SerializedName("server_notifications")
   private final TelemetryNotificationsPayload notifications;
 
+  @SerializedName("show_hotspot")
+  private final ShowHotspotPayload showHotspotPayload;
+
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
     OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
-    TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications) {
+    TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -89,6 +92,7 @@ public class TelemetryPayload {
     this.nodejs = nodejs;
     this.analyses = analyses;
     this.notifications = notifications;
+    this.showHotspotPayload = showHotspotPayload;
   }
 
   public long daysSinceInstallation() {

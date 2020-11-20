@@ -43,8 +43,9 @@ public class TelemetryPayloadTest {
     counters.put("QUALITY_GATE", new TelemetryNotificationsCounterPayload(5, 3));
     counters.put("NEW_ISSUES", new TelemetryNotificationsCounterPayload(10, 1));
     TelemetryNotificationsPayload notifPayload = new TelemetryNotificationsPayload(true, counters);
+    ShowHotspotPayload showHotspotPayload = new ShowHotspotPayload(4);
     TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
-      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload);
+      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload);
     String s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -60,7 +61,8 @@ public class TelemetryPayloadTest {
       + "\"jre\":\"1.8.0\","
       + "\"nodejs\":\"10.5.2\","
       + "\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}],"
-      + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}}}");
+      + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}},"
+      + "\"show_hotspot\":{\"requests_count\":4}}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);

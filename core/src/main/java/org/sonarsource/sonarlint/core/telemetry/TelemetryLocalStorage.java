@@ -40,6 +40,7 @@ class TelemetryLocalStorage {
   private boolean enabled;
   private final Map<String, TelemetryAnalyzerPerformance> analyzers;
   private final Map<String, TelemetryNotificationsCounter> notificationsCountersByEventType;
+  private int showHotspotRequestsCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -103,6 +104,7 @@ class TelemetryLocalStorage {
   void clearAfterPing() {
     this.analyzers.clear();
     this.notificationsCountersByEventType.clear();
+    showHotspotRequestsCount = 0;
   }
 
   long numUseDays() {
@@ -193,4 +195,11 @@ class TelemetryLocalStorage {
     this.notificationsCountersByEventType.computeIfAbsent(eventType, k -> new TelemetryNotificationsCounter()).incrementDevNotificationsClicked();
   }
 
+  public void incrementShowHotspotRequestCount() {
+    showHotspotRequestsCount++;
+  }
+
+  public int showHotspotRequestsCount() {
+    return showHotspotRequestsCount;
+  }
 }

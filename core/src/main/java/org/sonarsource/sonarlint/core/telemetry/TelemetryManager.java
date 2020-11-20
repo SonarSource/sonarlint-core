@@ -54,9 +54,7 @@ public class TelemetryManager {
   }
 
   public void enable() {
-    storage.tryUpdateAtomically(data -> {
-      data.setEnabled(true);
-    });
+    storage.tryUpdateAtomically(data -> data.setEnabled(true));
     uploadLazily();
   }
 
@@ -111,11 +109,14 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
   }
 
+  public void showHotspotRequestReceived() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementShowHotspotRequestCount);
+  }
+
   /**
    * Save and upload lazily telemetry data.
    */
   public void stop() {
     uploadLazily();
   }
-
 }

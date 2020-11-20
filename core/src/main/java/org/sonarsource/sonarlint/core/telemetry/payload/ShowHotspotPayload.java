@@ -20,25 +20,12 @@
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.Map;
 
-public class TelemetryNotificationsPayload {
-  private final boolean disabled;
+public class ShowHotspotPayload {
+  @SerializedName("requests_count")
+  public final int requestsCount;
 
-  @SerializedName("count_by_type")
-  private final Map<String, TelemetryNotificationsCounterPayload> counters;
-
-  public TelemetryNotificationsPayload(boolean disabled, Map<String, TelemetryNotificationsCounterPayload> counters) {
-    this.disabled = disabled;
-    this.counters = counters;
+  public ShowHotspotPayload(int requestsCount) {
+    this.requestsCount = requestsCount;
   }
-
-  public boolean disabled() {
-    return disabled;
-  }
-
-  public Map<String, TelemetryNotificationsCounterPayload> counters() {
-    return counters;
-  }
-
 }

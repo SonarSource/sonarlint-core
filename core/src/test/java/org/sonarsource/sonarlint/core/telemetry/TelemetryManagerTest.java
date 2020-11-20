@@ -323,6 +323,36 @@ public class TelemetryManagerTest {
     assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsClicked()).isEqualTo(DEFAULT_NOTIF_CLICKED + 2);
   }
 
+  @Test
+  public void accumulate_received_open_hotspot_requests() {
+    createAndSaveSampleData(storage);
+
+    // note: the manager hasn't seen the saved data
+    manager.showHotspotRequestReceived();
+    manager.showHotspotRequestReceived();
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+
+    assertThat(reloaded.showHotspotRequestsCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void uploadLazily_should_clear_accumulated_data() {
+    createAndSaveSampleData(storage);
+
+    // note: the manager hasn't seen the saved data
+    manager.analysisDoneOnSingleLanguage(Language.JAVA, 10);
+    manager.showHotspotRequestReceived();
+    manager.devNotificationsClicked(FOO_EVENT);
+
+    manager.uploadLazily();
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+    assertThat(reloaded.analyzers()).isEmpty();
+    assertThat(reloaded.showHotspotRequestsCount()).isZero();
+    assertThat(reloaded.notifications()).isEmpty();
+  }
+
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
