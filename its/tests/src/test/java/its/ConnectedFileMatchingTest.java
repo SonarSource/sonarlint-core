@@ -58,6 +58,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
     .build();
@@ -74,7 +75,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private List<String> logs = new ArrayList<>();
+  private final List<String> logs = new ArrayList<>();
 
   @BeforeClass
   public static void prepare() {
@@ -146,6 +147,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
       .build();
   }
 
+  @Override
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDirName, String filePath, String... properties) throws IOException {
     Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     List<ClientInputFile> filesToAnalyze = clientTools.collectAllFiles(projectDir)
@@ -164,6 +166,9 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   private static void analyzeMavenProject(String projectDirName) {
     Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     Path pom = projectDir.resolve("pom.xml");
-    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile()).setCleanPackageSonarGoals());
+    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
+      .setCleanPackageSonarGoals()
+      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 }
