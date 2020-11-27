@@ -62,6 +62,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   @Rule
   public Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.0.2010")).build();
 
@@ -74,7 +75,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private List<String> logs = new ArrayList<>();
+  private final List<String> logs = new ArrayList<>();
 
   @Before
   public void prepare() throws Exception {

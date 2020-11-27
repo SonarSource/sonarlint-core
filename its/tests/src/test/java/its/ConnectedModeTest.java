@@ -64,7 +64,6 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.qualityprofiles.ActivateRuleRequest;
 import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
@@ -74,8 +73,8 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
@@ -119,6 +118,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
     .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", ItUtils.pythonVersion))
@@ -310,8 +310,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
-    }
-    finally {
+    } finally {
       adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("false"));
     }
   }
@@ -486,7 +485,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     SonarLintWsClient slClient = new SonarLintWsClient(getServerConfig());
     SecurityHotspotsService securityHotspotsService = new SecurityHotspotsService(slClient);
 
-    Optional<RemoteHotspot> remoteHotspot = securityHotspotsService.fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(slClient, PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
+    Optional<RemoteHotspot> remoteHotspot = securityHotspotsService
+      .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(slClient, PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
 
     assertThat(remoteHotspot).isNotEmpty();
     RemoteHotspot actualHotspot = remoteHotspot.get();
@@ -826,16 +826,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .build();
   }
 
-  private static void removeGroupPermission(String groupName, String permission) {
-    adminWsClient.permissions().removeGroup(new RemoveGroupRequest()
-      .setGroupName(groupName)
-      .setPermission(permission));
-  }
-
   private static void analyzeMavenProject(String projectDirName) {
     Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     Path pom = projectDir.resolve("pom.xml");
-    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile()).setCleanPackageSonarGoals());
+    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
+      .setCleanPackageSonarGoals()
+      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
 }

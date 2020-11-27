@@ -60,6 +60,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .setEdition(Edition.ENTERPRISE)
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
