@@ -34,23 +34,23 @@ class RuleKeyTests {
     RuleKey ruleKey = new RuleKey(repository, rule);
     assertThat(ruleKey.repository()).isEqualTo(repository);
     assertThat(ruleKey.rule()).isEqualTo(rule);
-    assertThat(ruleKey.toString()).isEqualTo(repository + ":" + rule);
+    assertThat(ruleKey).hasToString(repository + ":" + rule);
   }
 
   @Test
-  void ruleKey_is_hashable() {
+  void ruleKey_equals_and_hashcode() {
     String repository = "squid";
     String rule = "1181";
 
     RuleKey ruleKey1 = new RuleKey(repository, rule);
     RuleKey ruleKey2 = new RuleKey(repository, rule);
-    assertThat(ruleKey1).isEqualTo(ruleKey1);
-    assertThat(ruleKey1).isEqualTo(ruleKey2);
-    assertThat(ruleKey1.hashCode()).isEqualTo(ruleKey2.hashCode());
-
-    assertThat(ruleKey1).isNotEqualTo(null);
-    assertThat(ruleKey1).isNotEqualTo(new RuleKey(repository, rule + "x"));
-    assertThat(ruleKey1).isNotEqualTo(new RuleKey(repository + "x", rule));
+    assertThat(ruleKey1)
+      .isEqualTo(ruleKey1)
+      .isEqualTo(ruleKey2)
+      .hasSameHashCodeAs(ruleKey2)
+      .isNotEqualTo(null)
+      .isNotEqualTo(new RuleKey(repository, rule + "x"))
+      .isNotEqualTo(new RuleKey(repository + "x", rule));
   }
 
   @Test
