@@ -24,7 +24,6 @@
   </issueManagement>
 
   <modules>
-    <module>client-api</module>
     <module>core</module>
     <module>slf4j-sonar-log</module>
   </modules>
