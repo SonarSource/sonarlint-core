@@ -69,7 +69,7 @@ class NotificationChecker {
   }
 
   /**
-   * Checks whether a server supports notifications
+   * Checks whether a server supports notifications. Throws exception is the server can't be contacted.
    */
   public boolean isSupported() {
     String path = getWsPath(Collections.emptyMap());
