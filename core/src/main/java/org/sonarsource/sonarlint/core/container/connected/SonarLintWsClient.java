@@ -153,8 +153,7 @@ public class SonarLintWsClient {
 
   private static String tryParseAsJsonError(String responseContent) {
     try {
-      JsonParser parser = new JsonParser();
-      JsonObject obj = parser.parse(responseContent).getAsJsonObject();
+      JsonObject obj = JsonParser.parseString(responseContent).getAsJsonObject();
       JsonArray errors = obj.getAsJsonArray("errors");
       List<String> errorMessages = new ArrayList<>();
       for (JsonElement e : errors) {
