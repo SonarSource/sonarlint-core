@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -832,7 +833,7 @@ class StandaloneIssueMediumTests {
     ClientInputFile inputFile2 = new OnDiskTestClientInputFile(unexistingPath.toPath(), "missing.bin", false, StandardCharsets.UTF_8, null);
 
     final List<Issue> issues = new ArrayList<>();
-    final List<String> logs = new ArrayList<>();
+    final List<String> logs = new CopyOnWriteArrayList<>();
     AnalysisResults analysisResults = sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
