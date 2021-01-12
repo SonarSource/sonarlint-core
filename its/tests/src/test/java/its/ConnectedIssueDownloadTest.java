@@ -80,11 +80,8 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   private final List<String> logs = new ArrayList<>();
 
   private static Issue wfIssue;
-
   private static Issue fpIssue;
-
   private static Issue overridenSeverityIssue;
-
   private static Issue overridenTypeIssue;
 
   @BeforeClass
@@ -95,12 +92,15 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
-    analyzeProject("sample-xoo");
+    analyzeProject("sample-xoo-v1");
+    // Second analysis with less issues to have closed issues
+    analyzeProject("sample-xoo-v2");
 
     // Mark a few issues as closed WF and closed FP
-    SearchWsResponse issueSearchResponse = adminWsClient.issues().search(new SearchRequest().setComponentKeys(asList(PROJECT_KEY)));
+    SearchWsResponse issueSearchResponse = adminWsClient.issues().search(new SearchRequest().setStatuses(asList("OPEN")).setComponentKeys(asList(PROJECT_KEY)));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
+    // Change severity and type
     overridenSeverityIssue = issueSearchResponse.getIssues(2);
     overridenTypeIssue = issueSearchResponse.getIssues(3);
 

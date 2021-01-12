@@ -64,7 +64,7 @@ class IssueDownloaderTests {
     try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
       response.writeTo(byteStream);
       try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
-        WsClientTestUtils.addResponse(wsClient, "/api/issues/search.protobuf?componentKeys=" + key + "&ps=500&p=1", inputStream);
+        WsClientTestUtils.addResponse(wsClient, "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&componentKeys=" + key + "&ps=500&p=1", inputStream);
       }
     }
 
@@ -88,7 +88,7 @@ class IssueDownloaderTests {
     try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
       response.writeTo(byteStream);
       try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
-        WsClientTestUtils.addResponse(wsClient, "/api/issues/search.protobuf?componentKeys=" + key + "&ps=500&p=1", inputStream);
+        WsClientTestUtils.addResponse(wsClient, "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&componentKeys=" + key + "&ps=500&p=1", inputStream);
       }
     }
 
@@ -101,7 +101,7 @@ class IssueDownloaderTests {
   void test_fail_other_codes() throws IOException {
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
     String key = "dummyKey";
-    WsClientTestUtils.addFailedResponse(wsClient, "/api/issues/search.protobuf?componentKeys=" + key + "&ps=500&p=1", 503, "");
+    WsClientTestUtils.addFailedResponse(wsClient, "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&componentKeys=" + key + "&ps=500&p=1", 503, "");
 
     IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueDownloader.download(key, projectConfiguration, PROGRESS));

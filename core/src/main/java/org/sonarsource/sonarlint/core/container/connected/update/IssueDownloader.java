@@ -100,6 +100,6 @@ public class IssueDownloader {
   }
 
   private static String getIssuesUrl(String key) {
-    return "/api/issues/search.protobuf?componentKeys=" + StringUtils.urlEncode(key);
+    return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&componentKeys=" + StringUtils.urlEncode(key);
   }
 }
