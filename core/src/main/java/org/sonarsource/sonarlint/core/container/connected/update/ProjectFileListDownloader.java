@@ -42,7 +42,7 @@ public class ProjectFileListDownloader {
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,
-      component -> files.add(component.getKey()), false, progress);
+      (component, response) -> files.add(component.getKey()), false, progress);
     return files;
   }
 

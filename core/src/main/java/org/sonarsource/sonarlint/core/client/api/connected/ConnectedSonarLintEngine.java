@@ -171,7 +171,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath);
+  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath, @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads and stores server issues for a given project.
@@ -180,7 +180,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(ServerConfiguration serverConfig, String projectKey);
+  void downloadServerIssues(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

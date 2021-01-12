@@ -49,11 +49,11 @@ public class IssueStoreReaderTest {
   private static final String PROJECT_KEY = "root";
 
   private IssueStoreReader issueStoreReader;
-  private IssueStore issueStore = new InMemoryIssueStore();
-  private StoragePaths storagePaths = mock(StoragePaths.class);
-  private StorageReader storageReader = mock(StorageReader.class);
-  private IssueStorePaths issueStorePaths = new IssueStorePaths();
-  private ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
+  private final IssueStore issueStore = new InMemoryIssueStore();
+  private final StoragePaths storagePaths = mock(StoragePaths.class);
+  private final StorageReader storageReader = mock(StorageReader.class);
+  private final IssueStorePaths issueStorePaths = new IssueStorePaths();
+  private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
@@ -231,8 +231,8 @@ public class IssueStoreReaderTest {
       .containsOnly(createApiIssue(PROJECT_KEY, "src/path1"));
   }
 
-  private Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
-    if (Objects.equal(o1.moduleKey(), o2.moduleKey()) && Objects.equal(o1.filePath(), o2.filePath())) {
+  private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
+    if (Objects.equal(o1.filePath(), o2.filePath())) {
       return 0;
     }
     return 1;
@@ -240,14 +240,12 @@ public class IssueStoreReaderTest {
 
   private ServerIssue createApiIssue(String moduleKey, String filePath) {
     return new DefaultServerIssue()
-      .setFilePath(filePath)
-      .setModuleKey(moduleKey);
+      .setFilePath(filePath);
   }
 
   private Sonarlint.ServerIssue createServerIssue(String moduleKey, String filePath) {
     return Sonarlint.ServerIssue.newBuilder()
       .setPath(filePath)
-      .setModuleKey(moduleKey)
       .build();
   }
 }

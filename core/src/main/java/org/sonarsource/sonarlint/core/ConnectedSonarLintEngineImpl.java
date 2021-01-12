@@ -237,17 +237,17 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(serverConfig, projectBinding, ideFilePath);
+      return getHandler().downloadServerIssues(serverConfig, projectBinding, ideFilePath, new ProgressWrapper(monitor));
     });
   }
 
   @Override
-  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
+  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
     withRwLock(() -> {
-      getHandler().downloadServerIssues(serverConfig, projectKey);
+      getHandler().downloadServerIssues(serverConfig, projectKey, new ProgressWrapper(monitor));
       return null;
     });
   }

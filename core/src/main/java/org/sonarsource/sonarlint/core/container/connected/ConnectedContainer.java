@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
@@ -102,7 +102,7 @@ public class ConnectedContainer extends ComponentContainer {
       ModuleHierarchyDownloader.class,
       RulesDownloader.class,
       QualityProfilesDownloader.class,
-      IssueDownloaderImpl.class,
+      IssueDownloader.class,
       IssueStoreFactory.class,
       new PluginCacheProvider(),
       PluginHashes.class,

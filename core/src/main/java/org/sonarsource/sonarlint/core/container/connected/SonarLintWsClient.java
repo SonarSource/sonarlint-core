@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
@@ -180,7 +180,7 @@ public class SonarLintWsClient {
    * @param getPaging extract {@link Paging} from the protobuf message
    */
   public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress) {
+    Function<G, List<F>> itemExtractor, BiConsumer<F, G> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress) {
     AtomicInteger page = new AtomicInteger(0);
     AtomicBoolean stop = new AtomicBoolean(false);
     AtomicInteger loaded = new AtomicInteger(0);
@@ -195,12 +195,15 @@ public class SonarLintWsClient {
   }
 
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging, Function<G, List<F>> itemExtractor,
-    Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded, WsResponse response)
+    BiConsumer<F, G> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded, WsResponse response)
     throws IOException {
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
     G protoBufResponse = responseParser.apply(response.contentStream());
     List<F> items = itemExtractor.apply(protoBufResponse);
     for (F item : items) {
-      itemConsumer.accept(item);
+      itemConsumer.accept(item, protoBufResponse);
       loaded.incrementAndGet();
     }
     boolean isEmpty = items.isEmpty();

@@ -26,9 +26,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.JUnitTempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -39,33 +37,34 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyListOf;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class PartialUpdaterTest {
+  private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   @Rule
   public JUnitTempFolder tempFolder = new JUnitTempFolder();
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
 
-  private IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
-  private IssueDownloader downloader = mock(IssueDownloader.class);
-  private StoragePaths storagePaths = mock(StoragePaths.class);
-  private IssueStore issueStore = mock(IssueStore.class);
-  private ProjectListDownloader projectListDownloader = mock(ProjectListDownloader.class);
-  private IssueStorePaths issueStorePaths = mock(IssueStorePaths.class);
-  private Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder().build();
-  private ProjectBinding projectBinding = new ProjectBinding("module", "", "");
+  private final IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
+  private final IssueDownloader downloader = mock(IssueDownloader.class);
+  private final StoragePaths storagePaths = mock(StoragePaths.class);
+  private final IssueStore issueStore = mock(IssueStore.class);
+  private final ProjectListDownloader projectListDownloader = mock(ProjectListDownloader.class);
+  private final IssueStorePaths issueStorePaths = mock(IssueStorePaths.class);
+  private final Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder().build();
+  private final ProjectBinding projectBinding = new ProjectBinding("module", "", "");
 
   private PartialUpdater updater;
 
@@ -81,57 +80,55 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(downloader.apply("module:file")).thenReturn(issues);
+    when(downloader.download("module:file", projectConfiguration, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(projectBinding, projectConfiguration, "file");
+    updater.updateFileIssues(projectBinding, projectConfiguration, "file", PROGRESS);
 
-    verify(issueStore).save(anyListOf(Sonarlint.ServerIssue.class));
+    verify(issueStore).save(anyList());
   }
 
   @Test
   public void update_file_issues_for_unknown_file() {
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
-    updater.updateFileIssues(projectBinding, projectConfiguration, "file");
-    verifyZeroInteractions(downloader);
-    verifyZeroInteractions(issueStore);
+    updater.updateFileIssues(projectBinding, projectConfiguration, "file", PROGRESS);
+    verifyNoInteractions(downloader);
+    verifyNoInteractions(issueStore);
   }
 
   @Test
   public void error_downloading_issues() {
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(downloader.apply("module:file")).thenThrow(IllegalArgumentException.class);
+    when(downloader.download("module:file", projectConfiguration, PROGRESS)).thenThrow(IllegalArgumentException.class);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
 
-    exception.expect(DownloadException.class);
-    updater.updateFileIssues(projectBinding, projectConfiguration, "file");
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(projectBinding, projectConfiguration, "file", PROGRESS));
   }
 
   @Test
-  public void update_file_issues_by_module() throws IOException {
-    ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").setModuleKey(projectBinding.projectKey()).build();
+  public void update_file_issues_by_project() throws IOException {
+    ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     when(storagePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(temp.newFolder().toPath());
-    when(downloader.apply(projectBinding.projectKey())).thenReturn(issues);
+    when(downloader.download(projectBinding.projectKey(), projectConfiguration, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration);
+    updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration, PROGRESS);
 
-    verify(issueStore).save(anyListOf(Sonarlint.ServerIssue.class));
+    verify(issueStore).save(anyList());
   }
 
   @Test
   public void error_downloading_modules() {
     when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
     doThrow(IllegalArgumentException.class).when(projectListDownloader).fetchTo(eq(temp.getRoot().toPath()), any(ProgressWrapper.class));
-    exception.expect(DownloadException.class);
 
-    updater.updateProjectList(new ProgressWrapper(null));
+    assertThrows(DownloadException.class, () -> updater.updateProjectList(PROGRESS));
   }
 
   @Test
   public void update_module_list() {
     when(storagePaths.getGlobalStorageRoot()).thenReturn(temp.getRoot().toPath());
-    updater.updateProjectList(new ProgressWrapper(null));
+    updater.updateProjectList(PROGRESS);
     verify(projectListDownloader).fetchTo(eq(temp.getRoot().toPath()), any(ProgressWrapper.class));
   }
 }

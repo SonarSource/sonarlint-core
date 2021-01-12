@@ -19,11 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Instant;
-
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultServerIssueTest {
   @Test
@@ -36,11 +35,9 @@ public class DefaultServerIssueTest {
     assertThat(issue.setFilePath("path1").filePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").key()).isEqualTo("key1");
     assertThat(issue.setLine(22).line()).isEqualTo(22);
-    assertThat(issue.setManualSeverity(true).manualSeverity()).isEqualTo(true);
     assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");
     assertThat(issue.setRuleKey("rule1").ruleKey()).isEqualTo("rule1");
     assertThat(issue.setResolution("RESOLVED").resolution()).isEqualTo("RESOLVED");
-    assertThat(issue.setModuleKey("module1").moduleKey()).isEqualTo("module1");
     assertThat(issue.setMessage("msg1").message()).isEqualTo("msg1");
     assertThat(issue.type()).isEqualTo(null);
     assertThat(issue.setType("type").type()).isEqualTo("type");

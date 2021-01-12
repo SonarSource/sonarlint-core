@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
-
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
@@ -32,9 +31,7 @@ public class DefaultServerIssue implements ServerIssue {
   private String message;
   private String checksum;
   private String assigneeLogin;
-  private String moduleKey;
   private String filePath;
-  private boolean manualSeverity;
   private Instant creationDate;
   private String severity;
   private String type;
@@ -75,18 +72,8 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public String moduleKey() {
-    return moduleKey;
-  }
-
-  @Override
   public String filePath() {
     return filePath;
-  }
-
-  @Override
-  public boolean manualSeverity() {
-    return manualSeverity;
   }
 
   @Override
@@ -98,7 +85,7 @@ public class DefaultServerIssue implements ServerIssue {
   public String severity() {
     return severity;
   }
-  
+
   @Override
   public String type() {
     return type;
@@ -139,18 +126,8 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setModuleKey(String moduleKey) {
-    this.moduleKey = moduleKey;
-    return this;
-  }
-
   public DefaultServerIssue setFilePath(String filePath) {
     this.filePath = filePath;
-    return this;
-  }
-
-  public DefaultServerIssue setManualSeverity(boolean manualSeverity) {
-    this.manualSeverity = manualSeverity;
     return this;
   }
 
@@ -163,7 +140,7 @@ public class DefaultServerIssue implements ServerIssue {
     this.severity = severity;
     return this;
   }
-  
+
   public DefaultServerIssue setType(@Nullable String type) {
     this.type = type;
     return this;
