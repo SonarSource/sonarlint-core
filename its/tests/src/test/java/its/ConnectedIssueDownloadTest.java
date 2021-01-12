@@ -97,7 +97,8 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     analyzeProject("sample-xoo-v2");
 
     // Mark a few issues as closed WF and closed FP
-    SearchWsResponse issueSearchResponse = adminWsClient.issues().search(new SearchRequest().setStatuses(asList("OPEN")).setComponentKeys(asList(PROJECT_KEY)));
+    SearchWsResponse issueSearchResponse = adminWsClient.issues()
+      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
     // Change severity and type
@@ -109,6 +110,15 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
 
     adminWsClient.issues().setSeverity(new SetSeverityRequest().setIssue(overridenSeverityIssue.getKey()).setSeverity("BLOCKER"));
     adminWsClient.issues().setType(new SetTypeRequest().setIssue(overridenTypeIssue.getKey()).setType("BUG"));
+
+    // Ensure an hostpot has been reported on server side (except for SQ 6.7 because there was no hotspots at that time)
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2)) {
+      assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY)).getHotspotsList()).isNotEmpty();
+    } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(7, 0)) {
+      assertThat(
+        adminWsClient.issues().search(new SearchRequest().setTypes(asList("SECURITY_HOTSPOT")).setComponentKeys(asList(PROJECT_KEY))).getIssuesList())
+          .isNotEmpty();
+    }
   }
 
   @Before
@@ -171,6 +181,7 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
       .setProjectKey(PROJECT_KEY)
+      .setSourceDirs("src")
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }

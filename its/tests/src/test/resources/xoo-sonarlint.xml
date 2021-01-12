@@ -8,5 +8,10 @@
       <key>OneIssuePerLine</key>
       <priority>MAJOR</priority>
     </rule>
+    <rule>
+      <repositoryKey>xoo</repositoryKey>
+      <key>Hotspot</key>
+      <priority>MAJOR</priority>
+    </rule>
   </rules>
 </profile>
