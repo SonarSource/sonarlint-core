@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -229,18 +230,18 @@ public class ProjectStorageUpdateExecutorTest {
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
 
     ServerIssue fileIssue1 = ServerIssue.newBuilder()
-      .setPath("some/path")
+      .setPrimaryLocation(Location.newBuilder().setPath("some/path"))
       .setRuleKey("squid:x")
       .build();
     ServerIssue fileIssue2 = ServerIssue.newBuilder()
-      .setPath("some/path")
+      .setPrimaryLocation(Location.newBuilder().setPath("some/path"))
       .setRuleKey("squid:y")
       .build();
     ServerIssue anotherFileIssue = ServerIssue.newBuilder()
-      .setPath("another/path")
+      .setPrimaryLocation(Location.newBuilder().setPath("another/path"))
       .build();
     ServerIssue notDownloadedIssue = ServerIssue.newBuilder()
-      .setPath("yet/another/path")
+      .setPrimaryLocation(Location.newBuilder().setPath("yet/another/path"))
       .build();
 
     IssueDownloader issueDownloader = mock(IssueDownloader.class);

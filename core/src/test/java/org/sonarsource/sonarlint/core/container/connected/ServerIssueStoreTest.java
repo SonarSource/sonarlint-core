@@ -31,6 +31,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -59,8 +61,9 @@ public class ServerIssueStoreTest {
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
-    issueList.add(builder.setPath(path1).build());
-    issueList.add(builder.setPath(path2).build());
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path1)).build());
+    builder.clear();
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path2)).build());
 
     store.save(issueList);
 
@@ -71,8 +74,8 @@ public class ServerIssueStoreTest {
 
   @Test
   public void should_read_object_replaced() {
-    ServerIssue issue1 = ServerIssue.newBuilder().setPath(path1).setLine(11).build();
-    ServerIssue issue2 = ServerIssue.newBuilder().setPath(path1).setLine(22).build();
+    ServerIssue issue1 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(11))).build();
+    ServerIssue issue2 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(22))).build();
 
     store.save(Collections.singletonList(issue1));
     assertThat(store.load(path1)).containsOnly(issue1);
@@ -94,7 +97,7 @@ public class ServerIssueStoreTest {
     }
 
     exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setPath(path1).build()));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1)).build()));
   }
 
   @Test
@@ -118,8 +121,8 @@ public class ServerIssueStoreTest {
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
-    issueList.add(builder.setPath(path1).build());
-    issueList.add(builder.setPath(path2).build());
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path1)).build());
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path2)).build());
 
     store.save(issueList);
     store.delete(path1);

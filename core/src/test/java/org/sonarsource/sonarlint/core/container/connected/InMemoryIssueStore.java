@@ -30,7 +30,7 @@ public class InMemoryIssueStore implements IssueStore {
 
   @Override
   public void save(List<ServerIssue> issues) {
-    issuesMap = issues.stream().collect(Collectors.groupingBy(ServerIssue::getPath));
+    issuesMap = issues.stream().collect(Collectors.groupingBy(issue -> issue.getPrimaryLocation().getPath()));
   }
 
   @Override

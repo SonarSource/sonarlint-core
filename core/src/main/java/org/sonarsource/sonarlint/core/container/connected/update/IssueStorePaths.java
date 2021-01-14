@@ -90,9 +90,9 @@ public class IssueStorePaths {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setChecksum(pbIssue.getChecksum());
-    issue.setLine(pbIssue.getLine());
+    issue.setLine(pbIssue.getPrimaryLocation().getTextRange().getStartLine());
     issue.setFilePath(idePath);
-    issue.setMessage(pbIssue.getMsg());
+    issue.setMessage(pbIssue.getPrimaryLocation().getMsg());
     issue.setSeverity(pbIssue.getSeverity());
     // type was added recently
     issue.setType(pbIssue.getType().isEmpty() ? null : pbIssue.getType());
