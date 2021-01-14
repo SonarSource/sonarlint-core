@@ -22,8 +22,10 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.time.Instant;
 import java.util.Map;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.container.model.DefaultServerFlow;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
@@ -90,7 +92,8 @@ public class IssueStorePaths {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setLineHash(pbIssue.getLineHash());
-    issue.setLine(pbIssue.getPrimaryLocation().getTextRange().getStartLine());
+    Sonarlint.ServerIssue.TextRange textRange = pbIssue.getPrimaryLocation().getTextRange();
+    issue.setTextRange(new TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset()));
     issue.setFilePath(idePath);
     issue.setMessage(pbIssue.getPrimaryLocation().getMsg());
     issue.setSeverity(pbIssue.getSeverity());
@@ -99,6 +102,9 @@ public class IssueStorePaths {
     issue.setResolution(pbIssue.getResolution());
     issue.setKey(pbIssue.getKey());
     issue.setRuleKey(pbIssue.getRuleRepository() + ":" + pbIssue.getRuleKey());
+    for (Sonarlint.ServerIssue.Flow f : pbIssue.getFlowList()) {
+      issue.getFlows().add(new DefaultServerFlow(f.getLocationList()));
+    }
     return issue;
   }
 }

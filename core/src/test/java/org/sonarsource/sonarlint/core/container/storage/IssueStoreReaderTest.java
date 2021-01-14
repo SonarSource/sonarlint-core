@@ -219,7 +219,7 @@ public class IssueStoreReaderTest {
   }
 
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
-    if (Objects.equal(o1.filePath(), o2.filePath())) {
+    if (Objects.equal(o1.getFilePath(), o2.getFilePath())) {
       return 0;
     }
     return 1;

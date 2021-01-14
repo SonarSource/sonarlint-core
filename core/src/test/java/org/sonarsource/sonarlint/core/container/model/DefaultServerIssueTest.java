@@ -20,9 +20,12 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
+import java.util.Arrays;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class DefaultServerIssueTest {
   @Test
@@ -32,15 +35,25 @@ public class DefaultServerIssueTest {
     assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");
     assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
     assertThat(issue.setAssigneeLogin("login1").assigneeLogin()).isEqualTo("login1");
-    assertThat(issue.setFilePath("path1").filePath()).isEqualTo("path1");
+    assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").key()).isEqualTo("key1");
-    assertThat(issue.setLine(22).line()).isEqualTo(22);
+    issue.setTextRange(new org.sonarsource.sonarlint.core.client.api.common.TextRange(1,
+      2,
+      3,
+      4));
+    assertThat(issue.getStartLine()).isEqualTo(1);
+    assertThat(issue.getStartLineOffset()).isEqualTo(2);
+    assertThat(issue.getEndLine()).isEqualTo(3);
+    assertThat(issue.getEndLineOffset()).isEqualTo(4);
     assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");
     assertThat(issue.setRuleKey("rule1").ruleKey()).isEqualTo("rule1");
     assertThat(issue.setResolution("RESOLVED").resolution()).isEqualTo("RESOLVED");
-    assertThat(issue.setMessage("msg1").message()).isEqualTo("msg1");
-    assertThat(issue.type()).isEqualTo(null);
+    assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
     assertThat(issue.setType("type").type()).isEqualTo("type");
 
+    assertThat(issue.getFlows()).isEmpty();
+
+    issue.setFlows(Arrays.asList(mock(ServerIssue.Flow.class), mock(ServerIssue.Flow.class)));
+    assertThat(issue.getFlows()).hasSize(2);
   }
 }

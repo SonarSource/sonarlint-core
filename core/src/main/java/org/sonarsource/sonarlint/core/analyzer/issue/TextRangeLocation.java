@@ -20,22 +20,28 @@
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import javax.annotation.Nullable;
-
 import org.sonar.api.batch.fs.TextRange;
+import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
 
-abstract class TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
+public abstract class TextRangeLocation implements IssueRangeAndMessage {
 
-  final TextRange originalTextRange;
   private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
 
-  TextRangeLocation(@Nullable TextRange originalTextRange) {
-    this.originalTextRange = originalTextRange;
-    this.textRange = originalTextRange != null ?
-      new org.sonarsource.sonarlint.core.client.api.common.TextRange(
-        originalTextRange.start().line(),
-        originalTextRange.start().lineOffset(),
-        originalTextRange.end().line(),
-        originalTextRange.end().lineOffset())
+  protected TextRangeLocation(@Nullable TextRange analyzerTextRange) {
+    this.textRange = analyzerTextRange != null ? new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+      analyzerTextRange.start().line(),
+      analyzerTextRange.start().lineOffset(),
+      analyzerTextRange.end().line(),
+      analyzerTextRange.end().lineOffset())
+      : null;
+  }
+
+  protected TextRangeLocation(@Nullable org.sonarsource.sonarlint.core.client.api.common.TextRange serverStorageTextRange) {
+    this.textRange = serverStorageTextRange != null ? new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+      serverStorageTextRange.getStartLine(),
+      serverStorageTextRange.getStartLineOffset(),
+      serverStorageTextRange.getEndLine(),
+      serverStorageTextRange.getEndLineOffset())
       : null;
   }
 

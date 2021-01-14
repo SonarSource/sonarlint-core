@@ -394,9 +394,11 @@ public class IssueTrackerTest {
 
     ServerIssue serverIssue = mock(ServerIssue.class);
     when(serverIssue.ruleKey()).thenReturn(ruleKey);
-    when(serverIssue.message()).thenReturn(message);
+    when(serverIssue.getMessage()).thenReturn(message);
     when(serverIssue.lineHash()).thenReturn(DigestUtils.digest(lineContent));
-    when(serverIssue.line()).thenReturn(newLine + 3);
+    TextRange serverTextRange = mock(TextRange.class);
+    when(serverTextRange.getStartLine()).thenReturn(newLine + 3);
+    when(serverIssue.getTextRange()).thenReturn(serverTextRange);
     when(serverIssue.creationDate()).thenReturn(Instant.now());
     when(serverIssue.key()).thenReturn(serverIssueKey);
     when(serverIssue.resolution()).thenReturn("fixed");

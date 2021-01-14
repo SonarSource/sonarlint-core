@@ -19,29 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.time.Instant;
-import java.util.List;
+import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
 
-public interface ServerIssue extends ServerIssueLocation {
-  String key();
+public interface ServerIssueLocation extends IssueRangeAndMessage {
 
-  String resolution();
-
-  String ruleKey();
-
-  String lineHash();
-
-  String assigneeLogin();
-
-  String severity();
-
-  String type();
-
-  Instant creationDate();
-
-  List<Flow> getFlows();
-
-  interface Flow {
-    List<ServerIssueLocation> locations();
-  }
+  /**
+   * @return null for global issues
+   */
+  @CheckForNull
+  String getFilePath();
 }

@@ -17,16 +17,42 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common.analysis;
+package org.sonarsource.sonarlint.core.client.api.common;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
 
-public interface IssueLocation extends IssueRangeAndMessage {
+public interface IssueRangeAndMessage {
 
   /**
-   * @return null for global issues
+   * @return null for file level issues
    */
   @CheckForNull
-  ClientInputFile getInputFile();
+  TextRange getTextRange();
+
+  @CheckForNull
+  String getMessage();
+
+  @CheckForNull
+  default Integer getStartLine() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getStartLine() : null;
+  }
+
+  @CheckForNull
+  default Integer getStartLineOffset() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getStartLineOffset() : null;
+  }
+
+  @CheckForNull
+  default Integer getEndLine() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getEndLine() : null;
+  }
+
+  @CheckForNull
+  default Integer getEndLineOffset() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getEndLineOffset() : null;
+  }
 }
