@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 public class DefaultServerIssue implements ServerIssue {
@@ -141,7 +140,7 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setType(@Nullable String type) {
+  public DefaultServerIssue setType(String type) {
     this.type = type;
     return this;
   }

@@ -1,6 +1,6 @@
 
-∫
-$javascript:MissingNewlineAtEndOfFileë
+∆
+$javascript:MissingNewlineAtEndOfFileù
 
 javascriptMissingNewlineAtEndOfFile1Files should contain an empty new line at the end"MINOR*js:©<p>Some tools such as Git work better when files end with an empty line.</p>
 <p>This rule simply generates an issue if it is missing.</p>
@@ -10,9 +10,10 @@ javascriptMissingNewlineAtEndOfFile1Files should contain an empty new line at
 +}
 \ No newline at end of file
 </pre>
-<p>if the empty line is missing at the end of the file.</p>
-˝
-javascript:S1135Ë
+<p>if the empty line is missing at the end of the file.</p>Z
+CODE_SMELL
+â
+javascript:S1135Ù
 
 javascriptS1135"TODO" tags should be handled"INFO*js:©<p>
   <code>TODO</code> tags are commonly used to mark places where some more code is required, but which the developer wants to implement later.
@@ -27,9 +28,10 @@ javascriptS1135"TODO" tags should be handled"INFO*js:©<p>
 function doSomething() {
   // TODO
 }
-</pre>
-’
-javascript:S1134¿
+</pre>Z
+CODE_SMELL
+·
+javascript:S1134Ã
 
 javascriptS1134"FIXME" tags should be handled"MAJOR*js:ˇ<p>
   <code>FIXME</code> tags are commonly used to mark places where a bug is suspected, but which the developer wants to deal with later.
@@ -44,9 +46,10 @@ javascriptS1134"FIXME" tags should be handled"MAJOR*js:ˇ<p>
 function divide(numerator, denominator) {
   return numerator / denominator;              // FIXME denominator value might be  0
 }
-</pre>
-Å
-javascript:S2508Ï
+</pre>Z
+CODE_SMELL
+ç
+javascript:S2508¯
 
 javascriptS25088The names of model properties should not contains spaces"CRITICAL*js:é<p>
   When using the Backbone.js framework, the names of model attributes should not contain spaces. This is because the Events object accepts space-delimited lists of events, so an attributes with spaces in the names could be misinterpreted.
@@ -70,9 +73,10 @@ Person = Backbone.Model.extend({
             birthDate: new Date()
         },
     });
-</pre>
-ø
-javascript:ConditionalCommentù
+</pre>Z
+CODE_SMELL
+À
+javascript:ConditionalComment©
 
 javascriptConditionalComment;Internet Explorer's conditional comments should not be used"MAJOR*js:≤<p>
   Internet Explorer offers a way to change the JavaScript code at runtime using conditional comments (activated by a @cc_on statement found in a comment). Using this preprocessing feature decreases readability and maintainability, and can hinder automated tools. What's more, it is specific to Internet Explorer and won't work for other browsers.
@@ -92,9 +96,10 @@ javascriptConditionalComment;Internet Explorer's conditional comments should 
     document.write("You are using IE5 or older");
   @end
   @*/
-</pre>
-È
-)javascript:BoundOrAssignedEvalOrArgumentsª
+</pre>Z
+CODE_SMELL
+ı
+)javascript:BoundOrAssignedEvalOrArguments«
 
 javascriptBoundOrAssignedEvalOrArguments6"eval" and "arguments" should not be bound or assigned"CRITICAL*js:∆
 <p>In JavaScript, <code>eval</code> is used to evaluate a string as JavaScript code, and <code>arguments</code> is used to access function arguments through indexed properties.
@@ -140,13 +145,15 @@ function fun() {
     // do something
   }
 }
-</pre>
-Ã
-javascript:ParsingError∞
+</pre>Z
+CODE_SMELL
+ÿ
+javascript:ParsingErrorº
 
-javascriptParsingErrorJavaScript parser failure"MAJOR*js:Ì<p>When the JavaScript parser fails, it is possible to record the failure as a violation on the file. This way, not only it is possible to track the number of files that do not parse but also to easily find out why they do not parse.</p>
-†	
-(javascript:VariableDeclarationAfterUsageÛ
+javascriptParsingErrorJavaScript parser failure"MAJOR*js:Ì<p>When the JavaScript parser fails, it is possible to record the failure as a violation on the file. This way, not only it is possible to track the number of files that do not parse but also to easily find out why they do not parse.</p>Z
+CODE_SMELL
+¨	
+(javascript:VariableDeclarationAfterUsageˇ
 
 javascriptVariableDeclarationAfterUsage1Variables should be declared before they are used"MAJOR*js:á<p>One of the biggest sources of confusion for JavaScript beginners is scoping. The reason scoping is so confusing in JavaScript is because JavaScript looks like a C-family language but doesn't act like one. C-family languages have block-level scope, meaning that when control enters a block, such as an <code>if</code> statement, new variables can be declared within that scope without affecting the outer scope. However, this is not the case in JavaScript.</p>
 <p>To minimize confusion as much as possible, variables should always be declared before they are used.</p>
@@ -177,14 +184,16 @@ function fun() {
 }
 
 fun(); // Print "1"
-</pre>
-—
-javascript:LineLength∑
+</pre>Z
+CODE_SMELL
+›
+javascript:LineLength√
 
 javascript
-LineLengthLines should not be too long"MINOR*js:t<p>Having to scroll horizontally makes it harder to get a quick overview and understanding of any piece of code.</p>
-û
-javascript:S1656â
+LineLengthLines should not be too long"MINOR*js:t<p>Having to scroll horizontally makes it harder to get a quick overview and understanding of any piece of code.</p>Z
+CODE_SMELL
+™
+javascript:S1656ï
 
 javascriptS1656%Variables should not be self-assigned"MAJOR*js:¡<p>There is no reason to re-assign a variable to itself. Either this statement is redundant and should be removed, or the re-assignment is a mistake and some other value or variable was intended for the assignment instead.</p>
 
@@ -206,9 +215,10 @@ function setName(name) {
 <ul>
 <li><a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
 <li><a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-≠
-'javascript:TooManyBreakOrContinueInLoopÅ
+</ul>Z
+CODE_SMELL
+π
+'javascript:TooManyBreakOrContinueInLoopç
 
 javascriptTooManyBreakOrContinueInLoopKLoops should not contain more than a single "break" or "continue" statement"MAJOR*js:¸<p>
   Restricting the number of <code>break</code> and <code>continue</code> statements in a loop is done in the interest of good structured programming.
@@ -231,9 +241,10 @@ for (var i = 1; i <= 10; i++) {  // Noncompliant - 2 continue - one might be tem
 
   alert("i = " + i);
 }
-</pre>
-∆
-javascript:S2228±
+</pre>Z
+CODE_SMELL
+“
+javascript:S2228Ω
 
 javascriptS2228"Console logging should not be used"MAJOR*js:Ï<p>
   Debug statements are always useful during development. But include them in production code - particularly in code that runs client-side - and you run the risk of inadvertently exposing sensitive information, slowing down the browser, or even erroring-out the site for some users. (Not all browsers support <code>console.log()</code>).
@@ -248,9 +259,10 @@ console.log(password_entered); // Noncompliant
 
 <ul>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure </li>
-</ul>
-‚
-javascript:S3317Õ
+</ul>Z
+CODE_SMELL
+Ó
+javascript:S3317Ÿ
 
 javascriptS3317'Class names and file names should match"MAJOR*js:É<p>By convention, a file that exports only one class should be named for that class. Anything else may confuse maintainers.</p>
 
@@ -270,9 +282,10 @@ class MyClass {
   // ...
 }
 export default MyClass;
-</pre>
-ﬁ
-javascript:S3271…
+</pre>Z
+CODE_SMELL
+Í
+javascript:S3271’
 
 javascriptS3271 Local storage should not be used"CRITICAL*js:É<p>Session storage and local storage are HTML 5 features which allow developers to easily store megabytes of data client-side, as opposed to the 4Kb cookies can accommodate. While useful to speed applications up on the client side, it can be dangerous to store sensitive information this way because the data is not encrypted by default and any script on the page may access it.</p>
 <p>This rule raises an issue when the <code>localStorage</code> and <code>sessionStorage</code> API's are used.</p>
@@ -287,9 +300,10 @@ sessionStorage.setItem("sessionId", sessionId); // Noncompliant
 <ul>
 <li> <a href="https://dl.packetstormsecurity.net/papers/attack/HTML5AttackVectors_RafayBaloch_UPDATED.pdf">Packet Storm Security</a> - HTML 5 Modern Day Attack And Defence Vectors
 </li><li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure
-</li></ul>
-Ÿ
-javascript:S905≈
+</li></ul>Z
+CODE_SMELL
+Â
+javascript:S905—
 
 javascriptS9059Non-empty statements should have at least one side-effect"CRITICAL*js:Á<p>An expression statement without side effects, such as a comparison without assigning its result to a variable, is useless, and must have been a mistake on the developer's part.</p>
 
@@ -303,17 +317,19 @@ a == 1;   // Noncompliant; was assignment intended?
 </pre>
 
 <h2>See</h2>
-<ul><li><a href="http://cwe.mitre.org/data/definitions/482">MITRE, CWE-482</a> - Comparing instead of Assigning</li></ul>
-Â
-javascript:S104—
+<ul><li><a href="http://cwe.mitre.org/data/definitions/482">MITRE, CWE-482</a> - Comparing instead of Assigning</li></ul>Z
+CODE_SMELL
+Ò
+javascript:S104›
 
 javascriptS104$Files should not have too many lines"MAJOR*js:ã<p>
   A source file that grows too much tends to aggregate too many responsibilities and inevitably becomes harder to understand and therefore to maintain.</br>
   Above a specific threshold, it is strongly advised to refactor it into smaller pieces of code which focus on well defined tasks.</br>
   Those smaller files will not only be easier to understand but also probably easier to test.
-</p>
-ô
-javascript:S1301Ñ
+</p>Z
+CODE_SMELL
+•
+javascript:S1301ê
 
 javascriptS13019"switch" statements should have at least 3 "case" clauses"MINOR*js:®<p><code>switch</code> statements are useful when there are many different cases depending on the value of the same expression.</p>
 <p>For just one or two cases however, the code will be more readable with <code>if</code> statements.</p>
@@ -344,9 +360,10 @@ if (variable == 0) {
 <li> MISRA C:2004, 15.5 - Every switch statement shall have at least one case clause.</li>
 <li> MISRA C++:2008, 6-4-8 - Every switch statement shall have at least one case-clause.</li>
 <li> MISRA C:2012, 16.6 - Every switch statement shall have at least two switch-clauses</li>
-</ul>
-Ó
-javascript:Parentheses”
+</ul>Z
+CODE_SMELL
+˙
+javascript:Parenthesesﬂ
 
 javascriptParenthesesXUseless parentheses around expressions should be removed to prevent any misunderstanding"MAJOR*js:“<p>Useless parentheses can sometimes be misleading and so should be removed. </p>
 <p>The following code snippet illustrates this rule:</p>
@@ -356,9 +373,10 @@ return (x);           // Non-Compliant
 return (x + 1);       // Non-Compliant
 int x = (y / 2 + 1);  // Non-Compliant
 int y = (4+X) * y;    // Compliant
-</pre>
-‘
-javascript:S2234ø
+</pre>Z
+CODE_SMELL
+‡
+javascript:S2234À
 
 javascriptS22340Parameters should be passed in the correct order"BLOCKER*js:Í<p>When the names of arguments in a function call match the names of the function parameters, it contributes to clearer, more readable code. However, when the names match, but are passed in a different order than the function parameters, it indicates a mistake in the parameter order which will likely lead to unexpected results.</p>
 
@@ -390,9 +408,10 @@ public void doTheThing() {
   var result = divide(divisor, dividend);
   //...
 }
-</pre>
-Ã
-javascript:S1145∑
+</pre>Z
+CODE_SMELL
+ÿ
+javascript:S1145√
 
 javascriptS1145FUseless "if(true) {...}" and "if(false){...}" blocks should be removed"MAJOR*js:Œ
 <p><code>if</code> statements with conditions that are always false have the effect of making blocks of code non-functional. <code>if</code> statements with conditions that are always true are completely redundant, and make the code less readable.</p>
@@ -431,9 +450,10 @@ doThirdThing();
 <li> <a href="http://cwe.mitre.org/data/definitions/571.html">MITRE, CWE-571</a> - Expression is Always True</li>
 <li> MISRA C:2004, 13.7</li>
 <li> MISRA C:2012, 14.3</li>
-</ul>
-‘
-javascript:S1264ø
+</ul>Z
+CODE_SMELL
+‡
+javascript:S1264À
 
 javascriptS12645A "while" loop should be used instead of a "for" loop"MINOR*js:Á<p>When only the condition expression is defined in a <code>for</code> loop, but the init and increment expressions are missing, a <code>while</code> loop should be used instead to increase readability. </p>
 
@@ -446,9 +466,10 @@ for (;condition;) { /*...*/ }
 <h2>Compliant Solution</h2>
 <pre>
 while (condition) { /*...*/ }
-</pre>
-∏	
-javascript:S2870£	
+</pre>Z
+CODE_SMELL
+ƒ	
+javascript:S2870Ø	
 
 javascriptS2870%"delete" should not be used on arrays"CRITICAL*js:ÿ<p>
   The <code>delete</code> operator can be used to remove a property from any object. Arrays are objects, so the <code>delete</code> operator can be used here too,
@@ -480,9 +501,10 @@ var myArray = ['a', 'b', 'c', 'd'];
 // removes 1 element from index 2
 removed = myArray.splice(2, 1);  // myArray => ['a', 'b', 'd']
 console.log(myArray[2]); // outputs 'd'
-</pre>
-¨
-javascript:S881ò
+</pre>Z
+CODE_SMELL
+∏
+javascript:S881§
 
 javascriptS881~Increment (++) and decrement (--) operators should not be used in a method call or mixed with other operators in an expression"MAJOR*js:¯<p>The use of increment and decrement operators in method calls or in combination with other arithmetic operators is not recommended, because:</p>
 <ul>
@@ -517,9 +539,10 @@ bar++;
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/ZwE">CERT, EXP30-C</a> -      Do not depend on the order of evaluation for side effects
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/fYAyAQ">CERT, EXP30-CPP</a> - Do not depend on order of evaluation between sequence points
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/yQC7AQ">CERT, EXP05-J</a> - Do not follow a write by a subsequent write or read of the same object within an expression
-</li></ul>
-£
-javascript:S2990é
+</li></ul>Z
+CODE_SMELL
+Ø
+javascript:S2990ö
 
 javascriptS2990+The global "this" object should not be used"CRITICAL*js:Ω<p>
   When the keyword <code>this</code> is used outside of an object, it refers to the global <code>this</code> object,
@@ -560,10 +583,11 @@ MyObj.func1 = function() {
     // ...
   }
 }
-</pre>
-¬
+</pre>Z
+CODE_SMELL
+Œ
 
- javascript:DuplicatePropertyNameù
+ javascript:DuplicatePropertyName©
 
 
 javascriptDuplicatePropertyName@Property names should not be duplicated within an object literal"CRITICAL*js:ß	<p>
@@ -603,9 +627,10 @@ var data = {
   "\x6bey7": "value",
   1b: "value"
 }
-</pre>
-ò
-javascript:S2999É
+</pre>Z
+CODE_SMELL
+§
+javascript:S2999è
 
 javascriptS2999-"new" operators should be used with functions"CRITICAL*js:∞<p>
   The <code>new</code> keyword should only be used with objects that define a constructor function. Use it with anything else, and you'll get a <code>TypeError</code> because there won't be a constructor function for the <code>new</code> keyword to invoke.
@@ -638,9 +663,10 @@ var someClass = function(){
 
 var obj1 = new someClass;  // Compliant
 var obj2 = new MyClass();  // Compliant regardless of considerJSDoc value
-</pre>
-˚
-javascript:S1788Ê
+</pre>Z
+CODE_SMELL
+á
+javascript:S1788Ú
 
 javascriptS17886Function parameters with default values should be last"CRITICAL*js:ä<p>The ability to define default values for function parameters can make a function easier to use. Default parameter values allow callers to specify as many or as few arguments as they want while getting the same functionality and minimizing boilerplate, wrapper code.</p>
 <p>But all function parameters with default values should be declared after the function parameters without default values. Otherwise, it makes it impossible for callers to take advantage of defaults; they must re-specify the defaulted values or pass <code>undefined</code> in order to "get to" the non-default parameters.</p>
@@ -661,9 +687,10 @@ function multiply(b, a = 1) {
 }
 
 var x = multiply(42);  // returns 42 as expected
-</pre>
-ˇ
-javascript:StrictModeÂ
+</pre>Z
+CODE_SMELL
+ã
+javascript:StrictModeÒ
 
 javascript
 StrictMode)"strict" mode should be used with caution"INFO*js:ï<p>
@@ -676,9 +703,10 @@ StrictMode)"strict" mode should be used with caution"INFO*js:ï<p>
 function strict() {
   'use strict';
 }
-</pre>
-≥
-javascript:S1994û
+</pre>Z
+CODE_SMELL
+ø
+javascript:S1994™
 
 javascriptS1994\"for" loop incrementers should modify the variable being tested in the loop's stop condition"CRITICAL*js:ú<p>It is almost always an error when a <code>for</code> loop's stop condition and incrementer don't act on the same variable. Even when it is not, it could confuse future maintainers of the code, and should be avoided.</p>
 
@@ -694,9 +722,10 @@ for (i = 0; i &lt; 10; j++) {  // Noncompliant
 for (i = 0; i &lt; 10; i++) {
   // ...
 }
-</pre>
-¨
-javascript:S878ò
+</pre>Z
+CODE_SMELL
+∏
+javascript:S878§
 
 javascriptS878!Comma operator should not be used"MAJOR*js:’<p>The comma operator takes two expressions, executes them from left to right and returns the result of the second one. Use of this operator is generally detrimental to the readability and reliability of code, and the same effect can be achieved by other means.</p>
 <h2>Noncompliant Code Example</h2>
@@ -722,9 +751,10 @@ for(i = 0, j = 5; i &lt; 6; i++, j++) { ... }
 <li> MISRA C:2004, 12.10 - The comma operator shall not be used.</li>
 <li> MISRA C++:2008, 5-18-1 - The comma operator shall not be used.</li>
 <li> MISRA C:2012, 12.3 - The comma operator should not be used</li>
-</ul>
-Ã
-javascript:S2688∑
+</ul>Z
+CODE_SMELL
+ÿ
+javascript:S2688√
 
 javascriptS2688'"NaN" should not be used in comparisons"BLOCKER*js:Î<p>
   <code>NaN</code> is not equal to anything, even itself. Testing for equality or inequality against <code>NaN</code> will yield predictable results, but probably not the ones you want.
@@ -753,9 +783,10 @@ if (a !== a) {
 if (a === a) {
   console.log("a is not NaN");
 }
-</pre>
-ª
-javascript:S2685¶
+</pre>Z
+CODE_SMELL
+«
+javascript:S2685≤
 
 javascriptS2685<"arguments.caller" and "arguments.callee" should not be used"CRITICAL*js:ƒ<p>Both <code>arguments.caller</code> and <code>arguments.callee</code> make quite a few optimizations impossible so they were deprecated in latest versions of JavaScript. In fact, EcmaScript 5 forbids the use of both in <code>strict</code> mode, according to the docs:</p>
 <blockquote>Arguments objects for strict mode functions define non-configurable accessor properties named "caller" and "callee" which throw a TypeError exception on access.</blockquote>
@@ -772,9 +803,10 @@ function whoCalled() {
   console.log(whoCalled.caller);  // Noncompliant
   console.log(whoCalled.arguments);  // Noncompliant
 }
-</pre>
-¥
-javascript:S3499ü
+</pre>Z
+CODE_SMELL
+¿
+javascript:S3499´
 
 javascriptS3499^Shorthand object properties should be grouped at the beginning or end of an object declaration"MINOR*js:û<p>Grouping all the shorthand declarations together in an object makes the declaration as a whole more readable. This rule accepts shorthand declarations grouped at either the beginning or end of an object.</p>
 
@@ -808,9 +840,10 @@ let obj1 = {
   color,
   judyGarland
 }
-</pre>
-°
-javascript:S3533å
+</pre>Z
+CODE_SMELL
+≠
+javascript:S3533ò
 
 javascriptS35330"import" should be used to include external code"MINOR*js:π<p>Before ECMAScript 2015, module management had to be ad-hoc or provided by 3rd-party libraries such as Node.js, Webpack, or RequireJS. Fortunately, ES2015, provides language-standard mechanisms for module management, <code>import</code> and <code>export</code>, and older usages should be converted.</p>
 
@@ -844,9 +877,10 @@ import horse from "./horse.js";
 
 // bar.js
 import circle from "./circle.js"
-</pre>
-√
-javascript:S1871Æ
+</pre>Z
+CODE_SMELL
+œ
+javascript:S1871∫
 
 javascriptS1871^Two branches in the same conditional structure should not have exactly the same implementation"MAJOR*js:≠<p>
 Having two <code>cases</code> in the same <code>switch</code> statement or branches in the same <code>if</code> structure  with the same implementation is at best duplicate code, and at worst a coding error. If the same logic is truly needed for both instances, then they should be combined, for an <code>if</code> structure or one should fall through to the other for a <code>switch</code>.
@@ -933,9 +967,10 @@ else if (a >= 20 && a < 50) {
 else {
   doTheRest();
 }
-</pre>
-÷
-javascript:S3498¡
+</pre>Z
+CODE_SMELL
+‚
+javascript:S3498Õ
 
 javascriptS3498.Object literal shorthand syntax should be used"MINOR*js:<p>When an already-defined variable is given the same name within a new object, object-shorthand syntax is preferred as being more compact. Similarly, object-shorthand is also preferred for the definition of functions in object literals.</p>
 
@@ -961,9 +996,10 @@ let myObj = {
     //...
   }
 }
-</pre>
-∞	
-javascript:S2681õ	
+</pre>Z
+CODE_SMELL
+º	
+javascript:S2681ß	
 
 javascriptS26813Multiline blocks should be enclosed in curly braces"CRITICAL*js:¬<p>Curly braces can be omitted from a one-line block, such as with an <code>if</code> statement or <code>for</code> loop, but doing so can be misleading and induce bugs. </p>
 <p>This rule raises an issue when the indentation of the lines after a one-line block indicates an intent to include those lines in the block, but the omission of curly braces means the lines will be unconditionally executed once.</p>
@@ -999,9 +1035,10 @@ for (int i = 0; i &lt; array.length; i++) {
 <h2>See</h2>
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/483.html">MITRE, CWE-483</a> - Incorrect Block Delimitation
-</li></ul>
-®
-javascript:S3531ì
+</li></ul>Z
+CODE_SMELL
+¥
+javascript:S3531ü
 
 javascriptS3531#Generators should "yield" something"MAJOR*js:Õ<p>A generator without a <code>yield</code> statement is at best confusing, and at worst a bug in your code, since the iterator produced by your code will always be empty. </p>
 
@@ -1022,9 +1059,10 @@ function* myGen(a, b) {
     yield answer;
   }
 }
-</pre>
-‚	
-javascript:S1472Õ	
+</pre>Z
+CODE_SMELL
+Ó	
+javascript:S1472Ÿ	
 
 javascriptS14724Function call arguments should not start on new line"CRITICAL*js:Û<p>Because semicolons at the ends of statements are optional, starting function call arguments on a separate line makes the code confusing. It could lead to errors and most likely <em>will</em> lead to questions for maintainers.</p>
 <p>What was the initial purpose of the developer ?</p>
@@ -1066,9 +1104,10 @@ var fn = function () {
   //...
 })();
 </pre>
-<p>By extension and to improve readability, any kind of function call arguments should not start on new line.</p>
-¶
-"javascript:CollapsibleIfStatementsˇ
+<p>By extension and to improve readability, any kind of function call arguments should not start on new line.</p>Z
+CODE_SMELL
+≤
+"javascript:CollapsibleIfStatementsã
 
 javascriptCollapsibleIfStatements,Collapsible "if" statements should be merged"MAJOR*js:û<p>Merging collapsible <code>if</code> statements increases the code's readability.</p>
 <h2>Noncompliant Code Example</h2>
@@ -1086,9 +1125,10 @@ if (x != undefined) {
 if (x != undefined &amp;&amp; x === 2) {
   // ...
 }
-</pre>
-˚
-$javascript:DuplicateFunctionArgument“
+</pre>Z
+CODE_SMELL
+á
+$javascript:DuplicateFunctionArgumentﬁ
 
 javascriptDuplicateFunctionArgument(Function argument names should be unique"CRITICAL*js:<p>Function arguments should all have different names to prevent any ambiguity. Indeed, if arguments have the same name, the last duplicated argument hides all the previous arguments with the same name. This hiding makes no sense, reduces understandability and maintainability, and obviously can be error prone. </p>
 <h2>Noncompliant Code Example</h2>
@@ -1102,19 +1142,21 @@ function compute(a, a, c) { // Noncompliant
 <pre>
 function compute(a, b, c) { // Compliant
 }
-</pre>
-Ô
-javascript:S2208⁄
+</pre>Z
+CODE_SMELL
+˚
+javascript:S2208Ê
 
 javascriptS2208#Wildcard imports should not be used"MAJOR*js:î<p>On the principle that clearer code is better code, you should explicitly <code>import</code> the things you want to use in a module. Using <code>import *</code> imports everything in the module, and runs the risk of confusing maintainers. Similarly, <code>export * from "module";</code> imports and then re-exports everything in the module, and runs the risk of confusing not just maintainers but also users of the module.</p>
 
 <h2>Noncompliant Code Example</h2>
 <pre>
 import * as Imported from "aModule";  // Noncompliant
-</pre>
-ﬂ
+</pre>Z
+CODE_SMELL
+Î
 
-$javascript:AssignmentWithinCondition∂
+$javascript:AssignmentWithinCondition¬
 
 
 javascriptAssignmentWithinCondition:Assignments should not be made from within sub-expressions"MAJOR*js:≈	<p>Assignments within sub-expressions are hard to spot and therefore make the code less readable.</p>
@@ -1148,9 +1190,10 @@ if (line = nextLine()) {...}  // Noncompliant
 <li> MISRA C++:2008, 6-2-1 - Assignment operators shall not be used in sub-expressions</li>
 <li> MISRA C:2012, 13.4 - The result of of an assignment operator should not be used</li>
 <li> <a href="http://cwe.mitre.org/data/definitions/481.html">MITRE, CWE-481</a> - Assigning instead of Comparing</li>
-</ul>
-ü
-javascript:ForInä
+</ul>Z
+CODE_SMELL
+´
+javascript:ForInñ
 
 javascriptForIn?"for...in" loops should filter properties before acting on them"MAJOR*js:®<p>The <code>for...in</code> in statement allows you to loop through the names of all of the properties of an object. Unfortunately, the list of properties includes all those properties that were inherited through the prototype chain. This has the bad side effect of serving up method functions when the interest is in data properties. Programs that don't take this into account can fail.</p>
 <p>Therefore, the body of every <code>for...in</code> statement should be wrapped in an <code>if</code> statement that filters which properties are acted upon. It can select for a particular type or range of values, or it can exclude functions, or it can exclude properties from the prototype. </p>
@@ -1169,10 +1212,11 @@ for (name in object) {
     doSomething(name);
   }
 }
-</pre>
-î
+</pre>Z
+CODE_SMELL
+†
 
-javascript:FutureReservedWordsÒ	
+javascript:FutureReservedWords˝	
 
 javascriptFutureReservedWords9"future reserved words" should not be used as identifiers"CRITICAL*js:Ñ	<p>The following words may be used as keywords in future evolutions of the language, so using them as identifiers should be avoided to allow an easier adoption of those potential future versions:</p>
 <ul>
@@ -1205,9 +1249,10 @@ var someData = { package: true };                 // Compliant, as it is not use
 
 <pre>
 var elements = document.getElementsByName("foo"); // Compliant
-</pre>
-»
-javascript:S1126≥
+</pre>Z
+CODE_SMELL
+‘
+javascript:S1126ø
 
 javascriptS1126TReturn of boolean expressions should not be wrapped into an "if-then-else" statement"MINOR*js:º<p>Return of boolean literal statements wrapped into <code>if-then-else</code> ones should be simplified.</p>
 <h2>Noncompliant Code Example</h2>
@@ -1226,9 +1271,10 @@ return expression;
 </pre>
 <pre>
 return !!expression;
-</pre>
-ñ
-javascript:S1764Å
+</pre>Z
+CODE_SMELL
+¢
+javascript:S1764ç
 
 javascriptS1764KIdentical expressions should not be used on both sides of a binary operator"CRITICAL*js:ê<p>
   Using the same value on either side of a binary operator is almost always a mistake. In the case of logical operators, it is either a copy/paste error and therefore a bug, or it is simply wasted code, and should be simplified. In the case of bitwise operators and most binary mathematical operators, having the same value on both sides of an operator yields predictable results, and should be simplified.
@@ -1290,9 +1336,10 @@ var j = a &lt;&lt; a; // Noncompliant
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
 <li> Rule <a href='/coding_rules#rule_key=javascript:S1656'>S1656</a> - Implements a check on <code>=</code>. </li>
-</ul>
-◊
-javascript:S2611¬
+</ul>Z
+CODE_SMELL
+„
+javascript:S2611Œ
 
 javascriptS2611(Untrusted content should not be included"CRITICAL*js:Ù<p>Including content in your site from an untrusted source can expose your users to attackers and even compromise your own site. For that reason, this rule raises an issue for each non-relative URL.</p>
 <h2>Noncompliant Code Example</h2>
@@ -1311,9 +1358,10 @@ include("http://hackers.com/steal.js")  // Noncompliant
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/829">MITRE, CWE-829</a> - Inclusion of Functionality from Untrusted Control Sphere
 </li><li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Risky Resource Management
-</li></ul>
-È
-javascript:Eval’
+</li></ul>Z
+CODE_SMELL
+ı
+javascript:Eval·
 
 javascriptEval\Code should not be dynamically injected and executed to prevent Eval Injection vulnerability"CRITICAL*js:‘<p>The <code>eval</code> function is a way to run arbitrary code at run-time. Generally it is considered to be very dangerous because it allows execution of arbitrary code. Its use is thus discouraged. If you have carefully verified that there is no other option than to use this construct, pay special attention not to pass any user-provided data into it without properly validating it beforehand.</p>
 <h2>Noncompliant Code Example</h2>
@@ -1326,9 +1374,10 @@ eval(code_to_be_dynamically_executed)
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/95.html">MITRE CWE-95</a> - CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A3-Cross-Site_Scripting_(XSS)">OWASP Top Ten 2013 Category A3</a> - Cross-Site Scripting (XSS)</li>
-</ul>
-Ó
-javascript:S1125Ÿ
+</ul>Z
+CODE_SMELL
+˙
+javascript:S1125Â
 
 javascriptS1125BLiteral boolean values should not be used in condition expressions"MINOR*js:Ù<p>
   Remove literal boolean values from conditional expressions to improve readability. Anything that can be tested for equality with a boolean value must itself be a boolean value, and boolean values can be tested atomically.
@@ -1353,9 +1402,10 @@ doSomething(true);
 <h2>Exceptions</h2>
 <p>
   The use of literal booleans in comparisons which use identity operators (<code>===</code> and <code>!==</code>) are ignored.
-</p>
-ô
-javascript:S2692Ñ
+</p>Z
+CODE_SMELL
+•
+javascript:S2692ê
 
 javascriptS26923"indexOf" checks should not be for positive numbers"MAJOR*js:Æ<p>
   Most checks against an <code>indexOf</code> call against a string or array compare it with -1 because 0 is a valid index. Any checks which look for values >0 ignore the first element, which is likely a bug.
@@ -1391,9 +1441,10 @@ if (arr.indexOf("blue") >= 0) {
 if (arr[0].indexOf("ish") > -1 {
   // ...
 }
-</pre>
-˝
-!javascript:UnusedFunctionArgument◊
+</pre>Z
+CODE_SMELL
+â
+!javascript:UnusedFunctionArgument„
 
 javascriptUnusedFunctionArgument,Unused function parameters should be removed"MAJOR*js:˜<p>
   Unused parameters are misleading. Whatever the value passed to such parameters is, the behavior will be the same.
@@ -1457,9 +1508,10 @@ function doSomething(a, b, c) {
 <ul>
 <li> MISRA C++:2008, 0-1-11</li>
 <li> MISRA C:2012, 2.7</li>
-</ul>
-û
-javascript:SingleQuoteÉ
+</ul>Z
+CODE_SMELL
+™
+javascript:SingleQuoteè
 
 javascriptSingleQuote0Single quotes should be used for string literals"MINOR*js:™<p>
   For consistency single-quotes (') are preferred to double-quotes (").
@@ -1474,9 +1526,10 @@ var firstParameter = "something";
 <h2>Compliant Solution</h2>
 <pre>
 var firstParameter = 'something';
-</pre>
-…
-javascript:S100µ
+</pre>Z
+CODE_SMELL
+’
+javascript:S100¡
 
 javascriptS1005Function names should comply with a naming convention"MINOR*js:ﬁ<p>
   Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate. This rule allows to check that all function names match a provided regular expression.
@@ -1490,16 +1543,18 @@ function DoSomething(){...}
 <h2>Compliant Solution</h2>
 <pre>
 function doSomething(){...}
-</pre>
-û
-javascript:TabCharacterÇ
+</pre>Z
+CODE_SMELL
+™
+javascript:TabCharacteré
 
 javascriptTabCharacter(Tabulation characters should not be used"MINOR*js:∞<p>
 Developers should not need to configure the tab width of their text editors in order to be able to read source code. So the use of tabulation character must be banned.
-</p>
-±
+</p>Z
+CODE_SMELL
+Ω
 
-javascript:S1697ú
+javascript:S1697®
 
 
 javascriptS1697WShort-circuit logic should be used to prevent null pointer dereferences in conditionals"BLOCKER*js:†	When either the equality operator in a test for <code>null</code> or <code>undefined</code>, or the logical operator that follows it is reversed, the code has the appearance of safely null-testing the object before dereferencing it. Unfortunately the effect is just the opposite - the object is null-tested and then dereferenced only if it is <code>null</code>/<code>undefined</code>, leading to a guaranteed <code>TypeError</code>.
@@ -1540,9 +1595,10 @@ if (str == null || str.length > 0) {
 if (str == undefined || str.length > 0) {
   console.log("String is not empty");
 }
-</pre>
-Ù
-javascript:S3512ﬂ
+</pre>Z
+CODE_SMELL
+Ä
+javascript:S3512Î
 
 javascriptS35128Template strings should be used instead of concatenation"MINOR*js:Ñ<p>ECMAScript 2015 added the ability to use template literals instead of concatenation. Since their use is clearer and more concise, they are preferred in environments that support ECMAScript 2015.</p>
 <p>This rule raises an issue when a string is created from the result of two or more concatenations.</p>
@@ -1567,9 +1623,10 @@ function sayHello(name) {
 function madLib(verb, noun) {
   console.log("I really ${verb} one or two ${noun}");
 }
-</pre>
-ì
-javascript:DebuggerStatementÚ
+</pre>Z
+CODE_SMELL
+ü
+javascript:DebuggerStatement˛
 
 javascriptDebuggerStatement&Debugger statements should not be used"CRITICAL*js:ö<p>The debugger statement can be placed anywhere in procedures to suspend execution. Using the debugger statement is similar to setting a breakpoint in the code. By definition such statement must absolutely be removed from the source code to prevent any unexpected behavior or added vulnerability to attacks in production.</p>
 <h2>Noncompliant Code Example</h2>
@@ -1594,9 +1651,10 @@ for (i = 1; i&lt;5; i++) {
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/489.html">MITRE, CWE-489</a> - Leftover Debug Code</li>
-</ul>
-¸
-javascript:S2424Á
+</ul>Z
+CODE_SMELL
+à	
+javascript:S2424Û
 
 javascriptS2424)Built-in objects should not be overridden"CRITICAL*js:ò<p>
   Overriding an object changes its behavior and could potentially impact all code using that object. Overriding standard, built-in objects could therefore have broad,
@@ -1616,10 +1674,10 @@ javascriptS2424)Built-in objects should not be overridden"CRITICAL*js:ò<p>
   <li>Reflection - Reflect, Proxy</li>
   <li>Internationalization - Intl</li>
   <li>Non-standard objects - Generator, Iterator, ParallelArray, StopIteration</li>
-</ul>
-ı
-
-javascript:S3513‡
+</ul>Z
+CODE_SMELL
+Å
+javascript:S3513Ï
 
 
 javascriptS3513+"arguments" should not be accessed directly"MAJOR*js:í
@@ -1657,9 +1715,10 @@ function doSomething(isTrue, ...values) {
     }
   }
 }
-</pre>
-∆
-javascript:VariableShadowing•
+</pre>Z
+CODE_SMELL
+“
+javascript:VariableShadowing±
 
 javascriptVariableShadowing Variables should not be shadowed"MAJOR*js:÷<p>
   Overriding a variable declared in an outer scope can strongly impact the readability, and therefore the maintainability, of a piece of code. Further, it could lead maintainers to introduce bugs because they think they're using one variable but are really using another.
@@ -1685,9 +1744,10 @@ show: function(point, element) {
     if(Droppables.isAffected(point, element, aDrop))
       affected.push(aDrop);
   });
-</pre>
-ò
-+javascript:FunctionDeclarationsWithinBlocksË
+</pre>Z
+CODE_SMELL
+§
++javascript:FunctionDeclarationsWithinBlocksÙ
 
 javascript FunctionDeclarationsWithinBlocks6Function declarations should not be made within blocks"MAJOR*js:Ù<p>
   While most script engines support function declarations within blocks, it is not part of ECMAScript 5 and below, and from browser to browser the implementations are inconsistent with each other. ECMAScript 5 and below only allows function declarations in the root statement list of a script or function. If you are targeting browsers that don't support ECMAScript 6, use a variable initialized with a function expression to define a function within a block :
@@ -1705,10 +1765,11 @@ if (x) {
 if (x) {
   var foo = function() {}
 }
-</pre>
-Å
+</pre>Z
+CODE_SMELL
+ç
 
-javascript:S1451Ï	
+javascript:S1451¯	
 
 javascriptS1451/Copyright and license headers should be defined"BLOCKER*js:ò	<p>
     Each source file should start with a header stating file ownership and the license which must be used to distribute the application.
@@ -1738,9 +1799,10 @@ javascriptS1451/Copyright and license headers should be defined"BLOCKER*js:
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-</pre>
-Û
-javascript:S3353ﬁ
+</pre>Z
+CODE_SMELL
+ˇ
+javascript:S3353Í
 
 javascriptS3353,Unchanged variables should be marked "const""MINOR*js:è<p>Marking a variable that is unchanged after initialization <code>const</code> is an indication to future maintainers that "no this isn't updated, and it's not supposed to be".
   <code>const</code> should be used in these situations in the interests of code clarity.</p>
@@ -1769,9 +1831,10 @@ function seek(input) {
   }
   return false;
 }
-</pre>
-Ó
-javascript:OctalNumber”
+</pre>Z
+CODE_SMELL
+˙
+javascript:OctalNumberﬂ
 
 javascriptOctalNumberOctal values should not be used"MAJOR*js:ã<p>
 Integer literals starting with a zero are octal rather than decimal values. While using octal values is fully supported, most developers do not have experience with them. They may not recognize octal values as such, mistaking them instead for decimal values.
@@ -1794,9 +1857,10 @@ var myNumber = 8;
 <li> MISRA C++:2008, 2-13-2 - Octal constants (other than zero) and octal escape sequences (other than "\0") shall not be used</li>
 <li> MISRA C:2012, 7.1 - Octal constants shall not be used</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/_QC7AQ">CERT DCL18-C</a> - Do not begin integer constants with 0 when specifying a decimal value</li>
-</ul>
-ı
-javascript:S1219‡
+</ul>Z
+CODE_SMELL
+Å
+javascript:S1219Ï
 
 javascriptS12196"switch" statements should not contain non-case labels"CRITICAL*js:Ñ<p>Even if it is legal, mixing case and non-case labels in the body of a switch statement is very confusing and can even be the result of a typing error.</p>
 <h2>Noncompliant Code Examples</h2>
@@ -1858,9 +1922,10 @@ switch (day) {
 <li> MISRA C:2004, 15.0 - The MISRA C <em>switch</em> syntax shall be used.</li>
 <li> MISRA C++:2008, 6-4-3 - A switch statement shall be a well-formed switch statement.</li>
 <li> MISRA C:2012, 16.1 - All switch statements shall be well-formed</li>
-</ul>
-Ú
-javascript:EmptyBlockÿ
+</ul>Z
+CODE_SMELL
+˛
+javascript:EmptyBlock‰
 
 javascript
 EmptyBlock.Nested blocks of code should not be left empty"MAJOR*js:Ç<p>
@@ -1875,9 +1940,10 @@ for (var i = 0; i < length; i++) {}  // Empty on purpose or missing piece of cod
 <h2>Exceptions</h2>
 <p>
   When a block contains a comment, this block is not considered to be empty.
-</p>
-¶
-javascript:LabelPlacementà
+</p>Z
+CODE_SMELL
+≤
+javascript:LabelPlacementî
 
 javascriptLabelPlacement:Only "while", "do" and "for" statements should be labelled"MAJOR*js:¢<p>Any statement or block of statements can be identified by a label, but those labels should be used only on 'while', 'do-while' and 'for' statements. Using labels in any other context leads to unstructured, confusing code. </p>
 <h2>Noncompliant Code Example</h2>
@@ -1898,9 +1964,10 @@ myLabel:for (i = 0; i &lt; 10; i++) {   // Compliant
   print("Loop");
   break myLabel;
 }
-</pre>
-
-javascript:S2427€
+</pre>Z
+CODE_SMELL
+¸
+javascript:S2427Á
 
 javascriptS2427)The base should be provided to "parseInt""CRITICAL*js:å<p>The <code>parseInt</code> function has two versions, one that takes a base value as a second argument and one that does not, and using the single-arg version can result in unexpected results on older browsers. </p>
 <h2>Noncompliant Code Example</h2>
@@ -1912,9 +1979,10 @@ parseInt("010");  // Noncompliant; pre-2013 browsers may return 8
 
 <pre>
 parseInt("010", 10);
-</pre>
-√
-javascript:EqEqEq≠
+</pre>Z
+CODE_SMELL
+œ
+javascript:EqEqEqπ
 
 javascriptEqEqEq7"===" and "!==" should be used instead of "==" and "!=""MAJOR*js:“<p>The <code>==</code> and <code>!=</code> operators do type coercion before comparing values. This is bad because it can mask type errors. For example, it evaluates <code>' \t\r\n' == 0</code> as <code>true</code>.</p>
 <p>It is best to always use the side-effect-less <code>===</code> and <code>!==</code> operators instead.</p>
@@ -1933,9 +2001,10 @@ if (var === 'howdy') {...}
 <p>Even if testing the equality of a variable against null doesn't do exactly what most JavaScript developers believe, usage of <code>==</code> or <code>!=</code> is tolerated in such context. In the following case, if <code>foo</code> hasn't been initialized, its default value is not <code>null</code> but <code>undefined</code>. Nevertheless <code>undefined == null</code>, so JavaScript developers get the expected behavior.</p>
 <pre>
 if(foo == null) {...}
-</pre>
-–
-javascript:S2703ª
+</pre>Z
+CODE_SMELL
+‹
+javascript:S2703«
 
 javascriptS2703'Variables should be declared explicitly"MAJOR*js:Ò<p>JavaScript variable scope can be particularly difficult to understand and get right. The situation gets even worse when you consider the <em>accidental</em> creation of global
   variables, which is what happens when you declare a variable inside a function or the <code>for</code> clause of a for-loop without using the <code>let</code>,
@@ -1963,9 +2032,10 @@ function f(){
     // ...
   }
 }
-</pre>
-›
-javascript:HtmlComments¡
+</pre>Z
+CODE_SMELL
+È
+javascript:HtmlCommentsÕ
 
 javascriptHtmlComments&HTML-style comments should not be used"MAJOR*js:Ò<p>
   HTML-style comments are not part of EcmaScript specification, and should not be used.
@@ -1980,9 +2050,10 @@ javascriptHtmlComments&HTML-style comments should not be used"MAJOR*js:Ò<p
 <pre>
 // Compliant
 /* Compliant */
-</pre>
-≤
-javascript:S2549ù
+</pre>Z
+CODE_SMELL
+æ
+javascript:S2549©
 
 javascriptS25499The "changed" property should not be manipulated directly"CRITICAL*js:æ<p>According to the Backbone.js docs</p>
 
@@ -2000,10 +2071,11 @@ javascriptS25499The "changed" property should not be manipulated directly"CR
 
 <pre>
 myModel.changed = { myProperty: 1 }; // Non-compliant
-</pre>
-ö
+</pre>Z
+CODE_SMELL
+¶
 
-javascript:S1854Ö
+javascript:S1854ë
 
 
 javascriptS1854Dead Stores should be removed"MAJOR*js:≈	<p>
@@ -2046,9 +2118,10 @@ function pow(a, b) {
   <li><a href="http://cwe.mitre.org/data/definitions/563.html">MITRE, CWE-563</a> - Assignment to Variable without Use ('Unused Variable')</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/QYA5">CERT, MSC13-C</a> - Detect and remove unused values</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/S4IyAQ">CERT, MSC13-CPP</a> - Detect and remove unused values</li>
-</ul>
-⁄
-javascript:S3514≈
+</ul>Z
+CODE_SMELL
+Ê
+javascript:S3514—
 
 javascriptS35143Destructuring syntax should be used for assignments"MAJOR*js:Ô<p>ECMAScript 2015 introduced the ability to extract and assign multiple data points from an object or array simultaneously. This is called "destructuring", and it allows you to condense boilerplate code so you can concentrate on logic. </p>
 <p>This rule raises an issue when multiple pieces of data are extracted out of the same object or array and assigned to variables.</p>
@@ -2075,9 +2148,10 @@ function foo (obj1, obj2, array) {
 
   var [zero, one] = array;
 }
-</pre>
-ü
-javascript:SemicolonÜ
+</pre>Z
+CODE_SMELL
+´
+javascript:Semicoloní
 
 javascript	Semicolon*Each statement should end with a semicolon"MINOR*js:µ<p>In JavaScript, the semicolon (<code>;</code>) is optional as a statement separator, but omitting semicolons can be confusing, and lead to unexpected results because a semicolon is implicitly inserted at the end of each line.</p>
 <h2>Noncompliant Code Example</h2>
@@ -2096,9 +2170,10 @@ function fun() {
   return 5;
 }
 print(fun());
-</pre>
-Ÿ
-javascript:PrimitiveWrappers∏
+</pre>Z
+CODE_SMELL
+Â
+javascript:PrimitiveWrappersƒ
 
 javascriptPrimitiveWrappers6Wrapper objects should not be used for primitive types"MAJOR*js:”<p>
   The use of wrapper objects for primitive types is gratuitous, confusing and dangerous. Simple literals should be used instead.
@@ -2118,9 +2193,10 @@ var x = false;
 if (x) {
   alert('hi');
 }
-</pre>
-Ø
-javascript:S2819ö
+</pre>Z
+CODE_SMELL
+ª
+javascript:S2819¶
 
 javascriptS2819?Cross-document messaging domains should be carefully restricted"CRITICAL*js:µ<p>
   HTML5 adds the ability to send messages to documents served from other domains. To mitigate the risk of sending sensitive information to a document served from a hostile or
@@ -2137,9 +2213,10 @@ myWindow.postMessage(message, "*"); // Noncompliant; how do you know what you lo
 <h2>See</h2>
 <ul>
   <li><a href="https://www.owasp.org/index.php/Top_10_2013-A3-Cross-Site_Scripting_(XSS)">OWASP Top Ten 2013 Category A3</a> - Cross-Site Scripting (XSS)</li>
-</ul>
-â
-javascript:CurlyBracesÓ
+</ul>Z
+CODE_SMELL
+ï
+javascript:CurlyBraces˙
 
 javascriptCurlyBraces1Control structures should always use curly braces"MAJOR*js:î<p>While not technically incorrect, the omission of curly braces can be misleading, and may lead to the introduction of errors during maintenance.</p>
 <h2>Noncompliant Code Example</h2>
@@ -2168,9 +2245,10 @@ if (condition) {
 <li> MISRA C:2012, 15.6 - The body of an iteration-statement or a selection-statement shall be a compound-statement</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/1QGMAg">CERT, EXP19-C</a> - Use braces for the body of an if, for, or while statement</li>
 <li> <a href="http://cwe.mitre.org/data/definitions/483.html">MITRE, CWE-483</a> - Incorrect Block Delimitation</li>
-</ul>
-Í
-javascript:S3402’
+</ul>Z
+CODE_SMELL
+ˆ
+javascript:S3402·
 
 javascriptS3402+Strings and non-strings should not be added"MAJOR*js:á<p>Use a <code>+</code> with two numbers and you'll get addition. But use it with a string and anything else, and you'll get concatenation. Very often that's not what's intended, and even when it is, it's likely to confuse future maintainers. </p>
 <p>Since this may not be what's intended, this rule raises an issue when <code>+</code> is used with a string and a non-string.</p>
@@ -2194,9 +2272,10 @@ var sum = parseInt(a) + b; // Compliant; yields 47
 var foo = ' is a lucky number';
 alert('' + 42 + foo);     // Use an empty string literal
 alert(`${42}${foo}`);     // Use template strings; available since ES2015
-</pre>
-¥
-javascript:UnusedVariableñ
+</pre>Z
+CODE_SMELL
+¿
+javascript:UnusedVariable¢
 
 javascriptUnusedVariable(Unused local variables should be removed"MAJOR*js:¬<p>
   If a local variable is declared but not used, it is dead code and should be removed. Doing so will improve maintainability because developers will not wonder what the variable is used for.
@@ -2215,9 +2294,10 @@ function numberOfMinutes(hours) {
 function numberOfMinutes(hours) {
   return hours * 60;
 }
-</pre>
-˚
-javascript:S1862Ê
+</pre>Z
+CODE_SMELL
+á
+javascript:S1862Ú
 
 javascriptS1862\Related "if/else if" statements and "cases" in a "switch" should not have the same condition"CRITICAL*js:‰<p>
   A <code>switch</code> and a chain of <code>if</code>/<code>else if</code> statements is evaluated from top to bottom. At most, only one branch will be executed: the first one with a condition that evaluates to <code>true</code>.
@@ -2285,9 +2365,10 @@ switch(i) {
   <ul>
     <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect </li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a>- Detect and remove code that has no effect </li>
-  </ul>
-µ
-javascript:ContinueStatementî
+  </ul>Z
+CODE_SMELL
+¡
+javascript:ContinueStatement†
 
 javascriptContinueStatement"continue" should not be used"CRITICAL*js:≈<p><code>continue</code> is an unstructured control flow statement. It makes code less testable, less readable and less maintainable. Structured control flow statements such as <code>if</code> should be used instead.</p>
 <h2>Noncompliant Code Example</h2>
@@ -2313,9 +2394,10 @@ javascriptContinueStatement"continue" should not be used"CRITICAL*js:≈<p>
 
 <ul>
 <li> MISRA C:2004, 14.5</li>
-</ul>
-ã
-javascript:S3403ˆ
+</ul>Z
+CODE_SMELL
+ó
+javascript:S3403Ç
 
 javascriptS3403FThe identity operator ("===") should not be used with dissimilar types"CRITICAL*js:ä<p>Comparing dissimilar types using the identity operator (<code>===</code>) will always return <code>false</code> because no type conversion is done before the comparison. Thus, such comparisons can only be bugs.</p>
 
@@ -2346,9 +2428,10 @@ var b = "8";
 if (a === Number(b)) {
   // ...
 }
-</pre>
-∑
-javascript:S3524¢
+</pre>Z
+CODE_SMELL
+√
+javascript:S3524Æ
 
 javascriptS3524GBraces and parentheses should be used consistently with arrow functions"INFO*js:π<p>Shared coding conventions allow teams to collaborate effectively. This rule raises an issue when the use of parentheses with an arrow function does not conform to the configured requirements.</p>
 
@@ -2363,9 +2446,10 @@ var bar = (a, b) =&gt; { return 0; };  // Noncompliant; remove curly braces from
 <pre>
 var foo = a =&gt; { /* ... */ };
 var bar = (a, b) =&gt; 0;
-</pre>
-ø
-javascript:S2432™
+</pre>Z
+CODE_SMELL
+À
+javascript:S2432∂
 
 javascriptS2432 Setters should not return values"CRITICAL*js:‰Functions declared with the <code>set</code> keyword will automatically return the values they were passed. Thus any value explicitly returned from a setter will be ignored, and explicitly returning a value is an error.
 
@@ -2388,9 +2472,10 @@ var person = {
     this.name = name;
   }
 }
-</pre>
-Ú
-!javascript:ExcessiveParameterListÃ
+</pre>Z
+CODE_SMELL
+˛
+!javascript:ExcessiveParameterListÿ
 
 javascriptExcessiveParameterList-Functions should not have too many parameters"MAJOR*js:Î<p>A long parameter list can indicate that a new structure should be created to wrap the numerous parameters or that the function is doing too many things.</p>
 
@@ -2407,9 +2492,10 @@ function doSomething(param1, param2, param3, param4, param5) {
 public void doSomething(int param1, int param2, int param3, String param4) {
 ...
 }
-</pre>
-–
-%javascript:ArrayAndObjectConstructors¶
+</pre>Z
+CODE_SMELL
+‹
+%javascript:ArrayAndObjectConstructors≤
 
 javascriptArrayAndObjectConstructors0Array and Object constructors should not be used"MAJOR*js:æ<p>
   Array and Object literals should always be preferred to Array and Object constructors.
@@ -2463,14 +2549,16 @@ var o2 = {
   c: 2,
   'strange key': 3
 };
-</pre>
-Î
-javascript:S1067÷
+</pre>Z
+CODE_SMELL
+˜
+javascript:S1067‚
 
 javascriptS1067%Expressions should not be too complex"MAJOR*js:é<p>The complexity of an expression is defined by the number of <code>&amp;&amp;</code>, <code>||</code> and <code>condition ? ifTrue : ifFalse</code> operators it contains.</p>
-<p>A single expression's complexity should not become too high to keep the code readable.</p>
-Ë
-javascript:S3002”
+<p>A single expression's complexity should not become too high to keep the code readable.</p>Z
+CODE_SMELL
+Ù
+javascript:S3002ﬂ
 
 javascriptS3002;Unary operators "+" and "-" should not be used with objects"CRITICAL*js:Ú<p>
   The unary operators <code>+</code> and <code>-</code> can be used to convert some value types to numeric values.
@@ -2511,9 +2599,10 @@ doSomethingWithNumber(+str);
 <pre>
 var b = new Boolean(true);
 doSomethingWithNumber(-b);  // Compliant
-</pre>
-ı
-javascript:S3003‡
+</pre>Z
+CODE_SMELL
+Å
+javascript:S3003Ï
 
 javascriptS30034Comparison operators should not be used with strings"MAJOR*js:â<p>The use of comparison operators (<code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>&gt;</code>) with strings is not likely to yield the expected results. Instead, try converting at least one operand to the <code>number</code> type.</p>
 
@@ -2533,9 +2622,10 @@ var orangeNumber = "45";
 if (Number(appleNumber) &lt; Number(orangeNumber)) {
   alert("There are more oranges");
 }
-</pre>
-Ù
-javascript:S2310ﬂ
+</pre>Z
+CODE_SMELL
+Ä
+javascript:S2310Î
 
 javascriptS2310ALoop counters should not be assigned to from within the loop body"MAJOR*js:˚<p>Loop counters should not be modified in the body of the loop. However other loop control variables representing logical values may be modified in the loop, for example a flag to indicate that something has been completed, which is then tested in the for statement.</p>
 
@@ -2561,9 +2651,10 @@ for (var name of names) {
     console.log(name);
   }
 }
-</pre>
-†
-javascript:S2550ã
+</pre>Z
+CODE_SMELL
+¨
+javascript:S2550ó
 
 javascriptS2550?"defaults" should be a function when objects or arrays are used"CRITICAL*js:¶<p>
   When using the Backbone.js framework, model <code>defaults</code> should be a function rather than an object if it contains arrays or objects. This is because objects and arrays are passed by reference in JavaScript. So a <code>defaults</code> object that contains arrays or objects is going to set the default value of every instance to point to the same shared object or array.
@@ -2590,9 +2681,10 @@ var Person = Backbone.Model.extend({
     };
   }
 });
-</pre>
-Â
-javascript:OneStatementPerLine¬
+</pre>Z
+CODE_SMELL
+Ò
+javascript:OneStatementPerLineŒ
 
 javascriptOneStatementPerLine&Statements should be on separate lines"MINOR*js:Î<p>For better readability, do not put more than one statement on a single line.</p>
 
@@ -2617,9 +2709,10 @@ if(someCondition) {
 <pre>
 onEvent(function() { doSomething(); });               // Compliant
 onEvent(function(p) { doSomething(); return p %2 ;}); // Noncompliant
-</pre>
-“
-javascript:S3001Ω
+</pre>Z
+CODE_SMELL
+ﬁ
+javascript:S3001…
 
 javascriptS30013"delete" should be used only with object properties"CRITICAL*js:‰<p>The semantics of the <code>delete</code> operator are a bit tricky, and it can only be reliably used to remove properties from objects. Pass anything else to it, and you may or may not get the desired result.</p>
 
@@ -2646,9 +2739,10 @@ var obj = {
 delete obj.x;
 delete obj.foo;
 
-</pre>
-Ú
--javascript:ConstructorFunctionsForSideEffects¿
+</pre>Z
+CODE_SMELL
+˛
+-javascript:ConstructorFunctionsForSideEffectsÃ
 
 javascript"ConstructorFunctionsForSideEffectsBConstructor functions should not be called purely for side-effects"MAJOR*js:æ<p>Some people like to call a constructor functions without assigning the result to a variable. There is no advantage in this approach since the object the <code>new</code> operator creates isn't used anywhere. Therefore this misleading syntax should be avoided.</p>
 <h2>Noncompliant Code Example</h2>
@@ -2660,9 +2754,10 @@ new MyConstructor(); // Non-Compliant
 
 <pre>
 var something = new MyConstructor();  // Compliant
-</pre>
-˛
-javascript:S2715È
+</pre>Z
+CODE_SMELL
+ä	
+javascript:S2715ı
 
 javascriptS2715F"find" should be used to select the children of an element known by id"MAJOR*js:Ä<p>
   The use of <code>find</code> allows <code>document.getElementById()</code> to be used for the top-level selection, and saves the Sizzle engine for where it's really needed.
@@ -2682,9 +2777,10 @@ javascriptS2715F"find" should be used to select the children of an element kn
 
 <h2>Compliant Solution</h2>
 
-<pre>var $productIds = $("#products").find("div.id"); // Compliant - #products is already selected by document.getElementById() so only div.id needs to go through Sizzle selector engine</pre>
-Ç
-javascript:S2716Ì
+<pre>var $productIds = $("#products").find("div.id"); // Compliant - #products is already selected by document.getElementById() so only div.id needs to go through Sizzle selector engine</pre>Z
+CODE_SMELL
+é
+javascript:S2716˘
 
 javascriptS2716&Universal selectors should not be used"MAJOR*js:§<p>
   Element selections that could be matched anywhere in the document can be very slow. That's why use of the universal selector, <code>*</code>, should be limited; it explicitly
@@ -2697,14 +2793,16 @@ javascriptS2716&Universal selectors should not be used"MAJOR*js:§<p>
 
 <h2>Compliant Solution</h2>
 
-<pre>$( ".buttons" ).children(); // Compliant</pre>
-∏
-javascript:S2713£
+<pre>$( ".buttons" ).children(); // Compliant</pre>Z
+CODE_SMELL
+ƒ
+javascript:S2713Ø
 
 javascriptS2713;JQuery cache variables should comply with a convention name"MINOR*js:≈<p>Shared naming conventions allow teams to collaborate efficiently.
-  This rule checks that all variables names that are used to store/cache jQuery objects match a provided regular expression.</p>
-ù
-javascript:S2714à
+  This rule checks that all variables names that are used to store/cache jQuery objects match a provided regular expression.</p>Z
+CODE_SMELL
+©
+javascript:S2714î
 
 javascriptS2714>Element type selectors should not be used with class selectors"MAJOR*js:ß<p>Using element type in class selectors is slower than using only the class selector.</p>
 
@@ -2714,9 +2812,10 @@ javascriptS2714>Element type selectors should not be used with class selector
 
 <h2>Compliant Solution</h2>
 
-<pre>var $products = $(".products");    // Compliant - fast</pre>
-≠
-javascript:S3525ò
+<pre>var $products = $(".products");    // Compliant - fast</pre>Z
+CODE_SMELL
+π
+javascript:S3525§
 
 javascriptS3525?Class methods should be used instead of "prototype" assignments"MAJOR*js:∂<p>Originally JavaScript didn't support <code>class</code>es, and class-like behavior had to be kludged using things like <code>prototype</code> assignments for "class" functions.
   Fortunately, ECMAScript 2015 added classes, so any lingering <code>prototype</code> uses should be  converted to true <code>class</code>es. The new syntax is more expressive and clearer, especially to those with experience in other languages.</p>
@@ -2744,9 +2843,10 @@ class MyClass {
     //...
   }
 }
-</pre>
-Ø
-javascript:S2392ö
+</pre>Z
+CODE_SMELL
+ª
+javascript:S2392¶
 
 javascriptS2392DVariable declarations should be placed appropriately for their scope"MAJOR*js:≥<p>A variable that is declared at function scope, but only used inside a single block should be declared in that block, and variables that are declared inside a block but used outside of it (which is possible with a <code>var</code>-style declaration) should be declared outside the block.</p>
 
@@ -2784,9 +2884,10 @@ function doSomething(a, b) {
 
   return a+b;
 }
-</pre>
-æ
-javascript:TrailingComma°
+</pre>Z
+CODE_SMELL
+ 
+javascript:TrailingComma≠
 
 javascriptTrailingComma"Trailing commas should not be used"BLOCKER*js:“<p>
   Most browsers parse and discard a meaningless, trailing comma. Unfortunately, that's not the case for Internet Explorer below version 9, which throws a meaningless error. Therefore trailing commas should be eliminated.
@@ -2807,10 +2908,12 @@ var settings = {
     'foo'  : oof,
     'bar' : rab
 };
-</pre>
-õ
+</pre>Z
+CODE_SMELL
+ß
 
-"javascript:MultilineStringLiteralsÙ	
+"javascript:MultilineStringLiteralsÄ
+
 
 javascriptMultilineStringLiterals,Multiline string literals should not be used"MAJOR*js:ì	<p>Continuing a string across a linebreak is supported in most script engines, but it is not a part of ECMAScript. Additionally, the whitespace at the beginning of each line can't be safely stripped at compile time, and any whitespace after the slash will result in tricky errors.</p>
 <h2>Noncompliant Code Example</h2>
@@ -2832,9 +2935,10 @@ var myString = 'A rather long string of English text, an error message ' +
     'those Schwarzenegger shades)! Where was I? Oh yes, ' +
     'you\'ve got an error and all the extraneous whitespace is ' +
     'just gravy.  Have a nice day.';
-</pre>
-€
-javascript:S2762∆
+</pre>Z
+CODE_SMELL
+Á
+javascript:S2762“
 
 javascriptS2762Selections should be stored"MAJOR*js:à<p>
   jQuery doesn't cache elements for you. If you've made a selection that you might need to make again, you should save the selection in a variable rather than making the
@@ -2865,9 +2969,10 @@ var paragraph = $("p");
 // ...
 
 paragraph = $("p");
-</pre>
-ô
-"javascript:NamedFunctionExpressionÚ
+</pre>Z
+CODE_SMELL
+•
+"javascript:NamedFunctionExpression˛
 
 javascriptNamedFunctionExpression-Named function expressions should not be used"MAJOR*js:ê<p>
   While named function expressions might be useful for debugging purposes, some browsers do not support them correctly (for example Internet Explorer 8).
@@ -2887,9 +2992,10 @@ fun = function(){}; // Compliant; function expression
 <p>ECMAScript 6 generator functions are excluded from this rule.</p>
 <pre>
 function* f() {} // Compliant; generator function.
-</pre>
-Æ
-javascript:S1154ô
+</pre>Z
+CODE_SMELL
+∫
+javascript:S1154•
 
 javascriptS11546Results of operations on strings should not be ignored"BLOCKER*js:æ<p>Doing an operation on a string without using the result of the operation is useless and is certainly due to a misunderstanding. </p>
 <h2>Noncompliant Code Example</h2>
@@ -2903,9 +3009,10 @@ str.toUpperCase(); // Noncompliant
 <pre>
 var str = "..."
 str = str.toUpperCase();
-</pre>
-Ê
-javascript:TrailingComment«
+</pre>Z
+CODE_SMELL
+Ú
+javascript:TrailingComment”
 
 javascriptTrailingComment:Comments should not be located at the end of lines of code"INFO*js:·<p>This rule verifies that single-line comments are not located at the end of a line of code.
 The main idea behind this rule is that in order to be really readable,
@@ -2929,9 +3036,10 @@ var a2 = b + c;
 <p>By default, the property "legalTrailingCommentPattern" allows to ignore comments containing only one word :</p>
 <pre>
 doSomething(); //FIXME
-</pre>
-Ó
-javascript:S2123Ÿ
+</pre>Z
+CODE_SMELL
+˙
+javascript:S2123Â
 
 javascriptS2123*Values should not be uselessly incremented"CRITICAL*js:âA value that is incremented or decremented and then not stored is at best wasted code and at worst a bug.
 
@@ -2945,9 +3053,10 @@ i = i++; // Noncompliant; i is still zero
 <pre>
 var i = 0;
 i++;
-</pre>
-¡
-javascript:SwitchWithoutDefaultù
+</pre>Z
+CODE_SMELL
+Õ
+javascript:SwitchWithoutDefault©
 
 javascriptSwitchWithoutDefault6"switch" statements should end with a "default" clause"MAJOR*js:µ<p>
 The requirement for a final <code>default</code> clause is defensive programming.
@@ -3007,9 +3116,10 @@ switch (param) {
 <li> <a href="http://cwe.mitre.org/data/definitions/478.html">MITRE, CWE-478</a> - Missing Default Case in Switch Statement</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/YgE">CERT, MSC01-C</a> - Strive for logical completeness</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/JoIyAQ">CERT, MSC01-CPP</a> - Strive for logical completeness</li>
-</ul>
-˘
-javascript:S2769‰
+</ul>Z
+CODE_SMELL
+Ö
+javascript:S2769
 
 javascriptS27690Selection results should be tested with "length""CRITICAL*js:é<p>
   Once you've made a selection, you typically want to know whether it actually found anything. Since selectors always return an object (the set of selected DOM elements), the
@@ -3031,14 +3141,16 @@ if ( $( "div.foo" ).length > 0) {
   // this code only runs if elements were found
   //  ...
 }
-</pre>
-ª
-javascript:FunctionComplexityô
+</pre>Z
+CODE_SMELL
+«
+javascript:FunctionComplexity•
 
 javascriptFunctionComplexity#Functions should not be too complex"MAJOR*js:∆<p>The cyclomatic complexity of functions should not exceed a defined threshold.</p>
-<p>Complex code can perform poorly and will in any case be difficult to understand and therefore to maintain.</p>
-Ó
-javascript:ElseIfWithoutElseÕ
+<p>Complex code can perform poorly and will in any case be difficult to understand and therefore to maintain.</p>Z
+CODE_SMELL
+˙
+javascript:ElseIfWithoutElseŸ
 
 javascriptElseIfWithoutElseE"if ... else if" constructs shall be terminated with an "else" clause"MAJOR*js:Ÿ
 <p>This rule applies whenever an <code>if</code> statement is followed by one or </p>
@@ -3078,9 +3190,10 @@ if (x == 0) {
 <li> <a href="https://www.securecoding.cert.org/confluence/x/YgE">CERT, MSC01-C</a> - Strive for logical completeness</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/JoIyAQ">CERT, MSC01-CPP</a> - Strive for logical completeness</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/PQHRAw">CERT, MSC64-Java</a> - Strive for logical completeness</li>
-</ul>
-º
-javascript:CommentedCodeü
+</ul>Z
+CODE_SMELL
+»
+javascript:CommentedCode´
 
 javascriptCommentedCode.Sections of code should not be "commented out""MAJOR*js:∆<p>Programmers should not comment out code as it bloats programs and reduces readability.</p>
 <p>Unused code should be deleted and can be retrieved from source control history if required.</p>
@@ -3091,15 +3204,17 @@ javascriptCommentedCode.Sections of code should not be "commented out""MAJOR
 <li> MISRA C++:2008, 2-7-2 - Sections of code shall not be "commented out" using C-style comments.</li>
 <li> MISRA C++:2008, 2-7-3 - Sections of code should not be "commented out" using C++ comments.</li>
 <li> MISRA C:2012, Dir. 4.4 - Sections of code should not be "commented out"</li>
-</ul>
-¨
-#javascript:CommentRegularExpressionÑ
+</ul>Z
+CODE_SMELL
+∏
+#javascript:CommentRegularExpressionê
 
 javascriptCommentRegularExpressionRegular expression on comment"MAJOR*js:Ø<p>This rule template can be used to create rules which will be triggered when a comment matches a given regular expression.</p>
 <p>For example, one can create a rule with the regular expression "<code>.*TODO.*</code>" to match all comment containing "TODO".</p>
-<p>Note that, in order to match TODO regardless of the case, the "<code>(?i)</code>" modifier can be prepended to the expression, as in "<code>(?i).*TODO.*</code>".</p>@
-ù	
-javascript:WithStatementÄ	
+<p>Note that, in order to match TODO regardless of the case, the "<code>(?i)</code>" modifier can be prepended to the expression, as in "<code>(?i).*TODO.*</code>".</p>@Z
+CODE_SMELL
+©	
+javascript:WithStatementå	
 
 javascriptWithStatement$"with" statements should not be used"MAJOR*js:±<p>
   The use of the <code>with</code> keyword produces an error in JavaScript strict mode code. However, that's not the worst that can be said against <code>with</code>.
@@ -3137,9 +3252,10 @@ foo.y = 4;
 foo.x = 3;
 
 print(foo.x + " " + x); // shows: 3 a
-</pre>
-÷
-javascript:ConditionalOperator≥
+</pre>Z
+CODE_SMELL
+‚
+javascript:ConditionalOperatorø
 
 javascriptConditionalOperator!Avoid use of conditional operator"MINOR*js:·<p>
 Condition operators can quickly become hard to be read.
@@ -3153,9 +3269,10 @@ The following code snippet illustrates this rule :
 function sayHello() {
   var a = (a === 'A') ? 'is A' : 'is not A'; // Non-Compliant
 }
-</pre>
-≥
-#javascript:NonEmptyCaseWithoutBreakã
+</pre>Z
+CODE_SMELL
+ø
+#javascript:NonEmptyCaseWithoutBreakó
 
 javascriptNonEmptyCaseWithoutBreak?Switch cases should end with an unconditional "break" statement"CRITICAL*js:ì<p>When the execution is not explicitly terminated at the end of a switch case, it continues to execute the statements of the following case. While this is sometimes intentional, it often is a mistake which leads to unexpected behavior. </p>
 <h2>Noncompliant Code Example</h2>
@@ -3217,9 +3334,10 @@ switch (myVariable) {
 <li> <a href="http://cwe.mitre.org/data/definitions/484.html">MITRE, CWE-484</a> - Omitted Break Statement in Switch</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/YIFLAQ">CERT, MSC17-C</a> - Finish every set of statements associated with a case label with a break statement</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/ZoFLAQ">CERT, MSC18-CPP</a> - Finish every set of statements associated with a case label with a break statement</li>
-</ul>
-π
-javascript:S888•
+</ul>Z
+CODE_SMELL
+≈
+javascript:S888±
 
 javascriptS888HRelational operators should be used in "for" loop termination conditions"CRITICAL*js:∏<p>
   Testing <code>for</code> loop termination using an equality operator (<code>==</code> and <code>!=</code>) is dangerous, because it could set up an infinite loop.
@@ -3265,9 +3383,10 @@ for (int i = 0; (item = arr[i]) != null; i++) {
   <li><a href="http://cwe.mitre.org/data/definitions/835">MITRE, CWE-835</a> - Loop with Unreachable Exit Condition ('Infinite Loop')</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/EwDJAQ">CERT, MSC21-C</a> - Use robust loop termination conditions</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/GwDJAQ">CERT, MSC21-CPP</a> - Use inequality to terminate a loop whose counter changes by more than one</li>
-</ul>
-∂
-javascript:S2137°
+</ul>Z
+CODE_SMELL
+¬
+javascript:S2137≠
 
 javascriptS2137-Local variables should not shadow "undefined""CRITICAL*js:Œ<p>
   It is possible to name a variable <code>undefined</code> in a local scope, but it is a very bad idea because <code>undefined</code> is what's returned for values and properties that have not yet been created. Make <code>undefined</code> a variable and you lose your ability to test whether other variables and properties exist.
@@ -3291,9 +3410,10 @@ function foo () {
      // ...
    }
  }
- </pre>
-⁄	
-javascript:UnreachableCodeª	
+ </pre>Z
+CODE_SMELL
+Ê	
+javascript:UnreachableCode«	
 
 javascriptUnreachableCode:Jump statements should not be followed by other statements"MAJOR*js:‘<p>Jump statements (<code>return</code>, <code>break</code> and <code>continue</code>) and <code>throw</code> expressions move control flow out of the current code block. Typically, any statements in a block that come after a jump or <code>throw</code> are simply wasted keystrokes lying in wait to confuse the unwary. </p>
 <h2>Noncompliant Code Example</h2>
@@ -3321,9 +3441,10 @@ int fun(int a) {
 <li> <a href="http://cwe.mitre.org/data/definitions/561.html">MITRE, CWE-561</a> - Dead Code</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect or is never executed</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-Í
-javascript:BitwiseOperators 
+</ul>Z
+CODE_SMELL
+ˆ
+javascript:BitwiseOperators÷
 
 javascriptBitwiseOperators$Bitwise operators should not be used"MAJOR*js:¯<p>JavaScript does not have an integer type, but it does have bitwise operators <code>&lt;&lt;</code>, <code>&gt;&gt;</code>, <code>&gt;&gt;&gt;</code>, <code>~</code>, <code>&amp;</code>, <code>|</code>. These operators convert their operands from floating point values to integers and back, so they are not as efficient as in C or other languages. Further, they are rarely useful in browser applications, and the similarity to the logical operators can mask some programming errors.</p>
 <h2>Noncompliant Code Example</h2>
@@ -3340,9 +3461,10 @@ var oppositeSigns = false;
 if ( (x &lt; 0 &amp;&amp; y &gt; 0) || (x &gt; 0 &amp;&amp; y &lt; 0) ) {
   oppositeSigns = true;
 }
-</pre>
-«
-javascript:S2138≤
+</pre>Z
+CODE_SMELL
+”
+javascript:S2138æ
 
 javascriptS2138""undefined" should not be assigned"CRITICAL*js:Í<p>
   <code>undefined</code> is the value you get for variables and properties which have not yet been created. Use the same value to reset an existing variable and you lose the ability to distinguish between a variable that exists but has no value and a variable that does not yet exist. Instead, <code>null</code> should be used, allowing you to tell the difference between a property that has been reset and one that was never created.
@@ -3378,9 +3500,10 @@ if (myObject.lname == undefined) {
 if (myObject.fname == undefined) {
   // no real way of knowing the true state of myObject.fname
 }
-</pre>
-Ü
-javascript:S1442Ò
+</pre>Z
+CODE_SMELL
+í
+javascript:S1442˝
 
 javascriptS1442"alert(...)" should not be used"MAJOR*js:Ø<p>alert(...) can be useful for debugging during development, but in production mode this kind of pop-up could expose sensitive information to attackers, and should never be displayed. </p>
 <h2>Noncompliant Code Example</h2>
@@ -3394,9 +3517,10 @@ if(unexpectedCondition)
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/489.html">MITRE, CWE-489</a> - Leftover Debug Code</li>
-</ul>
-¢
-javascript:S3500ç
+</ul>Z
+CODE_SMELL
+Æ
+javascript:S3500ô
 
 javascriptS35007Attempts should not be made to update "const" variables"BLOCKER*js:±<p>Variables declared with <code>const</code> cannot be modified. Unfortunately, attempts to do so don't always raise an error; in a non-ES2015 environment,
   such an attempt might simply be ignored.</p>
@@ -3405,9 +3529,10 @@ javascriptS35007Attempts should not be made to update "const" variables"BLOC
 <pre>
 const pi = "yes, please";
 pi = 3.14;  //Noncompliant
-</pre>
-¸
-javascript:S2770Á
+</pre>Z
+CODE_SMELL
+à
+javascript:S2770Û
 
 javascriptS2770,Deprecated jQuery methods should not be used"MAJOR*js:ò<p>
   Deprecation is a warning that a method has been superseded, and will eventually be removed. The deprecation period allows you to make a smooth transition away from the aging,
@@ -3431,9 +3556,10 @@ javascriptS2770,Deprecated jQuery methods should not be used"MAJOR*js:ò<p>
   <li><code>.size()</code></li>
   <li><code>.toggle()</code></li>
   <li><code>.unload()</code></li>
-</ul>
-Ÿ
-javascript:TrailingWhitespace∑
+</ul>Z
+CODE_SMELL
+Â
+javascript:TrailingWhitespace√
 
 javascriptTrailingWhitespace.Lines should not end with trailing whitespaces"MINOR*js:Ÿ<p>Trailing whitespaces are simply useless and should not stay in code. They may generate noise when comparing different versions of the same file.</p>
 <p>If you encounter issues from this rule, this probably means that you are not using an automated code formatter - which you should if you have the opportunity to do so. </p>
@@ -3443,9 +3569,10 @@ javascriptTrailingWhitespace.Lines should not end with trailing whitespaces"
 // The following string will error if there is a whitespace after '\'
 var str = "Hello \
 World";
-</pre>
-¿
-javascript:S2817´
+</pre>Z
+CODE_SMELL
+Ã
+javascript:S2817∑
 
 javascriptS2817$Web SQL databases should not be used"CRITICAL*js:·<p>
   The Web SQL Database standard never saw the light of day. It was first formulated, then deprecated by the W3C and was only implemented in some browsers. (It is not supported in
@@ -3466,9 +3593,10 @@ var db = window.openDatabase("myDb", "1.0", "Personal secrets stored here", 2*10
 <ul>
   <li><a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
   <li><a href="https://www.owasp.org/index.php/Top_10_2013-A9-Using_Components_with_Known_Vulnerabilities">OWASP Top Ten 2013 Category A9</a> - Using Components with Known Vulnerabilities</li>
-</ul>
-ê
-javascript:S3509˚
+</ul>Z
+CODE_SMELL
+ú
+javascript:S3509á
 
 javascriptS35090Default parameters should not cause side effects"MAJOR*js:®<p>The assignment of default parameter values is generally intended to help the caller. But when a default assignment causes the side effects, the caller may not be aware of the extra changes or may not fully understand their implications. I.e. default assignments with side effects may end up hurting the caller, and for that reason, they should be avoided.</p>
 
@@ -3483,9 +3611,10 @@ function go(i = count++) {  // Noncompliant
 go();  // outputs 0
 go(7); // outputs 7
 go();  // outputs 1
-</pre>
-€	
-javascript:S2814∆	
+</pre>Z
+CODE_SMELL
+Á	
+javascript:S2814“	
 
 javascriptS28140Variables and functions should not be redeclared"MAJOR*js:Û<p>
   This rule checks that a declaration doesn't use a name that is already in use. Indeed, it is possible to declare multiple variables and/or functions with the same name,
@@ -3547,9 +3676,10 @@ function printBar() {
 }
 
 printBar(); // prints "bar"
-</pre>
-π
-javascript:NestedIfDepthú
+</pre>Z
+CODE_SMELL
+≈
+javascript:NestedIfDepth®
 
 javascriptNestedIfDepth`Control flow statements "if", "for", "while", "switch" and "try" should not be nested too deeply"MAJOR*js:ë<p>
   Nested <code>if</code>, <code>for</code>, <code>while</code>, <code>switch</code> and <code>try</code> statements is a key ingredient for making what's known as "Spaghetti code".
@@ -3577,9 +3707,10 @@ javascriptNestedIfDepth`Control flow statements "if", "for", "while", "switch
       }
     }
   }
-</pre>
-Æ
-javascript:S2898ô
+</pre>Z
+CODE_SMELL
+∫
+javascript:S2898•
 
 javascriptS28986"[type=...]" should be used to select elements by type"MAJOR*js:¿<p>
   While <code>:&lt;element_type&gt;</code> and <code>[type="&lt;element_type&gt;"]</code> can both be used in jQuery to select elements by their type,
@@ -3607,9 +3738,10 @@ javascriptS28986"[type=...]" should be used to select elements by type"MAJOR
 
 <pre>
   var input = $( "form input[type=radio]" ); // Compliant
-</pre>
-ı
-'javascript:FunctionDefinitionInsideLoop…
+</pre>Z
+CODE_SMELL
+Å
+'javascript:FunctionDefinitionInsideLoop’
 
 javascriptFunctionDefinitionInsideLoop,Functions should not be defined inside loops"MAJOR*js:„<p>
   Defining a function inside of a loops can yield unexpected results because under the covers, only a single instance of the function is defined. Rather than creating new function instances, the loop iterations simply update the function's variables. Instead, the function should be returned.
@@ -3628,9 +3760,10 @@ print(funs[1]()); // 13 instead of 1
 print(funs[2]()); // 13 instead of 2
 print(funs[3]()); // 13 instead of 3
 ...
-</pre>
-á	
-javascript:S3504Ú
+</pre>Z
+CODE_SMELL
+ì	
+javascript:S3504˛
 
 javascriptS35042Variables should be declared with "let" or "const""MAJOR*js:ù<p>ECMAScript 2015 introduced the <code>let</code> and <code>const</code> keywords for block-scope variable declaration. Using <code>const</code> creates a read-only (constant) variable. </p>
 <p>The distinction between the types of variable created by <code>var</code> and by <code>let</code> is significant, and a switch to <code>let</code> will help alleviate many of the variable scope issues which have caused confusion in the past. </p>
@@ -3647,9 +3780,10 @@ var size = 4;
 <pre>
 const color = "blue";
 let size = 4;
-</pre>
-ë
-javascript:S138˝
+</pre>Z
+CODE_SMELL
+ù
+javascript:S138â
 
 javascriptS138(Functions should not have too many lines"MAJOR*js:≥<p>
   A function that grows too large tends to aggregate too many responsibilities.</br>
@@ -3681,9 +3815,10 @@ javascriptS138(Functions should not have too many lines"MAJOR*js:≥<p>
     // ...
   }
 })();
-</pre>
-µ
-javascript:S2251†
+</pre>Z
+CODE_SMELL
+¡
+javascript:S2251¨
 
 javascriptS2251IA "for" loop update clause should move the counter in the right direction"BLOCKER*js:≤A <code>for</code> loop with a stop condition that can never be reached, such as one with a counter that moves in the wrong direction, will run infinitely. While there are occasions when an infinite loop is intended, the convention is to construct such loops as <code>while</code> loops. More typically, an infinite <code>for</code> loop is a bug. 
 
@@ -3699,9 +3834,10 @@ for (var i = 0; i < strings.length; i--) { // Noncompliant;
 for (var i = 0; i < strings.length; i++) {
   //...
 }
-</pre>
-ì
-javascript:S930ˇ
+</pre>Z
+CODE_SMELL
+ü
+javascript:S930ã
 
 javascriptS930.Function calls should not pass extra arguments"CRITICAL*js:¨<p>You can easily call a JavaScript function with more arguments than the function needs, but the extra arguments will be just ignored by function execution.</p>
 
@@ -3723,27 +3859,34 @@ function doSomething(a, b) {
 }
 
 doSomething(1, 2, 3) // Compliant
-</pre>
-ß
-common-cs:FailedUnitTestsâ
-	common-csFailedUnitTests!Failed unit tests should be fixed"MAJOR*cs:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.
-·
-common-cs:DuplicatedBlocks¬
-	common-csDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*cs:dAn issue is created on a file as soon as there is at least one block of duplicated code on this file
-˝
-common-cs:SkippedUnitTestsﬁ
-	common-csSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*cs:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.
-ã
-$common-cs:InsufficientCommentDensity‚
-	common-csInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*cs:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.
-–
-"common-cs:InsufficientLineCoverage©
-	common-csInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*cs:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.
-€
-$common-cs:InsufficientBranchCoverage≤
-	common-csInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*cs:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.
-±
-%fxcop:UriParametersShouldNotBeStringsá
+</pre>Z
+CODE_SMELL
+≥
+common-cs:FailedUnitTestsï
+	common-csFailedUnitTests!Failed unit tests should be fixed"MAJOR*cs:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.Z
+CODE_SMELL
+Ì
+common-cs:DuplicatedBlocksŒ
+	common-csDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*cs:dAn issue is created on a file as soon as there is at least one block of duplicated code on this fileZ
+CODE_SMELL
+â
+common-cs:SkippedUnitTestsÍ
+	common-csSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*cs:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.Z
+CODE_SMELL
+ó
+$common-cs:InsufficientCommentDensityÓ
+	common-csInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*cs:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.Z
+CODE_SMELL
+‹
+"common-cs:InsufficientLineCoverageµ
+	common-csInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*cs:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.Z
+CODE_SMELL
+Á
+$common-cs:InsufficientBranchCoverageæ
+	common-csInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*cs:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.Z
+CODE_SMELL
+Ω
+%fxcop:UriParametersShouldNotBeStringsì
 fxcopUriParametersShouldNotBeStrings,CA1054: URI parameters should not be strings"MAJOR*cs2CA1054:õ<h2>Cause</h2>
 <p>
             A type declares a method with a string parameter whose name contains "uri", "Uri", "urn", "Urn", "url", or "Url" and the type does not declare a corresponding overload that takes a <code>System.Uri</code> parameter.
@@ -3783,9 +3926,10 @@ $common-cs:InsufficientBranchCoverage≤
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182174.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182174.aspx</a></p>
-◊
-#fxcop:DeclareEventHandlersCorrectlyØ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182174.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182174.aspx</a></p>Z
+CODE_SMELL
+„
+#fxcop:DeclareEventHandlersCorrectlyª
 fxcopDeclareEventHandlersCorrectly(CA1009: Declare event handlers correctly"MAJOR*cs2CA1009:…<h2>Cause</h2>
 <p>
             A delegate that handles a public or protected event does not have the correct signature, return type, or parameter names.
@@ -3811,9 +3955,10 @@ $common-cs:InsufficientBranchCoverage≤
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182133.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182133.aspx</a></p>
-‹
-8fxcop:ICollectionImplementationsHaveStronglyTypedMembersü
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182133.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182133.aspx</a></p>Z
+CODE_SMELL
+Ë
+8fxcop:ICollectionImplementationsHaveStronglyTypedMembers´
 fxcop2ICollectionImplementationsHaveStronglyTypedMembers?CA1035: ICollection implementations have strongly typed members"MAJOR*cs2CA1035:ç<h2>Cause</h2>
 <p>
             A public or protected type implements <code>System.Collections.ICollection</code> but does not provide a strongly typed method for <code>ICollection.CopyTo</code>. The strongly typed version of <code>CopyTo</code> must accept two parameters and cannot have a <code>System.Array</code> or an array of <code>System.Object</code> as its first parameter.
@@ -3848,9 +3993,10 @@ $common-cs:InsufficientBranchCoverage≤
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/49stb304.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/49stb304.aspx</a></p>
-›
-%fxcop:FlagsEnumsShouldHavePluralNames≥
+<p><a href="http://msdn.microsoft.com/en-us/library/49stb304.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/49stb304.aspx</a></p>Z
+CODE_SMELL
+È
+%fxcop:FlagsEnumsShouldHavePluralNamesø
 fxcopFlagsEnumsShouldHavePluralNames,CA1714: Flags enums should have plural names"MAJOR*cs2CA1714:«<h2>Cause</h2>
 <p>
             A public enumeration has the <code>System.FlagsAttribute</code> and its name does not end in 's'.
@@ -3881,9 +4027,10 @@ $common-cs:InsufficientBranchCoverage≤
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264486.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264486.aspx</a></p>
-à
-fxcop:AvoidUnmantainableCodeÁ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264486.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264486.aspx</a></p>Z
+CODE_SMELL
+î
+fxcop:AvoidUnmantainableCodeÛ
 
 fxcopAvoidUnmantainableCode!CA1505: Avoid unmaintainable code"MAJOR*cs2CA1505:è
 <h2>Cause</h2>
@@ -3903,10 +4050,11 @@ $common-cs:InsufficientBranchCoverage≤
 <p>
             Exclude this warning when a type or method is still considered maintainable despite its large size or when the type or method cannot be split.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb386043.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386043.aspx</a></p>
-Á
+<p><a href="http://msdn.microsoft.com/en-us/library/bb386043.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386043.aspx</a></p>Z
+CODE_SMELL
+Û
 
-,fxcop:DoNotDecreaseInheritedMemberVisibility∂
+,fxcop:DoNotDecreaseInheritedMemberVisibility¬
 
 fxcop&DoNotDecreaseInheritedMemberVisibility3CA2222: Do not decrease inherited member visibility"MAJOR*cs2CA2222:º	<h2>Cause</h2>
 <p>
@@ -3924,10 +4072,11 @@ $common-cs:InsufficientBranchCoverage≤
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182332.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182332.aspx</a></p>
-é
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182332.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182332.aspx</a></p>Z
+CODE_SMELL
+ö
 
-fxcop:AvoidUnusedPrivateFieldsÎ	
+fxcop:AvoidUnusedPrivateFields˜	
 fxcopAvoidUnusedPrivateFields#CA1823: Avoid unused private fields"MAJOR*cs2CA1823:è	<h2>Cause</h2>
 <p>
             This rule is reported when a private field in your code exists but is not used by any code path.
@@ -3967,9 +4116,10 @@ $common-cs:InsufficientBranchCoverage≤
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms245042.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms245042.aspx</a></p>
-Â
-fxcop:DeclarePInvokesCorrectly¬
+<p><a href="http://msdn.microsoft.com/en-us/library/ms245042.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms245042.aspx</a></p>Z
+CODE_SMELL
+Ò
+fxcop:DeclarePInvokesCorrectlyŒ
 fxcopDeclarePInvokesCorrectly#CA1415: Declare P/Invokes correctly"MAJOR*cs2CA1415:Ê<h2>Cause</h2>
 <p>
             A platform invoke method is incorrectly declared.
@@ -3986,9 +4136,10 @@ $common-cs:InsufficientBranchCoverage≤
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182204.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182204.aspx</a></p>
-ÿ
-0fxcop:ReviewSqlQueriesForSecurityVulnerabilities£
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182204.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182204.aspx</a></p>Z
+CODE_SMELL
+‰
+0fxcop:ReviewSqlQueriesForSecurityVulnerabilitiesØ
 fxcop*ReviewSqlQueriesForSecurityVulnerabilities7CA2100: Review SQL queries for security vulnerabilities"MAJOR*cs2CA2100:°<h2>Cause</h2>
 <p>
             A method sets the <code>IDbCommand.CommandText</code> property by using a string that is built from a string argument to the method.
@@ -4092,9 +4243,10 @@ string query = String.Format("SELECT TOP {0} FROM Table", x);
 <p>
             It is safe to suppress a warning from this rule if the command text does not contain any user input.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182310.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182310.aspx</a></p>
-√
-#fxcop:ImplementIDisposableCorrectlyõ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182310.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182310.aspx</a></p>Z
+CODE_SMELL
+œ
+#fxcop:ImplementIDisposableCorrectlyß
 fxcopImplementIDisposableCorrectly'CA1063: Implement IDisposable correctly"MAJOR*cs2CA1063:∂<h2>Cause</h2>
 <p>
 
@@ -4168,9 +4320,10 @@ string query = String.Format("SELECT TOP {0} FROM Table", x);
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms244737.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms244737.aspx</a></p>
-Ù
-fxcop:DeclareTypesInNamespaces—
+<p><a href="http://msdn.microsoft.com/en-us/library/ms244737.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms244737.aspx</a></p>Z
+CODE_SMELL
+Ä
+fxcop:DeclareTypesInNamespaces›
 fxcopDeclareTypesInNamespaces#CA1050: Declare types in namespaces"MAJOR*cs2CA1050:ı<h2>Cause</h2>
 <p>
             A public or protected type is defined outside the scope of a named namespace.
@@ -4187,9 +4340,10 @@ string query = String.Format("SELECT TOP {0} FROM Table", x);
 <p>
             Although you never have to suppress a warning from this rule, it is safe to do this when the assembly will never be used together with other assemblies.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182134.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182134.aspx</a></p>
-Ô
-&fxcop:DisposableFieldsShouldBeDisposedƒ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182134.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182134.aspx</a></p>Z
+CODE_SMELL
+˚
+&fxcop:DisposableFieldsShouldBeDisposed–
 fxcop DisposableFieldsShouldBeDisposed,CA2213: Disposable fields should be disposed"MAJOR*cs2CA2213:◊<h2>Cause</h2>
 <p>
             A type that implements <code>System.IDisposable</code> declares fields that are of types that also implement <code>IDisposable</code>. The <code>Dispose</code> method of the field is not called by the <code>Dispose</code> method of the declaring type.
@@ -4206,9 +4360,10 @@ string query = String.Format("SELECT TOP {0} FROM Table", x);
 <p>
             It is safe to suppress a warning from this rule if you are not responsible for releasing the resource held by the field, or if the call to <code>Dispose</code> occurs at a deeper calling level than the rule checks.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182328.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182328.aspx</a></p>
-ı
-'fxcop:DoNotDeclareVisibleInstanceFields…
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182328.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182328.aspx</a></p>Z
+CODE_SMELL
+Å
+'fxcop:DoNotDeclareVisibleInstanceFields’
 fxcop!DoNotDeclareVisibleInstanceFields.CA1051: Do not declare visible instance fields"MAJOR*cs2CA1051:Ÿ<h2>Cause</h2>
 <p>
             An externally visible type has an externally visible instance field.
@@ -4234,9 +4389,10 @@ string query = String.Format("SELECT TOP {0} FROM Table", x);
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182141.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182141.aspx</a></p>
-û
-,fxcop:IdentifiersShouldNotContainUnderscoresÌ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182141.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182141.aspx</a></p>Z
+CODE_SMELL
+™
+,fxcop:IdentifiersShouldNotContainUnderscores˘
 
 fxcop&IdentifiersShouldNotContainUnderscores2CA1707: Identifiers should not contain underscores"MAJOR*cs2CA1707:Ù	<h2>Cause</h2>
 <p>
@@ -4268,9 +4424,10 @@ string query = String.Format("SELECT TOP {0} FROM Table", x);
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182245.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182245.aspx</a></p>
-–?
-&fxcop:MovePInvokesToNativeMethodsClass•?
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182245.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182245.aspx</a></p>Z
+CODE_SMELL
+‹?
+&fxcop:MovePInvokesToNativeMethodsClass±?
 fxcop MovePInvokesToNativeMethodsClass-CA1060: Move P/Invokes to NativeMethods class"MAJOR*cs2CA1060:∑><h2>Cause</h2>
 <p>
             A method uses Platform Invocation Services to access unmanaged code and is not a member of one of the NativeMethods classes.
@@ -4458,10 +4615,11 @@ internal¬†static¬†class UnsafeNativeMethods
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182161.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182161.aspx</a></p>
-…
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182161.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182161.aspx</a></p>Z
+CODE_SMELL
+’
 
-fxcop:RemoveCallsToGCKeepAlive¶
+fxcop:RemoveCallsToGCKeepAlive≤
 
 fxcopRemoveCallsToGCKeepAlive$CA2004: Remove calls to GC.KeepAlive"MAJOR*cs2CA2004:…	<h2>Cause</h2>
 <p>
@@ -4479,9 +4637,10 @@ internal¬†static¬†class UnsafeNativeMethods
 <p>
             You can suppress this warning only if it is not technically correct to convert to <code>SafeHandle</code> usage in your class.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182293.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182293.aspx</a></p>
-ò
-!fxcop:DoNotNameEnumValuesReservedÚ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182293.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182293.aspx</a></p>Z
+CODE_SMELL
+§
+!fxcop:DoNotNameEnumValuesReserved˛
 fxcopDoNotNameEnumValuesReserved*CA1700: Do not name enum values 'Reserved'"MAJOR*cs2CA1700:å<h2>Cause</h2>
 <p>
             The name of an enumeration member contains the word "reserved".
@@ -4540,9 +4699,10 @@ internal¬†static¬†class UnsafeNativeMethods
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182236.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182236.aspx</a></p>
-Ì
-4fxcop:ProvideDeserializationMethodsForOptionalFields¥
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182236.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182236.aspx</a></p>Z
+CODE_SMELL
+˘
+4fxcop:ProvideDeserializationMethodsForOptionalFields¿
 fxcop.ProvideDeserializationMethodsForOptionalFields;CA2239: Provide deserialization methods for optional fields"MAJOR*cs2CA2239:™<h2>Cause</h2>
 <p>
             A type has a field that is marked with the <code>System.Runtime.Serialization.OptionalFieldAttribute</code> attribute and the type does not provide de-serialization event handling methods.
@@ -4597,9 +4757,10 @@ internal¬†static¬†class UnsafeNativeMethods
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182362.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182362.aspx</a></p>
-∫"
-!fxcop:OperationsShouldNotOverflowî"
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182362.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182362.aspx</a></p>Z
+CODE_SMELL
+∆"
+!fxcop:OperationsShouldNotOverflow†"
 fxcopOperationsShouldNotOverflow&CA2233: Operations should not overflow"MAJOR*cs2CA2233:≤!<h2>Cause</h2>
 <p>
             A method performs an arithmetic operation and does not validate the operands beforehand to prevent overflow.
@@ -4820,9 +4981,10 @@ namespace Samples
               </li>
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182354.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182354.aspx</a></p>
-ã!
-&fxcop:DoNotRaiseReservedExceptionTypes‡ 
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182354.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182354.aspx</a></p>Z
+CODE_SMELL
+ó!
+&fxcop:DoNotRaiseReservedExceptionTypesÏ 
 fxcop DoNotRaiseReservedExceptionTypes-CA2201: Do not raise reserved exception types"MAJOR*cs2CA2201:Ú<h2>Cause</h2>
 <p>
             A method raises an exception type that is too general or that is reserved by the runtime.
@@ -4993,9 +5155,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182338.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182338.aspx</a></p>
-À
-"fxcop:MarkAllNonSerializableFields§
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182338.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182338.aspx</a></p>Z
+CODE_SMELL
+◊
+"fxcop:MarkAllNonSerializableFields∞
 fxcopMarkAllNonSerializableFields(CA2235: Mark all non-serializable fields"MAJOR*cs2CA2235:ø<h2>Cause</h2>
 <p>
             An instance field of a type that is not serializable is declared in a type that is serializable.
@@ -5050,9 +5213,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182349.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182349.aspx</a></p>
-÷
-,fxcop:UseIntegralOrStringArgumentForIndexers•
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182349.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182349.aspx</a></p>Z
+CODE_SMELL
+‚
+,fxcop:UseIntegralOrStringArgumentForIndexers±
 fxcop&UseIntegralOrStringArgumentForIndexers4CA1043: Use integral or string argument for indexers"MAJOR*cs2CA1043:™<h2>Cause</h2>
 <p>
             A public or protected type contains a public or protected indexer that uses an index type other than System.Int32, System.Int64, <code>System.Object</code>, or <code>System.String</code>.
@@ -5082,9 +5246,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182180.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182180.aspx</a></p>
-Õ
-*fxcop:TestForEmptyStringsUsingStringLengthû
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182180.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182180.aspx</a></p>Z
+CODE_SMELL
+Ÿ
+*fxcop:TestForEmptyStringsUsingStringLength™
 fxcop$TestForEmptyStringsUsingStringLength2CA1820: Test for empty strings using string length"MAJOR*cs2CA1820:ß<h2>Cause</h2>
 <p>
             A string is compared to the empty string by using <code>Object.Equals</code>.
@@ -5102,10 +5267,10 @@ namespace Samples
 <p>
             It is safe to suppress a warning from this rule if performance is not an issue.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182279.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182279.aspx</a></p>
-˙
-
-#fxcop:UseParamsForVariableArguments“
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182279.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182279.aspx</a></p>Z
+CODE_SMELL
+Ü
+#fxcop:UseParamsForVariableArgumentsﬁ
 
 fxcopUseParamsForVariableArguments)CA2230: Use params for variable arguments"MAJOR*cs2CA2230:Î	<h2>Cause</h2>
 <p>
@@ -5124,9 +5289,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182366.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182366.aspx</a></p>
-ß
-7fxcop:DefaultConstructorsMustHaveConsistentTransparencyÎ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182366.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182366.aspx</a></p>Z
+CODE_SMELL
+≥
+7fxcop:DefaultConstructorsMustHaveConsistentTransparency˜
 fxcop1DefaultConstructorsMustHaveConsistentTransparency[CA2132: Default constructors must be at least as critical as base type default constructors"MAJOR*cs2CA2132:æ<h2>Cause</h2>
 <p>
             The transparency attribute of the default constructor of a derived class is not as critical as the transparency of the base class.
@@ -5202,9 +5368,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd983956.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd983956.aspx</a></p>
-å
-*fxcop:AvoidOverloadsInComVisibleInterfaces›
+<p><a href="http://msdn.microsoft.com/en-us/library/dd983956.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd983956.aspx</a></p>Z
+CODE_SMELL
+ò
+*fxcop:AvoidOverloadsInComVisibleInterfacesÈ
 fxcop$AvoidOverloadsInComVisibleInterfaces1CA1402: Avoid overloads in COM visible interfaces"MAJOR*cs2CA1402:Á<h2>Cause</h2>
 <p>
             A Component Object Model (COM) visible interface declares overloaded methods.
@@ -5285,9 +5452,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182197.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182197.aspx</a></p>
-µ
-fxcop:MarkEnumsWithFlagsò
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182197.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182197.aspx</a></p>Z
+CODE_SMELL
+¡
+fxcop:MarkEnumsWithFlags§
 fxcopMarkEnumsWithFlags&CA1027: Mark enums with FlagsAttribute"MAJOR*cs2CA1027:ø<h2>Cause</h2>
 <p>
             The values of a public enumeration are powers of two or are combinations of other values that are defined in the enumeration, and the <code>System.FlagsAttribute</code> attribute is not present. To reduce false positives, this rule does not report a violation for enumerations that have contiguous values.
@@ -5313,9 +5481,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182159.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182159.aspx</a></p>
-é
-)fxcop:IndexersShouldNotBeMultidimensional‡
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182159.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182159.aspx</a></p>Z
+CODE_SMELL
+ö
+)fxcop:IndexersShouldNotBeMultidimensionalÏ
 
 fxcop#IndexersShouldNotBeMultidimensional/CA1023: Indexers should not be multidimensional"MAJOR*cs2CA1023:Ì	<h2>Cause</h2>
 <p>
@@ -5346,9 +5515,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182152.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182152.aspx</a></p>
-∆
-.fxcop:MarkWindowsFormsEntryPointsWithStaThreadì
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182152.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182152.aspx</a></p>Z
+CODE_SMELL
+“
+.fxcop:MarkWindowsFormsEntryPointsWithStaThreadü
 fxcop(MarkWindowsFormsEntryPointsWithStaThread6CA2232: Mark Windows Forms entry points with STAThread"MAJOR*cs2CA2232:î<h2>Cause</h2>
 <p>
             An assembly references the <code>System.Windows.Forms</code> namespace, and its entry point is not marked with the <code>System.STAThreadAttribute</code> attribute.
@@ -5383,9 +5553,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 <p>
             It is safe to suppress a warning from this rule if you are developing for the .NET Compact Framework, for which the <code>STAThreadAttribute</code> attribute is unnecessary and not supported.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182351.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182351.aspx</a></p>
-·
-)fxcop:NonConstantFieldsShouldNotBeVisible≥
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182351.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182351.aspx</a></p>Z
+CODE_SMELL
+Ì
+)fxcop:NonConstantFieldsShouldNotBeVisibleø
 fxcop#NonConstantFieldsShouldNotBeVisible1CA2211: Non-constant fields should not be visible"MAJOR*cs2CA2211:æ<h2>Cause</h2>
 <p>
             A public or protected static field is not constant nor is it read-only.
@@ -5402,9 +5573,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 <p>
             It is safe to suppress a warning from this rule if you are developing an application and therefore have full control over access to the type that contains the static field. Library designers should not suppress a warning from this rule; using non-constant static fields can make using the library difficult for developers to use correctly.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182353.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182353.aspx</a></p>
-Ò
-+fxcop:ReviewDeclarativeSecurityOnValueTypes¡
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182353.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182353.aspx</a></p>Z
+CODE_SMELL
+˝
++fxcop:ReviewDeclarativeSecurityOnValueTypesÕ
 fxcop%ReviewDeclarativeSecurityOnValueTypes2CA2108: Review declarative security on value types"MAJOR*cs2CA2108:…<h2>Cause</h2>
 <p>
             A public or protected value type is secured by a <code>Data and Modeling in the .NET Framework</code> or Link Demands.
@@ -5421,10 +5593,11 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 <p>
             You can suppress a warning from this rule if any caller can obtain instances of the value type in its default state without posing a threat to security.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182307.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182307.aspx</a></p>
- 
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182307.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182307.aspx</a></p>Z
+CODE_SMELL
+÷
 
-fxcop:AvoidExcessiveLocals´
+fxcop:AvoidExcessiveLocals∑
 
 fxcopAvoidExcessiveLocalsCA1809: Avoid excessive locals"MAJOR*cs2CA1809:ÿ	<h2>Cause</h2>
 <p>
@@ -5450,9 +5623,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182263.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182263.aspx</a></p>
-Û
-(fxcop:DoNotHardcodeLocaleSpecificStrings∆
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182263.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182263.aspx</a></p>Z
+CODE_SMELL
+ˇ
+(fxcop:DoNotHardcodeLocaleSpecificStrings“
 fxcop"DoNotHardcodeLocaleSpecificStrings/CA1302: Do not hardcode locale specific strings"MAJOR*cs2CA1302:‘<h2>Cause</h2>
 <p>
             A method uses a string literal that represents part of the path of certain system folders.
@@ -5478,9 +5652,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182186.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182186.aspx</a></p>
-˜)
-*fxcop:IdentifiersShouldNotContainTypeNames»)
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182186.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182186.aspx</a></p>Z
+CODE_SMELL
+É*
+*fxcop:IdentifiersShouldNotContainTypeNames‘)
 fxcop$IdentifiersShouldNotContainTypeNames1CA1720: Identifiers should not contain type names"MAJOR*cs2CA1720:“(<h2>Cause</h2>
 <p>
             The name of a parameter in an externally visible member contains a¬†data type name.
@@ -5658,9 +5833,10 @@ Visual Basic 6 COM clients cannot implement interface methods by using an unders
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb531486.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb531486.aspx</a></p>
-≥%
-)fxcop:AvoidStaticMembersInComVisibleTypesÖ%
+<p><a href="http://msdn.microsoft.com/en-us/library/bb531486.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb531486.aspx</a></p>Z
+CODE_SMELL
+ø%
+)fxcop:AvoidStaticMembersInComVisibleTypesë%
 fxcop#AvoidStaticMembersInComVisibleTypes1CA1407: Avoid static members in COM visible types"MAJOR*cs2CA1407:ê$<h2>Cause</h2>
 <p>
             A type that is specifically marked as visible to Component Object Model (COM) contains a <code>public</code> <code>static</code> method.
@@ -5869,9 +6045,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182198.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182198.aspx</a></p>
-õ
-,fxcop:AptcaMethodsShouldOnlyCallAptcaMethodsÍ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182198.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182198.aspx</a></p>Z
+CODE_SMELL
+ß
+,fxcop:AptcaMethodsShouldOnlyCallAptcaMethodsˆ
 fxcop&AptcaMethodsShouldOnlyCallAptcaMethods4CA2116: APTCA methods should only call APTCA methods"MAJOR*cs2CA2116:Ô<h2>Cause</h2>
 <p>
             A method in an assembly with the <code>System.Security.AllowPartiallyTrustedCallersAttribute</code> attribute calls a method in an assembly that does not have the attribute.
@@ -5912,9 +6089,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182297.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182297.aspx</a></p>
-“
-%fxcop:DisposeObjectsBeforeLosingScope®
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182297.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182297.aspx</a></p>Z
+CODE_SMELL
+ﬁ
+%fxcop:DisposeObjectsBeforeLosingScope¥
 fxcopDisposeObjectsBeforeLosingScope+CA2000: Dispose objects before losing scope"MAJOR*cs2CA2000:Ω<h2>Cause</h2>
 <p>
             A local object of a <code>IDisposable</code> type is created but the object is not disposed before all references to the object are out of scope.
@@ -5977,9 +6155,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182289.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182289.aspx</a></p>
-Œ
-+fxcop:DisposableTypesShouldDeclareFinalizerû
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182289.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182289.aspx</a></p>Z
+CODE_SMELL
+⁄
++fxcop:DisposableTypesShouldDeclareFinalizer™
 fxcop%DisposableTypesShouldDeclareFinalizer1CA2216: Disposable types should declare finalizer"MAJOR*cs2CA2216:ß<h2>Cause</h2>
 <p>
             A type that implements <code>System.IDisposable</code>, and has fields that suggest the use of unmanaged resources, does not implement a finalizer as described by <code>Object.Finalize</code>.
@@ -6037,9 +6216,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182329.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182329.aspx</a></p>
-ı
--fxcop:IdentifiersShouldNotHaveIncorrectSuffix√
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182329.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182329.aspx</a></p>Z
+CODE_SMELL
+Å
+-fxcop:IdentifiersShouldNotHaveIncorrectSuffixœ
 fxcop'IdentifiersShouldNotHaveIncorrectSuffix4CA1711: Identifiers should not have incorrect suffix"MAJOR*cs2CA1711:«<h2>Cause</h2>
 <p>
             An identifier has an incorrect suffix.
@@ -6247,9 +6427,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182247.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182247.aspx</a></p>
-ó
--fxcop:TypesMustBeAtLeastAsCriticalAsBaseTypesÂ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182247.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182247.aspx</a></p>Z
+CODE_SMELL
+£
+-fxcop:TypesMustBeAtLeastAsCriticalAsBaseTypesÒ
 fxcop'TypesMustBeAtLeastAsCriticalAsBaseTypesMCA2146: Types must be at least as critical as their base types and interfaces"MAJOR*cs2CA2146:–
 <h2>Cause</h2>
 <p>
@@ -6267,9 +6448,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997443.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997443.aspx</a></p>
-◊
--fxcop:ParameterNamesShouldNotMatchMemberNames•
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997443.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997443.aspx</a></p>Z
+CODE_SMELL
+„
+-fxcop:ParameterNamesShouldNotMatchMemberNames±
 fxcop'ParameterNamesShouldNotMatchMemberNames5CA1719: Parameter names should not match member names"MAJOR*cs2CA1719:®<h2>Cause</h2>
 <p>
             The name of an externally visible member matches, in a case-insensitive comparison, the name of one of its parameters.
@@ -6304,9 +6486,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182252.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182252.aspx</a></p>
-≠
-%fxcop:UriPropertiesShouldNotBeStringsÉ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182252.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182252.aspx</a></p>Z
+CODE_SMELL
+π
+%fxcop:UriPropertiesShouldNotBeStringsè
 fxcopUriPropertiesShouldNotBeStrings,CA1056: URI properties should not be strings"MAJOR*cs2CA1056:ó<h2>Cause</h2>
 <p>
             A type declares a string property whose name contains "uri", "Uri", "urn", "Urn", "url", or "Url".
@@ -6346,9 +6529,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182175.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182175.aspx</a></p>
-ƒ
-'fxcop:StaticConstructorsShouldBePrivateò
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182175.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182175.aspx</a></p>Z
+CODE_SMELL
+–
+'fxcop:StaticConstructorsShouldBePrivate§
 fxcop!StaticConstructorsShouldBePrivate-CA2121: Static constructors should be private"MAJOR*cs2CA2121:©<h2>Cause</h2>
 <p>
             A type has a static constructor that is not private.
@@ -6375,9 +6559,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 <p>
             Do not suppress these violations. If your software design requires an explicit call to a static constructor, it is likely that the design contains serious flaws and should be reviewed.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182320.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182320.aspx</a></p>
-≥	
-fxcop:RemoveEmptyFinalizersì	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182320.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182320.aspx</a></p>Z
+CODE_SMELL
+ø	
+fxcop:RemoveEmptyFinalizersü	
 fxcopRemoveEmptyFinalizersCA1821: Remove empty finalizers"MAJOR*cs2CA1821:æ<h2>Cause</h2>
 <p>
             A type implements a finalizer that is empty, calls only the base type finalizer, or calls only conditionally emitted methods.
@@ -6394,9 +6579,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 <p>
             Do not suppress a message from this rule. Failure to suppress finalization decreases performance and provides no benefits.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264476.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264476.aspx</a></p>
-±/
-/fxcop:DoNotRaiseExceptionsInUnexpectedLocations˝.
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264476.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264476.aspx</a></p>Z
+CODE_SMELL
+Ω/
+/fxcop:DoNotRaiseExceptionsInUnexpectedLocationsâ/
 fxcop)DoNotRaiseExceptionsInUnexpectedLocations7CA1065: Do not raise exceptions in unexpected locations"MAJOR*cs2CA1065:¸-<h2>Cause</h2>
 <p>
             A method that is not expected to throw exceptions throws an exception.
@@ -6541,9 +6727,10 @@ causes CA2000 to occur because a failure in the construction of the StreamReader
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb386039.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386039.aspx</a></p>
-é
-*fxcop:TypesShouldNotExtendCertainBaseTypesﬂ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb386039.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386039.aspx</a></p>Z
+CODE_SMELL
+ö
+*fxcop:TypesShouldNotExtendCertainBaseTypesÎ
 fxcop$TypesShouldNotExtendCertainBaseTypes2CA1058: Types should not extend certain base types"MAJOR*cs2CA1058:Ë<h2>Cause</h2>
 <p>
             An externally visible type extends certain base types. Currently, this rule reports types that derive from the following types:
@@ -6687,9 +6874,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 <p>
             Do not suppress a warning from this rule for violations about <code>ApplicationException</code>. It is safe to suppress a warning from this rule for violations about <code>XmlDocument</code>. It is safe to suppress a warning about a non-generic collection if the code was released previously.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182171.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182171.aspx</a></p>
-À
-/fxcop:DoNotCallOverridableMethodsInConstructorsó
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182171.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182171.aspx</a></p>Z
+CODE_SMELL
+◊
+/fxcop:DoNotCallOverridableMethodsInConstructors£
 fxcop)DoNotCallOverridableMethodsInConstructors7CA2214: Do not call overridable methods in constructors"MAJOR*cs2CA2214:ñ<h2>Cause</h2>
 <p>
             The constructor of an unsealed type calls a virtual method defined in its class.
@@ -6706,9 +6894,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 <p>
             Do not suppress a warning from this rule. The constructor should be redesigned to eliminate the call to the virtual method.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182331.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182331.aspx</a></p>
-ﬂ
-fxcop:DoNotIgnoreMethodResultsº
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182331.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182331.aspx</a></p>Z
+CODE_SMELL
+Î
+fxcop:DoNotIgnoreMethodResults»
 fxcopDoNotIgnoreMethodResults$CA1806: Do not ignore method results"MAJOR*cs2CA1806:ﬂ<h2>Cause</h2>
 <p>
             There are several possible reasons for this warning:
@@ -6738,9 +6927,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 <p>
             Do not suppress a warning from this rule unless the act of creating the object serves some purpose.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182273.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182273.aspx</a></p>
-ñ
-.fxcop:StringUriOverloadsCallSystemUriOverloads„
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182273.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182273.aspx</a></p>Z
+CODE_SMELL
+¢
+.fxcop:StringUriOverloadsCallSystemUriOverloadsÔ
 fxcop(StringUriOverloadsCallSystemUriOverloads6CA1057: String URI overloads call System.Uri overloads"MAJOR*cs2CA1057:‰<h2>Cause</h2>
 <p>
             A type declares method overloads that differ only by the replacement of a string parameter with a <code>System.Uri</code> parameter, and the overload that takes the string parameter does not call the overload that takes the <code>Uri</code> parameter.
@@ -6780,9 +6970,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182170.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182170.aspx</a></p>
-˛
-fxcop:RemoveUnusedLocals·
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182170.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182170.aspx</a></p>Z
+CODE_SMELL
+ä
+fxcop:RemoveUnusedLocalsÌ
 fxcopRemoveUnusedLocalsCA1804: Remove unused locals"MAJOR*cs2CA1804:í<h2>Cause</h2>
 <p>
             A method declares a local variable but does not use the variable except possibly as the recipient of an assignment statement. For analysis by this rule, the tested assembly must be built with debugging information and the associated program database (.pdb) file must be available.
@@ -6822,9 +7013,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182278.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182278.aspx</a></p>
-¥
-fxcop:SpecifyCultureInfoó
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182278.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182278.aspx</a></p>Z
+CODE_SMELL
+¿
+fxcop:SpecifyCultureInfo£
 fxcopSpecifyCultureInfoCA1304: Specify CultureInfo"MAJOR*cs2CA1304:…<h2>Cause</h2>
 <p>
             A method or constructor calls a member that has an overload that accepts a <code>System.Globalization.CultureInfo</code> parameter, and the method or constructor does not call the overload that takes the <code>CultureInfo</code> parameter. This rule ignores calls to the following methods:
@@ -6885,9 +7077,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182189.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182189.aspx</a></p>
-‡
-%fxcop:UseGenericEventHandlerInstances∂
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182189.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182189.aspx</a></p>Z
+CODE_SMELL
+Ï
+%fxcop:UseGenericEventHandlerInstances¬
 fxcopUseGenericEventHandlerInstances+CA1003: Use generic event handler instances"MAJOR*cs2CA1003:À<h2>Cause</h2>
 <p>
             A type contains a delegate that returns void, whose signature contains two parameters (the first an object and the second a type that is assignable to EventArgs), and the containing assembly targets .NET Framework¬†2.0.
@@ -6942,9 +7135,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182178.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182178.aspx</a></p>
-¸
-,fxcop:WrapVulnerableFinallyClausesInOuterTryÀ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182178.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182178.aspx</a></p>Z
+CODE_SMELL
+à
+,fxcop:WrapVulnerableFinallyClausesInOuterTry◊
 fxcop&WrapVulnerableFinallyClausesInOuterTry4CA2124: Wrap vulnerable finally clauses in outer try"MAJOR*cs2CA2124:–<h2>Cause</h2>
 <p>
             In versions 1.0 and 1.1 of the .NET Framework, a public or protected method contains a <code>try</code>/<code>catch</code>/<code>finally</code> block. The <code>finally</code> block appears to reset security state and is not enclosed in a <code>finally</code> block.
@@ -6983,9 +7177,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 <p>
                 The following pseudo-code illustrates the pattern detected by this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182322.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182322.aspx</a></p>
-œ
-!fxcop:DoNotUseIdleProcessPriority©
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182322.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182322.aspx</a></p>Z
+CODE_SMELL
+€
+!fxcop:DoNotUseIdleProcessPriorityµ
 fxcopDoNotUseIdleProcessPriority(CA1600: Do not use idle process priority"MAJOR*cs2CA1600:≈<h2>Cause</h2>
 <p>
             This rule occurs when processes are set to <code>ProcessPriorityClass.Idle</code>.
@@ -7002,9 +7197,10 @@ public class MyReadOnlyCollection : ReadOnlyCollection&lt;T&gt;
 <p>
             This rule should be suppressed only when Idle process priority is required and mobility considerations can be ignored safely.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182219.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182219.aspx</a></p>
-ì
-1fxcop:OverrideEqualsAndOperatorEqualsOnValueTypes›
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182219.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182219.aspx</a></p>Z
+CODE_SMELL
+ü
+1fxcop:OverrideEqualsAndOperatorEqualsOnValueTypesÈ
 fxcop+OverrideEqualsAndOperatorEqualsOnValueTypes:CA1815: Override equals and operator equals on value types"MAJOR*cs2CA1815:◊<h2>Cause</h2>
 <p>
             A public value type does not override <code>Object.Equals</code>, or does not implement the equality operator (==). This rule does not check enumerations.
@@ -7175,9 +7371,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182276.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182276.aspx</a></p>
-¥
-'fxcop:UriReturnValuesShouldNotBeStringsà
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182276.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182276.aspx</a></p>Z
+CODE_SMELL
+¿
+'fxcop:UriReturnValuesShouldNotBeStringsî
 fxcop!UriReturnValuesShouldNotBeStrings/CA1055: URI return values should not be strings"MAJOR*cs2CA1055:ó<h2>Cause</h2>
 <p>
             The name of a method contains "uri", "Uri", "urn", "Urn", "url", or "Url", and the method returns a string.
@@ -7217,9 +7414,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182176.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182176.aspx</a></p>
-«!
-3fxcop:MethodsMustOverrideWithConsistentTransparencyè!
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182176.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182176.aspx</a></p>Z
+CODE_SMELL
+”!
+3fxcop:MethodsMustOverrideWithConsistentTransparencyõ!
 fxcop-MethodsMustOverrideWithConsistentTransparencyNCA2134: Methods must keep consistent transparency when overriding base methods"MAJOR*cs2CA2134:Û<h2>Cause</h2>
 <p>
             This rule fires when a method marked with the <code>SecurityCriticalAttribute</code> overrides a method that is transparent or marked with the <code>SecuritySafeCriticalAttribute</code>. The rule also fires when a method that is transparent or marked with the <code>SecuritySafeCriticalAttribute</code> overrides a method that is marked with a <code>SecurityCriticalAttribute</code>.
@@ -7315,9 +7513,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997447.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997447.aspx</a></p>
-–
-0fxcop:MembersShouldNotExposeCertainConcreteTypesõ
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997447.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997447.aspx</a></p>Z
+CODE_SMELL
+‹
+0fxcop:MembersShouldNotExposeCertainConcreteTypesß
 fxcop*MembersShouldNotExposeCertainConcreteTypes8CA1059: Members should not expose certain concrete types"MAJOR*cs2CA1059:ò<h2>Cause</h2>
 <p>
             An externally visible member is a certain concrete type or exposes certain concrete types through one of its parameters or return value. Currently, this rule reports exposure of the following concrete types:
@@ -7379,9 +7578,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182160.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182160.aspx</a></p>
-Ô
-&fxcop:MarkAttributesWithAttributeUsageƒ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182160.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182160.aspx</a></p>Z
+CODE_SMELL
+˚
+&fxcop:MarkAttributesWithAttributeUsage–
 fxcop MarkAttributesWithAttributeUsage4CA1018: Mark attributes with AttributeUsageAttribute"MAJOR*cs2CA1018:œ<h2>Cause</h2>
 <p>
             The <code>System.AttributeUsageAttribute</code> attribute is not present on the custom attribute.
@@ -7412,9 +7612,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182158.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182158.aspx</a></p>
- 
-!fxcop:AvoidNamespacesWithFewTypes§
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182158.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182158.aspx</a></p>Z
+CODE_SMELL
+÷
+!fxcop:AvoidNamespacesWithFewTypes∞
 fxcopAvoidNamespacesWithFewTypes'CA1020: Avoid namespaces with few types"MAJOR*cs2CA1020:¡<h2>Cause</h2>
 <p>
             A namespace other than the global namespace contains fewer than five types.
@@ -7446,9 +7647,10 @@ namespace TransparencyWarningsDemo
 <p>
             It is safe to suppress a warning from this rule when the namespace does not contain types that are used with the types in your other namespaces.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182130.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182130.aspx</a></p>
-é
-(fxcop:DoNotShipUnreleasedResourceFormats·
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182130.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182130.aspx</a></p>Z
+CODE_SMELL
+ö
+(fxcop:DoNotShipUnreleasedResourceFormatsÌ
 fxcop"DoNotShipUnreleasedResourceFormats/CA2228: Do not ship unreleased resource formats"MAJOR*cs2CA2228:Ô<h2>Cause</h2>
 <p>
             A resource file was built using a version of the .NET Framework that is not currently supported.
@@ -7465,9 +7667,10 @@ namespace TransparencyWarningsDemo
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182339.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182339.aspx</a></p>
-à
- fxcop:ReviewVisibleEventHandlers„
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182339.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182339.aspx</a></p>Z
+CODE_SMELL
+î
+ fxcop:ReviewVisibleEventHandlersÔ
 fxcopReviewVisibleEventHandlers%CA2109: Review visible event handlers"MAJOR*cs2CA2109:É<h2>Cause</h2>
 <p>
             A public or protected event-handling method was detected.
@@ -7505,9 +7708,10 @@ namespace TransparencyWarningsDemo
 <p>
             Suppress a warning from this rule only after a careful security review to make sure that your code does not pose a security threat.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182312.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182312.aspx</a></p>
-‰
-*fxcop:CollectionPropertiesShouldBeReadOnlyµ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182312.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182312.aspx</a></p>Z
+CODE_SMELL
+
+*fxcop:CollectionPropertiesShouldBeReadOnly¡
 fxcop$CollectionPropertiesShouldBeReadOnly1CA2227: Collection properties should be read only"MAJOR*cs2CA2227:ø<h2>Cause</h2>
 <p>
             An externally visible writable property is a type that implements <code>System.Collections.ICollection</code>. Arrays, indexers (properties with the name 'Item'), and permission sets are ignored by the rule.
@@ -7533,10 +7737,11 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182327.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182327.aspx</a></p>
-°
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182327.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182327.aspx</a></p>Z
+CODE_SMELL
+≠
 
--fxcop:DoNotDeclareVirtualMembersInSealedTypesÔ	
+-fxcop:DoNotDeclareVirtualMembersInSealedTypes˚	
 fxcop'DoNotDeclareVirtualMembersInSealedTypes6CA1048: Do not declare virtual members in sealed types"MAJOR*cs2CA1048:Ò<h2>Cause</h2>
 <p>
             A public type is sealed and declares a method that is both <code>virtual</code> (<code>Overridable</code> in Visual Basic) and not final. This rule does not report violations for delegate types, which must follow this pattern.
@@ -7554,9 +7759,10 @@ namespace TransparencyWarningsDemo
 <p>
             Do not suppress a warning from this rule. Leaving the type in its current state can cause maintenance issues and does not provide any benefits.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182140.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182140.aspx</a></p>
-Ã
-+fxcop:PropertyNamesShouldNotMatchGetMethodsú
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182140.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182140.aspx</a></p>Z
+CODE_SMELL
+ÿ
++fxcop:PropertyNamesShouldNotMatchGetMethods®
 fxcop%PropertyNamesShouldNotMatchGetMethods3CA1721: Property names should not match get methods"MAJOR*cs2CA1721:£<h2>Cause</h2>
 <p>
             The name of a public or protected member starts with 'Get' and otherwise matches the name of a public or protected property. For example, a type that contains a method that is named 'GetColor' and a property that is named 'Color' violates this rule.
@@ -7597,9 +7803,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182253.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182253.aspx</a></p>
- 
-7fxcop:OverloadOperatorEqualsOnOverloadingAddAndSubtracté
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182253.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182253.aspx</a></p>Z
+CODE_SMELL
+÷
+7fxcop:OverloadOperatorEqualsOnOverloadingAddAndSubtractö
 fxcop1OverloadOperatorEqualsOnOverloadingAddAndSubtract@CA1013: Overload operator equals on overloading add and subtract"MAJOR*cs2CA1013:¸	<h2>Cause</h2>
 <p>
             A public or protected type implements the addition or subtraction operators without implementing the equality operator.
@@ -7644,9 +7851,10 @@ return left.Equals(right);
 <p>
             It is safe to suppress a warning from this rule when the default implementation of the equality operator provides the correct behavior for the type.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182164.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182164.aspx</a></p>
-ˇ
-3fxcop:TypesThatOwnNativeResourcesShouldBeDisposable«
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182164.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182164.aspx</a></p>Z
+CODE_SMELL
+ã
+3fxcop:TypesThatOwnNativeResourcesShouldBeDisposable”
 fxcop-TypesThatOwnNativeResourcesShouldBeDisposable<CA1049: Types that own native resources should be disposable"MAJOR*cs2CA1049:Ω<h2>Cause</h2>
 <p>
             A type references a <code>System.IntPtr</code> field, a <code>System.UIntPtr</code> field, or a <code>System.Runtime.InteropServices.HandleRef</code> field, but does not implement <code>System.IDisposable</code>.
@@ -7687,9 +7895,10 @@ return left.Equals(right);
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182173.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182173.aspx</a></p>
-‰
-Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsò
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182173.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182173.aspx</a></p>Z
+CODE_SMELL
+
+Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethods§
 fxcopATransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsbCA2138: Transparent methods must not call methods with the SuppressUnmanagedCodeSecurity attribute"MAJOR*cs2CA2138:‘<h2>Cause</h2>
 <p>
             A security transparent method calls a method that is marked with the <code>SuppressUnmanagedCodeSecurityAttribute</code> attribute.
@@ -7707,9 +7916,10 @@ Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsò
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997711.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997711.aspx</a></p>
-©
-/fxcop:UseSafeHandleToEncapsulateNativeResourcesı
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997711.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997711.aspx</a></p>Z
+CODE_SMELL
+µ
+/fxcop:UseSafeHandleToEncapsulateNativeResourcesÅ
 fxcop)UseSafeHandleToEncapsulateNativeResources6CA2006: Use SafeHandle to encapsulate native resources"MAJOR*cs2CA2006:ı<h2>Cause</h2>
 <p>
             Managed code uses <code>IntPtr</code> to access native resources.
@@ -7728,9 +7938,11 @@ Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsò
 <p>
             You should not suppress this warning.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182294.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182294.aspx</a></p>
-ı	
-fxcop:DoNotHideBaseClassMethods—	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182294.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182294.aspx</a></p>Z
+CODE_SMELL
+Å
+
+fxcop:DoNotHideBaseClassMethods›	
 fxcopDoNotHideBaseClassMethods&CA1061: Do not hide base class methods"MAJOR*cs2CA1061:Ò<h2>Cause</h2>
 <p>
             A derived type declares a method with the same name and with the same number of parameters as one of its base methods; one or more of the parameters is a base type of the corresponding parameter in the base method; and any remaining parameters have types that are identical to the corresponding parameters in the base method.
@@ -7747,10 +7959,11 @@ Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsò
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182143.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182143.aspx</a></p>
-Ä
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182143.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182143.aspx</a></p>Z
+CODE_SMELL
+å
 
-1fxcop:DoNotIndirectlyExposeMethodsWithLinkDemands 	
+1fxcop:DoNotIndirectlyExposeMethodsWithLinkDemands÷	
 fxcop+DoNotIndirectlyExposeMethodsWithLinkDemands:CA2122: Do not indirectly expose methods with link demands"MAJOR*cs2CA2122:ƒ<h2>Cause</h2>
 <p>
             A public or protected member has a Link Demands and is called by a member that does not perform any security checks.
@@ -7767,9 +7980,10 @@ Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsò
 <p>
             To safely suppress a warning from this rule, you must make sure that your code does not grant its callers access to operations or resources that can be used in a destructive manner.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182303.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182303.aspx</a></p>
-‚
-7fxcop:ResourceStringCompoundWordsShouldBeCasedCorrectly¶
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182303.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182303.aspx</a></p>Z
+CODE_SMELL
+Ó
+7fxcop:ResourceStringCompoundWordsShouldBeCasedCorrectly≤
 fxcop1ResourceStringCompoundWordsShouldBeCasedCorrectly@CA1701: Resource string compound words should be cased correctly"MAJOR*cs2CA1701:î<h2>Cause</h2>
 <p>
             A resource string contains a compound word that does not appear to be cased correctly.
@@ -7806,10 +8020,12 @@ Gfxcop:TransparentMethodsMustNotCallSuppressUnmanagedCodeSecurityMethodsò
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264481.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264481.aspx</a></p>
-¶
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264481.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264481.aspx</a></p>Z
+CODE_SMELL
+≤
 
-$fxcop:PropertiesShouldNotBeWriteOnly˝	
+$fxcop:PropertiesShouldNotBeWriteOnlyâ
+
 fxcopPropertiesShouldNotBeWriteOnly+CA1044: Properties should not be write only"MAJOR*cs2CA1044:ì	<h2>Cause</h2>
 <p>
             The public or protected property has a set accessor but does not have a get accessor.
@@ -7826,9 +8042,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 <p>
             It is strongly recommended that you do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182165.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182165.aspx</a></p>
-•
--fxcop:DoNotNestGenericTypesInMemberSignaturesÛ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182165.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182165.aspx</a></p>Z
+CODE_SMELL
+±
+-fxcop:DoNotNestGenericTypesInMemberSignaturesˇ
 fxcop'DoNotNestGenericTypesInMemberSignatures6CA1006: Do not nest generic types in member signatures"MAJOR*cs2CA1006:ı<h2>Cause</h2>
 <p>
             An externally visible member has a signature that contains a nested type argument.
@@ -7883,9 +8100,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182144.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182144.aspx</a></p>
-ÿ
-4fxcop:TypesThatOwnDisposableFieldsShouldBeDisposableü
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182144.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182144.aspx</a></p>Z
+CODE_SMELL
+‰
+4fxcop:TypesThatOwnDisposableFieldsShouldBeDisposable´
 fxcop.TypesThatOwnDisposableFieldsShouldBeDisposable=CA1001: Types that own disposable fields should be disposable"MAJOR*cs2CA1001:ì<h2>Cause</h2>
 <p>
             A class declares and implements an instance field that is a <code>System.IDisposable</code> type and the class does not implement <code>IDisposable</code>.
@@ -7925,9 +8143,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182172.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182172.aspx</a></p>
-‘
-fxcop:DoNotTreatFibersAsThreads∞
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182172.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182172.aspx</a></p>Z
+CODE_SMELL
+‡
+fxcop:DoNotTreatFibersAsThreadsº
 fxcopDoNotTreatFibersAsThreads&CA2003: Do not treat fibers as threads"MAJOR*cs2CA2003:–<h2>Cause</h2>
 <p>
             A managed thread is being treated as a Win32 thread.
@@ -7944,9 +8163,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 <p>
             You should not suppress this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182291.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182291.aspx</a></p>
-˝
-&fxcop:OverrideMethodsOnComparableTypes“
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182291.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182291.aspx</a></p>Z
+CODE_SMELL
+â
+&fxcop:OverrideMethodsOnComparableTypesﬁ
 fxcop OverrideMethodsOnComparableTypes,CA1036: Override methods on comparable types"MAJOR*cs2CA1036:Â<h2>Cause</h2>
 <p>
             A public or protected type implements the <code>System.IComparable</code> interface and does not override <code>Object.Equals</code> or does not overload the language-specific operator for equality, inequality, less than, or greater than. The rule does not report a violation if the type inherits only an implementation of the interface.
@@ -7978,9 +8198,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 <p>
             It is safe to suppress a warning from this rule when the violation is caused by missing operators and your programming language does not support operator overloading, as is the case with Visual Basic¬†.NET. It is also safe to suppress a warning for from this rule when it fires on equality operators other than op_Equality if you determine that implementing the operators does not make sense in your application context. However, you should always over op_Equality and the == operator if you override Object.Equals.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182163.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182163.aspx</a></p>
-Ì	
- fxcop:PInvokesShouldNotBeVisible»	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182163.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182163.aspx</a></p>Z
+CODE_SMELL
+˘	
+ fxcop:PInvokesShouldNotBeVisible‘	
 fxcopPInvokesShouldNotBeVisible'CA1401: P/Invokes should not be visible"MAJOR*cs2CA1401:Ê<h2>Cause</h2>
 <p>
             A public or protected method in a public type has the <code>System.Runtime.InteropServices.DllImportAttribute</code> attribute (also implemented by the <code>Declare</code> keyword in Visual Basic).
@@ -7997,9 +8218,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182209.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182209.aspx</a></p>
-Ñ
-*fxcop:PassSystemUriObjectsInsteadOfStrings’
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182209.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182209.aspx</a></p>Z
+CODE_SMELL
+ê
+*fxcop:PassSystemUriObjectsInsteadOfStrings·
 fxcop$PassSystemUriObjectsInsteadOfStrings2CA2234: Pass System.Uri objects instead of strings"MAJOR*cs2CA2234:ﬁ<h2>Cause</h2>
 <p>
             A call is made to a method that has a string parameter whose name contains "uri", "Uri", "urn", "Urn", "url", or "Url"; and the declaring type of the method contains a corresponding method overload that has a <code>System.Uri</code> parameter.
@@ -8039,9 +8261,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182360.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182360.aspx</a></p>
-Ö
-#fxcop:NestedTypesShouldNotBeVisible›
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182360.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182360.aspx</a></p>Z
+CODE_SMELL
+ë
+#fxcop:NestedTypesShouldNotBeVisibleÈ
 fxcopNestedTypesShouldNotBeVisible*CA1034: Nested types should not be visible"MAJOR*cs2CA1034:ı
 <h2>Cause</h2>
 <p>
@@ -8062,9 +8285,10 @@ $fxcop:PropertiesShouldNotBeWriteOnly˝
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182162.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182162.aspx</a></p>
-¢
-Afxcop:TransparentMethodsShouldNotUseSuppressUnmanagedCodeSecurity‹
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182162.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182162.aspx</a></p>Z
+CODE_SMELL
+Æ
+Afxcop:TransparentMethodsShouldNotUseSuppressUnmanagedCodeSecurityË
 fxcop;TransparentMethodsShouldNotUseSuppressUnmanagedCodeSecuritycCA2145: Transparent methods should not be decorated with the SuppressUnmanagedCodeSecurityAttribute"MAJOR*cs2CA2145:ù<h2>Cause</h2>
 <p>
             A transparent method, a method that is marked with the <code>SecuritySafeCriticalAttribute</code> method, or a type that contains a method is marked with the <code>SuppressUnmanagedCodeSecurityAttribute</code> attribute.
@@ -8116,9 +8340,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997570.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997570.aspx</a></p>
-ä
-fxcop:EnumStorageShouldBeInt32Á
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997570.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997570.aspx</a></p>Z
+CODE_SMELL
+ñ
+fxcop:EnumStorageShouldBeInt32Û
 fxcopEnumStorageShouldBeInt32$CA1028: Enum storage should be Int32"MAJOR*cs2CA1028:ä<h2>Cause</h2>
 <p>
             The underlying type of a public enumeration is not System.Int32.
@@ -8263,9 +8488,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182147.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182147.aspx</a></p>
-Ÿ
-'fxcop:IdentifiersShouldNotMatchKeywords≠
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182147.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182147.aspx</a></p>Z
+CODE_SMELL
+Â
+'fxcop:IdentifiersShouldNotMatchKeywordsπ
 fxcop!IdentifiersShouldNotMatchKeywords-CA1716: Identifiers should not match keywords"MAJOR*cs2CA1716:æ<h2>Cause</h2>
 <p>
             A name of a namespace, a type, or a viritual or interface member matches a reserved keyword in a programming language.
@@ -8295,9 +8521,10 @@ namespace Samples
 <p>
             You can suppress a warning from this rule if you are convinced that the identifier will not confuse users of the API, and that  the library is usable in all available languages in the .NET Framework.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182248.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182248.aspx</a></p>
-√
-,fxcop:SecurityTransparentCodeShouldNotAssertí
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182248.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182248.aspx</a></p>Z
+CODE_SMELL
+œ
+,fxcop:SecurityTransparentCodeShouldNotAssertû
 fxcop&SecurityTransparentCodeShouldNotAssert8CA2147: Transparent methods may not use security asserts"MAJOR*cs2CA2147:ì<h2>Cause</h2>
 <p>
             Code that is marked as <code>SecurityTransparentAttribute</code> is not granted sufficient permissions to assert.
@@ -8317,9 +8544,10 @@ namespace Samples
 <p>
             Do not suppress a message from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264482.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264482.aspx</a></p>
-Ó
-fxcop:EnumsShouldHaveZeroValueÀ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264482.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264482.aspx</a></p>Z
+CODE_SMELL
+˙
+fxcop:EnumsShouldHaveZeroValue◊
 fxcopEnumsShouldHaveZeroValue$CA1008: Enums should have zero value"MAJOR*cs2CA1008:Ó<h2>Cause</h2>
 <p>
             An enumeration without an applied <code>System.FlagsAttribute</code> does not define a member that has a value of zero; or an enumeration that has an applied <code>FlagsAttribute</code> defines a member that has a value of zero but its name is not 'None', or the enumeration defines multiple zero-valued members.
@@ -8365,9 +8593,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182149.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182149.aspx</a></p>
-µ
-4fxcop:TransparentMethodsMustNotReferenceCriticalCode¸
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182149.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182149.aspx</a></p>Z
+CODE_SMELL
+¡
+4fxcop:TransparentMethodsMustNotReferenceCriticalCodeà
 fxcop.TransparentMethodsMustNotReferenceCriticalCodeCCA2140: Transparent code must not reference security critical items"MAJOR*cs2CA2140:Í<h2>Cause</h2>
 <p>
             A transparent method:
@@ -8419,9 +8648,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264475.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264475.aspx</a></p>
-É
-&fxcop:ComVisibleTypesShouldBeCreatableÿ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264475.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264475.aspx</a></p>Z
+CODE_SMELL
+è
+&fxcop:ComVisibleTypesShouldBeCreatable‰
 fxcop ComVisibleTypesShouldBeCreatable-CA1409: Com visible types should be creatable"MAJOR*cs2CA1409:Í<h2>Cause</h2>
 <p>
             A reference type that is specifically marked as visible to Component Object Model (COM) contains a public parameterized constructor but does not contain a public default (parameterless) constructor.
@@ -8448,9 +8678,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182203.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182203.aspx</a></p>
-å
-fxcop:AvoidExcessiveComplexityÈ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182203.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182203.aspx</a></p>Z
+CODE_SMELL
+ò
+fxcop:AvoidExcessiveComplexityı
 fxcopAvoidExcessiveComplexity"CA1502: Avoid excessive complexity"MAJOR*cs2CA1502:é<h2>Cause</h2>
 <p>
             A method has an excessive cyclomatic complexity.
@@ -8493,10 +8724,11 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182212.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182212.aspx</a></p>
-Å
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182212.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182212.aspx</a></p>Z
+CODE_SMELL
+ç
 
-fxcop:SecureAssertsÈ	
+fxcop:SecureAssertsı	
 fxcopSecureAssertsCA2106: Secure asserts"MAJOR*cs2CA2106:•	<h2>Cause</h2>
 <p>
             A method asserts a permission and no security checks are performed on the caller.
@@ -8513,9 +8745,10 @@ namespace Samples
 <p>
             Suppress a warning from this rule only after a careful security review.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182314.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182314.aspx</a></p>
-∫
-0fxcop:SpecifyMarshalingForPInvokeStringArgumentsÖ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182314.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182314.aspx</a></p>Z
+CODE_SMELL
+∆
+0fxcop:SpecifyMarshalingForPInvokeStringArgumentsë
 fxcop*SpecifyMarshalingForPInvokeStringArguments8CA2101: Specify marshaling for P/Invoke string arguments"MAJOR*cs2CA2101:Ç<h2>Cause</h2>
 <p>
             A platform invoke member allows for partially trusted callers, has a string parameter, and does not explicitly marshal the string.
@@ -8533,9 +8766,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182319.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182319.aspx</a></p>
-ÿ
--fxcop:CallGetLastErrorImmediatelyAfterPInvoke¶
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182319.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182319.aspx</a></p>Z
+CODE_SMELL
+‰
+-fxcop:CallGetLastErrorImmediatelyAfterPInvoke≤
 fxcop'CallGetLastErrorImmediatelyAfterPInvoke4CA1404: Call GetLastError immediately after P/Invoke"MAJOR*cs2CA1404:™<h2>Cause</h2>
 <p>
             A call is made to the Marshal.GetLastWin32Error method or the equivalent Win32 <code>GetLastError</code> function, and the call that comes immediately before is not to a platform invoke method.
@@ -8611,9 +8845,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182199.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182199.aspx</a></p>
-ä
-%fxcop:CallGCSuppressFinalizeCorrectly‡
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182199.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182199.aspx</a></p>Z
+CODE_SMELL
+ñ
+%fxcop:CallGCSuppressFinalizeCorrectlyÏ
 fxcopCallGCSuppressFinalizeCorrectly*CA1816: Call GC.SuppressFinalize correctly"MAJOR*cs2CA1816:ˆ<h2>Cause</h2>
 <p>
             <ul>
@@ -8658,9 +8893,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182269.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182269.aspx</a></p>
-Ç
-fxcop:ReviewUnusedParameters·
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182269.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182269.aspx</a></p>Z
+CODE_SMELL
+é
+fxcop:ReviewUnusedParametersÌ
 fxcopReviewUnusedParameters CA1801: Review unused parameters"MAJOR*cs2CA1801:ä<h2>Cause</h2>
 <p>
             A method signature includes a parameter that is not used in the method body. This rule does not examine the following methods:
@@ -8716,9 +8952,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182268.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182268.aspx</a></p>
-ß
-(fxcop:DoNotUseAutoDualClassInterfaceType˙
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182268.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182268.aspx</a></p>Z
+CODE_SMELL
+≥
+(fxcop:DoNotUseAutoDualClassInterfaceTypeÜ
 fxcop"DoNotUseAutoDualClassInterfaceType.CA1408: Do not use AutoDual ClassInterfaceType"MAJOR*cs2CA1408:â<h2>Cause</h2>
 <p>
             A Component Object Model (COM) visible type is marked with the <code>ClassInterfaceAttribute</code> attribute set to the <code>AutoDual</code> value of <code>ClassInterfaceType</code>.
@@ -8749,9 +8986,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182205.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182205.aspx</a></p>
-™
-'fxcop:DoNotPrefixEnumValuesWithTypeName˛
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182205.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182205.aspx</a></p>Z
+CODE_SMELL
+∂
+'fxcop:DoNotPrefixEnumValuesWithTypeNameä
 fxcop!DoNotPrefixEnumValuesWithTypeName0CA1712: Do not prefix enum values with type name"MAJOR*cs2CA1712:å<h2>Cause</h2>
 <p>
             An enumeration contains a member whose name starts with the type name of the enumeration.
@@ -8787,9 +9025,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182237.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182237.aspx</a></p>
-À
-fxcop:ExceptionsShouldBePublic®
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182237.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182237.aspx</a></p>Z
+CODE_SMELL
+◊
+fxcop:ExceptionsShouldBePublic¥
 fxcopExceptionsShouldBePublic#CA1064: Exceptions should be public"MAJOR*cs2CA1064:Ã<h2>Cause</h2>
 <p>
             A non-public exception derives directly from <code>Exception</code>, <code>SystemException</code>, or <code>ApplicationException</code>.
@@ -8807,9 +9046,10 @@ namespace Samples
 <p>
             Suppress a message from this rule if you are sure in all cases that the private exception will be caught within its own internal scope.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264484.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264484.aspx</a></p>
-Ä	
-fxcop:AvoidExcessiveInheritance‹
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264484.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264484.aspx</a></p>Z
+CODE_SMELL
+å	
+fxcop:AvoidExcessiveInheritanceË
 fxcopAvoidExcessiveInheritance#CA1501: Avoid excessive inheritance"MAJOR*cs2CA1501:ˇ<h2>Cause</h2>
 <p>
             A type is more than four levels deep in its inheritance hierarchy.
@@ -8826,9 +9066,10 @@ namespace Samples
 <p>
             It is safe to suppress a warning from this rule. However, the code might be more difficult to maintain. Note that, depending on the visibility of base types, resolving violations of this rule might create breaking changes. For example, removing public base types is a breaking change.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182213.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182213.aspx</a></p>
-Ï
-+fxcop:IdentifiersShouldDifferByMoreThanCaseº
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182213.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182213.aspx</a></p>Z
+CODE_SMELL
+¯
++fxcop:IdentifiersShouldDifferByMoreThanCase»
 fxcop%IdentifiersShouldDifferByMoreThanCase3CA1708: Identifiers should differ by more than case"MAJOR*cs2CA1708:√<h2>Cause</h2>
 <p>
             The names of two types, members, parameters, or fully qualified namespaces are identical when they are converted to lowercase.
@@ -8888,9 +9129,10 @@ namespace NamingLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182242.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182242.aspx</a></p>
-Ÿ
-.fxcop:ComRegistrationMethodsShouldNotBeVisible¶
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182242.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182242.aspx</a></p>Z
+CODE_SMELL
+Â
+.fxcop:ComRegistrationMethodsShouldNotBeVisible≤
 fxcop(ComRegistrationMethodsShouldNotBeVisible6CA1411: COM registration methods should not be visible"MAJOR*cs2CA1411:ß<h2>Cause</h2>
 <p>
             A method that is marked with the <code>System.Runtime.InteropServices.ComRegisterFunctionAttribute</code> or the <code>System.Runtime.InteropServices.ComUnregisterFunctionAttribute</code> attribute is externally visible.
@@ -8915,9 +9157,10 @@ namespace NamingLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182201.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182201.aspx</a></p>
-¿
-!fxcop:UseLiteralsWhereAppropriateö
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182201.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182201.aspx</a></p>Z
+CODE_SMELL
+Ã
+!fxcop:UseLiteralsWhereAppropriate¶
 fxcopUseLiteralsWhereAppropriate&CA1802: Use Literals Where Appropriate"MAJOR*cs2CA1802:∏<h2>Cause</h2>
 <p>
             A field is declared <code>static</code> and <code>readonly</code> (<code>Shared</code> and <code>ReadOnly</code> in Visual Basic), and is initialized with a value that is computable at compile time.
@@ -8936,9 +9179,10 @@ namespace NamingLibrary
 <p>
             It is safe to suppress a warning from this rule, or disable the rule, if performance is not of concern.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182280.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182280.aspx</a></p>
-ç
-"fxcop:ConstantsShouldBeTransparentÊ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182280.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182280.aspx</a></p>Z
+CODE_SMELL
+ô
+"fxcop:ConstantsShouldBeTransparentÚ
 fxcopConstantsShouldBeTransparent9CA2130: Security critical constants should be transparent"MAJOR*cs2CA2130:<h2>Cause</h2>
 <p>
             A constant field or an enumeration member is marked with the <code>SecurityCriticalAttribute</code>.
@@ -8955,9 +9199,10 @@ namespace NamingLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997446.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997446.aspx</a></p>
-∆
-@fxcop:TransparentMethodsMustNotHandleProcessCorruptingExceptionsÅ
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997446.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997446.aspx</a></p>Z
+CODE_SMELL
+“
+@fxcop:TransparentMethodsMustNotHandleProcessCorruptingExceptionsç
 fxcop:TransparentMethodsMustNotHandleProcessCorruptingExceptionsWCA2139: Transparent methods may not use the HandleProcessCorruptingExceptions attribute"MAJOR*cs2CA2139:œ
 <h2>Cause</h2>
 <p>
@@ -8975,9 +9220,10 @@ namespace NamingLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997565.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997565.aspx</a></p>
-Ù
-Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997565.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997565.aspx</a></p>Z
+CODE_SMELL
+Ä	
+Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands∂
 fxcop?SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands9CA2135: Level 2 assemblies should not contain LinkDemands"MAJOR*cs2CA2135:ë<h2>Cause</h2>
 <p>
             A class or class member is using a <code>LinkDemand</code> in an application that is using Level 2 security.
@@ -8994,9 +9240,10 @@ Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997569.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997569.aspx</a></p>
-°
--fxcop:IdentifiersShouldNotHaveIncorrectPrefixÔ
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997569.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997569.aspx</a></p>Z
+CODE_SMELL
+≠
+-fxcop:IdentifiersShouldNotHaveIncorrectPrefix˚
 
 fxcop'IdentifiersShouldNotHaveIncorrectPrefix4CA1722: Identifiers should not have incorrect prefix"MAJOR*cs2CA1722:Û	<h2>Cause</h2>
 <p>
@@ -9024,9 +9271,10 @@ Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182246.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182246.aspx</a></p>
-à	
-'fxcop:TypeNamesShouldNotMatchNamespaces‹
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182246.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182246.aspx</a></p>Z
+CODE_SMELL
+î	
+'fxcop:TypeNamesShouldNotMatchNamespacesË
 fxcop!TypeNamesShouldNotMatchNamespaces.CA1724: Type Names Should Not Match Namespaces"MAJOR*cs2CA1724:Ï<h2>Cause</h2>
 <p>
             A type name matches a .NET Framework namespace names in a case-insensitive comparison.
@@ -9043,9 +9291,10 @@ Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
 <p>
             For new development, no known scenarios occur where you must suppress a warning from this rule. Before you suppress the warning, carefully consider how the users of your library might be confused by the matching name. For shipping libraries, you might have to suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182257.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182257.aspx</a></p>
-‘4
-*fxcop:OperatorOverloadsHaveNamedAlternates•4
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182257.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182257.aspx</a></p>Z
+CODE_SMELL
+‡4
+*fxcop:OperatorOverloadsHaveNamedAlternates±4
 fxcop$OperatorOverloadsHaveNamedAlternates0CA2225: Operator overloads have named alternates"MAJOR*cs2CA2225:∞3<h2>Cause</h2>
 <p>
             An operator overload was detected, and the expected named alternative method was not found.
@@ -9619,9 +9868,10 @@ Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182355.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182355.aspx</a></p>
-∑
-fxcop:MarkMembersAsStaticô
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182355.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182355.aspx</a></p>Z
+CODE_SMELL
+√
+fxcop:MarkMembersAsStatic•
 fxcopMarkMembersAsStaticCA1822: Mark members as static"MAJOR*cs2CA1822:«<h2>Cause</h2>
 <p>
             A member that does not access instance data is not marked as static (Shared in Visual Basic).
@@ -9656,9 +9906,10 @@ Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms245046.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms245046.aspx</a></p>
-‰
-'fxcop:IdentifiersShouldBeCasedCorrectly∏
+<p><a href="http://msdn.microsoft.com/en-us/library/ms245046.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms245046.aspx</a></p>Z
+CODE_SMELL
+
+'fxcop:IdentifiersShouldBeCasedCorrectlyƒ
 fxcop!IdentifiersShouldBeCasedCorrectly-CA1709: Identifiers should be cased correctly"MAJOR*cs2CA1709:…<h2>Cause</h2>
 <p>
             The name of an identifier is not cased correctly.
@@ -9692,9 +9943,10 @@ Efxcop:SecurityRuleSetLevel2MethodsShouldNotBeProtectedWithLinkDemands™
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182240.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182240.aspx</a></p>
-ø$
-fxcop:AvoidOutParameters¢$
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182240.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182240.aspx</a></p>Z
+CODE_SMELL
+À$
+fxcop:AvoidOutParametersÆ$
 fxcopAvoidOutParametersCA1021: Avoid out parameters"MAJOR*cs2CA1021:”#<h2>Cause</h2>
 <p>
             A public or protected method in a public type has an <code>out</code> parameter.
@@ -9814,9 +10066,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182131.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182131.aspx</a></p>
-Õ
-,fxcop:ImplementStandardExceptionConstructorsú
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182131.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182131.aspx</a></p>Z
+CODE_SMELL
+Ÿ
+,fxcop:ImplementStandardExceptionConstructors®
 fxcop&ImplementStandardExceptionConstructors1CA1032: Implement standard exception constructors"MAJOR*cs2CA1032:§<h2>Cause</h2>
 <p>
             A type extends <code>System.Exception</code> and does not declare all the required constructors.
@@ -9848,9 +10101,10 @@ namespace Samples
 <p>
             It is safe to suppress a warning from this rule when the violation is caused by using a different access level for the public constructors.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182151.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182151.aspx</a></p>
-∏
-fxcop:AvoidUnsealedAttributesñ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182151.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182151.aspx</a></p>Z
+CODE_SMELL
+ƒ
+fxcop:AvoidUnsealedAttributes¢
 fxcopAvoidUnsealedAttributes!CA1813: Avoid unsealed attributes"MAJOR*cs2CA1813:Ω<h2>Cause</h2>
 <p>
             A public type inherits from <code>System.Attribute</code>, is not abstract, and is not sealed (<code>NotInheritable</code> in Visual Basic).
@@ -9880,9 +10134,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182267.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182267.aspx</a></p>
-ã
-fxcop:ListsAreStronglyTypedÎ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182267.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182267.aspx</a></p>Z
+CODE_SMELL
+ó
+fxcop:ListsAreStronglyTyped˜
 fxcopListsAreStronglyTyped CA1039: Lists are strongly typed"MAJOR*cs2CA1039:ï<h2>Cause</h2>
 <p>
             The public or protected type implements <code>System.Collections.IList</code> but does not provide a strongly typed method for one or more of the following:
@@ -9937,10 +10192,11 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182154.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182154.aspx</a></p>
-ä
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182154.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182154.aspx</a></p>Z
+CODE_SMELL
+ñ
 
- fxcop:AvoidDuplicateAcceleratorsÂ	
+ fxcop:AvoidDuplicateAcceleratorsÒ	
 fxcopAvoidDuplicateAccelerators$CA1301: Avoid duplicate accelerators"MAJOR*cs2CA1301:Ü	<h2>Cause</h2>
 <p>
             A type extends <code>System.Windows.Forms.Control</code> and contains two or more top level controls that have identical access keys that are stored in a resource file.
@@ -9958,9 +10214,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182185.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182185.aspx</a></p>
-Ù#
-*fxcop:AssembliesShouldHaveValidStrongNames≈#
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182185.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182185.aspx</a></p>Z
+CODE_SMELL
+Ä$
+*fxcop:AssembliesShouldHaveValidStrongNames—#
 fxcop$AssembliesShouldHaveValidStrongNames1CA2210: Assemblies should have valid strong names"MAJOR*cs2CA2210:œ"<h2>Cause</h2>
 <p>
             An assembly is not signed with a strong name, the strong name could not be verified, or the strong name would not be valid without the current registry settings of the computer.
@@ -10058,9 +10315,10 @@ namespace Samples
 <p>
             Only suppress a warning from this rule if the assembly is used in an environment where tampering with the contents is not a concern.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182127.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182127.aspx</a></p>
-«
-+fxcop:ComRegistrationMethodsShouldBeMatchedó
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182127.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182127.aspx</a></p>Z
+CODE_SMELL
+”
++fxcop:ComRegistrationMethodsShouldBeMatched£
 fxcop%ComRegistrationMethodsShouldBeMatched2CA1410: COM registration methods should be matched"MAJOR*cs2CA1410:ü<h2>Cause</h2>
 <p>
             A type declares a method that is marked with the <code>System.Runtime.InteropServices.ComRegisterFunctionAttribute</code> attribute but does not declare a method that is marked with the <code>System.Runtime.InteropServices.ComUnregisterFunctionAttribute</code> attribute, or vice versa.
@@ -10085,9 +10343,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182200.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182200.aspx</a></p>
-¯
-(fxcop:AvoidUninstantiatedInternalClassesÀ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182200.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182200.aspx</a></p>Z
+CODE_SMELL
+Ñ
+(fxcop:AvoidUninstantiatedInternalClasses◊
 fxcop"AvoidUninstantiatedInternalClasses-CA1812: Avoid uninstantiated internal classes"MAJOR*cs2CA1812:€<h2>Cause</h2>
 <p>
             An instance of an assembly-level type is not created by code in the assembly.
@@ -10196,10 +10455,12 @@ mc.Create();
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182265.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182265.aspx</a></p>
-†
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182265.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182265.aspx</a></p>Z
+CODE_SMELL
+¨
 
-fxcop:SpecifyMessageBoxOptions˝	
+fxcop:SpecifyMessageBoxOptionsâ
+
 fxcopSpecifyMessageBoxOptions!CA1300: Specify MessageBoxOptions"MAJOR*cs2CA1300:£	<h2>Cause</h2>
 <p>
             A method calls an overload of the <code>MessageBox.Show</code> method that does not take a <code>System.Windows.Forms.MessageBoxOptions</code> argument.
@@ -10216,9 +10477,10 @@ mc.Create();
 <p>
             It is safe to suppress a warning from this rule when the code library will not be localized for a culture that uses a right-to-left reading order.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182191.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182191.aspx</a></p>
-Ù
-,fxcop:ImplementSerializationMethodsCorrectly√
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182191.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182191.aspx</a></p>Z
+CODE_SMELL
+Ä
+,fxcop:ImplementSerializationMethodsCorrectlyœ
 fxcop&ImplementSerializationMethodsCorrectly1CA2238: Implement serialization methods correctly"MAJOR*cs2CA2238:À<h2>Cause</h2>
 <p>
             A method that handles a serialization event does not have the correct signature, return type, or visibility.
@@ -10304,9 +10566,10 @@ mc.Create();
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182344.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182344.aspx</a></p>
-Ê	
-6fxcop:CriticalTypesMustNotParticipateInTypeEquivalence´	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182344.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182344.aspx</a></p>Z
+CODE_SMELL
+Ú	
+6fxcop:CriticalTypesMustNotParticipateInTypeEquivalence∑	
 fxcop0CriticalTypesMustNotParticipateInTypeEquivalenceGCA2131: Security critical types may not participate in type equivalence"MAJOR*cs2CA2131:ì<h2>Cause</h2>
 <p>
             A type participates in type equivalence and a either the type itself, or a member or field of the type, is marked with the <code>SecurityCriticalAttribute</code> attribute.
@@ -10323,9 +10586,10 @@ mc.Create();
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997564.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997564.aspx</a></p>
-ä
-fxcop:DoNotCastUnnecessarilyÈ
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997564.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997564.aspx</a></p>Z
+CODE_SMELL
+ñ
+fxcop:DoNotCastUnnecessarilyı
 fxcopDoNotCastUnnecessarily!CA1800: Do not cast unnecessarily"MAJOR*cs2CA1800:ë<h2>Cause</h2>
 <p>
             A method performs duplicate casts on one of its arguments or local variables. For complete analysis by this rule, the tested assembly must be built by using debugging information and the associated program database (.pdb) file must be available.
@@ -10343,9 +10607,10 @@ mc.Create();
 <p>
             It is safe to suppress a warning from this rule, or to ignore the rule completely, if performance is not a concern.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182271.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182271.aspx</a></p>
-˛
-#fxcop:PInvokeEntryPointsShouldExist÷
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182271.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182271.aspx</a></p>Z
+CODE_SMELL
+ä
+#fxcop:PInvokeEntryPointsShouldExist‚
 fxcopPInvokeEntryPointsShouldExist*CA1400: P/Invoke entry points should exist"MAJOR*cs2CA1400:Ó<h2>Cause</h2>
 <p>
             A public or protected method is marked with the <code>System.Runtime.InteropServices.DllImportAttribute</code>. Either the unmanaged library could not be located or the method could not be matched to a function in the library. If the rule cannot find the method name exactly as it is specified, it looks for ANSI or wide-character versions of the method by suffixing the method name with 'A' or 'W'. If no match is found, the rule attempts to locate a function by using the __stdcall name format (_MyMethod@12, where 12 represents the length of the arguments). If no match is found, and the method name starts with '#', the rule searches for the function as an ordinal reference instead of a name reference.
@@ -10362,9 +10627,10 @@ mc.Create();
 <p>
             Do not suppress a warning from this rule when the unmanaged library is in the same directory as the managed assembly that references it. It might be safe to suppress a warning from this rule in the case where the unmanaged library could not be located.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182208.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182208.aspx</a></p>
-ä
-.fxcop:TransparencyAnnotationsShouldNotConflict◊
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182208.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182208.aspx</a></p>Z
+CODE_SMELL
+ñ
+.fxcop:TransparencyAnnotationsShouldNotConflict„
 
 fxcop(TransparencyAnnotationsShouldNotConflictDCA2136: Members should not have conflicting transparency annotations"MAJOR*cs2CA2136: 	<h2>Cause</h2>
 <p>
@@ -10382,9 +10648,10 @@ mc.Create();
 <p>
             Do not suppress warnings from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264493.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264493.aspx</a></p>
-∞
-/fxcop:InitializeReferenceTypeStaticFieldsInline¸
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264493.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264493.aspx</a></p>Z
+CODE_SMELL
+º
+/fxcop:InitializeReferenceTypeStaticFieldsInlineà
 fxcop)InitializeReferenceTypeStaticFieldsInline6CA1810: Initialize reference type static fields inline"MAJOR*cs2CA1810:¸<h2>Cause</h2>
 <p>
             A reference type declares an explicit static constructor.
@@ -10419,9 +10686,10 @@ mc.Create();
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182275.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182275.aspx</a></p>
-å
-)fxcop:CompoundWordsShouldBeCasedCorrectlyﬁ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182275.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182275.aspx</a></p>Z
+CODE_SMELL
+ò
+)fxcop:CompoundWordsShouldBeCasedCorrectlyÍ
 fxcop#CompoundWordsShouldBeCasedCorrectly0CA1702: Compound words should be cased correctly"MAJOR*cs2CA1702:Í<h2>Cause</h2>
 <p>
             The name of an identifier contains multiple words and at least one of the words appears to be a compound word that is not cased correctly.
@@ -10457,9 +10725,10 @@ mc.Create();
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264474.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264474.aspx</a></p>
-Ä
-fxcop:DoNotPassTypesByReference‹
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264474.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264474.aspx</a></p>Z
+CODE_SMELL
+å
+fxcop:DoNotPassTypesByReferenceË
 fxcopDoNotPassTypesByReference&CA1045: Do not pass types by reference"MAJOR*cs2CA1045:¸<h2>Cause</h2>
 <p>
             A public or protected method in a public type has a <code>ref</code> parameter that takes a primitive type, a reference type, or a value type that is not one of the built-in types.
@@ -10503,9 +10772,10 @@ mc.Create();
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182146.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182146.aspx</a></p>
-ﬂ
-fxcop:AvoidEmptyInterfaces¿
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182146.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182146.aspx</a></p>Z
+CODE_SMELL
+Î
+fxcop:AvoidEmptyInterfacesÃ
 fxcopAvoidEmptyInterfacesCA1040: Avoid empty interfaces"MAJOR*cs2CA1040:Ì<h2>Cause</h2>
 <p>
             The interface does not declare any members or implement two or more other interfaces.
@@ -10523,9 +10793,10 @@ mc.Create();
 <p>
             It is safe to suppress a warning from this rule when the interface is used to identify a set of types at compile time.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182128.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182128.aspx</a></p>
-¸
-fxcop:TestForNaNCorrectlyﬁ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182128.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182128.aspx</a></p>Z
+CODE_SMELL
+à	
+fxcop:TestForNaNCorrectlyÍ
 fxcopTestForNaNCorrectlyCA2242: Test for NaN correctly"MAJOR*cs2CA2242:å<h2>Cause</h2>
 <p>
             An expression tests a value against <code>Single.Nan</code> or <code>Double.Nan</code>.
@@ -10545,9 +10816,10 @@ mc.Create();
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264491.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264491.aspx</a></p>
-ƒ
-fxcop:CustomRuleTemplateß
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264491.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264491.aspx</a></p>Z
+CODE_SMELL
+–
+fxcop:CustomRuleTemplate≥
 fxcopCustomRuleTemplateTemplate for custom FxCop rules"MAJOR*cs:€<p>
 Follow these steps to make your custom FxCop rules available in SonarQube:
 </p>
@@ -10560,9 +10832,10 @@ Follow these steps to make your custom FxCop rules available in SonarQube:
     <li>Enable the newly created rule in your quality profile</li>
   </ol>
   <li>Relaunch an analysis on your projects, et voil√†, your custom rules are executed!</li>
-</ol>@
-º
-0fxcop:DoNotUseTimersThatPreventPowerStateChangesá
+</ol>@Z
+CODE_SMELL
+»
+0fxcop:DoNotUseTimersThatPreventPowerStateChangesì
 fxcop*DoNotUseTimersThatPreventPowerStateChanges:CA1601: Do not use timers that prevent power state changes"MAJOR*cs2CA1601:Ç<h2>Cause</h2>
 <p>
             A timer has an interval set to occur more than one time per second.
@@ -10579,9 +10852,10 @@ Follow these steps to make your custom FxCop rules available in SonarQube:
 <p>
             This rule should be suppressed only if firing the timer more than one time per second is required and mobility considerations can safely be ignored.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182230.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182230.aspx</a></p>
-≠	
--fxcop:MembersShouldDifferByMoreThanReturnType˚
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182230.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182230.aspx</a></p>Z
+CODE_SMELL
+π	
+-fxcop:MembersShouldDifferByMoreThanReturnTypeá	
 fxcop'MembersShouldDifferByMoreThanReturnType6CA2223: Members should differ by more than return type"MAJOR*cs2CA2223:˝<h2>Cause</h2>
 <p>
             Two public or protected members have signatures that are identical except for return type.
@@ -10598,9 +10872,10 @@ Follow these steps to make your custom FxCop rules available in SonarQube:
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182352.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182352.aspx</a></p>
-Á
-&fxcop:ValidateArgumentsOfPublicMethodsº
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182352.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182352.aspx</a></p>Z
+CODE_SMELL
+Û
+&fxcop:ValidateArgumentsOfPublicMethods»
 fxcop ValidateArgumentsOfPublicMethods,CA1062: Validate arguments of public methods"MAJOR*cs2CA1062:œ
 <h2>Cause</h2>
 <p>
@@ -10619,9 +10894,10 @@ Follow these steps to make your custom FxCop rules available in SonarQube:
 <p>
              You can suppress a warning from this rule if you are sure that the dereferenced parameter has been validated by another method call in the function.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182182.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182182.aspx</a></p>
-ˇ
-%fxcop:DoNotCatchGeneralExceptionTypes’
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182182.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182182.aspx</a></p>Z
+CODE_SMELL
+ã
+%fxcop:DoNotCatchGeneralExceptionTypes·
 fxcopDoNotCatchGeneralExceptionTypes,CA1031: Do not catch general exception types"MAJOR*cs2CA1031:È<h2>Cause</h2>
 <p>
             A general exception such as <code>System.Exception</code> or <code>System.SystemException</code> is caught in a <code>catch</code> statement, or a general catch clause such as catch() is used.
@@ -10661,9 +10937,10 @@ Follow these steps to make your custom FxCop rules available in SonarQube:
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182137.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182137.aspx</a></p>
-ˆ
-.fxcop:CallBaseClassMethodsOnISerializableTypes√
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182137.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182137.aspx</a></p>Z
+CODE_SMELL
+Ç
+.fxcop:CallBaseClassMethodsOnISerializableTypesœ
 fxcop(CallBaseClassMethodsOnISerializableTypes6CA2236: Call base class methods on ISerializable types"MAJOR*cs2CA2236:ƒ<h2>Cause</h2>
 <p>
             A type derives from a type that implements the <code>System.Runtime.Serialization.ISerializable</code> interface, and one of the following conditions is true:
@@ -10726,9 +11003,10 @@ Follow these steps to make your custom FxCop rules available in SonarQube:
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182326.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182326.aspx</a></p>
-Ô$
-%fxcop:PropertiesShouldNotReturnArrays≈$
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182326.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182326.aspx</a></p>Z
+CODE_SMELL
+˚$
+%fxcop:PropertiesShouldNotReturnArrays—$
 fxcopPropertiesShouldNotReturnArrays+CA1819: Properties should not return arrays"MAJOR*cs2CA1819:⁄#<h2>Cause</h2>
 <p>
             A public or protected property in a public type returns an array.
@@ -10986,9 +11264,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/0fss9skc.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/0fss9skc.aspx</a></p>
-ä
-.fxcop:TypeLinkDemandsRequireInheritanceDemands◊
+<p><a href="http://msdn.microsoft.com/en-us/library/0fss9skc.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/0fss9skc.aspx</a></p>Z
+CODE_SMELL
+ñ
+.fxcop:TypeLinkDemandsRequireInheritanceDemands„
 fxcop(TypeLinkDemandsRequireInheritanceDemands5CA2126: Type link demands require inheritance demands"MAJOR*cs2CA2126:Ÿ<h2>Cause</h2>
 <p>
             A public unsealed type is protected with a link demand, has an overridable method, and neither the type nor the method is protected with an inheritance demand.
@@ -11028,9 +11307,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182321.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182321.aspx</a></p>
-ã
-,fxcop:AbstractTypesShouldNotHaveConstructors⁄
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182321.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182321.aspx</a></p>Z
+CODE_SMELL
+ó
+,fxcop:AbstractTypesShouldNotHaveConstructorsÊ
 fxcop&AbstractTypesShouldNotHaveConstructors3CA1012: Abstract types should not have constructors"MAJOR*cs2CA1012:‡<h2>Cause</h2>
 <p>
             A public type is abstract and has a public constructor.
@@ -11047,9 +11327,10 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule. The abstract type has a public constructor.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182126.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182126.aspx</a></p>
-Ä
-,fxcop:InstantiateArgumentExceptionsCorrectlyœ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182126.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182126.aspx</a></p>Z
+CODE_SMELL
+å
+,fxcop:InstantiateArgumentExceptionsCorrectly€
 fxcop&InstantiateArgumentExceptionsCorrectly1CA2208: Instantiate argument exceptions correctly"MAJOR*cs2CA2208:◊<h2>Cause</h2>
 <p>
             Possible causes include the following situations:
@@ -11107,9 +11388,10 @@ namespace PerformanceLibrary
 <p>
             It is safe to suppress a warning from this rule only if a parameterized constructor is called with the correct string arguments.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182347.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182347.aspx</a></p>
-–
-.fxcop:MarkBooleanPInvokeArgumentsWithMarshalAsù
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182347.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182347.aspx</a></p>Z
+CODE_SMELL
+‹
+.fxcop:MarkBooleanPInvokeArgumentsWithMarshalAs©
 fxcop(MarkBooleanPInvokeArgumentsWithMarshalAs6CA1414: Mark boolean P/Invoke arguments with MarshalAs"MAJOR*cs2CA1414:û<h2>Cause</h2>
 <p>
             A platform invoke method declaration includes a <code>System.Boolean</code> parameter or return value but the <code>System.Runtime.InteropServices.MarshalAsAttribute</code> attribute is not applied to the parameter or return value.
@@ -11140,10 +11422,11 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182206.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182206.aspx</a></p>
-•
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182206.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182206.aspx</a></p>Z
+CODE_SMELL
+±
 
-.fxcop:ParameterNamesShouldMatchBaseDeclarationÚ	
+.fxcop:ParameterNamesShouldMatchBaseDeclaration˛	
 fxcop(ParameterNamesShouldMatchBaseDeclaration5CA1725: Parameter names should match base declaration"MAJOR*cs2CA1725:Ù<h2>Cause</h2>
 <p>
             The name of a parameter in an externally visible method override does not match the name of the parameter in the base declaration of the method, or the name of the parameter in the interface declaration of the method.
@@ -11160,10 +11443,12 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule except for COM visible methods in libraries that have previously shipped.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182251.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182251.aspx</a></p>
-¨
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182251.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182251.aspx</a></p>Z
+CODE_SMELL
+∏
 
-/fxcop:DoNotDeclareProtectedMembersInSealedTypes¯	
+/fxcop:DoNotDeclareProtectedMembersInSealedTypesÑ
+
 fxcop)DoNotDeclareProtectedMembersInSealedTypes8CA1047: Do not declare protected members in sealed types"MAJOR*cs2CA1047:ˆ<h2>Cause</h2>
 <p>
             A public type is <code>sealed</code> (<code>NotInheritable</code> in Visual basic) and declares a protected member or a protected nested type. This rule does not report violations for <code>Finalize</code> methods, which must follow this pattern.
@@ -11181,9 +11466,10 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule. Leaving the type in its current state can cause maintenance issues and does not provide any benefits.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182138.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182138.aspx</a></p>
-ï
--fxcop:ResourceStringsShouldBeSpelledCorrectly„
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182138.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182138.aspx</a></p>Z
+CODE_SMELL
+°
+-fxcop:ResourceStringsShouldBeSpelledCorrectlyÔ
 fxcop'ResourceStringsShouldBeSpelledCorrectly4CA1703: Resource strings should be spelled correctly"MAJOR*cs2CA1703:Á
 <h2>Cause</h2>
 <p>
@@ -11220,9 +11506,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264483.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264483.aspx</a></p>
-ú
-,fxcop:EventsShouldNotHaveBeforeOrAfterPrefixÎ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264483.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264483.aspx</a></p>Z
+CODE_SMELL
+®
+,fxcop:EventsShouldNotHaveBeforeOrAfterPrefix˜
 
 fxcop&EventsShouldNotHaveBeforeOrAfterPrefix5CA1713: Events should not have before or after prefix"MAJOR*cs2CA1713:Ô	<h2>Cause</h2>
 <p>
@@ -11241,9 +11528,10 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182238.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182238.aspx</a></p>
-‘
-/fxcop:ComVisibleTypeBaseTypesShouldBeComVisible†
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182238.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182238.aspx</a></p>Z
+CODE_SMELL
+‡
+/fxcop:ComVisibleTypeBaseTypesShouldBeComVisible¨
 fxcop)ComVisibleTypeBaseTypesShouldBeComVisible9CA1405: COM visible type base types should be COM visible"MAJOR*cs2CA1405:ù<h2>Cause</h2>
 <p>
             A Component Object Model (COM) visible type derives from a type that is not COM visible.
@@ -11260,9 +11548,10 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182202.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182202.aspx</a></p>
-á
-+fxcop:MethodSecurityShouldBeASupersetOfType◊
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182202.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182202.aspx</a></p>Z
+CODE_SMELL
+ì
++fxcop:MethodSecurityShouldBeASupersetOfType„
 fxcop%MethodSecurityShouldBeASupersetOfType4CA2114: Method security should be a superset of type"MAJOR*cs2CA2114:›<h2>Cause</h2>
 <p>
             A type has declarative security and one of its methods has declarative security for the same security action, and the security action is not Link Demands or Inheritance Demands, and the permissions checked by the type are not a subset of the permissions checked by the method.
@@ -11279,9 +11568,10 @@ namespace PerformanceLibrary
 <p>
             It is safe to suppress a warning from this rule if the method does not require the security specified by the type. However, this is not an ordinary scenario and might indicate a need for a careful design review.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182304.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182304.aspx</a></p>
-Ö
-;fxcop:TransparentMethodsShouldNotBeProtectedWithLinkDemands≈
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182304.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182304.aspx</a></p>Z
+CODE_SMELL
+ë
+;fxcop:TransparentMethodsShouldNotBeProtectedWithLinkDemands—
 
 fxcop5TransparentMethodsShouldNotBeProtectedWithLinkDemandsACA2142: Transparent code should not be protected with LinkDemands"MAJOR*cs2CA2142:Æ	<h2>Cause</h2>
 <p>
@@ -11299,9 +11589,10 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997567.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997567.aspx</a></p>
-Õ
-5fxcop:CatchNonClsCompliantExceptionsInGeneralHandlersì
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997567.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997567.aspx</a></p>Z
+CODE_SMELL
+Ÿ
+5fxcop:CatchNonClsCompliantExceptionsInGeneralHandlersü
 fxcop/CatchNonClsCompliantExceptionsInGeneralHandlers=CA2102: Catch non-CLSCompliant exceptions in general handlers"MAJOR*cs2CA2102:Ü<h2>Cause</h2>
 <p>
             A member in an assembly that is not marked with the <code>RuntimeCompatibilityAttribute</code> or is marked RuntimeCompatibility(WrapNonExceptionThrows = false) contains a catch block that handles <code>System.Exception</code> and does not contain an immediately following general catch block. This rule ignores Visual Basic assemblies.
@@ -11335,9 +11626,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264489.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264489.aspx</a></p>
-‚
-)fxcop:OnlyFlagsEnumsShouldHavePluralNames¥
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264489.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264489.aspx</a></p>Z
+CODE_SMELL
+Ó
+)fxcop:OnlyFlagsEnumsShouldHavePluralNames¿
 fxcop#OnlyFlagsEnumsShouldHavePluralNames:CA1717: Only FlagsAttribute enums should have plural names"MAJOR*cs2CA1717:∂<h2>Cause</h2>
 <p>
             The name of an externally visible enumeration ends in a plural word and the enumeration is not marked with the <code>System.FlagsAttribute</code> attribute.
@@ -11374,9 +11666,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264487.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264487.aspx</a></p>
-ë
-&fxcop:LiteralsShouldBeSpelledCorrectlyÊ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264487.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264487.aspx</a></p>Z
+CODE_SMELL
+ù
+&fxcop:LiteralsShouldBeSpelledCorrectlyÚ
 fxcop LiteralsShouldBeSpelledCorrectly,CA2204: Literals should be spelled correctly"MAJOR*cs2CA2204:˘<h2>Cause</h2>
 <p>
             A method passes a literal string to that is used in a parameter or property that requires a localized string and the literal string contains one or more words that are not recognized by the Microsoft spelling checker library.
@@ -11419,9 +11712,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264488.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264488.aspx</a></p>
-∫
-/fxcop:DoNotDeclareReadOnlyMutableReferenceTypesÜ
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264488.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264488.aspx</a></p>Z
+CODE_SMELL
+∆
+/fxcop:DoNotDeclareReadOnlyMutableReferenceTypesí
 fxcop)DoNotDeclareReadOnlyMutableReferenceTypes8CA2104: Do not declare read only mutable reference types"MAJOR*cs2CA2104:Ñ<h2>Cause</h2>
 <p>
             An externally visible type contains an externally visible read-only field that is a mutable reference type.
@@ -11440,9 +11734,10 @@ namespace PerformanceLibrary
 <p>
             It is safe to suppress a warning from this rule if the field type is immutable.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182302.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182302.aspx</a></p>
-≈
-fxcop:AvoidUncalledPrivateCode¢
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182302.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182302.aspx</a></p>Z
+CODE_SMELL
+—
+fxcop:AvoidUncalledPrivateCodeÆ
 fxcopAvoidUncalledPrivateCode#CA1811: Avoid uncalled private code"MAJOR*cs2CA1811:∆<h2>Cause</h2>
 <p>
             A private or internal (assembly-level) member does not have callers in the assembly, is not invoked by the common language runtime, and is not invoked by a delegate. The following members are not checked by this rule:
@@ -11494,9 +11789,10 @@ namespace PerformanceLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182264.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182264.aspx</a></p>
-Î
- fxcop:ReviewMisleadingFieldNames∆
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182264.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182264.aspx</a></p>Z
+CODE_SMELL
+˜
+ fxcop:ReviewMisleadingFieldNames“
 fxcopReviewMisleadingFieldNames%CA1504: Review misleading field names"MAJOR*cs2CA1504:Ê<h2>Cause</h2>
 <p>
             The name of an instance field starts with "s_" or the name of a <code>static</code> (<code>Shared</code> in Visual Basic) field starts with "m_".
@@ -11513,9 +11809,10 @@ namespace PerformanceLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb164506.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb164506.aspx</a></p>
-Ÿ>
-0fxcop:CollectionsShouldImplementGenericInterface§>
+<p><a href="http://msdn.microsoft.com/en-us/library/bb164506.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb164506.aspx</a></p>Z
+CODE_SMELL
+Â>
+0fxcop:CollectionsShouldImplementGenericInterface∞>
 fxcop*CollectionsShouldImplementGenericInterface6CA1010: Collections should implement generic interface"MAJOR*cs2CA1010:£=<h2>Cause</h2>
 <p>
             An externally visible type implements the <code>System.Collections.IEnumerable</code> interface but does not implement the <code>System.Collections.Generic.IEnumerable&lt;T&gt;</code> interface, and the containing assembly targets .NET Framework¬†2.0. This rule ignores types that implement <code>System.Collections.IDictionary</code>.
@@ -11878,10 +12175,11 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182132.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182132.aspx</a></p>
-”
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182132.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182132.aspx</a></p>Z
+CODE_SMELL
+ﬂ
 
-0fxcop:StaticHolderTypesShouldNotHaveConstructorsû
+0fxcop:StaticHolderTypesShouldNotHaveConstructors™
 
 fxcop*StaticHolderTypesShouldNotHaveConstructors8CA1053: Static holder types should not have constructors"MAJOR*cs2CA1053:õ	<h2>Cause</h2>
 <p>
@@ -11914,9 +12212,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule. The presence of the constructor suggests that the type is not a static type.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182169.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182169.aspx</a></p>
-¯
-.fxcop:DoNotMarkServicedComponentsWithWebMethod≈
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182169.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182169.aspx</a></p>Z
+CODE_SMELL
+Ñ
+.fxcop:DoNotMarkServicedComponentsWithWebMethod—
 fxcop(DoNotMarkServicedComponentsWithWebMethod6CA2212: Do not mark serviced components with WebMethod"MAJOR*cs2CA2212:∆<h2>Cause</h2>
 <p>
             A method in a type that inherits from <code>System.EnterpriseServices.ServicedComponent</code> is marked with <code>System.Web.Services.WebMethodAttribute</code>.
@@ -11936,9 +12235,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule. There are no scenarios where combining these elements is correct.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182336.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182336.aspx</a></p>
-±
--fxcop:SealMethodsThatSatisfyPrivateInterfacesˇ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182336.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182336.aspx</a></p>Z
+CODE_SMELL
+Ω
+-fxcop:SealMethodsThatSatisfyPrivateInterfacesã
 fxcop'SealMethodsThatSatisfyPrivateInterfaces4CA2119: Seal methods that satisfy private interfaces"MAJOR*cs2CA2119:É<h2>Cause</h2>
 <p>
             An inheritable public type provides an overridable method implementation of an <code>internal</code> (<code>Friend</code> in Visual Basic) interface.
@@ -11972,10 +12272,11 @@ namespace Samples
 <p>
             It is safe to suppress a warning from this rule if, after careful review, no security issues exist that might be exploitable if the method is overridden outside the assembly.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182313.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182313.aspx</a></p>
-Ú
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182313.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182313.aspx</a></p>Z
+CODE_SMELL
+˛
 
-#fxcop:RethrowToPreserveStackDetails 
+#fxcop:RethrowToPreserveStackDetails÷
 
 fxcopRethrowToPreserveStackDetails)CA2200: Rethrow to preserve stack details"MAJOR*cs2CA2200:„	<h2>Cause</h2>
 <p>
@@ -11993,9 +12294,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182363.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182363.aspx</a></p>
-”
-=fxcop:TransparentMethodsShouldNotLoadAssembliesFromByteArraysë
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182363.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182363.aspx</a></p>Z
+CODE_SMELL
+ﬂ
+=fxcop:TransparentMethodsShouldNotLoadAssembliesFromByteArraysù
 fxcop7TransparentMethodsShouldNotLoadAssembliesFromByteArraysDCA2144: Transparent code should not load assemblies from byte arrays"MAJOR*cs2CA2144:ı
 <h2>Cause</h2>
 <p>
@@ -12035,9 +12337,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997568.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997568.aspx</a></p>
-“
-!fxcop:AvoidExcessiveClassCoupling¨
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997568.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997568.aspx</a></p>Z
+CODE_SMELL
+ﬁ
+!fxcop:AvoidExcessiveClassCoupling∏
 fxcopAvoidExcessiveClassCoupling&CA1506: Avoid excessive class coupling"MAJOR*cs2CA1506: <h2>Cause</h2>
 <p>
             A type or method is coupled with many other types.
@@ -12055,9 +12358,10 @@ namespace Samples
 <p>
             Exclude this warning when the type or method is still considered maintainable despite its large number of dependencies on other types.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb397994.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb397994.aspx</a></p>
-´
-(fxcop:ImplementSerializationConstructors˛
+<p><a href="http://msdn.microsoft.com/en-us/library/bb397994.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb397994.aspx</a></p>Z
+CODE_SMELL
+∑
+(fxcop:ImplementSerializationConstructorsä
 fxcop"ImplementSerializationConstructors,CA2229: Implement serialization constructors"MAJOR*cs2CA2229:è<h2>Cause</h2>
 <p>
             The type implements the <code>System.Runtime.Serialization.ISerializable</code> interface, is not a delegate or interface, and one of the following conditions is true:
@@ -12093,9 +12397,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182343.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182343.aspx</a></p>
-å
-%fxcop:UseManagedEquivalentsOfWin32Api‚
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182343.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182343.aspx</a></p>Z
+CODE_SMELL
+ò
+%fxcop:UseManagedEquivalentsOfWin32ApiÓ
 fxcopUseManagedEquivalentsOfWin32Api,CA2205: Use managed equivalents of Win32 API"MAJOR*cs2CA2205:ˆ<h2>Cause</h2>
 <p>
             A platform invoke method is defined and a method with the equivalent functionality exists in the .NET Framework class library.
@@ -12140,9 +12445,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182365.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182365.aspx</a></p>
-®
-&fxcop:AvoidInt64ArgumentsForVB6Clients˝
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182365.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182365.aspx</a></p>Z
+CODE_SMELL
+¥
+&fxcop:AvoidInt64ArgumentsForVB6Clientsâ
 fxcop AvoidInt64ArgumentsForVB6Clients8CA1406: Avoid Int64 arguments for Visual Basic 6 clients"MAJOR*cs2CA1406:Ñ<h2>Cause</h2>
 <p>
             A type that is specifically marked as visible to Component Object Model (COM) declares a member that takes a System.Int64 argument.
@@ -12178,9 +12484,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182195.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182195.aspx</a></p>
-Ó
-$fxcop:ArrayFieldsShouldNotBeReadOnly≈
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182195.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182195.aspx</a></p>Z
+CODE_SMELL
+˙
+$fxcop:ArrayFieldsShouldNotBeReadOnly—
 fxcopArrayFieldsShouldNotBeReadOnly,CA2105: Array fields should not be read only"MAJOR*cs2CA2105:⁄<h2>Cause</h2>
 <p>
             A public or protected field that holds an array is declared read-only.
@@ -12207,9 +12514,10 @@ $fxcop:ArrayFieldsShouldNotBeReadOnly≈
 <p>
             Exclusion of a warning from this rule is strongly discouraged. Almost no scenarios occur where the contents of a read-only field are unimportant. If this is the case with your scenario, remove the <code>readonly</code> modifier instead of excluding the message.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182299.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182299.aspx</a></p>
-ƒ
-%fxcop:ProvideObsoleteAttributeMessageö
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182299.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182299.aspx</a></p>Z
+CODE_SMELL
+–
+%fxcop:ProvideObsoleteAttributeMessage¶
 fxcopProvideObsoleteAttributeMessage)CA1041: Provide ObsoleteAttribute message"MAJOR*cs2CA1041:±<h2>Cause</h2>
 <p>
             A type or member is marked by using a <code>System.ObsoleteAttribute</code> attribute that does not have its <code>ObsoleteAttribute.Message</code> property specified.
@@ -12229,10 +12537,11 @@ $fxcop:ArrayFieldsShouldNotBeReadOnly≈
 <p>
             Do not suppress a warning from this rule because the <code>Message</code> property provides critical information about the obsolete type or member.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182166.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182166.aspx</a></p>
-∆
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182166.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182166.aspx</a></p>Z
+CODE_SMELL
+“
 
-'fxcop:TransparentMethodsShouldNotDemandö
+'fxcop:TransparentMethodsShouldNotDemand¶
 
 fxcop!TransparentMethodsShouldNotDemand;CA2143: Transparent methods should not use security demands"MAJOR*cs2CA2143:ù	<h2>Cause</h2>
 <p>
@@ -12250,9 +12559,10 @@ $fxcop:ArrayFieldsShouldNotBeReadOnly≈
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997566.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997566.aspx</a></p>
-Ç
-&fxcop:EnumeratorsShouldBeStronglyTyped◊
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997566.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997566.aspx</a></p>Z
+CODE_SMELL
+é
+&fxcop:EnumeratorsShouldBeStronglyTyped„
 fxcop EnumeratorsShouldBeStronglyTyped,CA1038: Enumerators should be strongly typed"MAJOR*cs2CA1038:Í<h2>Cause</h2>
 <p>
             A public or protected type implements <code>System.Collections.IEnumerator</code> but does not provide a strongly typed version of the <code>IEnumerator.Current</code> property. Types that are derived from the following types are exempt from this rule:
@@ -12305,9 +12615,10 @@ $fxcop:ArrayFieldsShouldNotBeReadOnly≈
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182148.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182148.aspx</a></p>
-π	
-/fxcop:ReplaceRepetitiveArgumentsWithParamsArrayÖ	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182148.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182148.aspx</a></p>Z
+CODE_SMELL
+≈	
+/fxcop:ReplaceRepetitiveArgumentsWithParamsArrayë	
 fxcop)ReplaceRepetitiveArgumentsWithParamsArray6CA1025: Replace repetitive arguments with params array"MAJOR*cs2CA1025:Ö<h2>Cause</h2>
 <p>
             A public or protected method in a public type has more than three parameters, and its last three parameters are the same type.
@@ -12324,9 +12635,10 @@ $fxcop:ArrayFieldsShouldNotBeReadOnly≈
 <p>
             It is always safe to suppress a warning from this rule; however, this design might cause usability issues.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182167.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182167.aspx</a></p>
-Ù
--fxcop:TransparentMethodsMustNotCallNativeCode¬
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182167.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182167.aspx</a></p>Z
+CODE_SMELL
+Ä	
+-fxcop:TransparentMethodsMustNotCallNativeCodeŒ
 fxcop'TransparentMethodsMustNotCallNativeCode:CA2149: Transparent methods must not call into native code"MAJOR*cs2CA2149:¿<h2>Cause</h2>
 <p>
             A method calls a native function through a method stub such as P/Invoke.
@@ -12343,9 +12655,10 @@ $fxcop:ArrayFieldsShouldNotBeReadOnly≈
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ee155709.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ee155709.aspx</a></p>
-≠<
-+fxcop:OverrideGetHashCodeOnOverridingEquals˝;
+<p><a href="http://msdn.microsoft.com/en-us/library/ee155709.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ee155709.aspx</a></p>Z
+CODE_SMELL
+π<
++fxcop:OverrideGetHashCodeOnOverridingEqualsâ<
 fxcop%OverrideGetHashCodeOnOverridingEquals1CA2218: Override GetHashCode on overriding Equals"MAJOR*cs2CA2218:Ü;<h2>Cause</h2>
 <p>
             A public type overrides <code>Object.Equals</code> but does not override <code>Object.GetHashCode</code>.
@@ -12754,9 +13067,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182358.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182358.aspx</a></p>
-Ç
-.fxcop:AptcaTypesShouldOnlyExtendAptcaBaseTypesœ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182358.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182358.aspx</a></p>Z
+CODE_SMELL
+é
+.fxcop:AptcaTypesShouldOnlyExtendAptcaBaseTypes€
 fxcop(AptcaTypesShouldOnlyExtendAptcaBaseTypes7CA2117: APTCA types should only extend APTCA base types"MAJOR*cs2CA2117:œ<h2>Cause</h2>
 <p>
             A public or protected type in an assembly with the <code>System.Security.AllowPartiallyTrustedCallersAttribute</code> attribute inherits from a type declared in an assembly that does not have the attribute.
@@ -12800,9 +13114,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182298.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182298.aspx</a></p>
-¡
-&fxcop:DefaultParametersShouldNotBeUsedñ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182298.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182298.aspx</a></p>Z
+CODE_SMELL
+Õ
+&fxcop:DefaultParametersShouldNotBeUsed¢
 fxcop DefaultParametersShouldNotBeUsed-CA1026: Default parameters should not be used"MAJOR*cs2CA1026:®<h2>Cause</h2>
 <p>
             An externally visible type contains an externally visible method that uses a default parameter.
@@ -12828,9 +13143,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182135.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182135.aspx</a></p>
-–
-1fxcop:AttributeStringLiteralsShouldParseCorrectlyö
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182135.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182135.aspx</a></p>Z
+CODE_SMELL
+‹
+1fxcop:AttributeStringLiteralsShouldParseCorrectly¶
 fxcop+AttributeStringLiteralsShouldParseCorrectly8CA2243: Attribute string literals should parse correctly"MAJOR*cs2CA2243:ñ<h2>Cause</h2>
 <p>
             An attribute's string literal parameter does not parse correctly for a URL, GUID, or Version.
@@ -12849,10 +13165,11 @@ namespace Samples
 <p>
             It is safe to suppress a warning from this rule if the parameter does not represent a URL, GUID, or Version.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264490.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264490.aspx</a></p>
-√
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264490.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264490.aspx</a></p>Z
+CODE_SMELL
+œ
 
-,fxcop:FinalizersShouldCallBaseClassFinalizerí
+,fxcop:FinalizersShouldCallBaseClassFinalizerû
 
 fxcop&FinalizersShouldCallBaseClassFinalizer3CA2220: Finalizers should call base class finalizer"MAJOR*cs2CA2220:ò	<h2>Cause</h2>
 <p>
@@ -12870,9 +13187,10 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule. Some compilers that target the common language runtime insert a call to the base type's finalizer into the Microsoft intermediate language (MSIL). If a warning from this rule is reported, your compiler does not insert the call, and you must add it to your code.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182341.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182341.aspx</a></p>
-·$
-*fxcop:DefineAccessorsForAttributeArguments≤$
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182341.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182341.aspx</a></p>Z
+CODE_SMELL
+Ì$
+*fxcop:DefineAccessorsForAttributeArgumentsæ$
 fxcop$DefineAccessorsForAttributeArguments0CA1019: Define accessors for attribute arguments"MAJOR*cs2CA1019:Ω#<h2>Cause</h2>
 <p>
             In its constructor, an attribute defines arguments that do not have corresponding properties.
@@ -13059,9 +13377,10 @@ public¬†string MyOtherProperty
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182136.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182136.aspx</a></p>
-›2
-/fxcop:OverrideEqualsOnOverloadingOperatorEquals©2
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182136.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182136.aspx</a></p>Z
+CODE_SMELL
+È2
+/fxcop:OverrideEqualsOnOverloadingOperatorEqualsµ2
 fxcop)OverrideEqualsOnOverloadingOperatorEquals6CA2224: Override equals on overloading operator equals"MAJOR*cs2CA2224:©1<h2>Cause</h2>
 <p>
             A public type implements the equality operator, but does not override <code>Object.Equals</code>.
@@ -13332,9 +13651,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182357.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182357.aspx</a></p>
-Ì
-,fxcop:DoNotRaiseExceptionsInExceptionClausesº
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182357.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182357.aspx</a></p>Z
+CODE_SMELL
+˘
+,fxcop:DoNotRaiseExceptionsInExceptionClauses»
 fxcop&DoNotRaiseExceptionsInExceptionClauses4CA2219: Do not raise exceptions in exception clauses"MAJOR*cs2CA2219:¡<h2>Cause</h2>
 <p>
             An exception is thrown from a <code>finally</code>, filter, or fault clause.
@@ -13361,10 +13681,11 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb386041.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386041.aspx</a></p>
-ø
+<p><a href="http://msdn.microsoft.com/en-us/library/bb386041.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386041.aspx</a></p>Z
+CODE_SMELL
+À
 
-1fxcop:DoNotOverloadOperatorEqualsOnReferenceTypesâ
+1fxcop:DoNotOverloadOperatorEqualsOnReferenceTypesï
 
 fxcop+DoNotOverloadOperatorEqualsOnReferenceTypes:CA1046: Do not overload operator equals on reference types"MAJOR*cs2CA1046:É	<h2>Cause</h2>
 <p>
@@ -13390,9 +13711,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182145.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182145.aspx</a></p>
-∫
-!fxcop:FinalizersShouldBeProtectedî
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182145.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182145.aspx</a></p>Z
+CODE_SMELL
+∆
+!fxcop:FinalizersShouldBeProtected†
 fxcopFinalizersShouldBeProtected&CA2221: Finalizers should be protected"MAJOR*cs2CA2221:≤<h2>Cause</h2>
 <p>
             A public type implements a finalizer that does not specify family (protected) access.
@@ -13409,9 +13731,11 @@ namespace Samples
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182340.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182340.aspx</a></p>
-˝	
-!fxcop:NormalizeStringsToUppercase◊	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182340.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182340.aspx</a></p>Z
+CODE_SMELL
+â
+
+!fxcop:NormalizeStringsToUppercase„	
 fxcopNormalizeStringsToUppercase&CA1308: Normalize strings to uppercase"MAJOR*cs2CA1308:ı<h2>Cause</h2>
 <p>
             An operation normalizes a string to lowercase.
@@ -13428,9 +13752,10 @@ namespace Samples
 <p>
             It is safe to suppress a warning message when you are not making security decision based on the result (for example, when you are displaying it in the UI).
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb386042.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386042.aspx</a></p>
-¶
-fxcop:UsePreferredTermsä
+<p><a href="http://msdn.microsoft.com/en-us/library/bb386042.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386042.aspx</a></p>Z
+CODE_SMELL
+≤
+fxcop:UsePreferredTermsñ
 fxcopUsePreferredTermsCA1726: Use preferred terms"MAJOR*cs2CA1726:Ω<h2>Cause</h2>
 <p>
             The name of an externally visible identifier includes a term for which an alternative, preferred term exists. Alternatively, the name includes the term Flag or Flags.
@@ -13662,9 +13987,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182258.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182258.aspx</a></p>
-§
-.fxcop:GenericMethodsShouldProvideTypeParameterÒ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182258.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182258.aspx</a></p>Z
+CODE_SMELL
+∞
+.fxcop:GenericMethodsShouldProvideTypeParameter˝
 fxcop(GenericMethodsShouldProvideTypeParameter5CA1004: Generic methods should provide type parameter"MAJOR*cs2CA1004:Û<h2>Cause</h2>
 <p>
             The parameter signature of an externally visible generic method does not contain types that correspond to all the type parameters of the method.
@@ -13719,9 +14045,10 @@ namespace Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182150.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182150.aspx</a></p>
-ú+
-(fxcop:IdentifiersShouldHaveCorrectSuffixÔ*
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182150.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182150.aspx</a></p>Z
+CODE_SMELL
+®+
+(fxcop:IdentifiersShouldHaveCorrectSuffix˚*
 fxcop"IdentifiersShouldHaveCorrectSuffix.CA1710: Identifiers should have correct suffix"MAJOR*cs2CA1710:˛)<h2>Cause</h2>
 <p>
             An identifier does not have the correct suffix.
@@ -13998,9 +14325,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182244.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182244.aspx</a></p>
-ª
-fxcop:SetLocaleForDataTypesõ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182244.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182244.aspx</a></p>Z
+CODE_SMELL
+«
+fxcop:SetLocaleForDataTypesß
 fxcopSetLocaleForDataTypes!CA1306: Set locale for data types"MAJOR*cs2CA1306:ƒ<h2>Cause</h2>
 <p>
             A method or constructor created one or more <code>System.Data.DataTable</code> or <code>System.Data.DataSet</code> instances and did not explicitly set the locale property (<code>DataTable.Locale</code> or <code>DataSet.Locale</code>).
@@ -14017,9 +14345,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 <p>
             It is safe to suppress a warning from this rule when the library or application is for a limited local audience, the data is not shared, or the default setting yields the desired behavior in all supported scenarios.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182188.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182188.aspx</a></p>
-æ
-fxcop:UseEventsWhereAppropriateö
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182188.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182188.aspx</a></p>Z
+CODE_SMELL
+ 
+fxcop:UseEventsWhereAppropriate¶
 fxcopUseEventsWhereAppropriate$CA1030: Use events where appropriate"MAJOR*cs2CA1030:º<h2>Cause</h2>
 <p>
             A public, protected, or private method name begins with one of the following:
@@ -14051,9 +14380,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 <p>
             Suppress a warning from this rule if the method does not work with the .NET Framework event model.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182177.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182177.aspx</a></p>
-Ä
- fxcop:UseOrdinalStringComparison€
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182177.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182177.aspx</a></p>Z
+CODE_SMELL
+å
+ fxcop:UseOrdinalStringComparisonÁ
 fxcopUseOrdinalStringComparison$CA1309: Use ordinal StringComparison"MAJOR*cs2CA1309:¸<h2>Cause</h2>
 <p>
             A string comparison operation that is nonlinguistic does not set the <code>StringComparison</code> parameter to either Ordinal or OrdinalIgnoreCase.
@@ -14071,9 +14401,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 <p>
             It is safe to suppress a warning from this rule when the library or application is intended for a limited local audience or when the semantics of the current culture should be used.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb385972.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb385972.aspx</a></p>
-¸
-2fxcop:InterfaceMethodsShouldBeCallableByChildTypes≈
+<p><a href="http://msdn.microsoft.com/en-us/library/bb385972.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb385972.aspx</a></p>Z
+CODE_SMELL
+à
+2fxcop:InterfaceMethodsShouldBeCallableByChildTypes—
 fxcop,InterfaceMethodsShouldBeCallableByChildTypes;CA1033: Interface methods should be callable by child types"MAJOR*cs2CA1033:Ω<h2>Cause</h2>
 <p>
             An unsealed externally visible type provides an explicit method implementation of a public interface and does not provide an alternative externally visible method that has the same name.
@@ -14091,9 +14422,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 <p>
             It is safe to suppress a warning from this rule if an externally visible method is provided that has the same functionality but a different name than the explicitly implemented method.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182153.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182153.aspx</a></p>
-∫
-%fxcop:SecureSerializationConstructorsê
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182153.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182153.aspx</a></p>Z
+CODE_SMELL
+∆
+%fxcop:SecureSerializationConstructorsú
 fxcopSecureSerializationConstructors)CA2120: Secure serialization constructors"MAJOR*cs2CA2120:ß<h2>Cause</h2>
 <p>
             The type implements the <code>System.Runtime.Serialization.ISerializable</code> interface, is not a delegate or interface, and is declared in an assembly that allows partially trusted callers. The type has a constructor that takes a <code>System.Runtime.Serialization.SerializationInfo</code> object and a <code>System.Runtime.Serialization.StreamingContext</code> object (the signature of the serialization constructor). This constructor is not secured by a security check, but one or more of the regular constructors in the type is secured.
@@ -14123,9 +14455,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182317.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182317.aspx</a></p>
-¡
-fxcop:SpecifyStringComparisonü
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182317.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182317.aspx</a></p>Z
+CODE_SMELL
+Õ
+fxcop:SpecifyStringComparison´
 fxcopSpecifyStringComparison CA1307: Specify StringComparison"MAJOR*cs2CA1307:«
 <h2>Cause</h2>
 <p>
@@ -14144,9 +14477,10 @@ A <code>DataSet</code> object consists of a collection of <code>DataTable</code>
 <p>
             It is safe to suppress a warning from this rule when the library or application is intended for a limited local audience and will therefore not be localized.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb386080.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386080.aspx</a></p>
-Ï
-$fxcop:MarkAssembliesWithClsCompliant√
+<p><a href="http://msdn.microsoft.com/en-us/library/bb386080.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb386080.aspx</a></p>Z
+CODE_SMELL
+¯
+$fxcop:MarkAssembliesWithClsCompliantœ
 fxcopMarkAssembliesWithClsCompliant2CA1014: Mark assemblies with CLSCompliantAttribute"MAJOR*cs2CA1014:“<h2>Cause</h2>
 <p>
             An assembly does not have the <code>System.CLSCompliantAttribute</code> attribute applied to it.
@@ -14164,9 +14498,10 @@ $fxcop:MarkAssembliesWithClsCompliant√
 <p>
             Do not suppress a warning from this rule. If you do not want the assembly to be compliant, apply the attribute and set its value to <code>false</code>.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182156.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182156.aspx</a></p>
-«
-(fxcop:TransparentMethodsMustBeVerifiableö
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182156.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182156.aspx</a></p>Z
+CODE_SMELL
+”
+(fxcop:TransparentMethodsMustBeVerifiable¶
 fxcop"TransparentMethodsMustBeVerifiable;CA2137: Transparent methods must contain only verifiable IL"MAJOR*cs2CA2137:ú
 <h2>Cause</h2>
 <p>
@@ -14185,9 +14520,10 @@ $fxcop:MarkAssembliesWithClsCompliant√
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd983954.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd983954.aspx</a></p>
-ª
-fxcop:SpecifyIFormatProviderö
+<p><a href="http://msdn.microsoft.com/en-us/library/dd983954.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd983954.aspx</a></p>Z
+CODE_SMELL
+«
+fxcop:SpecifyIFormatProvider¶
 fxcopSpecifyIFormatProviderCA1305: Specify IFormatProvider"MAJOR*cs2CA1305:ƒ<h2>Cause</h2>
 <p>
             A method or constructor calls one or more members that have overloads that accept a <code>System.IFormatProvider</code> parameter, and the method or constructor does not call the overload that takes the <code>IFormatProvider</code> parameter. This rule ignores calls to .NET Framework methods that are documented as ignoring the <code>IFormatProvider</code> parameter and additionally the following methods:
@@ -14248,9 +14584,10 @@ $fxcop:MarkAssembliesWithClsCompliant√
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182190.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182190.aspx</a></p>
-Ó
-0fxcop:ProvideCorrectArgumentsToFormattingMethodsπ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182190.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182190.aspx</a></p>Z
+CODE_SMELL
+˙
+0fxcop:ProvideCorrectArgumentsToFormattingMethods≈
 fxcop*ProvideCorrectArgumentsToFormattingMethods7CA2241: Provide correct arguments to formatting methods"MAJOR*cs2CA2241:∑
 <h2>Cause</h2>
 <p>
@@ -14268,9 +14605,10 @@ $fxcop:MarkAssembliesWithClsCompliant√
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182361.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182361.aspx</a></p>
-¡
-#fxcop:UsePropertiesWhereAppropriateô
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182361.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182361.aspx</a></p>Z
+CODE_SMELL
+Õ
+#fxcop:UsePropertiesWhereAppropriate•
 fxcopUsePropertiesWhereAppropriate(CA1024: Use properties where appropriate"MAJOR*cs2CA1024:≥<h2>Cause</h2>
 <p>
             A public or protected method has a name that starts with Get, takes no parameters, and returns a value that is not an array.
@@ -14372,9 +14710,10 @@ namespace Microsoft.Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182181.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182181.aspx</a></p>
-‹
-.fxcop:ReviewSuppressUnmanagedCodeSecurityUsage©
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182181.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182181.aspx</a></p>Z
+CODE_SMELL
+Ë
+.fxcop:ReviewSuppressUnmanagedCodeSecurityUsageµ
 fxcop(ReviewSuppressUnmanagedCodeSecurityUsage;CA2118: Review SuppressUnmanagedCodeSecurityAttribute usage"MAJOR*cs2CA2118:•<h2>Cause</h2>
 <p>
             A public or protected type or member has the <code>System.Security.SuppressUnmanagedCodeSecurityAttribute</code> attribute.
@@ -14408,9 +14747,10 @@ namespace Microsoft.Samples
 <p>
             To safely suppress a warning from this rule, you must ensure that your code does not provide callers access to native operations or resources that can be used in a destructive manner.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182311.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182311.aspx</a></p>
-ﬁ#
-)fxcop:IdentifiersShouldBeSpelledCorrectly∞#
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182311.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182311.aspx</a></p>Z
+CODE_SMELL
+Í#
+)fxcop:IdentifiersShouldBeSpelledCorrectlyº#
 fxcop#IdentifiersShouldBeSpelledCorrectly/CA1704: Identifiers should be spelled correctly"MAJOR*cs2CA1704:Ω"<h2>Cause</h2>
 <p>
             The name of an identifier contains one or more words that are not recognized by the Microsoft spelling checker library. This rule does not check constructors or special-named members such as get and set property accessors.
@@ -14537,9 +14877,10 @@ namespace Microsoft.Samples
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb264492.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264492.aspx</a></p>
-‚
-fxcop:CA2151—
+<p><a href="http://msdn.microsoft.com/en-us/library/bb264492.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb264492.aspx</a></p>Z
+CODE_SMELL
+Ó
+fxcop:CA2151›
 fxcopCA2151>CA2151: Fields with critical types should be security critical"MAJOR*cs2CA2151:Ï<h2>Cause</h2>
 <p>
             A security transparent field or a safe critical field is declared. Its type is specified as security critical. For example:
@@ -14673,9 +15014,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dn621098.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dn621098.aspx</a></p>
-Ë
-(fxcop:MarkComSourceInterfacesAsIDispatchª
+<p><a href="http://msdn.microsoft.com/en-us/library/dn621098.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dn621098.aspx</a></p>Z
+CODE_SMELL
+Ù
+(fxcop:MarkComSourceInterfacesAsIDispatch«
 fxcop"MarkComSourceInterfacesAsIDispatch.CA1412: Mark ComSource Interfaces as IDispatch"MAJOR*cs2CA1412: <h2>Cause</h2>
 <p>
             A type is marked with the <code>ComSourceInterfacesAttribute</code> attribute and at least one specified interface is not marked with the <code>InterfaceTypeAttribute</code> attribute set to the <code>InterfaceIsDispatch</code> value.
@@ -14703,9 +15045,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182207.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182207.aspx</a></p>
-ç
-1fxcop:DelegatesMustBindWithConsistentTransparency◊
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182207.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182207.aspx</a></p>Z
+CODE_SMELL
+ô
+1fxcop:DelegatesMustBindWithConsistentTransparency„
 fxcop+DelegatesMustBindWithConsistentTransparencyCCA2133: Delegates must bind to methods with consistent transparency"MAJOR*cs2CA2133:»<h2>Cause</h2>
 <p>
             This warning fires on a method that binds a delegate that is marked with the <code>SecurityCriticalAttribute</code> to a method that is transparent or that is marked with the <code>SecuritySafeCriticalAttribute</code>. The warning also fires a method that binds a delegate that is transparent or safe-critical to a critical method.
@@ -14768,9 +15111,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997710.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997710.aspx</a></p>
-Ô
-"fxcop:ReviewDenyAndPermitOnlyUsage»
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997710.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997710.aspx</a></p>Z
+CODE_SMELL
+˚
+"fxcop:ReviewDenyAndPermitOnlyUsage‘
 fxcopReviewDenyAndPermitOnlyUsage)CA2107: Review deny and permit only usage"MAJOR*cs2CA2107:‚<h2>Cause</h2>
 <p>
             A method contains a security check that specifies the PermitOnly or Deny security action.
@@ -14809,9 +15153,10 @@ namespace TransparencyWarningsDemo
 <p>
             Suppress a warning from this rule only after you complete a security review.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182308.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182308.aspx</a></p>
-ë
-,fxcop:AvoidExcessiveParametersOnGenericTypes‡
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182308.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182308.aspx</a></p>Z
+CODE_SMELL
+ù
+,fxcop:AvoidExcessiveParametersOnGenericTypesÏ
 fxcop&AvoidExcessiveParametersOnGenericTypes3CA1005: Avoid excessive parameters on generic types"MAJOR*cs2CA1005:Ê<h2>Cause</h2>
 <p>
             An externally visible generic type has more than two type parameters.
@@ -14866,9 +15211,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182129.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182129.aspx</a></p>
-‘
-!fxcop:UseGenericsWhereAppropriateÆ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182129.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182129.aspx</a></p>Z
+CODE_SMELL
+‡
+!fxcop:UseGenericsWhereAppropriate∫
 fxcopUseGenericsWhereAppropriate&CA1007: Use generics where appropriate"MAJOR*cs2CA1007:Ã<h2>Cause</h2>
 <p>
             An externally visible method contains a reference parameter of type <code>System.Object</code>, and the containing assembly targets .NET Framework¬†2.0.
@@ -14923,9 +15269,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182179.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182179.aspx</a></p>
-≈
--fxcop:OperatorsShouldHaveSymmetricalOverloadsì
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182179.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182179.aspx</a></p>Z
+CODE_SMELL
+—
+-fxcop:OperatorsShouldHaveSymmetricalOverloadsü
 fxcop'OperatorsShouldHaveSymmetricalOverloads3CA2226: Operators should have symmetrical overloads"MAJOR*cs2CA2226:ò<h2>Cause</h2>
 <p>
             A type implements the equality or inequality operator and does not implement the opposite operator.
@@ -14971,9 +15318,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182356.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182356.aspx</a></p>
-˝
-(fxcop:DoNotLockOnObjectsWithWeakIdentity–
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182356.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182356.aspx</a></p>Z
+CODE_SMELL
+â
+(fxcop:DoNotLockOnObjectsWithWeakIdentity‹
 fxcop"DoNotLockOnObjectsWithWeakIdentity1CA2002: Do not lock on objects with weak identity"MAJOR*cs2CA2002:‹<h2>Cause</h2>
 <p>
             A thread attempts to acquire a lock on an object that has a weak identity.
@@ -15056,9 +15404,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182290.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182290.aspx</a></p>
-§
-'fxcop:MarkAssembliesWithAssemblyVersion¯
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182290.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182290.aspx</a></p>Z
+CODE_SMELL
+∞
+'fxcop:MarkAssembliesWithAssemblyVersionÑ
 fxcop!MarkAssembliesWithAssemblyVersion5CA1016: Mark assemblies with AssemblyVersionAttribute"MAJOR*cs2CA1016:Å<h2>Cause</h2>
 <p>
             The assembly does not have a version number.
@@ -15090,10 +15439,11 @@ namespace TransparencyWarningsDemo
 <p>
             Do not suppress a warning from this rule for assemblies that are used by third parties, or in a production environment.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182155.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182155.aspx</a></p>
-æ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182155.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182155.aspx</a></p>Z
+CODE_SMELL
+ 
 
-0fxcop:OverrideLinkDemandsShouldBeIdenticalToBaseâ
+0fxcop:OverrideLinkDemandsShouldBeIdenticalToBaseï
 
 fxcop*OverrideLinkDemandsShouldBeIdenticalToBase9CA2123: Override link demands should be identical to base"MAJOR*cs2CA2123:Ö	<h2>Cause</h2>
 <p>
@@ -15112,9 +15462,10 @@ namespace TransparencyWarningsDemo
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182305.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182305.aspx</a></p>
-”
-0fxcop:MarkAssembliesWithNeutralResourcesLanguageû
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182305.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182305.aspx</a></p>Z
+CODE_SMELL
+ﬂ
+0fxcop:MarkAssembliesWithNeutralResourcesLanguage™
 fxcop*MarkAssembliesWithNeutralResourcesLanguage>CA1824: Mark assemblies with NeutralResourcesLanguageAttribute"MAJOR*cs2CA1824:ï<h2>Cause</h2>
 <p>
             An assembly contains a ResX-based resource but does not have the <code>System.Resources.NeutralResourcesLanguageAttribute</code> applied to it.
@@ -15151,9 +15502,10 @@ namespace TransparencyWarningsDemo
 <p>
             It is permissible to suppress a warning from this rule. However, startup performance might decrease.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb385967.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb385967.aspx</a></p>
-Ê
-*fxcop:ConsiderPassingBaseTypesAsParameters∑
+<p><a href="http://msdn.microsoft.com/en-us/library/bb385967.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb385967.aspx</a></p>Z
+CODE_SMELL
+Ú
+*fxcop:ConsiderPassingBaseTypesAsParameters√
 fxcop$ConsiderPassingBaseTypesAsParameters1CA1011: Consider passing base types as parameters"MAJOR*cs2CA1011:¡<h2>Cause</h2>
 <p>
             A method declaration includes a formal parameter that is a derived type, and the method calls only members of the base type of the parameter.
@@ -15188,9 +15540,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/3hk32yyz.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/3hk32yyz.aspx</a></p>
-ﬂ
-fxcop:DoNotMarkEnumsWithFlagsΩ
+<p><a href="http://msdn.microsoft.com/en-us/library/3hk32yyz.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/3hk32yyz.aspx</a></p>Z
+CODE_SMELL
+Î
+fxcop:DoNotMarkEnumsWithFlags…
 fxcopDoNotMarkEnumsWithFlags-CA2217: Do not mark enums with FlagsAttribute"MAJOR*cs2CA2217:ÿ<h2>Cause</h2>
 <p>
             An externally visible enumeration is marked with <code>FlagsAttribute</code> and it has one or more values that are not powers of two or a combination of the other defined values on the enumeration.
@@ -15215,9 +15568,10 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182335.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182335.aspx</a></p>
-•
-fxcop:DoNotExposeGenericListsÉ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182335.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182335.aspx</a></p>Z
+CODE_SMELL
+±
+fxcop:DoNotExposeGenericListsè
 fxcopDoNotExposeGenericLists#CA1002: Do not expose generic lists"MAJOR*cs2CA1002:®<h2>Cause</h2>
 <p>
             A type contains an externally visible member that is a <code>System.Collections.Generic.List&lt;T&gt;</code> type, returns a <code>System.Collections.Generic.List&lt;T&gt;</code> type, or whose signature includes a <code>System.Collections.Generic.List&lt;T&gt;</code> parameter.
@@ -15298,10 +15652,11 @@ namespace TransparencyWarningsDemo
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182142.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182142.aspx</a></p>
-‰
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182142.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182142.aspx</a></p>Z
+CODE_SMELL
+
 
-+fxcop:VariableNamesShouldNotMatchFieldNames¥
++fxcop:VariableNamesShouldNotMatchFieldNames¿
 
 fxcop%VariableNamesShouldNotMatchFieldNames3CA1500: Variable names should not match field names"MAJOR*cs2CA1500:ª	<h2>Cause</h2>
 <p>
@@ -15319,9 +15674,10 @@ namespace TransparencyWarningsDemo
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182216.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182216.aspx</a></p>
-˘
-7fxcop:OverloadOperatorEqualsOnOverridingValueTypeEqualsΩ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182216.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182216.aspx</a></p>Z
+CODE_SMELL
+Ö
+7fxcop:OverloadOperatorEqualsOnOverridingValueTypeEquals…
 fxcop1OverloadOperatorEqualsOnOverridingValueTypeEquals?CA2231: Overload operator equals on overriding ValueType.Equals"MAJOR*cs2CA2231:¨<h2>Cause</h2>
 <p>
             A value type overrides <code>Object.Equals</code> but does not implement the equality operator.
@@ -15415,9 +15771,10 @@ return left.Equals(right);
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182359.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182359.aspx</a></p>
-€	
-%fxcop:ValueTypeFieldsShouldBePortable±	
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182359.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182359.aspx</a></p>Z
+CODE_SMELL
+Á	
+%fxcop:ValueTypeFieldsShouldBePortableΩ	
 fxcopValueTypeFieldsShouldBePortable,CA1900: Value type fields should be portable"MAJOR*cs2CA1900:≈<h2>Cause</h2>
 <p>
             This rule checks that structures that are declared with explicit layout will align correctly when marshaled to unmanaged code on 64-bit operating systems. IA-64 does not allow unaligned memory accesses and the process will crash if this violation is not fixed.
@@ -15434,9 +15791,10 @@ return left.Equals(right);
 <p>
             This warning should be suppressed only if it occurs in error.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182285.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182285.aspx</a></p>
-Ø
-'fxcop:SecuredTypesShouldNotExposeFieldsÉ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182285.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182285.aspx</a></p>Z
+CODE_SMELL
+ª
+'fxcop:SecuredTypesShouldNotExposeFieldsè
 fxcop!SecuredTypesShouldNotExposeFields.CA2112: Secured types should not expose fields"MAJOR*cs2CA2112:ì
 <h2>Cause</h2>
 <p>
@@ -15462,9 +15820,10 @@ return left.Equals(right);
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182318.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182318.aspx</a></p>
-ó
-%fxcop:StaticHolderTypesShouldBeSealedÌ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182318.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182318.aspx</a></p>Z
+CODE_SMELL
+£
+%fxcop:StaticHolderTypesShouldBeSealed˘
 fxcopStaticHolderTypesShouldBeSealed,CA1052: Static holder types should be sealed"MAJOR*cs2CA1052:Å<h2>Cause</h2>
 <p>
             A public or protected type contains only static members and is not declared with the <code>sealed (C# Reference)</code> (NotInheritable (Visual Basic)) modifier.
@@ -15589,10 +15948,11 @@ namespace DesignLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182168.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182168.aspx</a></p>
-Æ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182168.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182168.aspx</a></p>Z
+CODE_SMELL
+∫
 
-"fxcop:MarkAssembliesWithComVisibleá
+"fxcop:MarkAssembliesWithComVisibleì
 
 fxcopMarkAssembliesWithComVisible0CA1017: Mark assemblies with ComVisibleAttribute"MAJOR*cs2CA1017:ö	<h2>Cause</h2>
 <p>
@@ -15610,9 +15970,10 @@ namespace DesignLibrary
 <p>
             Do not suppress a warning from this rule. If you want the assembly to be visible, apply the attribute and set its value to <code>true</code>.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182157.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182157.aspx</a></p>
-ò
-fxcop:ReviewImperativeSecurityı
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182157.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182157.aspx</a></p>Z
+CODE_SMELL
+§
+fxcop:ReviewImperativeSecurityÅ
 fxcopReviewImperativeSecurity"CA2103: Review imperative security"MAJOR*cs2CA2103:ö<h2>Cause</h2>
 <p>
             A method uses imperative security and might be constructing the permission by using state information or return values that can change as long as the demand is active.
@@ -15630,9 +15991,10 @@ namespace DesignLibrary
 <p>
             It is safe to suppress a warning from this rule if the permission does not rely on changing data. However, it is better to change the imperative demand to its declarative equivalent.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182309.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182309.aspx</a></p>
-é
-,fxcop:MarkISerializableTypesWithSerializable›
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182309.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182309.aspx</a></p>Z
+CODE_SMELL
+ö
+,fxcop:MarkISerializableTypesWithSerializableÈ
 fxcop&MarkISerializableTypesWithSerializable;CA2237: Mark ISerializable types with SerializableAttribute"MAJOR*cs2CA2237:€<h2>Cause</h2>
 <p>
             An externally visible type implements the <code>System.Runtime.Serialization.ISerializable</code> interface and the type is not marked with the <code>System.SerializableAttribute</code> attribute. The rule ignores derived types whose base type is not serializable.
@@ -15687,9 +16049,10 @@ namespace DesignLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182350.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182350.aspx</a></p>
-¢
-(fxcop:IdentifiersShouldHaveCorrectPrefixı
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182350.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182350.aspx</a></p>Z
+CODE_SMELL
+Æ
+(fxcop:IdentifiersShouldHaveCorrectPrefixÅ
 fxcop"IdentifiersShouldHaveCorrectPrefix.CA1715: Identifiers should have correct prefix"MAJOR*cs2CA1715:Ñ<h2>Cause</h2>
 <p>
             The name of an externally visible interface does not start with an uppercase 'I'.
@@ -15719,9 +16082,10 @@ namespace DesignLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182243.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182243.aspx</a></p>
-º
-%fxcop:ImplementISerializableCorrectlyí
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182243.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182243.aspx</a></p>Z
+CODE_SMELL
+»
+%fxcop:ImplementISerializableCorrectlyû
 fxcopImplementISerializableCorrectly)CA2240: Implement ISerializable correctly"MAJOR*cs2CA2240:©<h2>Cause</h2>
 <p>
             An externally visible type is assignable to the <code>System.Runtime.Serialization.ISerializable</code> interface and one of the following conditions is true:
@@ -15785,9 +16149,10 @@ namespace DesignLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182342.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182342.aspx</a></p>
-ÿ
-&fxcop:DoNotDisposeObjectsMultipleTimes≠
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182342.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182342.aspx</a></p>Z
+CODE_SMELL
+‰
+&fxcop:DoNotDisposeObjectsMultipleTimesπ
 fxcop DoNotDisposeObjectsMultipleTimes-CA2202: Do not dispose objects multiple times"MAJOR*cs2CA2202:ø
 <h2>Cause</h2>
 <p>
@@ -15813,9 +16178,10 @@ namespace DesignLibrary
 <p>
             Do not suppress a warning from this rule. Even if <code>Dispose</code> for the object is known to be safely callable multiple times, the implementation might change in the future.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182334.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182334.aspx</a></p>
-Ë
-%fxcop:UseOnlyApiFromTargetedFrameworkæ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182334.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182334.aspx</a></p>Z
+CODE_SMELL
+Ù
+%fxcop:UseOnlyApiFromTargetedFramework 
 fxcopUseOnlyApiFromTargetedFramework,CA1903: Use only API from targeted framework"MAJOR*cs2CA1903:“<h2>Cause</h2>
 <p>
             A member or type is using a member or type that was introduced in a service pack that was not included with the project's targeted framework.
@@ -15883,9 +16249,10 @@ namespace DesignLibrary
 <p>
             Do not suppress a warning from this rule if this was not a deliberate dependency on the specified service pack. In this situation, your application might fail to run on systems without this service pack installed. Suppress the warning or turn this rule off if this was a deliberate dependency.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/cc667408.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/cc667408.aspx</a></p>
-ì
-1fxcop:TransparentMethodsMustNotSatisfyLinkDemands›
+<p><a href="http://msdn.microsoft.com/en-us/library/cc667408.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/cc667408.aspx</a></p>Z
+CODE_SMELL
+ü
+1fxcop:TransparentMethodsMustNotSatisfyLinkDemandsÈ
 fxcop+TransparentMethodsMustNotSatisfyLinkDemands8CA2141: Transparent methods must not satisfy LinkDemands"MAJOR*cs2CA2141:Ÿ<h2>Cause</h2>
 <p>
             A security transparent method calls a method in an assembly that is not marked with the <code>AllowPartiallyTrustedCallersAttribute</code> (APTCA) attribute, or a security transparent method satisfies a SecurityAction<code>.LinkDemand</code> for a type or a method.
@@ -15903,9 +16270,10 @@ namespace DesignLibrary
 <p>
             Do not suppress a warning from this rule.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dd997445.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997445.aspx</a></p>
-º
-0fxcop:AvoidNonpublicFieldsInComVisibleValueTypesá
+<p><a href="http://msdn.microsoft.com/en-us/library/dd997445.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dd997445.aspx</a></p>Z
+CODE_SMELL
+»
+0fxcop:AvoidNonpublicFieldsInComVisibleValueTypesì
 fxcop*AvoidNonpublicFieldsInComVisibleValueTypes:CA1413: Avoid non-public fields in COM visible value types"MAJOR*cs2CA1413:Ç<h2>Cause</h2>
 <p>
             A value type that is specifically marked as visible to Component Object Model (COM) declares a nonpublic instance field.
@@ -15936,9 +16304,10 @@ namespace DesignLibrary
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182196.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182196.aspx</a></p>
-ƒ
-)fxcop:PInvokeDeclarationsShouldBePortableñ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182196.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182196.aspx</a></p>Z
+CODE_SMELL
+–
+)fxcop:PInvokeDeclarationsShouldBePortable¢
 fxcop#PInvokeDeclarationsShouldBePortable0CA1901: P/Invoke declarations should be portable"MAJOR*cs2CA1901:¢
 <h2>Cause</h2>
 <p>
@@ -15964,9 +16333,10 @@ namespace DesignLibrary
 <p>
             You should not suppress this warning.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182284.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182284.aspx</a></p>
-ï
--fxcop:DoNotDeclareStaticMembersOnGenericTypes„
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182284.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182284.aspx</a></p>Z
+CODE_SMELL
+°
+-fxcop:DoNotDeclareStaticMembersOnGenericTypesÔ
 fxcop'DoNotDeclareStaticMembersOnGenericTypes6CA1000: Do not declare static members on generic types"MAJOR*cs2CA1000:Â<h2>Cause</h2>
 <p>
             An externally visible generic type contains a <code>static</code> (<code>Shared</code> in Visual Basic) member.
@@ -16050,10 +16420,11 @@ Generally, both of the prior declarations should be avoided so that the type arg
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182139.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182139.aspx</a></p>
-†
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182139.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182139.aspx</a></p>Z
+CODE_SMELL
+¨
 
-.fxcop:DisposeMethodsShouldCallBaseClassDisposeÌ	
+.fxcop:DisposeMethodsShouldCallBaseClassDispose˘	
 fxcop(DisposeMethodsShouldCallBaseClassDispose6CA2215: Dispose methods should call base class dispose"MAJOR*cs2CA2215:Ó<h2>Cause</h2>
 <p>
             A type that implements <code>System.IDisposable</code> inherits from a type that also implements <code>IDisposable</code>. The <code>Dispose</code> method of the inheriting type does not call the <code>Dispose</code> method of the parent type.
@@ -16070,9 +16441,10 @@ Generally, both of the prior declarations should be avoided so that the type arg
 <p>
             It is safe to suppress a warning from this rule if the call to <code>base</code>.<code>Dispose</code> occurs at a deeper calling level than the rule checks.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182330.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182330.aspx</a></p>
-≥
--fxcop:CallGCKeepAliveWhenUsingNativeResourcesÅ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182330.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182330.aspx</a></p>Z
+CODE_SMELL
+ø
+-fxcop:CallGCKeepAliveWhenUsingNativeResourcesç
 fxcop'CallGCKeepAliveWhenUsingNativeResources5CA2115: Call GC.KeepAlive when using native resources"MAJOR*cs2CA2115:Ñ<h2>Cause</h2>
 <p>
             A method declared in a type with a finalizer references a <code>System.IntPtr</code> or <code>System.UIntPtr</code> field, but does not call <code>GC.KeepAlive</code>.
@@ -16099,9 +16471,10 @@ Generally, both of the prior declarations should be avoided so that the type arg
             </ul>
             Carefully review other messages before excluding them. This rule detects errors that are difficult to reproduce and debug.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182300.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182300.aspx</a></p>
-â
-$fxcop:AvoidCallingProblematicMethods‡
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182300.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182300.aspx</a></p>Z
+CODE_SMELL
+ï
+$fxcop:AvoidCallingProblematicMethodsÏ
 fxcopAvoidCallingProblematicMethods)CA2001: Avoid calling problematic methods"MAJOR*cs2CA2001:¯<h2>Cause</h2>
 <p>
             A member calls a potentially dangerous or problematic method.
@@ -16209,9 +16582,10 @@ $fxcop:AvoidCallingProblematicMethods‡
 <p>
             You should suppress messages from this rule only when no alternatives to the problematic method are available.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/bb385973.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb385973.aspx</a></p>
-É
-,fxcop:DoNotPassLiteralsAsLocalizedParameters“
+<p><a href="http://msdn.microsoft.com/en-us/library/bb385973.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/bb385973.aspx</a></p>Z
+CODE_SMELL
+è
+,fxcop:DoNotPassLiteralsAsLocalizedParametersﬁ
 fxcop&DoNotPassLiteralsAsLocalizedParameters4CA1303: Do not pass literals as localized parameters"MAJOR*cs2CA1303:◊<h2>Cause</h2>
 <p>
             A method passes a string literal as a parameter to a constructor or method in the .NET Framework class library and that string should be localizable.
@@ -16241,9 +16615,10 @@ $fxcop:AvoidCallingProblematicMethods‡
             It is safe to suppress a warning from this rule if the code library will not be localized, or if the string is not exposed to the end user or a developer using the code library.
             Users can eliminate noise against methods which should not be passed localized strings by either renaming the parameter or property named, or by marking these items as conditional.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182187.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182187.aspx</a></p>
-Ÿ
-.fxcop:PInvokesShouldNotBeSafeCriticalFxCopRule¶
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182187.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182187.aspx</a></p>Z
+CODE_SMELL
+Â
+.fxcop:PInvokesShouldNotBeSafeCriticalFxCopRule≤
 fxcop(PInvokesShouldNotBeSafeCriticalFxCopRule9CA5122: P/Invoke declarations should not be safe critical"MAJOR*cs2CA5122:§
 <h2>Cause</h2>
 <p>
@@ -16332,9 +16707,10 @@ class C
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/dn621099.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dn621099.aspx</a></p>
-ú
-,fxcop:PreferJaggedArraysOverMultidimensionalÎ
+<p><a href="http://msdn.microsoft.com/en-us/library/dn621099.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/dn621099.aspx</a></p>Z
+CODE_SMELL
+®
+,fxcop:PreferJaggedArraysOverMultidimensional˜
 fxcop&PreferJaggedArraysOverMultidimensional2CA1814: Prefer jagged arrays over multidimensional"MAJOR*cs2CA1814:Ú<h2>Cause</h2>
 <p>
             A member is declared as a multidimensional array.
@@ -16351,9 +16727,10 @@ class C
 <p>
             Suppress a warning from this rule if the multidimensional array does not waste space.
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182277.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182277.aspx</a></p>
-Ä
-+fxcop:InitializeValueTypeStaticFieldsInline–
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182277.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182277.aspx</a></p>Z
+CODE_SMELL
+å
++fxcop:InitializeValueTypeStaticFieldsInline‹
 fxcop%InitializeValueTypeStaticFieldsInline2CA2207: Initialize value type static fields inline"MAJOR*cs2CA2207:ÿ<h2>Cause</h2>
 <p>
             A value-type declares an explicit static constructor.
@@ -16379,9 +16756,10 @@ class C
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182346.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182346.aspx</a></p>
-œ
-*fxcop:AutoLayoutTypesShouldNotBeComVisible†
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182346.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182346.aspx</a></p>Z
+CODE_SMELL
+€
+*fxcop:AutoLayoutTypesShouldNotBeComVisible¨
 fxcop$AutoLayoutTypesShouldNotBeComVisible3CA1403: Auto layout types should not be COM visible"MAJOR*cs2CA1403:®<h2>Cause</h2>
 <p>
             A Component Object Model (COM) visible value type is marked with the <code>System.Runtime.InteropServices.StructLayoutAttribute</code> attribute set to <code>LayoutKind.Auto</code>.
@@ -16410,9 +16788,10 @@ class C
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182194.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182194.aspx</a></p>
-´
- fxcop:PointersShouldNotBeVisibleÜ
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182194.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182194.aspx</a></p>Z
+CODE_SMELL
+∑
+ fxcop:PointersShouldNotBeVisibleí
 fxcopPointersShouldNotBeVisible&CA2111: Pointers should not be visible"MAJOR*cs2CA2111:•<h2>Cause</h2>
 <p>
             A public or protected <code>System.IntPtr</code> or <code>System.UIntPtr</code> field is not read-only.
@@ -16446,9 +16825,10 @@ class C
 
 
 </p><h2>MSDN Documentation</h2>
-<p><a href="http://msdn.microsoft.com/en-us/library/ms182306.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182306.aspx</a></p>
-Û
-csharpsquid:S2225›
+<p><a href="http://msdn.microsoft.com/en-us/library/ms182306.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms182306.aspx</a></p>Z
+CODE_SMELL
+ˇ
+csharpsquid:S2225È
 csharpsquidS2225*"ToString()" method should not return null"CRITICAL*cs:å<p>
     Calling <code>ToString()</code> on an object should always return a string. Returning <code>null</code> instead contravenes the method's implicit contract.
 </p>
@@ -16485,9 +16865,10 @@ public override string ToString ()
 
 <ul>
     <li><a href="http://cwe.mitre.org/data/definitions/476.html">MITRE CWE-476</a> - NULL Pointer Dereference</li>
-</ul>
-ü
-csharpsquid:S2346â
+</ul>Z
+CODE_SMELL
+´
+csharpsquid:S2346ï
 csharpsquidS2346<Flags enumerations zero-value members should be named "None""MINOR*cs:©<p>
     Consisitent use of "None" in flags enumerations indicates that all flag values are cleared.
     The value 0 should not be used to indicate any other state, since there is no way to check that the bit <code>0</code> is set.
@@ -16516,9 +16897,10 @@ enum FruitType
     Orange = 2,
     Strawberry = 4
 }
-</pre>
-≥
-csharpsquid:S2743ù
+</pre>Z
+CODE_SMELL
+ø
+csharpsquid:S2743©
 csharpsquidS27431Static fields should not be used in generic types"CRITICAL*cs:≈<p>
     A static field in a generic type is not shared among instances of different closed constructed types, thus <code>LengthLimitedSingletonCollection&lt;int&gt;.instances</code>
     and <code>LengthLimitedSingletonCollection&lt;string&gt;.instances</code> will point to different objects, even though <code>instances</code> is seemingly shared among all
@@ -16586,9 +16968,10 @@ public class Cache&lt;T&gt;
 {
   private static Dictionary&lt;string, T&gt; CacheDictionary { get; set; } // Compliant
 }
-</pre>
-Ã
-csharpsquid:S2223∂
+</pre>Z
+CODE_SMELL
+ÿ
+csharpsquid:S2223¬
 csharpsquidS22230Non-constant static fields should not be visible"MAJOR*cs:‚<p>
     A <code>static</code> field that is neither constant nor read-only is not thread-safe. Correctly accessing
     these fields from different threads needs synchronization with <code>lock</code>s. Improper synchronization
@@ -16633,9 +17016,10 @@ public class Shape
   {
   }
 }
-</pre>
-÷
-csharpsquid:S2344¿
+</pre>Z
+CODE_SMELL
+‚
+csharpsquid:S2344Ã
 csharpsquidS2344AEnumeration type names should not have "Flags" or "Enum" suffixes"MINOR*cs:€<p>
     The information that an enumeration type is actually an enumeration or a set of flags should not be duplicated in its name.
 </p>
@@ -16659,9 +17043,10 @@ enum Foo
     Bar = 2
     Baz = 4
 }
-</pre>
-ñ
-csharpsquid:S1135Ä
+</pre>Z
+CODE_SMELL
+¢
+csharpsquid:S1135å
 csharpsquidS1135"TODO" tags should be handled"INFO*cs:¿<p>
     <code>TODO</code> tags are commonly used to mark places where some more code is required, but which the
     developer wants to implement later.
@@ -16679,10 +17064,11 @@ private void DoSomething()
 {
   // TODO
 }
-</pre>
-¶
+</pre>Z
+CODE_SMELL
+≤
 
-csharpsquid:S2345ê
+csharpsquid:S2345ú
 
 csharpsquidS2345AFlags enumerations should explicitly initialize all their members"CRITICAL*cs:®	<p>
     Flags enumerations should not rely on the language to initialize the values of their members. Implicit initialization
@@ -16732,9 +17118,10 @@ class Program
         Console.WriteLine(bananaAndStrawberry.ToString());
     }
 }
-</pre>
-ı
-csharpsquid:S1134ﬂ
+</pre>Z
+CODE_SMELL
+Å
+csharpsquid:S1134Î
 csharpsquidS1134"FIXME" tags should be handled"MAJOR*cs:ù<p>
     <code>FIXME</code> tags are commonly used to mark places where a bug is suspected, but which the developer wants to deal with
     later.
@@ -16752,9 +17139,10 @@ private int Divide(int numerator, int denominator)
 {
   return numerator / denominator;              // FIXME denominator value might be  0
 }
-</pre>
-¡
-csharpsquid:S3397´
+</pre>Z
+CODE_SMELL
+Õ
+csharpsquid:S3397∑
 csharpsquidS3397f"base.Equals" should not be used to check for reference equality in "Equals" if "base" is not "object""CRITICAL*cs:û<p>
     <code>object.Equals()</code> overrides can be optimized by checking first for reference equality between <code>this</code> and the
     parameter. This check can be implemented by calling <code>object.ReferenceEquals()</code> or <code>base.Equals()</code>, where
@@ -16830,9 +17218,10 @@ class Derived : Base
     return base.Equals(other) &amp;&amp; this.derivedField == ((Derived)other).derivedField;
   }
 }
-</pre>
-¯
-csharpsquid:S1659‚
+</pre>Z
+CODE_SMELL
+Ñ
+csharpsquid:S1659Ó
 csharpsquidS1659:Multiple variables should not be declared on the same line"MINOR*cs:Ñ<p>
     Declaring multiple variable on one line is difficult to read.
 </p>
@@ -16864,9 +17253,10 @@ class MyClass
     int d;
   }
 }
-</pre>
-ƒ
-csharpsquid:S1656Æ
+</pre>Z
+CODE_SMELL
+–
+csharpsquid:S1656∫
 csharpsquidS1656%Variables should not be self-assigned"CRITICAL*cs:‚<p>
 There is no reason to re-assign a variable to itself. Either this statement is redundant and should be removed, or the re-assignment is a mistake and some other value or variable was intended for the assignment instead.
 </p>
@@ -16892,9 +17282,10 @@ public void setName(string name)
 <ul>
     <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
     <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-ï
-csharpsquid:S2228ˇ
+</ul>Z
+CODE_SMELL
+°
+csharpsquid:S2228ã
 csharpsquidS2228"Console logging should not be used"CRITICAL*cs:∂<p>
     Debug statements are always useful during development. But include them in production code - particularly
     in code that runs client-side - and you run the risk of inadvertently exposing sensitive information.
@@ -16915,9 +17306,10 @@ private void DoSomething ()
 
 <ul>
     <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
-</ul>
-™
-csharpsquid:S907ï
+</ul>Z
+CODE_SMELL
+∂
+csharpsquid:S907°
 csharpsquidS907#"goto" statement should not be used"MAJOR*cs:œ<p>
     <code>goto</code> is an unstructured control flow statement. It makes code less readable and maintainable.
     Structured control flow statements such as <code>if</code>, <code>for</code>, <code>while</code>,
@@ -16929,9 +17321,10 @@ private void DoSomething ()
 <ul>
     <li>MISRA C:2004, 14.4 - The goto statement shall not be used.</li>
     <li>MISRA C:2012, 15.1 - The goto statement should not be used</li>
-</ul>
-í
-csharpsquid:S2184¸
+</ul>Z
+CODE_SMELL
+û
+csharpsquid:S2184à
 csharpsquidS2184LResult of integer division should not be assigned to floating point variable"CRITICAL*cs:â<p>
     When division is performed on <code>int</code>s, the result will always be an <code>int</code>. You can assign that result to a
     <code>double</code>, <code>float</code> or <code>decimal</code> with automatic type conversion, but having started as an
@@ -16957,27 +17350,31 @@ static void Main()
   Method(3.0F/2);
 }
 static void Method(float f) { }
-</pre>
-…
-csharpsquid:S103¥
+</pre>Z
+CODE_SMELL
+’
+csharpsquid:S103¿
 csharpsquidS103Lines should not be too long"MINOR*cs:v<p>
 Having to scroll horizontally makes it harder to get a quick overview and understanding of any piece of code.
-</p>
-ê
-csharpsquid:S105˚
+</p>Z
+CODE_SMELL
+ú
+csharpsquid:S105á
 csharpsquidS105(Tabulation characters should not be used"MINOR*cs:∞<p>
 Developers should not need to configure the tab width of their text editors in order to be able to read source code.
 So the use of tabulation character must be banned.
-</p>
-◊
-csharpsquid:S104¬
+</p>Z
+CODE_SMELL
+„
+csharpsquid:S104Œ
 csharpsquidS104$Files should not have too many lines"MAJOR*cs:˚<p>
 A source file that grows too much tends to aggregate too many responsibilities and inevitably becomes harder to understand and therefore to maintain.
 Above a specific threshold, it is strongly advised to refactor it into smaller pieces of code which focus on well defined tasks.
 Those smaller files will not only be easier to understand but also probably easier to test.
-</p>
-Ò
-csharpsquid:S107‹
+</p>Z
+CODE_SMELL
+˝
+csharpsquid:S107Ë
 csharpsquidS107+Methods should not have too many parameters"MAJOR*cs:é<p>
 A long parameter list can indicate that a new structure should be created to wrap the numerous parameters or that the function is doing too many things.
 </p>
@@ -16997,9 +17394,10 @@ public void doSomething(int param1, int param2, int param3, string param4)
 {
 ...
 }
-</pre>
-‰
-csharpsquid:S108œ
+</pre>Z
+CODE_SMELL
+
+csharpsquid:S108€
 csharpsquidS108.Nested blocks of code should not be left empty"MAJOR*cs:˛<p>
 Most of the time a block of code is empty when a piece of code is really missing. So such empty block must be either filled or removed.
 </p>
@@ -17012,9 +17410,10 @@ for (int i = 0; i < 42; i++) {}  // Empty on purpose or missing piece of code ?
 <h2>Exceptions</h2>
 <p>
     When a block contains a comment, this block is not considered to be empty.
-</p>
- 
-csharpsquid:S2995¥
+</p>Z
+CODE_SMELL
+÷
+csharpsquid:S2995¿
 csharpsquidS2995;"Object.ReferenceEquals" should not be used for value types"CRITICAL*cs:“<p>
     Using <code>Object.ReferenceEquals</code> to compare the references of two value types simply won't return the
     expected results most of the time because such types are passed by value, not by reference.
@@ -17040,9 +17439,10 @@ public class MyClass
     }
   }
 }
-</pre>
-å
-csharpsquid:S2357ˆ
+</pre>Z
+CODE_SMELL
+ò
+csharpsquid:S2357Ç
 csharpsquidS2357Fields should be private"MAJOR*cs:∫<p>
     Fields should not be part of an API, and therefore should always be private. Indeed, they
     cannot be added to an interface for instance, and validation cannot be added later on without
@@ -17080,9 +17480,10 @@ public class Foo
 <h2>Exceptions</h2>
 <p>
     <code>static</code> and <code>const</code> fields are ignored.
-</p>
-≥
-csharpsquid:S1940ù
+</p>Z
+CODE_SMELL
+ø
+csharpsquid:S1940©
 csharpsquidS1940%Boolean checks should not be inverted"MINOR*cs:‘<p>
     It is needlessly complex to invert the result of a boolean comparison. The opposite comparison should be made instead.
 </p>
@@ -17097,9 +17498,10 @@ bool b = !(i < 10);  // Noncompliant
 <pre>
 if (a != 2) { ... }
 bool b = (i >= 10);
-</pre>
-¨
-csharpsquid:S2996ñ
+</pre>Z
+CODE_SMELL
+∏
+csharpsquid:S2996¢
 csharpsquidS2996/"ThreadStatic" fields should not be initialized"CRITICAL*cs:¿<p>
     When an object has a field annotated with <code>ThreadStatic</code>, that field is shared within a given thread,
     but unique across threads. Since a class' static initializer is only invoked for the
@@ -17136,9 +17538,10 @@ public class Foo
     }
   }
 }
-</pre>
-∞
-csharpsquid:S1301ö
+</pre>Z
+CODE_SMELL
+º
+csharpsquid:S1301¶
 csharpsquidS13019"switch" statements should have at least 3 "case" clauses"MINOR*cs:Ω<p>
     <code>switch</code> statements are useful when there are many different cases depending on the value of the same expression.
 </p>
@@ -17175,10 +17578,10 @@ if (variable == 0)
     <li>MISRA C:2004, 15.5 - Every switch statement shall have at least one case clause.</li>
     <li>MISRA C++:2008, 6-4-8 - Every switch statement shall have at least one case-clause.</li>
     <li>MISRA C:2012, 16.6 - Every switch statement shall have at least two switch-clauses</li>
-</ul>
-è
-csharpsquid:S3447˘
-
+</ul>Z
+CODE_SMELL
+õ
+csharpsquid:S3447Ö
 csharpsquidS3447<"[Optional]" should not be used on "ref" or "out" parameters"MAJOR*cs:ô
 <p>
     The use of <code>ref</code> or <code>out</code> in combination with <code>[Optional]</code> is both confusing and contradictory.
@@ -17222,9 +17625,10 @@ class MyClass
     new MyClass().DoStuff(ref i);
   }
 }
-</pre>
-Ù
-csharpsquid:S2234ﬁ
+</pre>Z
+CODE_SMELL
+Ä
+csharpsquid:S2234Í
 csharpsquidS22340Parameters should be passed in the correct order"BLOCKER*cs:à<p>
     When the names of parameters in a method call match the names of the method arguments,
     it contributes to clearer, more readable code. However, when the names match, but are
@@ -17264,9 +17668,10 @@ public void doTheThing()
   double result = divide(divisor, dividend);
   //...
 }
-</pre>
-ç
-csharpsquid:S3169˜
+</pre>Z
+CODE_SMELL
+ô
+csharpsquid:S3169É
 csharpsquidS3169+Multiple "OrderBy" calls should not be used"CRITICAL*cs:•<p>
     There's no point in chaining multiple <code>OrderBy</code> calls in a LINQ; only the last one will be reflected in the result
     because each subsequent call completely reorders the list. Thus, calling <code>OrderBy</code> multiple times is a performance
@@ -17290,9 +17695,10 @@ var x = personList
   .OrderBy(person => person.Age)
   .ThenBy(person => person.Name)
   .ToList();
-</pre>
-¢
-csharpsquid:S3444å
+</pre>Z
+CODE_SMELL
+Æ
+csharpsquid:S3444ò
 csharpsquidS3444YInterfaces with colliding, inherited members should explicitly redefine interface members"MAJOR*cs:è<p>
     When an interface <code>IDerived</code> inherits from two interfaces <code>IBase1</code> and <code>IBase2</code> that both 
     define a member <code>SomeProperty</code>, calling <code>IDerived.SomeProperty</code> will result in the compiler error 
@@ -17378,9 +17784,10 @@ public interface IBase2
 public interface IDerived : IBase1, IBase2
 {
 }
-</pre>
-Ã
-csharpsquid:S1145∂
+</pre>Z
+CODE_SMELL
+ÿ
+csharpsquid:S1145¬
 csharpsquidS1145FUseless "if(true) {...}" and "if(false){...}" blocks should be removed"MAJOR*cs:Ã<p>
   <code>if</code> statements with conditions that are always false have the effect of making blocks of code non-functional. This can be useful during debugging, but should not be checked in. <code>if</code> statements with conditions that are always true are completely redundant, and make the code less readable.
 </p>
@@ -17405,13 +17812,15 @@ if (false)
 <pre>
 doSomething();
 ...
-</pre>
-¢
-csharpsquid:S1541å
+</pre>Z
+CODE_SMELL
+Æ
+csharpsquid:S1541ò
 csharpsquidS1541!Methods should not be too complex"MAJOR*cs:«<p>The cyclomatic complexity of a function should not exceed a defined threshold.</p>
-<p>Complex code can perform poorly and will in any case be difficult to understand and therefore to maintain.</p>
-í
-csharpsquid:S121˝
+<p>Complex code can perform poorly and will in any case be difficult to understand and therefore to maintain.</p>Z
+CODE_SMELL
+û
+csharpsquid:S121â
 csharpsquidS121*Control structures should use curly braces"MAJOR*cs:∞<p>
   While not technically incorrect, the omission of curly braces can be misleading, and may lead to the introduction of errors during maintenance.
 </p>
@@ -17443,9 +17852,10 @@ if (condition)
     <li>MISRA C:2012, 15.6 - The body of an iteration-statement or a selection-statement shall be a compound-statement</li>
     <li> <a href="https://www.securecoding.cert.org/confluence/x/1QGMAg">CERT, EXP19-C</a> - Use braces for the body of an if, for, or while statement</li>
     <li> <a href="http://cwe.mitre.org/data/definitions/483.html">MITRE, CWE-483</a> - Incorrect Block Delimitation</li>
-</ul>
-ü
-csharpsquid:S1144â
+</ul>Z
+CODE_SMELL
+´
+csharpsquid:S1144ï
 csharpsquidS11441Unused private types or members should be removed"MAJOR*cs:¥<p>
     Private types or members that are never executed or referenced are dead code: unnecessary, inoperative code that
     should be removed. Cleaning out dead code decreases the size of the maintained codebase, making it easier to
@@ -17483,9 +17893,10 @@ public class Foo
 <h2>Exceptions</h2>
 <p>
     This rule doesn't raise any issue on empty constructors and attributed members.
-</p>
-≤
-csharpsquid:S3443ú
+</p>Z
+CODE_SMELL
+æ
+csharpsquid:S3443®
 csharpsquidS3443CType examining methods should be avoided on "System.Type" instances"MAJOR*cs:µ<p>
     If you call <code>GetType()</code> on a <code>Type</code> variable, the return value will always be <code>typeof(System.Type)</code>. So there's no real 
     point in making that call. The same applies to passing a type argument to <code>IsInstanceOfType</code>. In both cases the results are entirely 
@@ -17509,9 +17920,10 @@ var s = "abc";
 
 if (s.GetType().IsInstanceOfType("ssss"))
 { /* ... */ }
-</pre>
-©
-csharpsquid:S3168ì
+</pre>Z
+CODE_SMELL
+µ
+csharpsquid:S3168ü
 csharpsquidS3168("async" methods should not return "void""CRITICAL*cs:ƒ<p>
     An async method with a void return type is a "fire and forget" method best reserved for event handlers because there's no way to wait for the method's execution to complete and respond accordingly. There's also no way to catch exceptions thrown from the method.
 </p>
@@ -17565,9 +17977,10 @@ class HttpPrinter
     Console.Write(content);
   }
 }
-</pre>
-î
-csharpsquid:S122ˇ
+</pre>Z
+CODE_SMELL
+†
+csharpsquid:S122ã
 csharpsquidS122&Statements should be on separate lines"MINOR*cs:∂<p>
     For better readability, do not put more than one statement on a single line.
 </p>
@@ -17592,9 +18005,10 @@ if(someCondition) {
 <pre>
 Func&lt;object, bool&gt; item1 = o =&gt; { return true; }; // Compliant
 Func&lt;object, bool&gt; item1 = o =&gt; { var r = false; return r; }; // Noncompliant
-</pre>
-¢
-csharpsquid:S2197å
+</pre>Z
+CODE_SMELL
+Æ
+csharpsquid:S2197ò
 csharpsquidS21979Modulus results should not be checked for direct equality"MAJOR*cs:Ø<p>
     When the modulus of a negative number is calculated, the result will either be negative or zero. Thus, comparing the modulus
     of a variable for equality with a positive number (or a negative one) could result in unexpected results.
@@ -17621,9 +18035,10 @@ public bool IsOdd(uint x)
 {
   return x % 2 == 1;
 }
-</pre>
-‰
-csharpsquid:S3441Œ
+</pre>Z
+CODE_SMELL
+
+csharpsquid:S3441⁄
 csharpsquidS3441?Redundant property names should be omitted in anonymous classes"MINOR*cs:Î<p>
     When an anonymous type's properties are copied from properties or variables with the same names, it yields cleaner code to
     omit the new type's property name and the assignment operator.
@@ -17649,9 +18064,10 @@ var anon = new
   X,
   Y = "my string"
 };
-</pre>
-‚
-csharpsquid:S2757Ã
+</pre>Z
+CODE_SMELL
+Ó
+csharpsquid:S2757ÿ
 csharpsquidS2757'"=+" should not be used instead of "+=""CRITICAL*cs:˛<p>
     The use of operators pairs (<code>=+</code> or <code>=-</code>) where the reversed, single operator
     was meant (<code>+=</code> or <code>-=</code>) will compile and run, but not produce the expected results.
@@ -17677,9 +18093,10 @@ int num = 3;
 
 target = -num; // Compliant; intent to assign inverse value of num is clear
 target += num;
-</pre>
-›
-csharpsquid:S1944«
+</pre>Z
+CODE_SMELL
+È
+csharpsquid:S1944”
 csharpsquidS1944&Inappropriate casts should not be made"CRITICAL*cs:˙<p>
     Inappropriate casts are issues that will lead to unexpected behavior or runtime errors, such as
     <code>InvalidCastException</code>s. The compiler will catch bad casts from one class to another, but not bad casts to
@@ -17721,9 +18138,10 @@ public static class Program
     <li><a href="https://www.securecoding.cert.org/confluence/x/j4AyAQ">CERT, EXP56-CPP.</a> - Do not cast pointers into more strictly aligned pointer types</li>
     <li><a href="http://cwe.mitre.org/data/definitions/588.html">MITRE, CWE-588</a> - Attempt to Access Child of a Non-structure Pointer</li>
     <li><a href="http://cwe.mitre.org/data/definitions/704.html">MITRE, CWE-704</a> - Incorrect Type Conversion or Cast</li>
-</ul>
-¥
-csharpsquid:S2758û
+</ul>Z
+CODE_SMELL
+¿
+csharpsquid:S2758™
 csharpsquidS2758QThe ternary operator should not return the same value regardless of the condition"CRITICAL*cs:¶<p>
     When the second and third operands of a ternary operator are the same, the operator will always
     return the same value regardless of the condition. Either the operator itself is pointless, or a
@@ -17744,9 +18162,10 @@ public boolean canVote(Person person)
 {
   return person.getAge > 18 ? true : false;
 }
-</pre>
-˙
-csharpsquid:S2997‰
+</pre>Z
+CODE_SMELL
+Ü	
+csharpsquid:S2997
 csharpsquidS2997D"IDisposables" created in a "using" statement should not be returned"BLOCKER*cs:˙<p>
     Typically you want to use <code>using</code> to create a local <code>IDisposable</code> variable; it will trigger
     disposal of the object when control passes out of the block's scope. The exception to this rule is when your
@@ -17777,9 +18196,10 @@ public FileStream WriteToFile(string path, string text)
   fs.Write(bytes, 0, bytes.Length);
   return fs;
 }
-</pre>
-∑
-csharpsquid:S3449°
+</pre>Z
+CODE_SMELL
+√
+csharpsquid:S3449≠
 csharpsquidS34494Right operands of shift operators should be integers"BLOCKER*cs:«<p>
     Numbers can be shifted with the <code>&lt;&lt;</code> and <code>&gt;&gt;</code> operators, but the right operand of the operation needs to be 
     an <code>int</code> or a type that has an implicit conversion to <code>int</code>. However, with <code>dynamic</code>, the compiler's type 
@@ -17793,9 +18213,10 @@ dynamic d = 5;
 var x = d &gt;&gt; 5.4; // Noncompliant
 x = d &gt;&gt; null; // Noncompliant
 x &lt;&lt;= new object(); // Noncompliant
-</pre>
-—
-csharpsquid:S1939ª
+</pre>Z
+CODE_SMELL
+›
+csharpsquid:S1939«
 csharpsquidS1939(Inheritance list should not be redundant"MINOR*cs:Ô<p>
     An inheritance list entry is redundant if:
     <ul>
@@ -17818,9 +18239,10 @@ enum MyEnum : int  // Noncompliant
 public class MyClass
 
 enum MyEnum
-</pre>
-ã
-csharpsquid:S2070ı
+</pre>Z
+CODE_SMELL
+ó
+csharpsquid:S2070Å
 csharpsquidS2070;SHA-1 and Message-Digest hash algorithms should not be used"CRITICAL*cs:ì<p>
     The MD5 algorithm and its successor, SHA-1, are no longer considered secure, because it is too easy to
     create hash collisions with them. That is, it takes too little computational effort to come up with a
@@ -17856,9 +18278,10 @@ var hashProvider3 = HashAlgorithm.Create("SHA256Managed");
     <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
     <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Porous Defenses</li>
     <li>Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#WEAK_MESSAGE_DIGEST">MessageDigest Is Weak</a></li>
-</ul>
-≠
-csharpsquid:S1994ó
+</ul>Z
+CODE_SMELL
+π
+csharpsquid:S1994£
 csharpsquidS1994\"for" loop incrementers should modify the variable being tested in the loop's stop condition"MAJOR*cs:ó<p>
 It is almost always an error when a <code>for</code> loop's stop condition and incrementer don't act on the same variable. Even when it is not, it could confuse future maintainers of the code, and should be avoided.
 </p>
@@ -17877,9 +18300,10 @@ for (i = 0; i < 10; i++)
 {
   // ...
 }
-</pre>
-ù
-csharpsquid:S3532á
+</pre>Z
+CODE_SMELL
+©
+csharpsquid:S3532ì
 csharpsquidS35327Empty "default" clauses in a "switch" should be removed"MINOR*cs:¨<p>
     The <code>default</code> clause should take appropriate action. Having an empty <code>default</code> is a waste of keystrokes.
 </p>
@@ -17938,9 +18362,10 @@ void PrintName(Fruit fruit)
       break;
   }
 }
-</pre>
-ì
-csharpsquid:S3257˝
+</pre>Z
+CODE_SMELL
+ü
+csharpsquid:S3257â
 csharpsquidS3257ADeclarations and initializations should be as concise as possible"MINOR*cs:ò<p>
     Unnecessarily verbose declarations and initializations make it harder to read the code, and should be simplified.
 </p>
@@ -18003,9 +18428,10 @@ class Class
     MyEvent += (a,b) => { };
   }
 }
-</pre>
-—
-csharpsquid:S1871ª
+</pre>Z
+CODE_SMELL
+›
+csharpsquid:S1871«
 csharpsquidS1871^Two branches in the same conditional structure should not have exactly the same implementation"MAJOR*cs:π<p>
     Having two <code>cases</code> in the same <code>switch</code> statement or branches in the same <code>if</code> structure
     with the same implementation is at best duplicate code, and at worst a coding error. If the same logic is truly needed for
@@ -18115,9 +18541,10 @@ else
 {
   doTheRest();
 }
-</pre>
-∞	
-csharpsquid:S3376ö	
+</pre>Z
+CODE_SMELL
+º	
+csharpsquid:S3376¶	
 csharpsquidS3376VAttribute, EventArgs, and Exception type names should end with the type being extended"MINOR*cs:†<p>
     Adherence to the standard naming conventions makes your code not only more readable, but more usable. For instance,
     <code>class FirstAttribute : Attribute</code> can be used simply with <code>First</code>, but you must use the full
@@ -18154,9 +18581,10 @@ class Timeout : Exception // Noncompliant
 class ExtendedTimeout : Timeout // Ignored; doesn't conform to convention, but the direct base doesn't conform either
 {
 }
-</pre>
-ó
-csharpsquid:S2681Å
+</pre>Z
+CODE_SMELL
+£
+csharpsquid:S2681ç
 csharpsquidS26813Multiline blocks should be enclosed in curly braces"CRITICAL*cs:ß<p>
 Curly braces can be omitted from a one-line block, such as with an <code>if</code> statement or <code>for</code> loop, but doing so can be misleading and induce bugs.
 This rule raises an issue when the indentation of the lines after a one-line block indicates an intent to include those lines in the block, but the omission of curly braces means the lines will be unconditionally executed once.
@@ -18190,9 +18618,10 @@ for (int i = 0; i < array.length; i++)
   str = array[i];
   doTheThing(str);
 }
-</pre>
-ª
-csharpsquid:S3253•
+</pre>Z
+CODE_SMELL
+«
+csharpsquid:S3253±
 csharpsquidS32538"base()" constructor calls should not be explicitly made"MINOR*cs:…<p>
     Since the compiler will automatically invoke the base type's no-argument constructor, there's no need to specify its invocation explicitly. Doing so just clutters the code.
 </p>
@@ -18233,9 +18662,10 @@ class Y : X
     /* does something with the parameter */
   }
 }
-</pre>
-“
-csharpsquid:S3254º
+</pre>Z
+CODE_SMELL
+ﬁ
+csharpsquid:S3254»
 csharpsquidS3254:Default parameter values should not be passed as arguments"MINOR*cs:ﬁ<p>
     Specifying the default parameter values in a method call is redundant. Such values should be omitted in the interests of readability.
 </p>
@@ -18256,9 +18686,10 @@ public void M(int x, int y=5, int z = 7) { /* ... */ }
 // ...
 M(1);
 M(1);
-</pre>
-¥
-csharpsquid:S2328û
+</pre>Z
+CODE_SMELL
+¿
+csharpsquid:S2328™
 csharpsquidS23281"GetHashCode" should not reference mutable fields"CRITICAL*cs:∆<p>
     <code>GetHashCode</code> is used to file an object in a <code>Dictionary</code> or <code>Hashtable</code>.
     If <code>GetHashCode</code> uses non-<code>readonly</code> fields and those fields change after the object
@@ -18294,9 +18725,10 @@ public class Person
     hash += this.birthday.GetHashCode();
     return hash;
   }
-</pre>
-¥	
-csharpsquid:S1118û	
+</pre>Z
+CODE_SMELL
+¿	
+csharpsquid:S1118™	
 csharpsquidS11183Utility classes should not have public constructors"MAJOR*cs:«<p>
     Utility classes, which are collections of <code>static</code> members, are not meant to be instantiated. Even
     <code>abstract</code> utility classes, which can be extended, should not have <code>public</code> constructors.
@@ -18340,9 +18772,10 @@ public class StringUtils
     return s1 + s2;
   }
 }
-</pre>
-ˆ
-csharpsquid:S1117‡
+</pre>Z
+CODE_SMELL
+Ç
+csharpsquid:S1117Ï
 csharpsquidS1117.Local variables should not shadow class fields"MAJOR*cs:é<p>
     Shadowing fields with a local variable or with a method parameter is a bad practice that
     reduces code readability: It makes it confusing to know whether the field or the variable
@@ -18388,9 +18821,10 @@ class Foo {
     ...
   }
 }
-</pre>
-Å
-csharpsquid:S2326Î
+</pre>Z
+CODE_SMELL
+ç
+csharpsquid:S2326˜
 csharpsquidS2326(Unused type parameters should be removed"MAJOR*cs:ü<p>
     Type parameters that aren't used are dead code, which can only distract and possibly confuse
     developers during maintenance. Therefore, unused type parameters should be removed.
@@ -18415,14 +18849,16 @@ public class MoreMath
     return a + b;
   }
 }
-</pre>
-ﬁ
-csharpsquid:S1479»
+</pre>Z
+CODE_SMELL
+Í
+csharpsquid:S1479‘
 csharpsquidS1479;"switch" statements should not have too many "case" clauses"MAJOR*cs:È<p>
   When <code>switch</code> statements have a large set of <code>case</code> clauses, it is usually an attempt to map two sets of data. A real map structure would be more readable and maintainable, and should be used instead.
-</p>
-ñ
-csharpsquid:S1116Ä
+</p>Z
+CODE_SMELL
+¢
+csharpsquid:S1116å
 csharpsquidS1116"Empty statements should be removed"MINOR*cs:∫<p>
   Empty statements, i.e. <code>;</code>, are usually introduced by mistake, for example because:
   <ul>
@@ -18474,9 +18910,10 @@ void doSomethingElse()
     <li>MISRA C++:2008, 6-2-3 - Before preprocessing, a null statement shall only occur on a line by itself; it may be followed by a comment, provided that the first character following the null statement is a white-space character.</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-˛
-csharpsquid:S1905Ë
+</ul>Z
+CODE_SMELL
+ä
+csharpsquid:S1905Ù
 csharpsquidS1905"Redundant casts should not be used"MINOR*cs:¢<p>
     Unnecessary casting expressions make the code harder to read and understand.
 </p>
@@ -18503,9 +18940,10 @@ public IEnumerable&lt;int&gt; ExampleCollection(IEnumerable&lt;int&gt; coll)
 {
   return coll.Reverse();
 }
-</pre>
-ø
-csharpsquid:S3251©
+</pre>Z
+CODE_SMELL
+À
+csharpsquid:S3251µ
 csharpsquidS32518Implementations should be provided for "partial" methods"MINOR*cs:Õ<p>
     <code>partial</code> methods allow an increased degree of flexibility in programming a system. Hooks can be added to generated code
     by invoking methods that define their signature, but might not have an implementation yet. But if the implementation is still missing
@@ -18527,9 +18965,10 @@ partial class C
     M(); //Noncompliant. Will be removed.
   }
 }
-</pre>
-Î
-csharpsquid:S1643’
+</pre>Z
+CODE_SMELL
+˜
+csharpsquid:S1643·
 csharpsquidS16436Strings should not be concatenated using "+" in a loop"MAJOR*cs:˚<p>
     <code>StringBuilder</code> is more efficient than string concatenation, especially when the operator is repeated over and over as in loops.
 </p>
@@ -18552,9 +18991,10 @@ for (int i = 0; i &lt; arrayOfStrings.Length; ++i)
   bld.Append(arrayOfStrings[i]);
 }
 string str = bld.ToString();
-</pre>
-ä
-csharpsquid:S1764Ù
+</pre>Z
+CODE_SMELL
+ñ
+csharpsquid:S1764Ä
 csharpsquidS1764KIdentical expressions should not be used on both sides of a binary operator"CRITICAL*cs:Ç<p>
 Using the same value on either side of a binary operator is almost always a mistake. In the case of logical operators, it is either a copy/paste error and therefore a bug, or it is simply wasted code, and should be simplified. In the case of bitwise operators and most binary mathematical operators, having the same value on both sides of an operator yields predictable results, and should be simplified.
 </p>
@@ -18615,9 +19055,10 @@ int j = a << a; // Noncompliant
     <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
     <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
     <li>Rule S1656 - Implements a check on <code>=</code>.</li>
-</ul>
-æ
-csharpsquid:S1125®
+</ul>Z
+CODE_SMELL
+ 
+csharpsquid:S1125¥
 csharpsquidS1125(Boolean literals should not be redundant"MINOR*cs:‹<p>
     Redundant Boolean literals should be removed from expressions to improve readability.
 </p>
@@ -18648,9 +19089,10 @@ booleanVariable = !condition && exp;
 booleanVariable = !condition ||  exp;
 booleanVariable = condition && exp;
 booleanVariable = condition;
-</pre>
-˙
-csharpsquid:S2696‰
+</pre>Z
+CODE_SMELL
+Ü
+csharpsquid:S2696
 csharpsquidS26964Instance members should not write to "static" fields"CRITICAL*cs:â<p>
     Correctly updating a <code>static</code> field from a non-static method is tricky to get right and could easily lead to
     bugs if there are multiple class instances and/or multiple threads in play.
@@ -18671,9 +19113,10 @@ public class MyClass
     count++;  // Noncompliant
   }
 }
-</pre>
-ı
-csharpsquid:S2333ﬂ
+</pre>Z
+CODE_SMELL
+Å
+csharpsquid:S2333Î
 csharpsquidS2333%Redundant modifiers should be removed"MINOR*cs:ñ<p>
     Unnecessary keywords simply clutter the code and should be removed. Specifically:
     <ul>
@@ -18716,9 +19159,10 @@ public sealed class MyOtherClass : MyClass
   {
   }
 }
-</pre>
-ø
-csharpsquid:S2971©
+</pre>Z
+CODE_SMELL
+À
+csharpsquid:S2971µ
 csharpsquidS2971("IEnumerable" LINQs should be simplified"MAJOR*cs:›<p>
     In the interests of readability, code that can be simplified should be simplified. To that end, there are several
     ways <code>IEnumerable LINQ</code>s can be simplified
@@ -18749,9 +19193,10 @@ seq2.OfType&lt;T&gt;().Any(element => CheckCondition(element));
 seq3.OfType&lt;T&gt;();
 seq4.OfType&lt;T&gt;();
 seq.Any(element => [expression])
-</pre>
-Ω
-csharpsquid:S1244ß
+</pre>Z
+CODE_SMELL
+…
+csharpsquid:S1244≥
 csharpsquidS12448Floating point numbers should not be tested for equality"CRITICAL*cs:»<p>
     Floating point math is imprecise because of the challenges of storing such values in a binary
     representation. Even worse, floating point math is not associative; push a <code>float</code> or a <code>double</code>
@@ -18801,9 +19246,10 @@ if (myNumber &lt; 4 || myNumber &gt; 4) // Noncompliant indirect inequality test
 <ul>
     <li>MISRA C:2004, 13.3 - Floating-point expressions shall not be tested for equality or inequality.</li>
     <li>MISRA C++:2008, 6-2-2 - Floating-point expressions shall not be directly or indirectly tested for equality or inequality</li>
-</ul>
-Ê
-csharpsquid:S1121–
+</ul>Z
+CODE_SMELL
+Ú
+csharpsquid:S1121‹
 csharpsquidS1121:Assignments should not be made from within sub-expressions"MAJOR*cs:Ú<p>
     Assignments within sub-expressions are hard to spot and therefore make the code less readable.
     It is also a common mistake to write <code>=</code> when <code>==</code> was meant.
@@ -18832,9 +19278,10 @@ Assignments inside lambda and delegate expressions are allowed.
     <li>MISRA C++:2008, 6-2-1 - Assignment operators shall not be used in sub-expressions</li>
     <li>MISRA C:2012, 13.4 - The result of an assignment operator should not be used</li>
     <li><a href="http://cwe.mitre.org/data/definitions/481.html">MITRE, CWE-481</a> - Assigning instead of Comparing</li>
-</ul>
-º
-csharpsquid:S2692¶
+</ul>Z
+CODE_SMELL
+»
+csharpsquid:S2692≤
 csharpsquidS26923"IndexOf" checks should not be for positive numbers"CRITICAL*cs:Ã<p>
     Most checks against an <code>IndexOf</code> value compare it with -1 because 0 is a valid index. Any checks which look for
     values <code>&gt;0</code> ignore the first element, which is likely a bug. If the intent is merely to check inclusion of a
@@ -18897,9 +19344,10 @@ if (Array.IndexOf(stringArray, color) &gt;= 0)
 {
   // ...
 }
-</pre>
-æ
-csharpsquid:S101©
+</pre>Z
+CODE_SMELL
+ 
+csharpsquid:S101µ
 csharpsquidS1012Class names should comply with a naming convention"MINOR*cs:‘<p>
 Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate.
 This rule allows to check that all class names match a provided regular expression.
@@ -18915,9 +19363,10 @@ class my_class {...}
 
 <pre>
 class MyClass {...}
-</pre>
-π
-csharpsquid:S3265£
+</pre>Z
+CODE_SMELL
+≈
+csharpsquid:S3265Ø
 csharpsquidS32658Non-flags enums should not be used in bitwise operations"MINOR*cs:«<p>
     <code>enum</code>s are usually used to identify distinct elements in a set of values. However <code>enum</code>s can be treated as bit fields and 
     bitwise operations can be used on them to combine the values. This is a good way of specifying multiple elements of set with a single value. 
@@ -18947,9 +19396,10 @@ enum Permissions
 }
 // ...
 var x = Permissions.Read | Permissions.Write;
-</pre>
-†
-csharpsquid:S100ã
+</pre>Z
+CODE_SMELL
+¨
+csharpsquid:S100ó
 csharpsquidS1002Method name should comply with a naming convention"MINOR*cs:∂<p>
     Shared naming conventions allow teams to collaborate efficiently. This rule checks that all method names match a provided
     regular expression.
@@ -18967,9 +19417,10 @@ public int doSomething(){...}
 
 <pre>
 public int DoSomething(){...}
-</pre>
-⁄
-csharpsquid:S2330ƒ
+</pre>Z
+CODE_SMELL
+Ê
+csharpsquid:S2330–
 csharpsquidS2330#Array covariance should not be used"MAJOR*cs:˝<p>
     Array covariance is the principle that if an implicit or explicit reference conversion exits from type <code>A</code> to
     <code>B</code>, then the same conversion exists from the array type <code>A[]</code> to <code>B[]</code>.
@@ -19027,9 +19478,10 @@ class Program
     }
   }
 }
-</pre>
-∏
-csharpsquid:S2737¢
+</pre>Z
+CODE_SMELL
+ƒ
+csharpsquid:S2737Æ
 csharpsquidS2737+"catch" clauses should do more than rethrow"MINOR*cs:”<p>
 A <code>catch</code> clause that only rethrows the caught exception has the same effect as omitting the <code>catch</code> altogether and letting it bubble up automatically, but with more code and the additional detrement of leaving maintainers scratching their heads.
 Such clauses should either be eliminated or populated with the appropriate logic.
@@ -19064,10 +19516,11 @@ catch (Exception e)
 or
 <pre>
 string s = File.ReadAllText(fileName);
-</pre>
-ﬂ
+</pre>Z
+CODE_SMELL
+Î
 
-csharpsquid:S2339…
+csharpsquid:S2339’
 
 csharpsquidS2339*Public constant members should not be used"MAJOR*cs:˚	<p>
     Constant members are copied at compile time to the call sites, instead of being fetched at runtime.
@@ -19105,9 +19558,10 @@ public class Foo
       get { return 1.0; }
     }
 }
-</pre>
-„
-csharpsquid:S2219Õ
+</pre>Z
+CODE_SMELL
+Ô
+csharpsquid:S2219Ÿ
 csharpsquidS2219*Runtime type checking should be simplified"MINOR*cs:ˇ<p>
     To check the type of an object there are several options:
     <ul>
@@ -19172,10 +19626,10 @@ class Program
     b = appleType.IsInstanceOfType(apple);
   }
 }
-</pre>
-ê
-csharpsquid:S1006˙
-
+</pre>Z
+CODE_SMELL
+ú
+csharpsquid:S1006Ü
 csharpsquidS1006QMethod overrides should use the same default parameter values as the base methods"MAJOR*cs:Ö
 <p>
     Default arguments are determined by the static type of the object. If a default argument is different for a parameter in an
@@ -19248,9 +19702,10 @@ public class Program
     item.Write();
   }
 }
-</pre>
-°
-csharpsquid:S3427ã
+</pre>Z
+CODE_SMELL
+≠
+csharpsquid:S3427ó
 csharpsquidS3427AMethod overloads with default parameter values should not overlap"MAJOR*cs:¶<p>
     The rules for method resolution are complex and perhaps not properly understood by all coders. Having overloads with
     optional parameter values make the matter even harder to understand. An overload with default parameter values can be
@@ -19269,9 +19724,10 @@ public class MyClass
 MyClass myClass = new MyClass();
 
 myClass.Print(new string[3] {"yes", "no", "maybe"});  // which version of Print will be called?
-</pre>
-˘
-csharpsquid:S1481„
+</pre>Z
+CODE_SMELL
+Ö
+csharpsquid:S1481Ô
 csharpsquidS1481(Unused local variables should be removed"MAJOR*cs:ó<p>
 If a local variable is declared but not used, it is dead code and should be removed. Doing so will improve maintainability because developers will not wonder what the variable is used for.
 </p>
@@ -19302,9 +19758,10 @@ using(var t = new Timer()) // t never used, but compliant.
 {
   //...
 }
-</pre>
-Ú
-csharpsquid:S3262‹
+</pre>Z
+CODE_SMELL
+˛
+csharpsquid:S3262Ë
 csharpsquidS3262$"params" should be used on overrides"MINOR*cs:î<p>
     Overriding methods automatically inherit the <code>params</code> behavior. To ease readability, this modifier should be explicitly used in
     the overriding method as well.
@@ -19344,9 +19801,10 @@ class Derived : Base
     ...
   }
 }
-</pre>
-¨
-csharpsquid:S3263ñ
+</pre>Z
+CODE_SMELL
+∏
+csharpsquid:S3263¢
 csharpsquidS3263AStatic fields should appear in the order they must be initialized"BLOCKER*cs:Ø<p>
     Static field initializers are executed in the order in which they appear in the class from top to bottom. Thus,
     placing a static field in a class above the field or fields required for its initialization will yield unexpected
@@ -19382,9 +19840,10 @@ class MyClass
     X = Y;
   }
 }
-</pre>
-…
-csharpsquid:S2292≥
+</pre>Z
+CODE_SMELL
+’
+csharpsquid:S2292ø
 csharpsquidS2292-Trivial properties should be auto-implemented"MINOR*cs:‚<p>
     Trivial properties, which include no logic but setting and getting a backing field should be converted to auto-implemented
     properties, yielding cleaner and more readable code.
@@ -19409,9 +19868,10 @@ public class Car
 {
   public string Make { get; set; }
 }
-</pre>
-ë
-csharpsquid:S2290˚
+</pre>Z
+CODE_SMELL
+ù
+csharpsquid:S2290á
 csharpsquidS2290'Field-like events should not be virtual"CRITICAL*cs:≠<p>
     Field-like events are events that do not have explicit <code>add</code> and <code>remove</code> methods. The compiler
     generates a <code>private</code> <code>delegate</code> field to back the event, as well as generating the implicit
@@ -19491,10 +19951,11 @@ class Program
     r2.Refuel();
   }
 }
-</pre>
-⁄
+</pre>Z
+CODE_SMELL
+Ê
 
-csharpsquid:S2291ƒ
+csharpsquid:S2291–
 
 csharpsquidS2291=Overflow checking should not be disabled for "Enumerable.Sum""CRITICAL*cs:‡	<p>
     <code>Enumerable.Sum()</code> always executes addition in a <code>checked</code> context, so an
@@ -19557,9 +20018,10 @@ void Add(List&lt;int&gt; list)
     }
   }
 }
-</pre>
-»
-csharpsquid:S3237≤
+</pre>Z
+CODE_SMELL
+‘
+csharpsquid:S3237æ
 csharpsquidS3237!"value" parameters should be used"CRITICAL*cs:Í<p>
     In property and indexer <code>set</code> methods, and in event <code>add</code> and <code>remove</code> methods, the implicit
     <code>value</code> parameter holds the value the accessor was called with. Not using the <code>value</code> means that the
@@ -19591,9 +20053,10 @@ public int Count
   get { return count; }
   set { throw new InvalidOperationException(); }
 }
-</pre>
-ö
-csharpsquid:S1698Ñ
+</pre>Z
+CODE_SMELL
+¶
+csharpsquid:S1698ê
 csharpsquidS16983"==" should not be used when "Equals" is overridden"MAJOR*cs:≠<p>
     Using the equality <code>==</code> and inequality <code>!=</code> operators to compare two objects generally works. The operators
     can be overloaded, and therefore the comparison can resolve to the appropriate method. However, when the operators are used on
@@ -19657,9 +20120,10 @@ public class Program
 <h2>Exceptions</h2>
 <p>
     The rule does not report on comparisons of <code>System.Type</code> instances and on comparisons inside <code>Equals</code> overrides.
-</p>
-∞
-csharpsquid:S1697ö
+</p>Z
+CODE_SMELL
+º
+csharpsquid:S1697¶
 csharpsquidS1697WShort-circuit logic should be used to prevent null pointer dereferences in conditionals"BLOCKER*cs:ù<p>
 When either the equality operator in a null test or the logical operator that follows it is reversed, the code has the appearance of safely null-testing the object before dereferencing it.
 Unfortunately the effect is just the opposite - the object is null-tested and then dereferenced only if it is null, leading to a guaranteed null pointer dereference.
@@ -19689,9 +20153,10 @@ if (str != null &amp;&amp; str.Length > 0)
 {
   Console.WriteLine("String is not empty");
 }
-</pre>
-∆
-csharpsquid:S3235∞
+</pre>Z
+CODE_SMELL
+“
+csharpsquid:S3235º
 csharpsquidS3235(Redundant parentheses should not be used"MINOR*cs:‰<p>
     Redundant parentheses are simply wasted keystrokes, and should be removed.
 </p>
@@ -19726,9 +20191,10 @@ class MyClass
     };
   }
 }
-</pre>
-ï	
-csharpsquid:S3236ˇ
+</pre>Z
+CODE_SMELL
+°	
+csharpsquid:S3236ã	
 csharpsquidS3236QMethods with caller info attributes should not be invoked with explicit arguments"MAJOR*cs:ä<p>
     Caller information attributes (<code>CallerFilePathAttribute</code>, <code>CallerLineNumberAttribute</code>, and
     <code>CallerMemberNameAttribute</code>) provide a way to get information about the caller of a method through optional parameters.
@@ -19766,9 +20232,10 @@ void MyMethod()
 {
   TraceMessage("my message");
 }
-</pre>
-√
-csharpsquid:S1694≠
+</pre>Z
+CODE_SMELL
+œ
+csharpsquid:S1694π
 csharpsquidS1694@An abstract class should have both abstract and concrete methods"MINOR*cs:…
 <p>
     The purpose of an abstract class is to provide some heritable behaviors while also defining methods which must be
@@ -19841,9 +20308,10 @@ public abstract class Lamp
     }
   }
 }
-</pre>
-§
-csharpsquid:S3234é
+</pre>Z
+CODE_SMELL
+∞
+csharpsquid:S3234ö
 csharpsquidS3234I"GC.SuppressFinalize" should not be invoked for types without destructors"MINOR*cs:°<p>
     <code>GC.SuppressFinalize</code> asks the Common Language Runtime not to call the finalizer of an object. This is useful when
     implementing the dispose pattern where object finalization is already handled in <code>IDisposable.Dispose</code>. However, it
@@ -19874,9 +20342,10 @@ sealed class MyClass
     ...
   }
 }
-</pre>
-ã
-csharpsquid:S2387ı
+</pre>Z
+CODE_SMELL
+ó
+csharpsquid:S2387Å
 csharpsquidS2387:Child class members should not shadow parent class members"MAJOR*cs:ó<p>
     Having a variable with the same name in two unrelated classes is fine, but do the same thing within a class hierarchy
     and you'll get confusion at best, chaos at worst. Perhaps even worse is the case where a child class field varies from
@@ -19919,9 +20388,10 @@ public class Raspberry : Fruit
   private bool ripened;
   private static Color FLESH_COLOR;
 }
-</pre>
-Í
-csharpsquid:S1858‘
+</pre>Z
+CODE_SMELL
+ˆ
+csharpsquid:S1858‡
 csharpsquidS1858*"ToString()" calls should not be redundant"MINOR*cs:Ü<p>
     Invoking a method designed to return a string representation of an object which is already a string is a waste of
     keystrokes. Similarly, explicitly invoking <code>ToString()</code> when the compiler would do it implicitly is also
@@ -19950,9 +20420,10 @@ var s = "foo";
 var t = "fee fie foe " + s;
 var u = "" + 1;
 var v = string.Format("{0}", 1);
-</pre>
-†
-csharpsquid:S2306ä
+</pre>Z
+CODE_SMELL
+¨
+csharpsquid:S2306ñ
 csharpsquidS23065"async" and "await" should not be used as identifiers"MAJOR*cs:±<p>
 Since C# 5.0, <code>async</code> and <code>await</code> are contextual keywords.
 Contextual keywords do have a particular meaning in some contexts, but can still be used as variable names for example.
@@ -19968,9 +20439,10 @@ int await = 42; // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 int someOtherName = 42;
-</pre>
-¬
-csharpsquid:S1854¨
+</pre>Z
+CODE_SMELL
+Œ
+csharpsquid:S1854∏
 csharpsquidS1854Dead stores should be removed"MAJOR*cs:Î
 <p>
     A dead store happens when a local variable is assigned a value that is not read by any subsequent instruction.
@@ -20022,10 +20494,11 @@ void CalculateRate(int a, int b)
     <li><a href="http://cwe.mitre.org/data/definitions/563.html">MITRE, CWE-563</a> - Assignment to Variable without Use ('Unused Variable')</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/QYA5">CERT, MSC13-C</a> - Detect and remove unused values</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/S4IyAQ">CERT, MSC13-CPP</a> - Detect and remove unused values</li>
-</ul>
-¢
+</ul>Z
+CODE_SMELL
+Æ
 
-csharpsquid:S1699å
+csharpsquid:S1699ò
 
 csharpsquidS16995Constructors should only call non-overridable methods"MAJOR*cs:≥	<p>
     Calling an overridable method from a constructor could result in failures or strange behaviors when instantiating a subclass which overrides the method.
@@ -20071,9 +20544,10 @@ public class Child : Parent
     Console.WriteLine(this.foo.Length);
   }
 }
-</pre>
-‡	
-csharpsquid:S1172 	
+</pre>Z
+CODE_SMELL
+Ï	
+csharpsquid:S1172÷	
 csharpsquidS1172*Unused method parameters should be removed"MAJOR*cs:¸<p>
     Unused parameters are misleading. Whatever the value passed to such parameters is, the behavior will be the same.
 </p>
@@ -20139,10 +20613,11 @@ public class MyDto
 <ul>
     <li>MISRA C++:2008, 0-1-11</li>
     <li>MISRA C:2012, 2.7</li>
-</ul>
-›
+</ul>Z
+CODE_SMELL
+È
 
-csharpsquid:S3249«
+csharpsquid:S3249”
 
 csharpsquidS3249WClasses directly extending "object" should not call "base" in "GetHashCode" or "Equals""CRITICAL*cs:…	<p>
     Making a <code>base</code> call in an overridden method is generally a good idea, but not in <code>GetHashCode</code> and
@@ -20198,10 +20673,11 @@ public class Point
     ...
   }
 }
-</pre>
-ﬂ
+</pre>Z
+CODE_SMELL
+Î
 
-csharpsquid:S2952…
+csharpsquid:S2952’
 
 csharpsquidS2952KClasses should "Dispose" of members from the classes' own "Dispose" methods"CRITICAL*cs:◊	<p>
     It is possible in an <code>IDisposable</code> to call <code>Dispose</code> on class members from any method, but the
@@ -20259,9 +20735,11 @@ public class ResourceHolder : IDisposable
 <h2>See</h2>
 <ul>
     <li><a href="http://cwe.mitre.org/data/definitions/459.html">MITRE, CWE-459</a> - Incomplete Cleanup</li>
-</ul>
-˙	
-csharpsquid:S1862‰	
+</ul>Z
+CODE_SMELL
+Ü
+
+csharpsquid:S1862	
 csharpsquidS1862BRelated "if/else if" statements should not have the same condition"CRITICAL*cs:˚<p>
 A chain of <code>if</code>/<code>else if</code> statements is evaluated from top to bottom. At most, only one branch will be executed: the first one with a condition that evaluates to <code>true</code>.
 Therefore, duplicating a condition automatically leads to dead code. Usually, this is due to a copy/paste error. At best, it's simply dead code and at worst, it's a bug that is likely to induce
@@ -20293,10 +20771,11 @@ else if (param == 3)
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-«
+</ul>Z
+CODE_SMELL
+”
 
-csharpsquid:S2674±
+csharpsquid:S2674Ω
 
 csharpsquidS26748The length returned from a stream read should be checked"BLOCKER*cs:”	<p>
     You cannot assume that any given stream reading call will fill the <code>byte[]</code> passed in to the method with
@@ -20339,9 +20818,10 @@ public void DoSomething(string fileName)
     }
   }
 }
-</pre>
-ó
-csharpsquid:S2278Å
+</pre>Z
+CODE_SMELL
+£
+csharpsquid:S2278ç
 csharpsquidS2278GNeither DES (Data Encryption Standard) nor DESede (3DES) should be used"CRITICAL*cs:ì<p>
     According to the US National Institute of Standards and Technology (NIST), the Data Encryption Standard (DES) is no longer
     considered secure:
@@ -20380,9 +20860,10 @@ using (var aes = new AesCryptoServiceProvider())
     <li><a href="http://cwe.mitre.org/data/definitions/327.html">MITRE CWE-327</a> - Use of a Broken or Risky Cryptographic Algorithm</li>
     <li><a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
     <li>Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#DES_USAGE">DES / DESede Unsafe</a></li>
-</ul>
-Ê
-csharpsquid:S3246–
+</ul>Z
+CODE_SMELL
+Ú
+csharpsquid:S3246‹
 csharpsquidS3246@Generic type parameters should be co/contravariant when possible"MAJOR*cs:Ï<p>
     In the interests of making code as usable as possible, interfaces and delegates with generic parameters should use the
     <code>out</code> and <code>in</code> modifiers when possible to make the interfaces and delegates covariant and contravariant,
@@ -20417,9 +20898,10 @@ interface IConsumer&lt;in T&gt;
 {
     bool Eat(T fruit);
 }
-</pre>
-ﬁ
-csharpsquid:S3005»
+</pre>Z
+CODE_SMELL
+Í
+csharpsquid:S3005‘
 csharpsquidS30056"ThreadStatic" should not be used on non-static fields"CRITICAL*cs:Î<p>
     When a non-<code>static</code> class field is annotated with <code>ThreadStatic</code>, the code seems to show that the
     field can have different values for different calling threads, but that's not the case, since the <code>ThreadStatic</code>
@@ -20462,9 +20944,10 @@ public class MyClass
   }
   // ...
 }
-</pre>
-‚
-csharpsquid:S2551Ã
+</pre>Z
+CODE_SMELL
+Ó
+csharpsquid:S2551ÿ
 csharpsquidS2551/Types and "this" should not be used for locking"CRITICAL*cs:ˆ<p>
     Locking on the current object instance (i.e. <code>this</code>), or on a <code>Type</code> object increases the chance
     of deadlocks because any other thread could acquire (or attempt to acquire) the same lock for another unrelated purpose.
@@ -20495,9 +20978,10 @@ public void MyLockingMethod()
     // ...
   }
 }
-</pre>
-è
-csharpsquid:S1067˘
+</pre>Z
+CODE_SMELL
+õ
+csharpsquid:S1067Ö
 csharpsquidS1067%Expressions should not be too complex"MAJOR*cs:∞<p>
 The complexity of an expression is defined by the number of <code>&&</code>, <code>||</code> and <code>condition ? ifTrue : ifFalse</code> operators it contains.<br/>
 A single expression's complexity should not become too high to keep the code readable.
@@ -20512,9 +20996,10 @@ if (((condition1 && condition2) || (condition3 && condition4)) && condition5) { 
 <h2>Compliant Solution</h2>
 <pre>
 if ( (myFirstCondition() || mySecondCondition()) && myLastCondition()) { ... }
-</pre>
-Œ	
-csharpsquid:S3244∏	
+</pre>Z
+CODE_SMELL
+⁄	
+csharpsquid:S3244ƒ	
 csharpsquidS3244AAnonymous delegates should not be used to unsubscribe from Events"CRITICAL*cs:–<p>
     It is possible to subscribe to events with anonymous delegates, but having done so, it is impossible to unsubscribe from them.
     That's because the process of subscribing adds the delegate to a list. The process of unsubscribing essentially says: remove
@@ -20545,9 +21030,10 @@ listView.PreviewTextInput += func;
 // ...
 
 listView.PreviewTextInput -= func;
-</pre>
-Ñ
-csharpsquid:S1066Ó
+</pre>Z
+CODE_SMELL
+ê
+csharpsquid:S1066˙
 csharpsquidS1066,Collapsible "if" statements should be merged"MAJOR*cs:û<p>
     Merging collapsible <code>if</code> statements increases the code's readability.
 </p>
@@ -20569,9 +21055,10 @@ if (condition1 &amp;&amp; condition2)
 {
   ...
 }
-</pre>
-ê
-csharpsquid:S1186˙
+</pre>Z
+CODE_SMELL
+ú
+csharpsquid:S1186Ü
 csharpsquidS1186Methods should not be empty"MAJOR*cs:ª<p>
 There are several reasons for a method not to have a method body:
   <ul>
@@ -20614,9 +21101,10 @@ abstract class Animal
   {
   }
 }
-</pre>
-Ã
-csharpsquid:S2275∂
+</pre>Z
+CODE_SMELL
+ÿ
+csharpsquid:S2275¬
 csharpsquidS2275?Format strings should be passed the correct number of arguments"CRITICAL*cs:–<p>
     Use fewer arguments than are expected in your format string, and you'll get an error at runtime. Use more arguments than are
     expected, and you probably won't get the output you expect. Either way, it's a bug.
@@ -20639,9 +21127,10 @@ or
 // Fix the format string
 var s1 = string.Format("{0} {1}", 1, 2);
 var s2 = string.Format("{0} {1}", 10, 11);
-</pre>
-Ü
-csharpsquid:S1185
+</pre>Z
+CODE_SMELL
+í
+csharpsquid:S1185¸
 csharpsquidS1185UOverriding members should do more than simply call the same member in the super class"MINOR*cs:˜<p>
     Overriding a member just to call the same member from the base class without performing any other actions is useless and
     misleading. The only time this is justified is in <code>sealed</code> overriding methods, where the effect is to lock in
@@ -20662,9 +21151,10 @@ public override void Method()
 {
   //do something else
 }
-</pre>
-Û
-csharpsquid:S1109›
+</pre>Z
+CODE_SMELL
+ˇ
+csharpsquid:S1109È
 csharpsquidS1109@A close curly brace should be located at the beginning of a line"MINOR*cs:˘<p>
 Shared coding conventions make it possible for a team to efficiently collaborate. This rule makes it mandatory to place a close curly brace at the beginning of a line.
 </p>
@@ -20688,9 +21178,10 @@ if(condition)
 <p>When blocks are inlined (open and close curly braces on the same line), no issue is triggered.</p>
 <pre>
 if(condition) { doSomething(); }
-</pre>
-Î
-csharpsquid:S2955’
+</pre>Z
+CODE_SMELL
+˜
+csharpsquid:S2955·
 csharpsquidS2955VGeneric parameters not constrained to reference types should not be compared to "null""CRITICAL*cs:ÿ<p>
     When constraints have not been applied to restrict a generic type parameter to be a reference type,
     then a value type, such as a <code>struct</code>, could also be passed. In such cases, comparing the
@@ -20733,9 +21224,10 @@ private bool IsDefault&lt;T&gt;(T value) where T : class
   }
   // ...
 }
-</pre>
-õ	
-csharpsquid:S2953Ö	
+</pre>Z
+CODE_SMELL
+ß	
+csharpsquid:S2953ë	
 csharpsquidS2953>Methods named "Dispose" should implement "IDisposable.Dispose""MAJOR*cs:£<p>
     <code>Dispose</code> as a method name should be used exclusively to implement <code>IDisposable.Dispose</code> to prevent
     any confusion.
@@ -20794,9 +21286,10 @@ public class GarbageDisposal : IDisposable
     GC.SuppressFinalize(this);
   }
 }
-</pre>
-∏
-csharpsquid:S1227¢
+</pre>Z
+CODE_SMELL
+ƒ
+csharpsquid:S1227Æ
 csharpsquidS1227;break statements should not be used except for switch cases"MAJOR*cs:√<p>
 <code>break;</code> is an unstructured control flow statement which makes code harder to read.
 Ideally, every loop should have a single termination condition.
@@ -20827,18 +21320,20 @@ while (i != 10) // Compliant
   Console.WriteLine(i);
   i++;
 }
-</pre>
-ê
-csharpsquid:S2437˙
+</pre>Z
+CODE_SMELL
+ú
+csharpsquid:S2437Ü
 csharpsquidS2437,Silly bit operations should not be performed"MAJOR*cs:™<p>
     Certain bit operations are just silly and should not be performed because their results are predictable.
 </p>
 <p>
     Specifically, using <code>&amp; -1</code> with any value will always result in the original value, as will
     <code>anyValue ^ 0</code> and <code>anyValue | 0</code>.
-</p>
-‹
-csharpsquid:S1226∆
+</p>Z
+CODE_SMELL
+Ë
+csharpsquid:S1226“
 csharpsquidS1226@Method parameters and caught exceptions should not be reassigned"MAJOR*cs:‚<p>
     While it is technically correct to assign to parameters from within method bodies, it is better to use temporary variables to store intermediate results.
     This rule will typically detect cases where a constructor parameter is assigned to itself instead of a field of the same name, i.e. when <code>this</code> was forgotten.
@@ -20906,9 +21401,10 @@ class MyClass
 <h2>See</h2>
 <ul>
     <li>MISRA C:2012, 17.8 - A function parameter should not be modified</li>
-</ul>
-Ë
-csharpsquid:S3240“
+</ul>Z
+CODE_SMELL
+Ù
+csharpsquid:S3240ﬁ
 csharpsquidS32405The simplest possible condition syntax should be used"MINOR*cs:˘<p>
     In the interests of keeping code clean, the simplest possible conditional syntax should be used. That means using
     the <code>??</code> operator for an assign-if-not-null operator, and using the ternary operator <code>?:</code> for
@@ -20950,9 +21446,10 @@ x = a ?? b;
 x = a ?? b;
 x = a ?? new object();
 x = condition ? a : b;
-</pre>
-√
-csharpsquid:S3457≠
+</pre>Z
+CODE_SMELL
+œ
+csharpsquid:S3457π
 csharpsquidS3457;"string.Format()" should not be called without placeholders"MINOR*cs:Œ<p>
     There's no need to incur the overhead of a formatting call when the string to be formatted contains no formatting symbols.
     Instead, simply use the original input string.
@@ -20966,9 +21463,10 @@ var s = string.Format("some text");
 <h2>Compliant Solution</h2>
 <pre>
 var s = "some text";
-</pre>
-ˆ
-csharpsquid:S2368‡
+</pre>Z
+CODE_SMELL
+Ç
+csharpsquid:S2368Ï
 csharpsquidS2368@Public methods should not have multidimensional array parameters"MAJOR*cs:¸<p>
     Exposing methods with multidimensional array parameters require developers to have advanced knowledge about the language in
     order to be able to use them. Moreover, what exactly to pass to such parameters is not intuitive. Therefore, such methods
@@ -20999,9 +21497,10 @@ public class Program
     {
     }
 }
-</pre>
-≠	
-csharpsquid:S1313ó	
+</pre>Z
+CODE_SMELL
+π	
+csharpsquid:S1313£	
 csharpsquidS1313$IP addresses should not be hardcoded"MAJOR*cs:œ<p>
     Hardcoding an IP address into source code is a bad idea for several reasons:
     <ul>
@@ -21041,9 +21540,10 @@ var address = IPAddress.Parse(ip);
 
 <ul>
     <li> <a href="https://www.securecoding.cert.org/confluence/x/qQCHAQ">CERT, MSC03-J</a> - Never hard code sensitive information</li>
-</ul>
-†
-csharpsquid:S3215ä
+</ul>Z
+CODE_SMELL
+¨
+csharpsquid:S3215ñ
 csharpsquidS3215:"interface" instances should not be cast to concrete types"MAJOR*cs:¨<p>
     Needing to cast from an <code>interface</code> to a concrete type indicates that something is wrong with the abstractions in
     use, likely that something is missing from the <code>interface</code>. Instead of casting to a discrete type, the missing
@@ -21081,9 +21581,10 @@ public static class DowncastExampleProgram
     }
   }
 }
-</pre>
-†
-csharpsquid:S3216ä
+</pre>Z
+CODE_SMELL
+¨
+csharpsquid:S3216ñ
 csharpsquidS3216&"ConfigureAwait(false)" should be used"MAJOR*cs:¿<p>
     After an <code>await</code>ed <code>Task</code> has executed, you can continue execution in the original, calling
     thread or any arbitrary thread. Unless the rest of the code needs the context from which the <code>Task</code> was
@@ -21103,9 +21604,10 @@ var response = await httpClient.GetAsync(url);  // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 var response = await httpClient.GetAsync(url).ConfigureAwait(false);
-</pre>
-µ
-csharpsquid:S3456ü
+</pre>Z
+CODE_SMELL
+¡
+csharpsquid:S3456´
 csharpsquidS34567"string.ToCharArray()" should not be called redundantly"MAJOR*cs:ƒ<p>
     <code>ToCharArray</code> can be omitted when the operation on the array could have been done directly on the string, such as when
     iterating over the characters in a string, and when accessing a character in a string via an array index. In those cases, explicit
@@ -21128,9 +21630,10 @@ foreach (var c in str)
 {
   // ...
 }
-</pre>
-™
-csharpsquid:S2760î
+</pre>Z
+CODE_SMELL
+∂
+csharpsquid:S2760†
 csharpsquidS27604Sequential tests should not check the same condition"MAJOR*cs:º<p>
     When the same condition is checked twice in a row, it is either confusing - why have separate checks? - or an error - some other condition
     should have been checked in the second test.
@@ -21172,9 +21675,10 @@ if (b == c)
 <h2>Exceptions</h2>
 <p>
     Since it is a common pattern to test a variable, reassign it if it fails the test, then re-test it, that pattern is ignored.
-</p>
-ı
-csharpsquid:S1155ﬂ
+</p>Z
+CODE_SMELL
+Å
+csharpsquid:S1155Î
 csharpsquidS1155,"Any()" should be used to test for emptiness"MAJOR*cs:è<p>
     Using <code>.Count()</code> to test for emptiness works, but using <code>.Any()</code> makes the intent clearer,
     and the code more readable.
@@ -21207,9 +21711,10 @@ private static bool IsEmpty(IEnumerable&lt;string&gt; strings)
 {
   return !strings.Any();
 }
-</pre>
-í
-csharpsquid:S2123¸
+</pre>Z
+CODE_SMELL
+û
+csharpsquid:S2123à
 csharpsquidS2123*Values should not be uselessly incremented"CRITICAL*cs:´<p>
     A value that is incremented or decremented and then not stored is at best wasted code and at worst a bug.
 </p>
@@ -21237,9 +21742,10 @@ public int pickNumber()
   i++;
   return ++j;
 }
-</pre>
-”
-csharpsquid:S2761Ω
+</pre>Z
+CODE_SMELL
+ﬂ
+csharpsquid:S2761…
 csharpsquidS27619Doubled prefix operators "!!" and "~~" should not be used"CRITICAL*cs:›<p>
     Calling the <code>!</code> or <code>~</code> prefix operator twice does nothing: the second invocation undoes the first.
     Such mistakes are typically caused by accidentally double-tapping the key in question without noticing.
@@ -21264,9 +21770,10 @@ bool v2 = false;
 
 var v3 = !v1;
 var v4 = ~v2;
-</pre>
-–
-csharpsquid:S131ª
+</pre>Z
+CODE_SMELL
+‹
+csharpsquid:S131«
 csharpsquidS131G"switch/Select" statements should end with a "default/Case Else" clause"MAJOR*cs:—<p>
     The requirement for a final <code>default</code> clause is defensive programming. The clause should either take
     appropriate action, or contain a suitable comment as to why no action is taken. Even when the <code>switch</code>
@@ -21318,9 +21825,10 @@ switch (foo) // Compliant
     <li><a href="http://cwe.mitre.org/data/definitions/478.html">MITRE, CWE-478</a> - Missing Default Case in Switch Statement</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/YgE">CERT, MSC01-C</a> - Strive for logical completeness</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/JoIyAQ">CERT, MSC01-CPP</a> - Strive for logical completeness</li>
-</ul>
-®
-csharpsquid:S2486í
+</ul>Z
+CODE_SMELL
+¥
+csharpsquid:S2486û
 csharpsquidS2486(Generic exceptions should not be ignored"MAJOR*cs:∆<p>
     When exceptions occur, it is usually a bad idea to simply ignore them. Instead, it is better to handle them properly,
     or at least to log them.
@@ -21358,9 +21866,10 @@ catch (Exception exc)
 
 <ul>
     <li> <a href="http://cwe.mitre.org/data/definitions/391.html">MITRE, CWE-391</a> - Unchecked Error Condition</li>
-</ul>
-Ç
-csharpsquid:S3451Ï
+</ul>Z
+CODE_SMELL
+é
+csharpsquid:S3451¯
 csharpsquidS3451K"[DefaultValue]" should not be used when "[DefaultParameterValue]" is meant"MAJOR*cs:˝<p>
     The use of <code>[DefaultValue]</code> with <code>[Optional]</code> has no more effect than <code>[Optional]</code> alone. That's because 
     <code>[DefaultValue]</code> doesn't actually do anything; it merely indicates the intent for the value. More than likely, 
@@ -21397,9 +21906,10 @@ class MyClass
     new MyClass().DoStuff(); // prints 4
   }
 }
-</pre>
-Ú
-csharpsquid:S134›
+</pre>Z
+CODE_SMELL
+˛
+csharpsquid:S134È
 csharpsquidS134qControl flow statements "if", "for", "foreach", "do", "while", "switch" and "try" should not be nested too deeply"MAJOR*cs:…<p>
     Nested <code>if</code>, <code>switch</code>, <code>for</code>, <code>foreach</code>, <code>while</code>, <code>do</code>, and <code>try</code> statements
     are key ingredients for making what's known as "Spaghetti code". Such code is hard to read, refactor and therefore maintain.
@@ -21430,9 +21940,10 @@ if (condition1) // Compliant - depth = 1
     }
   }
 }
-</pre>
-—
-csharpsquid:S3217ª
+</pre>Z
+CODE_SMELL
+›
+csharpsquid:S3217«
 csharpsquidS3217<"Explicit" conversions of "foreach" loops should not be used"MAJOR*cs:€<p>
     The <code>foreach</code> statement was introduced in the C# language prior to generics. To make it easier to work with
     non-generic collections available at that time such as <code>ArrayList</code>, the <code>foreach</code> statements allows
@@ -21504,9 +22015,10 @@ foreach (Orange orange in fruitBasket.OfType<Orange>())
     The rule ignores iterations on collections of <code>object</code>s. This includes legacy code that uses
     <code>ArrayList</code>. Furthermore, the rule does not report on cases when user defined conversions are
     being called.
-</p>
-˜
-csharpsquid:S3218·
+</p>Z
+CODE_SMELL
+É	
+csharpsquid:S3218Ì
 csharpsquidS3218JInner class members should not shadow outer class "static" or type members"MAJOR*cs:Û<p>
     It's possible to name the members of an inner class the same as the <code>static</code> members of its enclosing class -
     possible, but a bad idea. That's because maintainers may be confused about which members are being used where. Instead the
@@ -21561,9 +22073,10 @@ class Outer
     }
   }
 }
-</pre>
-
-csharpsquid:S927€
+</pre>Z
+CODE_SMELL
+¸
+csharpsquid:S927Á
 csharpsquidS927-"partial" method parameter names should match"CRITICAL*cs:à<p>
     When the parameters to the implementation of a <code>partial</code> method don't match those
     in the signature declaration, then confusion is almost guaranteed. Either the implementer was
@@ -21618,10 +22131,11 @@ partial class Point
     <li>MISRA C:2004, 16.4 - The identifiers used in the declaration and definition of a function shall be identical.</li>
     <li>MISRA C++:2008, 8-4-2 - The identifiers used for the parameters in a re-declaration of a function shall be identical to those in the declaration.</li>
     <li>MISRA C:2012, 8.3 - All declarations of an object or function shall use the same names and type qualifiers.</li>
-</ul>
-ò
+</ul>Z
+CODE_SMELL
+§
 
-csharpsquid:S2360Ç
+csharpsquid:S2360é
 
 csharpsquidS2360&Optional parameters should not be used"MAJOR*cs:∏	<p>
     The overloading mechanism should be used in place of optional parameters for several reasons:
@@ -21650,9 +22164,10 @@ void Notify(string company)
 void Notify(string company, string office = "QJZ")
 {
 }
-</pre>
-ª
-csharpsquid:S125¶
+</pre>Z
+CODE_SMELL
+«
+csharpsquid:S125≤
 csharpsquidS125.Sections of code should not be "commented out""MAJOR*cs:’<p>
     Programmers should not comment out code as it bloats programs and reduces readability.
     Unused code should be deleted and can be retrieved from source control history if required.
@@ -21664,9 +22179,10 @@ void Notify(string company, string office = "QJZ")
     <li>MISRA C++:2008, 2-7-2 - Sections of code shall not be "commented out" using C-style comments.</li>
     <li>MISRA C++:2008, 2-7-3 - Sections of code should not be "commented out" using C++ comments.</li>
     <li>MISRA C:2012, Dir. 4.4 - Sections of code should not be "commented out"</li>
-</ul>
-É
-csharpsquid:S3450Ì
+</ul>Z
+CODE_SMELL
+è
+csharpsquid:S3450˘
 csharpsquidS3450\Parameters with "[DefaultParameterValue]" attributes should also be marked with "[Optional]""MAJOR*cs:Ì<p>
     There is no point in providing a default value for a parameter if callers are required to provide a value for it anyway. Thus,
     <code>[DefaultParameterValue]</code> should always be used in conjunction with <code>[Optional]</code>.
@@ -21693,9 +22209,10 @@ public void MyMethod([DefaultParameterValue(5)][Optional] int j)
 {
   Console.WriteLine(j);
 }
-</pre>
-‚
-csharpsquid:S127Õ
+</pre>Z
+CODE_SMELL
+Ó
+csharpsquid:S127Ÿ
 csharpsquidS127."for" loop stop conditions should be invariant"MAJOR*cs:¸<p>
     <code>for</code> loop stop conditions must be invariant (i.e. true at both the beginning and ending of every loop iteration). Ideally, this means that the stop condition is set to a local variable just before the loop begins.
 </p>
@@ -21748,10 +22265,11 @@ class Foo
 <ul>
     <li>MISRA C:2004, 13.6 - Numeric variables being used within a for loop for iteration counting shall not be modified in the body of the loop.</li>
     <li>MISRA C++:2008, 6-5-3 - The loop-counter shall not be modified within condition or statement.</li>
-</ul>
-à
+</ul>Z
+CODE_SMELL
+î
 
-csharpsquid:S3172Ú	
+csharpsquid:S3172˛	
 csharpsquidS3172"Delegates should not be subtracted"CRITICAL*cs:©	<p>
     In C#, delegates can be added together to chain their execution, and subtracted to remove their execution from the chain.
 </p>
@@ -21783,9 +22301,10 @@ chain23(); // will print "1234"!
 MyDelegate chain23 = chain1234 - first - fourth; // Compliant - "1" is first removed, followed by "4"
 
 chain23(); // will print "23"
-</pre>
-ó
-csharpsquid:S126Ç
+</pre>Z
+CODE_SMELL
+£
+csharpsquid:S126é
 csharpsquidS1269"if ... else if" constructs should end with "else" clause"MAJOR*cs:¶<p>
   This rule applies whenever an <code>if</code> statement is followed by one or
   more <code>else if</code> statements, the final <code>else if</code> should be
@@ -21834,9 +22353,10 @@ if (x == 0)
     <li><a href="https://www.securecoding.cert.org/confluence/x/YgE">CERT, MSC01-C</a> - Strive for logical completeness</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/JoIyAQ">CERT, MSC01-CPP</a> - Strive for logical completeness</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/PQHRAw">CERT, MSC64-Java</a> - Strive for logical completeness</li>
-</ul>
-Ã
-csharpsquid:S3052∂
+</ul>Z
+CODE_SMELL
+ÿ
+csharpsquid:S3052¬
 csharpsquidS30522Fields should not be initialized to default values"MINOR*cs:‡<p>
     The compiler automatically initializes class fields to their default values before setting them with any initialization
     values, so there is no need to explicitly set a field to its default value. Further, under the logic that cleaner code
@@ -21862,9 +22382,10 @@ class X
 </pre>
 
 <h2>Exceptions</h2>
-<code>const</code> fields are ignored.
-€"
-csharpsquid:S2930≈"
+<code>const</code> fields are ignored.Z
+CODE_SMELL
+Á"
+csharpsquid:S2930—"
 csharpsquidS2930!"IDisposables" should be disposed"CRITICAL*cs:˝!<p>
     When writing managed code, you don't need to worry about allocating or freeing memory: The garbage collector takes care of it. For efficiency
     reasons, some objects such as <code>Bitmap</code> use unmanaged memory, enabling for example the use of pointer arithmetic. Such objects have
@@ -21992,10 +22513,11 @@ public void ReadFromStream(Stream s)
 <h2>See</h2>
 <ul>
     <li> <a href="http://cwe.mitre.org/data/definitions/459.html">MITRE, CWE-459</a> - Incomplete Cleanup</li>
-</ul>
-“
+</ul>Z
+CODE_SMELL
+ﬁ
 
-csharpsquid:S3466º
+csharpsquid:S3466»
 
 csharpsquidS34664Optional parameters should be passed to "base" calls"CRITICAL*cs:·	<p>
     Generally, writing the least code that will readably do the job is a good thing, so omitting default parameter values seems to 
@@ -22054,9 +22576,10 @@ public class DerivedClass : BaseClass
     dc.MyMethod(12);  // prints 12
   }
 }
-</pre>
-‡
-csharpsquid:S2376 
+</pre>Z
+CODE_SMELL
+Ï
+csharpsquid:S2376÷
 csharpsquidS2376(Write-only properties should not be used"MAJOR*cs:˛<p>
     Properties with only setters are confusing and counterintuitive. Instead, a property getter should be added if possible, or
     the property should be replaced with a setter method.
@@ -22086,9 +22609,10 @@ class Program
         // ... some code ...
     }
 }
-</pre>
-¡
-csharpsquid:S3220´
+</pre>Z
+CODE_SMELL
+Õ
+csharpsquid:S3220∑
 csharpsquidS3220FMethod calls should not resolve ambiguously to overloads with "params""MAJOR*cs:¡<p>
     The rules for method resolution are complex and perhaps not properly understood by all coders. The <code>params</code> keyword can make
     method declarations overlap in non-obvious ways, so that slight changes in the argument types of an invocation can resolve to different
@@ -22112,9 +22636,10 @@ public class MyClass
 MyClass myClass = new MyClass();
 
 myClass.Format("", null, null); //Noncompliant, resolves to the first Format with params, but was that intended?
-</pre>
-©
-csharpsquid:S1848ì
+</pre>Z
+CODE_SMELL
+µ
+csharpsquid:S1848ü
 csharpsquidS1848JObjects should not be created to be dropped immediately without being used"CRITICAL*cs:¢<p>
 There is no good reason to create a new object to not do anything with it. Most of the time, this is due to a missing piece of code and so could lead to an unexpected behavior in production.
 </p>
@@ -22129,9 +22654,10 @@ if (x < 0)
 <pre>
 if (x < 0)
   throw new ArgumentException("x must be nonnegative");
-</pre>
-æ
-csharpsquid:S1449®
+</pre>Z
+CODE_SMELL
+ 
+csharpsquid:S1449¥
 csharpsquidS14493Culture should be specified for "string" operations"MAJOR*cs:—<p>
     <code>string.ToLower()</code>, <code>ToUpper</code>, <code>IndexOf</code>, <code>LastIndexOf</code>, and <code>Compare</code> are 
     all culture-dependent, as are some (floating point number and <code>DateTime</code>-related) calls to <code>ToString</code>. Fortunately, all have
@@ -22165,9 +22691,10 @@ var lowered = someString.ToLowerInvariant();
 <h2>See</h2>
 <ul>
     <li><a href="https://www.securecoding.cert.org/confluence/x/EwAiAg">CERT, STR02-J.</a> - Specify an appropriate locale when comparing locale-dependent data</li>
-</ul>
-Â
-csharpsquid:S2933œ
+</ul>Z
+CODE_SMELL
+Ò
+csharpsquid:S2933€
 csharpsquidS2933EFields that are only assigned in the constructor should be "readonly""MAJOR*cs:Ê<p>
     <code>readonly</code> fields can only be assigned in a class constructor. If a class has a field that's
     not marked <code>readonly</code> but is only set in the constructor, it could cause confusion about the
@@ -22197,9 +22724,10 @@ class Person
     _birthYear = birthYear;
   }
 }
-</pre>
-Í
-csharpsquid:S2934‘
+</pre>Z
+CODE_SMELL
+ˆ
+csharpsquid:S2934‡
 csharpsquidS2934`Property assignments should not be made for "readonly" fields not constrained to reference types"CRITICAL*cs:Õ<p>
     While the properties of a <code>readonly</code> reference type field can still be changed after initialization,
     those of a <code>readonly</code> value field, such as a <code>struct</code>, cannot.
@@ -22277,10 +22805,11 @@ class PointManager&lt;T&gt; where T : class, IPoint
     Console.WriteLine(point.X);
   }
 }
-</pre>
-Ö
+</pre>Z
+CODE_SMELL
+ë
 
-csharpsquid:S2931Ô	
+csharpsquid:S2931˚	
 csharpsquidS2931AClasses with "IDisposable" members should implement "IDisposable""CRITICAL*cs:á	<p>
     Classes with <code>IDisposable</code> members are responsible for cleaning up those members by calling
     their <code>Dispose</code> methods. The best practice here is for the owning class to itself implement
@@ -22328,9 +22857,10 @@ public class ResourceHolder : IDisposable
 
 <ul>
     <li> <a href="http://cwe.mitre.org/data/definitions/459.html">MITRE, CWE-459</a> - Incomplete Cleanup</li>
-</ul>
-⁄	
-csharpsquid:S818≈	
+</ul>Z
+CODE_SMELL
+Ê	
+csharpsquid:S818—	
 csharpsquidS818%Literal suffixes should be upper case"MINOR*cs:˝<p>
     Using upper case literal suffixes removes the potential ambiguity between "1" (digit 1) and "l" (letter el) for declaring literals.
 </p>
@@ -22363,9 +22893,10 @@ const double g = 1.2D;
     <li>MISRA C:2012, 7.3 - The lowercase character "l" shall not be used in a literal suffix</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/koAtAQ">CERT DCL16-C</a> - Use "L," not "l," to indicate a long value</li>
     <li><a href="https://www.securecoding.cert.org/confluence/x/n4AtAQ">CERT DCL16-CPP</a> - Use "L," not "l," to indicate a long value</li>
-</ul>
-˚
-csharpsquid:S2372Â
+</ul>Z
+CODE_SMELL
+á
+csharpsquid:S2372Ò
 csharpsquidS23725Exceptions should not be thrown from property getters"MAJOR*cs:å<p>
     Property getters should be simple operations that are always safe to call. If exceptions need to be thrown, it is best to convert the property to a method.
 </p>
@@ -22401,46 +22932,59 @@ class MyClass
     // ... some code ...
   }
 }
-</pre>
-≠
-common-java:FailedUnitTestsç
-common-javaFailedUnitTests!Failed unit tests should be fixed"MAJOR*java:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.
-É
-common-java:SkippedUnitTests‚
-common-javaSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*java:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.
-Á
-common-java:DuplicatedBlocks∆
-common-javaDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*java:dAn issue is created on a file as soon as there is at least one block of duplicated code on this file
-ë
-&common-java:InsufficientCommentDensityÊ
-common-javaInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*java:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.
-÷
-$common-java:InsufficientLineCoverage≠
-common-javaInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*java:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.
-·
-&common-java:InsufficientBranchCoverage∂
-common-javaInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*java:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.
-ß
-common-js:FailedUnitTestsâ
-	common-jsFailedUnitTests!Failed unit tests should be fixed"MAJOR*js:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.
-˝
-common-js:SkippedUnitTestsﬁ
-	common-jsSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*js:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.
-·
-common-js:DuplicatedBlocks¬
-	common-jsDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*js:dAn issue is created on a file as soon as there is at least one block of duplicated code on this file
-ã
-$common-js:InsufficientCommentDensity‚
-	common-jsInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*js:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.
-–
-"common-js:InsufficientLineCoverage©
-	common-jsInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*js:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.
-€
-$common-js:InsufficientBranchCoverage≤
-	common-jsInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*js:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.
-ó
+</pre>Z
+CODE_SMELL
+π
+common-java:FailedUnitTestsô
+common-javaFailedUnitTests!Failed unit tests should be fixed"MAJOR*java:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.Z
+CODE_SMELL
+è
+common-java:SkippedUnitTestsÓ
+common-javaSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*java:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.Z
+CODE_SMELL
+Û
+common-java:DuplicatedBlocks“
+common-javaDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*java:dAn issue is created on a file as soon as there is at least one block of duplicated code on this fileZ
+CODE_SMELL
+ù
+&common-java:InsufficientCommentDensityÚ
+common-javaInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*java:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.Z
+CODE_SMELL
+‚
+$common-java:InsufficientLineCoverageπ
+common-javaInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*java:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.Z
+CODE_SMELL
+Ì
+&common-java:InsufficientBranchCoverage¬
+common-javaInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*java:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.Z
+CODE_SMELL
+≥
+common-js:FailedUnitTestsï
+	common-jsFailedUnitTests!Failed unit tests should be fixed"MAJOR*js:ºTest failures or errors generally indicate that regressions have been introduced. Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.Z
+CODE_SMELL
+â
+common-js:SkippedUnitTestsÍ
+	common-jsSkippedUnitTests4Skipped unit tests should be either removed or fixed"MAJOR*js:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.Z
+CODE_SMELL
+Ì
+common-js:DuplicatedBlocksŒ
+	common-jsDuplicatedBlocks2Source files should not have any duplicated blocks"MAJOR*js:dAn issue is created on a file as soon as there is at least one block of duplicated code on this fileZ
+CODE_SMELL
+ó
+$common-js:InsufficientCommentDensityÓ
+	common-jsInsufficientCommentDensity>Source files should have a sufficient density of comment lines"MAJOR*js:ÌAn issue is created on a file as soon as the density of comment lines on this file is less than the required threshold. The number of comment lines to be written in order to reach the required threshold is provided by each issue message.Z
+CODE_SMELL
+‹
+"common-js:InsufficientLineCoverageµ
+	common-jsInsufficientLineCoverage3Lines should have sufficient coverage by unit tests"MAJOR*js:¡An issue is created on a file as soon as the line coverage on this file is less than the required threshold. It gives the number of lines to be covered in order to reach the required threshold.Z
+CODE_SMELL
+Á
+$common-js:InsufficientBranchCoverageæ
+	common-jsInsufficientBranchCoverage6Branches should have sufficient coverage by unit tests"MAJOR*js:≈An issue is created on a file as soon as the branch coverage on this file is less than the required threshold.It gives the number of branches to be covered in order to reach the required threshold.Z
+CODE_SMELL
+£
 
-java:S2070à
+java:S2070î
 javaS2070;SHA-1 and Message-Digest hash algorithms should not be used"CRITICAL*java2S2070:§<p>The MD5 algorithm and its successor, SHA-1, are no longer considered secure, because it is too easy to create hash collisions with them. That is, it takes too little computational effort to come up with a different input that produces the same MD5 or SHA-1 hash, and using the new, same-hash value gives an attacker the same access as if he had the originally-hashed value. This applies as well to the other Message-Digest algorithms: MD2, MD4, MD6.</p>
 <p>This rule tracks usage of the <code>java.security.MessageDigest</code>, and <code>org.apache.commons.codec.digest.DigestUtils</code> classes  to instantiate MD or SHA-1 algorithms, and of Guava's <code>com.google.common.hash.Hashing sha1</code> and <code>md5</code> methods. </p>
 <h2>Noncompliant Code Example</h2>
@@ -22465,10 +23009,11 @@ Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
 <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Porous Defenses</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#WEAK_MESSAGE_DIGEST">MessageDigest Is Weak</a></li>
-</ul>
-◊
+</ul>Z
+CODE_SMELL
+„
 
-java:S2076»
+java:S2076‘
 javaS20760Values passed to OS commands should be sanitized"CRITICAL*java2S2076:Ô<p>Applications that execute operating system commands or execute commands that interact with the underlying system should neutralize any externally-provided values used in those commands. Failure to do so could allow an attacker to include input that executes unintended commands, or exposes sensitive data.</p>
 <p>This rule logs an issue as soon as a command is built dynamically. it's then up to the auditor to figure out if the command execution is secure or not. </p>
 <h2>Noncompliant Code Example</h2>
@@ -22493,10 +23038,11 @@ public void execute(String command, String argument) {
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A1-Injection">OWASP Top Ten 2013 Category A1</a> - Injection</li>
 <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Insecure Interaction Between Components</li>
 <li> Derived from the FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#COMMAND_INJECTION">Potential Command Injection</a></li>
-</ul>
-Ø
+</ul>Z
+CODE_SMELL
+ª
 
-java:S2077†
+java:S2077¨
 javaS20771Values passed to SQL commands should be sanitized"CRITICAL*java2S2077:∆<p>Applications that execute SQL commands should neutralize any externally-provided values used in those commands. Failure to do so could allow an attacker to include input that changes the query so that unintended commands are executed, or sensitive data is exposed.</p>
 <p>This rule checks that method parameters are not used directly in non-Hibernate SQL statements, and that parameter binding, rather than concatenation is used in Hibernate statements.</p>
 <h2>Noncompliant Code Example</h2>
@@ -22566,10 +23112,11 @@ public User getUserHibernate(org.hibernate.Session session, String userInput) {
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A1-Injection">OWASP Top Ten 2013 Category A1</a> - Injection</li>
 <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Insecure Interaction Between Components</li>
 <li> Derived from FindSecBugs rules <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#SQL_INJECTION_JPA">Potential SQL/JPQL Injection (JPA)</a>, <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#SQL_INJECTION_JDO">Potential SQL/JDOQL Injection (JDO)</a>, <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#SQL_INJECTION_HIBERNATE">Potential SQL/HQL Injection (Hibernate)</a></li>
-</ul>
-¡
+</ul>Z
+CODE_SMELL
+Õ
 
-java:S2078≤
+java:S2078æ
 javaS20781Values passed to LDAP queries should be sanitized"CRITICAL*java2S2078:ÿ<p>Applications that execute LDAP queries should neutralize any externally-provided values in those commands. Failure to do so could allow an attacker to include input that changes the query so that unintended commands are executed, or sensitive data is exposed. Unhappily LDAP doesn't provide any prepared statement interfaces like SQL to easily remove this risk. So each time a LDAP query is built dynamically this rule logs an issue.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -22618,11 +23165,12 @@ public User lookupUser(String username, String base, String [] requestedAttrs) {
 <li> <a href="http://cwe.mitre.org/data/definitions/90">MITRE CWE-90</a> - Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A1-Injection">OWASP Top Ten 2013 Category A1</a> - Injection</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#LDAP_INJECTION">Potential LDAP Injection</a></li>
-</ul>
-Ã
+</ul>Z
+CODE_SMELL
+ÿ
 
 
-java:S2089Ω
+java:S2089…
 
 javaS2089%HTTP referers should not be relied on"CRITICAL*java2S2089:Ô	<p>The fields in an HTTP request are putty in the hands of an attacker, and you cannot rely on them to tell you the truth about anything. While it may be safe to store such values after they have been neutralized, decisions should never be made based on their contents.</p>
 <p>This rule flags uses of the referer header field.</p>
@@ -22647,10 +23195,11 @@ public class MyServlet extends HttpServlet {
 </li><li> <a href="http://cwe.mitre.org/data/definitions/293">MITRE, CWE-293</a> - Using Referer Field for Authentication
 </li><li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Porous Defenses
 </li><li> <a href="https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management">OWASP Top Ten 2013 Category A2</a> - Broken Authentication and Session Management
-</li></ul>
-ª
+</li></ul>Z
+CODE_SMELL
+«
 
-java:S1199¨
+java:S1199∏
 javaS1199%Nested code blocks should not be used"MAJOR*java2S1199:·<p>Nested code blocks can be used to create a new scope and restrict the visibility of the variables defined inside it. Using this feature in a method typically indicates that the method has too many responsibilities, and should be refactored into smaller methods.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -22688,10 +23237,11 @@ private void evaluateAdd() {
   int result = a + b;
   stack.push(result);
 }
-</pre>
-â
+</pre>Z
+CODE_SMELL
+ï
 
-java:S1197˙
+java:S1197Ü
 javaS1197>Array designators "[]" should be on the type, not the variable"MINOR*java2S1197:ñ<p>
   Array designators should always be located on the type for better code readability.
   Otherwise, developers must look both at the type and the variable name to know whether or
@@ -22707,10 +23257,11 @@ int[] matrix[];   // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 int[][] matrix;   // Compliant
-</pre>
-ª
+</pre>Z
+CODE_SMELL
+«
 
-java:S1195¨
+java:S1195∏
 javaS1195LArray designators "[]" should be located after the type in method signatures"MINOR*java2S1195:∫<p>According to the Java Language Specification: </p>
 <blockquote>
 <p>For compatibility with older versions of the Java SE platform,</p>
@@ -22730,10 +23281,11 @@ public int[] getMatrix()[] { /* ... */ }  // Noncompliant
 public int[] getVector() { /* ... */ }
 
 public int[][] getMatrix() { /* ... */ } 
-</pre>
-Ö
+</pre>Z
+CODE_SMELL
+ë
 
-java:S1194ˆ
+java:S1194Ç
 javaS1194("java.lang.Error" should not be extended"MINOR*java2S1194:®<p><code>java.lang.Error</code> and its subclasses represent abnormal conditions, such as <code>OutOfMemoryError</code>, which should only be encountered by the Java Virtual Machine.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -22744,10 +23296,11 @@ public class MyException extends Error { /* ... */ }       // Noncompliant
 
 <pre>
 public class MyException extends Exception { /* ... */ }   // Compliant
-</pre>
-∏
+</pre>Z
+CODE_SMELL
+ƒ
 
-java:S1193©
+java:S1193µ
 javaS1193GException types should not be tested using "instanceof" in catch blocks"MAJOR*java2S1193:º<p>
 Multiple catch blocks of the appropriate type should be used instead of catching a general exception, and then testing on the type.
 </p>
@@ -22770,10 +23323,11 @@ try {
   /* ... */
 } catch (IOException e) { /* ... */ }                // Compliant
 } catch (NullPointerException e) { /* ... */ }       // Compliant
-</pre>
-ê
+</pre>Z
+CODE_SMELL
+ú
 
-java:S1192Å
+java:S1192ç
 javaS1192(String literals should not be duplicated"MINOR*java2S1192:≥
 <p>Duplicated string literals make the process of refactoring error-prone, since you must be sure to update all occurrences.</p>
 <p>On the other hand, constants can be referenced from many places, but only need to be updated in a single place.</p>
@@ -22810,10 +23364,11 @@ public void run() {
 </pre>
 <h2>Exceptions</h2>
 
-<p>To prevent generating some false-positives, literals having less than 5 characters are excluded.</p>
-Ω
+<p>To prevent generating some false-positives, literals having less than 5 characters are excluded.</p>Z
+CODE_SMELL
+…
 
-java:S1191Æ
+java:S1191∫
 javaS11910Classes from "sun.*" packages should not be used"MAJOR*java2S1191:ÿ<p>Classes in the <code>sun.*</code> or <code>com.sun.*</code> packages are considered implementation details, and are not part of the Java API.</p>
 <p>They can cause problems when moving to new versions of Java because there is no backwards compatibility guarantee. Similarly, they can cause problems when moving to a different Java vendor, such as OpenJDK.</p>
 <p>Such classes are almost always wrapped by Java API classes that should be used instead.</p>
@@ -22822,10 +23377,11 @@ java:S1191Æ
 <pre>
 import com.sun.jna.Native;     // Noncompliant
 import sun.misc.BASE64Encoder; // Noncompliant
-</pre>
-Ó
+</pre>Z
+CODE_SMELL
+˙
 
-java:S1190ﬂ
+java:S1190Î
 javaS1190+Future keywords should not be used as names"MAJOR*java2S1190:é<p>Through Java's evolution keywords have been added. While code that uses those words as identifiers may be compilable under older versions of Java, it will not be under modern versions. </p>
 <table>
 <tr><th>Keyword</th><th>Added</th></tr>
@@ -22848,10 +23404,11 @@ public void doSomething() {
 public void doSomething() {
   int magic = 42;
 }
-</pre>
-÷
+</pre>Z
+CODE_SMELL
+‚
 
-java:S2092«
+java:S2092”
 javaS2092Cookies should be "secure""CRITICAL*java2S2092:Ñ<p>The "secure" attribute prevents cookies from being sent over plaintext connections such as HTTP, where they would be easily eavesdropped upon. Instead, cookies with the secure attribute are only sent over encrypted HTTPS connections.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -22872,10 +23429,11 @@ response.addCookie(c);
 <li> <a href="http://cwe.mitre.org/data/definitions/614">MITRE, CWE-614</a> - Sensitive Cookie in HTTPS Session Without 'Secure' Attribute
 </li><li> <a href="https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management">OWASP Top Ten 2013 Category A2</a> - Broken Authentication and Session Management
 </li><li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure
-</li></ul>
-Á	
+</li></ul>Z
+CODE_SMELL
+Û	
 
-java:S2093ÿ	
+java:S2093‰	
 javaS2093!Try-with-resources should be used"MAJOR*java2S2093:ë	<p>Java 7 introduced the try-with-resources statement, which guarantees that the resource in question will be closed. Since the new syntax is closer to bullet-proof, it should be preferred over the older <code>try</code>/<code>catch</code>/<code>finally</code> version.</p>
 <p>This rule checks that <code>close</code>-able resources are opened in a try-with-resources statement.</p>
 
@@ -22919,10 +23477,11 @@ try (BufferedReader br =
   return br.readLine();
 }
 catch (...) {}
-</pre>
-Ñ
+</pre>Z
+CODE_SMELL
+ê
 
-java:S2094ı
+java:S2094Å
 javaS2094Classes should not be empty"MAJOR*java2S2094:¥<p>There is no good excuse for an empty class. If it's being used simply as a common extension point, it should be replaced with an <code>interface</code>. If it was stubbed in as a placeholder for future development it should be fleshed-out. In any other case, it should be eliminated.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -22946,10 +23505,11 @@ public interface Nothing {
 public class ApplicationConfiguration {
 
 }
-</pre>
-ä
+</pre>Z
+CODE_SMELL
+ñ
 
-java:S2095˚
+java:S2095á
 javaS2095Resources should be closed"BLOCKER*java2S2095:π<p>Java's garbage collection cannot be relied on to clean up everything. Specifically, connections, streams, files and other classes that implement the <code>Closeable</code> interface or it's super-interface, <code>AutoCloseable</code>, must be manually closed after creation. Failure to do so will result in a resource leak which could bring first the application and then perhaps the box it's on to their knees.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -23002,10 +23562,11 @@ catch ( ... ) {
 <ul>
   <li><a href="http://cwe.mitre.org/data/definitions/459.html">MITRE, CWE-459</a> - Incomplete Cleanup</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/9gFqAQ">CERT, FIO04-J</a> - Release resources when they are no longer needed</li>
-</ul>
-˝
+</ul>Z
+CODE_SMELL
+â
 
-java:S2096Ó
+java:S2096˙
 javaS2096""main" should not "throw" anything"CRITICAL*java2S2096:£<p>There's no reason for a <code>main</code> method to <code>throw</code> anything. After all, what's going to catch it?</p>
 
 <p>Instead, the method should itself gracefully handle any exceptions that may bubble up to it, attach as much contextual information as possible, and perform whatever logging or user communication is necessary.</p>
@@ -23018,10 +23579,11 @@ public static void main(String args[]) throws Exception { // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 public static void main(String args[]) {
-</pre>
-’
+</pre>Z
+CODE_SMELL
+·
 
-java:S2097∆
+java:S2097“
 javaS2097."equals(Object obj)" should test argument type"BLOCKER*java2S2097:<p>Because the <code>equals</code> method takes a generic <code>Object</code> as a parameter, any type of object may be passed to it. The method should not assume it will only be used to test objects of its class type. It must instead check the parameter's type.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23044,16 +23606,18 @@ public boolean equals(Object obj) {
   MyClass mc = (MyClass)obj;
   // ...
 }
-</pre>
-Õ
+</pre>Z
+CODE_SMELL
+Ÿ
 
-java:S1188æ
+java:S1188 
 javaS1188<Lambdas and anonymous classes should not have too many lines"MAJOR*java2S1188:‹<p>
 Anonymous classes and lambdas (with Java 8) are a very convenient and compact way to inject a behavior without having to create a dedicated class. But those anonymous inner classes and lambdas should be used only if the behavior to be injected can be defined in a few lines of code, otherwise the source code can quickly become unreadable.
-</p>
-Ï	
+</p>Z
+CODE_SMELL
+¯	
 
-java:S1186›	
+java:S1186È	
 javaS1186Methods should not be empty"MAJOR*java2S1186:ú	<p>There are several reasons for a method not to have a method body:</p>
 <ul>
   <li>It is an unintentional omission, and should be fixed to prevent an unexpected behavior in production.</li>
@@ -23094,10 +23658,11 @@ public abstract class Animal {
   void speak() {
   }
 }
-</pre>
-∞
+</pre>Z
+CODE_SMELL
+º
 
-java:S1185°
+java:S1185≠
 javaS1185UOverriding methods should do more than simply call the same method in the super class"MINOR*java2S1185:¶<p>Overriding a method just to call the same method from the super class without performing any other actions is useless and misleading. The only time this is justified is in <code>final</code> overriding methods, where the effect is to lock in the parent class behavior. This rule ignores such overrides of <code>equals</code>, <code>hashCode</code> and <code>toString</code>.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23124,10 +23689,11 @@ public boolean isLegal(Action action) {         // Compliant - not simply forwar
 public int getId() {                            // Compliant - there is annotation different from @Override
   return super.getId();
 }
-</pre>
-§
+</pre>Z
+CODE_SMELL
+∞
 
-java:S1182ï
+java:S1182°
 javaS1182LClasses that override "clone" should be "Cloneable" and call "super.clone()""MAJOR*java2S1182:£<p><code>Cloneable</code> is the marker <code>Interface</code> that indicates that <code>clone()</code> may be called on an object. Overriding <code>clone()</code> without implementing <code>Cloneable</code> can be useful if you want to control how subclasses clone themselves, but otherwise, it's probably a mistake.</p>
 <p>The usual convention for <code>Object.clone()</code> according to Oracle's Javadoc is:</p>
 <ol>
@@ -23195,10 +23761,11 @@ class Application {
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/580.html">MITRE, CWE-580</a> - clone() Method Without super.clone()</li>
-</ul>
-“
+</ul>Z
+CODE_SMELL
+ﬁ
 
-java:S1181√
+java:S1181œ
 javaS1181(Throwable and Error should not be caught"BLOCKER*java2S1181:Û<p><code>Throwable</code> is the superclass of all errors and exceptions in Java.</p>
 <p><code>Error</code> is the superclass of all errors, which are not meant to be caught by applications.</p>
 <p>Catching either <code>Throwable</code> or <code>Error</code> will also catch <code>OutOfMemoryError</code> and <code>InternalError</code>, from which an application should not attempt to recover.</p>
@@ -23219,9 +23786,10 @@ try { /* ... */ } catch (MyException e) { /* ... */ }
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/396.html">MITRE, CWE-396</a> - Declaration of Catch for Generic Exception</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/BoB3AQ">CERT, ERR07-J</a> - Do not throw RuntimeException, Exception, or Throwable</li>
-</ul>
-¸
-java:TrailingCommentCheckﬁ
+</ul>Z
+CODE_SMELL
+à	
+java:TrailingCommentCheckÍ
 javaTrailingCommentCheck:Comments should not be located at the end of lines of code"INFO*java2TrailingCommentCheck:·<p>This rule verifies that single-line comments are not located at the end of a line of code. The main idea behind this rule is that in order to be really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of the code, not too long to be visible) but most often, automatic code formatters would not handle this correctly: the code would end up less readable. Comments are far better placed on the previous empty line of code, where they will always be visible and properly formatted.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23239,10 +23807,11 @@ int a2 = b + c;
 <p>By default, the property "legalTrailingCommentPattern" allows to ignore comments containing only one word :</p>
 <pre>
 doSomething(); //FIXME
-</pre>
-¯
+</pre>Z
+CODE_SMELL
+Ñ
 
-java:S1175È
+java:S1175ı
 javaS1175FThe signature of "finalize()" should match that of "Object.finalize()""MAJOR*java2S1175:˝<p><code>Object.finalize()</code> is called by the Garbage Collector sometime after the object becomes unreferenced.</p>
 <p>Overloading this method is misleading:</p>
 <ul>
@@ -23263,10 +23832,11 @@ public int finalize(int someParameter) {        // Noncompliant
 public int someBetterName(int someParameter) {  // Compliant
   /* ... */
 }
-</pre>
-“
+</pre>Z
+CODE_SMELL
+ﬁ
 
-java:S1174√
+java:S1174œ
 javaS1174K"Object.finalize()" should remain protected (versus public) when overriding"MAJOR*java2S1174:“<p>The contract of the <code>Object.finalize()</code> method is clear: only the Garbage Collector is supposed to call this method.</p>
 <p>Making this method public is misleading, because it implies that any caller can use it.</p>
 <h2>Noncompliant Code Example</h2>
@@ -23285,10 +23855,11 @@ public class MyClass {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/583.html">MITRE, CWE-583</a> - finalize() Method Declared Public</li>
 <li> CERT Java Secure Coding, MET12-J - Do not use finalizers</li>
-</ul>
-´	
+</ul>Z
+CODE_SMELL
+∑	
 
-java:S1172ú	
+java:S1172®	
 javaS1172*Unused method parameters should be removed"MAJOR*java2S1172:Ã<p>Unused parameters are misleading. Whatever the value passed to such parameters is, the behavior will be the same.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23330,10 +23901,11 @@ public void qix(String s) {
 <ul>
 <li> MISRA C++:2008, 0-1-11 - There shall be no unused parameters (named or unnamed) in nonvirtual functions.</li>
 <li> MISRA C:2012, 2.7 - There should be no unused parameters in functions</li>
-</ul>
-•
+</ul>Z
+CODE_SMELL
+±
 
-java:S1171ñ
+java:S1171¢
 javaS1171-Only static class initializers should be used"MAJOR*java2S1171:√<p>Non-static initializers are rarely used, and can be confusing for most developers.</p>
 <p>When possible, they should be refactored into standard constructors or field initializers.</p>
 <h2>Noncompliant Code Example</h2>
@@ -23367,10 +23939,11 @@ class MyClass {
   // Compliant
   private static final Map&lt;String, String&gt; MY_MAP = ImmutableMap.of("a", "b");
 }
-</pre>
-÷
+</pre>Z
+CODE_SMELL
+‚
 
-java:S1170«
+java:S1170”
 javaS1170jPublic constants and fields initialized at declaration should be "static final" rather than merely "final""MINOR*java2S1170:∑<p>Making a constant just <code>final</code> as opposed to <code>static final</code> leads to duplicating its value for every instance of the class, uselessly increasing the amount of memory required to execute the application.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23391,10 +23964,11 @@ public class Myclass {
 <p>No issues are reported on final fields of inner classes whose type is not a primitive or a String. Indeed according to the Java specification:</p>
 <blockquote>
 <p>An inner class is a nested class that is not explicitly or implicitly declared static. Inner classes may not declare static initializers (¬ß8.7) or member interfaces. Inner classes may not declare static members, unless they are compile-time constant fields (¬ß15.28).</p>
-</blockquote>
-È
+</blockquote>Z
+CODE_SMELL
+ı
 
-java:S1168⁄
+java:S1168Ê
 javaS1168?Empty arrays and collections should be returned instead of null"MAJOR*java2S1168:ı
 <p>Returning <code>null</code> instead of an actual array or collection forces callers of the method to explicitly test for nullity, making them more complex and less readable.</p>
 <p>Moreover, in many cases, <code>null</code> is used as a synonym for empty.</p>
@@ -23442,10 +24016,11 @@ public static List&lt;Result&gt; getResults() {
 
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/AgG7AQ">CERT, MSC19-C</a> - For functions that return an array, prefer returning an empty array over a null value</li>
-</ul>
-—
+</ul>Z
+CODE_SMELL
+›
 
-java:S1166¬
+java:S1166Œ
 javaS11669Exception handlers should preserve the original exception"CRITICAL*java2S1166:‡<p>When handling a caught exception, the original exception's message and stack trace should be logged or passed forward.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23489,10 +24064,11 @@ try {
   myInteger = 0;
 }
 
-</pre>
-Á
+</pre>Z
+CODE_SMELL
+Û
 
-java:S1165ÿ
+java:S1165‰
 javaS1165%Exception classes should be immutable"MAJOR*java2S1165:ç<p>Exceptions are meant to represent the application's state at which an error occurred.</p>
 <p>Making all fields final ensures that this state:</p>
 <ul>
@@ -23536,10 +24112,11 @@ public class MyException extends Exception {
   }
 
 }
-</pre>
-œ
+</pre>Z
+CODE_SMELL
+€
 
-java:S1163¿
+java:S1163Ã
 javaS11631Exceptions should not be thrown in finally blocks"CRITICAL*java2S1163:Ê<p>
 Throwing an exception from within a finally block will mask any exception which was previously thrown in the <code>try</code> or <code>catch</code> block.
 The masked's exception message and stack trace will be lost.
@@ -23566,10 +24143,11 @@ try {
 } finally {
   /* clean up */                                         // Compliant
 }
-</pre>
-∫
+</pre>Z
+CODE_SMELL
+∆
 
-java:S1162´
+java:S1162∑
 javaS1162&Checked Exception should not be thrown"MAJOR*java2S1162:ﬂ<p>The purpose of checked exceptions is to ensure that errors will be dealt with, either by propagating them or by handling them, but some believe that checked exceptions negatively impact the readability of source code, by spreading this error handling/propagation logic everywhere.</p>
 <p>This rule verifies that no method throws a new checked exception.</p>
 <h2>Noncompliant Code Example</h2>
@@ -23585,10 +24163,11 @@ public void myMethod1() throws CheckedException {
 public void myMethod2() throws CheckedException {  // Compliant; propagation allowed
   myMethod1();
 }
-</pre>
-û
+</pre>Z
+CODE_SMELL
+™
 
-java:S1161è
+java:S1161õ
 javaS1161x"@Override" annotation should be used on any method overriding (since Java 5) or implementing (since Java 6) another one"MAJOR*java2S1161:Ò<p>Using the <code>@Override</code> annotation is useful for two reasons :</p>
 <ul>
   <li>It elicits a warning from the compiler if the annotated method doesn't actually override anything, as in the case of a misspelling.</li>
@@ -23613,10 +24192,11 @@ class FirstChildClass extends ParentClass {
   @Override
   public boolean doSomething(){...}  // Compliant
 }
-</pre>
-±
+</pre>Z
+CODE_SMELL
+Ω
 
-java:S1160¢
+java:S1160Æ
 javaS11609Public methods should throw at most one checked exception"MAJOR*java2S1160:√<p>
   Using checked exceptions forces method callers to deal with errors, either by propagating them or by handling them.
   This makes those exceptions fully part of the API of the method.
@@ -23643,10 +24223,11 @@ public void delete() throws SomeApplicationLevelException {
 <h2>Exceptions</h2>
 <p>
   Overriding methods are not checked by this rule and are allowed to throw several checked exceptions.
-</p>
-ı
+</p>Z
+CODE_SMELL
+Å
 
-java:S1158Ê
+java:S1158Ú
 javaS1158VPrimitive wrappers should not be instantiated only for "toString" or "compareTo" calls"MAJOR*java2S1158:Í<p>
   Creating temporary primitive wrapper objects only for <code>String</code> conversion
   or the use of the <code>compareTo</code> method is inefficient.
@@ -23664,10 +24245,11 @@ new Integer(myInteger).toString();  // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 Integer.toString(myInteger);        // Compliant
-</pre>
-Ú
+</pre>Z
+CODE_SMELL
+˛
 
-java:S1157„
+java:S1157Ô
 javaS1157]Case insensitive string comparisons should be made without intermediate upper or lower casing"MAJOR*java2S1157:‡<p>
 Using <code>toLowerCase()</code> or <code>toUpperCase()</code> to make case insensitive comparisons is inefficient because it requires the creation of temporary, intermediate <code>String</code> objects.
 </p>
@@ -23684,10 +24266,11 @@ boolean result3 = foo.toLowerCase().equals(bar.LowerCase()); // Noncompliant
 
 <pre>
 boolean result = foo.equalsIgnoreCase(bar);                  // Compliant
-</pre>
-§
+</pre>Z
+CODE_SMELL
+∞
 
-java:S1155ï
+java:S1155°
 javaS11559Collection.isEmpty() should be used to test for emptiness"MAJOR*java2S1155:∂<p>Using <code>Collection.size()</code> to test for emptiness works, but using <code>Collection.isEmpty()</code> makes the code more readable and can be more performant. The time complexity of any <code>isEmpty()</code> method implementation should be <code>O(1)</code> whereas some implementations of <code>size()</code> can be <code>O\(n)</code>.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -23702,10 +24285,11 @@ if (myCollection.size() == 0) {  // Noncompliant
 if (myCollection.isEmpty()) {    // Compliant
   /* ... */
 }
-</pre>
-’
+</pre>Z
+CODE_SMELL
+·
 
-java:S1153∆
+java:S1153“
 javaS11533String.valueOf() should not be appended to a String"MINOR*java2S1153:Ì<p>
 Appending <code>String.valueOf()</code> to a <code>String</code> decreases the code readability.
 The argument passed to <code>String.valueOf()</code> should be directly appended instead.
@@ -23725,10 +24309,11 @@ public void display(int i){
 public void display(int i){
   System.out.println("Output is " + i);                    // Compliant
 }
-</pre>
-ﬂ
+</pre>Z
+CODE_SMELL
+Î
 
-java:S1151–
+java:S1151‹
 javaS11514"switch case" clauses should not have too many lines"MAJOR*java2S1151:ˆ<p>
   The <code>switch</code> statement should be used only to clearly define some new branches in the control flow.
   As soon as a <code>case</code> clause contains too many statements this highly decreases the readability
@@ -23767,10 +24352,11 @@ private void doSomething(){
     methodCall3("");
     methodCall4("");
 }
-</pre>
-ô
+</pre>Z
+CODE_SMELL
+•
 
-java:S1150ä
+java:S1150ñ
 javaS1150%Enumeration should not be implemented"MAJOR*java2S1150:ø<p>From the official Oracle Javadoc:</p>
 <blockquote>
 <p>NOTE: The functionality of this Enumeration interface is duplicated by the Iterator interface. In addition, Iterator adds an optional remove operation, and has shorter method names. New implementations should consider using Iterator in preference to Enumeration.</p>
@@ -23786,10 +24372,11 @@ public class MyClass implements Enumeration {  // Noncompliant
 public class MyClass implements Iterator {     // Compliant
   /* ... */
 }
-</pre>
-˜
+</pre>Z
+CODE_SMELL
+É	
 
-java:S1149Ë
+java:S1149Ù
 javaS1149QSynchronized classes Vector, Hashtable, Stack and StringBuffer should not be used"MAJOR*java2S1149:Ò<p>
 Early classes of the Java API, such as <code>Vector</code>, <code>Hashtable</code> and <code>StringBuffer</code>, were synchronized to make them thread-safe.
 Unfortunately, synchronization has a big negative impact on performance, even when using these collections from a single thread.
@@ -23823,10 +24410,11 @@ ArrayList cats = new ArrayList();
 <pre>
 @Override
 public Vector getCats() {...} 
-</pre>
-ÿ
+</pre>Z
+CODE_SMELL
+‰
 
-java:S1148…
+java:S1148’
 javaS11483Throwable.printStackTrace(...) should not be called"CRITICAL*java2S1148:Ì<p>
 <code>Throwable.printStackTrace(...)</code> prints a throwable and its stack trace to some stream.
 </p>
@@ -23855,10 +24443,11 @@ try {
 } catch(Exception e) {
   LOGGER.log("context", e);   // Compliant
 }
-</pre>
-¡
+</pre>Z
+CODE_SMELL
+Õ
 
-java:S1147≤
+java:S1147æ
 javaS1147!Exit methods should not be called"MAJOR*java2S1147:Î<p>Calling <code>System.exit(int status)</code> or <code>Rutime.getRuntime().exit(int status)</code> calls the shutdown hooks and shuts downs the entire Java virtual machine. Calling <code>Runtime.getRuntime().halt(int)</code> does an immediate shutdown, without calling the shutdown hooks, and skipping finalization.</p>
 <p>Each of these methods should be used with extreme care, and only when the intent is to stop the whole Java process. For instance, none of them should be called from applications running in a J2EE container.</p>
 <h2>Noncompliant Code Example</h2>
@@ -23876,10 +24465,11 @@ Runtime.getRuntime().halt(0);
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/382.html">MITRE, CWE-382</a> - Use of System.exit()</li>
-</ul>
-Ω
+</ul>Z
+CODE_SMELL
+…
 
-java:S1145Æ
+java:S1145∫
 javaS1145FUseless "if(true) {...}" and "if(false){...}" blocks should be removed"MAJOR*java2S1145:¬<p><code>if</code> statements with conditions that are always false have the effect of making blocks of code non-functional. <code>if</code> statements with conditions that are always true are completely redundant, and make the code less readable.</p>
 <p>There are three possible causes for the presence of such code: </p>
 <ul>
@@ -23928,10 +24518,11 @@ doSomething();
 <li> MISRA C:2012, 14.3</li>
 </ul>
 
-<p>This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S2583'>S2583</a> instead.</p>
-Ï
+<p>This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S2583'>S2583</a> instead.</p>Z
+CODE_SMELL
+¯
 
-java:S1143›
+java:S1143È
 javaS11438"return" statements should not occur in "finally" blocks"BLOCKER*java2S1143:˝<p><code>return</code>ing, <code>break</code>ing, <code>throw</code>ing, and so on from a <code>finally</code> block suppresses the propagation of any unhandled <code>Throwable</code> which was thrown in the <code>try</code> or <code>catch</code> block.</p>
 <p>This rule raises an issue when a jump statement (<code>break</code>, <code>continue</code>, <code>return</code>, <code>throw</code>, and <code>goto</code>) would force control flow to leave a <code>finally</code> block. </p>
 
@@ -23994,10 +24585,11 @@ public static void doSomethingWhichThrowsException() {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/584.html">MITRE, CWE-584</a> - Return Inside Finally Block
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/mIEbAQ">CERT, ERR04-J.</a> - Do not complete abruptly from a finally block
-</li></ul>
-õ
+</li></ul>Z
+CODE_SMELL
+ß
 
-java:S1142å
+java:S1142ò
 javaS11422Methods should not have too many return statements"MAJOR*java2S1142:¥<p>Having too many return statements in a method increases the method's essential complexity because the flow of execution is broken each time a return statement is encountered. This makes it harder to read and understand the logic of the method.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -24015,14 +24607,16 @@ public boolean myMethod() { // Noncompliant; there are 4 return statements
   }
   return false;
 }
-</pre>
-õ
+</pre>Z
+CODE_SMELL
+ß
 
-java:S1141å
-javaS1141%Try-catch blocks should not be nested"MAJOR*java2S1141:¡<p>Nesting <code>try</code>/<code>catch</code> blocks severely impacts the readability of source code because it makes it too difficult to understand which block will catch which exception.</p>
-˙
+java:S1141ò
+javaS1141%Try-catch blocks should not be nested"MAJOR*java2S1141:¡<p>Nesting <code>try</code>/<code>catch</code> blocks severely impacts the readability of source code because it makes it too difficult to understand which block will catch which exception.</p>Z
+CODE_SMELL
+Ü
 
-java:S3318Î
+java:S3318˜
 javaS3318/Untrusted data should not be stored in sessions"CRITICAL*java2S3318:ì<p>Data in a web session is considered inside the "trust boundary". That is, it is assumed to be trustworthy. But storing unvetted data from an unauthenticated user violates the trust boundary, and may lead that that data being used inappropriately.</p>
 <p>This rule raises an issue when data from <code>Cookie</code>s or <code>HttpServletRequest</code>s is stored in a session. </p>
 <h2>Noncompliant Code Example</h2>
@@ -24035,10 +24629,11 @@ session.setAttribute("login", login);  // Noncompliant
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/501">MITRE, CWE-501</a> - Trust Boundary Violation
-</li></ul>
-⁄
+</li></ul>Z
+CODE_SMELL
+Ê
 
-java:S2230À
+java:S2230◊
 javaS22301Non-public methods should not be "@Transactional""CRITICAL*java2S2230:ÒMarking a non-public method <code>@Transactional</code> is both useless and misleading because Spring doesn't "see" non-<code>public</code> methods, and so makes no provision for their proper invocation. Nor does Spring make provision for the methods invoked by the method it called.
 
 Therefore marking a <code>private</code>  method, for instance, <code>@Transactional</code> can only result in a runtime error or exception if the method is actually written to be <code>@Transactional</code>.
@@ -24049,10 +24644,11 @@ Therefore marking a <code>private</code>  method, for instance, <code>@Transacti
 private void doTheThing(ArgClass arg) {
   // ...
 }
-</pre>
-Á
+</pre>Z
+CODE_SMELL
+Û
 
-java:S2232ÿ
+java:S2232‰
 javaS2232'"ResultSet.isLast()" should not be used"MAJOR*java2S2232:ã<p>There are several reasons to avoid <code>ResultSet.isLast()</code>. First, support for this method is optional for <code>TYPE_FORWARD_ONLY</code> result sets. Second, it can be expensive (the driver may need to fetch the next row to answer the question). Finally, the specification is not clear on what should be returned when the <code>ResultSet</code> is empty, so some drivers may return the opposite of what is expected.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -24070,10 +24666,11 @@ ResultSet rs = stmt.executeQuery("SELECT name, address FROM PERSON");
 while (! rs.next()) {
 // process row
 }
-</pre>
-∂
+</pre>Z
+CODE_SMELL
+¬
 
-java:S2235ß
+java:S2235≥
 javaS22351IllegalMonitorStateException should not be caught"CRITICAL*java2S2235:ÕAccording to Oracle Javadoc:
 <blockquote>
 <code>IllegalMonitorStateException</code> is thrown when a thread has attempted to wait on an object's monitor or to notify other threads waiting on an object's monitor without owning the specified monitor.
@@ -24105,10 +24702,11 @@ public void doSomething(){
     ...
   }
 }
-</pre>
-è
+</pre>Z
+CODE_SMELL
+õ
 
-java:S2236Ä
+java:S2236å
 javaS2236\Methods "wait(...)", "notify()" and "notifyAll()" should never be called on Thread instances"BLOCKER*java2S2236:¸<p>On a Thread instance, the methods <code>wait(...)</code>, <code>notify()</code> and <code>notifyAll()</code> are available only because all classes in Java extend <code>Object</code> and therefore automatically inherit the methods. But there are two very good reasons to not call these methods on a Thread instance:</p>
 <ul>
 <li> Doing so is really confusing. What is really expected when calling, for instance, the <code>wait(...)</code> method on a Thread? That the execution of the Thread is suspended, or that acquisition of the object monitor is waited for?</li>
@@ -24120,10 +24718,11 @@ java:S2236Ä
 Thread myThread = new Thread(new RunnableJob());
 ...
 myThread.wait(2000);
-</pre>
-õ
+</pre>Z
+CODE_SMELL
+ß
 
-java:S2245å
+java:S2245ò
 javaS2245LPseudorandom number generators (PRNGs) should not be used in secure contexts"CRITICAL*java2S2245:ó<p>When software generates predictable values in a context requiring unpredictability, it may be possible for an attacker to guess the next value that will be generated, and use this guess to impersonate another user or access sensitive information.</p>
 <p>As the <code>java.util.Random</code> class relies on a pseudorandom number generator, this class and relating <code>java.lang.Math.random()</code> method should not be used for security-critical applications or for protecting sensitive data. In such context, the <code>java.security.SecureRandom</code> class which relies on a cryptographically strong random number generator (RNG) should be used in place.</p>
 <h2>Noncompliant Code Example</h2>
@@ -24143,10 +24742,11 @@ random.nextBytes(bytes);
 <li> <a href="https://www.securecoding.cert.org/confluence/display/java/MSC02-J.+Generate+strong+random+numbers">CERT, MSC02-J</a> - Generate strong random numbers</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#PREDICTABLE_RANDOM">Predictable Pseudo Random Number Generator</a></li>
-</ul>
-®
+</ul>Z
+CODE_SMELL
+¥
 
-java:S2250ô
+java:S2250•
 javaS22501"ConcurrentLinkedQueue.size()" should not be used"CRITICAL*java2S2250:ø<p>For most collections the <code>size()</code> method requires constant time, but the time required to execute <code>ConcurrentLinkedQueue.size()</code> is directly proportional to the number of elements in the queue. When the queue is large, this could therefore be an expensive operation. Further, the results may be inaccurate if the queue is modified during execution.</p>
 
 <p>By the way, if the <code>size()</code> is used only to check that the collection is empty, then the <code>isEmpty()</code> method should be used.</p>
@@ -24156,9 +24756,10 @@ java:S2250ô
 ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
 //...
 log.info("Queue contains " + queue.size() + " elements");
-</pre>
-Ø
-"java:StringEqualityComparisonCheckà
+</pre>Z
+CODE_SMELL
+ª
+"java:StringEqualityComparisonCheckî
 javaStringEqualityComparisonCheck+Strings should be compared using "equals()""CRITICAL*java2StringEqualityComparisonCheck:Ñ<p>Strings, just like any other <code>Object</code>, should be compared using the <code>equals()</code> method.</p>
 <p>Using <code>==</code> and <code>!=</code> compares references rather than values, and usually does not work.</p>
 
@@ -24182,10 +24783,11 @@ if (!"foo".equals(variable)) { /* ... */ }   // Compliant
 <li> <a href="http://cwe.mitre.org/data/definitions/597.html">MITRE, CWE-597</a> - Use of Wrong Operator in String Comparison</li>
 </ul>
 
-<p>This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S1698'>S1698</a> instead.</p>
-ó
+<p>This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S1698'>S1698</a> instead.</p>Z
+CODE_SMELL
+£
 
-java:S3340à
+java:S3340î
 javaS3340KAnnotation arguments should appear in the order in which they were declared"MINOR*java2S3340:ó<p>For optimal code readability, annotation arguments should be specified in the same order that they were declared in the annotation definition.</p>
 
 <h2>Noncompliant</h2>
@@ -24206,10 +24808,11 @@ String surname();
 }
 
 @Pet(name ="", surname="") // Compliant
-</pre>
-—
+</pre>Z
+CODE_SMELL
+›
 
-java:S2251¬
+java:S2251Œ
 javaS2251IA "for" loop update clause should move the counter in the right direction"BLOCKER*java2S2251:—A <code>for</code> loop with a counter that moves in the wrong direction is not an infinite loop. Because of wraparound, the loop will eventually reach its stop condition, but in doing so, it will run many, many more times than anticipated, potentially causing unexpected behavior. 
 
 <h2>Noncompliant Code Example</h2>
@@ -24228,20 +24831,22 @@ public void doSomething(String [] strings) {
     String string = strings[i];
     //...
   }
-</pre>
-Ø
+</pre>Z
+CODE_SMELL
+ª
 
-java:S2252†
+java:S2252¨
 javaS2252,Loop conditions should be true at least once"CRITICAL*java2S2252:ÀIf a <code>for</code> loop's condition is false before the first loop iteration, the loop will never be executed. Such loops are almost always bugs, particularly when the initial value and stop conditions are hard-coded.
 
 <h2>Noncompliant Code Example</h2>
 <pre>
 for (int i = 10; i &lt; 10; i++) {  // Noncompliant 
   // ...
-</pre>
-°
+</pre>Z
+CODE_SMELL
+≠
 
-java:S2253í
+java:S2253û
 javaS2253%Disallowed methods should not be used"MAJOR*java2S2253:≈<p>This rule allows banning certain methods.</p>
 <h2>Noncompliant Code Example</h2>
 <p>Given parameters:</p>
@@ -24254,10 +24859,11 @@ java:S2253í
 <pre>
 String name;
 name.replace("A","a");  // Noncompliant
-</pre>@
-°
+</pre>@Z
+CODE_SMELL
+≠
 
-java:S2254í
+java:S2254û
 javaS2254?"HttpServletRequest.getRequestedSessionId()" should not be used"CRITICAL*java2S2254:™<p>According to the Oracle Java API, the <code>HttpServletRequest.getRequestedSessionId()</code> method:</p>
 <blockquote>
 <p>Returns the session ID specified by the client. This may not be the same as the ID of the current valid session for this request. If the client did not specify a session ID, this method returns null.</p>
@@ -24285,10 +24891,11 @@ if(isActiveSession(request.getRequestedSessionId()) ){
 </li><li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Porous Defenses
 </li><li> <a href="https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management">OWASP Top Ten 2013 Category A2</a> - Broken Authentication and Session Management
 </li><li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#SERVLET_SESSION_ID">Untrusted Session Cookie Value</a>
-</li></ul>
-ò
+</li></ul>Z
+CODE_SMELL
+§
 
-java:S3346â
+java:S3346ï
 javaS33463"assert" should only be used with boolean variables"MAJOR*java2S3346:∞<p>Since <code>assert</code> statements aren't executed by default (they must be enabled with JVM flags) developers should never rely on their execution the evaluation of any logic required for correct program function.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -24300,10 +24907,11 @@ assert myList.remove(myList.get(0));  // Noncompliant
 <pre>
 boolean removed = myList.remove(myList.get(0));
 assert removed;
-</pre>
-˘
+</pre>Z
+CODE_SMELL
+Ö	
 
-java:S2257Í
+java:S2257ˆ
 javaS22575Only standard cryptographic algorithms should be used"BLOCKER*java2S2257:ç<p>The use of a non-standard algorithm is dangerous because a determined attacker may be able to break the algorithm and compromise whatever data has been protected. Standard algorithms like <code>SHA-256</code>, <code>SHA-384</code>, <code>SHA-512</code>, ... should be used instead.</p>
 <p>This rule tracks creation of <code>java.security.MessageDigest</code> subclasses.</p>
 <h2>Noncompliant Code Example</h2>
@@ -24320,10 +24928,11 @@ MyCryptographicAlgorithm extends MessageDigest {
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
 <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Porous Defenses</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#CUSTOM_MESSAGE_DIGEST">MessageDigest is Custom</a></li>
-</ul>
-´
+</ul>Z
+CODE_SMELL
+∑
 
-java:S2258ú
+java:S2258®
 javaS2258L"javax.crypto.NullCipher" should not be used for anything other than testing"BLOCKER*java2S2258:®<p>By contract, the <code>NullCipher</code> class provides an "identity cipher" -- one that does not transform or encrypt the plaintext in any way. As a consequence, the ciphertext is identical to the plaintext. So this class should be used for testing, and never in production code.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -24336,10 +24945,11 @@ NullCipher nc=new NullCipher();
 <li> <a href="http://cwe.mitre.org/data/definitions/327.html">CWE-327</a>: Use of a Broken or Risky Cryptographic Algorithm</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#NULL_CIPHER">NullCipher Unsafe</a></li>
-</ul>
-˝
+</ul>Z
+CODE_SMELL
+â
 
-java:S2259Ó
+java:S2259˙
 javaS2259(Null pointers should not be dereferenced"BLOCKER*java2S2259:û<p>
 A reference to <code>null</code> should never be dereferenced/accessed.
 Doing so will cause a <code>NullPointerException</code> to be thrown. At best, such an exception will cause abrupt program termination.
@@ -24408,10 +25018,11 @@ void paint(Color color) {
    <li><a href="https://www.owasp.org/index.php/Top_10_2013-A1-Injection">OWASP Top Ten 2013 Category A1</a> - Injection</li>
    <li><a href="https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management">OWASP Top Ten 2013 Category A2</a> - Broken Authentication and Session Management</li>
    <li><a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
-</ul>
-†
+</ul>Z
+CODE_SMELL
+¨
 
-java:S3355ë
+java:S3355ù
 javaS3355.Web applications should use validation filters"CRITICAL*java2S3355:∫
 <p>Specifying a validation filter for all input in your <code>web.xml</code> allows you to scrub all your HTTP parameters in one central place. To do so, you'll need to define a validator, and a filtering class that uses it, then set up the filter's use in <code>web.xml</code>.</p>
 
@@ -24444,9 +25055,10 @@ public class ValidationFilter implements javax.servlet.Filter {
 <ul>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A1-Injection">OWASP Top Ten 2013 Category A1</a> - Injection
 </li><li> <a href="https://www.owasp.org/index.php/How_to_add_validation_logic_to_HttpServletRequest">OWASP, How to add validation logic to HttpServletRequest</a>
-</li></ul>
-∑
-!java:LeftCurlyBraceStartLineCheckë
+</li></ul>Z
+CODE_SMELL
+√
+!java:LeftCurlyBraceStartLineCheckù
 javaLeftCurlyBraceStartLineCheck@An open curly brace should be located at the beginning of a line"MINOR*java2LeftCurlyBraceStartLineCheck:˝<p>Shared coding conventions make it possible to collaborate efficiently. This rule make it mandatory to place the open curly brace at the beginning of a line.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -24472,10 +25084,11 @@ public void myMethod
     doSomethingElse();
   }
 }
-</pre>
-¬
+</pre>Z
+CODE_SMELL
+Œ
 
-java:S2272≥
+java:S2272ø
 javaS2272?"Iterator.next()" methods should throw "NoSuchElementException""MAJOR*java2S2272:ŒBy contract, any implementation of the <code>java.util.Iterator.next()</code> method should throw a <code>NoSuchElementException</code> exception when the iteration has no more elements. Any other behavior when the iteration is done could lead to unexpected behavior for users of this <code>Iterator</code>. 
 
 <h2>Noncompliant Code Example</h2>
@@ -24502,10 +25115,11 @@ public class MyIterator implements Iterator&lt;String&gt;{
     ...
   }
 }
-</pre>
-æ	
+</pre>Z
+CODE_SMELL
+ 	
 
-java:S2273Ø	
+java:S2273ª	
 javaS2273r"wait(...)", "notify()" and "notifyAll()" methods should only be called when a lock is obviously held on an object"CRITICAL*java2S2273:î<p>By contract, the method <code>Object.wait(...)</code>, <code>Object.notify()</code> and <code>Object.notifyAll()</code> should be called by a thread that is the owner of the object's monitor. If this is not the case an <code>IllegalMonitorStateException</code> exception is thrown. This rule reinforces this constraint by making it mandatory to call one of these methods only inside a <code>synchronized</code> method or statement.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -24550,10 +25164,11 @@ private synchronized void removeElement() {
   }
   ... // Perform removal
 }
-</pre>
-◊
+</pre>Z
+CODE_SMELL
+„
 
-java:S2274»
+java:S2274‘
 javaS2274T"Object.wait(...)" and "Condition.await(...)" should be called inside a "while" loop"CRITICAL*java2S2274:À<p>According to the Java <code>Condition</code> interface documentation:</p>
 <blockquote>
 <p>When waiting upon a <code>Condition</code>, a "spurious wakeup" is permitted to occur, in general, as a concession to the underlying platform semantics. This has little practical impact on most application programs as a Condition should always be waited upon in a loop, testing the state predicate that is being waited for. An implementation is free to remove the possibility of spurious wakeups but it is recommended that applications programmers always assume that they can occur and so always wait in a loop.</p>
@@ -24594,10 +25209,11 @@ synchronized (obj) {
 
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/display/java/THI03-J.+Always+invoke+wait%28%29+and+await%28%29+methods+inside+a+loop">CERT THI03-J</a> - Always invoke wait() and await() methods inside a loop
-</li></ul>
-¸
+</li></ul>Z
+CODE_SMELL
+à
 
-java:S2275Ì
+java:S2275˘
 javaS2275MPrintf-style format strings should not lead to unexpected behavior at runtime"CRITICAL*java2S2275:˜<p>Because <code>printf</code>-style format strings are interpreted at runtime, rather than validated by the Java compiler, they can contain errors that lead to unexpected behavior or runtime errors. This rule statically validates the good behavior of <code>printf</code>-style formats when calling the <code>format(...)</code> methods of <code>java.util.Formatter</code>, <code>java.lang.String</code>, <code>java.io.PrintStream</code> and <code>java.io.PrintWriter</code> classes and the <code>printf(...)</code> methods of <code>java.io.PrintStream</code> or <code>java.io.PrintWriter</code> classes. </p>
 <h2>Noncompliant Code Example</h2>
 
@@ -24630,10 +25246,11 @@ String.format("%d is equals to %&lt;", 2);
 String.format("Is myObject null ? %b", myObject == null);
 String.format("value is %d", value);
 String s = "string without arguments"; 
-</pre>
-÷
+</pre>Z
+CODE_SMELL
+‚
 
-java:S2276«
+java:S2276”
 javaS2276M"wait(...)" should be used instead of "Thread.sleep(...)" when a lock is held"CRITICAL*java2S2276:—<p>If <code>Thread.sleep(...)</code> is called when the current thread holds a lock, it could lead to performance, and scalability issues, or even worse to deadlocks because the execution of the thread holding the lock is frozen. It's better to call <code>wait(...)</code> on the monitor object to temporarily release the lock and allow other threads to run.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -24660,11 +25277,12 @@ public void doSomething(){
   }
   ...
 }
-</pre>
-≈
+</pre>Z
+CODE_SMELL
+—
 
 
-java:S2277∂
+java:S2277¬
 
 javaS2277cCryptographic RSA algorithms should always incorporate OAEP (Optimal Asymmetric Encryption Padding)"CRITICAL*java2S2277:™	<p>Without OAEP in RSA encryption, it takes less work for an attacker to decrypt the data or infer patterns from the ciphertext. This rule logs an issue as soon as a literal value starts with <code>RSA/NONE</code>. </p>
 <h2>Noncompliant Code Example</h2>
@@ -24685,10 +25303,11 @@ Cipher rsa = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-256ANDMGF1PADD
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A5-Security_Misconfiguration">OWASP Top Ten 2013 Category A5</a> - Security Misconfiguration</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#RSA_NO_PADDING">RSA NoPadding Unsafe</a></li>
-</ul>
-†
+</ul>Z
+CODE_SMELL
+¨
 
-java:S2278ë
+java:S2278ù
 javaS2278GNeither DES (Data Encryption Standard) nor DESede (3DES) should be used"CRITICAL*java2S2278:°
 <p>According to the US National Institute of Standards and Technology (NIST), the Data Encryption Standard (DES) is no longer considered secure:</p>
 <blockquote>
@@ -24712,10 +25331,11 @@ Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
 <li> <a href="http://cwe.mitre.org/data/definitions/327.html">MITRE CWE-327</a> - Use of a Broken or Risky Cryptographic Algorithm</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten 2013 Category A6</a> - Sensitive Data Exposure</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#DES_USAGE">DES / DESede Unsafe</a></li>
-</ul>
-„
+</ul>Z
+CODE_SMELL
+Ô
 
-java:S3369‘
+java:S3369‡
 javaS3369&Security constraints should be defined"CRITICAL*java2S3369:Ö<p>Websphere, Tomcat, and JBoss web servers allow the definition of role-based access to servlets. It may not be granular enough for your purposes, but it's a start, and should be used at least as a base.</p>
 <p>This rule raises an issue when a <em>web.xml</em> file has no <code>&lt;security-contraint&gt;</code> elements.</p>
 
@@ -24723,10 +25343,11 @@ java:S3369‘
 <ul>
 <li> <a href="https://cwe.mitre.org/data/definitions/284.html">MITRE, CWE-284</a> - Improper Access Control
 </li><li> <a href="https://www.owasp.org/index.php/Top_10_2013-A7-Missing_Function_Level_Access_Control">OWASP Top Ten 2013 Category A7</a> - Missing Function Level Access Control
-</li></ul>
-≥
+</li></ul>Z
+CODE_SMELL
+ø
 
-java:S2039§
+java:S2039∞
 javaS2039.Member variable visibility should be specified"CRITICAL*java2S2039:Õ<p>Failing to explicitly declare the visibility of a member variable could result it in having a visibility you don't expect, and potentially leave it open to unexpected modification by other classes.</p>
 
 <h2>Noncompliant Code Sample</h2>
@@ -24749,10 +25370,11 @@ enum A {
  B;
  private int a;
 }
-</pre>
-ƒ
+</pre>Z
+CODE_SMELL
+–
 
-java:S3373µ
+java:S3373¡
 javaS3373<"action" mappings should not have too many "forward" entries"MAJOR*java2S3373:”<p>It makes sense to handle all related actions in the same place. Thus, the same <code>&lt;action&gt;</code> might logically handle all facets of CRUD on an entity, with no confusion in the naming about which <code>&lt;forward/&gt;</code> handles which facet. But go very far beyond that, and it becomes difficult to maintain a transparent naming convention. </p>
 <p>So to ease maintenance, this rule raises an issue when an <code>&lt;action&gt;</code> has more than the allowed number of <code>&lt;forward/&gt;</code> tags.</p>
 
@@ -24780,11 +25402,12 @@ java:S3373µ
 &lt;action path='/author' type='myapp.AuthorDispatchAction' name='authorForm' parameter='method'&gt;
   &lt;forward name='authorRead' path='WEB-INF/jsp/AuthorDetails' redirect='false'/&gt;
 &lt;/action&gt;
-</pre>
-ü
+</pre>Z
+CODE_SMELL
+´
 
 
-java:S3374ê
+java:S3374ú
 
 javaS33740Struts validation forms should have unique names"CRITICAL*java2S3374:∑	<p>According to the Common Weakness Enumeration,</p>
 <blockquote>If two validation forms have the same name, the Struts Validator arbitrarily chooses one of the forms to use for input validation and discards the other. This decision might not correspond to the programmer's expectations...</blockquote>
@@ -24813,9 +25436,10 @@ java:S3374ê
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/102.html">MITRE, CWE-102</a> - Struts: Duplicate Validation Forms
 </li><li> <a href="https://www.owasp.org/index.php/Struts:_Duplicate_Validation_Forms#Struts:_Duplicate_Validation_Forms">OWASP, Improper Data Validation</a> - Struts: Duplicate Validation Forms
-</li></ul>
-ú
-	java:S864é
+</li></ul>Z
+CODE_SMELL
+®
+	java:S864ö
 javaS864OLimited dependence should be placed on operator precedence rules in expressions"MAJOR*java2S864:õ<p>The rules of operator precedence are complicated and can lead to errors. For this reason, parentheses should be used for clarification in complex statements. However, this does not mean that parentheses should be gratuitously added around every operation. </p>
 <p>This rule raises issues when <code>&amp;&amp;</code> and <code>||</code> are used in combination, when assignment and equality or relational operators are used in together in a condition, and for other operator combinations according to the following table:</p>
 <table>
@@ -24855,14 +25479,16 @@ if ( (a = f(b,c)) == 1) { ... }
 <li> <a href="https://www.securecoding.cert.org/confluence/x/_wI">CERT EXP00-C</a> - Use parentheses for precedence of operation</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/VoAyAQ">CERT EXP00-CPP</a> - Use parentheses for precedence of operation</li>
 <li> <a href="http://cwe.mitre.org/data/definitions/783.html">MITRE, CWE-783</a> - Operator Precedence Logic Error</li>
-</ul>
-ä
-java:NoSonar˘
+</ul>Z
+CODE_SMELL
+ñ
+java:NoSonarÖ
 javaNoSonar1"NOSONAR" should not be used to switch off issues"MAJOR*java2NoSonar:û<p>Any issue to quality rule can be deactivated with the <code>NOSONAR</code> marker. This marker is pretty useful to exclude false-positive results but sometimes it can abusively be used to hide real quality flaws.</p>
-<p>This rule allows to track and/or forbid use of this marker.</p>
-ﬂ
+<p>This rule allows to track and/or forbid use of this marker.</p>Z
+CODE_SMELL
+Î
 
-java:S2293–
+java:S2293‹
 javaS2293*The diamond operator ("<>") should be used"MAJOR*java2S2293:Ä<p>Java 7 introduced the diamond operator (<code>&lt;&gt;</code>) to reduce the verbosity of generics code. For instance, instead of having to declare a <code>List</code>'s type in both its declaration and its constructor, you can now simplify the constructor declaration with <code>&lt;&gt;</code>, and the compiler will infer the type.</p>
 
 <p>
@@ -24880,10 +25506,11 @@ Map&lt;String,List&lt;Integer&gt;&gt; map = new HashMap&lt;String,List&lt;Intege
 <pre>
 List&lt;String&gt; strings = new ArrayList&lt;&gt;();
 Map&lt;String,List&lt;Integer&gt;&gt; map = new HashMap&lt;&gt;();
-</pre>
-Ì
+</pre>Z
+CODE_SMELL
+˘
 
-java:S2055ﬁ
+java:S2055Í
 javaS2055`The non-serializable super class of a "Serializable" class should have a no-argument constructor"CRITICAL*java2S2055:’<p>When a <code>Serializable</code> object has a non-serializable ancestor in its inheritance chain, object deserialization (re-instantiating the object from file) starts at the first non-serializable class, and proceeds down the chain, adding the properties of each subsequent child class, until the final object has been instantiated.</p>
 
 <p>In order to create the non-serializable ancestor, its no-argument constructor is called. Therefore the non-serializable ancestor of a <code>Serializable</code> class must have a no-arg constructor. Otherwise the class is <code>Serializable</code> but not deserializable.</p>
@@ -24931,10 +25558,11 @@ public class Raspberry extends Fruit
   public void setVariety(String variety) {...}
   public String getVarity() {...}
 }
-</pre>
-π
+</pre>Z
+CODE_SMELL
+≈
 
-java:S2057™
+java:S2057∂
 javaS2057/"Serializable" classes should have a version id"MAJOR*java2S2057:’<p>A <code>serialVersionUID</code> field is required in all <code>Serializable</code> classes. If you do not provide one, one will be calculated for you by the compiler. The danger in not explicitly choosing the value is that when the class changes, the compiler will generate an entirely new id, and you will be suddenly unable to deserialize (read from file) objects that were serialized with the previous version of the class.</p>
 
 <p><code>serialVersionUID</code>'s should be declared with all of these modifiers: <code>static final long</code>.</p>
@@ -24969,10 +25597,11 @@ public class Raspberry extends Fruit
 </pre>
 
 <h2>Exceptions</h2>
-Swing and AWT classes, <code>abstract</code> classes, <code>Throwable</code> and its subclasses (<code>Exception</code>s and <code>Error</code>s), and classes marked with <code>@SuppressWarnings("serial")</code> are ignored.
-Ë	
+Swing and AWT classes, <code>abstract</code> classes, <code>Throwable</code> and its subclasses (<code>Exception</code>s and <code>Error</code>s), and classes marked with <code>@SuppressWarnings("serial")</code> are ignored.Z
+CODE_SMELL
+Ù	
 
-java:S2059Ÿ	
+java:S2059Â	
 javaS2059G"Serializable" inner classes of "Serializable" classes should be static"MAJOR*java2S2059:Ï<p>Serializing a non-<code>static</code> inner class will result in an attempt at serializing the outer class as well. If the outer class is actually serializable, then the serialization will succeed but possibly write out far more data than was intended.</p>
 
 <p>Making the inner class <code>static</code> (i.e. "nested") avoids this problem, therefore inner classes should be <code>static</code> if possible. However, you should be aware that there are semantic differences between an inner class and a nested one: 
@@ -25002,9 +25631,10 @@ public class Raspberry implements Serializable {
     // ...
   }
 }
-</pre>
-–
-	java:S881¬
+</pre>Z
+CODE_SMELL
+‹
+	java:S881Œ
 javaS881eIncrement (++) and decrement (--) operators should not be mixed with other operators in an expression"MAJOR*java2S881:π
 <p>The use of increment and decrement operators in combination with other arithmetic operators is not recommended, because:</p>
 <p>It can significantly impair the readability of the code.</p>
@@ -25038,10 +25668,11 @@ bar++;
 <li> <a href="https://www.securecoding.cert.org/confluence/x/ZwE">CERT, EXP30-C</a> - 	Do not depend on the order of evaluation for side effects</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/fYAyAQ">CERT, EXP30-CPP</a> - Do not depend on order of evaluation between sequence points</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/yQC7AQ">CERT, EXP05-J</a> - Do not follow a write by a subsequent write or read of the same object within an expression</li>
-</ul>
-â
+</ul>Z
+CODE_SMELL
+ï
 
-java:S2061˙
+java:S2061Ü
 javaS2061?Custom serialization method signatures should meet requirements"CRITICAL*java2S2061:íWriters of <code>Serializable</code> classes can choose to let Java's automatic mechanisms handle serialization and deserialization, or they can choose to handle it themselves by implementing specific methods. However, if the signatures of those methods are not exactly what is expected, they will be ignored and the default serialization mechanisms will kick back in. 
 
 <h2>Noncompliant Code Example</h2>
@@ -25086,10 +25717,11 @@ public class Watermelon implements Serializable {
 
   private Object writeReplace() throws ObjectStreamException
   {...}
-</pre>
-∂
+</pre>Z
+CODE_SMELL
+¬
 
-java:S2063ß
+java:S2063≥
 javaS2063$Comparators should be "Serializable""MAJOR*java2S2063:›A non-serializable <code>Comparator</code> can prevent an otherwise-<code>Serializable</code> ordered collection from being serializable. Since the overhead to make a <code>Comparator</code> serializable is usually low, doing so can be considered good defensive programming.
 
 <h2>Noncompliant Code Example</h2>
@@ -25108,10 +25740,11 @@ public class FruitComparator implements Comparator&lt;Fruit&gt;, Serializable {
   int compare(Fruit f1, Fruit f2) {...}
   boolean equals(Object obj) {...}
 }
-</pre>
-¯
+</pre>Z
+CODE_SMELL
+Ñ
 
-java:S2065È
+java:S2065ı
 javaS2065<Fields in non-serializable classes should not be "transient""MINOR*java2S2065:á<code>transient</code> is used to mark fields in a <code>Serializable</code> class which will not be written out to file (or stream). In a class that does not implement <code>Serializable</code>, this modifier is simply wasted keystrokes, and should be removed.
 
 <h2>Noncompliant Code Example</h2>
@@ -25128,9 +25761,10 @@ class Vegetable {
   private Season ripe;
   // ...
 }
-</pre>
-¥
-	java:S888¶
+</pre>Z
+CODE_SMELL
+¿
+	java:S888≤
 javaS888HRelational operators should be used in "for" loop termination conditions"CRITICAL*java2S888:∑<p>Testing <code>for</code> loop termination using an equality operator (<code>==</code> and <code>!=</code>) is dangerous, because it could set up an infinite loop. Using a broader relational operator instead casts a wider net, and makes it harder (but not impossible) to accidentally write an infinite loop.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -25172,10 +25806,11 @@ for (int i = 0; (item = arr[i]) != null; i++) {
 <li> <a href="http://cwe.mitre.org/data/definitions/835">MITRE, CWE-835</a> - Loop with Unreachable Exit Condition ('Infinite Loop')</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/EwDJAQ">CERT, MSC21-C</a> - Use robust loop termination conditions</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/GwDJAQ">CERT, MSC21-CPP</a> - Use inequality to terminate a loop whose counter changes by more than one</li>
-</ul>
-ò	
+</ul>Z
+CODE_SMELL
+§	
 
-java:S2066â	
+java:S2066ï	
 javaS2066K"Serializable" inner classes of non-serializable classes should be "static""CRITICAL*java2S2066:ï<p>Serializing a non-<code>static</code> inner class will result in an attempt at serializing the outer class as well. If the outer class is not serializable, then serialization will fail, resulting in a runtime error.</p>
 
 <p>Making the inner class <code>static</code> (i.e. "nested") avoids this problem, therefore inner classes should be <code>static</code> if possible. However, you should be aware that there are semantic differences between an inner class and a nested one: 
@@ -25205,10 +25840,11 @@ public class Pomegranate {
     // ...
   }
 } 
-</pre>
-ﬂ
+</pre>Z
+CODE_SMELL
+Î
 
-java:S3398–
+java:S3398‹
 javaS3398O"private" methods called only by inner classes should be moved to those classes"MAJOR*java2S3398:€<p>When a <code>private</code> method is only invoked by an inner class, there's no reason not to move it into that class. It will still have the same access to the outer class' members, but the outer class will be clearer and less cluttered.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -25243,10 +25879,11 @@ public class Outie {
     }
   }
 }
-</pre>
-£
+</pre>Z
+CODE_SMELL
+Ø
 
-java:S2068î
+java:S2068†
 javaS2068$Credentials should not be hard-coded"CRITICAL*java2S2068:«<p>Because it is easy to extract strings from a compiled application, credentials should never be hard-coded. Do so, and they're almost guaranteed to end up in the hands of an attacker. This is particularly true for applications that are distributed.</p>
 <p>Credentials should be stored outside of the code in a strongly-protected encrypted configuration file or database.</p>
 <h2>Noncompliant Code Example</h2>
@@ -25279,10 +25916,11 @@ try {
 <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Porous Defenses</li>
 <li> <a href="https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management">OWASP Top Ten 2013 Category A2</a> - Broken Authentication and Session Management</li>
 <li> Derived from FindSecBugs rule <a href="http://h3xstream.github.io/find-sec-bugs/bugs.htm#HARD_CODE_PASSWORD">Hard Coded Password</a></li>
-</ul>
-ï
+</ul>Z
+CODE_SMELL
+°
 
-java:S1643Ü
+java:S1643í
 javaS16436Strings should not be concatenated using '+' in a loop"MAJOR*java2S1643:™<p>Strings are immutable objects in Java, so concatenation doesn't simply add the new String to the end of the existing string. Instead, in each loop iteration, the first String is converted to an intermediate object type, the second string is appended, and then the intermediate object is converted back to a String. Further, performance of these intermediate operations degrades as the String gets longer. Therefore, the use of StringBuilder is preferred.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -25300,9 +25938,10 @@ for (int i = 0; i < arrayOfStrings.length; ++i) {
   bld.append(arrayOfStrings[i]);
 }
 String str = bld.toString();
-</pre>
-ø
-	java:S818±
+</pre>Z
+CODE_SMELL
+À
+	java:S818Ω
 javaS818%Literal suffixes should be upper case"MINOR*java2S818:Ë<p>Using upper case literal suffixes removes the potential ambiguity between "1" (digit 1) and "l" (letter el) for declaring literals.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -25330,10 +25969,11 @@ double double1 = 1.0D;
 
 <ul>
 <li> <a href='/coding_rules#rule_key=squid:S1129'>S1129</a> - Long suffix "L" should be upper case
-</li></ul>
-—
+</li></ul>Z
+CODE_SMELL
+›
 
-java:S1641¬
+java:S1641Œ
 javaS1641GSets with elements that are enum values should be replaced with EnumSet"MAJOR*java2S1641:’<p>When all the elements in a Set are values from the same enum, the Set can be replaced with an EnumSet, which can be much more efficient than other sets because the underlying data structure is a simple bitmap.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -25364,10 +26004,11 @@ public class MyClass {
     EnumSet&lt;COLOR&gt; warm = EnumSet.of(COLOR.RED, COLOR.ORANGE);
   }
 }
-</pre>
-œ
+</pre>Z
+CODE_SMELL
+€
 
-java:S1640¿
+java:S1640Ã
 javaS1640CMaps with keys that are enum values should be replaced with EnumMap"MAJOR*java2S1640:◊<p>
   When all the keys of a Map are values from the same enum, the <code>Map</code> can be replaced with an <code>EnumMap</code>,
   which can be much more efficient than other sets because the underlying data structure is a simple array.
@@ -25399,9 +26040,10 @@ public class MyClass {
     EnumMap&lt;COLOR, String&gt; moodMap = new EnumMap&lt;COLOR, String&gt; (COLOR.class);
   }
 }
-</pre>
-˘
-java:EmptyStatementUsageCheck◊
+</pre>Z
+CODE_SMELL
+Ö
+java:EmptyStatementUsageCheck„
 javaEmptyStatementUsageCheck"Empty statements should be removed"MINOR*java2EmptyStatementUsageCheck:È<p>Empty statements, i.e. <code>;</code>, are usually introduced by mistake, for example because:</p>
 <ul>
 <li> It was meant to be replaced by an actual statement, but this was forgotten.</li>
@@ -25440,10 +26082,11 @@ void doSomethingElse() {
 <li> MISRA C++:2008, 6-2-3 - Before preprocessing, a null statement shall only occur on a line by itself; it may be followed by a comment, provided that the first character following the null statement is a white-space character.</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-ü
+</ul>Z
+CODE_SMELL
+´
 
-java:S1873ê
+java:S1873ú
 javaS1873)"static final" arrays should be "private""CRITICAL*java2S1873:æ
 <p>Public arrays, even ones declared <code>static final</code> can have their contents edited by malicious programs. The <code>final</code> keyword on an array declaration means that the array object itself may only be assigned once, but its contents are still mutable. Therefore making arrays <code>public</code> is a security risk.</p>
 <p>Instead, arrays should be private and accessed through methods.</p>
@@ -25484,10 +26127,11 @@ public class Estate {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/582.html">MITRE, CWE-582</a> - Array Declared Public, Final, and Static</li>
 <li> <a href="http://cwe.mitre.org/data/definitions/607.html">MITRE, CWE-607</a> - Public Static Final Field References Mutable Object</li>
-</ul>
-»	
+</ul>Z
+CODE_SMELL
+‘	
 
-java:S1872π	
+java:S1872≈	
 javaS1872&Classes should not be compared by name"CRITICAL*java2S1872:Í<p>There is no requirement that class names be unique, only that they be unique within a package. Therefore trying to determine an object's type based on its class name is an exercise fraught with danger. One of those dangers is that a malicious user will send objects of the same name as the trusted class and thereby gain trusted access. </p>
 <p>Instead, the <code>instanceof</code> operator should be used to check the object's underlying type.</p>
 <h2>Noncompliant Code Example</h2>
@@ -25524,10 +26168,11 @@ class Store {
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/486.html">MITRE, CWE-486</a> - Comparison of Classes by Name</li>
-</ul>
-…
+</ul>Z
+CODE_SMELL
+’
 
-java:S1871∫
+java:S1871∆
 javaS1871^Two branches in the same conditional structure should not have exactly the same implementation"MAJOR*java2S1871:∂<p>Having two <code>cases</code> in the same <code>switch</code> statement or branches in the same <code>if</code> structure  with the same implementation is at best duplicate code, and at worst a coding error. If the same logic is truly needed for both instances, then they should be combined, for an <code>if</code> structure or one should fall through to the other for a <code>switch</code>.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -25609,11 +26254,12 @@ else if (a &gt;= 20 &amp;&amp; a &lt; 50) {
 else {
   doTheRest(); 
 }
-</pre>
-Å
+</pre>Z
+CODE_SMELL
+ç
 
 
-java:S1862Ú	
+java:S1862˛	
 javaS1862BRelated "if/else if" statements should not have the same condition"CRITICAL*java2S1862:á	<p>A chain of <code>if</code>/<code>else if</code> statements is evaluated from top to bottom. At most, only one branch will be executed: the first one with a condition that evaluates to <code>true</code>. </p>
 <p>Therefore, duplicating a condition automatically leads to dead code. Usually, this is due to a copy/paste error. At best, it's simply dead code and at worst, it's a bug that is likely to induce further bugs as the code is maintained, and obviously it could lead to unexpected behavior. </p>
 <h2>Noncompliant Code Example</h2>
@@ -25645,10 +26291,11 @@ else if (param == 3)
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-…
+</ul>Z
+CODE_SMELL
+’
 
-java:S1860∫
+java:S1860∆
 javaS1860BSynchronization should not be based on Strings or boxed primitives"BLOCKER*java2S1860:–<p>Objects which are pooled and potentially reused should not be used for synchronization. If they are, it can cause unrelated threads to deadlock with unhelpful stacktraces. Specifically, <code>String</code> literals, and boxed primitives such as Integers should not be used as lock objects because they are pooled and reused. The story is even worse for <code>Boolean</code> objects, because there are only two instances of <code>Boolean</code>, <code>Boolean.TRUE</code> and <code>Boolean.FALSE</code> and every class that uses a Boolean will be referring to one of the two.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -25692,10 +26339,11 @@ public void doSomething() {
 
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/rQGeAQ">CERT, LCK01-J</a> - Do not synchronize on objects that may be reused</li>
-</ul>
-«
+</ul>Z
+CODE_SMELL
+”
 
-java:S1858∏
+java:S1858ƒ
 javaS18586"toString()" should never be called on a String object"MAJOR*java2S1858:‹<p>Invoking a method designed to return a string representation of an object which is already a string is a waste of keystrokes. This redundant construction may be optimized by the compiler, but will be confusing in the meantime.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -25710,10 +26358,11 @@ System.out.println(message.toString()); // Noncompliant;
 <pre>
 String message = "hello world";
 System.out.println(message);
-</pre>
-œ	
+</pre>Z
+CODE_SMELL
+€	
 
-java:S2301¿	
+java:S2301Ã	
 javaS23014Public methods should not contain selector arguments"MAJOR*java2S2301:Ê<p>A selector argument is a <code>boolean</code> argument that's used to determine which of two paths to take through a method. Specifying such a parameter may seem innocuous, particularly if it's well named. </p>
 <p>Unfortunately, the maintainers of the code calling the method won't see the parameter name, only its value. They'll be forced either to guess at the meaning or to take extra time to look the method up.</p>
 <p>Instead, separate methods should be written.</p>
@@ -25749,10 +26398,11 @@ public void temptChild(String name) {
 public void corrupt() {
   age &lt; legalAge ? temptChild("Joe") : temptAdult("Joe");
 }
-</pre>
-®
+</pre>Z
+CODE_SMELL
+¥
 
-java:S2786ô
+java:S2786•
 javaS2786,Nested "enum"s should not be declared static"MAJOR*java2S2786:«<p>According to <a href="http://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.9">the docs</a>:</p>
 <blockquote>Nested enum types are implicitly <code>static</code>.</blockquote>
 <p>So there's no need to declare them <code>static</code> explicitly.</p>
@@ -25777,10 +26427,11 @@ public class Flower {
 
   // ...
 }
-</pre>
-Â
+</pre>Z
+CODE_SMELL
+Ò
 
-java:S1612÷
+java:S1612‚
 javaS16121Lambdas should be replaced with method references"MINOR*java2S1612:ˇ<p>Method/constructor references are more compact and readable than using lambdas, and are therefore preferred.</p>
 
 <p>
@@ -25805,10 +26456,11 @@ java:S1612÷
   list.add(2);
 
   list.forEach(System.out::println);
-</pre>
-é
+</pre>Z
+CODE_SMELL
+ö
 
-java:S1854ˇ
+java:S1854ã
 javaS1854Dead stores should be removed"MAJOR*java2S1854:º<p>A dead store happens when a local variable is assigned a value, including <code>null</code> that is not read by any subsequent instruction. Calculating or retrieving a value only to then overwrite it or throw it away, could indicate a serious error in the code. Even if it's not an error, it is at best a waste of resources.</p>
 
 <p>Even assigning <code>null</code> to a variable is a dead store if the variable is not subsequently used. Assigning null as a hint to the garbage collector used to be common practice, but is no longer needed and such code should be eliminated.</p>
@@ -25846,10 +26498,11 @@ public void pow(int a, int b) {
   <li> <a href="http://cwe.mitre.org/data/definitions/563.html">MITRE, CWE-563</a> - Assignment to Variable without Use ('Unused Variable')</li>
   <li> <a href="https://www.securecoding.cert.org/confluence/x/QYA5">CERT, MSC13-C</a> - Detect and remove unused values</li>
   <li> <a href="https://www.securecoding.cert.org/confluence/x/S4IyAQ">CERT, MSC13-CPP</a> - Detect and remove unused values</li>
-</ul>
-≈
+</ul>Z
+CODE_SMELL
+—
 
-java:S1611∂
+java:S1611¬
 javaS1611\Parentheses should be removed from a single lambda input parameter when its type is inferred"MINOR*java2S1611:¥<p>There are two possible syntaxes for a lambda having only one input parameter with an inferred type: with and without parentheses around that single parameter. The simpler syntax, without parentheses, is more compact and readable than the one with parentheses, and is therefore preferred.</p>
 
 <p>
@@ -25864,10 +26517,11 @@ java:S1611∂
 <h2>Compliant Solution</h2>
 <pre>
 x -> x * 2
-</pre>
-Ä
+</pre>Z
+CODE_SMELL
+å
 
-java:S1610Ò
+java:S1610˝
 javaS1610AAbstract classes without fields should be converted to interfaces"MAJOR*java2S1610:ä<p>With Java 8's "default method" feature, any abstract class without direct or inherited field should be converted into an interface.</p>
 
 <p>
@@ -25894,10 +26548,11 @@ public interface Car {
     c.freeze(this);
   }
 }
-</pre>
-ö
+</pre>Z
+CODE_SMELL
+¶
 
-java:S1850ã
+java:S1850ó
 javaS1850M"instanceof" operators that always return "true" or "false" should be removed"MAJOR*java2S1850:ò<p><code>instanceof</code> operators that always return <code>true</code> or <code>false</code> are either useless or the result of a misunderstanding which could lead to unexpected behavior in production.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -25924,9 +26579,10 @@ public boolean isSuitable(Integer param) {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/571.html">MITRE, CWE-571</a> - Expression is Always True</li>
 <li> <a href="http://cwe.mitre.org/data/definitions/570.html">MITRE, CWE-570</a> - Expression is Always False</li>
-</ul>
-‹
-,java:RightCurlyBraceSameLineAsNextBlockCheck´
+</ul>Z
+CODE_SMELL
+Ë
+,java:RightCurlyBraceSameLineAsNextBlockCheck∑
 java'RightCurlyBraceSameLineAsNextBlockCheckhClose curly brace and the next "else", "catch" and "finally" keywords should be located on the same line"MINOR*java2'RightCurlyBraceSameLineAsNextBlockCheck:Ÿ<p>Shared coding conventions make it possible for a team to collaborate efficiently.</p>
 <p>This rule makes it mandatory to place closing curly braces on the same line as the next <code>else</code>, <code>catch</code> or <code>finally</code> keywords.</p>
 <p>The following code snippet illustrates this rule:</p>
@@ -25950,9 +26606,10 @@ public void myMethod() {
     closeConnection();
   }
 }
-</pre>
-‡
-!java:CallToFileDeleteOnExitMethod∫
+</pre>Z
+CODE_SMELL
+Ï
+!java:CallToFileDeleteOnExitMethod∆
 javaCallToFileDeleteOnExitMethod!"deleteOnExit" should not be used"MAJOR*java2CallToFileDeleteOnExitMethod:≈<p>Use of <code>File.deleteOnExit()</code> is not recommended for the following reasons:</p>
 <ul>
 <li> The deletion occurs only in the case of a normal JVM shutdown but not when the JVM crashes or is killed.</li>
@@ -25963,10 +26620,11 @@ public void myMethod() {
 <pre>
 File file = new File("file.txt");
 file.deleteOnExit();  // Noncompliant
-</pre>
-é	
+</pre>Z
+CODE_SMELL
+ö	
 
-java:S1609ˇ
+java:S1609ã	
 javaS1609X@FunctionalInterface annotation should be used to flag Single Abstract Method interfaces"MAJOR*java2S1609:Å<p>A Single Abstract Method (SAM) interface is a Java interface containing only one method. The Java API is full of SAM interfaces, such as <code>java.lang.Runnable</code>, <code>java.awt.event.ActionListener</code>, <code>java.util.Comparator</code> and <code>java.util.concurrent.Callable</code>. SAM interfaces have a special place in Java 8 because they can be implemented using Lambda expressions or Method references. </p>
 <p>Using <code>@FunctionalInterface</code> forces a compile break when an additional, non-overriding abstract method is added to a SAM, which would break the use of Lambda implementations.</p>
 
@@ -25988,14 +26646,16 @@ public interface Changeable&lt;T&gt; {
 public interface Changeable&lt;T&gt; {
   public void change(T o);
 }
-</pre>
-Ê
+</pre>Z
+CODE_SMELL
+Ú
 
-java:S1607◊
-javaS16074Skipped unit tests should be either removed or fixed"MAJOR*java2S1607:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.
-∞
+java:S1607„
+javaS16074Skipped unit tests should be either removed or fixed"MAJOR*java2S1607:~Skipped unit tests are considered as dead code. Either they should be activated again (and updated) or they should be removed.Z
+CODE_SMELL
+º
 
-java:S1849°
+java:S1849≠
 javaS18496"Iterator.hasNext()" should not call "Iterator.next()""BLOCKER*java2S1849:√Calling <code>Iterator.hasNext()</code> is not supposed to have any side effects, and therefore should not change the state of the iterator. <code>Iterator.next()</code> advances the iterator by one item. So calling it inside <code>Iterator.hasNext()</code>, breaks the <code>hasNext()</code> contract, and will lead to unexpected behavior in production.
 
 <h2>Noncompliant Code Example</h2>
@@ -26011,10 +26671,11 @@ public boolean hasNext() {
 }
 ...
 }
-</pre>
-Ø
+</pre>Z
+CODE_SMELL
+ª
 
-java:S1848†
+java:S1848¨
 javaS1848JObjects should not be created to be dropped immediately without being used"CRITICAL*java2S1848:≠There is no good reason to create a new object to not do anything with it. Most of the time, this is due to a missing piece of code and so could lead to an unexpected behavior in production.
 
 <h2>Noncompliant Code Example</h2>
@@ -26027,10 +26688,11 @@ if (x &lt; 0)
 <pre>
 if (x &lt; 0)
   throw new IllegalArgumentException("x must be nonnegative");
-</pre>
-ü
+</pre>Z
+CODE_SMELL
+´
 
-java:S1604ê
+java:S1604ú
 javaS1604HAnonymous inner classes containing only one method should become lambdas"MAJOR*java2S1604:¢<p>Before Java 8, the only way to partially support closures in Java was by using anonymous inner classes. But the syntax of anonymous classes may seem unwieldy and unclear.</p>
 
 <p>With Java 8, most uses of anonymous inner classes should be replaced by lambdas to highly increase the readability of the source code.</p>
@@ -26051,10 +26713,11 @@ myCollection.map(new Mapper&lt;String,String&gt;() {
 <h2>Compliant Solution</h2>
 <pre>
 myCollection.map(element -&gt; new StringBuilder(element).reverse().toString());
-</pre>
-ˆ
+</pre>Z
+CODE_SMELL
+Ç
 
-java:S3400Á
+java:S3400Û
 javaS3400#Methods should not return constants"MAJOR*java2S3400:û<p>There's no point in forcing the overhead of a method call for a method that always returns the same constant value. Even worse, the fact that a method call must be made will likely mislead developers who call the method into thinking that something more is done. Declare a constant instead.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -26071,10 +26734,11 @@ public static int bestNumber = 12;
 
 
 <h2>Exceptions</h2>
-<p><code>@Override</code> methods are ignored by this rule, since they may be required by an interface or needed to replace the value returned by a parent class.</p>
-ı
+<p><code>@Override</code> methods are ignored by this rule, since they may be required by an interface or needed to replace the value returned by a parent class.</p>Z
+CODE_SMELL
+Å
 
-java:S1845Ê
+java:S1845Ú
 javaS1845OMethods and field names should not be the same or differ only by capitalization"MAJOR*java2S1845:Ò<p>Looking at the set of methods in a class, including superclass methods, and finding two methods or fields that differ only by capitalization is confusing to users of the class. It is similarly confusing to have a method and a field which differ only in capitalization or a method and a field with exactly the same name and visibility.</p>
 <p>In the case of methods, it may have been a mistake on the part of the original developer, who intended to override a superclass method, but instead added a new method with nearly the same name.</p>
 <p>Otherwise, this situation simply indicates poor naming. Method names should be action-oriented, and thus contain a verb, which is unlikely in the case where both a method and a member have the same name (with or without capitalization differences). However, renaming a public method could be disruptive to callers. Therefore renaming the member is the recommended action.</p>
@@ -26119,11 +26783,13 @@ public class MyCar extends Car{
   public void driveReallyFast(){...}
 
 }
-</pre>
-Ñ
+</pre>Z
+CODE_SMELL
+ê
 
 
-java:S1844ı	
+java:S1844Å
+
 javaS1844j"Object.wait(...)" should never be called on objects that implement "java.util.concurrent.locks.Condition""BLOCKER*java2S1844:„<p>From the Java API documentation:</p>
 <blockquote>
 <code>Condition</code> factors out the <code>Object</code> monitor methods (<code>wait</code>, <code>notify</code> and <code>notifyAll</code>) into distinct objects to give the effect of having multiple wait-sets per object, by combining them with the use of arbitrary Lock implementations. Where a <code>Lock</code> replaces the use of <code>synchronized</code> methods and statements, a <code>Condition</code> replaces the use of the <code>Object</code> monitor methods.
@@ -26146,10 +26812,11 @@ final Lock lock = new ReentrantLock();
 final Condition notFull  = lock.newCondition();
 ...
 notFull.await();
-</pre>
-∫
+</pre>Z
+CODE_SMELL
+∆
 
-java:S1602´
+java:S1602∑
 javaS1602OLamdbas containing only one statement should not nest this statement in a block"MAJOR*java2S1602:∂<p>There are two ways to write lambdas that contain single statement, but one is definitely more compact and readable than the other.</p>
 
 <p>
@@ -26167,9 +26834,10 @@ x -&gt; {System.out.println(x+1);}
 <pre>
 x -&gt; System.out.println(x+1)
 (a, b) -&gt; a+b    //For return statement, the return keyword should also be dropped
-</pre>
-Å
-java:ArchitecturalConstraint‡
+</pre>Z
+CODE_SMELL
+ç
+java:ArchitecturalConstraintÏ
 javaArchitecturalConstraint,Architectural constraints should be followed"MAJOR*java2ArchitecturalConstraint:Ë<p>A source code comply to an architectural model when it fully
 	adheres to a set of architectural constraints. A constraint allows to
 	deny references between classes by pattern.</p>
@@ -26180,11 +26848,12 @@ x -&gt; System.out.println(x+1)
 		java.util.Enumeration from any classes</li>
 	<li>forbid access to java.sql.** from **.ui.** and **.web.**
 		classes</li>
-</ul>@
-Ç
+</ul>@Z
+CODE_SMELL
+é
 
 
-java:S2325Û	
+java:S2325ˇ	
 javaS2325D"private" methods that don't access instance data should be "static""MINOR*java2S2325:â	<p>
   <code>private</code> methods that don't access instance data can be <code>static</code>
   to prevent any misunderstanding about the contract of the method.
@@ -26230,10 +26899,11 @@ class Utilities {
   <li><code>private void writeObject(java.io.ObjectOutputStream out) throws IOException;</code></li>
   <li><code>private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException;</code></li>
   <li><code>private void readObjectNoData() throws ObjectStreamException;</code></li>
-</ul>
-ı
+</ul>Z
+CODE_SMELL
+Å
 
-java:S2326Ê
+java:S2326Ú
 javaS2326(Unused type parameters should be removed"MAJOR*java2S2326:ò<p>Type parameters that aren't used are dead code, which can only distract and possibly confuse developers during maintenance. Therefore, unused type parameters should be removed.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26250,10 +26920,11 @@ int Add(int a, int b)
 {
   return a + b; 
 }
-</pre>
-ù
+</pre>Z
+CODE_SMELL
+©
 
-java:S3417é
+java:S3417ö
 javaS3417*Disallowed dependencies should not be used"MAJOR*java2S3417:º<p>Whether they are disallowed locally for security, license, or dependability reasons, forbidden dependencies should not be used. </p>
 <p>This rule raises an issue when the group or artifact id of a dependency matches the configured forbidden dependency pattern. </p>
 
@@ -26265,10 +26936,11 @@ java:S3417é
     &lt;artifactId&gt;log4j&lt;/artifactId&gt; 
     &lt;version&gt;1.2.17&lt;/version&gt; 
 &lt;/dependency&gt; 
-</pre>@
-≠
+</pre>@Z
+CODE_SMELL
+π
 
-java:S3419û
+java:S3419™
 javaS3419+Group ids should follow a naming convention"MINOR*java2S3419:Õ<p>Shared naming conventions allow teams to collaborate effectively. This rule raises an issue when the a pom's <code>groupId</code> does not match the provided regular expression.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -26288,10 +26960,11 @@ java:S3419û
 
   &lt;!-- ... --&gt;
 &lt;/project&gt;
-</pre>
-µ
+</pre>Z
+CODE_SMELL
+¡
 
-java:S3420¶
+java:S3420≤
 javaS3420.Artifact ids should follow a naming convention"MINOR*java2S3420:“<p>Shared naming conventions allow teams to collaborate effectively. This rule raises an issue when a pom's <code>artifactId</code> does not match the provided regular expression.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -26311,10 +26984,11 @@ java:S3420¶
 
   &lt;!-- ... --&gt;
 &lt;/project&gt;
-</pre>
-Õ
+</pre>Z
+CODE_SMELL
+Ÿ
 
-java:S3421æ
+java:S3421 
 javaS34211Deprecated "${pom}" properties should not be used"MAJOR*java2S3421:Á<p>Deprecated features are those that have been retained temporarily for backward compatibility, but which will eventually be removed. In effect, deprecation announces a grace period to allow the smooth transition from the old features to the new ones. In that period, no use of the deprecated features should be added, and all existing uses should be gradually removed.</p>
 <p>This rule raises an issue when <code>${pom.*}</code> properties are used in a pom.</p>
 
@@ -26333,10 +27007,11 @@ java:S3421æ
 <pre>
   &lt;build&gt;
     &lt;finalName&gt;${artifactId}-${version}&lt;/finalName&gt;
-</pre>
-å
+</pre>Z
+CODE_SMELL
+ò
 
-java:S2333˝
+java:S2333â
 javaS2333&Redundant modifiers should not be used"MINOR*java2S2333:±<p>The methods declared in an <code>interface</code> are <code>public</code> and <code>abstract</code> by default. Any variables are automatically <code>public static final</code>. There is no need to explicitly declare them so.</p>
 
 <p>Since annotations are implicitly interfaces, the same holds true for them as well.</p>
@@ -26355,10 +27030,11 @@ public interface Vehicle {
 public interface Vehicle {
 
   void go(int speed, Direction direction);
-</pre>
-¿
+</pre>Z
+CODE_SMELL
+Ã
 
-java:S3422±
+java:S3422Ω
 javaS3422+Dependencies should not have "system" scope"MAJOR*java2S3422:‡<p><code>system</code> dependencies are sought at a specific, specified path. This drastically reduces portability because if you deploy your artifact in an environment that's not configured just like yours is, your code won't work. </p>
 
 <h2>Noncompliant Code Example</h2>
@@ -26370,11 +27046,12 @@ java:S3422±
   &lt;scope&gt;system&lt;/scope&gt;  &lt;!-- Noncompliant --&gt;
   &lt;systemPath&gt;/usr/bin/lib/rt.jar&lt;/systemPath&gt;  &lt;!-- remove this --&gt;
 &lt;/dependency&gt;
-</pre>
-Ó
+</pre>Z
+CODE_SMELL
+˙
 
 
-java:S3423ﬂ
+java:S3423Î
 
 javaS3423/pom elements should be in the recommended order"MINOR*java2S3423:ä
 <p>The POM Code Convention convention recommends listing modifiers in the following order:</p>
@@ -26414,10 +27091,11 @@ java:S3423ﬂ
 <h2>See</h2>
 <ul>
 <li> <a href="https://maven.apache.org/developers/conventions/code.html#POM_Code_Convention">POM Code Convention</a>
-</li></ul>
-¿
+</li></ul>Z
+CODE_SMELL
+Ã
 
-java:S2583±
+java:S2583Ω
 javaS2583FConditions should not unconditionally evaluate to "TRUE" or to "FALSE""BLOCKER*java2S2583:√<p>
 Conditional statements using a condition which cannot be anything but <code>FALSE</code> have the effect of making blocks of code non-functional.
 If the condition cannot evaluate to anything but <code>TRUE</code>, the conditional statement is completely redundant, and makes the code less readable.
@@ -26467,9 +27145,10 @@ private void compute(boolean foo) {
   <li><a href="http://cwe.mitre.org/data/definitions/571">MITRE, CWE-571</a> - Expression is Always True</li>
   <li>MISRA C:2004, 13.7 - Boolean operations whose results are invariant shall not be permitted.</li>
   <li>MISRA C:2012, 14.3 - Controlling expressions shall not be invariant</li>
-</ul>
-ˆ
-java:S00121Ê
+</ul>Z
+CODE_SMELL
+Ç
+java:S00121Ú
 javaS00121*Control structures should use curly braces"MAJOR*java2S00121:î<p>While not technically incorrect, the omission of curly braces can be misleading, and may lead to the introduction of errors during maintenance.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26497,9 +27176,10 @@ if (condition) {
 </li><li> MISRA C:2012, 15.6 - The body of an iteration-statement or a selection-statement shall be a compound-statement
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/1QGMAg">CERT, EXP19-C</a> - Use braces for the body of an if, for, or while statement
 </li><li> <a href="http://cwe.mitre.org/data/definitions/483.html">MITRE, CWE-483</a> - Incorrect Block Delimitation
-</li></ul>
-Ï
-java:S00120‹
+</li></ul>Z
+CODE_SMELL
+¯
+java:S00120Ë
 javaS001204Package names should comply with a naming convention"MINOR*java2S00120:Ä<p>Shared coding conventions allow teams to collaborate efficiently. This rule checks that all package names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26511,9 +27191,10 @@ package org.exAmple; // Noncompliant
 
 <pre>
 package org.example; 
-</pre>
-‘
-java:S00122ƒ
+</pre>Z
+CODE_SMELL
+‡
+java:S00122–
 javaS00122&Statements should be on separate lines"MINOR*java2S00122:ˆ<p>For better readability, do not put more than one statement on a single line.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26526,10 +27207,11 @@ if(someCondition) doSomething();
 if(someCondition) {
   doSomething();
 }
-</pre>
-Ø
+</pre>Z
+CODE_SMELL
+ª
 
-java:S1258†
+java:S1258¨
 javaS1258@Classes and enums with private members should have a constructor"MAJOR*java2S1258:∫<p>
   Non-abstract <code>class</code>es and <code>enum</code>s with non-<code>static</code>,
   <code>private</code> members should explicitly initialize those members,
@@ -26552,9 +27234,10 @@ class A {
     this.field = field;
   }
 }
-</pre>
-º
-java:LeftCurlyBraceEndLineCheckò
+</pre>Z
+CODE_SMELL
+»
+java:LeftCurlyBraceEndLineCheck§
 javaLeftCurlyBraceEndLineCheck:An open curly brace should be located at the end of a line"MINOR*java2LeftCurlyBraceEndLineCheck:é<p>Sharing some coding conventions is a key point to make it possible for a team to efficiently collaborate. This rule make it mandatory to place open curly braces at the end of lines of code.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26576,10 +27259,11 @@ if(condition) {
 <p>When blocks are inlined (left and right curly braces on the same line), no issue is triggered. </p>
 <pre>
 if(condition) {doSomething();} 
-</pre>
-¢
+</pre>Z
+CODE_SMELL
+Æ
 
-java:S1488ì
+java:S1488ü
 javaS1488NLocal Variables should not be declared and then immediately returned or thrown"MINOR*java2S1488:ü<p>Declaring a variable only to immediately return or throw it is a bad practice.
 Some developers argue that the practice improves code readability, because it enables them to explicitly name what is being returned. However, this variable is an internal implementation detail that is not exposed to the callers of the method. The method name should be sufficient for callers to know exactly what will be returned.</p>
 
@@ -26606,10 +27290,11 @@ public long computeDurationInMilliseconds() {
 public void doSomething() {
   throw new RuntimeException();
 }
-</pre>
-–
+</pre>Z
+CODE_SMELL
+‹
 
-java:S1244¡
+java:S1244Õ
 javaS12448Floating point numbers should not be tested for equality"CRITICAL*java2S1244:‡<p>Floating point math is imprecise because of the challenges of storing such values in a binary representation. Even worse, floating point math is not associative; push a <code>float</code> or a <code>double</code> through a series of simple mathematical operations and the answer will be different based on the order of those operation because of the rounding that takes place at each step.</p>
 <p>Even simple floating point assignments are not simple:</p>
 <pre>
@@ -26656,10 +27341,11 @@ if(f != f) { // Compliant; test for NaN value
 <ul>
 <li> MISRA C:2004, 13.3 - Floating-point expressions shall not be tested for equality or inequality.
 </li><li> MISRA C++:2008, 6-2-2 - Floating-point expressions shall not be directly or indirectly tested for equality or inequality
-</li></ul>
-À
+</li></ul>Z
+CODE_SMELL
+◊
 
-java:S2912º
+java:S2912»
 javaS2912,"indexOf" checks should use a start position"MAJOR*java2S2912:Í<p>
   One thing that makes good code good is the clarity with which it conveys the intent of the original programmer to maintainers,
   and the proper choice of <code>indexOf</code> methods can help move code from confusing to clear.
@@ -26688,10 +27374,11 @@ String name = "ismael";
 if (name.indexOf("ae", 2) > -1) {
 // ...
 }
-</pre>
-®
+</pre>Z
+CODE_SMELL
+¥
 
-java:S1481ô
+java:S1481•
 javaS1481(Unused local variables should be removed"MAJOR*java2S1481:À<p>If a local variable is declared but not used, it is dead code and should be removed. Doing so will improve maintainability because developers will not wonder what the variable is used for.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26707,14 +27394,16 @@ public int numberOfMinutes(int hours) {
 public int numberOfMinutes(int hours) {
   return hours * 60;
 }
-</pre>
-’
+</pre>Z
+CODE_SMELL
+·
 
-java:S1479∆
-javaS1479;"switch" statements should not have too many "case" clauses"MAJOR*java2S1479:Â<p>When <code>switch</code> statements have a large set of <code>case</code> clauses, it is usually an attempt to map two sets of data. A real map structure would be more readable and maintainable, and should be used instead.</p>
-√
+java:S1479“
+javaS1479;"switch" statements should not have too many "case" clauses"MAJOR*java2S1479:Â<p>When <code>switch</code> statements have a large set of <code>case</code> clauses, it is usually an attempt to map two sets of data. A real map structure would be more readable and maintainable, and should be used instead.</p>Z
+CODE_SMELL
+œ
 
-java:S2924¥
+java:S2924¿
 javaS2924JUnit rules should be used"MAJOR*java2S2924:Ù<p>
   While some <code>TestRule</code> classes have the desired effect without ever being directly referenced by a test,
   several others do no, and there's no reason to leave them cluttering up the file if they're not in use.
@@ -26751,10 +27440,11 @@ public class ProjectDefinitionTest {
     assertThat(def.getKey(), is("mykey"));
   }
 }
-</pre>
-Ò
+</pre>Z
+CODE_SMELL
+˝
 
-java:S2925‚
+java:S2925Ó
 javaS2925*"Thread.sleep" should not be used in tests"MAJOR*java2S2925:í<p>
   Using <code>Thread.sleep</code> in a test is just generally a bad idea.
   It creates brittle tests that can fail unpredictably depending on environment ("Passes on my machine!") or load.
@@ -26771,10 +27461,11 @@ public void testDoTheThing(){
   Thread.sleep(500);  // Noncompliant
   // assertions...
 }
-</pre>
-œ
+</pre>Z
+CODE_SMELL
+€
 
-java:S1228¿
+java:S1228Ã
 javaS12287Packages should have a javadoc file 'package-info.java'"MINOR*java2S1228:„<p>Each package in a Java project should include a <code>package-info.java</code> file. The purpose of this file is to document the Java package using javadoc and declare package annotations.</p>
 
 <h2>Compliant Solution</h2>
@@ -26784,10 +27475,11 @@ java:S1228¿
 **/
 @ParametersAreNonnullByDefault
 package org.foo.bar;
-</pre>
-¯
+</pre>Z
+CODE_SMELL
+Ñ
 
-java:S1226È
+java:S1226ı
 javaS1226SMethod parameters, caught exceptions and foreach variables should not be reassigned"MAJOR*java2S1226:<p>While it is technically correct to assign to parameters from within method bodies, it is better to use temporary variables to store intermediate results.</p>
 <p>This rule will typically detect cases where a constructor parameter is assigned to itself instead of a field of the same name, i.e. when <code>this</code> was forgotten.</p>
 <p>Allowing parameters to be assigned to also reduces the code readability as developers will not be able to know whether the original parameter or some temporary variable is being accessed without going through the whole method.</p>
@@ -26845,10 +27537,11 @@ class MyClass {
 
 <ul>
 <li> MISRA C:2012, 17.8 - A function parameter should not be modified</li>
-</ul>
-Á
+</ul>Z
+CODE_SMELL
+Û
 
-java:S1223ÿ
+java:S1223‰
 javaS1223LNon-constructor methods should not have the same name as the enclosing class"MAJOR*java2S1223:Ê<p>Having a class and some of its methods sharing the same name is misleading, and leaves others to wonder whether it was done that way on purpose, or was the methods supposed to be a constructor.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -26865,10 +27558,11 @@ public class Foo {
    public Foo() {...}
    public void foo(String label) {...}  // Compliant
 }
-</pre>
-ù
+</pre>Z
+CODE_SMELL
+©
 
-java:S1221é
+java:S1221ö
 javaS12211Methods should not be named "hashcode" or "equal""CRITICAL*java2S1221:¥<p>Naming a method <code>hashcode()</code> or <code>equal</code> is either:</p>
 <ul>
 <li> A bug in the form of a typo. Overriding <code>Object.hashCode()</code> (note the camelCasing) or <code>Object.equals</code> (note the 's' on the end) was meant, and the application does not behave as expected.</li>
@@ -26889,10 +27583,11 @@ public boolean equal(Object obj) { /* ... */ }  // Noncompliant
 public int hashCode() { /* ... */ }
 
 public boolean equals(Object obj) { /* ... */ } 
-</pre>
-ê
+</pre>Z
+CODE_SMELL
+ú
 
-java:S1220Å
+java:S1220ç
 javaS1220.The default unnamed package should not be used"MINOR*java2S1220:≠<p>According to the Java Language Specification:</p>
 
 <blockquote>
@@ -26911,10 +27606,11 @@ public class MyClass { /* ... */ }
 package org.example;
 
 public class MyClass{ /* ... */ }
-</pre>
-ì
+</pre>Z
+CODE_SMELL
+ü
 
-java:S1219Ñ
+java:S1219ê
 javaS12196"switch" statements should not contain non-case labels"MAJOR*java2S1219:®
 <p>Even if it is legal, mixing case and non-case labels in the body of a switch statement is very confusing and can even be the result of a typing error.</p>
 <h2>Noncompliant Code Example</h2>
@@ -26969,10 +27665,11 @@ switch (day) {
 <li> MISRA C:2004, 15.0 - The MISRA C <em>switch</em> syntax shall be used.
 </li><li> MISRA C++:2008, 6-4-3 - A switch statement shall be a well-formed switch statement.
 </li><li> MISRA C:2012, 16.1 - All switch statements shall be well-formed
-</li></ul>
-œ
+</li></ul>Z
+CODE_SMELL
+€
 
-java:S1217¿
+java:S1217Ã
 javaS1217=Thread.run() and Runnable.run() should not be called directly"CRITICAL*java2S1217:⁄<p>The purpose of the <code>Thread.run()</code> and <code>Runnable.run()</code> methods is to execute code in a separate, dedicated thread. Calling those methods directly doesn't make sense because it causes their code to be executed in the current thread. </p>
 <p>To get the expected behavior, call the <code>Thread.start()</code> method instead.</p>
 <h2>Noncompliant Code Example</h2>
@@ -26992,10 +27689,11 @@ myThread.start(); // Compliant
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/572.html">MITRE, CWE-572</a> - Call to Thread run() instead of start()</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/KQAiAg">CERT THI00-J</a> - Do not invoke Thread.run()</li>
-</ul>
-ã
+</ul>Z
+CODE_SMELL
+ó
 
-java:S1215¸
+java:S1215à
 javaS1215FExecution of the Garbage Collector should be triggered only by the JVM"MAJOR*java2S1215:ê<p>
 Calling <code>System.gc()</code> or <code>Runtime.getRuntime().gc()</code> is a bad idea for a simple reason:
 there is no way to know exactly what will be done under the hood by the JVM because the behavior will depend on its vendor, version and options:
@@ -27010,11 +27708,13 @@ there is no way to know exactly what will be done under the hood by the JVM beca
 
 <p>An application relying on those unpredictable methods is also unpredictable and therefore broken.</p>
 
-<p>The task of running the garbage collector should be left exclusively to the JVM.</p>
-â
+<p>The task of running the garbage collector should be left exclusively to the JVM.</p>Z
+CODE_SMELL
+ï
 
 
-java:S1699˙	
+java:S1699Ü
+
 javaS16995Constructors should only call non-overridable methods"MAJOR*java2S1699:ü	<p>Calling an overridable method from a constructor could result in failures or strange behaviors when instantiating a subclass which overrides the method.</p>
 <p>For example:</p>
 <ul>
@@ -27050,10 +27750,11 @@ public class Child extends Parent {
   }
 
 }
-</pre>
-Õ
+</pre>Z
+CODE_SMELL
+Ÿ
 
-java:S1698æ
+java:S1698 
 javaS1698*Objects should be compared with "equals()""MAJOR*java2S1698:Ó<p>Using the equality (<code>==</code>) and inequality (<code>!=</code>) operators to compare two objects does not check to see if they have the same values. Rather it checks to see if both object references point to exactly the same object in memory. The vast majority of the time, this is not what you want to do. Use the .equals() method to compare the values of two objects or to compare a string object to a string literal.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -27105,11 +27806,12 @@ if (str1 == str3)
   <li><a href="http://cwe.mitre.org/data/definitions/595.html">MITRE, CWE-595</a> - Comparison of Object References Instead of Object Contents</li>
   <li><a href="http://cwe.mitre.org/data/definitions/597">MITRE, CWE-597</a> - Use of Wrong Operator in String Comparison</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/wwD1AQ">CERT, EXP03-J</a> - Do not use the equality operators when comparing values of boxed primitives</li>
-</ul>
-∫
+</ul>Z
+CODE_SMELL
+∆
 
 
-java:S1214´
+java:S1214∑
 
 javaS1214-Constants should not be defined in interfaces"MINOR*java2S1214:ÿ	<p>According to Joshua Bloch, author of "Effective Java":</p>
 
@@ -27156,10 +27858,11 @@ public final class Status {             // Compliant
    public static final int OPEN = 1;
    public static final int CLOSED = 2;
 }
-</pre>
-î
+</pre>Z
+CODE_SMELL
+†
 
-java:S1213Ö
+java:S1213ë
 javaS1213UThe members of an interface declaration or class should appear in a pre-defined order"MINOR*java2S1213:ä<p>According to the Java Code Conventions as defined by Oracle, the members of a class or interface declaration should appear in the following order in the source files:</p>
 <ul>
 <li> Class and instance variables</li>
@@ -27185,10 +27888,11 @@ public class Foo{
    public Foo() {...}
    public boolean isTrue() {...}
 }
-</pre>
-œ
+</pre>Z
+CODE_SMELL
+€
 
-java:S1697¿
+java:S1697Ã
 javaS1697WShort-circuit logic should be used to prevent null pointer dereferences in conditionals"BLOCKER*java2S1697:¡<p>
   When either the equality operator in a null test or the logical operator that follows it is reversed,
   the code has the appearance of safely null-testing the object before dereferencing it.
@@ -27216,20 +27920,22 @@ if (str == null || str.length() == 0) {
 if (str != null &amp;&amp; str.length() &gt; 0) {
   System.out.println("String is not empty");
 }
-</pre>
-˙
+</pre>Z
+CODE_SMELL
+Ü
 
-java:S2701Î
+java:S2701˜
 javaS27017Literal boolean values should not be used in assertions"MAJOR*java2S2701:é<p>There's no reason to use literal boolean values in assertions. Doing so is at best confusing for maintainers, and at worst a bug.</p>
 <h2>Noncompliant Code Example</h2>
 
 <pre>
 Assert.assertTrue(true);  // Noncompliant
 assertThat(true).isTrue(); // Noncompliant
-</pre>
-§	
+</pre>Z
+CODE_SMELL
+∞	
 
-java:S1696ï	
+java:S1696°	
 javaS1696+"NullPointerException" should not be caught"MAJOR*java2S1696:ƒ<p><code>NullPointerException</code> should be avoided, not caught. Any situation in which <code>NullPointerException</code> is explicitly caught can easily be converted to a <code>null</code> test, and any behavior being carried out in the catch block can easily be moved to the "is null" branch of the conditional.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -27265,10 +27971,11 @@ public int lengthPlus(String str) {
 <ul>
   <li><a href="http://cwe.mitre.org/data/definitions/395.html">MITRE, CWE-395</a> - Use of NullPointerException Catch to Detect NULL Pointer Dereference</li>
   <li> <a href="https://www.securecoding.cert.org/confluence/x/BIB3AQ">CERT, ERR08-J</a> - Do not catch NullPointerException or any of its ancestors</li>
-</ul>
-á
+</ul>Z
+CODE_SMELL
+ì
 
-java:S1695¯
+java:S1695Ñ
 javaS16956"NullPointerException" should not be explicitly thrown"MAJOR*java2S1695:ú<p>A <code>NullPointerException</code> should indicate that a <code>null</code> value was unexpectedly encountered. Good programming practice dictates that code is structured to avoid NPE's. </p>
 <p>Explicitly throwing <code>NullPointerException</code> forces a method's callers to explicitly catch it, rather than coding to avoid it. Further, it makes it difficult to distinguish between the unexpectedly-encountered <code>null</code> value and the condition which causes the method to purposely throw an NPE.</p>
 <p>If an NPE is being thrown to indicate that a parameter to the method should not have been null, use the <code>@NotNull</code> annotation instead.</p>
@@ -27284,10 +27991,11 @@ public void doSomething (String aString) throws NullPointerException {
 <pre>
 public void doSomething (@NotNull String aString) {
 }
-</pre>
-ü
+</pre>Z
+CODE_SMELL
+´
 
-java:S1694ê
+java:S1694ú
 javaS1694@An abstract class should have both abstract and concrete methods"MINOR*java2S1694:™
 <p>The purpose of an abstract class is to provide some heritable behaviors while also defining methods which must be implemented by sub-classes.</p>
 <p>A class with no abstract methods that was made abstract purely to prevent instantiation should be converted to a concrete class (i.e. remove the <code>abstract</code> keyword) with a private constructor.</p>
@@ -27343,11 +28051,12 @@ public abstract class Lamp {
     }
   }
 }
-</pre>
-õ
+</pre>Z
+CODE_SMELL
+ß
 
 
-java:S1210å
+java:S1210ò
 
 javaS1210R"equals(Object obj)" should be overridden along with the "compareTo(T obj)" method"CRITICAL*java2S1210:ë	<p>
 According to the Java <code>Comparable.compareTo(T o)</code> documentation:
@@ -27383,20 +28092,22 @@ public class Foo implements Comparable&lt;Foo&gt; {
   @Override
   public boolean equals(Object obj) { /* ... */ }
 }
-</pre>
-Ë
+</pre>Z
+CODE_SMELL
+Ù
 
-java:S1452Ÿ
+java:S1452Â
 javaS1452>Generic wildcard types should not be used in return parameters"MAJOR*java2S1452:ı<p>Using a wildcard as a return type implicitly means that the return parameter should be considered as read-only but without any way to enforce this contract. </p>
 <p>Let's take the example of method returning a "List&lt;? extends Animal&gt;". Is it possible on this list to add a Dog, a Cat, ... we simply don't know. The consumer of a method should not have to deal with such disruptive questions. </p>
 <h2>Noncompliant Code Example</h2>
 
 <pre>
 List&lt;? extends Animal&gt; getAnimals(){...}
-</pre>
-Û	
+</pre>Z
+CODE_SMELL
+ˇ	
 
-java:S1451‰	
+java:S1451	
 javaS1451/Copyright and license headers should be defined"BLOCKER*java2S1451:ç	<p>Each source file should start with a header stating file ownership and the license which must be used to distribute the application. </p>
 <p>This rule must be fed with the header text that is expected at the beginning of every file.</p>
 <h2>Compliant Solution</h2>
@@ -27421,13 +28132,15 @@ java:S1451‰
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-</pre>
-ƒ
-java:ParsingErrorÆ
-javaParsingErrorJava parser failure"MAJOR*java2ParsingError:Á<p>When the Java parser fails, it is possible to record the failure as a violation on the file. This way, not only it is possible to track the number of files that do not parse but also to easily find out why they do not parse.</p>
-Õ
+</pre>Z
+CODE_SMELL
+–
+java:ParsingError∫
+javaParsingErrorJava parser failure"MAJOR*java2ParsingError:Á<p>When the Java parser fails, it is possible to record the failure as a violation on the file. This way, not only it is possible to track the number of files that do not parse but also to easily find out why they do not parse.</p>Z
+CODE_SMELL
+Ÿ
 
-java:S1449æ
+java:S1449 
 javaS1449*Locale should be used in String operations"MAJOR*java2S1449:Ó<p>Failure to specify a locale when calling the methods <code>toLowerCase()</code> or <code>toUpperCase()</code> on <code>String</code> objects means the system default encoding will be used, possibly creating problems with international characters. For instance with the Turkish language, when converting the small letter i to upper case, the result is capital letter I with a dot over it.</p>
 <p>Case conversion without a locale may work fine in its "home" environment, but break in ways that are extremely difficult to diagnose for customers who use different encodings. Such bugs can be nearly, if not completely, impossible to reproduce when it's time to fix them.</p>
 
@@ -27444,19 +28157,21 @@ myString.toLowerCase(Locale.TR)
 <h2>See</h2>
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/EwAiAg">CERT, STR02-J.</a> - Specify an appropriate locale when comparing locale-dependent data
-</li></ul>
-¸
+</li></ul>Z
+CODE_SMELL
+à
 
-java:S1448Ì
+java:S1448˘
 javaS1448(Classes should not have too many methods"MAJOR*java2S1448:ü<p>
   A class that grows too much tends to aggregate too many responsibilities
   and inevitably becomes harder to understand and therefore to maintain.
   Above a specific threshold, it is strongly advised to refactor the class
   into smaller ones which focus on well defined topics.
-</p>
-à
+</p>Z
+CODE_SMELL
+î
 
-java:S1206˘
+java:S1206Ö
 javaS1206C"equals(Object obj)" and "hashCode()" should be overridden in pairs"BLOCKER*java2S1206:é<p>According to the Java Language Specification, there is a contract between <code>equals(Object)</code> and <code>hashCode()</code>:</p>
 <blockquote>
 <p>If two objects are equal according to the <code>equals(Object)</code> method, then calling the <code>hashCode</code> method on each of the two objects must produce the same integer result. </p>
@@ -27498,10 +28213,11 @@ class MyClass {    // Compliant
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/581.html">MITRE, CWE-581</a> - Object Model Violation: Just One of Equals and Hashcode Defined</li>
 <li> CERT Java Secure Coding, MET09-J - Classes that define an equals() method must also define a hashCode() method</li>
-</ul>
-ö
+</ul>Z
+CODE_SMELL
+¶
 
-java:S1444ã
+java:S1444ó
 javaS1444)"public static" fields should be constant"CRITICAL*java2S1444:π<p>There is no good reason to declare a field "public" and "static" without also declaring it "final". Most of the time this is a kludge to share a state among several objects. But with this approach, any object can do whatever it wants with the shared state, such as setting it to <code>null</code>. </p>
 <h2>Noncompliant Code Example</h2>
 
@@ -27524,11 +28240,12 @@ public class Greeter {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/500.html">MITRE, CWE-500</a> - Public Static Field Not Marked Final</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/QQBqAQ">CERT OBJ10-J</a> - Do not use public static nonfinal variables</li>
-</ul>
-¶
+</ul>Z
+CODE_SMELL
+≤
 
 
-java:S1201ó
+java:S1201£
 
 javaS1201<Methods named "equals" should override Object.equals(Object)"MAJOR*java2S1201:µ	<p>"equals" as a method name should be used exclusively to override <code>Object.equals(Object)</code> to prevent any confusion.</p>
 <p>It is tempting to overload the method to take a specific class instead of <code>Object</code> as parameter, to save the class comparison check. However, this will not work as expected.</p>
@@ -27567,10 +28284,11 @@ class MyClass {
 
   /* ... */
 }
-</pre>
-ﬁ
+</pre>Z
+CODE_SMELL
+Í
 
-java:S1200œ
+java:S1200€
 javaS1200YClasses should not be coupled to too many other classes (Single Responsibility Principle)"MAJOR*java2S1200:–
 <p>
   According to the Single Responsibility Principle, introduced by Robert C. Martin in his book "Principles of Object Oriented Design", a class should have only one responsibility:
@@ -27607,10 +28325,11 @@ class Foo {                        // Noncompliant - Foo depends on too many cla
     T9 a9;
   }
 }
-</pre>
-¢
+</pre>Z
+CODE_SMELL
+Æ
 
-java:S2718ì
+java:S2718ü
 javaS2718H"DateUtils.truncate" from Apache Commons Lang library should not be used"MAJOR*java2S2718:•<p>The use of the <code>Instant</code> class introduced in Java 8 to truncate a date can be significantly faster than the <code>DateUtils</code> class from Commons Lang.</p>
 
 <p>
@@ -27633,10 +28352,11 @@ public Date trunc(Date date) {
   instant = instant.truncatedTo(ChronoUnit.SECONDS);
   return Date.from(instant);
 }
-</pre>
-ß
+</pre>Z
+CODE_SMELL
+≥
 
-java:S2970ò
+java:S2970§
 javaS2970Assertions should be complete"CRITICAL*java2S2970:“<p>
   It is very easy to write incomplete assertions when using some test frameworks.
   This rule enforces complete assertions in the following cases:
@@ -27695,17 +28415,19 @@ public void test() {
   check("foo.txt", "key1").isTrue();
   check("bar.txt", "key2").isTrue();
 }
-</pre>
-Ø
+</pre>Z
+CODE_SMELL
+ª
 
-java:S2972†
+java:S2972¨
 javaS2972,Inner classes should not have too many lines"MAJOR*java2S2972:Œ<p>
   Inner classes should be short and sweet, to manage complexity in the overall file.
   An inner class that has grown longer than a certain threshold should probably be externalized to its own file.
-</p>
-º
+</p>Z
+CODE_SMELL
+»
 
-java:S2973≠
+java:S2973π
 javaS2973-Escaped Unicode characters should not be used"MAJOR*java2S2973:⁄<p>The use of Unicode escape sequences should be reserved for characters that would otherwise be ambiguous, such as unprintable characters.</p>
 <p>This rule ignores sequences composed entirely of Unicode characters, but otherwise raises an issue for each Unicode character that represents a printable character.</p>
 
@@ -27717,10 +28439,11 @@ String prefix = "n\u00E9e"; // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 String prefix = "n√©e";
-</pre>
-î
+</pre>Z
+CODE_SMELL
+†
 
-java:S2974Ö
+java:S2974ë
 javaS29747Classes without "public" constructors should be "final""MAJOR*java2S2974:®<p>Classes with only <code>private</code> constructors should be marked <code>final</code> to prevent any mistaken extension attempts.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -27747,10 +28470,11 @@ public final class PrivateConstructorClass {  // Compliant
     return 42;
   }
 }
-</pre>
-ˇ
+</pre>Z
+CODE_SMELL
+ã
 
-java:S2975
+java:S2975¸
 javaS2975 "clone" should not be overridden"MAJOR*java2S2975:™<p>
   Many consider <code>clone</code> and <code>Cloneable</code> broken in Java,
   largely because the rules for overriding <code>clone</code> are tricky and difficult to get right, according to Joshua Bloch:
@@ -27804,11 +28528,12 @@ public class MyClass {
 <ul>
   <li>S2157 - "Cloneables" should implement "clone"</li>
   <li>S1182 - Classes that override "clone" should be "Cloneable" and call "super.clone()"</li>
-</ul>
-ø
+</ul>Z
+CODE_SMELL
+À
 
 
-java:S2976∞
+java:S2976º
 
 javaS2976>"File.createTempFile" should not be used to create a directory"CRITICAL*java2S2976:…	<p>
   Using <code>File.createTempFile</code> as the first step in creating a temporary directory causes a race condition
@@ -27843,10 +28568,11 @@ File tempDir = tempPath.toFile();
 <h2>See</h2>
 <ul>
   <li><a href="https://www.owasp.org/index.php/Top_10_2013-A9-Using_Components_with_Known_Vulnerabilities">OWAPS Top Ten 2013 Category A9 - Using Components with Known Vulnerabilities</a></li>
-</ul>
-◊
+</ul>Z
+CODE_SMELL
+„
 
-java:S2737»
+java:S2737‘
 javaS2737+"catch" clauses should do more than rethrow"MAJOR*java2S2737:˜<p>A <code>catch</code> clause that only rethrows the caught exception has the same effect as omitting the <code>catch</code> altogether and letting it bubble up automatically, but with more code and the additional detrement of leaving maintainers scratching their heads. </p>
 <p>Such clauses should either be eliminated or populated with the appropriate logic.</p>
 
@@ -27875,10 +28601,11 @@ catch (Exception e) {  // Compliant
 <p>or</p>
 <pre>
 string s = File.ReadAllText(fileName);
-</pre>
-Ã
+</pre>Z
+CODE_SMELL
+ÿ
 
-java:S1659Ω
+java:S1659…
 javaS1659:Multiple variables should not be declared on the same line"MINOR*java2S1659:›<p>Declaring multiple variable on one line is difficult to read.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -27905,10 +28632,11 @@ class MyClass {
     int d;
   }
 }
-</pre>
-∫
+</pre>Z
+CODE_SMELL
+∆
 
-java:S1656´
+java:S1656∑
 javaS1656%Variables should not be self-assigned"CRITICAL*java2S1656:›<p>
   There is no reason to re-assign a variable to itself.
   Either this statement is redundant and should be removed,
@@ -27933,9 +28661,10 @@ public void setName(String name) {
 <ul>
   <li><a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
-</ul>
-
-1java:RightCurlyBraceDifferentLineAsNextBlockCheck∫
+</ul>Z
+CODE_SMELL
+¸
+1java:RightCurlyBraceDifferentLineAsNextBlockCheck∆
 java,RightCurlyBraceDifferentLineAsNextBlockCheckfClose curly brace and the next "else", "catch" and "finally" keywords should be on two different lines"MINOR*java2,RightCurlyBraceDifferentLineAsNextBlockCheck:‡<p>Shared coding conventions make it possible for a team to collaborate efficiently.</p>
 <p>This rule makes it mandatory to place a closing curly brace and the next <code>else</code>, <code>catch</code> or <code>finally</code> keyword on two different lines.</p>
 <p>The following code snippet illustrates this rule:</p>
@@ -27959,18 +28688,20 @@ public void myMethod() {
     closeConnection();
   }
 }
-</pre>
-◊
-java:UnusedProtectedMethod∏
+</pre>Z
+CODE_SMELL
+„
+java:UnusedProtectedMethodƒ
 javaUnusedProtectedMethod*Unused protected methods should be removed"MAJOR*java2UnusedProtectedMethod:»<p>Protected methods that are never used by any of the classes in the same project are suspected to be dead code. Dead code is unnecessary, inoperative code that should be removed. Removing dead code makes maintenance easier by decreasing the size of the maintained code base, thereby making it easier to understand the program and preventing the introduction of bugs.</p>
 <p>Unused protected methods are not considered dead code in the following cases:</p>
 <ul>
 <li> Protected methods which override a parent class method.</li>
 <li> Protected methods of an abstract class.</li>
-</ul>
-Ñ	
+</ul>Z
+CODE_SMELL
+ê	
 
-java:S3281ı
+java:S3281Å	
 javaS3281<Default EJB interceptors should be declared in "ejb-jar.xml""MAJOR*java2S3281:ì<p>Default interceptors, such as application security interceptors, must be listed in the <code>ejb-jar.xml</code> file, or they will not be treated as default. </p>
 <p>This rule applies to projects that contain JEE Beans  (any one of <code>javax.ejb.Singleton</code>, <code>MessageDriven</code>, <code>Stateless</code> or <code>Stateful</code>).</p>
 
@@ -27994,10 +28725,11 @@ java:S3281ı
       &lt;interceptor-class&gt;com.myco.ImportantInterceptor&lt;/interceptor-class&gt;
    &lt;/interceptor-binding&gt;
 &lt;/assembly-descriptor&gt;
-</pre>
-ª
+</pre>Z
+CODE_SMELL
+«
 
-java:S3282¨
+java:S3282∏
 javaS3282<EJB interceptor exclusions should be declared as annotations"MAJOR*java2S3282: <p>Exclusions for default interceptors can be declared either in xml or as class annotations. Since annotations are more visible to maintainers, they are preferred.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -28026,10 +28758,11 @@ public class MyExcludedClass implements MessageListener
   public void doTheThing() {
     // ...
   }
-</pre>
-ô
+</pre>Z
+CODE_SMELL
+•
 
-java:S2197ä
+java:S2197ñ
 javaS21979Modulus results should not be checked for direct equality"CRITICAL*java2S2197:®When the modulus of a negative number is calculated, the result will either be negative or zero. Thus, comparing the modulus of a variable for equality with a positive number (or a negative one) could result in false negatives. 
 
 <h2>Noncompliant Code Example</h2>
@@ -28052,10 +28785,11 @@ or
 public boolean isOdd(int x) {
   return Math.abs(x %2) != 1;
 }
-</pre>
-Ì
+</pre>Z
+CODE_SMELL
+˘
 
-java:S3047ﬁ
+java:S3047Í
 javaS30473Multiple loops over the same set should be combined"MAJOR*java2S3047:Ö<p>
   When a method loops multiple over the same set of data,
   whether it's a list or a set of numbers,
@@ -28083,10 +28817,11 @@ public void doSomethingToAList(List&lt;String&gt; strings) {
     doStep2(str);
   }
 }
-</pre>
-Æ
+</pre>Z
+CODE_SMELL
+∫
 
-java:S3052ü
+java:S3052´
 javaS30522Fields should not be initialized to default values"MINOR*java2S3052:«<p>
   The compiler automatically initializes class fields to their default values before setting them with any initialization values,
   so there is no need to explicitly set a field to its default value. Further, under the logic that cleaner code is better code,
@@ -28114,14 +28849,16 @@ public class MyClass {
 </pre>
 
 <h2>Exceptions</h2>
-<p><code>final</code> fields are ignored.</p>
-á
-java:CycleBetweenPackagesÈ
+<p><code>final</code> fields are ignored.</p>Z
+CODE_SMELL
+ì
+java:CycleBetweenPackagesı
 javaCycleBetweenPackages)Cycles between packages should be removed"MAJOR*java2CycleBetweenPackages:¸<p>When several packages are involved in a cycle (package A &gt; package B &gt; package C &gt; package A, where "&gt;" means "depends upon"), that means those packages are highly coupled, and there is no way to reuse/extract one of those packages without importing all the other packages. Such cycle could quickly increase the effort required to maintain an application and embrace business change.</p>
-<p>SonarQube not only detect cycles between packages, but also calculates the minimum effort to break those cycles. This rule logs a violation on each source file having an outgoing dependency to be cut in order to break a cycle.</p>
-‘
+<p>SonarQube not only detect cycles between packages, but also calculates the minimum effort to break those cycles. This rule logs a violation on each source file having an outgoing dependency to be cut in order to break a cycle.</p>Z
+CODE_SMELL
+‡
 
-java:S3066≈
+java:S3066—
 javaS3066,"enum" fields should not be publicly mutable"CRITICAL*java2S3066:<p><code>enum</code>s are generally thought of as constant, but an <code>enum</code> with a <code>public</code> field or <code>public</code> setter is not only non-constant, but also vulnerable to malicious code. Ideally fields in an <code>enum</code> are <code>private</code> and set in the constructor, but if that's not possible, their visibility should be reduced as much as possible.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -28158,11 +28895,11 @@ public enum Continent {
   Continent(int countryCount, int landMass) { 
     // ...
   }
-</pre>
-Ü
+</pre>Z
+CODE_SMELL
+í
 
-java:S1068˜
-
+java:S1068É
 javaS1068'Unused private fields should be removed"MAJOR*java2S1068:™
 <p>
 If a private field is declared but not used in the program, it can be considered dead code and should therefore be removed.
@@ -28201,10 +28938,11 @@ public class MyClass implements java.io.Serializable {
   private static final long serialVersionUID = 42L;
 }
 </pre>
-<p>Moreover, this rule doesn't raise any issue on annotated fields.</p>
-º
+<p>Moreover, this rule doesn't raise any issue on annotated fields.</p>Z
+CODE_SMELL
+»
 
-java:S1067≠
+java:S1067π
 javaS1067%Expressions should not be too complex"MAJOR*java2S1067:‚<p>The complexity of an expression is defined by the number of <code>&amp;&amp;</code>, <code>||</code> and <code>condition ? ifTrue : ifFalse</code> operators it contains.</p>
 <p>A single expression's complexity should not become too high to keep the code readable.</p>
 <h2>Noncompliant Code Example</h2>
@@ -28217,10 +28955,11 @@ if (((condition1 &amp;&amp; condition2) || (condition3 &amp;&amp; condition4)) &
 
 <pre>
 if ( (myFirstCondition() || mySecondCondition()) &amp;&amp; myLastCondition()) { ... }     
-</pre>
-ï
+</pre>Z
+CODE_SMELL
+°
 
-java:S1066Ü
+java:S1066í
 javaS1066,Collapsible "if" statements should be merged"MAJOR*java2S1066:¥<p>Merging collapsible <code>if</code> statements increases the code's readability.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -28242,10 +28981,11 @@ if (file != null &amp;&amp; isFileOrDirectory(file)) {
 private static boolean isFileOrDirectory(File file) {
   return file.isFile() || file.isDirectory();
 }
-</pre>
-ñ
+</pre>Z
+CODE_SMELL
+¢
 
-java:S1065á
+java:S1065ì
 javaS1065Unused labels should be removed"MAJOR*java2S1065:¬<p>If a label is declared but not used in the program, it can be considered as dead code and should therefore be removed.</p>
 <p>This will improve maintainability as developers will not wonder what this label is used for.</p>
 
@@ -28271,10 +29011,11 @@ void foo() {
 <h2>See</h2>
 <ul>
   <li>MISRA C:2012, 2.6 - A function should not contain unused label declarations</li>
-</ul>
-ü
+</ul>Z
+CODE_SMELL
+´
 
-java:S1294ê
+java:S1294ú
 javaS12946The Array.equals(Object obj) method should not be used"CRITICAL*java2S1294:±<p>Since arrays do not override <code>Object.equals()</code>, calling equals on two arrays is the same as comparing their addresses. This means that <code>array1.equals(array2)</code> is equivalent to <code>array1==array2</code>. </p>
 <p>However, some developers might expect <code>Array.equals(Object obj)</code> to do more than a simple memory address comparison, comparing for instance the size and content of the two arrays. To prevent such a misunderstanding, the '==' operator or <code>Arrays.equals(array1, array2)</code> must always be used in place of the <code>Array.equals(Object obj)</code> method.</p>
 <h2>Noncompliant Code Example</h2>
@@ -28293,13 +29034,15 @@ if(array1 == array2){...}
 </pre>
 
 <h2>Deprecated</h2>
-<p>This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S2159'>S2159</a> instead.</p>
-…
-java:ClassCyclomaticComplexity¶
+<p>This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S2159'>S2159</a> instead.</p>Z
+CODE_SMELL
+’
+java:ClassCyclomaticComplexity≤
 javaClassCyclomaticComplexity!Classes should not be too complex"MAJOR*java2ClassCyclomaticComplexity:∑<p>The Cyclomatic Complexity is measured by the number of <code>&amp;&amp;</code> and <code>||</code> operators and <code>if</code>, <code>while</code>, <code>do</code>, <code>for</code>, <code>?:</code>, <code>catch</code>, <code>switch</code>, <code>case</code>, <code>return</code> and <code>throw</code> statements in the body of a class plus one for each constructor, method, static initializer, or instance initializer in the class. The last return statement in method, if exists, is not taken into account.</p>
-<p>Even when the Cyclomatic Complexity of a class is very high, this complexity might be well distributed among all methods. Nevertheless, most of the time, a very complex class is a class which breaks the Single Responsibility Principle and which should be re-factored to be split in several classes.</p>
-‰
-	java:S106÷
+<p>Even when the Cyclomatic Complexity of a class is very high, this complexity might be well distributed among all methods. Nevertheless, most of the time, a very complex class is a class which breaks the Single Responsibility Principle and which should be re-factored to be split in several classes.</p>Z
+CODE_SMELL
+
+	java:S106‚
 javaS106<Standard outputs should not be used directly to log anything"MAJOR*java2S106:ˆ<p>When logging a message there are two important requirements which must be fulfilled:</p>
 <ul>
   <li> The user must be able to easily retrieve the logs</li>
@@ -28316,9 +29059,10 @@ System.out.println("My Message");  // Noncompliant
 <h2>Compliant Solution</h2>
 <pre>
 logger.log("My Message");
-</pre>
-ú
-	java:S109é
+</pre>Z
+CODE_SMELL
+®
+	java:S109ö
 javaS109 Magic numbers should not be used"MINOR*java2S109: <p>A magic number is a number that comes out of nowhere, and is directly used in a statement. Magic numbers are often used, for instance to limit the number of iterations of a loops, to test the value of a property, etc.</p>
 
 <p>Using magic numbers may seem obvious and straightforward when you're writing a piece of code, but they are much less obvious and straightforward at debugging time.</p>
@@ -28343,9 +29087,10 @@ public static void doSomething() {
     ...
   }
 }
-</pre>
-’
-	java:S134«
+</pre>Z
+CODE_SMELL
+·
+	java:S134”
 javaS134`Control flow statements "if", "for", "while", "switch" and "try" should not be nested too deeply"MAJOR*java2S134:√<p>
 Nested <code>if</code>, <code>for</code>, <code>while</code>, <code>switch</code>, and <code>try</code> statements is a key ingredient for making what's known as "Spaghetti code".
 </p>
@@ -28369,9 +29114,10 @@ if (condition1) {                  // Compliant - depth = 1
     }
   }
 }
-</pre>
-Ö
-	java:S135˜
+</pre>Z
+CODE_SMELL
+ë
+	java:S135É
 javaS135KLoops should not contain more than a single "break" or "continue" statement"MAJOR*java2S135:à<p>Restricting the number of <code>break</code> and <code>continue</code> statements in a loop is done in the interest of good structured programming. </p>
 <p>One <code>break</code> and <code>continue</code> statement is acceptable in a loop, since it facilitates optimal coding. If there is more than one, the code should be refactored to increase readability.</p>
 <h2>Noncompliant Code Example</h2>
@@ -28388,9 +29134,10 @@ for (int i = 1; i &lt;= 10; i++) {     // Noncompliant - 2 continue - one might 
 
   System.out.println("i = " + i);
 }
-</pre>
-·
-	java:S138”
+</pre>Z
+CODE_SMELL
+Ì
+	java:S138ﬂ
 javaS138&Methods should not have too many lines"MAJOR*java2S138:â<p>
 A method that grows too large tends to aggregate too many responsibilities.
 Such method inevitably become harder to understand and therefore harder to maintain.
@@ -28399,10 +29146,11 @@ Such method inevitably become harder to understand and therefore harder to maint
 <p>
 Above a specific threshold, it is strongly advised to refactor into smaller methods which focus on well-defined tasks.
 Those smaller methods will not only be easier to understand, but also probably easier to test.
-</p>
-’
+</p>Z
+CODE_SMELL
+·
 
-java:S1264∆
+java:S1264“
 javaS12645A "while" loop should be used instead of a "for" loop"MINOR*java2S1264:Î<p>
   When only the condition expression is defined in a <code>for</code> loop, but the init and increment expressions are missing,
   a <code>while</code> loop should be used instead to increase readability.
@@ -28416,9 +29164,10 @@ for (;condition;) { /*...*/ }
 <h2>Compliant Solution</h2>
 <pre>
 while (condition) { /*...*/ }
-</pre>
-¿
-	java:S128≤
+</pre>Z
+CODE_SMELL
+Ã
+	java:S128æ
 javaS128?Switch cases should end with an unconditional "break" statement"MAJOR*java2S128:œ<p>
   When the execution is not explicitly terminated at the end of a switch case,
   it continues to execute the statements of the following case. While this is sometimes intentional,
@@ -28482,15 +29231,17 @@ switch (myVariable) {
   <li><a href="http://cwe.mitre.org/data/definitions/484.html">MITRE, CWE-484</a> - Omitted Break Statement in Switch</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/YIFLAQ">CERT, MSC17-C</a> - Finish every set of statements associated with a case label with a break statement</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/ZoFLAQ">CERT, MSC18-CPP</a> - Finish every set of statements associated with a case label with a break statement</li>
-</ul>
-ò
-	java:S124ä
+</ul>Z
+CODE_SMELL
+§
+	java:S124ñ
 javaS1248Comments matching a regular expression should be handled"MAJOR*java2S124:¨<p>This rule template can be used to create rules which will be triggered when a comment matches a given regular expression.</p>
 <p>For example, one can create a rule with the regular expression <code>.*TODO.*</code> to match all comment containing "TODO".</p>
-<p>Note that, in order to match TODO regardless of the case, the <code>(?i)</code> modifier should be prepended to the expression, as in <code>(?i).*TODO.*</code>.</p>@
-é
+<p>Note that, in order to match TODO regardless of the case, the <code>(?i)</code> modifier should be prepended to the expression, as in <code>(?i).*TODO.*</code>.</p>@Z
+CODE_SMELL
+ö
 
-java:S3438ˇ
+java:S3438ã
 javaS3438K"SingleConnectionFactory" instances should be set to "reconnectOnException""CRITICAL*java2S3438:ã<p>Use of a Spring <code>SingleConnectionFactory</code> without enabling the <code>reconnectOnException</code> setting will prevent automatic connection recovery when the connection goes bad. </p>
 <p>That's because the <code>reconnectOnException</code> property defaults to <code>false</code>. As a result, even if the code that uses this connection factory (Spring's <code>DefaultMessageListenerContainer</code> or your own code) has reconnect logic, that code won't work because the <code>SingleConnectionFactory</code> will act like a single-connection pool by preventing connection <code>close</code> calls from actually closing anything. As a result, subsequent factory <code>create</code> operations will just hand back the original broken <code>Connection</code>.</p>
 
@@ -28513,11 +29264,12 @@ java:S3438ˇ
    &lt;constructor-arg ref="dummyConnectionFactory" /&gt;
    &lt;property name="reconnectOnException"&gt;&lt;value&gt;true&lt;/value&gt;&lt;/property&gt;
  &lt;/bean&gt;
-</pre>
-õ
+</pre>Z
+CODE_SMELL
+ß
 
 
-java:S2109å
+java:S2109ò
 
 javaS2109>Reflection should not be used to check non-runtime annotations"BLOCKER*java2S2109:¶	<p>The writer of an annotation can set one of three retention policies for it:</p>
 <ul>
@@ -28535,9 +29287,10 @@ java:S2109å
 Method m = String.class.getMethod("getBytes", new Class[] {int.class,
 int.class, byte[].class, int.class});
 if (m.isAnnotationPresent(Override.class)) {  // Noncompliant; test will always return false, even when @Override is present in the code
-</pre>
-¥
-java:S00114§
+</pre>Z
+CODE_SMELL
+¿
+java:S00114∞
 javaS001146Interface names should comply with a naming convention"MINOR*java2S00114:∆<p>Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate. This rule allows to check that all interface names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28549,9 +29302,10 @@ public interface myInterface {...} // Noncompliant
 
 <pre>
 public interface MyInterface {...}
-</pre>
-ê
-java:S00113Ä
+</pre>Z
+CODE_SMELL
+ú
+java:S00113å
 javaS001131Files should contain an empty new line at the end"MINOR*java2S00113:ß<p>Some tools such as Git work better when files end with an empty line.</p>
 <p>This rule simply generates an issue if it is missing.</p>
 <p>For example, a Git diff looks like this if the empty line is missing at the end of the file:</p>
@@ -28559,9 +29313,10 @@ public interface MyInterface {...}
 +class Test {
 +}
 \ No newline at end of file
-</pre>
-ß
-java:S00116ó
+</pre>Z
+CODE_SMELL
+≥
+java:S00116£
 javaS001162Field names should comply with a naming convention"MINOR*java2S00116:Ω<p>Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate. This rule allows to check that field names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28577,9 +29332,10 @@ class MyClass {
 class MyClass {
    private int myField;
 }
-</pre>
-Ù
-java:S00115‰
+</pre>Z
+CODE_SMELL
+Ä
+java:S00115
 javaS001155Constant names should comply with a naming convention"MINOR*java2S00115:á<p>Shared coding conventions allow teams to collaborate efficiently. This rule checks that all constant names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28603,9 +29359,10 @@ public class MyClass {
 public enum MyEnum {
   FIRST;
 }
-</pre>
-ç
-java:S00118˝
+</pre>Z
+CODE_SMELL
+ô
+java:S00118â
 javaS00118;Abstract class names should comply with a naming convention"MINOR*java2S00118:ö<p>Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate. This rule allows to check that all abstract class names match a provided regular expression.</p>
 <p>The following code snippet illustrates this rule:</p>
 <pre>
@@ -28617,9 +29374,10 @@ class AbstractLikeClass { // Noncompliant
 
 abstract class AbstractClass { // Compliant
 }
-</pre>
-¬
-java:S00117≤
+</pre>Z
+CODE_SMELL
+Œ
+java:S00117æ
 javaS00117PLocal variable and method parameter names should comply with a naming convention"MINOR*java2S00117:∫<p>Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate. This rule allows to check that all local variable and function parameter names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28647,9 +29405,10 @@ public void doSomething(int myParam) {
 for (int i = 0; i &lt; limit; i++) {  // Compliant
   // ...
 }
-</pre>
-µ
-java:S00119•
+</pre>Z
+CODE_SMELL
+¡
+java:S00119±
 javaS00119;Type parameter names should comply with a naming convention"MINOR*java2S00119:¬<p>Shared naming conventions make it possible for a team to collaborate efficiently. Following the established convention of single-letter type parameter names helps users and maintainers of your code quickly see the difference between a type parameter and a poorly named class.</p>
 
 <p>This rule check that all type parameter names match a provided regular expression. The following code snippets use the default regular expression.</p>
@@ -28667,10 +29426,11 @@ public class MyClass&lt;T&gt; {
   &lt;T&gt; void method(T t) {
   }
 }
-</pre>
-Â
+</pre>Z
+CODE_SMELL
+Ò
 
-java:S2110÷
+java:S2110‚
 javaS2110(Invalid "Date" values should not be used"CRITICAL*java2S2110:Ö<p>Whether the valid value ranges for <code>Date</code> fields start with 0 or 1 varies by field. For instance, month starts at 0, and day of month starts at 1. Enter a date value that goes past the end of the valid range, and the date will roll without error or exception. For instance, enter 12 for month, and you'll get January of the following year.</p>
 
 <p>This rule checks for bad values used in conjunction with <code>java.util.Date</code>, <code>java.sql.Date</code>, and <code>java.util.Calendar</code>. Specifically, values outside of the valid ranges:</p>
@@ -28713,10 +29473,11 @@ Calendar c = new Gregorian Calendar(2014, 11, 25);
 if (c.get(Calendar.MONTH) == 11) {
   // ...
 }
-</pre>
-Œ
+</pre>Z
+CODE_SMELL
+⁄
 
-java:S2111ø
+java:S2111À
 javaS2111'"BigDecimal(double)" should not be used"CRITICAL*java2S2111:Ô<p>Because of floating point imprecision, you're unlikely to get the value you expect from the <code>BigDecimal(double)</code> constructor. </p>
 <p>From <a href="http://docs.oracle.com/javase/7/docs/api/java/math/BigDecimal.html#BigDecimal(double)">the JavaDocs</a>:</p>
 <blockquote>The results of this constructor can be somewhat unpredictable. One might assume that writing new BigDecimal(0.1) in Java creates a BigDecimal which is exactly equal to 0.1 (an unscaled value of 1, with a scale of 1), but it is actually equal to 0.1000000000000000055511151231257827021181583404541015625. This is because 0.1 cannot be represented exactly as a double (or, for that matter, as a binary fraction of any finite length). Thus, the value that is being passed in to the constructor is not exactly equal to 0.1, appearances notwithstanding.</blockquote>
@@ -28741,10 +29502,11 @@ BigDecimal bd2 = BigDecimal.valueOf(1.1);
 
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NQAVAg">CERT, NUM10-J</a> - Do not construct BigDecimal objects from floating-point literals</li>
-</ul>
-á	
+</ul>Z
+CODE_SMELL
+ì	
 
-java:S2112¯
+java:S2112Ñ	
 javaS21121"URL.hashCode" and "URL.equals" should be avoided"MAJOR*java2S2112:°<p>The <code>equals</code> and <code>hashCode</code> methods of <code>java.net.URL</code> both make calls out to the Internet and are blocking operations. <code>URI</code> on the other hand makes no such calls and should be used instead unless the specific <code>URL</code> functionality is required.</p>
 
 <p>This rule checks for uses of <code>URL</code>'s in <code>Map</code> and <code>Set</code>, and for explicit calls to the <code>equals</code> and <code>hashCode</code> methods.</p>
@@ -28774,10 +29536,11 @@ public void checkUrl(URL url) {
     // ...
   }
 }
-</pre>
-˚
+</pre>Z
+CODE_SMELL
+á
 
-java:S2114Ï
+java:S2114¯
 javaS2114BCollections should not be passed as arguments to their own methods"CRITICAL*java2S2114:Å<p>Passing a collection as an argument to the collection's own method is either an error - some other argument was intended - or simply nonsensical code.</p>
 
 <p>Further, because some methods require that the argument remain unmodified during the execution, passing a collection to itself can result in undefined behavior.</p>
@@ -28792,9 +29555,10 @@ List &lt;Object&gt; objs = new ArrayList&lt;Object&gt;();
   objs.containsAll(objs); // Noncompliant; always true
   objs.removeAll(objs); // Noncompliant; confusing. Use clear() instead
   objs.retainAll(objs); // Noncompliant; NOOP
-</pre>
-ﬂ
-java:S00112œ
+</pre>Z
+CODE_SMELL
+Î
+java:S00112€
 javaS00112)Generic exceptions should never be thrown"CRITICAL*java2S00112:˚<p>Using such generic exceptions as <code>Error</code>, <code>RuntimeException</code>, <code>Throwable</code>, and <code>Exception</code> prevents calling methods from handling true, system-generated exceptions differently than application-generated errors. </p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28821,10 +29585,11 @@ public void myMethod() throws Exception {...}
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/397.html">MITRE, CWE-397</a> - Declaration of Throws for Generic Exception</li>
-</ul>
-ﬂ
+</ul>Z
+CODE_SMELL
+Î
 
-java:S2116–
+java:S2116‹
 javaS2116A"hashCode" and "toString" should not be called on array instances"CRITICAL*java2S2116:ÊWhile <code>hashCode</code> and <code>toString</code> are available on arrays, they are largely useless. <code>hashCode</code> returns the array's "identity hash code", and <code>toString</code> returns nearly the same value. Neither method's output actually reflects the array's contents. Instead, you should pass the array to the relevant static <code>Arrays</code> method.
 
 <h2>Noncompliant Code Example</h2>
@@ -28843,10 +29608,11 @@ public static void main( String[] args )
     String argStr = Arrays.toString(args);
     int argHash = Arrays.hashCode(args);
 
-</pre>
-≥	
+</pre>Z
+CODE_SMELL
+ø	
 
-java:S2118§	
+java:S2118∞	
 javaS2118.Non-serializable classes should not be written"CRITICAL*java2S2118:ÕNothing in a non-serializable class will be written out to file, and attempting to serialize such a class will result in an exception being thrown. Only a class that <code>implements Serializable</code> or one that extends such a class can successfully be serialized (or de-serialized).
 
 <h2>Noncompliant Code Example</h2>
@@ -28881,27 +29647,31 @@ public class Menu {
     oos.writeObject(veg);
   }
 }
-</pre>
-…
-java:S00103π
+</pre>Z
+CODE_SMELL
+’
+java:S00103≈
 javaS00103Lines should not be too long"MINOR*java2S00103:v<p>
 Having to scroll horizontally makes it harder to get a quick overview and understanding of any piece of code.
-</p>
-ê
-java:S00105Ä
+</p>Z
+CODE_SMELL
+ú
+java:S00105å
 javaS00105(Tabulation characters should not be used"MINOR*java2S00105:∞<p>
 Developers should not need to configure the tab width of their text editors in order to be able to read source code.
 So the use of tabulation character must be banned.
-</p>
-◊
-java:S00104«
+</p>Z
+CODE_SMELL
+„
+java:S00104”
 javaS00104$Files should not have too many lines"MAJOR*java2S00104:˚<p>
 A source file that grows too much tends to aggregate too many responsibilities and inevitably becomes harder to understand and therefore to maintain.
 Above a specific threshold, it is strongly advised to refactor it into smaller pieces of code which focus on well defined tasks.
 Those smaller files will not only be easier to understand but also probably easier to test.
-</p>
-˜
-java:S00107Á
+</p>Z
+CODE_SMELL
+É
+java:S00107Û
 javaS00107+Methods should not have too many parameters"MAJOR*java2S00107:î<p>A long parameter list can indicate that a new structure should be created to wrap the numerous parameters or that the function is doing too many things.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -28920,9 +29690,10 @@ public void doSomething(int param1, int param2, int param3, String param4) {
 </pre>
 
 <h2>Exceptions</h2>
-<p>Methods annotated with Spring's <code>@RequestMapping</code> may have a lot of parameters, encapsulation being possible. Such methods are therefore ignored.</p>
-à
-java:S00108¯
+<p>Methods annotated with Spring's <code>@RequestMapping</code> may have a lot of parameters, encapsulation being possible. Such methods are therefore ignored.</p>Z
+CODE_SMELL
+î
+java:S00108Ñ
 javaS00108.Nested blocks of code should not be left empty"MAJOR*java2S00108:¢<p>Most of the time a block of code is empty when a piece of code is really missing. So such empty block must be either filled or removed.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28931,10 +29702,11 @@ for (int i = 0; i &lt; 42; i++){}  // Empty on purpose or missing piece of code 
 </pre>
 <h2>Exceptions</h2>
 
-<p>When a block contains a comment, this block is not considered to be empty unless it is a <code>synchronized</code> block. <code>synchronized</code> blocks are still considered empty even with comments because they can still affect program flow.</p>
-Ô
+<p>When a block contains a comment, this block is not considered to be empty unless it is a <code>synchronized</code> block. <code>synchronized</code> blocks are still considered empty even with comments because they can still affect program flow.</p>Z
+CODE_SMELL
+˚
 
-java:S2122‡
+java:S2122Ï
 javaS2122<"ScheduledThreadPoolExecutor" should not have 0 core threads"BLOCKER*java2S2122:¸<p><code>java.util.concurrent.ScheduledThreadPoolExecutor</code>'s pool is sized with <code>corePoolSize</code>, so setting <code>corePoolSize</code> to zero means the executor will have no threads and run nothing.</p>
 <p>This rule detects instances where <code>corePoolSize</code> is set to zero, via either its setter or the object constructor.</p>
 <h2>Noncompliant Code Example</h2>
@@ -28946,10 +29718,11 @@ public void do(){
 
   ScheduledThreadPoolExecutor stpe2 = new ScheduledThreadPoolExecutor(POOL_SIZE);
   stpe2.setCorePoolSize(0);  // Noncompliant
-</pre>
-â
+</pre>Z
+CODE_SMELL
+ï
 
-java:S2123˙
+java:S2123Ü
 javaS2123*Values should not be uselessly incremented"CRITICAL*java2S2123:ß<p>A value that is incremented or decremented and then not stored is at best wasted code and at worst a bug.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28973,9 +29746,10 @@ public int pickNumber() {
   i++; 
   return ++j; 
 }
-</pre>
-Ñ
-java:S00101Ù
+</pre>Z
+CODE_SMELL
+ê
+java:S00101Ä
 javaS001012Class names should comply with a naming convention"MINOR*java2S00101:ö<p>Sharing some naming conventions is a key point to make it possible for a team to efficiently collaborate. This rule allows to check that all class names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -28987,19 +29761,21 @@ class my_class {...}
 
 <pre>
 class MyClass {...}
-</pre>
-¿
+</pre>Z
+CODE_SMELL
+Ã
 
-java:S2127±
+java:S2127Ω
 javaS21276"Double.longBitsToDouble" should not be used for "int""BLOCKER*java2S2127:”<p><code>Double.longBitsToDouble</code> expects a 64-bit, <code>long</code> argument. Pass it a smaller value, such as an <code>int</code> and the mathematical conversion into a <code>double</code> simply won't work as anticipated because the layout of the bits will be interpreted incorrectly, as if a child were trying to use an adult's gloves.</p>
 
 <h2>Noncompliant Code Example</h2>
 <pre>
 int i = 42;
 double d = Double.longBitsToDouble(i);  // Noncompliant
-</pre>
-‹
-java:S00100Ã
+</pre>Z
+CODE_SMELL
+Ë
+java:S00100ÿ
 javaS001003Method names should comply with a naming convention"MINOR*java2S00100:Ò<p>Shared naming conventions allow teams to collaborate efficiently. This rule checks that all method names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -29018,10 +29794,11 @@ public int doSomething(){...}
 <pre>
 @Override
 public int Do_Something(){...}
-</pre>
- 
+</pre>Z
+CODE_SMELL
+÷
 
-java:S2129ª
+java:S2129«
 javaS2129UConstructors should not be used to instantiate "String" and primitive-wrapper classes"MAJOR*java2S2129:¿<p>Constructors for <code>Strings</code> and the objects used to wrap primitives should never be used. Doing so is less clear and uses more memory than simply using the desired value in the case of strings, and using <code>valueOf</code> for everything else.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -29040,10 +29817,11 @@ String nonempty = "Hello world";
 Double myDouble = Double.valueOf(1.1);
 Integer integer = Integer.valueOf(1);
 Boolean bool = Boolean.valueOf(true);
-</pre>
-≤
+</pre>Z
+CODE_SMELL
+æ
 
-java:S2130£
+java:S2130Ø
 javaS21309Parsing should be used to convert "Strings" to primitives"MAJOR*java2S2130:ƒRather than creating a boxed primitive from a <code>String</code> to extract the primitive value, use the relevant <code>parse</code> method instead. It will be clearer and more efficient.
 
 <h2>Noncompliant Code Example</h2>
@@ -29058,10 +29836,11 @@ float f = new Float(myNum).floatValue();  // Noncompliant; creates &amp; discard
 String myNum = "12.2";
 
 float f = Float.parseFloat(myNum);
-</pre>
-¶
+</pre>Z
+CODE_SMELL
+≤
 
-java:S1905ó
+java:S1905£
 javaS1905"Redundant casts should not be used"MINOR*java2S1905:œ<p>Unnecessary casting expressions make the code harder to read and understand.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -29105,10 +29884,11 @@ class C {
     fun((A) b); //call the first method so cast is not redundant.
   }
 }
-</pre>
-Ñ
+</pre>Z
+CODE_SMELL
+ê
 
-java:S2131ı
+java:S2131Å
 javaS2131;Primitives should not be boxed just for "String" conversion"MAJOR*java2S2131:î<p>"Boxing" is the process of putting a primitive value into a primitive-wrapper object. When that's done purely to use the wrapper class' <code>toString</code> method, it's a waste of memory and cycles because those methods are <code>static</code>, and can therefore be used without a class instance. Similarly, using the <code>static</code> method <code>valueOf</code> in the primitive-wrapper classes with a non-<code>String</code> argument should be avoided, as should concatenating empty string <code>""</code> to a primitive.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -29123,10 +29903,11 @@ myIntString = 4 + "";  // Noncompliant
 <pre>
 int myInt = 4;
 String myIntString = Integer.toString(myInt);
-</pre>
-€
+</pre>Z
+CODE_SMELL
+Á
 
-java:S2133Ã
+java:S2133ÿ
 javaS21330Objects should not be created only to "getClass""MAJOR*java2S2133:ˆ<p>Creating an object for the sole purpose of calling <code>getClass</code> on it is a waste of memory and cycles. Instead, simply use the class' <code>.class</code> property.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -29138,10 +29919,11 @@ Class c = myOb.getClass();
 <h2>Compliant Solution</h2>
 <pre>
 Class c = MyObject.class; 
-</pre>
-ï
+</pre>Z
+CODE_SMELL
+°
 
-java:S2134Ü
+java:S2134í
 javaS2134CClasses extending java.lang.Thread should override the "run" method"MAJOR*java2S2134:ù<p>According to the Java API documentation:</p>
 <blockquote>
 There are two ways to create a new thread of execution. One is to declare a class to be a subclass of Thread. This subclass should override the run method of class Thread. An instance of the subclass can then be allocated and started...
@@ -29156,10 +29938,11 @@ public class MyRunner extends Thread { // Noncompliant; run method not overridde
 
   public void doSometing() {...}
 }
-</pre>
-¬
+</pre>Z
+CODE_SMELL
+Œ
 
-java:S2142≥
+java:S2142ø
 javaS2142,"InterruptedException" should not be ignored"CRITICAL*java2S2142:ﬁ
 <p><code>InterruptedExceptions</code> should never be ignored in the code, and simply logging the exception counts in this case as "ignoring". Instead, <code>InterruptedExceptions</code> should either be rethrown - immediately or after cleaning up the method's state - or the method should be reinterrupted. Any other course of action risks delaying thread shutdown and loses the information that the thread was interrupted - probably without finishing its task.</p>
 
@@ -29208,10 +29991,11 @@ public void run () {
 <h2>See</h2>
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/391.html">MITRE, CWE-391</a> - Unchecked Error Condition
-</li></ul>
-«
+</li></ul>Z
+CODE_SMELL
+”
 
-java:S2384∏
+java:S2384ƒ
 javaS23849Mutable members should not be stored or returned directly"CRITICAL*java2S2384:÷<p>
   Mutable objects are those whose state can be changed.
   For instance, an array is mutable, but a String is not.
@@ -29286,10 +30070,11 @@ public class B {
   <li><a href="http://cwe.mitre.org/data/definitions/374">MITRE, CWE-374 - Passing Mutable Objects to an Untrusted Method</a></li>
   <li><a href="http://cwe.mitre.org/data/definitions/375">MITRE, CWE-375 - Returning a Mutable Object ot an Untrusted Caller</a></li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/zQCuAQ">CERT, OBJ05-J - Defensively copy private mutable class members before returning their references</a></li>
-</ul>
-¨
+</ul>Z
+CODE_SMELL
+∏
 
-java:S2386ù
+java:S2386©
 javaS2386,Mutable fields should not be "public static""CRITICAL*java2S2386:»<p>There is no good reason to have a mutable object as the <code>public</code> (by default), <code>static</code> member of an <code>interface</code>. Such variables should be moved into classes and their visibility lowered. </p>
 <p>Similarly, mutable <code>static</code> members of classes and enumerations which are accessed directly, rather than through getters and setters, should be protected to the degree possible. That can be done by reducing visibility or making the field <code>final</code> if appropriate. </p>
 <p>Note that making a mutable field, such as an array, <code>final</code> will keep the variable from being reassigned, but doing so has no effect on the mutability of the internal state of the array (i.e. it doesn't accomplish the goal).</p>
@@ -29313,10 +30098,11 @@ public class A {
 <ul>
   <li> <a href="http://cwe.mitre.org/data/definitions/582.html">MITRE, CWE-582</a> - Array Declared Public, Final, and Static</li>
   <li> <a href="http://cwe.mitre.org/data/definitions/607.html">MITRE, CWE-607</a> - Public Static Final Field References Mutable Object</li>
-</ul>
-É
+</ul>Z
+CODE_SMELL
+è
 
-java:S2387Ù
+java:S2387Ä
 javaS2387:Child class members should not shadow parent class members"MAJOR*java2S2387:î<p>Having a variable with the same name in two unrelated classes is fine, but do the same thing within a class hierarchy and you'll get confusion at best,
 chaos at worst. Perhaps even worse is the case where a child class field varies from the name of a parent class only by case.</p>
 
@@ -29352,10 +30138,11 @@ public class Raspberry extends Fruit {
   private boolean ripened;
   private static Color FLESH_COLOR;
 }
-</pre>
-å
+</pre>Z
+CODE_SMELL
+ò
 
-java:S2388˝
+java:S2388â
 javaS2388>Inner class calls to super class methods should be unambiguous"MAJOR*java2S2388:ô<p>When an inner class extends another class, and both its outer class and its parent class have a method with the same name, calls to that method can be confusing. The compiler will resolve the call to the superclass method, but maintainers may be confused, so the superclass method should be called explicitly, using <code>super.</code>.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -29396,10 +30183,11 @@ public class Outer {
     }
   }
 }
-</pre>
-
+</pre>Z
+CODE_SMELL
+¸
 
-java:S2147·
+java:S2147Ì
 javaS2147Catches should be combined"MAJOR*java2S2147:°<p>Since Java 7 it has been possible to catch multiple exceptions at once. Therefore, when multiple <code>catch</code> blocks have the same code, they should be combined for better readability.</p>
 <p><strong>Note</strong> that this rule is automatically disabled when the project's <code>sonar.java.source</code> is lower than <code>7</code>.</p>
 
@@ -29429,9 +30217,10 @@ catch (TimeoutException e) {
   doCleanup();
   throw e;
 }
-</pre>
-„
-!java:SwitchLastCaseIsDefaultCheckΩ
+</pre>Z
+CODE_SMELL
+Ô
+!java:SwitchLastCaseIsDefaultCheck…
 javaSwitchLastCaseIsDefaultCheck6"switch" statements should end with a "default" clause"MAJOR*java2SwitchLastCaseIsDefaultCheck:≥<p>The requirement for a final <code>default</code> clause is defensive programming. The clause should either take appropriate action, or contain a suitable comment as to why no action is taken.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -29486,10 +30275,11 @@ switch (param) {
 <li> <a href="http://cwe.mitre.org/data/definitions/478.html">MITRE, CWE-478</a> - Missing Default Case in Switch Statement</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/YgE">CERT, MSC01-C</a> - Strive for logical completeness</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/JoIyAQ">CERT, MSC01-CPP</a> - Strive for logical completeness</li>
-</ul>
-Ö	
+</ul>Z
+CODE_SMELL
+ë	
 
-java:S2391ˆ
+java:S2391Ç	
 javaS23913JUnit framework methods should be declared properly"CRITICAL*java2S2391:ö<p>
   If the <code>suite</code> method in a JUnit 3 <code>TestCase</code> is not declared correctly, it will not be used.
   Such a method must be named "suite", have no arguments, be <code>public static</code>, and must return either a <code>junit.framework.Test</code>
@@ -29516,10 +30306,11 @@ public void tearDwon() { ... }  // Noncompliant; should be tearDown
 public static Test suite() { ... }
 public void setUp() { ... }
 public void tearDown() { ... }
-</pre>
-È	
+</pre>Z
+CODE_SMELL
+ı	
 
-java:S2151⁄	
+java:S2151Ê	
 javaS2151*"runFinalizersOnExit" should not be called"BLOCKER*java2S2151:à	<p>Running finalizers on JVM exit is disabled by default. It can be enabled with <code>System.runFinalizersOnExit</code> and <code>Runtime.runFinalizersOnExit</code>, but both methods are deprecated because they are are inherently unsafe. </p>
 <p>According to the Oracle Javadoc:</p>
 <blockquote>
@@ -29554,10 +30345,11 @@ public static void main(String [] args) {
 
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/H4cbAQ">CERT, MET12-J</a> - Do not use finalizers</li>
-</ul>
-∂	
+</ul>Z
+CODE_SMELL
+¬	
 
-java:S2153ß	
+java:S2153≥	
 javaS21536Boxing and unboxing should not be immediately reversed"MAJOR*java2S2153:À<p>Boxing is the process of putting a primitive value into an analogous object, such as creating an <code>Integer</code> to hold an <code>int</code> value. Unboxing is the process of retrieving the primitive value from such an object.</p>
 <p>Since the original value is unchanged during boxing and unboxing, there's no point in doing either when not needed. This also applies to autoboxing and auto-unboxing (when Java implicitly handles the primitive/object transition for you).</p>
 <h2>Noncompliant Code Example</h2>
@@ -29584,10 +30376,11 @@ public void func() {
   examineInteger(i); // Compliant; value is boxed but not then unboxed
   examineInteger(iger1.intValue()); // Noncompliant; unboxed int will be autoboxed
 }
-</pre>
-á
+</pre>Z
+CODE_SMELL
+ì
 
-java:S2154¯
+java:S2154Ñ
 javaS2154cDissimilar primitive wrappers should not be used with the ternary operator without explicit casting"CRITICAL*java2S2154:Ï<p>If wrapped primitive values (e.g. <code>Integers</code> and <code>Floats</code>) are used in a ternary operator (e.g. <code>a?b:c</code>), both values will be unboxed and coerced to a common type, potentially leading to unexpected results. To avoid this, add an explicit cast to a compatible type.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -29604,10 +30397,11 @@ Number n = condition ? i : f;  // Noncompliant; i is coerced to float. n = 1.234
 Integer i = 123456789;
 Float f = 1.0f;
 Number n = condition ? (Number) i : f;  // n = 123456789
-</pre>
-π
+</pre>Z
+CODE_SMELL
+≈
 
-java:S2156™
+java:S2156∂
 javaS21563"final" classes should not have "protected" members"MAJOR*java2S2156:—The difference between <code>private</code> and <code>protected</code> visibility is that child classes can see and use <code>protected</code> members, but they cannot see <code>private</code> ones. Since a <code>final</code> class will have no children, marking the members of a <code>final</code> class <code>protected</code> is confusingly pointless.
 
 <h2>Noncompliant Code Example</h2>
@@ -29628,11 +30422,12 @@ public final class MyFinalClass {
   public void setName(String name) {
     // ...
   }
-</pre>
-‚
+</pre>Z
+CODE_SMELL
+Ó
 
 
-java:S2157”
+java:S2157ﬂ
 
 javaS2157%"Cloneables" should implement "clone""CRITICAL*java2S2157:Ö
 <p>Simply implementing <code>Cloneable</code>  without also overriding <code>Object.clone()</code> does not necessarily make the class cloneable. While the <code>Cloneable</code> interface does not include a <code>clone</code> method, it is required by convention, and ensures true cloneability. Otherwise the default JVM <code>clone</code> will be used, which copies primitive values and object references from the source to the target. I.e. without overriding <code>clone</code>, any cloned instances will potentially share members with the source instance.</p>
@@ -29663,10 +30458,11 @@ class Team implements Cloneable {
     //...
   }
 }
-</pre>
-ì
+</pre>Z
+CODE_SMELL
+ü
 
-java:S2159Ñ
+java:S2159ê
 javaS2159(Silly equality checks should not be made"CRITICAL*java2S2159:≥<p>Comparisons of dissimilar types will always return false. The comparison and all its dependent code can simply be removed. This includes:</p>
 <ul>
 <li> comparing an object with null</li>
@@ -29712,10 +30508,11 @@ else if (trees.equals(tools)) {  // Noncompliant; incompatible arrays
 else if (tree.equals(null)) {  // Noncompliant
   // ...
 }
-</pre>
-µ
+</pre>Z
+CODE_SMELL
+¡
 
-java:S3008¶
+java:S3008≤
 javaS3008CStatic non-final field names should comply with a naming convention"MINOR*java2S3008:Ω<p>Shared naming conventions allow teams to  collaborate efficiently. This rule checks that static non-final field names match a provided regular expression.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -29731,10 +30528,11 @@ public final class MyClass {
 class MyClass {
    private static String fooBar;
 }
-</pre>
-˜
+</pre>Z
+CODE_SMELL
+É
 
-java:S2160Ë
+java:S2160Ù
 javaS21603Subclasses that add fields should override "equals""MAJOR*java2S2160:è<p>Extend a class that overrides <code>equals</code> and add fields without overriding <code>equals</code> in the subclass, and you run the risk of non-equivalent instances of your subclass being seen as equal, because only the superclass fields will be considered in the equality test.</p>
 
 <p>This rule looks for classes that do all of the following:</p>
@@ -29803,10 +30601,11 @@ public class Raspberry extends Fruit {
     return false;
   }
 }
-</pre>
-ñ
+</pre>Z
+CODE_SMELL
+¢
 
-java:S2162á
+java:S2162ì
 javaS2162<"equals" methods should be symmetric and work for subclasses"CRITICAL*java2S2162:¢<p>A key facet of the <code>equals</code> contract is that if <code>a.equals(b)</code> then <code>b.equals(a)</code>, i.e. that the relationship is symmetric. </p>
 <p>Using <code>instanceof</code> breaks the contract when there are subclasses, because while the child is an <code>instanceof</code> the parent, the parent is not an <code>intanceof</code> the child. For instance, assume that <code>Raspberry extends Fruit</code> and adds some fields (requiring a new implementation of <code>equals</code>):</p>
 <pre>
@@ -29865,10 +30664,11 @@ public class Fruit extends Food {
     }
     return false;
 }
-</pre>
-‰
+</pre>Z
+CODE_SMELL
+
 
-java:S2164’
+java:S2164·
 javaS2164&Math should not be performed on floats"CRITICAL*java2S2164:ÜFor small numbers, <code>float</code> math has enough precision to yield the expected value, but for larger numbers, it does not. <code>BigDecimal</code> is the best alternative, but if a primitive is required, use a <code>double</code>.
 
 <h2>Noncompliant Code Example</h2>
@@ -29887,10 +30687,11 @@ float b = 1.0f;
 BigDecimal c = BigDecimal.valueOf(a).add(BigDecimal.valueOf(b));
 
 double d = (double)a + (double)b;
-</pre>
-£
+</pre>Z
+CODE_SMELL
+Ø
 
-java:S2165î
+java:S2165†
 javaS2165*"finalize" should not set fields to "null""MAJOR*java2S2165:ƒ<p>There is no point in setting class fields to <code>null</code> in a finalizer. If this this is a hint to the garbage collector, it is unnecessary - the object will be garbage collected anyway - and doing so may actually cause extra work for the garbage collector.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -29901,10 +30702,11 @@ public class Foo {
   @Override
   void finalize() {
     name = null;  // Noncompliant; completely unnecessary
-</pre>
-≥	
+</pre>Z
+CODE_SMELL
+ø	
 
-java:S2166§	
+java:S2166∞	
 javaS2166FClasses named like "Exception" should extend "Exception" or a subclass"MAJOR*java2S2166:∏Clear, communicative naming is important in code. It helps maintainers and API users understand the intentions for and uses of a unit of code. Using "exception" in the name of a class that does not extend <code>Exception</code> or one of its subclasses is a clear violation of the expectation that a class' name will indicate what it is and/or does.
 
 <h2>Noncompliant Code Example</h2>
@@ -29933,10 +30735,11 @@ public class FruitSport {
 public class CarException extends Exception {
   public CarException(String message, Throwable cause) {
   // ...
-</pre>
-ﬂ
+</pre>Z
+CODE_SMELL
+Î
 
-java:S2167–
+java:S2167‹
 javaS21671"compareTo" should not return "Integer.MIN_VALUE""CRITICAL*java2S2167:ˆ<p>It is the sign, rather than the magnitude of the value returned from <code>compareTo</code> that matters. Returning <code>Integer.MIN_VALUE</code> does not convey a higher degree of inequality, and doing so can cause errors because the return value of <code>compareTo</code> is sometimes inversed, with the expectation that negative values become positive. However, inversing <code>Integer.MIN_VALUE</code> yields <code>Integer.MIN_VALUE</code> rather than <code>Integer.MAX_VALUE</code>.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -29953,10 +30756,11 @@ public int compareTo(MyClass) {
   if (condition) {
     return -1;
   }
-</pre>
-Ü
+</pre>Z
+CODE_SMELL
+í
 
-java:S2175˜
+java:S2175É
 javaS21753Inappropriate "Collection" calls should not be made"CRITICAL*java2S2175:õ<p>A couple <code>Collection</code> methods can be called with arguments of an incorrect type, but doing so is pointless and likely the result of using the wrong argument. This rule will raise an issue when the type of the argument to <code>List.contains</code> or <code>List.remove</code> is unrelated to the type used for the list declaration.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -29967,10 +30771,11 @@ Integer integer = Integer.valueOf(1);
 if (list.contains(integer)) {  // Noncompliant. Always false.
   list.remove(integer); // Noncompliant. list.add(integer) doesn't compile, so this will always return false
 }
-</pre>
-ï
+</pre>Z
+CODE_SMELL
+°
 
-java:S2176Ü
+java:S2176í
 javaS21768Class names should not shadow interfaces or superclasses"MAJOR*java2S2176:®While it's perfectly legal to give a class the same simple name as a class in another package that it extends or interface it implements, it's confusing and could cause problems in the future. 
 
 <h2>Noncompliant Code Example</h2>
@@ -29985,10 +30790,11 @@ public class Foo implements a.b.Foo { // Noncompliant
 package my.mypackage;
 
 public class FooJr implements a.b.Foo {
-</pre>
-©
+</pre>Z
+CODE_SMELL
+µ
 
-java:S2177ö
+java:S2177¶
 javaS2177FChild class methods named for parent class methods should be overrides"MAJOR*java2S2177:Æ<p>When a method in a child class has the same signature as a method in a parent class, it is assumed to be an override. However, that's not the case when:</p>
 <ul>
 <li> the parent class method is <code>static</code> and the child class method is not.
@@ -30054,10 +30860,11 @@ public class Child extends Parent {
     //...
   }
 }
-</pre>
-á
+</pre>Z
+CODE_SMELL
+ì
 
-java:S2178¯
+java:S2178Ñ
 javaS21786Short-circuit logic should be used in boolean contexts"CRITICAL*java2S2178:ôThe use of non-short-circuit logic in a boolean context is likely a mistake - one that could cause serious program errors as conditions are evaluated under the wrong circumstances.
 
 <h2>Noncompliant Code Example</h2>
@@ -30068,10 +30875,11 @@ if(getTrue() | getFalse()) { ... } // Noncompliant; both sides evaluated
 <h2>Compliant Solution</h2>
 <pre>
 if(getTrue() || getFalse()) { ... }  // true short-circuit logic
-</pre>
-ù
+</pre>Z
+CODE_SMELL
+©
 
-java:S3027é
+java:S3027ö
 javaS3027=String function use should be optimized for single characters"MINOR*java2S3027:´<p>An <code>indexOf</code> or <code>lastIndexOf</code> call with a single letter <code>String</code> can be made more performant by switching to a call with a <code>char</code> argument.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -30092,10 +30900,11 @@ int pos = myStr.indexOf('W');
 // ...
 int otherPos = myStr.lastIndexOf('r');
 // ...
-</pre>
-¡
+</pre>Z
+CODE_SMELL
+Õ
 
-java:S2183≤
+java:S2183æ
 javaS2183HInts and longs should not be shifted by more than their number of bits-1"CRITICAL*java2S2183:¡<p>Since an <code>int</code> is a 32-bit variable, shifting by more than (-)31 is confusing at best and an error at worst. Shifting an <code>int</code> by 32 is the same as shifting it by 0, and shifting it by 33 is the same as shifting it by 1.</p>
 
 <p>Similarly, shifting a <code>long</code> by (-)64 is the same as shifting it by 0, and shifting it by 65 is the same as shifting it by 1.</p>
@@ -30112,10 +30921,11 @@ public int shift(int a) {
 public int shift(int a) {
   return a << 16;
 }
-</pre>
-ã
+</pre>Z
+CODE_SMELL
+ó
 
-java:S2184¸
+java:S2184à
 javaS2184.Math operands should be cast before assignment"CRITICAL*java2S2184:•<p>When arithmetic is performed on <code>int</code>s, the result will always be an <code>int</code>. You can assign that result to a <code>long</code>, <code>double</code>, or <code>float</code> with automatic type conversion, but having started as an <code>int</code>, the result will likely not be what you expect. </p>
 <p>For instance, if the result of <code>int</code> division is assigned to a floating-point variable, precision will have been lost before the assignment. Likewise, if the result of multiplication is assigned to a <code>long</code>, it may have already overflowed before the assignment.</p>
 <p>In either case, the result will not be what was expected. Instead, at least one operand should be cast or promoted to the final type before the operation takes place.</p>
@@ -30162,10 +30972,11 @@ public long compute(long factor){
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/190">MITRE, CWE-190</a> - Integer Overflow or Wraparound</li>
 <li> <a href="http://www.sans.org/top25-software-errors/">SANS Top 25</a> - Risky Resource Management</li>
-</ul>
-≤
+</ul>Z
+CODE_SMELL
+æ
 
-java:S2185£
+java:S2185Ø
 javaS2185"Silly math should not be performed"MAJOR*java2S2185:€<p>Certain math operations are just silly and should not be performed because their results are predictable.</p>
 <p>In particular, <code>anyValue % 1</code> is silly because it will always return 0.</p>
 <p>Casting a non-floating-point value to floating-point and then passing it to <code>Math.round</code>, <code>Math.ceil</code>, or <code>Math.floor</code> is silly  because the result will always be the original value. </p>
@@ -30199,10 +31010,11 @@ public void doMath(int a)
 double floor = Math.floor((double)a); // Noncompliant
 double ceiling = Math.ceil(4.2);
 double arcTan = Math.atan(0.0);
-</pre>
-•
+</pre>Z
+CODE_SMELL
+±
 
-java:S2186ñ
+java:S2186¢
 javaS21864JUnit assertions should not be used in "run" methods"CRITICAL*java2S2186:π<p>JUnit assertions should not be made from the <code>run</code> method of a <code>Runnable</code>, because failed assertions result in <code>AssertionError</code>s being thrown. If the error is thrown from a thread other than the one that ran the test, the thread will exit but the test won't fail.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -30211,10 +31023,11 @@ public void run() {
   // ...
   Assert.assertEquals(expected, actual);  // Noncompliant
 }
-</pre>
-ı
+</pre>Z
+CODE_SMELL
+Å
 
-java:S3034Ê
+java:S3034Ú
 javaS3034SRaw byte values should not be used in bitwise operations in combination with shifts"CRITICAL*java2S3034:Í<p>When reading bytes in order to build other primitive values such as <code>int</code>s or <code>long</code>s, the <code>byte</code> values are automatically promoted, but that promotion can have unexpected results.</p>
 <p>For instance, the binary representation of the integer 640 is <code>0b0000_0010_1000_0000</code>, which can also be written with the array of (unsigned) bytes <code>[2, 128]</code>. However, since Java uses two's complement, the representation of the integer in signed bytes will be <code>[2, -128]</code>  (because the <code>byte</code> <code>0b1000_0000</code> is promoted to the <code>int</code> <code>0b1111_1111_1111_1111_1111_1111_1000_0000</code>). Consequently, trying to reconstruct the initial integer by shifting and adding the values of the bytes without taking care of the sign will not produce the expected result.  </p>
 <p>To prevent such accidental value conversion, use bitwise and (<code>&amp;</code>) to combine the <code>byte</code> value with <code>0xff</code> (255) and turn all the higher bits back off.</p>
@@ -30240,15 +31053,17 @@ java:S3034Ê
     }
     return result;
   }
-</pre>
-ñ
+</pre>Z
+CODE_SMELL
+¢
 
-java:S2187á
+java:S2187ì
 javaS2187TestCases should contain tests"MAJOR*java2S2187:√<p>There's no point in having a JUnit <code>TestCase</code> without any test methods. Similarly, you shouldn't have a file in the tests directory with "Test" in the name, but not tests in the file. Doing either of these things may lead someone to think that uncovered classes have been tested.</p>
-<p>This rule raises an issue when files in the test directory have "Test" in the name or implement <code>TestCase</code> but don't contain any tests.</p>
-â
+<p>This rule raises an issue when files in the test directory have "Test" in the name or implement <code>TestCase</code> but don't contain any tests.</p>Z
+CODE_SMELL
+ï
 
-java:S2188˙
+java:S2188Ü
 javaS2188*JUnit test cases should call super methods"CRITICAL*java2S2188:ß<p>Overriding a parent class method prevents that method from being called unless an explicit <code>super</code> call is made in the overriding method. In some cases not calling the <code>super</code> method is acceptable, but not with <code>setUp</code> and <code>tearDown</code> in a JUnit 3 <code>TestCase</code>.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -30272,10 +31087,11 @@ public class MyClassTest extends MyAbstractTestCase {
       super.setUp();
       myClass = new MyClass();
     }
-</pre>
-ˇ
+</pre>Z
+CODE_SMELL
+ã
 
-java:S1774
+java:S1774¸
 javaS1774'The ternary operator should not be used"MAJOR*java2S1774:£<p>While the ternary operator is pleasingly compact, it's use can make code more difficult to read. It should therefore be avoided in favor of the more verbose <code>if</code>/<code>else</code> structure.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -30290,9 +31106,10 @@ if (i > 10) {
 } else {
   System.out.println("no");
 }
-</pre>
-∂
-"java:RightCurlyBraceStartLineCheckè
+</pre>Z
+CODE_SMELL
+¬
+"java:RightCurlyBraceStartLineCheckõ
 javaRightCurlyBraceStartLineCheck@A close curly brace should be located at the beginning of a line"MINOR*java2RightCurlyBraceStartLineCheck:˘<p>Shared coding conventions make it possible for a team to efficiently collaborate. This rule makes it mandatory to place a close curly brace at the beginning of a line.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -30312,10 +31129,11 @@ if(condition) {
 <p>When blocks are inlined (open and close curly braces on the same line), no issue is triggered. </p>
 <pre>
 if(condition) {doSomething();} 
-</pre>
-Ó
+</pre>Z
+CODE_SMELL
+˙
 
-java:S1764ﬂ
+java:S1764Î
 javaS1764KIdentical expressions should not be used on both sides of a binary operator"CRITICAL*java2S1764:Î<p>Using the same value on either side of a binary operator is almost always a mistake. In the case of logical operators, it is either a copy/paste error and therefore a bug, or it is simply wasted code, and should be simplified. In the case of bitwise operators and most binary mathematical operators, having the same value on both sides of an operator yields predictable results, and should be simplified.</p>
 <p>This rule ignores <code>*</code>, <code>+</code>, and <code>=</code>. </p>
 <h2>Noncompliant Code Example</h2>
@@ -30371,10 +31189,11 @@ int j = a &lt;&lt; a; // Noncompliant
 <li> <a href="https://www.securecoding.cert.org/confluence/x/NYA5">CERT, MSC12-C</a> - Detect and remove code that has no effect</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/SIIyAQ">CERT, MSC12-CPP</a> - Detect and remove code that has no effect</li>
 <li> Rule S1656 - Implements a check on <code>=</code>. </li>
-</ul>
-√	
+</ul>Z
+CODE_SMELL
+œ	
 
-java:S2638¥	
+java:S2638¿	
 javaS2638,Method overrides should not change contracts"MAJOR*java2S2638:‚<p>Because a subclass instance may be cast to and treated as an instance of the superclass, overriding methods should uphold the aspects of the superclass contract that relate to the Liskov Substitution Principle. Specifically, if the parameters or return type of the superclass method are marked with any of the following: <code>@Nullable</code>, <code>@CheckForNull</code>, <code>@NotNull</code>, <code>@NonNull</code>, and <code>@Nonnull</code>, then subclass parameters are not allowed to tightened the contract, and return values are not allowed to loosen it.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -30406,9 +31225,10 @@ public class Raspberry extends Fruit {
 </pre>
 
 <h2>See also</h2>
-<p>https://en.wikipedia.org/wiki/Liskov_substitution_principle</p>
-ï	
-java:CallToDeprecatedMethodı
+<p>https://en.wikipedia.org/wiki/Liskov_substitution_principle</p>Z
+CODE_SMELL
+°	
+java:CallToDeprecatedMethodÅ	
 javaCallToDeprecatedMethod%"@Deprecated" code should not be used"MINOR*java2CallToDeprecatedMethod:à<p>
   Once deprecated, classes, and interfaces, and their members should be avoided, rather than used, inherited or extended.
   Deprecation is a warning that the class or interface has been superseded, and will eventually be removed.
@@ -30435,10 +31255,11 @@ public class Bar extends Fum {  // Noncompliant; Fum is deprecated
 <ul>
 <li><a href="http://cwe.mitre.org/data/definitions/477.html">MITRE, CWE-477</a> - Use of Obsolete Functions</li>
 <li><a href="https://www.owasp.org/index.php/Top_10_2013-A9-Using_Components_with_Known_Vulnerabilities">OWASP Top Ten 2013 Category A9</a> - Using Components with Known Vulnerabilities</li>
-</ul>
-Ø
+</ul>Z
+CODE_SMELL
+ª
 
-java:S2639†
+java:S2639¨
 javaS26394Inappropriate regular expressions should not be used"CRITICAL*java2S2639:√<p>Regular expressions are powerful but tricky, and even those long used to using them can make mistakes.</p>
 <p>The following should not be used as regular expressions:</p>
 <ul>
@@ -30454,10 +31275,11 @@ String str = "/File|Name.txt";
 String clean = str.replaceAll(".",""); // Noncompliant; probably meant to remove only dot chars, but returns an empty string
 String clean2 = str.replaceAll("|","_"); // Noncompliant; yields _/_F_i_l_e_|_N_a_m_e_._t_x_t_
 String clean3 = str.replaceAll(File.separator,""); // Noncompliant; exception on Windows
-</pre>
-±
+</pre>Z
+CODE_SMELL
+Ω
 
-java:S2885¢
+java:S2885Æ
 javaS28852"Calendars" and "DateFormats" should not be static"CRITICAL*java2S2885:«<p>Not all classes in the standard Java library were written to be thread-safe. Using them in a multi-threaded manner is highly likely to cause data problems or exceptions at runtime.</p>
 <p>This rule raises an issue when an instance of <code>Calendar</code>, <code>DateFormat</code>, <code>javax.xml.xpath.XPath</code>, or <code>javax.xml.validation.SchemaFactory</code> is marked <code>static</code>.</p>
 
@@ -30473,17 +31295,19 @@ public class MyClass {
 public class MyClass {
   private SimpleDateFormat format = new SimpleDateFormat("HH-mm-ss");
   private Calendar calendar = Calendar.getInstance();
-</pre>
-∏
+</pre>Z
+CODE_SMELL
+ƒ
 
-java:S1996©
+java:S1996µ
 javaS1996?Files should contain only one top-level class or interface each"MAJOR*java2S1996:ƒ<p>
   A file that grows too much tends to aggregate too many responsibilities and inevitably becomes harder to understand and therefore to maintain.
   This is doubly true for a file with multiple top-level classes and interfaces. It is strongly advised to divide the file into one top-level class or interface per file.
-</p>
-ß
+</p>Z
+CODE_SMELL
+≥
 
-java:S1994ò
+java:S1994§
 javaS1994\"for" loop incrementers should modify the variable being tested in the loop's stop condition"MAJOR*java2S1994:ñ<p>It is almost always an error when a <code>for</code> loop's stop condition and incrementer don't act on the same variable. Even when it is not, it could confuse future maintainers of the code, and should be avoided.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -30498,10 +31322,11 @@ for (i = 0; i < 10; j++) {  // Noncompliant
 for (i = 0; i < 10; i++) {
   // ...
 }
-</pre>
-¿
+</pre>Z
+CODE_SMELL
+Ã
 
-java:S1989±
+java:S1989Ω
 javaS19894Exceptions should not be thrown from servlet methods"CRITICAL*java2S1989:‘<p>
   Even though the signatures for methods in a servlet include <code>throws IOException, ServletException</code>,
   it's a bad idea to let such exceptions be thrown.
@@ -30544,10 +31369,11 @@ public void doGet(HttpServletRequest request, HttpServletResponse response)
   <li><a href="http://cwe.mitre.org/data/definitions/600.html">MITRE, CWE-600</a> - Uncaught Exception in Servlet</li>
   <li><a href="https://www.securecoding.cert.org/confluence/x/s4EVAQ">CERT, ERR01-J</a> - Do not allow exceptions to expose sensitive information</li>
   <li><a href="https://www.owasp.org/index.php/Top_10_2013-A6-Sensitive_Data_Exposure">OWASP Top Ten Category A6</a> - Sensitive Data Exposure</li>
-</ul>
-é	
+</ul>Z
+CODE_SMELL
+ö	
 
-java:S2653ˇ
+java:S2653ã	
 javaS26530Web applications should not have a "main" method"CRITICAL*java2S2653:¶<p>
   There is no reason to have a <code>main</code> method in a web application.
   It may have been useful for debugging during application development,
@@ -30578,9 +31404,10 @@ public class MyServlet extends HttpServlet {
 <h2>See</h2>
 <ul>
   <li><a href="http://cwe.mitre.org/data/definitions/489.html">MITRE, CWE-489</a> - Leftover Debug Code</li>
-</ul>
-Ç
-java:UndocumentedApiÈ
+</ul>Z
+CODE_SMELL
+é
+java:UndocumentedApiı
 javaUndocumentedApiHPublic types, methods and fields (API) should be documented with Javadoc"MINOR*java2UndocumentedApi:Á<p>Try to imagine using the standard Java API (Collections, JDBC, IO, ...) without Javadoc. It would be a nightmare, because Javadoc is the only way to understand of the contract of the API. Documenting an API with Javadoc increases the productivity of the developers consuming it.</p>
 <p>The following Javadoc elements are required:</p>
 <ul>
@@ -30678,10 +31505,11 @@ public class MyClass&lt;T&gt; implements Runnable {
     return value;
   }
 }
-</pre>
-º
+</pre>Z
+CODE_SMELL
+»
 
-java:S2658≠
+java:S2658π
 javaS2658(Classes should not be loaded dynamically"CRITICAL*java2S2658:‹<p>
   Dynamically loaded classes could contain malicious code executed by a static class initializer.
   I.E. you wouldn't even have to instantiate or explicitly invoke methods on such classes to be vulnerable to an attack.
@@ -30699,10 +31527,11 @@ Class clazz = Class.forName(className);  // Noncompliant
 <ul>
   <li><a href="http://cwe.mitre.org/data/definitions/545.html">MITRE, CWE-545</a> - Use of Dynamic Class Loading</li>
   <li><a href="https://www.owasp.org/index.php/Top_10_2013-A1-Injection">OWASP Top 10 2013 Category A1</a> - Injection</li>
-</ul>
-•
+</ul>Z
+CODE_SMELL
+±
 
-java:S2674ñ
+java:S2674¢
 javaS26747The value returned from a stream read should be checked"BLOCKER*java2S2674:∑
 <p>You cannot assume that any given stream reading call will fill the <code>byte[]</code> passed in to the method. Instead, you must check the value returned by the read method to see how many bytes were read. Fail to do so, and you introduce bug that is both harmful and difficult to reproduce.</p>
 
@@ -30736,10 +31565,11 @@ public void doSomething(String fileName) {
     }
   } catch (IOException e) { ... }
 }
-</pre>
-¶
+</pre>Z
+CODE_SMELL
+≤
 
-java:S1724ó
+java:S1724£
 javaS1724DDeprecated classes and interfaces should not be extended/implemented"MAJOR*java2S1724:≠<p>Deprecated classes and interfaces should be avoided, rather than used, inherited or extended. Deprecation is a warning that the class or interface has been superseded, and will eventually be removed. The deprecation period allows you to make a smooth transition away from the aging, soon-to-be-retired technology.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -30767,10 +31597,11 @@ class Bar extends Foo { ... } // compliant Bar is deprecated.
   <h2>See</h2>
     <ul>
       <li><a href="http://cwe.mitre.org/data/definitions/477.html">MITRE, CWE-477</a> - Use of Obsolete Functions</li>
-    </ul>
-°
+    </ul>Z
+CODE_SMELL
+≠
 
-java:S2675í
+java:S2675û
 javaS2675)"readObject" should not be "synchronized""MAJOR*java2S2675:√<p>A <code>readObject</code> method is written when a <code>Serializable</code> object needs special handling to be rehydrated from file.
 It should be the case that the object being created by <code>readObject</code> is only visible to the thread that invoked the method,
 and the <code>synchronized</code> keyword is not needed, and using <code>synchronized</code> anyway is just confusing.
@@ -30792,10 +31623,11 @@ private void readObject(java.io.ObjectInputStream in)
      throws IOException, ClassNotFoundException { // Compliant
   //...
 }
-</pre>
-î
+</pre>Z
+CODE_SMELL
+†
 
-java:S2676Ö
+java:S2676ë
 javaS2676SNeither "Math.abs" nor negation should be used on numbers that could be "MIN_VALUE""CRITICAL*java2S2676:â<p>It is possible for a call to <code>hashCode</code> to return <code>Integer.MIN_VALUE</code>. Take the absolute value of such a hashcode and you'll still have a negative number. Since your code is likely to assume that it's a positive value instead, your results will be unreliable.</p>
 <p>Similarly, <code>Integer.MIN_VALUE</code> could be returned from <code>Random.nextInt()</code> or any object's <code>compareTo</code> method, and <code>Long.MIN_VALUE</code> could be returned from <code>Random.nextLong()</code>. Calling <code>Math.abs</code> on values returned from these methods is similarly ill-advised.</p>
 <h2>Noncompliant Code Example</h2>
@@ -30815,10 +31647,11 @@ public void doSomething(String str) {
     // ...
   }
 }
-</pre>
-î	
+</pre>Z
+CODE_SMELL
+†	
 
-java:S2677Ö	
+java:S2677ë	
 javaS26772"read" and "readLine" return values should be used"BLOCKER*java2S2677:´<p>When a method is called that returns data read from some data source, that data should be stored rather than thrown away. Any other course of action is surely a bug.</p>
 <p>This rule raises an issue when the return value of any of the following is ignored or merely null-checked: <code>BufferedReader.readLine()</code>, <code>Reader.read()</code>, and these methods in any child classes.</p>
 
@@ -30851,17 +31684,19 @@ public void doSomethingWithFile(String fileName) {
     // ...
   }
 }
-</pre>
-¸
+</pre>Z
+CODE_SMELL
+à
 
-java:S2437Ì
+java:S2437˘
 javaS2437,Silly bit operations should not be performed"MAJOR*java2S2437:õ<p>Certain bit operations are just silly and should not be performed because their results are predictable.</p>
 
-<p>Specifically, using <code>&amp; -1</code> with any value will always result in the original value, as will <code>anyValue ^ 0</code> and <code>anyValue | 0</code>.</p>
-ï
+<p>Specifically, using <code>&amp; -1</code> with any value will always result in the original value, as will <code>anyValue ^ 0</code> and <code>anyValue | 0</code>.</p>Z
+CODE_SMELL
+°
 
 
-java:S2438Ü
+java:S2438í
 
 javaS2438;"Threads" should not be used where "Runnables" are expected"MAJOR*java2S2438:•	<p>While it is technically correct to use a <code>Thread</code> where a <code>Runnable</code> is called for, the semantics of the two objects are different, and mixing them is a bad practice that will likely lead to headaches in the future.</p>
 
@@ -30895,10 +31730,11 @@ java:S2438Ü
             }
         };
         new Thread(r).start();
-</pre>
-°
+</pre>Z
+CODE_SMELL
+≠
 
-java:S2681í
+java:S2681û
 javaS26813Multiline blocks should be enclosed in curly braces"CRITICAL*java2S2681:∂<p>
   Curly braces can be omitted from a one-line block, such as with an <code>if</code> statement or <code>for</code> loop, but doing so can be misleading and induce bugs.
 </p>
@@ -30933,10 +31769,11 @@ for (int i = 0; i < array.length; i++) {
   str = array[i];
   doTheThing(str);
 }
-</pre>
-Ç	
+</pre>Z
+CODE_SMELL
+é	
 
-java:S2440Û
+java:S2440ˇ
 javaS2440=Classes with only "static" methods should not be instantiated"MAJOR*java2S2440:ê<p><code>static</code> methods can be accessed without an instance of the enclosing class, so there's no reason to instantiate a class that has only <code>static</code> methods.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -30984,10 +31821,11 @@ public class TextManipulator {
 <h2>See Also</h2>
 <ul>
     <li><a href='/coding_rules#rule_key=squid:S1118'>S1118</a> - Utility classes should not have public constructors</li>
-</ul>
-Ô	
+</ul>Z
+CODE_SMELL
+˚	
 
-java:S2441‡	
+java:S2441Ï	
 javaS2441?Non-serializable objects should not be stored in "HttpSessions""CRITICAL*java2S2441:¯<p>If you have no intention of writting an <code>HttpSession</code> object to file, then storing non-<code>serializable</code> objects in it may not seem like a big deal. But whether or not you explicitly serialize the session, it may be written to disk anyway, as the server manages its memory use in a process called "passivation". Further, some servers automatically write their active sessions out to file at shutdown &amp; deserialize any such sessions at startup.</p>
 <p>The point is, that even though <code>HttpSession</code> does not <code>extend Serializable</code>, you must nonetheless assume that it will be serialized, and </p>
 <p>understand that if you've stored non-serializable objects in the session, errors will result. </p>
@@ -31006,10 +31844,11 @@ session.setAttribute("address", new Address());  // Noncompliant; Address isn't 
 <h2>See</h2>
 <ul>
   <li><a href="http://cwe.mitre.org/data/definitions/579.html">MITRE, CWE-579</a> - J2EE Bad Practices: Non-serializable Object Stored in Session</li>
-</ul>
-≥
+</ul>Z
+CODE_SMELL
+ø
 
-java:S2442§
+java:S2442∞
 javaS2442+"Lock" objects should not be "synchronized""MAJOR*java2S2442:”<p>
 <code>java.util.concurrent.locks.Lock</code> offers far more powerful and flexible locking operations than are available with <code>synchronized</code> blocks.
 So synchronizing on a <code>Lock</code> throws away the power of the object, and is just silly.
@@ -31031,10 +31870,11 @@ synchronized(lock) {  // Noncompliant
 Lock lock = new MyLockImpl();
 lock.tryLock();
 //...
-</pre>
-Å
+</pre>Z
+CODE_SMELL
+ç
 
-java:S2200Ú
+java:S2200˛
 javaS2200="compareTo" results should not be checked for specific values"MAJOR*java2S2200:èWhile most <code>compareTo</code> methods return -1, 0, or 1, some do not, and testing the result of a <code>compareTo</code> against a specific value other than 0 could result in false negatives.
 
 <h2>Noncompliant Code Example</h2>
@@ -31049,11 +31889,12 @@ if (myClass.compareTo(arg) == -1) {  // Noncompliant
 if (myClass.compareTo(arg) &lt; 0) {
   // ...
 }
-</pre>
-¬
+</pre>Z
+CODE_SMELL
+Œ
 
 
-java:S2201≥
+java:S2201ø
 
 javaS2201SReturn values should not be ignored when function calls don't have any side effects"CRITICAL*java2S2201:∑	<p>When the call to a function doesn't have any side effect, what is the point of ignoring the result of the function call ? In such case, either the function call is useless and should be dropped or the source code doesn't behave as expected. </p>
 <p>To prevent generating any false-positives, this rule triggers an issues only on the following predefined list of immutable classes in the Java API : String, Boolean, Integer, Double, Float, Byte, Character, Short, StackTraceElement.</p>
@@ -31079,11 +31920,12 @@ public void handle(String command){
 <li> MISRA C:2012, 17.7 - The value returned by a function having non-void return type shall be used</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/9YIRAQ">CERT, EXP12-C</a> - Do not ignore values returned by functions</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/eoAyAQ">CERT, EXP12-CPP</a> - Do not ignore values returned by functions or methods</li>
-</ul>
-∞
+</ul>Z
+CODE_SMELL
+º
 
 
-java:S2444°
+java:S2444≠
 
 javaS2444?Lazy initialization of "static" fields should be "synchronized""CRITICAL*java2S2444:π	<p>In a multi-threaded situation, un-<code>synchronized</code> lazy initialization of non-<code>volatile</code> fields could mean that a second thread has access to a half-initizliaed object while the first thread is still creating it. Allowing such access could cause serious bugs. Instead. the initizliation block should be <code>synchronized</code> or the variable made <code>volatile</code>.</p>
 <p>Similarly, updates of such fields should also be <code>synchronized</code>.</p>
@@ -31127,10 +31969,11 @@ public static synchronized Object getInstance() {
     instance = new Object();
     return instance;
 }
-</pre>
-ò
+</pre>Z
+CODE_SMELL
+§
 
-java:S2445â
+java:S2445ï
 javaS2445[Blocks synchronized on fields should not contain assignments of new objects to those fields"BLOCKER*java2S2445:Ü<p>Synchronizing on a class field synchronizes not on the field itself, but on the object assigned to it. So reassigning a field in a block synchronized on that field's contents immediately opens the block up to access by another thread.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -31158,10 +32001,11 @@ private void doSomething(){
     // ...
   }
 }
-</pre>
-Ÿ
+</pre>Z
+CODE_SMELL
+Â
 
-java:S2446 
+java:S2446÷
 javaS2446"notifyAll" should be used"CRITICAL*java2S2446:á<code>notify</code> and <code>notifyAll</code> both wake up sleeping threads, but <code>notify</code> only rouses one, while <code>notifyAll</code> rouses all of them. Since <code>notify</code> might not wake up the right thread, <code>notifyAll</code> should be used instead.
 
 <h2>Noncompliant Code Example</h2>
@@ -31190,10 +32034,11 @@ class MyThread extends Thread{
     }
   }
 }
-</pre>
-Ê
+</pre>Z
+CODE_SMELL
+Ú
 
-java:S2204◊
+java:S2204„
 javaS2204E".equals()" should not be used to test the values of "Atomic" classes"BLOCKER*java2S2204:Í<p><code>AtomicInteger</code>, and <code>AtomicLong</code> extend <code>Number</code>, but they're distinct from <code>Integer</code> and <code>Long</code> and should be handled differently. <code>AtomicInteger</code> and <code>AtomicLong</code> are designed to support lock-free, thread-safe programming on single variables. As such, an <code>AtomicInteger</code> will only ever be "equal" to itself. Instead, you should <code>.get()</code> the value and make comparisons on it.</p>
 
 <p>This applies to all the atomic, seeming-primitive wrapper classes: <code>AtomicInteger</code>, <code>AtomicLong</code>, and <code>AtomicBoolean</code>.</p>
@@ -31212,10 +32057,11 @@ AtomicInteger aInt1 = new AtomicInteger(0);
 AtomicInteger aInt2 = new AtomicInteger(0);
 
 if (aInt1.get() == aInt2.get()) { ... }
-</pre>
-õ
+</pre>Z
+CODE_SMELL
+ß
 
-java:S1710å
+java:S1710ò
 javaS1710,Annotation repetitions should not be wrapped"MAJOR*java2S1710:∫<p>Before Java 8 if you needed to use multiple instances of the same annotation, they had to be wrapped in a container annotation. With Java 8, that's no longer necessary, allowing for cleaner, more readable code.</p>
 
 <p>
@@ -31242,10 +32088,11 @@ public class SomeClass {
 public class SomeClass {
   ...
 }
-</pre>
-ã
+</pre>Z
+CODE_SMELL
+ó
 
-java:S2447¸
+java:S2447à
 javaS24473Null should not be returned from a "Boolean" method"MAJOR*java2S2447:£<p>While <code>null</code> is technically a valid <code>Boolean</code> value, that fact, and the distinction between <code>Boolean</code> and <code>boolean</code> is easy to forget. So returning <code>null</code> from a <code>Boolean</code> method is likely to cause problems with callers' code.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -31254,10 +32101,11 @@ public Boolean isUsable() {
   // ...
   return null;  // Noncompliant
 }
-</pre>
-À
+</pre>Z
+CODE_SMELL
+◊
 
-java:S2208º
+java:S2208»
 javaS2208#Wildcard imports should not be used"MAJOR*java2S2208:Û<p>Blindly importing all the classes in a package clutters the class namespace and could lead to conflicts between classes in different packages with the same name. On the other hand, specifically listing the necessary classes avoids that problem and makes clear which versions were wanted.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -31281,10 +32129,11 @@ private Date date;
 <p>Static imports are ignored by this rule. E.G.</p>
 <pre>
 import static java.lang.Math.*;
-</pre>
-Ê
+</pre>Z
+CODE_SMELL
+Ú
 
-java:S2209◊
+java:S2209„
 javaS2209."static" members should be accessed statically"MAJOR*java2S2209:É<p>
   While it is <em>possible</em> to access <code>static</code> members from a class instance, it's bad form,
   and considered by most to be misleading because it implies to the readers of your code that
@@ -31323,10 +32172,11 @@ public class B {
     A.counter ++;  // Compliant
   }
 }
-</pre>
-ˇ
+</pre>Z
+CODE_SMELL
+ã
 
-java:S2692
+java:S2692¸
 javaS26923"indexOf" checks should not be for positive numbers"CRITICAL*java2S2692:î<p>Most checks against an <code>indexOf</code> value compare it with -1 because 0 is a valid index. Any checks which look for values &gt;0 ignore the first element, which is likely a bug.
 If the intent is merely to check inclusion of a value in a <code>String</code> or a <code>List</code>, consider using the <code>contains</code> method instead.</p>
 
@@ -31374,10 +32224,11 @@ if (name.indexOf("ish") &gt;= 0) {
 if (name.indexOf("hma") &gt; -1) {
   // ...
 }
-</pre>
-›
+</pre>Z
+CODE_SMELL
+È
 
-java:S1948Œ
+java:S1948⁄
 javaS1948KFields in a "Serializable" class should either be transient or serializable"CRITICAL*java2S1948:⁄<p>Fields in a <code>Serializable</code> class must themselves be either <code>Serializable</code> or <code>transient</code> even if the class is never explicitly serialized or deserialized. That's because under load, most J2EE application frameworks flush objects to disk, and an allegedly <code>Serializable</code> object with non-transient, non-serializable data members could cause program crashes, and open the door to attackers.</p>
 <p>This rule raises an issue on non-<code>Serializable</code> fields, and on collection fields when they are not <code>private</code> (because they could be assigned non-<code>Serializable</code> values externally), and when they are assigned non-<code>Serializable</code> types within the class.</p>
 
@@ -31422,10 +32273,11 @@ private void readObject(java.io.ObjectInputStream in) throws IOException, ClassN
       <li><a href="http://cwe.mitre.org/data/definitions/594.html">MITRE, CWE-594</a> - Saving Unserializable Objects to Disk</li>
       <li><a href="http://docs.oracle.com/javase/6/docs/api/java/io/Serializable.html">Oracle Java 6, Serializable</a></li>
       <li><a href="http://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html">Oracle Java 7, Serializable</a></li>
-    </ul>
-¬
+    </ul>Z
+CODE_SMELL
+Œ
 
-java:S2693≥
+java:S2693ø
 javaS2693-Threads should not be started in constructors"MAJOR*java2S2693:‡<p>The problem with invoking <code>Thread.start()</code> in a constructor is that you'll have a confusing mess on your hands if the class is ever extended because the superclass' constructor will start the thread before the child class has truly been initialized.</p>
 
 <p>This rule raises an issue any time <code>start</code> is invoked in the constructor of a non-<code>final</code> class.</p>
@@ -31442,10 +32294,11 @@ public class MyClass {
     thread.start(); // Noncompliant
   }
 }
-</pre>
-è
+</pre>Z
+CODE_SMELL
+õ
 
-java:S2694Ä
+java:S2694å
 javaS2694LInner classes which do not reference their owning classes should be "static""MAJOR*java2S2694:é<p>
   A non-static inner class has a reference to its outer class, and access to the outer class' fields and methods.
   That class reference makes the inner class larger and could cause the outer class instance to live in memory longer than necessary.
@@ -31496,10 +32349,11 @@ public class Fruit {
     }
   }
 }
-</pre>
-ﬁ
+</pre>Z
+CODE_SMELL
+Í
 
-java:S2695œ
+java:S2695€
 javaS2695O"PreparedStatement" and "ResultSet" methods should be called with valid indices"BLOCKER*java2S2695:ÿ<p>The parameters in a <code>PreparedStatement</code> are numbered from 1, not 0, so using any set method of a <code>PreparedStatement</code> with a number less than 1 is a bug, as is using an index higher than the number of parameters. Similarly, <code>ResultSet</code> indices also start at 1, rather than 0.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -31528,10 +32382,11 @@ while (rs.next()) {
   String fname = rs.getString(1);
   // ...
 }
-</pre>
-æ
+</pre>Z
+CODE_SMELL
+ 
 
-java:S2696Ø
+java:S2696ª
 javaS26964Instance methods should not write to "static" fields"CRITICAL*java2S2696:“<p>Correctly updating a <code>static</code> field from a non-static method is tricky to get right and could easily lead to bugs if there are multiple class instances and/or multiple threads in play. Ideally, <code>static</code> fields are only updated from <code>synchronized static</code> methods.</p>
 
 <p>This rule raises an issue each time a <code>static</code> field is updated from a non-static method.</p>
@@ -31548,10 +32403,11 @@ public class MyClass {
     count++;  // Noncompliant
   }
 }
-</pre>
-Ô
+</pre>Z
+CODE_SMELL
+˚
 
-java:S1943‡
+java:S1943Ï
 javaS1943OClasses and methods that rely on the default system encoding should not be used"MAJOR*java2S1943:Î<p>Using classes and methods that rely on the default system encoding can result in code that works fine in its "home" environment. But that code may break for customers who use different encodings in ways that are extremely difficult to diagnose and nearly, if not completely, impossible to reproduce when it's time to fix them.</p>
 <p>This rule detects uses of the following classes and methods:</p>
 <ul>
@@ -31594,10 +32450,11 @@ java:S1943‡
 <li> <code>PrintWriter(String fileName)</code></li>
 </ul>
 <li> <code>IOUtils</code> methods which accept an encoding argument when that argument is null, and overloads of those methods that omit the encoding argument</li>
-</ul>
-Â
+</ul>Z
+CODE_SMELL
+Ò
 
-java:S1701÷
+java:S1701‚
 javaS17014Fields and methods should not have conflicting names"MAJOR*java2S1701:¸<p>It's confusing to have a class field with the same name as a method in the class. It's also confusing to have multiple fields that differ only in capitalization</p>
 <p>Typically this situation indicates poor naming. Method names should be action-oriented, and thus contain a verb, which is unlikely in the case where both a method and a member have the same name. However, renaming a public method could be disruptive to callers. Therefore renaming the member is the recommended action.</p>
 <h2>Compliant Solution</h2>
@@ -31617,10 +32474,11 @@ public class Foo {
     String tmp2 = query(); // no question now what was intended
   }
 }
-</pre>
-Â
+</pre>Z
+CODE_SMELL
+Ò
 
-java:S2698÷
+java:S2698‚
 javaS2698(JUnit assertions should include messages"MAJOR*java2S2698:à<p>Adding messages to JUnit assertions is an investment in your future productivity. Spend a few seconds writing them now, and you'll save a lot of time on the other end when either the tests fail and you need to quickly diagnose the problem, or when you need to maintain the tests and the assertion messages work as a sort of documentation.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -31635,10 +32493,11 @@ assertThat(list.get(0)).isEqualTo("pear");  // Noncompliant
 assertEquals("There should have been 4 Fruits in the list", 4, list.size());
 
 assertThat(list.get(0)).as("check first element").overridingErrorMessage("The first element should be a pear, not a %s", list.get(0)).isEqualTo("pear"); 
-</pre>
-¬	
+</pre>Z
+CODE_SMELL
+Œ	
 
-java:S1700≥	
+java:S1700ø	
 javaS1700=A field should not duplicate the name of its containing class"MAJOR*java2S1700:–<p>It's confusing to have a class member with the same name (case differences aside) as its enclosing class. This is particularly so when you consider the common practice of naming a class instance for the class itself.</p>
 <p>Best practice dictates that any field or member with the same name as the enclosing class be renamed to be more descriptive of the particular aspect of the class it represents or holds.</p>
 
@@ -31683,19 +32542,21 @@ public class Foo {
   }
   ...
 }
-</pre>
-ù
+</pre>Z
+CODE_SMELL
+©
 
-java:S3546é
+java:S3546ö
 javaS3546-Resources as defined by user should be closed"CRITICAL*java2S3546:∂<p>Leaking resources in an application is never a good idea, as it can lead to memory issues, and even the crash of the application. This rule template allows you to specify which constructions open a resource and how it is closed in order to raise issue within a method scope when custom resources are leaked.</p>
 
 <h2>See also</h2>
 <ul>
 <li> <a href='/coding_rules#rule_key=squid:S2095'>S2095</a> - Resources should be closed
-</li></ul>@
-º
+</li></ul>@Z
+CODE_SMELL
+»
 
-java:S2699≠
+java:S2699π
 javaS2699Tests should include assertions"CRITICAL*java2S2699:Â<p>
   A test case without assertions ensures only that no exceptions are thrown. Beyond basic runnability, it ensures nothing about the behavior of the code under test.
 </p>
@@ -31721,10 +32582,11 @@ public void testDoSomething() {
   assertNull(myClass.doSomething());  // JUnit assertion
   assertThat(myClass.doSomething()).isNull();  // Fest assertion
 }
-</pre>
-…
+</pre>Z
+CODE_SMELL
+’
 
-java:S1941∫
+java:S1941∆
 javaS19419Variables should not be declared before they are relevant"MAJOR*java2S1941:€<p>
   For the sake of clarity, variables should be declared as close to where they're used as possible.
   This is particularly true when considering methods that contain early returns and the potential to throw exceptions.
@@ -31767,10 +32629,11 @@ public boolean isConditionMet(int a, int b) {
   }
   return false;
 }
-</pre>
-≤
+</pre>Z
+CODE_SMELL
+æ
 
-java:S1940£
+java:S1940Ø
 javaS1940%Boolean checks should not be inverted"MINOR*java2S1940:ÿ<p>
   It is needlessly complex to invert the result of a boolean comparison.
   The opposite comparison should be made instead.
@@ -31786,10 +32649,11 @@ boolean b = !(i < 10);  // Noncompliant
 <pre>
 if (a != 2) { ...}
 boolean b = (i >= 10);
-</pre>
-ı
+</pre>Z
+CODE_SMELL
+Å
 
-java:S1939Ê
+java:S1939Ú
 javaS19396Extensions and implementations should not be redundant"MINOR*java2S1939:ä<p>
 All classes extend <code>Object</code> implicitly. Doing so explicitly is redundant.
 </p>
@@ -31829,9 +32693,10 @@ public interface MyOtherFace extends MyFace {
 public class Foo implements MyOtherFace {
   //...
 }
-</pre>
-√
-	java:S923µ
+</pre>Z
+CODE_SMELL
+œ
+	java:S923¡
 javaS923CFunctions should not be defined with a variable number of arguments"INFO*java2S923:œ<p>As stated per effective java : </p>
 <blockquote>Varargs methods are a convenient way to define methods that require a variable number of arguments, but they should not be overused. They can produce confusing results if used innapropriately.</blockquote>
 
@@ -31848,10 +32713,11 @@ void fun ( String... strings )	// Noncompliant
 <li> MISRA C:2004, 16.1 - Functions shall not be defined with a variable number of arguments.
 </li><li> MISRA C++:2008, 8-4-1 - Functions shall not be defined using the ellipsis notation.
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/i4CW">CERT, DCL50-CPP</a> - Do not define a C-style variadic function
-</li></ul>
-–
+</li></ul>Z
+CODE_SMELL
+‹
 
-java:S2221¡
+java:S2221Õ
 javaS2221D"Exception" should not be caught when not required by called methods"CRITICAL*java2S2221:‘
 <p>
   Catching <code>Exception</code> seems like an efficient way to handle multiple possible exceptions.
@@ -31892,10 +32758,11 @@ try {
 <h2>See</h2>
 <ul>
   <li><a href="http://cwe.mitre.org/data/definitions/396.html">MITRE, CWE-396</a> - Declaration of Catch for Generic Exception</li>
-</ul>
-†
+</ul>Z
+CODE_SMELL
+¨
 
-java:S2222ë
+java:S2222ù
 javaS2222Locks should be released"CRITICAL*java2S2222:–<p>The logic in a method should ensure that locks are released in the methods in which they were acquired. Failure to release a lock increases the potential for deadlocks and could result in runtime errors in production.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -31931,10 +32798,11 @@ public class MyClass {
   }
 
 }
-</pre>
-å
+</pre>Z
+CODE_SMELL
+ò
 
-java:S2225˝
+java:S2225â
 javaS22259"toString()" and "clone()" methods should not return null"CRITICAL*java2S2225:õ<p>Calling <code>toString()</code> or <code>clone()</code> on an object should always return a string or an object. Returning <code>null</code> instead contravenes the method's implicit contract.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -31958,10 +32826,11 @@ public override string ToString () {
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/476.html">MITRE CWE-476</a> - NULL Pointer Dereference
-</li></ul>
-„
+</li></ul>Z
+CODE_SMELL
+Ô
 
-java:S2226‘
+java:S2226‡
 javaS22260Servlets should not have mutable instance fields"CRITICAL*java2S2226:˚<p>By contract, a servlet container creates one instance of each servlet and then a dedicated thread is attached to each new incoming HTTP request to process this request. So all threads are sharing the servlet instances and by extension instance fields.  To prevent any misunderstanding and unexpected behavior at runtime, all servlet fields should then be either <code>static</code> and/or <code>final</code>, or simply removed.</p>
 <p>With Struts 1.X, the same constraint exists on <code>org.apache.struts.action.Action</code>.</p>
 
@@ -31978,10 +32847,11 @@ public class MyAction extends Action {
   private String userName;  //Same reason
   ...
 }
-</pre>
-Û
+</pre>Z
+CODE_SMELL
+ˇ
 
-java:S1135‰
+java:S1135
 javaS1135"TODO" tags should be handled"INFO*java2S1135:¢<p><code>TODO</code> tags are commonly used to mark places where some more code is required, but which the developer wants to implement later.</p>
 <p>Sometimes the developer will not have the time or will simply forget to get back to that tag.</p>
 <p>This rule is meant to track those tags, and ensure that they do not go unnoticed.</p>
@@ -31991,10 +32861,11 @@ java:S1135‰
 void doSomething() {
   // TODO
 }
-</pre>
-“
+</pre>Z
+CODE_SMELL
+ﬁ
 
-java:S1134√
+java:S1134œ
 javaS1134"FIXME" tags should be handled"MAJOR*java2S1134:ˇ<p><code>FIXME</code> tags are commonly used to mark places where a bug is suspected, but which the developer wants to deal with later.</p>
 <p>Sometimes the developer will not have the time or will simply forget to get back to that tag.</p>
 <p>This rule is meant to track those tags, and ensure that they do not go unnoticed.</p>
@@ -32004,10 +32875,11 @@ java:S1134√
 int divide(int numerator, int denominator) {
   return numerator / denominator;              // FIXME denominator value might be  0
 }
-</pre>
-˚
+</pre>Z
+CODE_SMELL
+á
 
-java:S1133Ï
+java:S1133¯
 javaS1133,Deprecated code should be removed eventually"INFO*java2S1133:õ<p>
 This rule is meant to be used as a way to track code which is marked as being deprecated.
 Deprecated code should eventually be removed.
@@ -32032,10 +32904,11 @@ class Foo {
   public void baz() {    // Compliant
   }
 }
-</pre>
-Ô
+</pre>Z
+CODE_SMELL
+˚
 
-java:S1132‡
+java:S1132Ï
 javaS1132MStrings literals should be placed on the left side when checking for equality"MAJOR*java2S1132:Ì<p>
 It is preferable to place string literals on the left-hand side of an <code>equals()</code> or <code>equalsIgnoreCase()</code> method call.
 This prevents null pointer exceptions from being raised, as a string literal can never be null by definition.
@@ -32054,10 +32927,11 @@ System.out.println("Equal? " + (myString != null &amp;&amp; myString.equals("foo
 
 <pre>
 System.out.println("Equal?" + "foo".equals(myString));                         // Compliant - properly deals with the null case
-</pre>
-≈
+</pre>Z
+CODE_SMELL
+—
 
-java:S1126∂
+java:S1126¬
 javaS1126TReturn of boolean expressions should not be wrapped into an "if-then-else" statement"MINOR*java2S1126:º<p>Return of boolean literal statements wrapped into <code>if-then-else</code> ones should be simplified.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -32075,10 +32949,11 @@ return expression;
 </pre>
 <pre>
 return !!expression;
-</pre>
-Â
+</pre>Z
+CODE_SMELL
+Ò
 
-java:S1125÷
+java:S1125‚
 javaS1125BLiteral boolean values should not be used in condition expressions"MINOR*java2S1125:Ó<p>Remove literal boolean values from conditional expressions to improve readability. Anything that can be tested for equality with a boolean value must itself be a boolean value, and boolean values can be tested atomically.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -32107,10 +32982,11 @@ booleanVariable = !condition &amp;&amp; exp;
 booleanVariable = !condition ||  exp;
 booleanVariable = condition &amp;&amp; exp;
 booleanVariable = condition;
-</pre>
-∆
+</pre>Z
+CODE_SMELL
+“
 
-java:S1118∑
+java:S1118√
 javaS11183Utility classes should not have public constructors"MAJOR*java2S1118:ﬁ<p>
 Utility classes, which are a collection of static members, are not meant to be instantiated.
 Even abstract utility classes, which can be extended, should not have public constructors.
@@ -32146,16 +33022,18 @@ class StringUtils { // Compliant
   }
 
 }
-</pre>
-÷
+</pre>Z
+CODE_SMELL
+‚
 
-java:S1598«
+java:S1598”
 javaS15986Package declaration should match source file directory"MAJOR*java2S1598:Î<p>By convention, a Java class' physical location (source directories) and its logical representation (packages) should be kept in sync. Thus a Java file located at "src/org/sonarqube/Foo.java" should have a package of "org.sonarqube".</p>
 
-<p>Unfortunately, this convention is not enforced by Java compilers, and nothing prevents a developer from making the "Foo.java" class part of the "com.apple" package, which could degrade the maintainability of both the class and its application.</p>
-Ë	
+<p>Unfortunately, this convention is not enforced by Java compilers, and nothing prevents a developer from making the "Foo.java" class part of the "com.apple" package, which could degrade the maintainability of both the class and its application.</p>Z
+CODE_SMELL
+Ù	
 
-java:S1596Ÿ	
+java:S1596Â	
 javaS1596|Collections.emptyList(), emptyMap() and emptySet() should be used instead of Collections.EMPTY_LIST, EMPTY_MAP and EMPTY_SET"MAJOR*java2S1596:∑<p>Since the introduction of generics in Java 5, it is recommended to use generic types such as <code>List&lt;String&gt;</code> instead of raw ones such as just <code>List</code>. Assigning a raw type into a generic one is not type safe, and will generate a warning. The old <code>EMPTY_...</code> fields of the <code>Collections</code> class return raw types, whereas the newer <code>empty...()</code> methods return generic ones.</p>
 <p>Developers will also more easily find the <code>emptyIterator()</code> and <code>emptyListIterator()</code> methods for which there is no field equivalent if they are used to call the methods.</p>
 <h2>Noncompliant Code Example</h2>
@@ -32171,9 +33049,10 @@ Set&lt;String&gt; collection3 = Collections.EMPTY_SET;
 List&lt;String&gt; collection1 = Collections.emptyList();
 Map&lt;String, String&gt; collection2 = Collections.emptyMap();
 Set&lt;String&gt; collection3 = Collections.emptySet();
-</pre>
-É
-java:EmptyFile
+</pre>Z
+CODE_SMELL
+è
+java:EmptyFile¸
 java	EmptyFileFiles should not be empty"MAJOR*java2	EmptyFile:©<p>Files with no lines of code clutter a project and should be removed. </p>
 <h2>Noncompliant Code Example</h2>
 
@@ -32181,9 +33060,10 @@ Set&lt;String&gt; collection3 = Collections.emptySet();
 //package org.foo;
 //
 //public class Bar {}
-</pre>
-À	
-java:IndentationCheck±	
+</pre>Z
+CODE_SMELL
+◊	
+java:IndentationCheckΩ	
 javaIndentationCheck+Source code should be indented consistently"MINOR*java2IndentationCheck: <p>Proper indentation is a simple and effective way to improve the code's readability. Consistent indentation among the developers on a team also reduces the differences that are committed to source control systems, making code reviews easier. </p>
 <p>By default this rule checks that each block of code is indented but not the size of this indent. The parameter "indentSize" allows the expected indent size to be defined. Only the first line of a badly indented section is reported.</p>
 <p>The following code illustrates this rule when the expected indent size is set to 2:</p>
@@ -32218,11 +33098,12 @@ class Foo {
     } 
   }
 }
-</pre>
-È
+</pre>Z
+CODE_SMELL
+ı
 
 
-java:S1319⁄
+java:S1319Ê
 
 javaS1319ÇDeclarations should use Java collection interfaces such as "List" rather than specific implementation classes such as "LinkedList""MAJOR*java2S1319:±	<p>The purpose of the Java Collections API is to provide a well defined hierarchy of interfaces in order to hide implementation details.</p>
 <p>Implementing classes must be used to instantiate new collections, but the result of an instantiation should ideally be stored in a variable whose type is a Java Collection interface.</p>
@@ -32253,10 +33134,11 @@ public class Employees {
     return employees;
   }
 }
-</pre>
-ª
+</pre>Z
+CODE_SMELL
+«
 
-java:S1318¨
+java:S1318∏
 javaS1318@"object == null" should be used instead of "object.equals(null)""CRITICAL*java2S1318:√<p>Inexperienced Java developers might expect the <code>Object.equals(Object obj)</code> method to correctly handle the case where the left hand side is null, but that is not the case.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -32272,10 +33154,11 @@ if (variable == null) { /* ... */ }        // Compliant
 <h2>Deprecated</h2>
 <p>
 This rule is deprecated, use <a href='/coding_rules#rule_key=squid:S2159'>S2159</a> instead.
-</p>
-Â
+</p>Z
+CODE_SMELL
+Ò
 
-java:S1317÷
+java:S1317‚
 javaS1317N"StringBuilder" and "StringBuffer" should not be instantiated with a character"MAJOR*java2S1317:‚<p>Instantiating a <code>StringBuilder</code> or a <code>StringBuffer</code> with a character is misleading because most Java developers would expect the character to be the initial value of the <code>StringBuffer</code>. </p>
 <p>What actually happens is that the int representation of the character is used to determine the initial size of the <code>StringBuffer</code>.</p>
 <h2>Noncompliant Code Example</h2>
@@ -32287,19 +33170,21 @@ StringBuffer foo = new StringBuffer('x');   //equivalent to StringBuffer foo = n
 
 <pre>
 StringBuffer foo = new StringBuffer("x");
-</pre>
-é
+</pre>Z
+CODE_SMELL
+ö
 
-java:S1315ˇ
+java:S1315ã
 javaS13158"CHECKSTYLE:OFF" suppression comments should not be used"MINOR*java2S1315:°<p>This rule allows you to track the use of the Checkstyle suppression comment mechanism. </p>
 <h2>Noncompliant Code Example</h2>
 
 <pre>
 // CHECKSTYLE:OFF
-</pre>
-ò
+</pre>Z
+CODE_SMELL
+§
 
-java:S1314â
+java:S1314ï
 javaS1314Octal values should not be used"MAJOR*java2S1314:ƒ<p>Integer literals starting with a zero are octal rather than decimal values. While using octal values is fully supported, most developers do not have experience with them. They may not recognize octal values as such, mistaking them instead for decimal values.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -32318,10 +33203,11 @@ int myNumber = 8;
 </li><li> MISRA C++:2008, 2-13-2 - Octal constants (other than zero) and octal escape sequences (other than "\0") shall not be used
 </li><li> MISRA C:2012, 7.1 - Octal constants shall not be used
 </li><li> <a href="https://www.securecoding.cert.org/confluence/x/_QC7AQ">CERT DCL18-C</a> - Do not begin integer constants with 0 when specifying a decimal value
-</li></ul>
-∫
+</li></ul>Z
+CODE_SMELL
+∆
 
-java:S1313´
+java:S1313∑
 javaS1313$IP addresses should not be hardcoded"CRITICAL*java2S1313:ﬁ<p>Hardcoding an IP address into source code is a bad idea for several reasons:</p>
 <ul>
 <li> a recompile is required if the address changes</li>
@@ -32345,10 +33231,11 @@ Socket socket = new Socket(ip, 6667);
 
 <ul>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/qQCHAQ">CERT, MSC03-J</a> - Never hard code sensitive information</li>
-</ul>
-ƒ
+</ul>Z
+CODE_SMELL
+–
 
-java:S1312µ
+java:S1312¡
 javaS1312MLoggers should be "private static final" and should share a naming convention"MINOR*java2S1312:¬<p>Loggers should:</p>
 <ul>
   <li><code>private</code>: never be accessible outside of its parent class. If another class needs to log something, it should instantiate its own logger.</li>
@@ -32368,19 +33255,21 @@ private static final Logger LOGGER = LoggerFactory.getLogger(Foo.class);
 </pre>
 
 <h2>Exceptions</h2>
-<p>Variables of type <code>org.apache.maven.plugin.logging.Log</code> are ignored.</p>
-ı
+<p>Variables of type <code>org.apache.maven.plugin.logging.Log</code> are ignored.</p>Z
+CODE_SMELL
+Å
 
-java:S1310Ê
+java:S1310Ú
 javaS1310/"NOPMD" suppression comments should not be used"MINOR*java2S1310:ë<p>This rule allows you to track the use of the PMD suppression comment mechanism. </p>
 <h2>Noncompliant Code Example</h2>
 
 <pre>
 // NOPMD
-</pre>
-ø
+</pre>Z
+CODE_SMELL
+À
 
-java:S1309∞
+java:S1309º
 javaS13093The @SuppressWarnings annotation should not be used"INFO*java2S1309:ÿ<p>This rule allows you to track the usage of the <code>@SuppressWarnings</code> mechanism.</p>
 <h2>Noncompliant Code Example</h2>
 <p>In case &quot;listOfWarnings=unchecked&quot;</p>
@@ -32391,10 +33280,11 @@ java:S1309∞
 <p>In case &quot;listOfWarnings=unchecked&quot;</p>
 <pre>
 @SuppressWarnings("unchecked")
-</pre>
-ñ
+</pre>Z
+CODE_SMELL
+¢
 
-java:S1301á
+java:S1301ì
 javaS13019"switch" statements should have at least 3 "case" clauses"MINOR*java2S1301:®<p><code>switch</code> statements are useful when there are many different cases depending on the value of the same expression.</p>
 <p>For just one or two cases however, the code will be more readable with <code>if</code> statements.</p>
 <h2>Noncompliant Code Example</h2>
@@ -32424,10 +33314,11 @@ if (variable == 0) {
 <li> MISRA C:2004, 15.5 - Every switch statement shall have at least one case clause.</li>
 <li> MISRA C++:2008, 6-4-8 - Every switch statement shall have at least one case-clause.</li>
 <li> MISRA C:2012, 16.6 - Every switch statement shall have at least two switch-clauses</li>
-</ul>
-Ö
+</ul>Z
+CODE_SMELL
+ë
 
-java:S2864ˆ
+java:S2864Ç
 javaS2864F"entrySet()" should be iterated when both the key and value are needed"MAJOR*java2S2864:ä<p>When only the keys from a map are needed in a loop, iterating the <code>keySet</code> makes sense. But when both the key and the value are needed, it's more efficient to iterate the <code>entrySet</code>, which will give access to both the key and value, instead.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -32449,9 +33340,10 @@ public void doSomethingWithMap(Map&lt;String,Object&gt; map) {
     // ...
   }
 }
-</pre>
-∂
-	java:S125®
+</pre>Z
+CODE_SMELL
+¬
+	java:S125¥
 javaS125.Sections of code should not be "commented out""MAJOR*java2CommentedOutCodeLine:∆<p>Programmers should not comment out code as it bloats programs and reduces readability.</p>
 <p>Unused code should be deleted and can be retrieved from source control history if required.</p>
 <h2>See</h2>
@@ -32461,10 +33353,11 @@ public void doSomethingWithMap(Map&lt;String,Object&gt; map) {
 <li> MISRA C++:2008, 2-7-2 - Sections of code shall not be "commented out" using C-style comments.</li>
 <li> MISRA C++:2008, 2-7-3 - Sections of code should not be "commented out" using C++ comments.</li>
 <li> MISRA C:2012, Dir. 4.4 - Sections of code should not be "commented out"</li>
-</ul>
-Á
+</ul>Z
+CODE_SMELL
+Û
 
-java:S1104ÿ
+java:S1104‰
 javaS1104:Class variable fields should not have public accessibility"MAJOR*java2ClassVariableVisibilityCheck:·
 <p>Public class variable fields do not respect the encapsulation principle and has three main disadvantages:</p>
 <ul>
@@ -32510,10 +33403,11 @@ public class MyClass {
 
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/493.html">MITRE, CWE-493</a> - Critical Public Variable Without Final Modifier</li>
-</ul>
-˝
+</ul>Z
+CODE_SMELL
+â	
 
-java:S1114Ó
+java:S1114˙
 javaS1114Qsuper.finalize() should be called at the end of Object.finalize() implementations"BLOCKER*java2.ObjectFinalizeOverridenCallsSuperFinalizeCheck:Ã<p>Overriding the <code>Object.finalize()</code> method must be done with caution to dispose some system resources.</p>
 <p>Calling the <code>super.finalize()</code> at the end of this method implementation is highly recommended in case parent implementations must also dispose some system resources.</p>
 <h2>Noncompliant Code Example</h2>
@@ -32541,10 +33435,11 @@ protected void finalize() {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/568.html">MITRE, CWE-568</a> - finalize() Method Without super.finalize()</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/H4cbAQ">CERT, MET12-J</a> - Do not use finalizers</li>
-</ul>
-‚
+</ul>Z
+CODE_SMELL
+Ó
 
-java:S1113”
+java:S1113ﬂ
 javaS11134The Object.finalize() method should not be overriden"MAJOR*java2ObjectFinalizeOverridenCheck:‚<p>This Object.finalize() method is called by the garbage collector on an object when garbage collection determines that there are no more references to the object. But there is absolutely no warranty that this method will be called AS SOON AS the last references to the object are removed. It can be few microseconds to few minutes later. So when some system resources need to be disposed by an object, it's better to not rely on this asynchronous mechanism to dispose them.</p>
 <h2>Noncompliant Code Example</h2>
 
@@ -32561,17 +33456,19 @@ public class MyClass {
 
 <ul>
 <li> CERT Java Secure Coding, MET12-J - Do not use finalizers</li>
-</ul>
-Æ
+</ul>Z
+CODE_SMELL
+∫
 
-java:S1541ü
+java:S1541´
 javaS1541!Methods should not be too complex"MAJOR*java2MethodCyclomaticComplexity:√<p>
   The cyclomatic complexity of methods should not exceed a defined threshold.
   Complex code can perform poorly and will in any case be difficult to understand and therefore to maintain.
-</p>
-©
+</p>Z
+CODE_SMELL
+µ
 
-java:S1128ö
+java:S1128¶
 javaS1128!Useless imports should be removed"MINOR*java2UselessImportCheck:∆<p>
 The imports part of a file should be handled by the Integrated Development Environment (IDE), not manually by the developer.
 Unused and useless imports should not occur if that is the case.
@@ -32596,10 +33493,11 @@ class ExampleClass {
   public SomeType something;
 
 }
-</pre>
-π
+</pre>Z
+CODE_SMELL
+≈
 
-java:S1119™
+java:S1119∂
 javaS1119Labels should not be used"MAJOR*java2LabelsShouldNotBeUsedCheck:÷<p>
 Labels are not commonly used in Java, and many developers do not understand how they work.
 Moreover, their usage make the control flow harder to follow, which reduces the code's readability.
@@ -32636,10 +33534,11 @@ for (int row = 1; row < matrix.length; row++) {          // Compliant
     System.out.println(matrix[row][col]);                // Also prints 4, 7 and 8
   }
 }
-</pre>
-∞
+</pre>Z
+CODE_SMELL
+º
 
-java:S1117°
+java:S1117≠
 javaS1117.Local variables should not shadow class fields"MAJOR*java2HiddenFieldCheck:¬<p>Shadowing fields with a local variable is a bad practice that reduces code readability: It makes it confusing to know whether the field or the variable is being used.</p>
 
 <h2>Noncompliant Code Example</h2>
@@ -32652,10 +33551,11 @@ class Foo {
     ...
   }
 }
-</pre>
-™
+</pre>Z
+CODE_SMELL
+∂
 
-java:S1111õ
+java:S1111ß
 javaS11111The Object.finalize() method should not be called"CRITICAL*java2ObjectFinalizeCheck:≥<p>According to the official javadoc documentation, this Object.finalize() is called by the garbage collector on an object when garbage collection determines that there are no more references to the object. Calling this method explicitly breaks this contract and so is misleading. </p>
 <h2>Noncompliant Code Example</h2>
 
@@ -32669,10 +33569,11 @@ public void dispose() throws Throwable {
 <ul>
 <li> <a href="http://cwe.mitre.org/data/definitions/586.html">MITRE, CWE-586</a> - Explicit Call to Finalize()</li>
 <li> <a href="https://www.securecoding.cert.org/confluence/x/H4cbAQ">CERT, MET12-J</a> - Do not use finalizers</li>
-</ul>
-Ω	
+</ul>Z
+CODE_SMELL
+…	
 
-java:S1121Æ	
+java:S1121∫	
 javaS1121:Assignments should not be made from within sub-expressions"MAJOR*java2AssignmentInSubExpressionCheck:µ<p>Assignments within sub-expressions are hard to spot and therefore make the code less readable.</p>
 <p>It is also a common mistake to write <code>=</code> when <code>==</code> was meant.</p>
 <p>Ideally, expressions should not have side-effects.</p>
@@ -32701,10 +33602,11 @@ doSomething(i == 42);  // Perhaps in fact the assignment operator was expected
 <li> MISRA C++:2008, 6-2-1 - Assignment operators shall not be used in sub-expressions</li>
 <li> MISRA C:2012, 13.4 - The result of of an assignment operator should not be used</li>
 <li> <a href="http://cwe.mitre.org/data/definitions/481.html">MITRE, CWE-481</a> - Assigning instead of Comparing</li>
-</ul>
-™
+</ul>Z
+CODE_SMELL
+∂
 
-java:S1144õ
+java:S1144ß
 javaS1144'Unused private method should be removed"MAJOR*java2UnusedPrivateMethod:¿
 <p>Private methods that are never executed are dead code: unnecessary, inoperative code that should be removed. Cleaning out dead code decreases the size of the maintained codebase, making it easier to understand the program and preventing bugs from being introduced.</p>
 <h2>Noncompliant Code Example</h2>
@@ -32737,10 +33639,11 @@ public class Foo implements Serializable
 
   private void readObject(ObjectInputStream in){...}  //Compliant, relates to the java serialization mechanism
 }
-</pre>
-ú
+</pre>Z
+CODE_SMELL
+®
 
-java:S1130ç
+java:S1130ô
 javaS1130-Throws declarations should not be superfluous"MINOR*java2RedundantThrowsDeclarationCheck:†<p>
 An exception in a <code>throws</code> declaration in Java is superfluous if it is:
 </p>
@@ -32766,11 +33669,12 @@ void baz() throws RuntimeException {}  // Noncompliant; RuntimeException can alw
 void foo() throws MyException {}
 void bar() throws Throwable {}
 void baz() {}
-</pre>
-¨
+</pre>Z
+CODE_SMELL
+∏
 
 
-java:S1123ù
+java:S1123©
 
 javaS1123GDeprecated elements should have both the annotation and the Javadoc tag"MAJOR*java2MissingDeprecatedCheck:ü	<p>Deprecation should be marked with both the <code>@Deprecated</code> annotation and @deprecated Javadoc tag. The annotation enables tools such as IDEs to warn about referencing deprecated elements, and the tag can be used to explain when it was deprecated, why, and how references should be refactored.</p>
 
@@ -32835,16 +33739,18 @@ interface Plop {
   void bar();
 
 }
-</pre>
-≥
-	java:S110•
+</pre>Z
+CODE_SMELL
+ø
+	java:S110±
 javaS1102Inheritance tree of classes should not be too deep"MAJOR*java2MaximumInheritanceDepth:º<p>Inheritance is certainly one of the most valuable concepts in object-oriented programming.</p>
 <p>It's a way to compartmentalize and reuse code by creating collections of attributes and behaviors called classes which can be based on previously created classes.</p>
 <p>But abusing of this concept by creating a deep inheritance tree can lead to very complex and unmaintainable source code.</p>
-<p>Most of the time a too deep inheritance tree is due to bad object oriented design which has led to systematically use 'inheritance' when 'composition' would suit better.</p>
-§
+<p>Most of the time a too deep inheritance tree is due to bad object oriented design which has led to systematically use 'inheritance' when 'composition' would suit better.</p>Z
+CODE_SMELL
+∞
 
-java:S1124ï
+java:S1124°
 javaS11241Modifiers should be declared in the correct order"MINOR*java2ModifiersOrderCheck:∞<p>The Java Language Specification recommends listing modifiers in the following order:</p>
 <p>1. Annotations</p>
 <p>2. public</p>
@@ -32870,9 +33776,10 @@ static public void main(String[] args) {   // Noncompliant
 <pre>
 public static void main(String[] args) {   // Compliant
 }
-</pre>
-ñ
-	java:S127à
+</pre>Z
+CODE_SMELL
+¢
+	java:S127î
 javaS127."for" loop stop conditions should be invariant"MAJOR*java2ForLoopCounterChangedCheck:†
 <p><code>for</code> loop stop conditions must be invariant (i.e. true at both the beginning and ending of every loop iteration). Ideally, this means that the stop condition is set to a local variable just before the loop begins. </p>
 <p>Stop conditions that are not invariant are difficult to understand and maintain, and will likely lead to the introduction of errors in the future.</p>
@@ -32901,10 +33808,11 @@ for (int i = 0; i &lt; 10; i++) {...}
 <ul>
 <li> MISRA C:2004, 13.6 - Numeric variables being used within a <em>for</em> loop for iteration counting shall not be modified in the body of the loop.
 </li><li> MISRA C++:2008, 6-5-3 - The <em>loop-counter</em> shall not be modified within <em>condition</em> or <em>statement</em>.
-</li></ul>
-Û
+</li></ul>Z
+CODE_SMELL
+ˇ
 
-java:S1110‰
+java:S1110
 javaS1110XUseless parentheses around expressions should be removed to prevent any misunderstanding"MAJOR*java2UselessParenthesesCheck:‘<p>
 Useless parentheses can sometimes be misleading and so should be removed.
 </p>
@@ -32919,4 +33827,5 @@ return (x);           // Noncompliant
 return (x + 1);       // Noncompliant
 int x = (y / 2 + 1);  // Noncompliant
 int y = (4+X) * y;    // Compliant
-</pre>
+</pre>Z
+CODE_SMELL

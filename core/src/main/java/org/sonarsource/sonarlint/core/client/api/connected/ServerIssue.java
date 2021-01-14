@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.time.Instant;
-import javax.annotation.CheckForNull;
 
 public interface ServerIssue {
   String key();
@@ -41,7 +40,6 @@ public interface ServerIssue {
 
   String severity();
 
-  @CheckForNull
   String type();
 
   Instant creationDate();

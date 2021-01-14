@@ -20,13 +20,11 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
-import javax.annotation.CheckForNull;
 
 public interface Issue extends IssueLocation {
 
   String getSeverity();
 
-  @CheckForNull
   String getType();
 
   String getRuleKey();
