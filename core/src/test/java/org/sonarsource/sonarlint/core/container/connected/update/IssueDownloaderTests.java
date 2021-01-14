@@ -25,12 +25,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.sonarqube.ws.Common;
+import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.Paging;
+import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,11 +51,30 @@ class IssueDownloaderTests {
     Issues.SearchWsResponse response = Issues.SearchWsResponse.newBuilder()
       .addIssues(Issues.Issue.newBuilder()
         .setRule("sonarjava:S123")
+        .setHash("hash")
+        .setMessage("Primary message")
+        .setTextRange(TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4))
         .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent("project:foo/bar/Hello.java"))
+        .setComponent("project:foo/bar/Hello.java")
+        .addFlows(Flow.newBuilder()
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent("project:foo/bar/Hello.java")
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 2").setComponent("project:foo/bar/Hello2.java")
+            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12))))
+        .addFlows(Flow.newBuilder()
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent("project:foo/bar/Hello3.java")
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 2").setComponent("project:foo/bar/Hello.java")
+            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))))
       .addComponents(Issues.Component.newBuilder()
         .setKey("project:foo/bar/Hello.java")
         .setPath("foo/bar/Hello.java"))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey("project:foo/bar/Hello2.java")
+        .setPath("foo/bar/Hello2.java"))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey("project:foo/bar/Hello3.java")
+        .setPath("foo/bar/Hello3.java"))
       .setPaging(Paging.newBuilder()
         .setPageIndex(1)
         .setPageSize(500)
@@ -72,6 +95,27 @@ class IssueDownloaderTests {
     IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
     List<ServerIssue> issues = issueDownloader.download(key, projectConfiguration, PROGRESS);
     assertThat(issues).hasSize(1);
+
+    ServerIssue serverIssue = issues.get(0);
+    assertThat(serverIssue.getChecksum()).isEqualTo("hash");
+    assertThat(serverIssue.getPrimaryLocation().getMsg()).isEqualTo("Primary message");
+    assertThat(serverIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartOffset()).isEqualTo(2);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndOffset()).isEqualTo(4);
+
+    assertThat(serverIssue.getFlowList()).hasSize(2);
+    assertThat(serverIssue.getFlow(0).getLocationList()).hasSize(2);
+    Location flowLocation12 = serverIssue.getFlow(0).getLocation(1);
+    assertThat(flowLocation12.getMsg()).isEqualTo("Flow 1 - Location 2");
+    assertThat(flowLocation12.getPath()).isEqualTo("foo/bar/Hello2.java");
+    assertThat(flowLocation12.getTextRange().getStartLine()).isEqualTo(9);
+    assertThat(flowLocation12.getTextRange().getStartOffset()).isEqualTo(10);
+    assertThat(flowLocation12.getTextRange().getEndLine()).isEqualTo(11);
+    assertThat(flowLocation12.getTextRange().getEndOffset()).isEqualTo(12);
+
+    assertThat(serverIssue.getFlow(1).getLocationList()).hasSize(2);
   }
 
   @Test

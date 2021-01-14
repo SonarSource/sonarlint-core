@@ -51,7 +51,7 @@ public class ServerIssueStore implements IssueStore {
   @Override
   public synchronized void save(List<ServerIssue> issues) {
     // organize everything in memory to avoid making an IO access per issue
-    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getPath));
+    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(issue -> issue.getPrimaryLocation().getPath()));
 
     for (Map.Entry<String, List<ServerIssue>> entry : issuesPerFile.entrySet()) {
       try {

@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.sonar.api.rule.RuleKey;
+import org.sonarqube.ws.Common.Flow;
+import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Issues.Component;
 import org.sonarqube.ws.Issues.Issue;
@@ -32,6 +34,7 @@ import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -57,7 +60,10 @@ public class IssueDownloader {
     searchUrl.append(getIssuesUrl(key));
     wsClient.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
-    Sonarlint.ServerIssue.Builder builder = Sonarlint.ServerIssue.newBuilder();
+    Sonarlint.ServerIssue.Builder issueBuilder = Sonarlint.ServerIssue.newBuilder();
+    Location.Builder locationBuilder = Location.newBuilder();
+    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder = Sonarlint.ServerIssue.TextRange.newBuilder();
+    Sonarlint.ServerIssue.Flow.Builder flowBuilder = Sonarlint.ServerIssue.Flow.newBuilder();
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
     Map<String, Component> componentsByKey = new HashMap<>();
     SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
@@ -68,38 +74,78 @@ public class IssueDownloader {
         componentsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Component::getKey, c -> c)));
         return r.getIssuesList();
       },
-      issue -> result.add(convertWsIssue(projectConfiguration, builder, issue, componentsByKey)),
+      issue -> result.add(convertWsIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, issue, componentsByKey)),
       true,
       progress);
 
     return result;
   }
 
-  private ServerIssue convertWsIssue(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder builder, Issue issue, Map<String, Component> componentsByKey) {
-    builder.clear();
-    RuleKey ruleKey = RuleKey.parse(issue.getRule());
-    Component component = componentsByKey.get(issue.getComponent());
-    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issue.getSubProject(), component.getPath());
-    builder
-      .setAssigneeLogin(issue.getAssignee())
-      .setChecksum(issue.getHash())
-      .setCreationDate(org.sonar.api.utils.DateUtils.parseDateTime(issue.getCreationDate()).getTime())
-      .setKey(issue.getKey())
-      .setLine(issue.getLine())
-      .setMsg(issue.getMessage())
-      .setPath(sqPath)
-      .setResolution(issue.getResolution())
+  private ServerIssue convertWsIssue(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
+    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs,
+    Map<String, Component> componentsByKey) {
+    issueBuilder.clear();
+    RuleKey ruleKey = RuleKey.parse(issueFromWs.getRule());
+    Location primary = buildPrimaryLocation(projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey);
+    issueBuilder
+      .setAssigneeLogin(issueFromWs.getAssignee())
+      .setChecksum(issueFromWs.getHash())
+      .setCreationDate(org.sonar.api.utils.DateUtils.parseDateTime(issueFromWs.getCreationDate()).getTime())
+      .setKey(issueFromWs.getKey())
+      .setPrimaryLocation(primary)
+      .setResolution(issueFromWs.getResolution())
       .setRuleKey(ruleKey.rule())
       .setRuleRepository(ruleKey.repository())
-      .setSeverity(issue.getSeverity().name())
-      .setStatus(issue.getStatus());
+      .setSeverity(issueFromWs.getSeverity().name())
+      .setStatus(issueFromWs.getStatus());
 
-    if (issue.hasType()) {
+    buildFlows(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, issueFromWs, componentsByKey);
+
+    if (issueFromWs.hasType()) {
       // type was added recently
-      builder.setType(issue.getType().name());
+      issueBuilder.setType(issueFromWs.getType().name());
     }
 
-    return builder.build();
+    return issueBuilder.build();
+  }
+
+  private void buildFlows(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
+    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs, Map<String, Component> componentsByKey) {
+    for (Flow flowFromWs : issueFromWs.getFlowsList()) {
+      flowBuilder.clear();
+
+      for (org.sonarqube.ws.Common.Location locationFromWs : flowFromWs.getLocationsList()) {
+        Component component = componentsByKey.get(locationFromWs.getComponent());
+        String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), component.getPath());
+        locationBuilder.clear();
+        locationBuilder.setPath(sqPath);
+        locationBuilder.setMsg(locationFromWs.getMsg());
+        copyTextRangeFromWs(locationBuilder, textRangeBuilder, locationFromWs.getTextRange());
+        flowBuilder.addLocation(locationBuilder);
+      }
+
+      issueBuilder.addFlow(flowBuilder);
+    }
+  }
+
+  private Location buildPrimaryLocation(ProjectConfiguration projectConfiguration, Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
+    Issue issueFromWs, Map<String, Component> componentsByKey) {
+    Component component = componentsByKey.get(issueFromWs.getComponent());
+    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), component.getPath());
+    locationBuilder.clear();
+    locationBuilder.setPath(sqPath);
+    locationBuilder.setMsg(issueFromWs.getMessage());
+    copyTextRangeFromWs(locationBuilder, textRangeBuilder, issueFromWs.getTextRange());
+    return locationBuilder.build();
+  }
+
+  private static void copyTextRangeFromWs(Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, TextRange textRange) {
+    textRangeBuilder.clear();
+    textRangeBuilder.setStartLine(textRange.getStartLine());
+    textRangeBuilder.setStartOffset(textRange.getStartOffset());
+    textRangeBuilder.setEndLine(textRange.getEndLine());
+    textRangeBuilder.setEndOffset(textRange.getEndOffset());
+    locationBuilder.setTextRange(textRangeBuilder);
   }
 
   private static String getIssuesUrl(String key) {
