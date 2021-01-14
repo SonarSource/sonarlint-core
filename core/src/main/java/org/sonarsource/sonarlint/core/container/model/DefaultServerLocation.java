@@ -17,31 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.container.model;
 
-import java.time.Instant;
-import java.util.List;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analyzer.issue.TextRangeLocation;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 
-public interface ServerIssue extends ServerIssueLocation {
-  String key();
+public class DefaultServerLocation extends TextRangeLocation implements ServerIssueLocation {
+  private final String message;
+  private final String filePath;
 
-  String resolution();
+  public DefaultServerLocation(@Nullable String filePath, @Nullable org.sonarsource.sonarlint.core.client.api.common.TextRange textRange, @Nullable String message) {
+    super(textRange);
+    this.filePath = filePath;
+    this.message = message;
+  }
 
-  String ruleKey();
+  @Override
+  public String getFilePath() {
+    return filePath;
+  }
 
-  String lineHash();
-
-  String assigneeLogin();
-
-  String severity();
-
-  String type();
-
-  Instant creationDate();
-
-  List<Flow> getFlows();
-
-  interface Flow {
-    List<ServerIssueLocation> locations();
+  @Override
+  public String getMessage() {
+    return message;
   }
 }

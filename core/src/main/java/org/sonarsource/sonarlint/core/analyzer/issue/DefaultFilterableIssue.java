@@ -25,6 +25,8 @@ import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
 
 public class DefaultFilterableIssue implements FilterableIssue {
   private final DefaultClientIssue rawIssue;
@@ -85,7 +87,12 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public TextRange textRange() {
-    return rawIssue.originalTextRange;
+    org.sonarsource.sonarlint.core.client.api.common.TextRange textRange = rawIssue.getTextRange();
+    if (textRange == null) {
+      return null;
+    }
+    return new DefaultTextRange(new DefaultTextPointer(textRange.getStartLine(), textRange.getStartLineOffset()),
+      new DefaultTextPointer(textRange.getEndLine(), textRange.getEndLineOffset()));
   }
 
 }

@@ -20,13 +20,15 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 public class DefaultServerIssue implements ServerIssue {
   private String key;
   private String resolution;
   private String ruleKey;
-  private int line;
   private String message;
   private String lineHash;
   private String assigneeLogin;
@@ -34,6 +36,8 @@ public class DefaultServerIssue implements ServerIssue {
   private Instant creationDate;
   private String severity;
   private String type;
+  private List<Flow> flows = new ArrayList<>();
+  private TextRange textRange;
 
   @Override
   public String key() {
@@ -51,12 +55,7 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public int line() {
-    return line;
-  }
-
-  @Override
-  public String message() {
+  public String getMessage() {
     return message;
   }
 
@@ -71,7 +70,7 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public String filePath() {
+  public String getFilePath() {
     return filePath;
   }
 
@@ -90,6 +89,16 @@ public class DefaultServerIssue implements ServerIssue {
     return type;
   }
 
+  @Override
+  public TextRange getTextRange() {
+    return textRange;
+  }
+
+  @Override
+  public List<Flow> getFlows() {
+    return flows;
+  }
+
   public DefaultServerIssue setKey(String key) {
     this.key = key;
     return this;
@@ -102,11 +111,6 @@ public class DefaultServerIssue implements ServerIssue {
 
   public DefaultServerIssue setRuleKey(String ruleKey) {
     this.ruleKey = ruleKey;
-    return this;
-  }
-
-  public DefaultServerIssue setLine(int line) {
-    this.line = line;
     return this;
   }
 
@@ -142,6 +146,16 @@ public class DefaultServerIssue implements ServerIssue {
 
   public DefaultServerIssue setType(String type) {
     this.type = type;
+    return this;
+  }
+
+  public DefaultServerIssue setTextRange(TextRange textRange) {
+    this.textRange = textRange;
+    return this;
+  }
+
+  public DefaultServerIssue setFlows(List<Flow> flows) {
+    this.flows = flows;
     return this;
   }
 }

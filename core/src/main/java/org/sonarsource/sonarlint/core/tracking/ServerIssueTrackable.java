@@ -50,7 +50,7 @@ public class ServerIssueTrackable implements Trackable {
   public String getSeverity() {
     return serverIssue.severity();
   }
-  
+
   @Override
   public String getType() {
     return serverIssue.type();
@@ -58,12 +58,12 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public String getMessage() {
-    return serverIssue.message();
+    return serverIssue.getMessage();
   }
 
   @Override
   public Integer getLine() {
-    return serverIssue.line();
+    return serverIssue.getStartLine();
   }
 
   @Override
@@ -73,7 +73,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public TextRange getTextRange() {
-    return new TextRange(serverIssue.line());
+    return serverIssue.getTextRange();
   }
 
   @Override

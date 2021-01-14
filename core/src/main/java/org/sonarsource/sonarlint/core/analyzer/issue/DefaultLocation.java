@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 
-public class DefaultLocation extends TextRangeLocation {
+public class DefaultLocation extends TextRangeLocation implements IssueLocation {
   private final String message;
   private final ClientInputFile inputFile;
 
