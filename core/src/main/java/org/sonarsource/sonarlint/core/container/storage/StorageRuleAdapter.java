@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Collection;
 import java.util.Locale;
-import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.RuleStatus;
@@ -30,7 +29,7 @@ import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 
 public class StorageRuleAdapter implements SonarLintRule {
 
-  private org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule r;
+  private final org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule r;
 
   public StorageRuleAdapter(org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule r) {
     this.r = r;
@@ -63,7 +62,7 @@ public class StorageRuleAdapter implements SonarLintRule {
 
   @Override
   public RuleType type() {
-    return StringUtils.isNotBlank(r.getType()) ? RuleType.valueOf(r.getType().toUpperCase(Locale.ENGLISH)) : null;
+    return RuleType.valueOf(r.getType().toUpperCase(Locale.ENGLISH));
   }
 
   @Override

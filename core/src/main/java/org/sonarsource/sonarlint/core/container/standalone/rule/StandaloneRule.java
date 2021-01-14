@@ -50,10 +50,10 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   private final String description;
   private final String internalKey;
   private final Map<String, DefaultStandaloneRuleParam> params;
-  private boolean isActiveByDefault;
+  private final boolean isActiveByDefault;
   private final Language language;
   private final String[] tags;
-  private Set<RuleKey> deprecatedKeys;
+  private final Set<RuleKey> deprecatedKeys;
 
   public StandaloneRule(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key());
@@ -125,6 +125,7 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
     return params.values().stream().map(p -> (StandaloneRuleParam) p).collect(toList());
   }
 
+  @Override
   public boolean isActiveByDefault() {
     return isActiveByDefault;
   }
@@ -156,7 +157,7 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
 
   @Override
   public String getType() {
-    return type != null ? type.name() : null;
+    return type.name();
   }
 
   @Override

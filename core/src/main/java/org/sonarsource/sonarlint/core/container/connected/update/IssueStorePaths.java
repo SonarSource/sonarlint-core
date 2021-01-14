@@ -94,8 +94,7 @@ public class IssueStorePaths {
     issue.setFilePath(idePath);
     issue.setMessage(pbIssue.getPrimaryLocation().getMsg());
     issue.setSeverity(pbIssue.getSeverity());
-    // type was added recently
-    issue.setType(pbIssue.getType().isEmpty() ? null : pbIssue.getType());
+    issue.setType(pbIssue.getType());
     issue.setCreationDate(Instant.ofEpochMilli(pbIssue.getCreationDate()));
     issue.setResolution(pbIssue.getResolution());
     issue.setKey(pbIssue.getKey());

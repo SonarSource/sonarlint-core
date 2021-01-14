@@ -138,20 +138,6 @@ public class IssueStoreReaderTest {
   }
 
   @Test
-  public void testDontSetTypeIfDoesntExist() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-
-    Sonarlint.ServerIssue serverIssue = Sonarlint.ServerIssue.newBuilder()
-      .setPrimaryLocation(Location.newBuilder().setPath("path"))
-      .build();
-
-    issueStore.save(Collections.singletonList(serverIssue));
-
-    ServerIssue issue = issueStoreReader.getServerIssues(projectBinding, "path").iterator().next();
-    assertThat(issue.type()).isNull();
-  }
-
-  @Test
   public void testSingleModule() {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
 

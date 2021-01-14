@@ -40,7 +40,6 @@ import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.rule.AdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.rules.RuleType;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFlow;
@@ -94,8 +93,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     String primaryMessage = defaultIfEmpty(issue.primaryLocation().message(), rule.name());
     org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
-    RuleType typeOrNull = rule.type();
-    String type = typeOrNull != null ? typeOrNull.name() : null;
+    String type = rule.type().name();
 
     List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows());
 

@@ -36,7 +36,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   private final Rule rule;
   private final List<Flow> flows;
 
-  public DefaultClientIssue(String severity, @Nullable String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
+  public DefaultClientIssue(String severity, String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows) {
     super(textRange);
     this.severity = severity;

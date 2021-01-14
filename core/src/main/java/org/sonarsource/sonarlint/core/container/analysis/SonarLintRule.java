@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.rules.RuleType;
 
 public interface SonarLintRule extends Rule {
 
-  @CheckForNull
   RuleType type();
 
 }
