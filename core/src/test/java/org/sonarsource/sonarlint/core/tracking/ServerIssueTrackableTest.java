@@ -32,7 +32,7 @@ public class ServerIssueTrackableTest {
   private final Trackable trackable = new ServerIssueTrackable(serverIssue);
 
   public ServerIssueTrackableTest() {
-    when(serverIssue.checksum()).thenReturn("blah");
+    when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolution()).thenReturn("non-empty");
   }
 
@@ -49,7 +49,7 @@ public class ServerIssueTrackableTest {
   @Test
   public void should_delegate_fields_to_protobuf_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.message());
-    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.checksum().hashCode());
+    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
     assertThat(trackable.isResolved()).isEqualTo(!serverIssue.resolution().isEmpty());
     assertThat(trackable.getAssignee()).isEqualTo(serverIssue.assigneeLogin());

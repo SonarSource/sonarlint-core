@@ -68,7 +68,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Integer getLineHash() {
-    return serverIssue.checksum().hashCode();
+    return serverIssue.lineHash().hashCode();
   }
 
   @Override

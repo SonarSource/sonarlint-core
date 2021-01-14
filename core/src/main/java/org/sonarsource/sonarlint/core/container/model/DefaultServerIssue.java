@@ -28,7 +28,7 @@ public class DefaultServerIssue implements ServerIssue {
   private String ruleKey;
   private int line;
   private String message;
-  private String checksum;
+  private String lineHash;
   private String assigneeLogin;
   private String filePath;
   private Instant creationDate;
@@ -61,8 +61,8 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public String checksum() {
-    return checksum;
+  public String lineHash() {
+    return lineHash;
   }
 
   @Override
@@ -115,8 +115,8 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setChecksum(String checksum) {
-    this.checksum = checksum;
+  public DefaultServerIssue setLineHash(String lineHash) {
+    this.lineHash = lineHash;
     return this;
   }
 

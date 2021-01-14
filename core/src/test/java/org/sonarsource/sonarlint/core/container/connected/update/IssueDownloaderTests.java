@@ -97,7 +97,7 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
 
     ServerIssue serverIssue = issues.get(0);
-    assertThat(serverIssue.getChecksum()).isEqualTo("hash");
+    assertThat(serverIssue.getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getPrimaryLocation().getMsg()).isEqualTo("Primary message");
     assertThat(serverIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(1);

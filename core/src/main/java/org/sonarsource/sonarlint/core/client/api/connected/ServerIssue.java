@@ -32,7 +32,7 @@ public interface ServerIssue {
 
   String message();
 
-  String checksum();
+  String lineHash();
 
   String assigneeLogin();
 
