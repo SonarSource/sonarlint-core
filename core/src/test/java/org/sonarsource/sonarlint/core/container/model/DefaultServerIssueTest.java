@@ -29,7 +29,7 @@ public class DefaultServerIssueTest {
   public void testRoundTrips() {
     DefaultServerIssue issue = new DefaultServerIssue();
     Instant i1 = Instant.ofEpochMilli(100_000_000);
-    assertThat(issue.setChecksum("checksum1").checksum()).isEqualTo("checksum1");
+    assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");
     assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
     assertThat(issue.setAssigneeLogin("login1").assigneeLogin()).isEqualTo("login1");
     assertThat(issue.setFilePath("path1").filePath()).isEqualTo("path1");

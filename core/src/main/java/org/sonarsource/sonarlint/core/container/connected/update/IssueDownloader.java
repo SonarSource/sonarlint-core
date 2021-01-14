@@ -89,7 +89,7 @@ public class IssueDownloader {
     Location primary = buildPrimaryLocation(projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey);
     issueBuilder
       .setAssigneeLogin(issueFromWs.getAssignee())
-      .setChecksum(issueFromWs.getHash())
+      .setLineHash(issueFromWs.getHash())
       .setCreationDate(org.sonar.api.utils.DateUtils.parseDateTime(issueFromWs.getCreationDate()).getTime())
       .setKey(issueFromWs.getKey())
       .setPrimaryLocation(primary)

@@ -395,7 +395,7 @@ public class IssueTrackerTest {
     ServerIssue serverIssue = mock(ServerIssue.class);
     when(serverIssue.ruleKey()).thenReturn(ruleKey);
     when(serverIssue.message()).thenReturn(message);
-    when(serverIssue.checksum()).thenReturn(DigestUtils.digest(lineContent));
+    when(serverIssue.lineHash()).thenReturn(DigestUtils.digest(lineContent));
     when(serverIssue.line()).thenReturn(newLine + 3);
     when(serverIssue.creationDate()).thenReturn(Instant.now());
     when(serverIssue.key()).thenReturn(serverIssueKey);

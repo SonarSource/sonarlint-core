@@ -89,7 +89,7 @@ public class IssueStorePaths {
   public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String idePath) {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
-    issue.setChecksum(pbIssue.getChecksum());
+    issue.setLineHash(pbIssue.getLineHash());
     issue.setLine(pbIssue.getPrimaryLocation().getTextRange().getStartLine());
     issue.setFilePath(idePath);
     issue.setMessage(pbIssue.getPrimaryLocation().getMsg());
