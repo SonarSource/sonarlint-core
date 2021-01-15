@@ -162,7 +162,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     DefaultExecutor executor = new DefaultExecutor();
     executor.setWorkingDirectory(new File("projects/sample-java"));
     int exitValue = executor.execute(cmdLine);
-    assertThat(exitValue).isEqualTo(0);
+    assertThat(exitValue).isZero();
   }
 
   @AfterClass

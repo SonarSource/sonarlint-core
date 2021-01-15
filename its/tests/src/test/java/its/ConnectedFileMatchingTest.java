@@ -116,7 +116,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     assertThat(projectBinding.sqPathPrefix()).isEmpty();
     assertThat(projectBinding.idePathPrefix()).isEmpty();
     List<ServerIssue> serverIssues = engine.downloadServerIssues(getServerConfig(), projectBinding,
-      "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+      "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", null);
     assertThat(serverIssues).hasSize(2);
   }
 
@@ -135,7 +135,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("module_b/module_b1");
     assertThat(projectBinding.idePathPrefix()).isEmpty();
     List<ServerIssue> serverIssues = engine.downloadServerIssues(getServerConfig(), projectBinding,
-      "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+      "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", null);
     assertThat(serverIssues).hasSize(2);
   }
 

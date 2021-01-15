@@ -99,13 +99,11 @@ message ActiveRules {
 
 message ServerIssue {
   string path = 1;
-  string module_key = 2;
   string rule_repository = 3;
   string rule_key = 4;
   int32 line = 5;
   string msg = 6;
   string severity = 7;
-  bool manual_severity = 8;
   string resolution = 9;
   string status = 10;
   string checksum = 11;

@@ -150,17 +150,17 @@ public class StorageContainerHandler {
     return storageExclusions.getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
+  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath, ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, ideFilePath);
+    updater.updateFileIssues(projectBinding, configuration, ideFilePath, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
+  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey, ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(projectKey, configuration);
+    updater.updateFileIssues(projectKey, configuration, progress);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {

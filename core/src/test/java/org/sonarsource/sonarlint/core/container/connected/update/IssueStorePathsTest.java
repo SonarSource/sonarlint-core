@@ -20,15 +20,13 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import org.junit.Test;
-import org.sonar.scanner.protocol.Constants;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IssueStorePathsTest {
-  private IssueStorePaths issueStorePaths = new IssueStorePaths();
+  private final IssueStorePaths issueStorePaths = new IssueStorePaths();
 
   @Test
   public void local_path_to_sq_path_uses_both_prefixes() {
@@ -105,45 +103,4 @@ public class IssueStorePathsTest {
     assertThat(fileKey).isNull();
   }
 
-  @Test
-  public void to_storage_issue() {
-    ScannerInput.ServerIssue issue = ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey("moduleA")
-      .setPath("path")
-      .setKey("key")
-      .setRuleKey("ruleKey")
-      .setAssigneeLogin("login")
-      .setChecksum("checksum")
-      .setMsg("msg")
-      .setSeverity(Constants.Severity.BLOCKER)
-      .setLine(10)
-      .setPath("path")
-      .setResolution("resolution")
-      .setType("BUG")
-      .setStatus("OPEN")
-      .setRuleRepository("repo")
-      .setCreationDate(1000L)
-      .build();
-
-    Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder()
-      .putModulePathByKey("root", "project")
-      .putModulePathByKey("moduleA", "project/A")
-      .putModulePathByKey("moduleB", "project/B")
-      .build();
-
-    Sonarlint.ServerIssue serverIssue = issueStorePaths.toStorageIssue(issue, projectConfiguration);
-    assertThat(serverIssue.getPath()).isEqualTo("project/A/path");
-    assertThat(serverIssue.getType()).isEqualTo("BUG");
-    assertThat(serverIssue.getAssigneeLogin()).isEqualTo("login");
-    assertThat(serverIssue.getModuleKey()).isEqualTo("moduleA");
-    assertThat(serverIssue.getChecksum()).isEqualTo("checksum");
-    assertThat(serverIssue.getCreationDate()).isEqualTo(1000L);
-    assertThat(serverIssue.getKey()).isEqualTo("key");
-    assertThat(serverIssue.getMsg()).isEqualTo("msg");
-    assertThat(serverIssue.getResolution()).isEqualTo("resolution");
-    assertThat(serverIssue.getStatus()).isEqualTo("OPEN");
-    assertThat(serverIssue.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(serverIssue.getRuleRepository()).isEqualTo("repo");
-    assertThat(serverIssue.getSeverity()).isEqualTo("BLOCKER");
-  }
 }

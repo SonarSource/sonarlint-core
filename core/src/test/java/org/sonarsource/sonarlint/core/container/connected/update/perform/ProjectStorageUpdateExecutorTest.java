@@ -41,7 +41,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.WsClientTestUtils;
@@ -63,6 +62,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 import org.sonarsource.sonarlint.core.util.ws.WsResponse;
@@ -96,15 +96,15 @@ public class ProjectStorageUpdateExecutorTest {
   private final String organizationKey;
   private SonarLintWsClient wsClient;
   private ProjectStorageUpdateExecutor projectUpdate;
-  private StoragePaths storagePaths = mock(StoragePaths.class);
-  private StorageReader storageReader = mock(StorageReader.class);
-  private TempFolder tempFolder = mock(TempFolder.class);
-  private ModuleHierarchyDownloader moduleHierarchy = mock(ModuleHierarchyDownloader.class);
-  private IssueStore issueStore = new InMemoryIssueStore();
-  private IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
-  private ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
+  private final StoragePaths storagePaths = mock(StoragePaths.class);
+  private final StorageReader storageReader = mock(StorageReader.class);
+  private final TempFolder tempFolder = mock(TempFolder.class);
+  private final ModuleHierarchyDownloader moduleHierarchy = mock(ModuleHierarchyDownloader.class);
+  private final IssueStore issueStore = new InMemoryIssueStore();
+  private final IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
+  private final ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
   private ProjectConfigurationDownloader projectConfigurationDownloader;
-  private ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
+  private final ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
 
   public ProjectStorageUpdateExecutorTest(@Nullable String organizationKey) {
     this.organizationKey = organizationKey;
@@ -228,35 +228,30 @@ public class ProjectStorageUpdateExecutorTest {
 
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(temp.newFolder().toPath());
 
-    ScannerInput.ServerIssue fileIssue1 = ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey("someModuleKey")
+    ServerIssue fileIssue1 = ServerIssue.newBuilder()
       .setPath("some/path")
       .setRuleKey("squid:x")
       .build();
-    ScannerInput.ServerIssue fileIssue2 = ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey("someModuleKey")
+    ServerIssue fileIssue2 = ServerIssue.newBuilder()
       .setPath("some/path")
       .setRuleKey("squid:y")
       .build();
-    ScannerInput.ServerIssue anotherFileIssue = ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey("someModuleKey")
+    ServerIssue anotherFileIssue = ServerIssue.newBuilder()
       .setPath("another/path")
       .build();
-    ScannerInput.ServerIssue notDownloadedIssue = ScannerInput.ServerIssue.newBuilder()
-      .setModuleKey("someModuleKey")
+    ServerIssue notDownloadedIssue = ServerIssue.newBuilder()
       .setPath("yet/another/path")
       .build();
 
-    IssueDownloader issueDownloader = projectKey -> Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue);
+    IssueDownloader issueDownloader = mock(IssueDownloader.class);
+    when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(ProgressWrapper.class)))
+      .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
     projectUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, tempFolder, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
     projectUpdate.update(MODULE_KEY_WITH_BRANCH, new ProgressWrapper(null));
 
-    // TODO
-    // assertThat(issueStore.load("TODO")).containsOnly(fileIssue1, fileIssue2);
-    // assertThat(issueStore.load("TODO")).containsOnly(anotherFileIssue);
-    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class));
+    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), any(ProgressWrapper.class));
   }
 
   @Test
@@ -265,9 +260,9 @@ public class ProjectStorageUpdateExecutorTest {
     projectUpdate = new ProjectStorageUpdateExecutor(storageReader, storagePaths, wsClient, tempFolder, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
     ProjectConfiguration.Builder projectConfigurationBuilder = ProjectConfiguration.newBuilder();
-    projectConfigurationBuilder.getMutableModulePathByKey().put("rootModule", "");
-    projectConfigurationBuilder.getMutableModulePathByKey().put("moduleA", "A");
-    projectConfigurationBuilder.getMutableModulePathByKey().put("moduleB", "B");
+    projectConfigurationBuilder.putModulePathByKey("rootModule", "");
+    projectConfigurationBuilder.putModulePathByKey("moduleA", "A");
+    projectConfigurationBuilder.putModulePathByKey("moduleB", "B");
 
     List<String> fileList = new ArrayList<>();
     fileList.add("rootModule:pom.xml");

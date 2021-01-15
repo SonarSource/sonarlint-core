@@ -153,8 +153,7 @@ public class SonarLintWsClient {
 
   private static String tryParseAsJsonError(String responseContent) {
     try {
-      JsonParser parser = new JsonParser();
-      JsonObject obj = parser.parse(responseContent).getAsJsonObject();
+      JsonObject obj = JsonParser.parseString(responseContent).getAsJsonObject();
       JsonArray errors = obj.getAsJsonArray("errors");
       List<String> errorMessages = new ArrayList<>();
       for (JsonElement e : errors) {
@@ -197,6 +196,9 @@ public class SonarLintWsClient {
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging, Function<G, List<F>> itemExtractor,
     Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded, WsResponse response)
     throws IOException {
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
     G protoBufResponse = responseParser.apply(response.contentStream());
     List<F> items = itemExtractor.apply(protoBufResponse);
     for (F item : items) {

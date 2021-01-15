@@ -66,7 +66,7 @@ public class ProjectStorageUpdateExecutor {
 
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
-      updateServerIssues(projectKey, temp, projectConfiguration);
+      updateServerIssues(projectKey, temp, projectConfiguration, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
@@ -104,9 +104,9 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(StoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration) {
+  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
     Path basedir = temp.resolve(StoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir);
+    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, progress);
   }
 
   private void updateStatus(Path temp) {

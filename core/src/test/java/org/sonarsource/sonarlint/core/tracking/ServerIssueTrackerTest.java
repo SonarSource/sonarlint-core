@@ -32,12 +32,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class ServerIssueTrackerTest {
-  private String projectKey = "dummy project";
-  private String filePath = "dummy file";
-  private ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
-  private ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
-  private ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-  private ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
+  private final String projectKey = "dummy project";
+  private final String filePath = "dummy file";
+  private final ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
+  private final ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
+  private final ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
+  private final ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
 
   @Test
   public void should_get_issues_from_engine_without_downloading() {
@@ -50,15 +50,15 @@ public class ServerIssueTrackerTest {
   @Test
   public void should_download_issues_from_engine() {
     tracker.update(serverConfiguration, engine, projectBinding, Collections.singleton(filePath));
-    verify(engine).downloadServerIssues(serverConfiguration, projectBinding, filePath);
+    verify(engine).downloadServerIssues(serverConfiguration, projectBinding, filePath, null);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
   public void should_get_issues_from_engine_if_download_failed() {
-    when(engine.downloadServerIssues(serverConfiguration, projectBinding, filePath)).thenThrow(new DownloadException());
+    when(engine.downloadServerIssues(serverConfiguration, projectBinding, filePath, null)).thenThrow(new DownloadException());
     tracker.update(serverConfiguration, engine, projectBinding, Collections.singleton(filePath));
-    verify(engine).downloadServerIssues(serverConfiguration, projectBinding, filePath);
+    verify(engine).downloadServerIssues(serverConfiguration, projectBinding, filePath, null);
     verify(engine).getServerIssues(projectBinding, filePath);
     verifyNoMoreInteractions(engine);
   }

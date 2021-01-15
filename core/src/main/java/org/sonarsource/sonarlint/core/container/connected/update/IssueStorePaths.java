@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.time.Instant;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
@@ -76,33 +75,6 @@ public class IssueStorePaths {
     return sqPathPrefix + ideFilePath.substring(localPrefixLen);
   }
 
-  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue, Sonarlint.ProjectConfiguration projectConfiguration) {
-    String sqPath = fileKeyToSqPath(projectConfiguration, issue.getModuleKey(), issue.getPath());
-
-    Sonarlint.ServerIssue.Builder builder = Sonarlint.ServerIssue.newBuilder()
-      .setAssigneeLogin(issue.getAssigneeLogin())
-      .setChecksum(issue.getChecksum())
-      .setCreationDate(issue.getCreationDate())
-      .setKey(issue.getKey())
-      .setLine(issue.getLine())
-      .setManualSeverity(issue.getManualSeverity())
-      .setModuleKey(issue.getModuleKey())
-      .setMsg(issue.getMsg())
-      .setPath(sqPath)
-      .setResolution(issue.getResolution())
-      .setRuleKey(issue.getRuleKey())
-      .setRuleRepository(issue.getRuleRepository())
-      .setSeverity(issue.getSeverity().name())
-      .setStatus(issue.getStatus());
-
-    if (issue.hasType()) {
-      // type was added recently
-      builder.setType(issue.getType());
-    }
-
-    return builder.build();
-  }
-
   public String fileKeyToSqPath(Sonarlint.ProjectConfiguration projectConfiguration, String fileModuleKey, String filePath) {
     Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
 
@@ -118,10 +90,8 @@ public class IssueStorePaths {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setChecksum(pbIssue.getChecksum());
-    issue.setModuleKey(pbIssue.getModuleKey());
     issue.setLine(pbIssue.getLine());
     issue.setFilePath(idePath);
-    issue.setManualSeverity(pbIssue.getManualSeverity());
     issue.setMessage(pbIssue.getMsg());
     issue.setSeverity(pbIssue.getSeverity());
     // type was added recently

@@ -24,7 +24,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -43,9 +42,8 @@ public class PartialUpdaterFactory {
   public PartialUpdater create(ServerConfiguration serverConfig) {
     SonarLintWsClient client = new SonarLintWsClient(serverConfig);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloaderImpl(client);
+    IssueDownloader downloader = new IssueDownloader(client, issueStorePaths);
     ProjectListDownloader projectListDownloader = new ProjectListDownloader(client);
-    return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader,
-      issueStorePaths, tempFolder);
+    return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
   }
 }
