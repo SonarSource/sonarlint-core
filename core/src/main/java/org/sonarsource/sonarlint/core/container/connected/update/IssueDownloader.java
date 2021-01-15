@@ -20,22 +20,22 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Issues.Component;
+import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
-
-  private static final Logger LOG = Loggers.get(IssueDownloader.class);
 
   private final SonarLintWsClient wsClient;
   private final IssueStorePaths issueStorePaths;
@@ -59,44 +59,47 @@ public class IssueDownloader {
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
     Sonarlint.ServerIssue.Builder builder = Sonarlint.ServerIssue.newBuilder();
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
+    Map<String, Component> componentsByKey = new HashMap<>();
     SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
       Issues.SearchWsResponse::parseFrom,
       Issues.SearchWsResponse::getPaging,
-      Issues.SearchWsResponse::getIssuesList,
-      (issue, response) -> {
-        builder.clear();
-        RuleKey ruleKey = RuleKey.parse(issue.getRule());
-        Optional<Component> component = response.getComponentsList().stream().filter(c -> c.getKey().equals(issue.getComponent())).findFirst();
-        if (!component.isPresent()) {
-          LOG.warn("WS did not return component {}", issue.getComponent());
-          return;
-        }
-        String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issue.getSubProject(), component.get().getPath());
-        builder
-          .setAssigneeLogin(issue.getAssignee())
-          .setChecksum(issue.getHash())
-          .setCreationDate(org.sonar.api.utils.DateUtils.parseDateTimeQuietly(issue.getCreationDate()).getTime())
-          .setKey(issue.getKey())
-          .setLine(issue.getLine())
-          .setMsg(issue.getMessage())
-          .setPath(sqPath)
-          .setResolution(issue.getResolution())
-          .setRuleKey(ruleKey.rule())
-          .setRuleRepository(ruleKey.repository())
-          .setSeverity(issue.getSeverity().name())
-          .setStatus(issue.getStatus());
-
-        if (issue.hasType()) {
-          // type was added recently
-          builder.setType(issue.getType().name());
-        }
-
-        result.add(builder.build());
+      r -> {
+        componentsByKey.clear();
+        componentsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Component::getKey, c -> c)));
+        return r.getIssuesList();
       },
+      issue -> result.add(convertWsIssue(projectConfiguration, builder, issue, componentsByKey)),
       true,
       progress);
 
     return result;
+  }
+
+  private ServerIssue convertWsIssue(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder builder, Issue issue, Map<String, Component> componentsByKey) {
+    builder.clear();
+    RuleKey ruleKey = RuleKey.parse(issue.getRule());
+    Component component = componentsByKey.get(issue.getComponent());
+    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issue.getSubProject(), component.getPath());
+    builder
+      .setAssigneeLogin(issue.getAssignee())
+      .setChecksum(issue.getHash())
+      .setCreationDate(org.sonar.api.utils.DateUtils.parseDateTime(issue.getCreationDate()).getTime())
+      .setKey(issue.getKey())
+      .setLine(issue.getLine())
+      .setMsg(issue.getMessage())
+      .setPath(sqPath)
+      .setResolution(issue.getResolution())
+      .setRuleKey(ruleKey.rule())
+      .setRuleRepository(ruleKey.repository())
+      .setSeverity(issue.getSeverity().name())
+      .setStatus(issue.getStatus());
+
+    if (issue.hasType()) {
+      // type was added recently
+      builder.setType(issue.getType().name());
+    }
+
+    return builder.build();
   }
 
   private static String getIssuesUrl(String key) {

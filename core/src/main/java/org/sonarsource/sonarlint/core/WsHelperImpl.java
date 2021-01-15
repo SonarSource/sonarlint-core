@@ -193,7 +193,7 @@ public class WsHelperImpl implements WsHelper {
       Organizations.SearchWsResponse::parseFrom,
       Organizations.SearchWsResponse::getPaging,
       Organizations.SearchWsResponse::getOrganizationsList,
-      (org, resp) -> result.add(new DefaultRemoteOrganization(org)),
+      org -> result.add(new DefaultRemoteOrganization(org)),
       false,
       progress);
 

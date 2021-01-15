@@ -59,7 +59,7 @@ public class ModuleHierarchyDownloader {
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,
-      (module, response) -> modules.add(module),
+      modules::add,
       true,
       progress);
 

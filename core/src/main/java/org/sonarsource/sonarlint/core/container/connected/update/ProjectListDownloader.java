@@ -50,7 +50,7 @@ public class ProjectListDownloader {
       Components.SearchWsResponse::parseFrom,
       Components.SearchWsResponse::getPaging,
       Components.SearchWsResponse::getComponentsList,
-      (project, response) -> {
+      project -> {
         projectBuilder.clear();
         projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
           .setKey(project.getKey())
