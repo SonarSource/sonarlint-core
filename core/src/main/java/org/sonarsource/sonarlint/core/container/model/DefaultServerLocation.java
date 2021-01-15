@@ -22,12 +22,13 @@ package org.sonarsource.sonarlint.core.container.model;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analyzer.issue.TextRangeLocation;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 
 public class DefaultServerLocation extends TextRangeLocation implements ServerIssueLocation {
   private final String message;
   private final String filePath;
 
-  public DefaultServerLocation(@Nullable String filePath, @Nullable org.sonarsource.sonarlint.core.client.api.common.TextRange textRange, @Nullable String message) {
+  public DefaultServerLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message) {
     super(textRange);
     this.filePath = filePath;
     this.message = message;

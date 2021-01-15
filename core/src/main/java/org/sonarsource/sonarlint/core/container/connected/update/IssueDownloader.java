@@ -120,7 +120,9 @@ public class IssueDownloader {
         locationBuilder.clear();
         locationBuilder.setPath(sqPath);
         locationBuilder.setMsg(locationFromWs.getMsg());
-        copyTextRangeFromWs(locationBuilder, textRangeBuilder, locationFromWs.getTextRange());
+        if (locationFromWs.hasTextRange()) {
+          copyTextRangeFromWs(locationBuilder, textRangeBuilder, locationFromWs.getTextRange());
+        }
         flowBuilder.addLocation(locationBuilder);
       }
 
@@ -135,16 +137,18 @@ public class IssueDownloader {
     locationBuilder.clear();
     locationBuilder.setPath(sqPath);
     locationBuilder.setMsg(issueFromWs.getMessage());
-    copyTextRangeFromWs(locationBuilder, textRangeBuilder, issueFromWs.getTextRange());
+    if (issueFromWs.hasTextRange()) {
+      copyTextRangeFromWs(locationBuilder, textRangeBuilder, issueFromWs.getTextRange());
+    }
     return locationBuilder.build();
   }
 
   private static void copyTextRangeFromWs(Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, TextRange textRange) {
     textRangeBuilder.clear();
     textRangeBuilder.setStartLine(textRange.getStartLine());
-    textRangeBuilder.setStartOffset(textRange.getStartOffset());
+    textRangeBuilder.setStartLineOffset(textRange.getStartOffset());
     textRangeBuilder.setEndLine(textRange.getEndLine());
-    textRangeBuilder.setEndOffset(textRange.getEndOffset());
+    textRangeBuilder.setEndLineOffset(textRange.getEndOffset());
     locationBuilder.setTextRange(textRangeBuilder);
   }
 

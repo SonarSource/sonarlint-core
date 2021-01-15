@@ -101,9 +101,9 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getPrimaryLocation().getMsg()).isEqualTo("Primary message");
     assertThat(serverIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartOffset()).isEqualTo(2);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndOffset()).isEqualTo(4);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLineOffset()).isEqualTo(4);
 
     assertThat(serverIssue.getFlowList()).hasSize(2);
     assertThat(serverIssue.getFlow(0).getLocationList()).hasSize(2);
@@ -111,9 +111,9 @@ class IssueDownloaderTests {
     assertThat(flowLocation12.getMsg()).isEqualTo("Flow 1 - Location 2");
     assertThat(flowLocation12.getPath()).isEqualTo("foo/bar/Hello2.java");
     assertThat(flowLocation12.getTextRange().getStartLine()).isEqualTo(9);
-    assertThat(flowLocation12.getTextRange().getStartOffset()).isEqualTo(10);
+    assertThat(flowLocation12.getTextRange().getStartLineOffset()).isEqualTo(10);
     assertThat(flowLocation12.getTextRange().getEndLine()).isEqualTo(11);
-    assertThat(flowLocation12.getTextRange().getEndOffset()).isEqualTo(12);
+    assertThat(flowLocation12.getTextRange().getEndLineOffset()).isEqualTo(12);
 
     assertThat(serverIssue.getFlow(1).getLocationList()).hasSize(2);
   }

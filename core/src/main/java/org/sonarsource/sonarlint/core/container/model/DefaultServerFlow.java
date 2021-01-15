@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
@@ -32,7 +31,7 @@ public class DefaultServerFlow implements ServerIssue.Flow {
   public DefaultServerFlow(List<Location> list) {
     this.locations = list.stream()
       .map(i -> new DefaultServerLocation(i.getPath(),
-        new TextRange(i.getTextRange().getStartLine(), i.getTextRange().getStartOffset(), i.getTextRange().getEndLine(), i.getTextRange().getEndOffset()),
+        i.hasTextRange() ? i.getTextRange() : null,
         i.getMsg()))
       .collect(Collectors.toList());
   }
