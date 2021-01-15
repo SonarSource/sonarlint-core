@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,7 +41,9 @@ import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Flow;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -216,6 +219,47 @@ public class IssueStoreReaderTest {
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createApiIssue("src/path1"));
+  }
+
+  @Test
+  public void canReadFlowsFromStorage() {
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
+
+    // setup issues
+    issueStore.save(Collections.singletonList(Sonarlint.ServerIssue.newBuilder()
+      .setPrimaryLocation(
+        Location.newBuilder().setPath("src/path1").setMsg("Primary").setTextRange(TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3).setEndLineOffset(4)))
+      .addFlow(Flow.newBuilder()
+        .addLocation(Location.newBuilder().setPath("src/path1").setMsg("Flow 1 - Location 1")
+          .setTextRange(TextRange.newBuilder().setStartLine(5).setStartLineOffset(6).setEndLine(7).setEndLineOffset(8)))
+        .addLocation(Location.newBuilder().setPath("src/path1").setMsg("Flow 1 - Location 2 - Without text range"))
+        .addLocation(Location.newBuilder().setPath("src/path2")))
+      .build()));
+
+    List<ServerIssue> issuesReadFromStorage = issueStoreReader.getServerIssues(projectBinding, "src/path1");
+    assertThat(issuesReadFromStorage).hasSize(1);
+    ServerIssue serverIssue = issuesReadFromStorage.get(0);
+    assertThat(serverIssue.getFilePath()).isEqualTo("src/path1");
+    assertThat(serverIssue.getMessage()).isEqualTo("Primary");
+    assertThat(serverIssue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(serverIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(serverIssue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(serverIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+
+    assertThat(serverIssue.getFlows()).hasSize(1);
+    assertThat(serverIssue.getFlows().get(0).locations()).hasSize(3);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getFilePath()).isEqualTo("src/path1");
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getMessage()).isEqualTo("Flow 1 - Location 1");
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLineOffset()).isEqualTo(6);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLine()).isEqualTo(7);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLineOffset()).isEqualTo(8);
+
+    assertThat(serverIssue.getFlows().get(0).locations().get(1).getMessage()).isEqualTo("Flow 1 - Location 2 - Without text range");
+    assertThat(serverIssue.getFlows().get(0).locations().get(1).getTextRange()).isNull();
+
+    assertThat(serverIssue.getFlows().get(0).locations().get(2).getMessage()).isEmpty();
+    assertThat(serverIssue.getFlows().get(0).locations().get(2).getFilePath()).isEqualTo("src/path2");
   }
 
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {

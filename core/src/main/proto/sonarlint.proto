@@ -123,9 +123,9 @@ message ServerIssue {
 
 	message TextRange {
 	  int32 start_line = 1;
-	  int32 start_offset = 2;
+	  int32 start_line_offset = 2;
 	  int32 end_line = 3;
-	  int32 end_offset = 4;
+	  int32 end_line_offset = 4;
 	}
 }
 

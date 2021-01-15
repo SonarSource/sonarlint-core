@@ -36,7 +36,7 @@ public abstract class TextRangeLocation implements IssueRangeAndMessage {
       : null;
   }
 
-  protected TextRangeLocation(@Nullable org.sonarsource.sonarlint.core.client.api.common.TextRange serverStorageTextRange) {
+  protected TextRangeLocation(@Nullable org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange serverStorageTextRange) {
     this.textRange = serverStorageTextRange != null ? new org.sonarsource.sonarlint.core.client.api.common.TextRange(
       serverStorageTextRange.getStartLine(),
       serverStorageTextRange.getStartLineOffset(),

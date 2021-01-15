@@ -92,8 +92,10 @@ public class IssueStorePaths {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setLineHash(pbIssue.getLineHash());
-    Sonarlint.ServerIssue.TextRange textRange = pbIssue.getPrimaryLocation().getTextRange();
-    issue.setTextRange(new TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset()));
+    if (pbIssue.getPrimaryLocation().hasTextRange()) {
+      Sonarlint.ServerIssue.TextRange textRange = pbIssue.getPrimaryLocation().getTextRange();
+      issue.setTextRange(new TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset()));
+    }
     issue.setFilePath(idePath);
     issue.setMessage(pbIssue.getPrimaryLocation().getMsg());
     issue.setSeverity(pbIssue.getSeverity());
