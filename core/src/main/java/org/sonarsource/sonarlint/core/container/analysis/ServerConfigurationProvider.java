@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 /**
- * Can't put {@link ServerConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
+ * Can't put {@link ConnectionConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
  *
  */
 public class ServerConfigurationProvider {

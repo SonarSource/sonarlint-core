@@ -133,7 +133,6 @@ public class ConnectedIssueMediumTest {
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();
@@ -146,7 +145,6 @@ public class ConnectedIssueMediumTest {
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
@@ -315,7 +313,7 @@ public class ConnectedIssueMediumTest {
   }
 
   static class StoreIssueListener implements IssueListener {
-    private List<Issue> issues;
+    private final List<Issue> issues;
 
     StoreIssueListener(List<Issue> issues) {
       this.issues = issues;

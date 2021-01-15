@@ -66,7 +66,7 @@ public class IssueDownloader {
     Sonarlint.ServerIssue.Flow.Builder flowBuilder = Sonarlint.ServerIssue.Flow.newBuilder();
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
     Map<String, Component> componentsByKey = new HashMap<>();
-    SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
+    wsClient.getPaginated(searchUrl.toString(),
       Issues.SearchWsResponse::parseFrom,
       Issues.SearchWsResponse::getPaging,
       r -> {

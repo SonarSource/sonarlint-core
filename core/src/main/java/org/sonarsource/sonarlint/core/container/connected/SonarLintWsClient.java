@@ -35,22 +35,23 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common.Paging;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.ws.GetRequest;
-import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
-import org.sonarsource.sonarlint.core.util.ws.PostRequest;
-import org.sonarsource.sonarlint.core.util.ws.WsConnector;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.stream.Collectors.joining;
 
+/**
+ * Wrapper around SonarLintHttpClient to avoid repetitive code, like support of pagination, and log timing of requests
+ */
 public class SonarLintWsClient {
 
   private static final Logger LOG = Loggers.get(SonarLintWsClient.class);
@@ -58,55 +59,18 @@ public class SonarLintWsClient {
   public static final int PAGE_SIZE = 500;
   public static final int MAX_PAGES = 20;
 
-  private final WsConnector client;
-  private final String userAgent;
-  private final String organizationKey;
+  private final SonarLintHttpClient client;
+  private final ConnectedModeEndpoint endpoint;
 
-  public SonarLintWsClient(ServerConfiguration serverConfig) {
-    this.userAgent = serverConfig.getUserAgent();
-    this.organizationKey = serverConfig.getOrganizationKey();
-    client = buildClient(serverConfig);
+  public SonarLintWsClient(ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
+    this.endpoint = endpoint;
+    this.client = client;
   }
 
-  private static WsConnector buildClient(ServerConfiguration serverConfig) {
-    return HttpConnector.newBuilder().url(serverConfig.getUrl())
-      .userAgent(serverConfig.getUserAgent())
-      .credentials(serverConfig.getLogin(), serverConfig.getPassword())
-      .proxy(serverConfig.getProxy())
-      .proxyCredentials(serverConfig.getProxyLogin(), serverConfig.getProxyPassword())
-      .readTimeoutMilliseconds(serverConfig.getReadTimeoutMs())
-      .connectTimeoutMilliseconds(serverConfig.getConnectTimeoutMs())
-      .setSSLSocketFactory(serverConfig.getSSLSocketFactory())
-      .setTrustManager(serverConfig.getTrustManager())
-      .build();
-  }
-
-  public WsResponse get(String path) {
-    WsResponse response = rawGet(path);
+  public SonarLintHttpClient.Response get(String path) {
+    SonarLintHttpClient.Response response = rawGet(path);
     if (!response.isSuccessful()) {
       throw handleError(response);
-    }
-    return response;
-  }
-
-  public WsResponse post(String path) {
-    WsResponse response = rawPost(path);
-    if (!response.isSuccessful()) {
-      throw handleError(response);
-    }
-    return response;
-  }
-
-  /**
-   * Execute POST and don't check response
-   */
-  public WsResponse rawPost(String path) {
-    long startTime = System2.INSTANCE.now();
-    PostRequest request = new PostRequest(path);
-    WsResponse response = client.call(request);
-    long duration = System2.INSTANCE.now() - startTime;
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("{} {} {} | response time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
     }
     return response;
   }
@@ -114,92 +78,103 @@ public class SonarLintWsClient {
   /**
    * Execute GET and don't check response
    */
-  public WsResponse rawGet(String path) {
+  public SonarLintHttpClient.Response rawGet(String relativePath) {
     long startTime = System2.INSTANCE.now();
-    GetRequest request = new GetRequest(path);
-    WsResponse response = client.call(request);
+    StringBuilder fullUrl = new StringBuilder();
+    String endpointUrl = endpoint.getBaseUrl();
+    fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
+    fullUrl.append("/");
+    fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1, relativePath.length()) : relativePath);
+    String url = fullUrl.toString();
+
+    SonarLintHttpClient.Response response = client.get(url);
     long duration = System2.INSTANCE.now() - startTime;
     if (LOG.isDebugEnabled()) {
-      LOG.debug("{} {} {} | response time={}ms", request.getMethod(), response.code(), response.requestUrl(), duration);
+      LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
     }
     return response;
   }
 
-  public static RuntimeException handleError(WsResponse toBeClosed) {
-    try (WsResponse failedResponse = toBeClosed) {
+  public static RuntimeException handleError(SonarLintHttpClient.Response toBeClosed) {
+    try (SonarLintHttpClient.Response failedResponse = toBeClosed) {
       if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
         return new IllegalStateException("Not authorized. Please check server credentials.");
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_FORBIDDEN) {
         // Details are in response content
-        return new IllegalStateException(tryParseAsJsonError(failedResponse.content()));
+        return new IllegalStateException(tryParseAsJsonError(failedResponse));
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_NOT_FOUND) {
         return new NotFoundException(formatHttpFailedResponse(failedResponse, null));
       }
 
-      String errorMsg = null;
-      if (failedResponse.hasContent()) {
-        errorMsg = tryParseAsJsonError(failedResponse.content());
-      }
+      String errorMsg = tryParseAsJsonError(failedResponse);
 
       return new IllegalStateException(formatHttpFailedResponse(failedResponse, errorMsg));
     }
   }
 
-  private static String formatHttpFailedResponse(WsResponse failedResponse, @Nullable String errorMsg) {
-    return "Error " + failedResponse.code() + " on " + failedResponse.requestUrl() + (errorMsg != null ? (": " + errorMsg) : "");
+  private static String formatHttpFailedResponse(SonarLintHttpClient.Response failedResponse, @Nullable String errorMsg) {
+    return "Error " + failedResponse.code() + " on " + failedResponse.url() + (errorMsg != null ? (": " + errorMsg) : "");
   }
 
-  private static String tryParseAsJsonError(String responseContent) {
-    try {
-      JsonObject obj = JsonParser.parseString(responseContent).getAsJsonObject();
-      JsonArray errors = obj.getAsJsonArray("errors");
-      List<String> errorMessages = new ArrayList<>();
-      for (JsonElement e : errors) {
-        errorMessages.add(e.getAsJsonObject().get("msg").getAsString());
-      }
-      return errorMessages.stream().collect(joining(", "));
-    } catch (Exception e) {
+  @CheckForNull
+  private static String tryParseAsJsonError(SonarLintHttpClient.Response response) {
+    String content = response.bodyAsString();
+    if (StringUtils.isBlank(content)) {
       return null;
     }
-  }
-
-  public String getUserAgent() {
-    return userAgent;
+    JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
+    JsonArray errors = obj.getAsJsonArray("errors");
+    List<String> errorMessages = new ArrayList<>();
+    for (JsonElement e : errors) {
+      errorMessages.add(e.getAsJsonObject().get("msg").getAsString());
+    }
+    return errorMessages.stream().collect(joining(", "));
   }
 
   public Optional<String> getOrganizationKey() {
-    return Optional.ofNullable(organizationKey);
+    if (endpoint.isSonarCloud()) {
+      return Optional.ofNullable(endpoint.getOrganization());
+    }
+    return Optional.empty();
   }
 
-  // static to allow mocking SonarLintWsClient while still using this method
-  /**
-   * @param responseParser ProtoBuf parser
-   * @param getPaging extract {@link Paging} from the protobuf message
-   */
-  public static <G, F> void getPaginated(SonarLintWsClient client, String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
+  public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress) {
     AtomicInteger page = new AtomicInteger(0);
     AtomicBoolean stop = new AtomicBoolean(false);
     AtomicInteger loaded = new AtomicInteger(0);
     do {
       page.incrementAndGet();
-      String url = baseUrl + (baseUrl.contains("?") ? "&" : "?") + "ps=" + PAGE_SIZE + "&p=" + page;
+      StringBuilder fullUrl = new StringBuilder();
+      String endpointUrl = endpoint.getBaseUrl();
+      fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
+      fullUrl.append("/");
+      fullUrl.append(relativeUrlWithoutPaginationParams.startsWith("/") ? relativeUrlWithoutPaginationParams.substring(1, relativeUrlWithoutPaginationParams.length())
+        : relativeUrlWithoutPaginationParams);
+      fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
+      fullUrl.append("ps=" + PAGE_SIZE + "&p=" + page);
       SonarLintWsClient.consumeTimed(
-        () -> client.get(url),
-        response -> processPage(baseUrl, responseParser, getPaging, itemExtractor, itemConsumer, limitToTwentyPages, progress, page, stop, loaded, response),
+        () -> client.get(fullUrl.toString()),
+        response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPaging, itemExtractor, itemConsumer, limitToTwentyPages, progress, page, stop, loaded,
+          response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
     } while (!stop.get());
   }
 
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging, Function<G, List<F>> itemExtractor,
-    Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded, WsResponse response)
+    Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
+    SonarLintHttpClient.Response response)
     throws IOException {
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
-    G protoBufResponse = responseParser.apply(response.contentStream());
+    G protoBufResponse;
+    try (InputStream body = response.bodyAsStream()) {
+      protoBufResponse = responseParser.apply(body);
+    }
+
     List<F> items = itemExtractor.apply(protoBufResponse);
     for (F item : items) {
       itemConsumer.accept(item);
@@ -222,19 +197,21 @@ public class SonarLintWsClient {
     R apply(T t) throws IOException;
   }
 
-  public static <G> G processTimed(Supplier<WsResponse> responseSupplier, IOFunction<WsResponse, G> responseProcessor, LongConsumer durationConsummer) {
+  public static <G> G processTimed(Supplier<SonarLintHttpClient.Response> responseSupplier, IOFunction<SonarLintHttpClient.Response, G> responseProcessor,
+    LongConsumer durationConsummer) {
     long startTime = System2.INSTANCE.now();
     G result;
-    try (WsResponse response = responseSupplier.get()) {
+    try (SonarLintHttpClient.Response response = responseSupplier.get()) {
       result = responseProcessor.apply(response);
     } catch (IOException e) {
-      throw new IllegalStateException(e);
+      throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);
     }
     durationConsummer.accept(System2.INSTANCE.now() - startTime);
     return result;
   }
 
-  public static void consumeTimed(Supplier<WsResponse> responseSupplier, IOConsummer<WsResponse> responseConsumer, LongConsumer durationConsummer) {
+  public static void consumeTimed(Supplier<SonarLintHttpClient.Response> responseSupplier, IOConsummer<SonarLintHttpClient.Response> responseConsumer,
+    LongConsumer durationConsummer) {
     processTimed(responseSupplier, r -> {
       responseConsumer.accept(r);
       return null;

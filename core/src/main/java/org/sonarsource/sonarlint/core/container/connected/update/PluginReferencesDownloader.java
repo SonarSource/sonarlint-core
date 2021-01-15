@@ -80,7 +80,7 @@ public class PluginReferencesDownloader {
   public PluginReferences fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
-    float refCount = (float) refs.getReferenceList().size();
+    float refCount = refs.getReferenceList().size();
     for (PluginReference ref : refs.getReferenceList()) {
       progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(serverVersion, ref.getKey()));
@@ -116,7 +116,7 @@ public class PluginReferencesDownloader {
 
       SonarLintWsClient.consumeTimed(
         () -> wsClient.get(url),
-        response -> FileUtils.copyInputStreamToFile(response.contentStream(), toFile.toFile()),
+        response -> FileUtils.copyInputStreamToFile(response.bodyAsStream(), toFile.toFile()),
         duration -> LOG.info("Downloaded '{}' in {}ms", filename, duration));
     }
   }

@@ -50,7 +50,7 @@ public class ProjectQualityProfilesDownloader {
     try {
       qpResponse = SonarLintWsClient.processTimed(
         () -> wsClient.get(url.toString()),
-        response -> Qualityprofiles.SearchWsResponse.parseFrom(response.contentStream()),
+        response -> Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream()),
         duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
     } catch (NotFoundException e) {
       throw new ProjectNotFoundException(projectKey, wsClient.getOrganizationKey().orElse(null));

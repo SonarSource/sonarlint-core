@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
@@ -139,10 +138,10 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
 
   @Test
   public void download_all_issues_limited_to_10k() throws IOException {
-    engine.update(getServerConfig(), null);
-    engine.updateProject(getServerConfig(), PROJECT_KEY, null);
+    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
-    engine.downloadServerIssues(getServerConfig(), PROJECT_KEY, null);
+    engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     List<ServerIssue> file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
     List<ServerIssue> file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
@@ -150,10 +149,10 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_000);
 
     // Force reload of each files
-    List<ServerIssue> reloaded500 = engine.downloadServerIssues(getServerConfig(), new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo", null);
+    List<ServerIssue> reloaded500 = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo", null);
     assertThat(reloaded500).hasSize(500);
 
-    List<ServerIssue> reloaded10k = engine.downloadServerIssues(getServerConfig(), new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo", null);
+    List<ServerIssue> reloaded10k = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo", null);
     assertThat(reloaded10k).hasSize(10_000);
 
     // Now storage is complete
@@ -167,14 +166,6 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(allIssues.get(fpIssue.getKey()).resolution()).isEqualTo("FALSE-POSITIVE");
     assertThat(allIssues.get(overridenSeverityIssue.getKey()).severity()).isEqualTo("BLOCKER");
     assertThat(allIssues.get(overridenTypeIssue.getKey()).type()).isEqualTo("BUG");
-  }
-
-  private ServerConfiguration getServerConfig() {
-    return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
   }
 
   private static void analyzeProject(String projectDirName) {

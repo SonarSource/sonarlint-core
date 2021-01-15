@@ -37,8 +37,8 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerNotification;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 class NotificationChecker {
   private static final Logger LOG = Loggers.get(NotificationChecker.class);
@@ -58,13 +58,13 @@ class NotificationChecker {
   @CheckForNull
   public List<ServerNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
     String path = getWsPath(projectTimestamps);
-    try (WsResponse wsResponse = wsClient.rawGet(path)) {
+    try (SonarLintHttpClient.Response wsResponse = wsClient.rawGet(path)) {
       if (!wsResponse.isSuccessful()) {
-        LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.content());
+        LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.bodyAsString());
         return Collections.emptyList();
       }
 
-      return parseResponse(wsResponse.content());
+      return parseResponse(wsResponse.bodyAsString());
     }
   }
 
@@ -73,7 +73,7 @@ class NotificationChecker {
    */
   public boolean isSupported() {
     String path = getWsPath(Collections.emptyMap());
-    try (WsResponse wsResponse = wsClient.rawGet(path)) {
+    try (SonarLintHttpClient.Response wsResponse = wsClient.rawGet(path)) {
       return wsResponse.isSuccessful();
     }
   }

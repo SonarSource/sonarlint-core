@@ -96,7 +96,7 @@ public class ServerVersionAndStatusChecker {
     return SonarLintWsClient.processTimed(
       () -> wsClient.get("api/system/status"),
       response -> {
-        String responseStr = response.content();
+        String responseStr = response.bodyAsString();
         try {
           SystemStatus status = new Gson().fromJson(responseStr, SystemStatus.class);
           ServerInfos.Builder builder = ServerInfos.newBuilder();

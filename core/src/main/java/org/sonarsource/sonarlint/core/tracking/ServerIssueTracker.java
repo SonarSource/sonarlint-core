@@ -27,9 +27,10 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 
 public class ServerIssueTracker {
 
@@ -41,8 +42,9 @@ public class ServerIssueTracker {
     this.issueTracker = issueTracker;
   }
 
-  public void update(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> fetchServerIssues(serverConfiguration, engine, projectBinding, fileKey));
+  public void update(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding,
+    Collection<String> fileKeys) {
+    update(fileKeys, fileKey -> fetchServerIssues(endpoint, client, engine, projectBinding, fileKey));
   }
 
   public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
@@ -62,11 +64,11 @@ public class ServerIssueTracker {
     }
   }
 
-  private static List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine,
+  private static List<ServerIssue> fetchServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ConnectedSonarLintEngine engine,
     ProjectBinding projectBinding, String ideFilePath) {
     try {
       LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath);
-      return engine.downloadServerIssues(serverConfiguration, projectBinding, ideFilePath, null);
+      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
       return engine.getServerIssues(projectBinding, ideFilePath);

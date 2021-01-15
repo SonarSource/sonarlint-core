@@ -19,10 +19,8 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
@@ -35,7 +33,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotReq
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
@@ -47,21 +44,27 @@ import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValida
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static java.util.Objects.requireNonNull;
 
 public class WsHelperImpl implements WsHelper {
   private static final Logger LOG = Loggers.get(WsHelperImpl.class);
+  private final SonarLintHttpClient client;
 
-  @Override
-  public ValidationResult validateConnection(ServerConfiguration serverConfig) {
-    return validateConnection(createClient(serverConfig), serverConfig.getOrganizationKey());
+  public WsHelperImpl(SonarLintHttpClient client) {
+    this.client = client;
   }
 
-  static ValidationResult validateConnection(SonarLintWsClient client, @Nullable String organizationKey) {
+  @Override
+  public ValidationResult validateConnection(ConnectedModeEndpoint endpoint) {
+    return validateConnection(createClient(endpoint), endpoint.isSonarCloud() ? endpoint.getOrganization() : null);
+  }
+
+  private static ValidationResult validateConnection(SonarLintWsClient client, @Nullable String organizationKey) {
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
     AuthenticationChecker authChecker = new AuthenticationChecker(client);
     try {
@@ -80,61 +83,35 @@ public class WsHelperImpl implements WsHelper {
     }
   }
 
-  private static SonarLintWsClient createClient(ServerConfiguration serverConfig) {
-    requireNonNull(serverConfig);
-    return new SonarLintWsClient(serverConfig);
-  }
-
-  static String generateAuthenticationToken(ServerVersionAndStatusChecker serverChecker, SonarLintWsClient client, String name, boolean force) {
-    try {
-      // in 5.3 login is mandatory and user needs admin privileges
-      serverChecker.checkVersionAndStatus("5.4");
-
-      if (force) {
-        // revoke
-        client.post("api/user_tokens/revoke?name=" + name);
-      }
-
-      // create
-      try (WsResponse response = client.post("api/user_tokens/generate?name=" + name)) {
-        Map<?, ?> javaRootMapObject = new Gson().fromJson(response.content(), Map.class);
-        return (String) javaRootMapObject.get("token");
-      }
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
+  private SonarLintWsClient createClient(ConnectedModeEndpoint endpoint) {
+    requireNonNull(endpoint);
+    return new SonarLintWsClient(endpoint, client);
   }
 
   @Override
-  public String generateAuthenticationToken(ServerConfiguration serverConfig, String name, boolean force) {
-    SonarLintWsClient client = createClient(serverConfig);
-    return generateAuthenticationToken(new ServerVersionAndStatusChecker(client), client, name, force);
-  }
-
-  @Override
-  public List<RemoteOrganization> listUserOrganizations(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
-    SonarLintWsClient client = createClient(serverConfig);
+  public List<RemoteOrganization> listUserOrganizations(ConnectedModeEndpoint endpoint, @Nullable ProgressMonitor monitor) {
+    SonarLintWsClient client = createClient(endpoint);
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
     return listUserOrganizations(client, serverChecker, new ProgressWrapper(monitor));
   }
 
   @Override
-  public Optional<RemoteOrganization> getOrganization(ServerConfiguration serverConfig, String organizationKey, @Nullable ProgressMonitor monitor) {
-    SonarLintWsClient client = createClient(serverConfig);
-    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(client);
-    return getOrganization(client, serverChecker, organizationKey, new ProgressWrapper(monitor));
+  public Optional<RemoteOrganization> getOrganization(ConnectedModeEndpoint endpoint, String organizationKey, @Nullable ProgressMonitor monitor) {
+    SonarLintWsClient wsClient = createClient(endpoint);
+    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(wsClient);
+    return getOrganization(wsClient, serverChecker, organizationKey, new ProgressWrapper(monitor));
   }
 
   @Override
-  public Optional<RemoteProject> getProject(ServerConfiguration serverConfig, String projectKey, ProgressMonitor monitor) {
-    SonarLintWsClient client = createClient(serverConfig);
-    return fetchComponent(client, projectKey)
+  public Optional<RemoteProject> getProject(ConnectedModeEndpoint endpoint, String projectKey, ProgressMonitor monitor) {
+    SonarLintWsClient wsClient = createClient(endpoint);
+    return fetchComponent(wsClient, projectKey)
       .map(DefaultRemoteProject::new);
   }
 
   @Override
-  public Optional<RemoteHotspot> getHotspot(ServerConfiguration serverConfig, GetSecurityHotspotRequestParams requestParams) {
-    SecurityHotspotsService service = new SecurityHotspotsService(createClient(serverConfig));
+  public Optional<RemoteHotspot> getHotspot(ConnectedModeEndpoint endpoint, GetSecurityHotspotRequestParams requestParams) {
+    SecurityHotspotsService service = new SecurityHotspotsService(endpoint, client);
     return service.fetch(requestParams);
   }
 
@@ -143,7 +120,7 @@ public class WsHelperImpl implements WsHelper {
       () -> client.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey)),
       response -> {
         if (response.isSuccessful()) {
-          return Optional.of(Components.ShowWsResponse.parseFrom(response.contentStream()));
+          return Optional.of(Components.ShowWsResponse.parseFrom(response.bodyAsStream()));
         }
         return Optional.empty();
       },
@@ -189,7 +166,7 @@ public class WsHelperImpl implements WsHelper {
   private static List<RemoteOrganization> getPaginatedOrganizations(SonarLintWsClient client, String url, ProgressWrapper progress) {
     List<RemoteOrganization> result = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(client, url,
+    client.getPaginated(url,
       Organizations.SearchWsResponse::parseFrom,
       Organizations.SearchWsResponse::getPaging,
       Organizations.SearchWsResponse::getOrganizationsList,

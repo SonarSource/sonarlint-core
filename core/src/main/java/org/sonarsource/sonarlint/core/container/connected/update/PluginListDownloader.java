@@ -57,7 +57,7 @@ public class PluginListDownloader {
     return SonarLintWsClient.processTimed(
       () -> wsClient.get(WS_PATH),
       response -> {
-        InstalledPlugins installedPlugins = new Gson().fromJson(response.contentReader(), InstalledPlugins.class);
+        InstalledPlugins installedPlugins = new Gson().fromJson(response.bodyAsString(), InstalledPlugins.class);
         return Arrays.stream(installedPlugins.plugins).map(this::toSonarAnalyzer).collect(Collectors.toList());
       },
       duration -> LOG.info("Downloaded plugin list in {}ms", duration));

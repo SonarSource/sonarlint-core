@@ -56,7 +56,7 @@ public class QualityProfilesDownloader {
     SonarLintWsClient.consumeTimed(
       () -> wsClient.get(searchUrl.toString()),
       response -> {
-        SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.contentStream());
+        SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream());
         for (QualityProfile qp : qpResponse.getProfilesList()) {
           QProfile.Builder qpBuilder = QProfile.newBuilder();
           qpBuilder.setKey(qp.getKey());

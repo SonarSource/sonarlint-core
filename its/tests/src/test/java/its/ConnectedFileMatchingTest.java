@@ -47,7 +47,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
@@ -103,8 +102,8 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @Test
   public void should_match_files_when_importing_entire_project() throws IOException {
-    engine.update(getServerConfig(), null);
-    engine.updateProject(getServerConfig(), PROJECT_KEY, null);
+    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // entire project imported in IDE
     Path projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
@@ -115,15 +114,15 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     ProjectBinding projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEmpty();
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    List<ServerIssue> serverIssues = engine.downloadServerIssues(getServerConfig(), projectBinding,
+    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", null);
     assertThat(serverIssues).hasSize(2);
   }
 
   @Test
   public void should_match_files_when_importing_module() throws IOException {
-    engine.update(getServerConfig(), null);
-    engine.updateProject(getServerConfig(), PROJECT_KEY, null);
+    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // only module B1 imported in IDE
     Path projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
@@ -134,17 +133,9 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     ProjectBinding projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("module_b/module_b1");
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    List<ServerIssue> serverIssues = engine.downloadServerIssues(getServerConfig(), projectBinding,
+    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", null);
     assertThat(serverIssues).hasSize(2);
-  }
-
-  private ServerConfiguration getServerConfig() {
-    return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
   }
 
   @Override

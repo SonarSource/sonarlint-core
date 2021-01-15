@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import javax.annotation.Nullable;
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.io.FileUtils;
@@ -69,9 +71,9 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -95,6 +97,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
+
+  protected static final OkHttpClient SC_CLIENT = CLIENT_NO_AUTH.newBuilder()
+    .addNetworkInterceptor(new PreemptiveAuthenticatorInterceptor(Credentials.basic(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))
+    .build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -252,7 +258,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allProjectsByKey()).isNotEmpty();
     provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
+    assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
+      projectKey(PROJECT_KEY_JAVA),
+      projectKey(PROJECT_KEY_PHP));
     assertThat(engine.allProjectsByKey()).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
   }
 
@@ -461,22 +469,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void generateToken() {
-    WsHelper ws = new WsHelperImpl();
-    ServerConfiguration serverConfig = getServerConfig();
-
-    String token = ws.generateAuthenticationToken(serverConfig, "test-its", true);
-    assertThat(token).isNotNull();
-  }
-
-  @Test
   public void checkForUpdate() {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
-    ServerConfiguration serverConfig = getServerConfig();
+    ConnectedModeEndpoint serverConfig = sonarcloudEndpointITOrg();
 
-    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Toggle a rule to ensure quality profile date is changed
@@ -489,36 +488,36 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setKey(profileKey)
       .setRule("java:S1228"));
 
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).contains("Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, projectKey(PROJECT_KEY_JAVA), null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey(PROJECT_KEY_JAVA), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that is not in the whitelist
     setSettings(projectKey(PROJECT_KEY_JAVA), "sonar.foo", "biz");
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, projectKey(PROJECT_KEY_JAVA), null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey(PROJECT_KEY_JAVA), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that *is* in the whitelist
     setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), "sonar.exclusions", "**/*.foo");
 
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, projectKey(PROJECT_KEY_JAVA), null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey(PROJECT_KEY_JAVA), null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
   }
 
   @Test
   public void downloadUserOrganizations() {
-    WsHelper helper = new WsHelperImpl();
-    assertThat(helper.listUserOrganizations(getServerConfig(), null)).hasSize(1);
+    WsHelper helper = new WsHelperImpl(new SonarLintHttpClientOkHttpImpl(SC_CLIENT));
+    assertThat(helper.listUserOrganizations(sonarcloudEndpointITOrg(), null)).hasSize(1);
   }
 
   @Test
   public void getOrganization() {
-    WsHelper helper = new WsHelperImpl();
-    Optional<RemoteOrganization> org = helper.getOrganization(getServerConfigForOrg(null), SONARCLOUD_ORGANIZATION, null);
+    WsHelper helper = new WsHelperImpl(new SonarLintHttpClientOkHttpImpl(SC_CLIENT));
+    Optional<RemoteOrganization> org = helper.getOrganization(sonarcloudEndpoint(null), SONARCLOUD_ORGANIZATION, null);
     assertThat(org).isPresent();
     assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
     assertThat(org.get().getName()).isEqualTo("SonarLint IT Tests");
@@ -526,9 +525,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void getProject() {
-    WsHelper helper = new WsHelperImpl();
-    assertThat(helper.getProject(getServerConfig(), projectKey("foo"), null)).isNotPresent();
-    assertThat(helper.getProject(getServerConfig(), projectKey(PROJECT_KEY_RUBY), null)).isPresent();
+    WsHelper helper = new WsHelperImpl(new SonarLintHttpClientOkHttpImpl(SC_CLIENT));
+    assertThat(helper.getProject(sonarcloudEndpointITOrg(), projectKey("foo"), null)).isNotPresent();
+    assertThat(helper.getProject(sonarcloudEndpointITOrg(), projectKey(PROJECT_KEY_RUBY), null)).isPresent();
   }
 
   @Test
@@ -573,9 +572,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void testConnection() {
-    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(SONARCLOUD_ORGANIZATION)).success()).isTrue();
-    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg(null)).success()).isTrue();
-    assertThat(new WsHelperImpl().validateConnection(getServerConfigForOrg("not-exists")).success()).isFalse();
+    assertThat(new WsHelperImpl(new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).validateConnection(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION)).success()).isTrue();
+    assertThat(new WsHelperImpl(new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).validateConnection(sonarcloudEndpoint(null)).success()).isTrue();
+    assertThat(new WsHelperImpl(new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).validateConnection(sonarcloudEndpoint("not-exists")).success()).isFalse();
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
@@ -593,15 +592,15 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(getServerConfig(), projectKey, null);
+    engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey, null);
   }
 
   private void updateGlobal() {
-    engine.update(getServerConfig(), null);
+    engine.update(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
   }
 
-  private ServerConfiguration getServerConfig() {
-    return getServerConfigForOrg(SONARCLOUD_ORGANIZATION);
+  private ConnectedModeEndpoint sonarcloudEndpointITOrg() {
+    return sonarcloudEndpoint(SONARCLOUD_ORGANIZATION);
   }
 
   public static WsClient newAdminWsClient() {
@@ -611,13 +610,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .build());
   }
 
-  private ServerConfiguration getServerConfigForOrg(@Nullable String orgKey) {
-    return ServerConfiguration.builder()
-      .url(SONARCLOUD_STAGING_URL)
-      .organizationKey(orgKey)
-      .userAgent("SonarLint ITs")
-      .credentials(SONARCLOUD_USER,
-        SONARCLOUD_PASSWORD)
-      .build();
+  private ConnectedModeEndpoint sonarcloudEndpoint(@Nullable String orgKey) {
+    return endpoint(SONARCLOUD_STAGING_URL, true, orgKey);
   }
 }

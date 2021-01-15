@@ -90,12 +90,6 @@ public class TelemetryManagerTest {
     manager = new TelemetryManager(storagePath, client, attributes);
   }
 
-  private TelemetryManager stubbedTelemetryManager(TelemetryLocalStorage data) throws IOException {
-    TelemetryLocalStorageManager storage = mock(TelemetryLocalStorageManager.class);
-    when(storage.tryRead()).thenReturn(data);
-    return stubbedTelemetryManager(storage);
-  }
-
   private TelemetryManager stubbedTelemetryManager(TelemetryLocalStorageManager storage) throws IOException {
     Path path = temp.newFile().toPath();
     return new TelemetryManager(path, client, attributes) {

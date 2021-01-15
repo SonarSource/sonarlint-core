@@ -69,7 +69,6 @@ public class ConnectedStaleStorageMediumTest {
   private static void writeUpdateStatus(Path storage, String version) throws IOException {
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();

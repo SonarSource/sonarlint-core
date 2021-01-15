@@ -23,6 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
+import com.sonar.orchestrator.http.HttpResponse;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
@@ -80,11 +81,10 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.hotspot.SecurityHotspotsService;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
@@ -295,7 +295,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allProjectsByKey()).hasSize(15);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(endpoint(ORCHESTRATOR), sqHttpClient(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
     assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
@@ -303,10 +303,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void updateNoAuth() {
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     try {
-      engine.update(ServerConfiguration.builder()
-        .url(ORCHESTRATOR.getServer().getUrl())
-        .userAgent("SonarLint ITs")
-        .build(), null);
+      engine.update(endpoint(ORCHESTRATOR), sqHttpClientNoAuth(), null);
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
@@ -482,11 +479,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6));
 
     analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
-    SonarLintWsClient slClient = new SonarLintWsClient(getServerConfig());
-    SecurityHotspotsService securityHotspotsService = new SecurityHotspotsService(slClient);
+    SecurityHotspotsService securityHotspotsService = new SecurityHotspotsService(endpoint(ORCHESTRATOR), sqHttpClient());
 
     Optional<RemoteHotspot> remoteHotspot = securityHotspotsService
-      .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(slClient, PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
+      .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
 
     assertThat(remoteHotspot).isNotEmpty();
     RemoteHotspot actualHotspot = remoteHotspot.get();
@@ -500,10 +496,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   }
 
-  private String getFirstHotspotKey(SonarLintWsClient client, String projectKey) throws InvalidProtocolBufferException {
-    org.sonarsource.sonarlint.core.util.ws.WsResponse wsResponse = client.get("/api/hotspots/search.protobuf?projectKey=" + projectKey);
+  private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
+    HttpResponse response = ORCHESTRATOR.getServer()
+      .newHttpCall("/api/hotspots/search.protobuf")
+      .setParam("projectKey", projectKey)
+      .setAdminCredentials()
+      .execute();
     Parser<Hotspots.SearchWsResponse> parser = Hotspots.SearchWsResponse.parser();
-    return parser.parseFrom(wsResponse.contentStream()).getHotspots(0).getKey();
+    return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
   }
 
   @Test
@@ -687,35 +687,23 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void generateToken() {
-    WsHelper ws = new WsHelperImpl();
-    ServerConfiguration serverConfig = getServerConfig(true);
-
-    String token = ws.generateAuthenticationToken(serverConfig, "name", false);
-    assertThat(token).isNotNull();
-
-    token = ws.generateAuthenticationToken(serverConfig, "name", true);
-    assertThat(token).isNotNull();
-  }
-
-  @Test
   public void checkForUpdate() {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
-    ServerConfiguration serverConfig = getServerConfig(true);
+    ConnectedModeEndpoint serverConfig = endpointNoOrg("http://localhost:" + redirectPort);
 
-    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
 
     // restarting server should not lead to notify an update
     ORCHESTRATOR.restartServer();
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a global setting that is not in the whitelist
     setSettings(null, "sonar.foo", "bar");
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a global setting that *is* in the whitelist
@@ -725,31 +713,31 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
     adminWsClient.qualityprofiles().activateRule(new ActivateRuleRequest().setKey(profileKey).setRule(javaRuleKey("S1228")));
 
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that is not in the whitelist
     setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that *is* in the whitelist
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
 
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
   }
 
   @Test
   public void getProject() {
-    WsHelper helper = new WsHelperImpl();
-    assertThat(helper.getProject(getServerConfig(), "foo", null)).isNotPresent();
-    assertThat(helper.getProject(getServerConfig(), PROJECT_KEY_RUBY, null)).isPresent();
+    WsHelper helper = new WsHelperImpl(sqHttpClient());
+    assertThat(helper.getProject(endpoint(ORCHESTRATOR), "foo", null)).isNotPresent();
+    assertThat(helper.getProject(endpoint(ORCHESTRATOR), PROJECT_KEY_RUBY, null)).isPresent();
   }
 
   @Test
@@ -807,23 +795,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(getServerConfig(), projectKey, null);
+    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), projectKey, null);
   }
 
   private void updateGlobal() {
-    engine.update(getServerConfig(), null);
-  }
-
-  private ServerConfiguration getServerConfig() {
-    return getServerConfig(false);
-  }
-
-  private ServerConfiguration getServerConfig(boolean redirect) {
-    return ServerConfiguration.builder()
-      .url(redirect ? ("http://localhost:" + redirectPort) : ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
+    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void analyzeMavenProject(String projectDirName) {
