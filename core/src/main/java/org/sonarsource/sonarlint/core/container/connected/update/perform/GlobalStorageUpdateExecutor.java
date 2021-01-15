@@ -26,7 +26,6 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
@@ -50,15 +49,13 @@ public class GlobalStorageUpdateExecutor {
   private final TempFolder tempFolder;
   private final ProjectListDownloader projectListDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
-  private final SonarLintWsClient wsClient;
   private final QualityProfilesDownloader qualityProfilesDownloader;
   private final PluginListDownloader pluginListDownloader;
 
-  public GlobalStorageUpdateExecutor(StoragePaths storageManager, SonarLintWsClient wsClient, ServerVersionAndStatusChecker statusChecker,
+  public GlobalStorageUpdateExecutor(StoragePaths storageManager, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
     ProjectListDownloader projectListDownloader, QualityProfilesDownloader qualityProfilesDownloader, PluginListDownloader pluginListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
-    this.wsClient = wsClient;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalSettingsDownloader = globalPropertiesDownloader;
@@ -101,7 +98,6 @@ public class GlobalStorageUpdateExecutor {
       progress.executeNonCancelableSection(() -> {
         StorageStatus storageStatus = StorageStatus.newBuilder()
           .setStorageVersion(StoragePaths.STORAGE_VERSION)
-          .setClientUserAgent(wsClient.getUserAgent())
           .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
           .setUpdateTimestamp(new Date().getTime())
           .build();

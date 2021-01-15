@@ -19,49 +19,46 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.MediaTypes;
-import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
-import org.sonarsource.sonarlint.core.util.ws.DeleteRequest;
-import org.sonarsource.sonarlint.core.util.ws.HttpConnector;
-import org.sonarsource.sonarlint.core.util.ws.PostRequest;
 
 public class TelemetryHttpClient {
 
+  public static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com/sonarlint";
+
   private static final Logger LOG = Loggers.get(TelemetryHttpClient.class);
 
-  private static final String TELEMETRY_PATH = "sonarlint";
-
-  private final TelemetryHttpConnectorFactory httpFactory;
-  private final TelemetryClientConfig clientConfig;
   private final String product;
   private final String version;
   private final String ideVersion;
+  private final SonarLintHttpClient client;
+  private final String endpoint;
 
-  public TelemetryHttpClient(TelemetryClientConfig clientConfig, String product, String version, String ideVersion) {
-    this(clientConfig, product, version, ideVersion, new TelemetryHttpConnectorFactory());
+  public TelemetryHttpClient(String product, String version, String ideVersion, SonarLintHttpClient client) {
+    this(product, version, ideVersion, client, TELEMETRY_ENDPOINT);
   }
 
-  TelemetryHttpClient(TelemetryClientConfig clientConfig, String product, String version, String ideVersion, TelemetryHttpConnectorFactory httpFactory) {
-    this.clientConfig = clientConfig;
+  TelemetryHttpClient(String product, String version, String ideVersion, SonarLintHttpClient client, String endpoint) {
     this.product = product;
     this.version = version;
     this.ideVersion = ideVersion;
-    this.httpFactory = httpFactory;
+    this.client = client;
+    this.endpoint = endpoint;
   }
 
   void upload(TelemetryLocalStorage data, TelemetryClientAttributesProvider attributesProvider) {
     try {
-      sendPost(httpFactory.buildClient(clientConfig), createPayload(data, attributesProvider));
+      sendPost(createPayload(data, attributesProvider));
     } catch (Throwable catchEmAll) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Failed to upload telemetry data", catchEmAll);
@@ -71,7 +68,7 @@ public class TelemetryHttpClient {
 
   void optOut(TelemetryLocalStorage data, TelemetryClientAttributesProvider attributesProvider) {
     try {
-      sendDelete(httpFactory.buildClient(clientConfig), createPayload(data, attributesProvider));
+      sendDelete(createPayload(data, attributesProvider));
     } catch (Throwable catchEmAll) {
       if (SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Failed to upload telemetry opt-out", catchEmAll);
@@ -94,17 +91,19 @@ public class TelemetryHttpClient {
       analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload);
   }
 
-  private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
-    String json = payload.toJson();
-    DeleteRequest post = new DeleteRequest(TELEMETRY_PATH);
-    post.setMediaType(MediaTypes.JSON);
-    httpConnector.delete(post, json).failIfNotSuccessful().close();
+  private void sendDelete(TelemetryPayload payload) throws IOException {
+    try (SonarLintHttpClient.Response response = client.delete(endpoint, SonarLintHttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
+      if (!response.isSuccessful() && SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.error("Failed to upload telemetry opt-out: {}", response.toString());
+      }
+    }
   }
 
-  private static void sendPost(HttpConnector httpConnector, TelemetryPayload payload) {
-    String json = payload.toJson();
-    PostRequest post = new PostRequest(TELEMETRY_PATH);
-    post.setMediaType(MediaTypes.JSON);
-    httpConnector.post(post, json).failIfNotSuccessful().close();
+  private void sendPost(TelemetryPayload payload) throws IOException {
+    try (SonarLintHttpClient.Response response = client.post(endpoint, SonarLintHttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
+      if (!response.isSuccessful() && SonarLintUtils.isInternalDebugEnabled()) {
+        LOG.error("Failed to upload telemetry data: {}", response.toString());
+      }
+    }
   }
 }

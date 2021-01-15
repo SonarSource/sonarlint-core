@@ -55,7 +55,7 @@ public class ModuleHierarchyDownloader {
   public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
+    wsClient.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,

@@ -36,6 +36,8 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 
 /**
  * Entry point for SonarLint.
@@ -77,7 +79,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Gets locally stored server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ConnectionConfiguration, String, ProgressMonitor)})
    * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
@@ -126,7 +128,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
-  Map<String, RemoteProject> downloadAllProjects(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  Map<String, RemoteProject> downloadAllProjects(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, @Nullable ProgressMonitor monitor);
 
   /**
    * Update current server.
@@ -135,14 +137,14 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws CanceledException          if the update task was cancelled
    * @since 2.0
    */
-  UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  UpdateResult update(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, @Nullable ProgressMonitor monitor);
 
   /**
    * Update given project.
    *
    * @since 2.0
    */
-  void updateProject(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
+  void updateProject(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -151,7 +153,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException             if it fails to download
    * @since 2.6
    */
-  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if project storage need updates.
@@ -160,27 +162,28 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException if it fails to download
    * @since 2.6
    */
-  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(ConnectionConfiguration, String, ProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
-  List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath, @Nullable ProgressMonitor monitor);
+  List<ServerIssue> downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ProjectBinding projectBinding, String ideFilePath,
+    @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads and stores server issues for a given project.
    *
-   * @param serverConfig form which to download issues
-   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(ServerConfiguration, String, ProgressMonitor)})
+   * @param endpoint form which to download issues
+   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(ConnectionConfiguration, String, ProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor);
+  void downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

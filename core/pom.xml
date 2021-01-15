@@ -11,6 +11,10 @@
   <name>SonarLint Core - Implementation</name>
   <description>Library used by SonarLint clients (CLI, Eclipse, ...)</description>
 
+  <properties>
+    <jarsigner.skip>true</jarsigner.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -51,11 +55,6 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.8.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>okhttp</artifactId>
-      <version>${okhttp.version}</version>
     </dependency>
     <dependency>
       <groupId>org.picocontainer</groupId>
@@ -99,6 +98,12 @@
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>${okhttp.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver</artifactId>
       <scope>test</scope>
       <version>${okhttp.version}</version>
@@ -111,6 +116,11 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -134,9 +144,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.stefanbirkner</groupId>
-      <artifactId>system-rules</artifactId>
-      <version>1.19.0</version>
+      <groupId>uk.org.webcompere</groupId>
+      <artifactId>system-stubs-jupiter</artifactId>
+      <version>1.1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -265,6 +275,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
+            <id>shade</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -273,6 +284,13 @@
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <minimizeJar>true</minimizeJar>
               <shadeSourcesContent>true</shadeSourcesContent>
+              <artifactSet>
+                <excludes>
+                  <exclude>${project.groupId}:sonarlint-slf4j-sonar-log</exclude>
+                  <exclude>com.squareup.okhttp3:okhttp</exclude>
+                  <exclude>com.squareup.okio:okio</exclude>
+                </excludes>
+              </artifactSet>
               <relocations>
                 <relocation>
                   <pattern></pattern>
@@ -285,8 +303,6 @@
                     <include>org.checkerframework.**</include>
                     <include>com.google.gson.**</include>
                     <include>org.picocontainer.**</include>
-                    <include>okhttp3.**</include>
-                    <include>okio.**</include>
                     <include>org.sonarqube.ws.**</include>
                   </includes>
                 </relocation>
@@ -380,24 +396,41 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- SLE-223 Sign after shading -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jarsigner-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <alias>sonarsource-codesign-2019-2021</alias>
+          <keystore>${sonarsource.keystore.path}</keystore>
+          <storepass>${sonarsource.keystore.password}</storepass>
+          <tsa>http://timestamp.digicert.com</tsa>
+          <!-- Force resign of shaded dependencies -->
+          <removeExistingSignatures>true</removeExistingSignatures>
+        </configuration>
         <executions>
           <execution>
             <id>sign</id>
+            <!-- SLE-223 Sign after shading -->
+            <phase>pre-integration-test</phase>
             <goals>
               <goal>sign</goal>
             </goals>
           </execution>
           <execution>
             <id>verify</id>
+            <phase>verify</phase>
             <goals>
               <goal>verify</goal>
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+        </configuration>
       </plugin>
     </plugins>
   </build>

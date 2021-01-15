@@ -46,7 +46,7 @@ public class ProjectListDownloader {
     searchUrl.append(PROJECT_SEARCH_URL);
     wsClient.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
-    SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
+    wsClient.getPaginated(searchUrl.toString(),
       Components.SearchWsResponse::parseFrom,
       Components.SearchWsResponse::getPaging,
       Components.SearchWsResponse::getComponentsList,

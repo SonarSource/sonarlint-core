@@ -38,12 +38,12 @@ import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
@@ -112,8 +112,8 @@ public class RulesDownloader {
     return builder.toString();
   }
 
-  private static SearchResponse loadFromStream(WsResponse response) {
-    try (InputStream is = response.contentStream()) {
+  private static SearchResponse loadFromStream(SonarLintHttpClient.Response response) {
+    try (SonarLintHttpClient.Response toBeClosed = response; InputStream is = toBeClosed.bodyAsStream()) {
       return SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);

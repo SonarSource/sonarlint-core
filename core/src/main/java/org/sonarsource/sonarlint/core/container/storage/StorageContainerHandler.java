@@ -40,12 +40,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
@@ -150,15 +151,16 @@ public class StorageContainerHandler {
     return storageExclusions.getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath, ProgressWrapper progress) {
-    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+  public List<ServerIssue> downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ProjectBinding projectBinding, String ideFilePath,
+    ProgressWrapper progress) {
+    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
     updater.updateFileIssues(projectBinding, configuration, ideFilePath, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey, ProgressWrapper progress) {
-    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+  public void downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, ProgressWrapper progress) {
+    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
     updater.updateFileIssues(projectKey, configuration, progress);
   }
@@ -179,8 +181,8 @@ public class StorageContainerHandler {
 
   }
 
-  public Map<String, RemoteProject> downloadProjectList(ServerConfiguration serverConfig, ProgressWrapper progress) {
-    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+  public Map<String, RemoteProject> downloadProjectList(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ProgressWrapper progress) {
+    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     updater.updateProjectList(progress);
     return allProjectsByKey();
   }

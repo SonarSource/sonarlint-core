@@ -23,55 +23,60 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager.getPath;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager.migrate;
 
-public class TelemetryPathManagerTest {
+@ExtendWith(SystemStubsExtension.class)
+class TelemetryPathManagerTest {
   private static final String PRODUCT_KEY = "the-product";
-  @Rule
-  public final EnvironmentVariables env = new EnvironmentVariables();
-  @Rule
-  public LogTester logTester = new LogTester();
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+
+  @SystemStub
+  private EnvironmentVariables environment;
+
+  @RegisterExtension
+  public LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
   private Path oldPath;
   private Path newPath;
 
-  @Before
-  public void setUp() throws IOException {
-    oldPath = temp.newFile().toPath();
+  @BeforeEach
+  public void setUp(@TempDir Path tempDir) throws IOException {
+    oldPath = tempDir.resolve("old");
     Files.write(oldPath, "old content".getBytes());
 
-    env.set(SonarLintPathManager.SONARLINT_USER_HOME_ENV, temp.newFolder().toString());
+    environment.set(SonarLintPathManager.SONARLINT_USER_HOME_ENV, tempDir.resolve("new").toString());
     newPath = getPath(PRODUCT_KEY);
   }
 
-  @AfterClass
+  @AfterAll
   public static void after() {
     // to avoid conflicts with SonarLintLogging
     new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
-  public void should_get_path_under_sonarlint_home() {
+  void should_get_path_under_sonarlint_home() {
     Path path = SonarLintPathManager.home().relativize(getPath("product"));
     assertThat(path.startsWith("..")).isFalse();
   }
 
   @Test
-  public void migrate_should_not_copy_when_new_file_exists() throws IOException {
+  void migrate_should_not_copy_when_new_file_exists() throws IOException {
     Files.createDirectories(newPath.getParent());
     Files.write(newPath, "new usage".getBytes());
     doMigrate();
@@ -79,14 +84,14 @@ public class TelemetryPathManagerTest {
   }
 
   @Test
-  public void migrate_should_not_copy_when_old_file_missing() throws IOException {
+  void migrate_should_not_copy_when_old_file_missing() throws IOException {
     Files.delete(oldPath);
     doMigrate();
     assertThat(oldEqualsNew()).isFalse();
   }
 
   @Test
-  public void migrate_should_not_copy_when_cannot_create_parent_dirs() throws IOException {
+  void migrate_should_not_copy_when_cannot_create_parent_dirs() throws IOException {
     Files.createDirectories(newPath.getParent().getParent());
     Files.write(newPath.getParent(), "dummy".getBytes());
 
@@ -95,14 +100,14 @@ public class TelemetryPathManagerTest {
   }
 
   @Test
-  public void migrate_should_copy() throws IOException {
+  void migrate_should_copy() throws IOException {
     doMigrate();
     assertThat(oldEqualsNew()).isTrue();
   }
 
   @Test
-  public void log_error_if_migrate_fails_and_debug_enabled() throws IOException {
-    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+  void log_error_if_migrate_fails_and_debug_enabled() throws IOException {
+    environment.set("SONARLINT_INTERNAL_DEBUG", "true");
     Files.createDirectories(newPath);
     doMigrate();
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to migrate telemetry storage");

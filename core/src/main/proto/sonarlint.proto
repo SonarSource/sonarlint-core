@@ -29,7 +29,6 @@ option optimize_for = SPEED;
 message StorageStatus {
   string storage_version = 1;
   string sonarlint_core_version = 2;
-  string client_user_agent = 3;
   int64 update_timestamp = 4;
 }
 

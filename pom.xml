@@ -40,7 +40,6 @@
     <junit.version>4.13.1</junit.version>
     <junit.jupiter.version>5.7.0</junit.jupiter.version>
     <junit.vintage.version>5.7.0</junit.vintage.version>
-    <jarsigner.skip>true</jarsigner.skip>
   </properties>
 
   <dependencyManagement>
@@ -48,6 +47,11 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.jupiter.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
         <version>${junit.jupiter.version}</version>
       </dependency>
       <dependency>
@@ -100,19 +104,6 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>3.2.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jarsigner-plugin</artifactId>
-          <version>3.0.0</version>
-          <configuration>
-            <alias>sonarsource-codesign-2019-2021</alias>
-            <keystore>${sonarsource.keystore.path}</keystore>
-            <storepass>${sonarsource.keystore.password}</storepass>
-            <tsa>http://timestamp.digicert.com?alg=sha256</tsa>
-            <!-- Force resign of shaded dependencies -->
-            <removeExistingSignatures>true</removeExistingSignatures>
-          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

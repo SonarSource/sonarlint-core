@@ -41,7 +41,6 @@ import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 
@@ -108,7 +107,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
-    UpdateResult update = engine.update(config(), null);
+    UpdateResult update = engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
     assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1.2080'). Skip downloading it.");
@@ -117,15 +116,8 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   @Test
   public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
-    ValidationResult result = new WsHelperImpl().validateConnection(config());
+    ValidationResult result = new WsHelperImpl(sqHttpClient()).validateConnection(endpoint(ORCHESTRATOR));
     assertThat(result.success()).isTrue();
   }
 
-  private ServerConfiguration config() {
-    return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
-  }
 }

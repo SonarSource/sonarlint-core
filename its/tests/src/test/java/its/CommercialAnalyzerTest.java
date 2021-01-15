@@ -47,7 +47,6 @@ import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -192,19 +191,11 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), projectKey, null);
+    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), projectKey, null);
   }
 
   private void updateGlobal() {
-    engine.update(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), null);
+    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

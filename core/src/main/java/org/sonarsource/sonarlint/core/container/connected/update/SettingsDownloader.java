@@ -75,7 +75,7 @@ public class SettingsDownloader {
     SonarLintWsClient.consumeTimed(
       () -> wsClient.get(url.toString()),
       response -> {
-        try (InputStream is = response.contentStream()) {
+        try (InputStream is = response.bodyAsStream()) {
           ValuesWsResponse values = ValuesWsResponse.parseFrom(is);
           for (Setting s : values.getSettingsList()) {
             // Storage optimisation: don't store settings having same value than global settings
@@ -84,7 +84,7 @@ public class SettingsDownloader {
             }
           }
         } catch (IOException e) {
-          throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
+          throw new IllegalStateException("Unable to parse properties from: " + response.bodyAsString(), e);
         }
       },
       duration -> LOG.info("Downloaded settings in {}ms", duration));

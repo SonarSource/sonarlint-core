@@ -38,7 +38,7 @@ public class ProjectFileListDownloader {
     String path = buildPath(projectKey);
     List<String> files = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, path,
+    wsClient.getPaginated(path,
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,

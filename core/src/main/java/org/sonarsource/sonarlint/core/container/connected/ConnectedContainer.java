@@ -25,7 +25,6 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -58,6 +57,8 @@ import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -66,23 +67,25 @@ public class ConnectedContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(ConnectedContainer.class);
 
-  private final ServerConfiguration serverConfiguration;
+  private final ConnectedModeEndpoint endpoint;
   private final ConnectedGlobalConfiguration globalConfig;
+  private final SonarLintHttpClient client;
 
-  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, ServerConfiguration serverConfiguration) {
+  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
     this.globalConfig = globalConfig;
-    this.serverConfiguration = serverConfiguration;
+    this.endpoint = endpoint;
+    this.client = client;
   }
 
   @Override
   protected void doBeforeStart() {
     add(
       globalConfig,
-      serverConfiguration,
+      endpoint,
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginVersionChecker.class,
-      SonarLintWsClient.class,
+      new SonarLintWsClient(endpoint, client),
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,
       ProjectStorageUpdateChecker.class,

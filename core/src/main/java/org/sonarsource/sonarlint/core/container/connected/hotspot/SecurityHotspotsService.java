@@ -19,7 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.hotspot;
 
-import com.google.protobuf.Parser;
+import java.io.InputStream;
+import java.util.Optional;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common;
@@ -28,29 +29,24 @@ import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-
-import java.util.Optional;
 
 public class SecurityHotspotsService {
   private static final Logger LOG = Loggers.get(SecurityHotspotsService.class);
 
   private static final String HOTSPOTS_API_URL = "/api/hotspots/show.protobuf";
-  private final Parser<Hotspots.ShowWsResponse> parser;
 
-  public SecurityHotspotsService(SonarLintWsClient client) {
-    this(client, Hotspots.ShowWsResponse.parser());
-  }
+  private final SonarLintWsClient client;
 
-  public SecurityHotspotsService(SonarLintWsClient client, Parser<Hotspots.ShowWsResponse> parser) {
-    this.client = client;
-    this.parser = parser;
+  public SecurityHotspotsService(ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
+    this.client = new SonarLintWsClient(endpoint, client);
   }
 
   public Optional<RemoteHotspot> fetch(GetSecurityHotspotRequestParams params) {
-    try(WsResponse wsResponse = client.get(getUrl(params.hotspotKey, params.projectKey))) {
-      Hotspots.ShowWsResponse response = parser.parseFrom(wsResponse.contentStream());
+    try (SonarLintHttpClient.Response wsResponse = client.get(getUrl(params.hotspotKey, params.projectKey)); InputStream is = wsResponse.bodyAsStream()) {
+      Hotspots.ShowWsResponse response = Hotspots.ShowWsResponse.parseFrom(is);
       return Optional.of(adapt(response));
     } catch (Exception e) {
       LOG.error("Error while fetching security hotspot", e);
@@ -84,6 +80,4 @@ public class SecurityHotspotsService {
   private static TextRange convertTextRange(Common.TextRange textRange) {
     return new TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset());
   }
-
-  private final SonarLintWsClient client;
 }

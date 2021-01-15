@@ -19,19 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
+import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.WsClientTestUtils;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
@@ -41,6 +39,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
+
+  private static final String DUMMY_KEY = "dummyKey";
+
+  @RegisterExtension
+  static MockWebServerExtension mockServer = new MockWebServerExtension();
+
   private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
 
   private final Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder().build();
@@ -81,20 +85,12 @@ class IssueDownloaderTests {
         .setTotal(1))
       .build();
 
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    mockServer.addProtobufResponse(
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + DUMMY_KEY + "&ps=500&p=1",
+      response);
 
-    String key = "dummyKey";
-    try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
-      response.writeTo(byteStream);
-      try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
-        WsClientTestUtils.addResponse(wsClient,
-          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + key + "&ps=500&p=1",
-          inputStream);
-      }
-    }
-
-    IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(key, projectConfiguration, PROGRESS);
+    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
+    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, PROGRESS);
     assertThat(issues).hasSize(1);
 
     ServerIssue serverIssue = issues.get(0);
@@ -128,32 +124,23 @@ class IssueDownloaderTests {
         .setTotal(0))
       .build();
 
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+    mockServer.addProtobufResponse(
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + DUMMY_KEY + "&ps=500&p=1",
+      response);
 
-    String key = "dummyKey";
-    try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
-      response.writeTo(byteStream);
-      try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
-        WsClientTestUtils.addResponse(wsClient,
-          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + key + "&ps=500&p=1",
-          inputStream);
-      }
-    }
-
-    IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(key, projectConfiguration, PROGRESS);
+    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
+    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
   @Test
   void test_fail_other_codes() throws IOException {
-    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
-    String key = "dummyKey";
-    WsClientTestUtils.addFailedResponse(wsClient,
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + key + "&ps=500&p=1", 503, "");
+    mockServer.addResponse(
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + DUMMY_KEY + "&ps=500&p=1",
+      new MockResponse().setResponseCode(503));
 
-    IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueDownloader.download(key, projectConfiguration, PROGRESS));
+    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueDownloader.download(DUMMY_KEY, projectConfiguration, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 }
