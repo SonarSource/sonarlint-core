@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.util.StringUtils.equalsIgnoringTrailingSlash;
 import static org.sonarsource.sonarlint.core.util.StringUtils.isEmpty;
 
 import org.junit.Test;
@@ -68,4 +69,20 @@ public class StringUtilsTest {
   public void test_whitespace_string_is_not_empty() {
     assertThat(isEmpty("  ")).isFalse();
   }
+
+  @Test
+  public void test_equalsIgnoringTrailingSlash_same_strings_different_trails() {
+    assertThat(equalsIgnoringTrailingSlash("too", "too/")).isTrue();
+  }
+
+  @Test
+  public void test_equalsIgnoringTrailingSlash_different() {
+    assertThat(equalsIgnoringTrailingSlash("tto", "too/")).isFalse();
+  }
+
+  @Test
+  public void test_equalsIgnoringTrailingSlash_same_strings_same_trails() {
+    assertThat(equalsIgnoringTrailingSlash("too", "too")).isTrue();
+  }
+
 }
