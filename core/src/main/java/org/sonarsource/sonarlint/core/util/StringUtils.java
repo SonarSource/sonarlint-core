@@ -111,4 +111,16 @@ public class StringUtils {
     }
     return sb.toString();
   }
+
+  public static boolean equalsIgnoringTrailingSlash(String aString, String anotherString) {
+    return withTrailingSlash(aString).equals(withTrailingSlash(anotherString));
+  }
+
+  private static String withTrailingSlash(String str) {
+    if (!str.endsWith("/")) {
+      return str + '/';
+    }
+    return str;
+  }
+
 }
