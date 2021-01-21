@@ -41,6 +41,8 @@ class TelemetryLocalStorage {
   private final Map<String, TelemetryAnalyzerPerformance> analyzers;
   private final Map<String, TelemetryNotificationsCounter> notificationsCountersByEventType;
   private int showHotspotRequestsCount;
+  private int taintVulnerabilitiesInvestigatedLocallyCount;
+  private int taintVulnerabilitiesInvestigatedRemotelyCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -105,6 +107,8 @@ class TelemetryLocalStorage {
     this.analyzers.clear();
     this.notificationsCountersByEventType.clear();
     showHotspotRequestsCount = 0;
+    taintVulnerabilitiesInvestigatedLocallyCount = 0;
+    taintVulnerabilitiesInvestigatedRemotelyCount = 0;
   }
 
   long numUseDays() {
@@ -125,6 +129,10 @@ class TelemetryLocalStorage {
    * @see #setUsedAnalysis(String, int)
    */
   void setUsedAnalysis() {
+    markSonarLintAsUsedToday();
+  }
+
+  private void markSonarLintAsUsedToday() {
     LocalDate now = LocalDate.now();
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
@@ -136,7 +144,7 @@ class TelemetryLocalStorage {
    * Register the analysis of a single file, with information regarding language and duration of the analysis.
    */
   void setUsedAnalysis(String language, int analysisTimeMs) {
-    setUsedAnalysis();
+    markSonarLintAsUsedToday();
 
     TelemetryAnalyzerPerformance analyzer = analyzers.computeIfAbsent(language, x -> new TelemetryAnalyzerPerformance());
     analyzer.registerAnalysis(analysisTimeMs);
@@ -191,15 +199,34 @@ class TelemetryLocalStorage {
   }
 
   public void incrementDevNotificationsClicked(String eventType) {
-    setUsedAnalysis();
+    markSonarLintAsUsedToday();
     this.notificationsCountersByEventType.computeIfAbsent(eventType, k -> new TelemetryNotificationsCounter()).incrementDevNotificationsClicked();
   }
 
   public void incrementShowHotspotRequestCount() {
+    markSonarLintAsUsedToday();
     showHotspotRequestsCount++;
   }
 
   public int showHotspotRequestsCount() {
     return showHotspotRequestsCount;
+  }
+
+  public void incrementTaintVulnerabilitiesInvestigatedLocallyCount() {
+    markSonarLintAsUsedToday();
+    taintVulnerabilitiesInvestigatedLocallyCount++;
+  }
+
+  public int taintVulnerabilitiesInvestigatedLocallyCount() {
+    return taintVulnerabilitiesInvestigatedLocallyCount;
+  }
+
+  public void incrementTaintVulnerabilitiesInvestigatedRemotelyCount() {
+    markSonarLintAsUsedToday();
+    taintVulnerabilitiesInvestigatedRemotelyCount++;
+  }
+
+  public int taintVulnerabilitiesInvestigatedRemotelyCount() {
+    return taintVulnerabilitiesInvestigatedRemotelyCount;
   }
 }

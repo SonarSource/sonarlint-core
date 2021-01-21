@@ -113,6 +113,14 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementShowHotspotRequestCount);
   }
 
+  public void taintVulnerabilitiesInvestigatedLocally() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedLocallyCount);
+  }
+
+  public void taintVulnerabilitiesInvestigatedRemotely() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
+  }
+
   /**
    * Save and upload lazily telemetry data.
    */
