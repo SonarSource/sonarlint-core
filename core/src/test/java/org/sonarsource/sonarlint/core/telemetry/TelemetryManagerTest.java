@@ -47,7 +47,6 @@ import static org.mockito.Mockito.when;
 
 public class TelemetryManagerTest {
   private static final int DEFAULT_NOTIF_CLICKED = 5;
-
   private static final int DEFAULT_NOTIF_COUNT = 10;
 
   private static final String FOO_EVENT = "foo_event";
@@ -337,6 +336,22 @@ public class TelemetryManagerTest {
   }
 
   @Test
+  public void accumulate_investigated_taint_vulnerabilities() {
+    createAndSaveSampleData(storage);
+
+    // note: the manager hasn't seen the saved data
+    manager.taintVulnerabilitiesInvestigatedLocally();
+    manager.taintVulnerabilitiesInvestigatedLocally();
+    manager.taintVulnerabilitiesInvestigatedLocally();
+    manager.taintVulnerabilitiesInvestigatedRemotely();
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+
+    assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isEqualTo(3);
+    assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isEqualTo(1);
+  }
+
+  @Test
   public void uploadLazily_should_clear_accumulated_data() {
     createAndSaveSampleData(storage);
 
@@ -344,6 +359,8 @@ public class TelemetryManagerTest {
     manager.analysisDoneOnSingleLanguage(Language.JAVA, 10);
     manager.showHotspotRequestReceived();
     manager.devNotificationsClicked(FOO_EVENT);
+    manager.taintVulnerabilitiesInvestigatedLocally();
+    manager.taintVulnerabilitiesInvestigatedRemotely();
 
     manager.uploadLazily();
 
@@ -351,6 +368,8 @@ public class TelemetryManagerTest {
     assertThat(reloaded.analyzers()).isEmpty();
     assertThat(reloaded.showHotspotRequestsCount()).isZero();
     assertThat(reloaded.notifications()).isEmpty();
+    assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
+    assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

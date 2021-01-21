@@ -27,6 +27,7 @@ import org.sonarqube.ws.MediaTypes;
 import org.sonarsource.sonarlint.core.client.api.common.TelemetryClientConfig;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
@@ -84,11 +85,13 @@ public class TelemetryHttpClient {
     TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
     TelemetryNotificationsPayload notifications = TelemetryUtils.toPayload(attributesProvider.devNotificationsDisabled(), data.notifications());
     ShowHotspotPayload showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
+    TaintVulnerabilitiesPayload taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
+      data.taintVulnerabilitiesInvestigatedRemotelyCount());
     String os = System.getProperty("os.name");
     String jre = System.getProperty("java.version");
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
-      analyzers, notifications, showHotspotPayload);
+      analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload);
   }
 
   private static void sendDelete(HttpConnector httpConnector, TelemetryPayload payload) {
