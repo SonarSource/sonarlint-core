@@ -357,17 +357,7 @@
               !*
             </Import-Package>
             <Export-Package>
-              org.sonarsource.sonarlint.core.client.api.common;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.common.analysis;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.connected;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.connected.objectstore;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.exceptions;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.standalone;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.util;version="${project.version}",
-              org.sonarsource.sonarlint.core.client.api.notifications;version="${project.version}",
-              org.sonarsource.sonarlint.core;version="${project.version}",
-              org.sonarsource.sonarlint.core.telemetry;version="${project.version}",
-              org.sonarsource.sonarlint.core.notifications;version="${project.version}",
+              org.sonarsource.sonarlint.core.*;version="${project.version}",
               com.google.protobuf,
             </Export-Package>
             <Include-Resource>
