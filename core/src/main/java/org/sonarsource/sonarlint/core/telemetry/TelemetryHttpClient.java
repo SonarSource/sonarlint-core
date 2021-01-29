@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.sonar.api.utils.log.Logger;
@@ -91,7 +90,7 @@ public class TelemetryHttpClient {
       analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload);
   }
 
-  private void sendDelete(TelemetryPayload payload) throws IOException {
+  private void sendDelete(TelemetryPayload payload) {
     try (SonarLintHttpClient.Response response = client.delete(endpoint, SonarLintHttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
       if (!response.isSuccessful() && SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Failed to upload telemetry opt-out: {}", response.toString());
@@ -99,7 +98,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  private void sendPost(TelemetryPayload payload) throws IOException {
+  private void sendPost(TelemetryPayload payload) {
     try (SonarLintHttpClient.Response response = client.post(endpoint, SonarLintHttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
       if (!response.isSuccessful() && SonarLintUtils.isInternalDebugEnabled()) {
         LOG.error("Failed to upload telemetry data: {}", response.toString());

@@ -35,6 +35,8 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SystemStubsExtension.class)
 class TelemetryHttpClientTests {
@@ -47,33 +49,12 @@ class TelemetryHttpClientTests {
   @RegisterExtension
   public LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
-  private final TelemetryClientAttributesProvider attributes = new TelemetryClientAttributesProvider() {
-
-    @Override
-    public boolean usesConnectedMode() {
-      return true;
-    }
-
-    @Override
-    public boolean useSonarCloud() {
-      return true;
-    }
-
-    @Override
-    public Optional<String> nodeVersion() {
-      return Optional.empty();
-    }
-
-    @Override
-    public boolean devNotificationsDisabled() {
-      return true;
-    }
-
-  };
+  private final TelemetryClientAttributesProvider attributes = mock(TelemetryClientAttributesProvider.class);
 
   @BeforeEach
   public void setUp() {
-    underTest = new TelemetryHttpClient("product", "version", "ideversion", mockServer.httpClient(), mockServer.url("/"));
+    when(attributes.nodeVersion()).thenReturn(Optional.empty());
+    underTest = new TelemetryHttpClient("product", "version", "ideversion", MockWebServerExtension.httpClient(), mockServer.url("/"));
   }
 
   @AfterAll
@@ -117,6 +98,24 @@ class TelemetryHttpClientTests {
   }
 
   @Test
+  void should_not_crash_when_cannot_build_payload_upload() throws Exception {
+    when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
+
+    underTest.upload(new TelemetryLocalStorage(), attributes);
+
+    assertThat(mockServer.getRequestCount()).isZero();
+  }
+
+  @Test
+  void should_not_crash_when_cannot_build_payload_optout() throws Exception {
+    when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
+
+    underTest.optOut(new TelemetryLocalStorage(), attributes);
+
+    assertThat(mockServer.getRequestCount()).isZero();
+  }
+
+  @Test
   void failed_upload_should_log_if_debug(EnvironmentVariables env) {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     underTest.upload(new TelemetryLocalStorage(), attributes);
@@ -128,5 +127,25 @@ class TelemetryHttpClientTests {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     underTest.optOut(new TelemetryLocalStorage(), attributes);
     assertThat(logTester.logs(LoggerLevel.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*code=404.*"));
+  }
+
+  @Test
+  void failed_upload_payload_should_log_if_debug(EnvironmentVariables env) {
+    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+    when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
+
+    underTest.upload(new TelemetryLocalStorage(), attributes);
+
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry data");
+  }
+
+  @Test
+  void failed_optout_payload_should_log_if_debug(EnvironmentVariables env) {
+    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+    when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
+
+    underTest.optOut(new TelemetryLocalStorage(), attributes);
+
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry opt-out");
   }
 }
