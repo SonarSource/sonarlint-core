@@ -82,6 +82,10 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     responsesByPath.put(path, response);
   }
 
+  public int getRequestCount() {
+    return server.getRequestCount();
+  }
+
   public RecordedRequest takeRequest() {
     try {
       return server.takeRequest();
