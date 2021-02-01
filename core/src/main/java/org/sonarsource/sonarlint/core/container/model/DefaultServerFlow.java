@@ -25,6 +25,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
+
 public class DefaultServerFlow implements ServerIssue.Flow {
   private final List<ServerIssueLocation> locations;
 
@@ -32,7 +34,7 @@ public class DefaultServerFlow implements ServerIssue.Flow {
     this.locations = list.stream()
       .map(i -> new DefaultServerLocation(i.getPath(),
         i.hasTextRange() ? i.getTextRange() : null,
-        i.getMsg()))
+        i.getMsg(), trimToNull(i.getCodeSnippet())))
       .collect(Collectors.toList());
   }
 
