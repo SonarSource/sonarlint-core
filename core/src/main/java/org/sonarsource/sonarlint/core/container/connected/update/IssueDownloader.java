@@ -153,6 +153,8 @@ public class IssueDownloader {
   }
 
   private static String getIssuesUrl(String key) {
-    return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&componentKeys=" + StringUtils.urlEncode(key);
+    // As a small workaround to the 10k limit, we sort on status, descending, in order to have resolved issues first (FP/WF)
+    return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys="
+      + StringUtils.urlEncode(key);
   }
 }
