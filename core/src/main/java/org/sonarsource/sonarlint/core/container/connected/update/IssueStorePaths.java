@@ -29,6 +29,8 @@ import org.sonarsource.sonarlint.core.container.model.DefaultServerFlow;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
+
 public class IssueStorePaths {
 
   public String sqPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, String projectKey, String sqFilePath) {
@@ -95,6 +97,7 @@ public class IssueStorePaths {
     if (pbIssue.getPrimaryLocation().hasTextRange()) {
       Sonarlint.ServerIssue.TextRange textRange = pbIssue.getPrimaryLocation().getTextRange();
       issue.setTextRange(new TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset()));
+      issue.setCodeSnippet(trimToNull(pbIssue.getPrimaryLocation().getCodeSnippet()));
     }
     issue.setFilePath(idePath);
     issue.setMessage(pbIssue.getPrimaryLocation().getMsg());

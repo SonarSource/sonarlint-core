@@ -39,6 +39,7 @@ public class DefaultServerIssue implements ServerIssue {
   private String type;
   private List<Flow> flows = new ArrayList<>();
   private TextRange textRange;
+  private String codeSnippet;
 
   @Override
   public String key() {
@@ -100,6 +101,11 @@ public class DefaultServerIssue implements ServerIssue {
     return flows;
   }
 
+  @Override
+  public String getCodeSnippet() {
+    return codeSnippet;
+  }
+
   public DefaultServerIssue setKey(String key) {
     this.key = key;
     return this;
@@ -157,6 +163,11 @@ public class DefaultServerIssue implements ServerIssue {
 
   public DefaultServerIssue setFlows(List<Flow> flows) {
     this.flows = flows;
+    return this;
+  }
+
+  public DefaultServerIssue setCodeSnippet(String codeSnippet) {
+    this.codeSnippet = codeSnippet;
     return this;
   }
 }

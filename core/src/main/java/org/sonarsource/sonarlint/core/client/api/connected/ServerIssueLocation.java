@@ -29,4 +29,10 @@ public interface ServerIssueLocation extends IssueRangeAndMessage {
    */
   @CheckForNull
   String getFilePath();
+
+  /**
+   * The code snippet corresponding to the text range on the server.
+   */
+  @CheckForNull
+  String getCodeSnippet();
 }

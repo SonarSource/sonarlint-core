@@ -119,6 +119,7 @@ message ServerIssue {
     string path = 1;
     string msg = 2;
     TextRange text_range = 3;
+    string code_snippet = 4;
   }
 
 	message TextRange {

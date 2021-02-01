@@ -27,11 +27,13 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 public class DefaultServerLocation extends TextRangeLocation implements ServerIssueLocation {
   private final String message;
   private final String filePath;
+  private final String codeSnippet;
 
-  public DefaultServerLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message) {
+  public DefaultServerLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String codeSnippet) {
     super(textRange);
     this.filePath = filePath;
     this.message = message;
+    this.codeSnippet = codeSnippet;
   }
 
   @Override
@@ -42,5 +44,10 @@ public class DefaultServerLocation extends TextRangeLocation implements ServerIs
   @Override
   public String getMessage() {
     return message;
+  }
+
+  @Override
+  public String getCodeSnippet() {
+    return codeSnippet;
   }
 }

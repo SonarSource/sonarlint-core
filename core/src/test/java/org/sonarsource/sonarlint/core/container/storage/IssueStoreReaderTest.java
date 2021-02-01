@@ -228,10 +228,15 @@ public class IssueStoreReaderTest {
     // setup issues
     issueStore.save(Collections.singletonList(Sonarlint.ServerIssue.newBuilder()
       .setPrimaryLocation(
-        Location.newBuilder().setPath("src/path1").setMsg("Primary").setTextRange(TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3).setEndLineOffset(4)))
+        Location.newBuilder()
+          .setPath("src/path1")
+          .setMsg("Primary")
+          .setTextRange(TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3).setEndLineOffset(4))
+          .setCodeSnippet("Primary location code"))
       .addFlow(Flow.newBuilder()
         .addLocation(Location.newBuilder().setPath("src/path1").setMsg("Flow 1 - Location 1")
-          .setTextRange(TextRange.newBuilder().setStartLine(5).setStartLineOffset(6).setEndLine(7).setEndLineOffset(8)))
+          .setTextRange(TextRange.newBuilder().setStartLine(5).setStartLineOffset(6).setEndLine(7).setEndLineOffset(8))
+          .setCodeSnippet("Some code snipper\n\t with newline"))
         .addLocation(Location.newBuilder().setPath("src/path1").setMsg("Flow 1 - Location 2 - Without text range"))
         .addLocation(Location.newBuilder().setPath("src/path2")))
       .build()));
@@ -245,6 +250,7 @@ public class IssueStoreReaderTest {
     assertThat(serverIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(serverIssue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(serverIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(serverIssue.getCodeSnippet()).isEqualTo("Primary location code");
 
     assertThat(serverIssue.getFlows()).hasSize(1);
     assertThat(serverIssue.getFlows().get(0).locations()).hasSize(3);
@@ -254,6 +260,7 @@ public class IssueStoreReaderTest {
     assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLineOffset()).isEqualTo(6);
     assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLine()).isEqualTo(7);
     assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLineOffset()).isEqualTo(8);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getCodeSnippet()).isEqualTo("Some code snipper\n\t with newline");
 
     assertThat(serverIssue.getFlows().get(0).locations().get(1).getMessage()).isEqualTo("Flow 1 - Location 2 - Without text range");
     assertThat(serverIssue.getFlows().get(0).locations().get(1).getTextRange()).isNull();
