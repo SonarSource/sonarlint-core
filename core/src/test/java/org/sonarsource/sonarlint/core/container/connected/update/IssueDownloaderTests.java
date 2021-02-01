@@ -88,7 +88,8 @@ class IssueDownloaderTests {
       response.writeTo(byteStream);
       try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
         WsClientTestUtils.addResponse(wsClient,
-          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&componentKeys=" + key + "&ps=500&p=1", inputStream);
+          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + key + "&ps=500&p=1",
+          inputStream);
       }
     }
 
@@ -134,7 +135,8 @@ class IssueDownloaderTests {
       response.writeTo(byteStream);
       try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
         WsClientTestUtils.addResponse(wsClient,
-          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&componentKeys=" + key + "&ps=500&p=1", inputStream);
+          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + key + "&ps=500&p=1",
+          inputStream);
       }
     }
 
@@ -148,7 +150,7 @@ class IssueDownloaderTests {
     SonarLintWsClient wsClient = WsClientTestUtils.createMock();
     String key = "dummyKey";
     WsClientTestUtils.addFailedResponse(wsClient,
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&componentKeys=" + key + "&ps=500&p=1", 503, "");
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys=" + key + "&ps=500&p=1", 503, "");
 
     IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueDownloader.download(key, projectConfiguration, PROGRESS));
