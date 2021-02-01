@@ -49,8 +49,7 @@ public class SecurityHotspotsService {
   }
 
   public Optional<RemoteHotspot> fetch(GetSecurityHotspotRequestParams params) {
-    try {
-      WsResponse wsResponse = client.get(getUrl(params.hotspotKey, params.projectKey));
+    try(WsResponse wsResponse = client.get(getUrl(params.hotspotKey, params.projectKey))) {
       Hotspots.ShowWsResponse response = parser.parseFrom(wsResponse.contentStream());
       return Optional.of(adapt(response));
     } catch (Exception e) {
