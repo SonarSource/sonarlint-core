@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.rule.RuleKey;
@@ -34,6 +35,8 @@ import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -45,6 +48,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
+import static java.util.stream.Collectors.joining;
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class RulesDownloader {
@@ -52,9 +56,11 @@ public class RulesDownloader {
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
 
   private final ServerApiHelper serverApiHelper;
+  private final Set<Language> enabledLanguages;
 
-  public RulesDownloader(ServerApiHelper serverApiHelper) {
+  public RulesDownloader(ServerApiHelper serverApiHelper, ConnectedGlobalConfiguration globalConfiguration) {
     this.serverApiHelper = serverApiHelper;
+    this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
   public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
@@ -107,6 +113,7 @@ public class RulesDownloader {
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
     builder.append("&severities=").append(severity);
+    builder.append("&languages=").append(enabledLanguages.stream().map(Language::getLanguageKey).collect(joining(",")));
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();
