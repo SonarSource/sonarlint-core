@@ -36,11 +36,16 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
+  private static final String FILE_1_KEY = "project:foo/bar/Hello.java";
+  private static final String FILE_2_KEY = "project:foo/bar/Hello2.java";
+  private static final String FILE_3_KEY = "project:foo/bar/Hello3.java";
+
   private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
 
   private final Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder().build();
@@ -55,25 +60,25 @@ class IssueDownloaderTests {
         .setMessage("Primary message")
         .setTextRange(TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4))
         .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent("project:foo/bar/Hello.java")
+        .setComponent(FILE_1_KEY)
         .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent("project:foo/bar/Hello.java")
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 2").setComponent("project:foo/bar/Hello2.java")
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 2").setComponent(FILE_2_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12))))
         .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent("project:foo/bar/Hello3.java")
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_3_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 2").setComponent("project:foo/bar/Hello.java")
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 2").setComponent(FILE_1_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))))
       .addComponents(Issues.Component.newBuilder()
-        .setKey("project:foo/bar/Hello.java")
+        .setKey(FILE_1_KEY)
         .setPath("foo/bar/Hello.java"))
       .addComponents(Issues.Component.newBuilder()
-        .setKey("project:foo/bar/Hello2.java")
+        .setKey(FILE_2_KEY)
         .setPath("foo/bar/Hello2.java"))
       .addComponents(Issues.Component.newBuilder()
-        .setKey("project:foo/bar/Hello3.java")
+        .setKey(FILE_3_KEY)
         .setPath("foo/bar/Hello3.java"))
       .setPaging(Paging.newBuilder()
         .setPageIndex(1)
@@ -117,6 +122,91 @@ class IssueDownloaderTests {
     assertThat(flowLocation12.getTextRange().getEndLineOffset()).isEqualTo(12);
 
     assertThat(serverIssue.getFlow(1).getLocationList()).hasSize(2);
+  }
+
+  @Test
+  void populate_code_snippet_of_taint_vulnerabilities() throws IOException {
+    Issues.SearchWsResponse response = buildSampleTaintVulnerabilityResponse();
+
+    SonarLintWsClient wsClient = WsClientTestUtils.createMock();
+
+    try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
+      response.writeTo(byteStream);
+      try (InputStream inputStream = new ByteArrayInputStream(byteStream.toByteArray())) {
+        WsClientTestUtils.addResponse(wsClient,
+          "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys="
+            + StringUtils.urlEncode(FILE_1_KEY)
+            + "&ps=500&p=1",
+          inputStream);
+      }
+    }
+    WsClientTestUtils.addResponse(wsClient, "/api/sources/raw?key=" + StringUtils.urlEncode(FILE_1_KEY), "Even\nBefore My\n\tCode\n  Snippet And\n After");
+
+    IssueDownloader issueDownloader = new IssueDownloader(wsClient, issueStorePaths);
+    List<ServerIssue> issues = issueDownloader.download(FILE_1_KEY, projectConfiguration, PROGRESS);
+    assertThat(issues).hasSize(1);
+
+    ServerIssue serverIssue = issues.get(0);
+    assertThat(serverIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(2);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLineOffset()).isEqualTo(7);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLine()).isEqualTo(4);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLineOffset()).isEqualTo(9);
+    assertThat(serverIssue.getPrimaryLocation().getCodeSnippet()).isEqualTo("My\n\tCode\n  Snippet");
+
+    assertThat(serverIssue.getFlowList()).hasSize(1);
+    assertThat(serverIssue.getFlow(0).getLocationList()).hasSize(4);
+
+    Location flowLocation11 = serverIssue.getFlow(0).getLocation(0);
+    assertThat(flowLocation11.getPath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
+    assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
+    assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
+    assertThat(flowLocation11.getCodeSnippet()).isEqualTo("After");
+
+    // Invalid text range
+    assertThat(serverIssue.getFlow(0).getLocation(1).getCodeSnippet()).isEmpty();
+
+    // 404
+    assertThat(serverIssue.getFlow(0).getLocation(2).getCodeSnippet()).isEmpty();
+
+    // No text range
+    assertThat(serverIssue.getFlow(0).getLocation(3).getCodeSnippet()).isEmpty();
+  }
+
+  private Issues.SearchWsResponse buildSampleTaintVulnerabilityResponse() {
+    Issues.SearchWsResponse response = Issues.SearchWsResponse.newBuilder()
+      .addIssues(Issues.Issue.newBuilder()
+        .setRule("javasecurity:S123")
+        .setHash("hash")
+        .setMessage("Primary message")
+        .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9))
+        .setCreationDate("2021-01-11T18:17:31+0000")
+        .setComponent(FILE_1_KEY)
+        .addFlows(Flow.newBuilder()
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Invalid text range").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(7).setEndOffset(6)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Another file").setComponent(FILE_2_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location No Text Range").setComponent(FILE_3_KEY))))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey(FILE_1_KEY)
+        .setPath("foo/bar/Hello.java"))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey(FILE_2_KEY)
+        .setPath("foo/bar/Hello2.java"))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey(FILE_3_KEY)
+        .setPath("foo/bar/Hello3.java"))
+      .setPaging(Paging.newBuilder()
+        .setPageIndex(1)
+        .setPageSize(500)
+        .setTotal(1))
+      .build();
+    return response;
   }
 
   @Test
