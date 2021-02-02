@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,7 +32,9 @@ import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarqube.ws.Rules.SearchResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
@@ -40,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader.RULES_SEARCH_URL;
 
 class RulesDownloaderTests {
@@ -49,21 +55,24 @@ class RulesDownloaderTests {
 
   private final ProgressMonitor monitor = mock(ProgressMonitor.class);
   private final ProgressWrapper progressWrapper = new ProgressWrapper(monitor);
+  private final ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
 
   @BeforeEach
   public void prepare() throws IOException {
     Context context = new Context();
     context.createRepository("javascript", "js").done();
     context.createRepository("squid", "java").done();
+    when(globalConfig.getEnabledLanguages()).thenReturn(Collections.singleton(Language.JS));
   }
 
   @Test
   void rules_update_protobuf(@TempDir Path tempDir) {
-    emptyMockForAllSeverities();
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", "/update/rulesp1.pb");
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
+    emptyMockForAllSeverities("js,java");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=js,java&p=1&ps=500", "/update/rulesp1.pb");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=js,java&p=2&ps=500", "/update/rulesp2.pb");
+    when(globalConfig.getEnabledLanguages()).thenReturn(new LinkedHashSet<>(Arrays.asList(Language.JS, Language.JAVA)));
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig);
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -78,10 +87,10 @@ class RulesDownloaderTests {
     SearchResponse response = SearchResponse.newBuilder()
       .setTotal(10001)
       .build();
-    emptyMockForAllSeverities();
-    mockServer.addProtobufResponse(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", response);
+    emptyMockForAllSeverities("js");
+    mockServer.addProtobufResponse(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=1&ps=500", response);
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig);
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> rulesUpdate.fetchRulesTo(tempDir, progressWrapper));
     assertThat(thrown).hasMessage("Found more than 10000 rules for severity 'MAJOR' in the SonarQube server, which is not supported by SonarLint.");
@@ -89,11 +98,11 @@ class RulesDownloaderTests {
 
   @Test
   void rules_update_protobuf_with_org(@TempDir Path tempDir) {
-    emptyMockForAllSeverities(RULES_SEARCH_URL + "&organization=myOrg");
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&p=1&ps=500", "/update/rulesp1.pb");
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
+    emptyMockForAllSeverities(RULES_SEARCH_URL + "&organization=myOrg", "js");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&languages=js&p=1&ps=500", "/update/rulesp1.pb");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&languages=js&p=2&ps=500", "/update/rulesp2.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper("myOrg"));
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper("myOrg"), globalConfig);
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -105,23 +114,23 @@ class RulesDownloaderTests {
 
   @Test
   void should_get_rules_of_all_severities(@TempDir Path tempDir) {
-    emptyMockForAllSeverities();
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", "/update/rulesp1.pb");
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=INFO&p=1&ps=500", "/update/rules_info_p1.pb");
+    emptyMockForAllSeverities("js");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=1&ps=500", "/update/rulesp1.pb");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=2&ps=500", "/update/rulesp2.pb");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=INFO&languages=js&p=1&ps=500", "/update/rules_info_p1.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig);
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939 + 34);
 
-    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=INFO&p=1&ps=500");
-    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=MINOR&p=1&ps=500");
-    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500");
-    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=MAJOR&p=2&ps=500");
-    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=CRITICAL&p=1&ps=500");
-    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=BLOCKER&p=1&ps=500");
+    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=INFO&languages=js&p=1&ps=500");
+    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=MINOR&languages=js&p=1&ps=500");
+    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=1&ps=500");
+    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=2&ps=500");
+    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=CRITICAL&languages=js&p=1&ps=500");
+    assertThat(mockServer.takeRequest().getPath()).isEqualTo(RULES_SEARCH_URL + "&severities=BLOCKER&languages=js&p=1&ps=500");
 
     verify(monitor).setMessage("Loading severity 'info'");
     verify(monitor).setFraction(0.0f);
@@ -142,10 +151,10 @@ class RulesDownloaderTests {
     org.sonarqube.ws.Rules.SearchResponse response = org.sonarqube.ws.Rules.SearchResponse.newBuilder()
       .addRules(org.sonarqube.ws.Rules.Rule.newBuilder().setKey("S:101").build())
       .build();
-    emptyMockForAllSeverities();
-    mockServer.addProtobufResponse(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", response);
+    emptyMockForAllSeverities("js");
+    mockServer.addProtobufResponse(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=1&ps=500", response);
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig);
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules saved = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -155,22 +164,22 @@ class RulesDownloaderTests {
 
   @Test
   void errorReadingStream(@TempDir Path tempDir) {
-    emptyMockForAllSeverities();
-    mockServer.addStringResponse(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", "trash");
+    emptyMockForAllSeverities("js");
+    mockServer.addStringResponse(RULES_SEARCH_URL + "&severities=MAJOR&languages=js&p=1&ps=500", "trash");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig);
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> rulesUpdate.fetchRulesTo(tempDir, progressWrapper));
     assertThat(thrown).hasMessage("Failed to load rules");
   }
 
-  private void emptyMockForAllSeverities() {
-    emptyMockForAllSeverities(RULES_SEARCH_URL);
+  private void emptyMockForAllSeverities(String languages) {
+    emptyMockForAllSeverities(RULES_SEARCH_URL, languages);
   }
 
-  private void emptyMockForAllSeverities(String baseUrl) {
+  private void emptyMockForAllSeverities(String baseUrl, String languages) {
     for (Severity s : Severity.values()) {
-      mockServer.addResponseFromResource(baseUrl + "&severities=" + s.name() + "&p=1&ps=500", "/update/empty_rules.pb");
+      mockServer.addResponseFromResource(baseUrl + "&severities=" + s.name() + "&languages=" + languages + "&p=1&ps=500", "/update/empty_rules.pb");
     }
 
   }
