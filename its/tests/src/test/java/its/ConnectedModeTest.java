@@ -831,6 +831,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     Path pom = projectDir.resolve("pom.xml");
     ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
       .setCleanPackageSonarGoals()
+      .setProperty("sonar.projectKey", projectDirName)
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }

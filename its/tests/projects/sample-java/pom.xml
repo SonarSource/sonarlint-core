@@ -8,6 +8,7 @@
   <description>Sample project for ITs</description>
   
   <properties>
+    <!-- Create an issue for test analysisJavaPomXml -->
     <old.version>${pom.version}</old.version>
   </properties>
 
