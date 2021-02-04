@@ -25,20 +25,20 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfilesDownloader {
   private static final Logger LOG = Loggers.get(QualityProfilesDownloader.class);
 
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public QualityProfilesDownloader(SonarLintWsClient wsClient) {
+  public QualityProfilesDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -53,7 +53,7 @@ public class QualityProfilesDownloader {
     searchUrl.append(DEFAULT_QP_SEARCH_URL);
     wsClient.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("?organization=").append(StringUtils.urlEncode(org)));
-    SonarLintWsClient.consumeTimed(
+    ServerApiHelper.consumeTimed(
       () -> wsClient.get(searchUrl.toString()),
       response -> {
         SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream());

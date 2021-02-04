@@ -25,8 +25,8 @@ import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -38,7 +38,7 @@ class ServerIssueTrackerTests {
   private final String filePath = "dummy file";
   private final ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
   private final ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
-  private final ConnectedModeEndpoint endpoint = mock(ConnectedModeEndpoint.class);
+  private final EndpointParams endpoint = mock(EndpointParams.class);
   private final ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
 
   @Test
@@ -51,7 +51,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_download_issues_from_engine() {
-    SonarLintHttpClient client = MockWebServerExtension.httpClient();
+    HttpClient client = MockWebServerExtension.httpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath));
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, null);
     verifyNoMoreInteractions(engine);
@@ -59,7 +59,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
-    SonarLintHttpClient client = MockWebServerExtension.httpClient();
+    HttpClient client = MockWebServerExtension.httpClient();
     when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, null)).thenThrow(new DownloadException());
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath));
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, null);

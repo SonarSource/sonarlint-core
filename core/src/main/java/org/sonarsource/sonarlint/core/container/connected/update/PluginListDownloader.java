@@ -29,9 +29,9 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class PluginListDownloader {
@@ -42,11 +42,11 @@ public class PluginListDownloader {
 
   public static final String WS_PATH = "/api/plugins/installed";
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, SonarLintWsClient wsClient, PluginVersionChecker pluginVersionChecker) {
+  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, ServerApiHelper wsClient, PluginVersionChecker pluginVersionChecker) {
     this.wsClient = wsClient;
     this.pluginVersionChecker = pluginVersionChecker;
 
@@ -54,7 +54,7 @@ public class PluginListDownloader {
   }
 
   public List<SonarAnalyzer> downloadPluginList() {
-    return SonarLintWsClient.processTimed(
+    return ServerApiHelper.processTimed(
       () -> wsClient.get(WS_PATH),
       response -> {
         InstalledPlugins installedPlugins = new Gson().fromJson(response.bodyAsString(), InstalledPlugins.class);

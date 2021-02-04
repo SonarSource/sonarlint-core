@@ -35,13 +35,13 @@ import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -51,9 +51,9 @@ public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public RulesDownloader(SonarLintWsClient wsClient) {
+  public RulesDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -112,8 +112,8 @@ public class RulesDownloader {
     return builder.toString();
   }
 
-  private static SearchResponse loadFromStream(SonarLintHttpClient.Response response) {
-    try (SonarLintHttpClient.Response toBeClosed = response; InputStream is = toBeClosed.bodyAsStream()) {
+  private static SearchResponse loadFromStream(HttpClient.Response response) {
+    try (HttpClient.Response toBeClosed = response; InputStream is = toBeClosed.bodyAsStream()) {
       return SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);

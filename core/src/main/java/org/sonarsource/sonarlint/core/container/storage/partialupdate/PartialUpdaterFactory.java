@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class PartialUpdaterFactory {
   private final StoragePaths storagePaths;
@@ -40,8 +40,8 @@ public class PartialUpdaterFactory {
     this.tempFolder = tempFolder;
   }
 
-  public PartialUpdater create(ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
-    SonarLintWsClient wsClient = new SonarLintWsClient(endpoint, client);
+  public PartialUpdater create(EndpointParams endpoint, HttpClient client) {
+    ServerApiHelper wsClient = new ServerApiHelper(endpoint, client);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
     IssueDownloader downloader = new IssueDownloader(wsClient, issueStorePaths);
     ProjectListDownloader projectListDownloader = new ProjectListDownloader(wsClient);

@@ -30,20 +30,20 @@ import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Issues.Component;
 import org.sonarqube.ws.Issues.Issue;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
   private final IssueStorePaths issueStorePaths;
 
-  public IssueDownloader(SonarLintWsClient wsClient, IssueStorePaths issueStorePaths) {
+  public IssueDownloader(ServerApiHelper wsClient, IssueStorePaths issueStorePaths) {
     this.wsClient = wsClient;
     this.issueStorePaths = issueStorePaths;
   }

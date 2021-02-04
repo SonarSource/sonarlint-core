@@ -102,8 +102,8 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @Test
   public void should_match_files_when_importing_entire_project() throws IOException {
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // entire project imported in IDE
     Path projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
@@ -114,15 +114,15 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     ProjectBinding projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEmpty();
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), projectBinding,
+    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", null);
     assertThat(serverIssues).hasSize(2);
   }
 
   @Test
   public void should_match_files_when_importing_module() throws IOException {
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // only module B1 imported in IDE
     Path projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
@@ -133,7 +133,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     ProjectBinding projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("module_b/module_b1");
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), projectBinding,
+    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", null);
     assertThat(serverIssues).hasSize(2);
   }

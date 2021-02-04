@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -34,8 +34,8 @@ class NotificationConfigurationTests {
     ServerNotificationListener listener = mock(ServerNotificationListener.class);
     LastNotificationTime lastNotificationTime = mock(LastNotificationTime.class);
     String projectKey = "key";
-    ConnectedModeEndpoint endpoint = mock(ConnectedModeEndpoint.class);
-    SonarLintHttpClient client = mock(SonarLintHttpClient.class);
+    EndpointParams endpoint = mock(EndpointParams.class);
+    HttpClient client = mock(HttpClient.class);
     NotificationConfiguration configuration = new NotificationConfiguration(listener, lastNotificationTime, projectKey, () -> endpoint, () -> client);
 
     assertThat(configuration.lastNotificationTime()).isEqualTo(lastNotificationTime);

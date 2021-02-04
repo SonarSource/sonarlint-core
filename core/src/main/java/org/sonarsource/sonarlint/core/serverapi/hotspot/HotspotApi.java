@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.hotspot;
+package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.io.InputStream;
 import java.util.Optional;
@@ -26,26 +26,23 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-public class SecurityHotspotsService {
-  private static final Logger LOG = Loggers.get(SecurityHotspotsService.class);
+public class HotspotApi {
+  private static final Logger LOG = Loggers.get(HotspotApi.class);
 
   private static final String HOTSPOTS_API_URL = "/api/hotspots/show.protobuf";
 
-  private final SonarLintWsClient client;
+  private final ServerApiHelper helper;
 
-  public SecurityHotspotsService(ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
-    this.client = new SonarLintWsClient(endpoint, client);
+  public HotspotApi(ServerApiHelper helper) {
+    this.helper = helper;
   }
 
-  public Optional<RemoteHotspot> fetch(GetSecurityHotspotRequestParams params) {
-    try (SonarLintHttpClient.Response wsResponse = client.get(getUrl(params.hotspotKey, params.projectKey)); InputStream is = wsResponse.bodyAsStream()) {
+  public Optional<ServerHotspot> fetch(GetSecurityHotspotRequestParams params) {
+    try (HttpClient.Response wsResponse = helper.get(getUrl(params.hotspotKey, params.projectKey)); InputStream is = wsResponse.bodyAsStream()) {
       Hotspots.ShowWsResponse response = Hotspots.ShowWsResponse.parseFrom(is);
       return Optional.of(adapt(response));
     } catch (Exception e) {
@@ -54,19 +51,19 @@ public class SecurityHotspotsService {
     return Optional.empty();
   }
 
-  private static RemoteHotspot adapt(Hotspots.ShowWsResponse hotspot) {
-    return new RemoteHotspot(
+  private static ServerHotspot adapt(Hotspots.ShowWsResponse hotspot) {
+    return new ServerHotspot(
       hotspot.getMessage(),
       hotspot.getComponent().getPath(),
       convertTextRange(hotspot.getTextRange()),
       hotspot.getAuthor(),
-      RemoteHotspot.Status.valueOf(hotspot.getStatus()),
-      hotspot.hasResolution() ? RemoteHotspot.Resolution.valueOf(hotspot.getResolution()) : null,
+      ServerHotspot.Status.valueOf(hotspot.getStatus()),
+      hotspot.hasResolution() ? ServerHotspot.Resolution.valueOf(hotspot.getResolution()) : null,
       adapt(hotspot.getRule()));
   }
 
-  private static RemoteHotspot.Rule adapt(Hotspots.Rule rule) {
-    return new RemoteHotspot.Rule(rule.getKey(), rule.getName(), rule.getSecurityCategory(), RemoteHotspot.Rule.Probability.valueOf(rule.getVulnerabilityProbability()),
+  private static ServerHotspot.Rule adapt(Hotspots.Rule rule) {
+    return new ServerHotspot.Rule(rule.getKey(), rule.getName(), rule.getSecurityCategory(), ServerHotspot.Rule.Probability.valueOf(rule.getVulnerabilityProbability()),
       rule.getRiskDescription(), rule.getVulnerabilityDescription(), rule.getFixRecommendations());
   }
 

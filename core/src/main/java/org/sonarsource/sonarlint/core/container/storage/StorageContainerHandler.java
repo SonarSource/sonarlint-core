@@ -39,17 +39,17 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -139,7 +139,7 @@ public class StorageContainerHandler {
     return projectStorageStatusReader.apply(projectKey);
   }
 
-  public Map<String, RemoteProject> allProjectsByKey() {
+  public Map<String, ServerProject> allProjectsByKey() {
     return allProjectReader.get();
   }
 
@@ -151,7 +151,7 @@ public class StorageContainerHandler {
     return storageExclusions.getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ProjectBinding projectBinding, String ideFilePath,
+  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
@@ -159,7 +159,7 @@ public class StorageContainerHandler {
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, ProgressWrapper progress) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
     updater.updateFileIssues(projectKey, configuration, progress);
@@ -181,7 +181,7 @@ public class StorageContainerHandler {
 
   }
 
-  public Map<String, RemoteProject> downloadProjectList(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ProgressWrapper progress) {
+  public Map<String, ServerProject> downloadProjectList(EndpointParams endpoint, HttpClient client, ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     updater.updateProjectList(progress);
     return allProjectsByKey();

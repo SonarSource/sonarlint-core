@@ -46,8 +46,8 @@ import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 public abstract class AbstractConnectedTest {
   protected static final String SONARLINT_USER = "sonarlint";
@@ -64,7 +64,7 @@ public abstract class AbstractConnectedTest {
   @ClassRule
   public static TemporaryFolder t = new TemporaryFolder();
 
-  protected static final class SonarLintHttpClientOkHttpImpl implements SonarLintHttpClient {
+  protected static final class SonarLintHttpClientOkHttpImpl implements HttpClient {
     private final OkHttpClient okClient;
 
     public SonarLintHttpClientOkHttpImpl(OkHttpClient okClient) {
@@ -204,44 +204,23 @@ public abstract class AbstractConnectedTest {
     return map;
   }
 
-  public static SonarLintHttpClient sqHttpClient() {
+  public static HttpClient sqHttpClient() {
     return new SonarLintHttpClientOkHttpImpl(SQ_CLIENT);
   }
 
-  public static SonarLintHttpClient sqHttpClientNoAuth() {
+  public static HttpClient sqHttpClientNoAuth() {
     return new SonarLintHttpClientOkHttpImpl(CLIENT_NO_AUTH);
   }
 
-  protected ConnectedModeEndpoint endpoint(Orchestrator orchestrator) {
-    return endpointNoOrg(orchestrator.getServer().getUrl());
+  protected EndpointParams endpointParams(Orchestrator orchestrator) {
+    return endpointParamsNoOrg(orchestrator.getServer().getUrl());
   }
 
-  protected ConnectedModeEndpoint endpointNoOrg(String url) {
-    return endpoint(url, false, null);
+  protected EndpointParams endpointParamsNoOrg(String url) {
+    return endpointParams(url, false, null);
   }
 
-  protected ConnectedModeEndpoint endpoint(String url, boolean isSonarCloud, @Nullable String org) {
-
-    return new ConnectedModeEndpoint() {
-
-      @Override
-      public boolean isSonarCloud() {
-        return isSonarCloud;
-      }
-
-      @Override
-      public String getOrganization() {
-        if (!isSonarCloud) {
-          throw new UnsupportedOperationException("getOrganization");
-        }
-        return org;
-      }
-
-      @Override
-      public String getBaseUrl() {
-        return url;
-      }
-
-    };
+  protected EndpointParams endpointParams(String url, boolean isSonarCloud, @Nullable String org) {
+    return new EndpointParams(url, isSonarCloud, org);
   }
 }

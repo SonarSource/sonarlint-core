@@ -17,14 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
-public interface RemoteOrganization {
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 
-  String getKey();
+import static org.assertj.core.api.Assertions.assertThat;
 
-  String getName();
+class GetSecurityHotspotRequestParamsTest {
+  @Test
+  void it_should_populate_fields_with_constructor_parameters() {
+    GetSecurityHotspotRequestParams params = new GetSecurityHotspotRequestParams("hotspotKey", "projectKey");
 
-  String getDescription();
+    assertThat(params.hotspotKey).isEqualTo("hotspotKey");
+    assertThat(params.projectKey).isEqualTo("projectKey");
+  }
 
 }

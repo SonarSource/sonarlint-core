@@ -17,32 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.sonarqube.ws.Common.Paging;
-import org.sonarqube.ws.Organizations;
-import org.sonarqube.ws.Organizations.Organization;
-import org.sonarqube.ws.Organizations.SearchWsResponse;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
-import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class WsHelperImplTests {
+class ConnectionValidatorTests {
 
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
@@ -63,27 +51,16 @@ class WsHelperImplTests {
     "      \"version\": \"3.4 (build 5828)\"\n" +
     "    } ]}";
 
-  private WsHelperImpl helper;
-
-  @Mock
-  private ServerVersionAndStatusChecker serverChecker;
-  @Mock
-  private PluginVersionChecker pluginChecker;
-  @Mock
-  private AuthenticationChecker authChecker;
-
-  @BeforeEach
-  public void setUp() throws IOException {
-    MockitoAnnotations.initMocks(this);
-    helper = new WsHelperImpl(MockWebServerExtension.httpClient());
-  }
+  private final ServerVersionAndStatusChecker serverChecker = mock(ServerVersionAndStatusChecker.class);
 
   @Test
   void testConnection_ok() throws Exception {
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    ValidationResult validation = helper.validateConnection(mockServer.endpoint());
+    ValidationResult validation = underTest.validateConnection();
 
     assertThat(validation.success()).isTrue();
     assertThat(mockServer.takeRequest().getPath()).isEqualTo("/api/system/status");
@@ -92,11 +69,13 @@ class WsHelperImplTests {
 
   @Test
   void testConnectionOrganizationNotFound() throws Exception {
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
+
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1", "/orgs/empty.pb");
 
-    ValidationResult validation = helper.validateConnection(mockServer.endpoint("myOrg"));
+    ValidationResult validation = underTest.validateConnection();
 
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("No organizations found for key: myOrg");
@@ -104,56 +83,30 @@ class WsHelperImplTests {
 
   @Test
   void testConnection_ok_with_org() throws Exception {
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), MockWebServerExtension.httpClient()));
+
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=1", "/orgs/single.pb");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=2", "/orgs/empty.pb");
 
-    ValidationResult validation = helper.validateConnection(mockServer.endpoint("henryju-github"));
+    ValidationResult validation = underTest.validateConnection();
 
     assertThat(validation.success()).isTrue();
   }
 
   @Test
   void testUnsupportedServer() {
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"4.5\",\"status\": \"UP\"}");
 
     when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
 
-    ValidationResult validation = helper.validateConnection(mockServer.endpoint());
+    ValidationResult validation = underTest.validateConnection();
 
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 6.7");
-  }
-
-  @Test
-  void testListUserOrganizationWithMoreThan20Pages() throws IOException {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
-
-    for (int i = 0; i < 21; i++) {
-      mockOrganizationsPage(i + 1, 10500);
-    }
-
-    List<RemoteOrganization> orgs = helper.listUserOrganizations(mockServer.endpoint(), null);
-
-    assertThat(orgs).hasSize(10500);
-  }
-
-  private void mockOrganizationsPage(int page, int total) throws IOException {
-    List<Organization> orgs = IntStream.rangeClosed(1, 500)
-      .mapToObj(i -> Organization.newBuilder().setKey("org_page" + page + "number" + i).build())
-      .collect(Collectors.toList());
-
-    Paging paging = Paging.newBuilder()
-      .setPageSize(500)
-      .setTotal(total)
-      .setPageIndex(page)
-      .build();
-    SearchWsResponse response = Organizations.SearchWsResponse.newBuilder()
-      .setPaging(paging)
-      .addAllOrganizations(orgs)
-      .build();
-    mockServer.addProtobufResponse("/api/organizations/search.protobuf?member=true&ps=500&p=" + page, response);
   }
 
 }

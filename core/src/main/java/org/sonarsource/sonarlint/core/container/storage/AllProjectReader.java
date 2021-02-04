@@ -22,12 +22,12 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 
-public class AllProjectReader implements Supplier<Map<String, RemoteProject>> {
+public class AllProjectReader implements Supplier<Map<String, ServerProject>> {
   private final StorageReader storageReader;
 
   public AllProjectReader(StorageReader storageReader) {
@@ -35,8 +35,8 @@ public class AllProjectReader implements Supplier<Map<String, RemoteProject>> {
   }
 
   @Override
-  public Map<String, RemoteProject> get() {
-    Map<String, RemoteProject> results = new HashMap<>();
+  public Map<String, ServerProject> get() {
+    Map<String, ServerProject> results = new HashMap<>();
     ProjectList projectList = storageReader.readProjectList();
     Map<String, Project> projectsByKey = projectList.getProjectsByKeyMap();
     for (Map.Entry<String, Project> entry : projectsByKey.entrySet()) {

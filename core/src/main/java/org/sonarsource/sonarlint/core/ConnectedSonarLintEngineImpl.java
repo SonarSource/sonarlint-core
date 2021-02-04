@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
@@ -55,8 +54,9 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.util.Objects.requireNonNull;
@@ -164,7 +164,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public UpdateResult update(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, @Nullable ProgressMonitor monitor) {
+  public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
     requireNonNull(endpoint);
     setLogging(null);
     return withRwLock(() -> {
@@ -196,13 +196,13 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, @Nullable ProgressMonitor monitor) {
+  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
     requireNonNull(endpoint);
     return withReadLock(() -> runInConnectedContainer(endpoint, client, container -> container.checkForUpdate(new ProgressWrapper(monitor))));
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey,
+  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey,
     @Nullable ProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
@@ -210,12 +210,12 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public Map<String, RemoteProject> allProjectsByKey() {
+  public Map<String, ServerProject> allProjectsByKey() {
     return withReadLock(() -> getHandler().allProjectsByKey());
   }
 
   @Override
-  public Map<String, RemoteProject> downloadAllProjects(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, @Nullable ProgressMonitor monitor) {
+  public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
       return getHandler().downloadProjectList(endpoint, client, new ProgressWrapper(monitor));
@@ -239,7 +239,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ProjectBinding projectBinding, String ideFilePath,
+  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
@@ -248,7 +248,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void downloadServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, @Nullable ProgressMonitor monitor) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor) {
     withRwLock(() -> {
       getHandler().downloadServerIssues(endpoint, client, projectKey, new ProgressWrapper(monitor));
       return null;
@@ -261,7 +261,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void updateProject(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, String projectKey, @Nullable ProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
@@ -312,7 +312,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     }
   }
 
-  private <U> U runInConnectedContainer(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, Function<ConnectedContainer, U> func) {
+  private <U> U runInConnectedContainer(EndpointParams endpoint, HttpClient client, Function<ConnectedContainer, U> func) {
     ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, endpoint, client);
     try {
       connectedContainer.startComponents();

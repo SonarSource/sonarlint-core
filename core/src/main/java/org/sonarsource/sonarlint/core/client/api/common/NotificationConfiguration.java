@@ -22,18 +22,18 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 public class NotificationConfiguration {
   private final ServerNotificationListener listener;
   private final LastNotificationTime lastNotificationTime;
   private final String projectKey;
-  private final Supplier<ConnectedModeEndpoint> endpoint;
-  private final Supplier<SonarLintHttpClient> client;
+  private final Supplier<EndpointParams> endpoint;
+  private final Supplier<HttpClient> client;
 
   public NotificationConfiguration(ServerNotificationListener listener, LastNotificationTime lastNotificationTime,
-    String projectKey, Supplier<ConnectedModeEndpoint> endpoint, Supplier<SonarLintHttpClient> client) {
+    String projectKey, Supplier<EndpointParams> endpoint, Supplier<HttpClient> client) {
     this.listener = listener;
     this.lastNotificationTime = lastNotificationTime;
     this.projectKey = projectKey;
@@ -53,11 +53,11 @@ public class NotificationConfiguration {
     return projectKey;
   }
 
-  public Supplier<ConnectedModeEndpoint> endpoint() {
+  public Supplier<EndpointParams> endpoint() {
     return endpoint;
   }
 
-  public Supplier<SonarLintHttpClient> client() {
+  public Supplier<HttpClient> client() {
     return client;
   }
 }

@@ -35,14 +35,15 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,7 +108,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
-    UpdateResult update = engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    UpdateResult update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
     assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1.2080'). Skip downloading it.");
@@ -116,7 +117,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   @Test
   public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
-    ValidationResult result = new WsHelperImpl(sqHttpClient()).validateConnection(endpoint(ORCHESTRATOR));
+    ValidationResult result = new ConnectionValidator(new ServerApiHelper(endpointParams(ORCHESTRATOR), sqHttpClient())).validateConnection();
     assertThat(result.success()).isTrue();
   }
 

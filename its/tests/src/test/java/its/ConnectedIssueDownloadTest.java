@@ -138,10 +138,10 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
 
   @Test
   public void download_all_issues_limited_to_10k() throws IOException {
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
-    engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     List<ServerIssue> file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
     List<ServerIssue> file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
@@ -149,10 +149,10 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_000);
 
     // Force reload of each files
-    List<ServerIssue> reloaded500 = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo", null);
+    List<ServerIssue> reloaded500 = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo", null);
     assertThat(reloaded500).hasSize(500);
 
-    List<ServerIssue> reloaded10k = engine.downloadServerIssues(endpoint(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo", null);
+    List<ServerIssue> reloaded10k = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo", null);
     assertThat(reloaded10k).hasSize(10_000);
 
     // Now storage is complete

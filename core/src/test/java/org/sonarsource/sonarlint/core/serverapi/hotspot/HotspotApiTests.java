@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.hotspot;
+package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Optional;
@@ -30,21 +30,20 @@ import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SecurityHotspotsServiceTests {
+class HotspotApiTests {
 
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
-  private SecurityHotspotsService underTest;
+  private HotspotApi underTest;
 
   @BeforeEach
   public void setUp() {
-    underTest = new SecurityHotspotsService(mockServer.endpoint(), MockWebServerExtension.httpClient());
+    underTest = new HotspotApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
   }
 
   @Test
@@ -82,20 +81,20 @@ class SecurityHotspotsServiceTests {
         .build())
       .build());
 
-    Optional<RemoteHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
     assertThat(remoteHotspot).isNotEmpty();
-    RemoteHotspot hotspot = remoteHotspot.get();
+    ServerHotspot hotspot = remoteHotspot.get();
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
     assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(1, 2, 3, 4));
     assertThat(hotspot.author).isEqualTo("author");
-    assertThat(hotspot.status).isEqualTo(RemoteHotspot.Status.REVIEWED);
-    assertThat(hotspot.resolution).isEqualTo(RemoteHotspot.Resolution.SAFE);
+    assertThat(hotspot.status).isEqualTo(ServerHotspot.Status.REVIEWED);
+    assertThat(hotspot.resolution).isEqualTo(ServerHotspot.Resolution.SAFE);
     assertThat(hotspot.rule.key).isEqualTo("key");
     assertThat(hotspot.rule.name).isEqualTo("name");
     assertThat(hotspot.rule.securityCategory).isEqualTo("category");
-    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(RemoteHotspot.Rule.Probability.HIGH);
+    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspot.Rule.Probability.HIGH);
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");
@@ -103,7 +102,7 @@ class SecurityHotspotsServiceTests {
 
   @Test
   void it_should_return_empty_optional_when_ws_client_throws_an_exception() {
-    Optional<RemoteHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
     assertThat(remoteHotspot).isEmpty();
   }
 
@@ -111,7 +110,7 @@ class SecurityHotspotsServiceTests {
   void it_should_return_empty_optional_when_parser_throws_an_exception() throws InvalidProtocolBufferException {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Issues.BulkChangeWsResponse.newBuilder().build());
 
-    Optional<RemoteHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
     assertThat(remoteHotspot).isEmpty();
   }
@@ -132,10 +131,10 @@ class SecurityHotspotsServiceTests {
         .build())
       .build());
 
-    Optional<RemoteHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
     assertThat(remoteHotspot).isNotEmpty();
-    RemoteHotspot hotspot = remoteHotspot.get();
+    ServerHotspot hotspot = remoteHotspot.get();
     assertThat(hotspot.resolution).isNull();
   }
 }

@@ -17,23 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.http;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.serverapi;
 
-import javax.annotation.Nullable;
-
-/**
- * SonarQube or SonarCloud endpoint
- */
-public interface ConnectedModeEndpoint {
-
-  String getBaseUrl();
-
-  boolean isSonarCloud();
-
-  /**
-   * @throws UnsupportedOperationException if not SonarCloud
-   */
-  @Nullable
-  String getOrganization();
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

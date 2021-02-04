@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarqube.ws.Components;
 import org.sonarqube.ws.Components.Component;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -39,9 +39,9 @@ import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQu
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public ModuleHierarchyDownloader(SonarLintWsClient wsClient) {
+  public ModuleHierarchyDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -94,8 +94,8 @@ public class ModuleHierarchyDownloader {
 
   @CheckForNull
   private String fetchAncestorKey(String moduleKey) {
-    return WsHelperImpl
-      .fetchComponent(wsClient, moduleKey)
+    return new ProjectApi(wsClient)
+      .fetchComponent(moduleKey)
       .flatMap(r -> r.getAncestorsList().stream().map(Component::getKey).findFirst())
       .orElse(null);
   }

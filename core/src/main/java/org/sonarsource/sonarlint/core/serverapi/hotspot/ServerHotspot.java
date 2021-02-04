@@ -17,14 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 
 import javax.annotation.Nullable;
 
-public class RemoteHotspot {
-  public RemoteHotspot(String message,
+public class ServerHotspot {
+  public ServerHotspot(String message,
                        String filePath,
                        TextRange textRange,
                        String author,

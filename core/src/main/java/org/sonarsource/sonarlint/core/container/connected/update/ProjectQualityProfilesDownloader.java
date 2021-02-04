@@ -26,17 +26,17 @@ import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectQualityProfilesDownloader {
 
   private static final Logger LOG = Loggers.get(ProjectQualityProfilesDownloader.class);
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public ProjectQualityProfilesDownloader(SonarLintWsClient wsClient) {
+  public ProjectQualityProfilesDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -48,7 +48,7 @@ public class ProjectQualityProfilesDownloader {
     wsClient.getOrganizationKey()
       .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
     try {
-      qpResponse = SonarLintWsClient.processTimed(
+      qpResponse = ServerApiHelper.processTimed(
         () -> wsClient.get(url.toString()),
         response -> Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream()),
         duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));

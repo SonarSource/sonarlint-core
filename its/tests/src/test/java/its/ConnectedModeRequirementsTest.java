@@ -131,7 +131,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void dontDownloadPluginIfNotEnabledLanguage() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
       .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JS_PLUGIN_KEY);
@@ -140,7 +140,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void dontFailIfMissingBasePlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).contains("Plugin 'JavaScript Custom Rules Plugin' dependency on 'javascript' is unsatisfied. Skip loading it.");
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
       .contains(tuple(CUSTOM_JS_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("javascript"))));
@@ -149,7 +149,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void dontLoadExcludedPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
     engine.stop(false);
 
@@ -165,11 +165,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void analysisJavascriptWithoutTypescript() throws Exception {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
 
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, null);
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -197,11 +197,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = createEngine(e -> e
       .setExtraProperties(extraProperties)
       .addEnabledLanguages(Language.JS, Language.PHP));
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
 
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, null);
     SaveIssueListener issueListenerTs = new SaveIssueListener();
     engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
     assertThat(issueListenerTs.getIssues()).hasSize(0);
