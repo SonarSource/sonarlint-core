@@ -72,19 +72,19 @@ import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.connected.GetSecurityHotspotRequestParams;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteHotspot;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
-import org.sonarsource.sonarlint.core.container.connected.hotspot.SecurityHotspotsService;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
@@ -295,7 +295,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allProjectsByKey()).hasSize(15);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(endpoint(ORCHESTRATOR), sqHttpClient(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
     assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
@@ -303,7 +303,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void updateNoAuth() {
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     try {
-      engine.update(endpoint(ORCHESTRATOR), sqHttpClientNoAuth(), null);
+      engine.update(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), null);
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
@@ -479,18 +479,18 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6));
 
     analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
-    SecurityHotspotsService securityHotspotsService = new SecurityHotspotsService(endpoint(ORCHESTRATOR), sqHttpClient());
+    HotspotApi securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
 
-    Optional<RemoteHotspot> remoteHotspot = securityHotspotsService
+    Optional<ServerHotspot> remoteHotspot = securityHotspotsService
       .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
 
     assertThat(remoteHotspot).isNotEmpty();
-    RemoteHotspot actualHotspot = remoteHotspot.get();
+    ServerHotspot actualHotspot = remoteHotspot.get();
     assertThat(actualHotspot.message).isEqualTo("Make sure using this hardcoded IP address is safe here.");
     assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
     assertThat(actualHotspot.textRange).isEqualToComparingFieldByField(new TextRange(5, 14, 5, 29));
     assertThat(actualHotspot.author).isEmpty();
-    assertThat(actualHotspot.status).isEqualTo(RemoteHotspot.Status.TO_REVIEW);
+    assertThat(actualHotspot.status).isEqualTo(ServerHotspot.Status.TO_REVIEW);
     assertThat(actualHotspot.resolution).isNull();
     assertThat(actualHotspot.rule.key).isEqualTo("java:S1313");
 
@@ -691,7 +691,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
-    ConnectedModeEndpoint serverConfig = endpointNoOrg("http://localhost:" + redirectPort);
+    EndpointParams serverConfig = endpointParamsNoOrg("http://localhost:" + redirectPort);
 
     StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
@@ -735,9 +735,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void getProject() {
-    WsHelper helper = new WsHelperImpl(sqHttpClient());
-    assertThat(helper.getProject(endpoint(ORCHESTRATOR), "foo", null)).isNotPresent();
-    assertThat(helper.getProject(endpoint(ORCHESTRATOR), PROJECT_KEY_RUBY, null)).isPresent();
+    ProjectApi helper = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).project();
+    assertThat(helper.getProject("foo", null)).isNotPresent();
+    assertThat(helper.getProject(PROJECT_KEY_RUBY, null)).isPresent();
   }
 
   @Test
@@ -795,11 +795,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), projectKey, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
   }
 
   private void updateGlobal() {
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void analyzeMavenProject(String projectDirName) {

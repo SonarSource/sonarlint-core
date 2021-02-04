@@ -17,19 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
-import org.junit.jupiter.api.Test;
+public class GetSecurityHotspotRequestParams {
+  public final String hotspotKey;
+  public final String projectKey;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class GetSecurityHotspotRequestParamsTest {
-  @Test
-  void it_should_populate_fields_with_constructor_parameters() {
-    GetSecurityHotspotRequestParams params = new GetSecurityHotspotRequestParams("hotspotKey", "projectKey");
-
-    assertThat(params.hotspotKey).isEqualTo("hotspotKey");
-    assertThat(params.projectKey).isEqualTo("projectKey");
+  public GetSecurityHotspotRequestParams(String hotspotKey, String projectKey) {
+    this.hotspotKey = hotspotKey;
+    this.projectKey = projectKey;
   }
-
 }

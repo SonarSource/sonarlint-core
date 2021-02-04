@@ -33,11 +33,11 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Settings.FieldValues.Value;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.stream.Collectors.joining;
@@ -46,9 +46,9 @@ public class SettingsDownloader {
   private static final Logger LOG = Loggers.get(SettingsDownloader.class);
 
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public SettingsDownloader(SonarLintWsClient wsClient) {
+  public SettingsDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -72,7 +72,7 @@ public class SettingsDownloader {
     if (projectKey != null) {
       url.append("?component=").append(StringUtils.urlEncode(projectKey));
     }
-    SonarLintWsClient.consumeTimed(
+    ServerApiHelper.consumeTimed(
       () -> wsClient.get(url.toString()),
       response -> {
         try (InputStream is = response.bodyAsStream()) {

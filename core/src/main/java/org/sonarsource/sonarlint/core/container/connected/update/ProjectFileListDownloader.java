@@ -22,15 +22,15 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.util.ArrayList;
 import java.util.List;
 import org.sonarqube.ws.Components;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectFileListDownloader {
   private static final String BASE_PATH = "api/components/tree.protobuf?qualifiers=FIL,UTS&";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public ProjectFileListDownloader(SonarLintWsClient wsClient) {
+  public ProjectFileListDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 

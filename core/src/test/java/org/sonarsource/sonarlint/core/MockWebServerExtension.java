@@ -38,9 +38,9 @@ import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -117,16 +117,16 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     }
   }
 
-  public SonarLintWsClient slClient() {
+  public ServerApiHelper slClient() {
     return slClient(null);
   }
 
-  public SonarLintWsClient slClient(@Nullable String organizationKey) {
-    return new SonarLintWsClient(endpoint(organizationKey), httpClient());
+  public ServerApiHelper slClient(@Nullable String organizationKey) {
+    return new ServerApiHelper(endpointParams(organizationKey), httpClient());
   }
 
-  public static SonarLintHttpClient httpClient() {
-    return new SonarLintHttpClient() {
+  public static HttpClient httpClient() {
+    return new HttpClient() {
 
       private final OkHttpClient okClient = SHARED_CLIENT.newBuilder().build();
 
@@ -208,29 +208,12 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     };
   }
 
-  public ConnectedModeEndpoint endpoint() {
-    return endpoint(null);
+  public EndpointParams endpointParams() {
+    return endpointParams(null);
   }
 
-  public ConnectedModeEndpoint endpoint(@Nullable String organizationKey) {
-    return new ConnectedModeEndpoint() {
-
-      @Override
-      public boolean isSonarCloud() {
-        return organizationKey != null;
-      }
-
-      @Override
-      public String getOrganization() {
-        return organizationKey;
-      }
-
-      @Override
-      public String getBaseUrl() {
-        return url("/");
-      }
-
-    };
+  public EndpointParams endpointParams(@Nullable String organizationKey) {
+    return new EndpointParams(url("/"), organizationKey != null, organizationKey);
   }
 
 }

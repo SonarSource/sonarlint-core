@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguratio
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
@@ -144,10 +144,10 @@ class NotificationTimerTaskTests {
   }
 
   private NotificationConfiguration createProject(String key) {
-    return createProject(key, mock(ConnectedModeEndpoint.class));
+    return createProject(key, mock(EndpointParams.class));
   }
 
-  private NotificationConfiguration createProject(String key, ConnectedModeEndpoint endpoint) {
+  private NotificationConfiguration createProject(String key, EndpointParams endpoint) {
     NotificationConfiguration project = mock(NotificationConfiguration.class);
 
     when(project.listener()).thenReturn(listener);

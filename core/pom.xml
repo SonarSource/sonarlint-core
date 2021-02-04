@@ -287,8 +287,6 @@
               <artifactSet>
                 <excludes>
                   <exclude>${project.groupId}:sonarlint-slf4j-sonar-log</exclude>
-                  <exclude>com.squareup.okhttp3:okhttp</exclude>
-                  <exclude>com.squareup.okio:okio</exclude>
                 </excludes>
               </artifactSet>
               <relocations>

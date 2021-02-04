@@ -57,21 +57,22 @@ import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(ConnectedContainer.class);
 
-  private final ConnectedModeEndpoint endpoint;
+  private final EndpointParams endpoint;
   private final ConnectedGlobalConfiguration globalConfig;
-  private final SonarLintHttpClient client;
+  private final HttpClient client;
 
-  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
+  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, EndpointParams endpoint, HttpClient client) {
     this.globalConfig = globalConfig;
     this.endpoint = endpoint;
     this.client = client;
@@ -85,7 +86,7 @@ public class ConnectedContainer extends ComponentContainer {
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginVersionChecker.class,
-      new SonarLintWsClient(endpoint, client),
+      new ServerApiHelper(endpoint, client),
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,
       ProjectStorageUpdateChecker.class,

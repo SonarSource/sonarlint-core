@@ -21,20 +21,20 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
 import org.sonarqube.ws.Components;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectListDownloader {
 
   private static final String PROJECT_SEARCH_URL = "api/components/search.protobuf?qualifiers=TRK";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public ProjectListDownloader(SonarLintWsClient wsClient) {
+  public ProjectListDownloader(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 

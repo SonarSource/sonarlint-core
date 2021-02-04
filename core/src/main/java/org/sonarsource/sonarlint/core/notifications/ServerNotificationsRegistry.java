@@ -24,9 +24,9 @@ import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ServerNotificationsRegistry {
   static final int DELAY = 60_000;
@@ -65,8 +65,8 @@ public class ServerNotificationsRegistry {
   /**
    * Checks if a server supports notifications
    */
-  public static boolean isSupported(ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
-    NotificationChecker checker = new NotificationChecker(new SonarLintWsClient(endpoint, client));
+  public static boolean isSupported(EndpointParams endpoint, HttpClient client) {
+    NotificationChecker checker = new NotificationChecker(new ServerApiHelper(endpoint, client));
     return checker.isSupported();
   }
 

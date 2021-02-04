@@ -34,20 +34,20 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 class NotificationTimerTask extends TimerTask {
   // merge with most recent time
   private static final BinaryOperator<ZonedDateTime> MERGE_TIMES = (t1, t2) -> t1.toInstant().compareTo(t2.toInstant()) > 0 ? t1 : t2;
   private static final Logger LOG = Loggers.get(NotificationTimerTask.class);
   private Collection<NotificationConfiguration> configuredProjects = Collections.emptyList();
-  private final Function<SonarLintWsClient, NotificationChecker> notificationCheckerFactory;
+  private final Function<ServerApiHelper, NotificationChecker> notificationCheckerFactory;
 
   public NotificationTimerTask() {
     this(NotificationChecker::new);
   }
 
-  NotificationTimerTask(Function<SonarLintWsClient, NotificationChecker> notificationCheckerFactory) {
+  NotificationTimerTask(Function<ServerApiHelper, NotificationChecker> notificationCheckerFactory) {
     this.notificationCheckerFactory = notificationCheckerFactory;
   }
 
@@ -57,9 +57,9 @@ class NotificationTimerTask extends TimerTask {
 
   @Override
   public void run() {
-    Map<SonarLintWsClient, List<NotificationConfiguration>> mapByServer = groupByServer();
+    Map<ServerApiHelper, List<NotificationConfiguration>> mapByServer = groupByServer();
 
-    for (Map.Entry<SonarLintWsClient, List<NotificationConfiguration>> entry : mapByServer.entrySet()) {
+    for (Map.Entry<ServerApiHelper, List<NotificationConfiguration>> entry : mapByServer.entrySet()) {
       requestForServer(entry.getKey(), entry.getValue());
     }
   }
@@ -70,7 +70,7 @@ class NotificationTimerTask extends TimerTask {
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 
-  private void requestForServer(SonarLintWsClient wsClient, List<NotificationConfiguration> configs) {
+  private void requestForServer(ServerApiHelper wsClient, List<NotificationConfiguration> configs) {
     try {
       Map<String, ZonedDateTime> request = configs.stream()
         .collect(Collectors.toMap(NotificationConfiguration::projectKey, NotificationTimerTask::getLastNotificationTime, MERGE_TIMES));
@@ -94,8 +94,8 @@ class NotificationTimerTask extends TimerTask {
     }
   }
 
-  private Map<SonarLintWsClient, List<NotificationConfiguration>> groupByServer() {
-    return configuredProjects.stream().collect(Collectors.groupingBy(n -> new SonarLintWsClient(n.endpoint().get(), n.client().get())));
+  private Map<ServerApiHelper, List<NotificationConfiguration>> groupByServer() {
+    return configuredProjects.stream().collect(Collectors.groupingBy(n -> new ServerApiHelper(n.endpoint().get(), n.client().get())));
   }
 
 }

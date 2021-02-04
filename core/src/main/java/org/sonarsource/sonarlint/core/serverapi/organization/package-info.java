@@ -17,34 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.serverapi.organization;
 
-import org.sonarqube.ws.Organizations.Organization;
-import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
-
-public class DefaultRemoteOrganization implements ServerOrganization {
-  private final String key;
-  private final String name;
-  private final String description;
-
-  public DefaultRemoteOrganization(Organization org) {
-    this.key = org.getKey();
-    this.name = org.getName();
-    this.description = org.getDescription();
-  }
-
-  @Override
-  public String getKey() {
-    return key;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public String getDescription() {
-    return description;
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

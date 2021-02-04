@@ -191,11 +191,11 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpoint(ORCHESTRATOR), sqHttpClient(), projectKey, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
   }
 
   private void updateGlobal() {
-    engine.update(endpoint(ORCHESTRATOR), sqHttpClient(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

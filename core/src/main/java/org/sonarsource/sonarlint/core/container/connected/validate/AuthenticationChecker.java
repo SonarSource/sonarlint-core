@@ -21,19 +21,19 @@ package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.gson.Gson;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class AuthenticationChecker {
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public AuthenticationChecker(SonarLintWsClient wsClient) {
+  public AuthenticationChecker(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
   public ValidationResult validateCredentials() {
-    try (SonarLintHttpClient.Response response = wsClient.rawGet("api/authentication/validate?format=json")) {
+    try (HttpClient.Response response = wsClient.rawGet("api/authentication/validate?format=json")) {
       int code = response.code();
       if (response.isSuccessful()) {
         String responseStr = response.bodyAsString();

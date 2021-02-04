@@ -26,17 +26,17 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ServerVersionAndStatusChecker {
 
   private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
 
   private static final String MIN_SQ_VERSION = "6.7";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public ServerVersionAndStatusChecker(SonarLintWsClient wsClient) {
+  public ServerVersionAndStatusChecker(ServerApiHelper wsClient) {
     this.wsClient = wsClient;
   }
 
@@ -93,7 +93,7 @@ public class ServerVersionAndStatusChecker {
   }
 
   private ServerInfos fetchServerInfos() {
-    return SonarLintWsClient.processTimed(
+    return ServerApiHelper.processTimed(
       () -> wsClient.get("api/system/status"),
       response -> {
         String responseStr = response.bodyAsString();

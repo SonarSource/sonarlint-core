@@ -29,8 +29,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 public class ServerIssueTracker {
 
@@ -42,7 +42,7 @@ public class ServerIssueTracker {
     this.issueTracker = issueTracker;
   }
 
-  public void update(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding,
+  public void update(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding,
     Collection<String> fileKeys) {
     update(fileKeys, fileKey -> fetchServerIssues(endpoint, client, engine, projectBinding, fileKey));
   }
@@ -64,7 +64,7 @@ public class ServerIssueTracker {
     }
   }
 
-  private static List<ServerIssue> fetchServerIssues(ConnectedModeEndpoint endpoint, SonarLintHttpClient client, ConnectedSonarLintEngine engine,
+  private static List<ServerIssue> fetchServerIssues(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine,
     ProjectBinding projectBinding, String ideFilePath) {
     try {
       LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath);

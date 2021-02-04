@@ -27,13 +27,13 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.lang.String.format;
@@ -43,9 +43,9 @@ public class PluginReferencesDownloader {
   private static final Logger LOG = Loggers.get(PluginReferencesDownloader.class);
 
   private final PluginCache pluginCache;
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper wsClient;
 
-  public PluginReferencesDownloader(SonarLintWsClient wsClient, PluginCache pluginCache) {
+  public PluginReferencesDownloader(ServerApiHelper wsClient, PluginCache pluginCache) {
     this.wsClient = wsClient;
     this.pluginCache = pluginCache;
   }
@@ -114,7 +114,7 @@ public class PluginReferencesDownloader {
         LOG.info("Download '{}'...", filename);
       }
 
-      SonarLintWsClient.consumeTimed(
+      ServerApiHelper.consumeTimed(
         () -> wsClient.get(url),
         response -> FileUtils.copyInputStreamToFile(response.bodyAsStream(), toFile.toFile()),
         duration -> LOG.info("Downloaded '{}' in {}ms", filename, duration));

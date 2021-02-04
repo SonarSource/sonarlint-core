@@ -17,14 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.serverapi.organization;
 
-public class GetSecurityHotspotRequestParams {
-  public final String hotspotKey;
-  public final String projectKey;
+public interface ServerOrganization {
 
-  public GetSecurityHotspotRequestParams(String hotspotKey, String projectKey) {
-    this.hotspotKey = hotspotKey;
-    this.projectKey = projectKey;
-  }
+  String getKey();
+
+  String getName();
+
+  String getDescription();
+
 }

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected;
+package org.sonarsource.sonarlint.core.serverapi;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -42,33 +42,31 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
-import org.sonarsource.sonarlint.core.http.ConnectedModeEndpoint;
-import org.sonarsource.sonarlint.core.http.SonarLintHttpClient;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.stream.Collectors.joining;
 
 /**
- * Wrapper around SonarLintHttpClient to avoid repetitive code, like support of pagination, and log timing of requests
+ * Wrapper around HttpClient to avoid repetitive code, like support of pagination, and log timing of requests
  */
-public class SonarLintWsClient {
+public class ServerApiHelper {
 
-  private static final Logger LOG = Loggers.get(SonarLintWsClient.class);
+  private static final Logger LOG = Loggers.get(ServerApiHelper.class);
 
   public static final int PAGE_SIZE = 500;
   public static final int MAX_PAGES = 20;
 
-  private final SonarLintHttpClient client;
-  private final ConnectedModeEndpoint endpoint;
+  private final HttpClient client;
+  private final EndpointParams endpointParams;
 
-  public SonarLintWsClient(ConnectedModeEndpoint endpoint, SonarLintHttpClient client) {
-    this.endpoint = endpoint;
+  public ServerApiHelper(EndpointParams endpointParams, HttpClient client) {
+    this.endpointParams = endpointParams;
     this.client = client;
   }
 
-  public SonarLintHttpClient.Response get(String path) {
-    SonarLintHttpClient.Response response = rawGet(path);
+  public HttpClient.Response get(String path) {
+    HttpClient.Response response = rawGet(path);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
@@ -78,16 +76,16 @@ public class SonarLintWsClient {
   /**
    * Execute GET and don't check response
    */
-  public SonarLintHttpClient.Response rawGet(String relativePath) {
+  public HttpClient.Response rawGet(String relativePath) {
     long startTime = System2.INSTANCE.now();
     StringBuilder fullUrl = new StringBuilder();
-    String endpointUrl = endpoint.getBaseUrl();
+    String endpointUrl = endpointParams.getBaseUrl();
     fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
     fullUrl.append("/");
     fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1, relativePath.length()) : relativePath);
     String url = fullUrl.toString();
 
-    SonarLintHttpClient.Response response = client.get(url);
+    HttpClient.Response response = client.get(url);
     long duration = System2.INSTANCE.now() - startTime;
     if (LOG.isDebugEnabled()) {
       LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
@@ -95,8 +93,8 @@ public class SonarLintWsClient {
     return response;
   }
 
-  public static RuntimeException handleError(SonarLintHttpClient.Response toBeClosed) {
-    try (SonarLintHttpClient.Response failedResponse = toBeClosed) {
+  public static RuntimeException handleError(HttpClient.Response toBeClosed) {
+    try (HttpClient.Response failedResponse = toBeClosed) {
       if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
         return new IllegalStateException("Not authorized. Please check server credentials.");
       }
@@ -114,12 +112,12 @@ public class SonarLintWsClient {
     }
   }
 
-  private static String formatHttpFailedResponse(SonarLintHttpClient.Response failedResponse, @Nullable String errorMsg) {
+  private static String formatHttpFailedResponse(HttpClient.Response failedResponse, @Nullable String errorMsg) {
     return "Error " + failedResponse.code() + " on " + failedResponse.url() + (errorMsg != null ? (": " + errorMsg) : "");
   }
 
   @CheckForNull
-  private static String tryParseAsJsonError(SonarLintHttpClient.Response response) {
+  private static String tryParseAsJsonError(HttpClient.Response response) {
     String content = response.bodyAsString();
     if (StringUtils.isBlank(content)) {
       return null;
@@ -134,10 +132,7 @@ public class SonarLintWsClient {
   }
 
   public Optional<String> getOrganizationKey() {
-    if (endpoint.isSonarCloud()) {
-      return Optional.ofNullable(endpoint.getOrganization());
-    }
-    return Optional.empty();
+    return endpointParams.getOrganization();
   }
 
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
@@ -148,14 +143,14 @@ public class SonarLintWsClient {
     do {
       page.incrementAndGet();
       StringBuilder fullUrl = new StringBuilder();
-      String endpointUrl = endpoint.getBaseUrl();
+      String endpointUrl = endpointParams.getBaseUrl();
       fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
       fullUrl.append("/");
       fullUrl.append(relativeUrlWithoutPaginationParams.startsWith("/") ? relativeUrlWithoutPaginationParams.substring(1, relativeUrlWithoutPaginationParams.length())
         : relativeUrlWithoutPaginationParams);
       fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
       fullUrl.append("ps=" + PAGE_SIZE + "&p=" + page);
-      SonarLintWsClient.consumeTimed(
+      ServerApiHelper.consumeTimed(
         () -> client.get(fullUrl.toString()),
         response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPaging, itemExtractor, itemConsumer, limitToTwentyPages, progress, page, stop, loaded,
           response),
@@ -165,7 +160,7 @@ public class SonarLintWsClient {
 
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging, Function<G, List<F>> itemExtractor,
     Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressWrapper progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
-    SonarLintHttpClient.Response response)
+    HttpClient.Response response)
     throws IOException {
     if (!response.isSuccessful()) {
       throw handleError(response);
@@ -197,11 +192,11 @@ public class SonarLintWsClient {
     R apply(T t) throws IOException;
   }
 
-  public static <G> G processTimed(Supplier<SonarLintHttpClient.Response> responseSupplier, IOFunction<SonarLintHttpClient.Response, G> responseProcessor,
+  public static <G> G processTimed(Supplier<HttpClient.Response> responseSupplier, IOFunction<HttpClient.Response, G> responseProcessor,
     LongConsumer durationConsummer) {
     long startTime = System2.INSTANCE.now();
     G result;
-    try (SonarLintHttpClient.Response response = responseSupplier.get()) {
+    try (HttpClient.Response response = responseSupplier.get()) {
       result = responseProcessor.apply(response);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);
@@ -210,7 +205,7 @@ public class SonarLintWsClient {
     return result;
   }
 
-  public static void consumeTimed(Supplier<SonarLintHttpClient.Response> responseSupplier, IOConsummer<SonarLintHttpClient.Response> responseConsumer,
+  public static void consumeTimed(Supplier<HttpClient.Response> responseSupplier, IOConsummer<HttpClient.Response> responseConsumer,
     LongConsumer durationConsummer) {
     processTimed(responseSupplier, r -> {
       responseConsumer.accept(r);

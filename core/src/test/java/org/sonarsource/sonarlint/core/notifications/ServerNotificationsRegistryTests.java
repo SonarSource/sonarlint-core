@@ -78,7 +78,7 @@ class ServerNotificationsRegistryTests {
   void testIsSupported() {
     mockServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse());
 
-    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpoint(), MockWebServerExtension.httpClient())).isTrue();
+    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), MockWebServerExtension.httpClient())).isTrue();
   }
 
 }

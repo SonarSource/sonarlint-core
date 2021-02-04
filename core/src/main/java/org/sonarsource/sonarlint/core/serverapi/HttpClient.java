@@ -17,12 +17,43 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.serverapi;
 
-public interface RemoteProject {
+import java.io.Closeable;
+import java.io.InputStream;
 
-  String getKey();
+/**
+ * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
+ */
+public interface HttpClient {
 
-  String getName();
+  String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+
+  interface Response extends Closeable {
+
+    int code();
+
+    default boolean isSuccessful() {
+      return code() >= 200 && code() < 300;
+    }
+
+    String bodyAsString();
+
+    InputStream bodyAsStream();
+
+    /**
+     * Only runtime exception
+     */
+    @Override
+    void close();
+
+    String url();
+  }
+
+  Response get(String url);
+
+  Response post(String url, String contentType, String body);
+
+  Response delete(String url, String contentType, String body);
 
 }

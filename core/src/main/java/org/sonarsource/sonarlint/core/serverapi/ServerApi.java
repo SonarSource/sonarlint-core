@@ -17,43 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.http;
+package org.sonarsource.sonarlint.core.serverapi;
 
-import java.io.Closeable;
-import java.io.InputStream;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
+import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 
-/**
- * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
- */
-public interface SonarLintHttpClient {
+public class ServerApi {
+  private final ServerApiHelper helper;
 
-  String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
-
-  interface Response extends Closeable {
-
-    int code();
-
-    default boolean isSuccessful() {
-      return code() >= 200 && code() < 300;
-    }
-
-    String bodyAsString();
-
-    InputStream bodyAsStream();
-
-    /**
-     * Only runtime exception
-     */
-    @Override
-    void close();
-
-    String url();
+  public ServerApi(EndpointParams endpoint, HttpClient client) {
+    this(new ServerApiHelper(endpoint, client));
   }
 
-  Response get(String url);
+  public ServerApi(ServerApiHelper helper) {
+    this.helper = helper;
+  }
 
-  Response post(String url, String contentType, String body);
+  public HotspotApi hotspot() {
+    return new HotspotApi(helper);
+  }
 
-  Response delete(String url, String contentType, String body);
+  public OrganizationApi organization() {
+    return new OrganizationApi(helper);
+  }
+
+  public ProjectApi project() {
+    return new ProjectApi(helper);
+  }
 
 }
