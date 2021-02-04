@@ -46,10 +46,10 @@ public class SettingsDownloader {
   private static final Logger LOG = Loggers.get(SettingsDownloader.class);
 
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public SettingsDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public SettingsDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchGlobalSettingsTo(Path dest) {
@@ -73,7 +73,7 @@ public class SettingsDownloader {
       url.append("?component=").append(StringUtils.urlEncode(projectKey));
     }
     ServerApiHelper.consumeTimed(
-      () -> wsClient.get(url.toString()),
+      () -> serverApiHelper.get(url.toString()),
       response -> {
         try (InputStream is = response.bodyAsStream()) {
           ValuesWsResponse values = ValuesWsResponse.parseFrom(is);

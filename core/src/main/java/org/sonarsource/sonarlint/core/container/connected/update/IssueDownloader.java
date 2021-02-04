@@ -40,11 +40,11 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
 
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
   private final IssueStorePaths issueStorePaths;
 
-  public IssueDownloader(ServerApiHelper wsClient, IssueStorePaths issueStorePaths) {
-    this.wsClient = wsClient;
+  public IssueDownloader(ServerApiHelper serverApiHelper, IssueStorePaths issueStorePaths) {
+    this.serverApiHelper = serverApiHelper;
     this.issueStorePaths = issueStorePaths;
   }
 
@@ -58,7 +58,7 @@ public class IssueDownloader {
   public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(getIssuesUrl(key));
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
     Sonarlint.ServerIssue.Builder issueBuilder = Sonarlint.ServerIssue.newBuilder();
     Location.Builder locationBuilder = Location.newBuilder();
@@ -66,7 +66,7 @@ public class IssueDownloader {
     Sonarlint.ServerIssue.Flow.Builder flowBuilder = Sonarlint.ServerIssue.Flow.newBuilder();
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
     Map<String, Component> componentsByKey = new HashMap<>();
-    wsClient.getPaginated(searchUrl.toString(),
+    serverApiHelper.getPaginated(searchUrl.toString(),
       Issues.SearchWsResponse::parseFrom,
       Issues.SearchWsResponse::getPaging,
       r -> {

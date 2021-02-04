@@ -42,12 +42,12 @@ public class PluginListDownloader {
 
   public static final String WS_PATH = "/api/plugins/installed";
 
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, ServerApiHelper wsClient, PluginVersionChecker pluginVersionChecker) {
-    this.wsClient = wsClient;
+  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, ServerApiHelper serverApiHelper, PluginVersionChecker pluginVersionChecker) {
+    this.serverApiHelper = serverApiHelper;
     this.pluginVersionChecker = pluginVersionChecker;
 
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();
@@ -55,7 +55,7 @@ public class PluginListDownloader {
 
   public List<SonarAnalyzer> downloadPluginList() {
     return ServerApiHelper.processTimed(
-      () -> wsClient.get(WS_PATH),
+      () -> serverApiHelper.get(WS_PATH),
       response -> {
         InstalledPlugins installedPlugins = new Gson().fromJson(response.bodyAsString(), InstalledPlugins.class);
         return Arrays.stream(installedPlugins.plugins).map(this::toSonarAnalyzer).collect(Collectors.toList());

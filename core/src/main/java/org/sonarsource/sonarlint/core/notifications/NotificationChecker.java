@@ -45,10 +45,10 @@ class NotificationChecker {
   private static final String API_PATH = "api/developers/search_events";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DateUtils.DATETIME_FORMAT);
 
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  NotificationChecker(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  NotificationChecker(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   /**
@@ -58,7 +58,7 @@ class NotificationChecker {
   @CheckForNull
   public List<ServerNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
     String path = getWsPath(projectTimestamps);
-    try (HttpClient.Response wsResponse = wsClient.rawGet(path)) {
+    try (HttpClient.Response wsResponse = serverApiHelper.rawGet(path)) {
       if (!wsResponse.isSuccessful()) {
         LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.bodyAsString());
         return Collections.emptyList();
@@ -73,7 +73,7 @@ class NotificationChecker {
    */
   public boolean isSupported() {
     String path = getWsPath(Collections.emptyMap());
-    try (HttpClient.Response wsResponse = wsClient.rawGet(path)) {
+    try (HttpClient.Response wsResponse = serverApiHelper.rawGet(path)) {
       return wsResponse.isSuccessful();
     }
   }

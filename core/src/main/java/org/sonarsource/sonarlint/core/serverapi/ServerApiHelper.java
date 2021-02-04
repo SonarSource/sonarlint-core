@@ -78,12 +78,7 @@ public class ServerApiHelper {
    */
   public HttpClient.Response rawGet(String relativePath) {
     long startTime = System2.INSTANCE.now();
-    StringBuilder fullUrl = new StringBuilder();
-    String endpointUrl = endpointParams.getBaseUrl();
-    fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
-    fullUrl.append("/");
-    fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1, relativePath.length()) : relativePath);
-    String url = fullUrl.toString();
+    String url = buildEndpointUrl(relativePath);
 
     HttpClient.Response response = client.get(url);
     long duration = System2.INSTANCE.now() - startTime;
@@ -91,6 +86,15 @@ public class ServerApiHelper {
       LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
     }
     return response;
+  }
+
+  private String buildEndpointUrl(String relativePath) {
+    StringBuilder fullUrl = new StringBuilder();
+    String endpointUrl = endpointParams.getBaseUrl();
+    fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
+    fullUrl.append("/");
+    fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1, relativePath.length()) : relativePath);
+    return fullUrl.toString();
   }
 
   public static RuntimeException handleError(HttpClient.Response toBeClosed) {
@@ -142,12 +146,7 @@ public class ServerApiHelper {
     AtomicInteger loaded = new AtomicInteger(0);
     do {
       page.incrementAndGet();
-      StringBuilder fullUrl = new StringBuilder();
-      String endpointUrl = endpointParams.getBaseUrl();
-      fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
-      fullUrl.append("/");
-      fullUrl.append(relativeUrlWithoutPaginationParams.startsWith("/") ? relativeUrlWithoutPaginationParams.substring(1, relativeUrlWithoutPaginationParams.length())
-        : relativeUrlWithoutPaginationParams);
+      StringBuilder fullUrl = new StringBuilder(buildEndpointUrl(relativeUrlWithoutPaginationParams));
       fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
       fullUrl.append("ps=" + PAGE_SIZE + "&p=" + page);
       ServerApiHelper.consumeTimed(

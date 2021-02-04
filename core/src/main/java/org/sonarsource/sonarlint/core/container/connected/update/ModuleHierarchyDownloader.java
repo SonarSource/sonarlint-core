@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarqube.ws.Components;
 import org.sonarqube.ws.Components.Component;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -39,10 +39,10 @@ import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQu
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ModuleHierarchyDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public ModuleHierarchyDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   /**
@@ -55,7 +55,7 @@ public class ModuleHierarchyDownloader {
   public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    wsClient.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
+    serverApiHelper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,
@@ -94,7 +94,8 @@ public class ModuleHierarchyDownloader {
 
   @CheckForNull
   private String fetchAncestorKey(String moduleKey) {
-    return new ProjectApi(wsClient)
+    return new ServerApi(serverApiHelper)
+      .project()
       .fetchComponent(moduleKey)
       .flatMap(r -> r.getAncestorsList().stream().map(Component::getKey).findFirst())
       .orElse(null);

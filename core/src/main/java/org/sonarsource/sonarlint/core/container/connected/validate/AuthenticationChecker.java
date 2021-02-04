@@ -26,14 +26,14 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class AuthenticationChecker {
 
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public AuthenticationChecker(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public AuthenticationChecker(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public ValidationResult validateCredentials() {
-    try (HttpClient.Response response = wsClient.rawGet("api/authentication/validate?format=json")) {
+    try (HttpClient.Response response = serverApiHelper.rawGet("api/authentication/validate?format=json")) {
       int code = response.code();
       if (response.isSuccessful()) {
         String responseStr = response.bodyAsString();

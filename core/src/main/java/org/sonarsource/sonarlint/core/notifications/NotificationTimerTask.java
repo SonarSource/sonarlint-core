@@ -70,12 +70,12 @@ class NotificationTimerTask extends TimerTask {
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 
-  private void requestForServer(ServerApiHelper wsClient, List<NotificationConfiguration> configs) {
+  private void requestForServer(ServerApiHelper serverApiHelper, List<NotificationConfiguration> configs) {
     try {
       Map<String, ZonedDateTime> request = configs.stream()
         .collect(Collectors.toMap(NotificationConfiguration::projectKey, NotificationTimerTask::getLastNotificationTime, MERGE_TIMES));
 
-      NotificationChecker notificationChecker = notificationCheckerFactory.apply(wsClient);
+      NotificationChecker notificationChecker = notificationCheckerFactory.apply(serverApiHelper);
       List<ServerNotification> notifications = notificationChecker.request(request);
 
       for (ServerNotification n : notifications) {

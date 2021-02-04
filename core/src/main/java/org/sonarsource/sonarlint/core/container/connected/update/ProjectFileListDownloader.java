@@ -28,17 +28,17 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectFileListDownloader {
   private static final String BASE_PATH = "api/components/tree.protobuf?qualifiers=FIL,UTS&";
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ProjectFileListDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public ProjectFileListDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public List<String> get(String projectKey, ProgressWrapper progress) {
     String path = buildPath(projectKey);
     List<String> files = new ArrayList<>();
 
-    wsClient.getPaginated(path,
+    serverApiHelper.getPaginated(path,
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,
@@ -50,7 +50,7 @@ public class ProjectFileListDownloader {
     StringBuilder url = new StringBuilder();
     url.append(BASE_PATH);
     url.append("component=").append(StringUtils.urlEncode(projectKey));
-    wsClient.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
     return url.toString();
   }
 }

@@ -32,10 +32,10 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 public class ProjectListDownloader {
 
   private static final String PROJECT_SEARCH_URL = "api/components/search.protobuf?qualifiers=TRK";
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ProjectListDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public ProjectListDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchTo(Path dest, ProgressWrapper progress) {
@@ -44,9 +44,9 @@ public class ProjectListDownloader {
 
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(PROJECT_SEARCH_URL);
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
-    wsClient.getPaginated(searchUrl.toString(),
+    serverApiHelper.getPaginated(searchUrl.toString(),
       Components.SearchWsResponse::parseFrom,
       Components.SearchWsResponse::getPaging,
       Components.SearchWsResponse::getComponentsList,

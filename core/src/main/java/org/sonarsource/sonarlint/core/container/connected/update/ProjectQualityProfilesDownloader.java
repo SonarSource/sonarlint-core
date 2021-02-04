@@ -34,10 +34,10 @@ public class ProjectQualityProfilesDownloader {
 
   private static final Logger LOG = Loggers.get(ProjectQualityProfilesDownloader.class);
 
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ProjectQualityProfilesDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public ProjectQualityProfilesDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public List<QualityProfile> fetchModuleQualityProfiles(String projectKey) {
@@ -45,15 +45,15 @@ public class ProjectQualityProfilesDownloader {
     StringBuilder url = new StringBuilder();
     url.append("/api/qualityprofiles/search.protobuf?project=");
     url.append(StringUtils.urlEncode(projectKey));
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
     try {
       qpResponse = ServerApiHelper.processTimed(
-        () -> wsClient.get(url.toString()),
+        () -> serverApiHelper.get(url.toString()),
         response -> Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream()),
         duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
     } catch (NotFoundException e) {
-      throw new ProjectNotFoundException(projectKey, wsClient.getOrganizationKey().orElse(null));
+      throw new ProjectNotFoundException(projectKey, serverApiHelper.getOrganizationKey().orElse(null));
     }
     return qpResponse.getProfilesList();
   }

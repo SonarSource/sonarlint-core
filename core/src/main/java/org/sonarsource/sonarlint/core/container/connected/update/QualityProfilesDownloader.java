@@ -36,10 +36,10 @@ public class QualityProfilesDownloader {
   private static final Logger LOG = Loggers.get(QualityProfilesDownloader.class);
 
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public QualityProfilesDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public QualityProfilesDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchQualityProfilesTo(Path destDir) {
@@ -51,10 +51,10 @@ public class QualityProfilesDownloader {
 
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(DEFAULT_QP_SEARCH_URL);
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("?organization=").append(StringUtils.urlEncode(org)));
     ServerApiHelper.consumeTimed(
-      () -> wsClient.get(searchUrl.toString()),
+      () -> serverApiHelper.get(searchUrl.toString()),
       response -> {
         SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream());
         for (QualityProfile qp : qpResponse.getProfilesList()) {
