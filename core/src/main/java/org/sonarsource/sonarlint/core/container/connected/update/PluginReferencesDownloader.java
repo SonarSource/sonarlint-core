@@ -43,10 +43,10 @@ public class PluginReferencesDownloader {
   private static final Logger LOG = Loggers.get(PluginReferencesDownloader.class);
 
   private final PluginCache pluginCache;
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public PluginReferencesDownloader(ServerApiHelper wsClient, PluginCache pluginCache) {
-    this.wsClient = wsClient;
+  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache) {
+    this.serverApiHelper = serverApiHelper;
     this.pluginCache = pluginCache;
   }
 
@@ -115,7 +115,7 @@ public class PluginReferencesDownloader {
       }
 
       ServerApiHelper.consumeTimed(
-        () -> wsClient.get(url),
+        () -> serverApiHelper.get(url),
         response -> FileUtils.copyInputStreamToFile(response.bodyAsStream(), toFile.toFile()),
         duration -> LOG.info("Downloaded '{}' in {}ms", filename, duration));
     }

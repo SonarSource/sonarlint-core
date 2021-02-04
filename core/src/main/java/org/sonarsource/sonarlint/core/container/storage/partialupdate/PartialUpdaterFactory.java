@@ -41,10 +41,10 @@ public class PartialUpdaterFactory {
   }
 
   public PartialUpdater create(EndpointParams endpoint, HttpClient client) {
-    ServerApiHelper wsClient = new ServerApiHelper(endpoint, client);
+    ServerApiHelper serverApiHelper = new ServerApiHelper(endpoint, client);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloader(wsClient, issueStorePaths);
-    ProjectListDownloader projectListDownloader = new ProjectListDownloader(wsClient);
+    IssueDownloader downloader = new IssueDownloader(serverApiHelper, issueStorePaths);
+    ProjectListDownloader projectListDownloader = new ProjectListDownloader(serverApiHelper);
     return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
   }
 }

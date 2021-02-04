@@ -34,10 +34,10 @@ public class ServerVersionAndStatusChecker {
   private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
 
   private static final String MIN_SQ_VERSION = "6.7";
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ServerVersionAndStatusChecker(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public ServerVersionAndStatusChecker(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   /**
@@ -94,7 +94,7 @@ public class ServerVersionAndStatusChecker {
 
   private ServerInfos fetchServerInfos() {
     return ServerApiHelper.processTimed(
-      () -> wsClient.get("api/system/status"),
+      () -> serverApiHelper.get("api/system/status"),
       response -> {
         String responseStr = response.bodyAsString();
         try {

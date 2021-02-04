@@ -30,7 +30,7 @@ import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +43,7 @@ class HotspotApiTests {
 
   @BeforeEach
   public void setUp() {
-    underTest = new HotspotApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtension.httpClient()).hotspot();
   }
 
   @Test

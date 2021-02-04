@@ -51,10 +51,10 @@ public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
 
-  private final ServerApiHelper wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public RulesDownloader(ServerApiHelper wsClient) {
-    this.wsClient = wsClient;
+  public RulesDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
@@ -86,7 +86,7 @@ public class RulesDownloader {
 
     while (true) {
       page++;
-      SearchResponse response = loadFromStream(wsClient.get(getUrl(severity, page, pageSize)));
+      SearchResponse response = loadFromStream(serverApiHelper.get(getUrl(severity, page, pageSize)));
       if (response.getTotal() > 10_000) {
         throw new IllegalStateException(
           String.format("Found more than 10000 rules for severity '%s' in the SonarQube server, which is not supported by SonarLint.", severity));
@@ -104,7 +104,7 @@ public class RulesDownloader {
   private String getUrl(String severity, int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
     builder.append("&severities=").append(severity);
     builder.append("&p=").append(page);
