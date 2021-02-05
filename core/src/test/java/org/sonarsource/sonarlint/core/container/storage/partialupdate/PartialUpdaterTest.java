@@ -80,9 +80,9 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(downloader.download("module:file", projectConfiguration, PROGRESS)).thenReturn(issues);
+    when(downloader.download("module:file", projectConfiguration, false, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(projectBinding, projectConfiguration, "file", PROGRESS);
+    updater.updateFileIssues(projectBinding, projectConfiguration, "file", false, PROGRESS);
 
     verify(issueStore).save(anyList());
   }
@@ -90,7 +90,7 @@ public class PartialUpdaterTest {
   @Test
   public void update_file_issues_for_unknown_file() {
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
-    updater.updateFileIssues(projectBinding, projectConfiguration, "file", PROGRESS);
+    updater.updateFileIssues(projectBinding, projectConfiguration, "file", false, PROGRESS);
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
   }
@@ -98,10 +98,10 @@ public class PartialUpdaterTest {
   @Test
   public void error_downloading_issues() {
     when(storagePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(downloader.download("module:file", projectConfiguration, PROGRESS)).thenThrow(IllegalArgumentException.class);
+    when(downloader.download("module:file", projectConfiguration, false, PROGRESS)).thenThrow(IllegalArgumentException.class);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(projectBinding, projectConfiguration, "file", PROGRESS));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(projectBinding, projectConfiguration, "file", false, PROGRESS));
   }
 
   @Test
@@ -110,9 +110,9 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     when(storagePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(temp.newFolder().toPath());
-    when(downloader.download(projectBinding.projectKey(), projectConfiguration, PROGRESS)).thenReturn(issues);
+    when(downloader.download(projectBinding.projectKey(), projectConfiguration, false, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration, PROGRESS);
+    updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration, false, PROGRESS);
 
     verify(issueStore).save(anyList());
   }

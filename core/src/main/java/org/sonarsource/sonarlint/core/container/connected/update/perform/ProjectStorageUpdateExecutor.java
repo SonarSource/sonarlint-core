@@ -58,12 +58,12 @@ public class ProjectStorageUpdateExecutor {
     this.serverIssueUpdater = serverIssueUpdater;
   }
 
-  public void update(String projectKey, ProgressWrapper progress) {
+  public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
 
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
-      updateServerIssues(projectKey, temp, projectConfiguration, progress);
+      updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
@@ -101,9 +101,9 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(StoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
+  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     Path basedir = temp.resolve(StoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, progress);
+    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
   }
 
   private void updateStatus(Path temp) {

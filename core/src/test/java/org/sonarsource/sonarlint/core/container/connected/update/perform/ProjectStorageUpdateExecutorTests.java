@@ -148,7 +148,7 @@ class ProjectStorageUpdateExecutorTests {
     when(storageReader.readQProfiles()).thenReturn(builder.build());
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
     assertThat(thrown)
       .hasMessage("Unable to parse WS response: Protocol message tag had invalid wire type.")
       .hasCauseInstanceOf(InvalidProtocolBufferException.class);
@@ -171,7 +171,7 @@ class ProjectStorageUpdateExecutorTests {
     when(storageReader.readQProfiles()).thenReturn(builder.build());
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    underTest.update(MODULE_KEY_WITH_BRANCH, PROGRESS);
+    underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
     ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(StoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
     assertThat(projectConfiguration.getQprofilePerLanguageMap()).containsOnly(
@@ -201,7 +201,7 @@ class ProjectStorageUpdateExecutorTests {
     when(storageReader.readQProfiles()).thenReturn(builder.build());
     when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
     assertThat(thrown).hasMessageContaining("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
   }
 
@@ -234,14 +234,14 @@ class ProjectStorageUpdateExecutorTests {
       .build();
 
     IssueDownloader issueDownloader = mock(IssueDownloader.class);
-    when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(ProgressWrapper.class)))
+    when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), any(ProgressWrapper.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
     underTest = new ProjectStorageUpdateExecutor(storageReader, storagePaths, tempFolder, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
-    underTest.update(MODULE_KEY_WITH_BRANCH, PROGRESS);
+    underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
-    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), any(ProgressWrapper.class));
+    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressWrapper.class));
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")

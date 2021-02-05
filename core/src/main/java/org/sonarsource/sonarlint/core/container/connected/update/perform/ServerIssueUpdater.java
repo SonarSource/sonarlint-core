@@ -42,14 +42,14 @@ public class ServerIssueUpdater {
     this.tempFolder = tempFolder;
   }
 
-  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
+  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     Path work = tempFolder.newDir().toPath();
     Path target = storagePaths.getServerIssuesPath(projectKey);
-    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, progress), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
   }
 
-  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, ProgressWrapper progress) {
-    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, progress);
+  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 

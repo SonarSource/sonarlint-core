@@ -137,25 +137,18 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_all_issues_limited_to_10k() throws IOException {
+  public void download_all_issues_not_limited_to_10k() throws IOException {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
 
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
 
     List<ServerIssue> file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
     List<ServerIssue> file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
-    // Number of issues is truncated to 10k
-    assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_000);
 
-    // Force reload of each files
-    List<ServerIssue> reloaded500 = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo", null);
-    assertThat(reloaded500).hasSize(500);
+    // Number of issues is not limited to 10k
+    assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
 
-    List<ServerIssue> reloaded10k = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo", null);
-    assertThat(reloaded10k).hasSize(10_000);
-
-    // Now storage is complete
     Map<String, ServerIssue> allIssues = new HashMap<>();
     engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo").forEach(i -> allIssues.put(i.key(), i));
     engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo").forEach(i -> allIssues.put(i.key(), i));
@@ -166,6 +159,9 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(allIssues.get(fpIssue.getKey()).resolution()).isEqualTo("FALSE-POSITIVE");
     assertThat(allIssues.get(overridenSeverityIssue.getKey()).severity()).isEqualTo("BLOCKER");
     assertThat(allIssues.get(overridenTypeIssue.getKey()).type()).isEqualTo("BUG");
+
+    // No hotspots
+    assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.type()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
   }
 
   private static void analyzeProject(String projectDirName) {

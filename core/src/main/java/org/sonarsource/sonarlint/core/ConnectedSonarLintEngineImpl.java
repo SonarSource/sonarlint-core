@@ -240,17 +240,17 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    @Nullable ProgressMonitor monitor) {
+    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(endpoint, client, projectBinding, ideFilePath, new ProgressWrapper(monitor));
+      return getHandler().downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
     });
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
     withRwLock(() -> {
-      getHandler().downloadServerIssues(endpoint, client, projectKey, new ProgressWrapper(monitor));
+      getHandler().downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
       return null;
     });
   }
@@ -261,7 +261,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
@@ -271,7 +271,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.updateProject(projectKey, new ProgressWrapper(monitor));
+      connectedContainer.updateProject(projectKey, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
