@@ -43,7 +43,7 @@ class ProjectFileListDownloaderTests {
 
   @BeforeEach
   public void setUp() {
-    underTest = new ProjectFileListDownloader(mockServer.slClient());
+    underTest = new ProjectFileListDownloader(mockServer.serverApiHelper());
   }
 
   @Test
@@ -58,7 +58,7 @@ class ProjectFileListDownloaderTests {
 
   @Test
   void should_get_files_with_organization() throws IOException {
-    underTest = new ProjectFileListDownloader(mockServer.slClient("myorg"));
+    underTest = new ProjectFileListDownloader(mockServer.serverApiHelper("myorg"));
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&organization=myorg&ps=500&p=1", "/update/component_tree.pb");
 
     List<String> files = underTest.get(PROJECT_KEY, progressWrapper);

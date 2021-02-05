@@ -34,7 +34,7 @@ class ProjectQualityProfilesDownloaderTests {
 
   @Test
   void not_found() {
-    ProjectQualityProfilesDownloader underTest = new ProjectQualityProfilesDownloader(mockServer.slClient());
+    ProjectQualityProfilesDownloader underTest = new ProjectQualityProfilesDownloader(mockServer.serverApiHelper());
 
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=key", new MockResponse().setResponseCode(404));
 

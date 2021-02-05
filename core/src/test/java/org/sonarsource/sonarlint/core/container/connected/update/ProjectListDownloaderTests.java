@@ -39,7 +39,7 @@ class ProjectListDownloaderTests {
   @Test
   void update_modules(@TempDir Path tempDir) throws Exception {
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", "/update/searchmodulesp1.pb");
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.slClient());
+    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper());
 
     moduleListUpdate.fetchTo(tempDir, new ProgressWrapper(null));
 
@@ -50,7 +50,7 @@ class ProjectListDownloaderTests {
   @Test
   void update_modules_with_org(@TempDir Path tempDir) throws Exception {
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.slClient("myOrg"));
+    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper("myOrg"));
 
     moduleListUpdate.fetchTo(tempDir, new ProgressWrapper(null));
 

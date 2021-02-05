@@ -80,7 +80,7 @@ class GlobalStorageUpdateExecutorTests {
     when(tempFolder.newDir()).thenReturn(tempDir);
     storageManager = mock(StoragePaths.class);
     when(storageManager.getGlobalStorageRoot()).thenReturn(destDir);
-    globalUpdate = new GlobalStorageUpdateExecutor(storageManager, new ServerVersionAndStatusChecker(mockServer.slClient()),
+    globalUpdate = new GlobalStorageUpdateExecutor(storageManager, new ServerVersionAndStatusChecker(mockServer.serverApiHelper()),
       mock(PluginReferencesDownloader.class), mock(SettingsDownloader.class), rulesDownloader, mock(ProjectListDownloader.class),
       mock(QualityProfilesDownloader.class), mock(PluginListDownloader.class), tempFolder);
   }

@@ -126,11 +126,11 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     }
   }
 
-  public ServerApiHelper slClient() {
-    return slClient(null);
+  public ServerApiHelper serverApiHelper() {
+    return serverApiHelper(null);
   }
 
-  public ServerApiHelper slClient(@Nullable String organizationKey) {
+  public ServerApiHelper serverApiHelper(@Nullable String organizationKey) {
     return new ServerApiHelper(endpointParams(organizationKey), httpClient());
   }
 

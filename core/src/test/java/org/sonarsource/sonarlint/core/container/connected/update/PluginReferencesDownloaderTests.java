@@ -58,7 +58,7 @@ class PluginReferencesDownloaderTests {
 
   @BeforeEach
   public void setUp() throws IOException {
-    underTest = new PluginReferencesDownloader(mockServer.slClient(), pluginCache);
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache);
   }
 
   @Test
