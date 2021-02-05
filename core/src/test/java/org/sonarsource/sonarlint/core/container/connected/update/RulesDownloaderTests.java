@@ -63,7 +63,7 @@ class RulesDownloaderTests {
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", "/update/rulesp1.pb");
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.slClient());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -81,7 +81,7 @@ class RulesDownloaderTests {
     emptyMockForAllSeverities();
     mockServer.addProtobufResponse(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", response);
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.slClient());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> rulesUpdate.fetchRulesTo(tempDir, progressWrapper));
     assertThat(thrown).hasMessage("Found more than 10000 rules for severity 'MAJOR' in the SonarQube server, which is not supported by SonarLint.");
@@ -93,7 +93,7 @@ class RulesDownloaderTests {
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&p=1&ps=500", "/update/rulesp1.pb");
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.slClient("myOrg"));
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper("myOrg"));
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -110,7 +110,7 @@ class RulesDownloaderTests {
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&p=2&ps=500", "/update/rulesp2.pb");
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=INFO&p=1&ps=500", "/update/rules_info_p1.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.slClient());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -145,7 +145,7 @@ class RulesDownloaderTests {
     emptyMockForAllSeverities();
     mockServer.addProtobufResponse(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", response);
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.slClient());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
     rulesUpdate.fetchRulesTo(tempDir, progressWrapper);
 
     Rules saved = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.RULES_PB), Rules.parser());
@@ -158,7 +158,7 @@ class RulesDownloaderTests {
     emptyMockForAllSeverities();
     mockServer.addStringResponse(RULES_SEARCH_URL + "&severities=MAJOR&p=1&ps=500", "trash");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.slClient());
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper());
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> rulesUpdate.fetchRulesTo(tempDir, progressWrapper));
     assertThat(thrown).hasMessage("Failed to load rules");

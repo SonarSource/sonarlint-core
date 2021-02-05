@@ -50,7 +50,7 @@ class SettingsDownloaderTests {
 
   @BeforeEach
   public void setUp() {
-    underTest = new SettingsDownloader(mockServer.slClient());
+    underTest = new SettingsDownloader(mockServer.serverApiHelper());
   }
 
   @Test

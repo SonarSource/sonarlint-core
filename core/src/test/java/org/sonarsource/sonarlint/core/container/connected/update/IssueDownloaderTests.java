@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.io.IOException;
 import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -34,12 +35,18 @@ import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
+
+  private static final String FILE_1_KEY = "project:foo/bar/Hello.java";
+  private static final String FILE_2_KEY = "project:foo/bar/Hello2.java";
+  private static final String FILE_3_KEY = "project:foo/bar/Hello3.java";
 
   private static final String DUMMY_KEY = "dummyKey";
 
@@ -50,6 +57,13 @@ class IssueDownloaderTests {
 
   private final Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder().build();
   private final IssueStorePaths issueStorePaths = new IssueStorePaths();
+  private IssueDownloader underTest;
+
+  @BeforeEach
+  public void prepare() {
+    ServerApi serverApi = new ServerApi(mockServer.serverApiHelper());
+    underTest = new IssueDownloader(serverApi.issue(), serverApi.source(), issueStorePaths);
+  }
 
   @Test
   void test_download_one_issue_no_taint() throws IOException {
@@ -66,8 +80,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, false, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, false, PROGRESS);
     assertThat(issues).hasSize(1);
 
     ServerIssue serverIssue = issues.get(0);
@@ -112,27 +125,28 @@ class IssueDownloaderTests {
         .setRule("javasecurity:S789")
         .setHash("hash2")
         .setMessage("Primary message 2")
-        .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(2).setEndLine(3).setEndOffset(4))
+        .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9))
         .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent("project:foo/bar/Hello2.java")
+        .setComponent(FILE_1_KEY)
         .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent("project:foo/bar/Hello.java")
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 2").setComponent("project:foo/bar/Hello2.java")
-            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12))))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Invalid text range").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(7).setEndOffset(6)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Another file").setComponent(FILE_2_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
         .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent("project:foo/bar/Hello3.java")
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 2").setComponent("project:foo/bar/Hello.java")
-            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
       .addComponents(Issues.Component.newBuilder()
-        .setKey("project:foo/bar/Hello.java")
+        .setKey(FILE_1_KEY)
         .setPath("foo/bar/Hello.java"))
       .addComponents(Issues.Component.newBuilder()
-        .setKey("project:foo/bar/Hello2.java")
+        .setKey(FILE_2_KEY)
         .setPath("foo/bar/Hello2.java"))
       .addComponents(Issues.Component.newBuilder()
-        .setKey("project:foo/bar/Hello3.java")
+        .setKey(FILE_3_KEY)
         .setPath("foo/bar/Hello3.java"))
       .setPaging(Paging.newBuilder()
         .setPageIndex(1)
@@ -144,9 +158,9 @@ class IssueDownloaderTests {
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       response);
+    mockServer.addStringResponse("/api/sources/raw?key=" + StringUtils.urlEncode(FILE_1_KEY), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
 
     assertThat(issues).hasSize(2);
 
@@ -160,23 +174,34 @@ class IssueDownloaderTests {
 
     assertThat(taintIssue.getLineHash()).isEqualTo("hash2");
     assertThat(taintIssue.getPrimaryLocation().getMsg()).isEqualTo("Primary message 2");
-    assertThat(taintIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello2.java");
+    assertThat(taintIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(2);
-    assertThat(taintIssue.getPrimaryLocation().getTextRange().getStartLineOffset()).isEqualTo(2);
-    assertThat(taintIssue.getPrimaryLocation().getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(taintIssue.getPrimaryLocation().getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(taintIssue.getPrimaryLocation().getTextRange().getStartLineOffset()).isEqualTo(7);
+    assertThat(taintIssue.getPrimaryLocation().getTextRange().getEndLine()).isEqualTo(4);
+    assertThat(taintIssue.getPrimaryLocation().getTextRange().getEndLineOffset()).isEqualTo(9);
+    assertThat(taintIssue.getPrimaryLocation().getCodeSnippet()).isEqualTo("My\n\tCode\n  Snippet");
 
     assertThat(taintIssue.getFlowList()).hasSize(2);
-    assertThat(taintIssue.getFlow(0).getLocationList()).hasSize(2);
-    Location flowLocation12 = taintIssue.getFlow(0).getLocation(1);
-    assertThat(flowLocation12.getMsg()).isEqualTo("Flow 1 - Location 2");
-    assertThat(flowLocation12.getPath()).isEqualTo("foo/bar/Hello2.java");
-    assertThat(flowLocation12.getTextRange().getStartLine()).isEqualTo(9);
-    assertThat(flowLocation12.getTextRange().getStartLineOffset()).isEqualTo(10);
-    assertThat(flowLocation12.getTextRange().getEndLine()).isEqualTo(11);
-    assertThat(flowLocation12.getTextRange().getEndLineOffset()).isEqualTo(12);
+    assertThat(taintIssue.getFlow(0).getLocationList()).hasSize(4);
 
-    assertThat(taintIssue.getFlow(1).getLocationList()).hasSize(2);
+    Location flowLocation11 = taintIssue.getFlow(0).getLocation(0);
+    assertThat(flowLocation11.getPath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
+    assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
+    assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
+    assertThat(flowLocation11.getCodeSnippet()).isEqualTo("After");
+
+    // Invalid text range
+    assertThat(taintIssue.getFlow(0).getLocation(1).getCodeSnippet()).isEmpty();
+
+    // 404
+    assertThat(taintIssue.getFlow(0).getLocation(2).getCodeSnippet()).isEmpty();
+
+    // No text range
+    assertThat(taintIssue.getFlow(0).getLocation(3).getCodeSnippet()).isEmpty();
+
+    assertThat(taintIssue.getFlow(1).getLocationList()).hasSize(1);
   }
 
   @Test
@@ -208,8 +233,7 @@ class IssueDownloaderTests {
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
 
-    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
 
     assertThat(issues).hasSize(1);
   }
@@ -218,8 +242,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() throws IOException {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -227,8 +250,7 @@ class IssueDownloaderTests {
   void test_fail_other_codes() throws IOException {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
-    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueDownloader.download(DUMMY_KEY, projectConfiguration, true, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
@@ -236,8 +258,7 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() throws IOException {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    IssueDownloader issueDownloader = new IssueDownloader(mockServer.slClient(), issueStorePaths);
-    List<ServerIssue> issues = issueDownloader.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
     assertThat(issues).isEmpty();
   }
 }

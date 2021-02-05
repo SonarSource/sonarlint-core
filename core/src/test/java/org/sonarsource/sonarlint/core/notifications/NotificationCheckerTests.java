@@ -59,7 +59,7 @@ class NotificationCheckerTests {
 
   @BeforeEach
   public void setUp() {
-    underTest = new NotificationChecker(mockServer.slClient());
+    underTest = new NotificationChecker(mockServer.serverApiHelper());
   }
 
   @Test

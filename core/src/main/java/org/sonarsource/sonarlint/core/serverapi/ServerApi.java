@@ -23,6 +23,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
 public class ServerApi {
   private final ServerApiHelper helper;
@@ -49,6 +50,10 @@ public class ServerApi {
 
   public IssueApi issue() {
     return new IssueApi(helper);
+  }
+
+  public SourceApi source() {
+    return new SourceApi(helper);
   }
 
 }

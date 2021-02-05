@@ -43,7 +43,7 @@ class QualityProfilesDownloaderTests {
   @Test
   void test(@TempDir Path tempDir) {
     mockServer.addResponseFromResource("/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
-    underTest = new QualityProfilesDownloader(mockServer.slClient());
+    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper());
 
     underTest.fetchQualityProfilesTo(tempDir);
 
@@ -64,7 +64,7 @@ class QualityProfilesDownloaderTests {
   @Test
   void testWithOrg(@TempDir Path tempDir) {
     mockServer.addResponseFromResource("/api/qualityprofiles/search.protobuf?organization=myOrg", "/update/qualityprofiles.pb");
-    underTest = new QualityProfilesDownloader(mockServer.slClient("myOrg"));
+    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper("myOrg"));
 
     underTest.fetchQualityProfilesTo(tempDir);
 
@@ -87,7 +87,7 @@ class QualityProfilesDownloaderTests {
     // wrong file
     mockServer.addStringResponse("/api/qualityprofiles/search.protobuf", "foo bar");
 
-    underTest = new QualityProfilesDownloader(mockServer.slClient());
+    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper());
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchQualityProfilesTo(tempDir));
     assertThat(thrown).hasMessageContaining("Protocol message tag had invalid wire type");

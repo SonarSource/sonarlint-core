@@ -125,7 +125,7 @@ class ProjectStorageUpdateExecutorTests {
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
-    projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(mockServer.slClient(organizationKey)),
+    projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(mockServer.serverApiHelper(organizationKey)),
       mock(SettingsDownloader.class));
 
     underTest = new ProjectStorageUpdateExecutor(storageReader, storagePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);

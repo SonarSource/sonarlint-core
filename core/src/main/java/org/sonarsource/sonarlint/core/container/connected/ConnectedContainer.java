@@ -62,6 +62,8 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
@@ -107,6 +109,8 @@ public class ConnectedContainer extends ComponentContainer {
       RulesDownloader.class,
       QualityProfilesDownloader.class,
       IssueDownloader.class,
+      IssueApi.class,
+      SourceApi.class,
       IssueStoreFactory.class,
       new PluginCacheProvider(),
       PluginHashes.class,

@@ -89,7 +89,7 @@ class PluginListDownloaderTests {
   void testParsing_typescript_disabled() {
     when(globalConfig.getEnabledLanguages()).thenReturn(Collections.singleton(Language.JS));
     mockServer.addStringResponse("/api/plugins/installed", RESPONSE_67);
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, mockServer.slClient(), pluginVersionChecker).downloadPluginList();
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, mockServer.serverApiHelper(), pluginVersionChecker).downloadPluginList();
     assertThat(pluginList)
       .extracting(SonarAnalyzer::key, SonarAnalyzer::filename, SonarAnalyzer::hash, SonarAnalyzer::version, SonarAnalyzer::sonarlintCompatible, SonarAnalyzer::versionSupported)
       .containsOnly(
@@ -107,7 +107,7 @@ class PluginListDownloaderTests {
   void testParsing_typescript_enabled() {
     when(globalConfig.getEnabledLanguages()).thenReturn(new HashSet<>(Arrays.asList(Language.JS, Language.TS)));
     mockServer.addStringResponse("/api/plugins/installed", RESPONSE_67);
-    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, mockServer.slClient(), pluginVersionChecker).downloadPluginList();
+    List<SonarAnalyzer> pluginList = new PluginListDownloader(globalConfig, mockServer.serverApiHelper(), pluginVersionChecker).downloadPluginList();
     assertThat(pluginList)
       .extracting(SonarAnalyzer::key, SonarAnalyzer::filename, SonarAnalyzer::hash, SonarAnalyzer::version, SonarAnalyzer::sonarlintCompatible, SonarAnalyzer::versionSupported)
       .containsOnly(

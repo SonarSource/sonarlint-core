@@ -47,7 +47,7 @@ class ModuleHierarchyDownloaderTests {
 
   @BeforeEach
   public void setUp() {
-    underTest = new ModuleHierarchyDownloader(mockServer.slClient());
+    underTest = new ModuleHierarchyDownloader(mockServer.serverApiHelper());
   }
 
   @Test

@@ -28,6 +28,8 @@ import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
 public class PartialUpdaterFactory {
   private final StoragePaths storagePaths;
@@ -43,7 +45,7 @@ public class PartialUpdaterFactory {
   public PartialUpdater create(EndpointParams endpoint, HttpClient client) {
     ServerApiHelper serverApiHelper = new ServerApiHelper(endpoint, client);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloader(serverApiHelper, issueStorePaths);
+    IssueDownloader downloader = new IssueDownloader(new IssueApi(serverApiHelper), new SourceApi(serverApiHelper), issueStorePaths);
     ProjectListDownloader projectListDownloader = new ProjectListDownloader(serverApiHelper);
     return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
   }
