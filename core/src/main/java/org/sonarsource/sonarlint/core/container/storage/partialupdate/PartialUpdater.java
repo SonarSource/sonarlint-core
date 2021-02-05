@@ -53,7 +53,8 @@ public class PartialUpdater {
     this.tempFolder = tempFolder;
   }
 
-  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, ProgressWrapper progress) {
+  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
+    ProgressWrapper progress) {
     Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
@@ -62,7 +63,7 @@ public class PartialUpdater {
     }
     List<ServerIssue> issues;
     try {
-      issues = downloader.download(fileKey,projectConfiguration, progress);
+      issues = downloader.download(fileKey, projectConfiguration, fetchTaintVulnerabilities, progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
@@ -70,8 +71,8 @@ public class PartialUpdater {
     issueStore.save(issues);
   }
 
-  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
-    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, progress);
+  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
   }
 
   public void updateProjectList(ProgressWrapper progress) {

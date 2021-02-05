@@ -20,25 +20,31 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.TextRange;
-import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Issues.Component;
 import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi.DownloadIssuesResult;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
+
+  private static final Logger LOG = Loggers.get(IssueDownloader.class);
 
   private final ServerApiHelper serverApiHelper;
   private final IssueStorePaths issueStorePaths;
@@ -55,30 +61,76 @@ public class IssueDownloader {
    * @param key project key, or file key.
    * @return Iterator of issues. It can be empty but never null.
    */
-  public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
-    StringBuilder searchUrl = new StringBuilder();
-    searchUrl.append(getIssuesUrl(key));
-    serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+  public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     Sonarlint.ServerIssue.Builder issueBuilder = Sonarlint.ServerIssue.newBuilder();
     Location.Builder locationBuilder = Location.newBuilder();
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder = Sonarlint.ServerIssue.TextRange.newBuilder();
     Sonarlint.ServerIssue.Flow.Builder flowBuilder = Sonarlint.ServerIssue.Flow.newBuilder();
+
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
-    Map<String, Component> componentsByKey = new HashMap<>();
-    serverApiHelper.getPaginated(searchUrl.toString(),
-      Issues.SearchWsResponse::parseFrom,
-      Issues.SearchWsResponse::getPaging,
-      r -> {
-        componentsByKey.clear();
-        componentsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Component::getKey, c -> c)));
-        return r.getIssuesList();
-      },
-      issue -> result.add(convertWsIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, issue, componentsByKey)),
-      true,
-      progress);
+
+    IssueApi issueApi = new ServerApi(serverApiHelper).issue();
+
+    List<ScannerInput.ServerIssue> batchIssues = issueApi.downloadAllFromBatchIssues(key);
+
+    Set<String> taintRuleKeys = new HashSet<>();
+    for (ScannerInput.ServerIssue batchIssue : batchIssues) {
+      if (IssueApi.TAINT_REPOS.contains(batchIssue.getRuleRepository())) {
+        taintRuleKeys.add(new org.sonarsource.sonarlint.core.client.api.common.RuleKey(batchIssue.getRuleRepository(), batchIssue.getRuleKey()).toString());
+      } else {
+        result.add(toStorageIssue(batchIssue, projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder));
+      }
+    }
+
+    if (fetchTaintVulnerabilities && !taintRuleKeys.isEmpty()) {
+      try {
+        DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, progress);
+        downloadVulnerabilitiesForRules.getIssues().forEach(i -> {
+          result.add(convertWsIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i, downloadVulnerabilitiesForRules.getComponentsByKey()));
+        });
+      } catch (Exception e) {
+        LOG.warn("Unable to fetch taint vulnerabilities", e);
+      }
+    }
 
     return result;
+  }
+
+  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue batchIssueFromWs, Sonarlint.ProjectConfiguration projectConfiguration,
+    Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
+    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder) {
+    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, batchIssueFromWs.getModuleKey(), batchIssueFromWs.getPath());
+
+    Location primary = buildPrimaryLocationForBatchIssue(locationBuilder, textRangeBuilder, batchIssueFromWs, sqPath);
+
+    issueBuilder.clear();
+    Sonarlint.ServerIssue.Builder builder = issueBuilder
+      .setAssigneeLogin(batchIssueFromWs.getAssigneeLogin())
+      .setLineHash(batchIssueFromWs.getChecksum())
+      .setCreationDate(batchIssueFromWs.getCreationDate())
+      .setKey(batchIssueFromWs.getKey())
+      .setPrimaryLocation(primary)
+      .setResolution(batchIssueFromWs.getResolution())
+      .setRuleKey(batchIssueFromWs.getRuleKey())
+      .setRuleRepository(batchIssueFromWs.getRuleRepository())
+      .setSeverity(batchIssueFromWs.getSeverity().name())
+      .setStatus(batchIssueFromWs.getStatus())
+      .setType(batchIssueFromWs.getType());
+
+    return builder.build();
+  }
+
+  private Location buildPrimaryLocationForBatchIssue(Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
+    ScannerInput.ServerIssue issueFromWs, String sqPath) {
+    locationBuilder.clear();
+    locationBuilder.setPath(sqPath);
+    locationBuilder.setMsg(issueFromWs.getMsg());
+    if (issueFromWs.hasLine()) {
+      textRangeBuilder.clear();
+      textRangeBuilder.setStartLine(issueFromWs.getLine());
+      locationBuilder.setTextRange(textRangeBuilder);
+    }
+    return locationBuilder.build();
   }
 
   private ServerIssue convertWsIssue(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
@@ -97,14 +149,10 @@ public class IssueDownloader {
       .setRuleKey(ruleKey.rule())
       .setRuleRepository(ruleKey.repository())
       .setSeverity(issueFromWs.getSeverity().name())
-      .setStatus(issueFromWs.getStatus());
+      .setStatus(issueFromWs.getStatus())
+      .setType(issueFromWs.getType().name());
 
     buildFlows(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, issueFromWs, componentsByKey);
-
-    if (issueFromWs.hasType()) {
-      // type was added recently
-      issueBuilder.setType(issueFromWs.getType().name());
-    }
 
     return issueBuilder.build();
   }
@@ -150,11 +198,5 @@ public class IssueDownloader {
     textRangeBuilder.setEndLine(textRange.getEndLine());
     textRangeBuilder.setEndLineOffset(textRange.getEndOffset());
     locationBuilder.setTextRange(textRangeBuilder);
-  }
-
-  private static String getIssuesUrl(String key) {
-    // As a small workaround to the 10k limit, we sort on status, descending, in order to have resolved issues first (FP/WF)
-    return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=CODE_SMELL,BUG,VULNERABILITY&s=STATUS&asc=false&componentKeys="
-      + StringUtils.urlEncode(key);
   }
 }

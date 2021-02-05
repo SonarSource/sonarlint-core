@@ -47,10 +47,10 @@ import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpd
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -152,17 +152,17 @@ public class StorageContainerHandler {
   }
 
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    ProgressWrapper progress) {
+    boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, ideFilePath, progress);
+    updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, ProgressWrapper progress) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(projectKey, configuration, progress);
+    updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, progress);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {

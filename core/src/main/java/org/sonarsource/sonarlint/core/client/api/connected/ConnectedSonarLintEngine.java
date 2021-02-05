@@ -145,7 +145,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    *
    * @since 2.0
    */
-  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
+  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -175,7 +175,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @since 2.5
    */
   List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    @Nullable ProgressMonitor monitor);
+    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads and stores server issues for a given project.
@@ -184,7 +184,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
+  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

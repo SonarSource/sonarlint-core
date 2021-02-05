@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -38,6 +39,7 @@ import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -114,6 +116,13 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
       responsesByPath.put(path, new MockResponse().setBody(b));
     } catch (IOException e) {
       fail(e);
+    }
+  }
+
+  public void addProtobufResponseDelimited(String path, Message... m) {
+    try (Buffer b = new Buffer()) {
+      ProtobufUtil.writeMessages(b.outputStream(), Arrays.asList(m).iterator());
+      responsesByPath.put(path, new MockResponse().setBody(b));
     }
   }
 
