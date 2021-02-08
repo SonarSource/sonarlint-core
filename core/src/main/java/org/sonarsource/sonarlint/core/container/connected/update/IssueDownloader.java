@@ -48,6 +48,8 @@ import static java.util.stream.Collectors.joining;
 
 public class IssueDownloader {
 
+  private static final Set<String> NON_CLOSED_STATUSES = new HashSet<>(Arrays.asList("OPEN", "CONFIRMED", "REOPENED"));
+
   private static final Logger LOG = Loggers.get(IssueDownloader.class);
 
   private final IssueStorePaths issueStorePaths;
@@ -80,7 +82,9 @@ public class IssueDownloader {
     Set<String> taintRuleKeys = new HashSet<>();
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
       if (IssueApi.TAINT_REPOS.contains(batchIssue.getRuleRepository())) {
-        taintRuleKeys.add(new org.sonarsource.sonarlint.core.client.api.common.RuleKey(batchIssue.getRuleRepository(), batchIssue.getRuleKey()).toString());
+        if (NON_CLOSED_STATUSES.contains(batchIssue.getStatus())) {
+          taintRuleKeys.add(new org.sonarsource.sonarlint.core.client.api.common.RuleKey(batchIssue.getRuleRepository(), batchIssue.getRuleKey()).toString());
+        }
       } else {
         result.add(toStorageIssue(batchIssue, projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder));
       }
@@ -90,10 +94,10 @@ public class IssueDownloader {
       Map<String, String[]> sourceCodeByKey = new HashMap<>();
       try {
         DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, progress);
-        downloadVulnerabilitiesForRules.getIssues().forEach(i -> {
-          result.add(convertTaintIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i, downloadVulnerabilitiesForRules.getComponentsByKey(),
-            sourceCodeByKey));
-        });
+        downloadVulnerabilitiesForRules.getIssues()
+          .forEach(i -> result.add(
+            convertTaintIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i, downloadVulnerabilitiesForRules.getComponentsByKey(),
+              sourceCodeByKey)));
       } catch (Exception e) {
         LOG.warn("Unable to fetch taint vulnerabilities", e);
       }
