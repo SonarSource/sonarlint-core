@@ -658,7 +658,7 @@ class StandaloneIssueMediumTests {
       false);
 
     final Collection<RuleKey> includedRules = singleton(new RuleKey("squid", "S3553"));
-    List<String> logs = new ArrayList<>();
+    List<String> logs = new CopyOnWriteArrayList<>();
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
