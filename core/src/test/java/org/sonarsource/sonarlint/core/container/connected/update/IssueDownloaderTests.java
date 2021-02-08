@@ -115,6 +115,7 @@ class IssueDownloaderTests {
       .setChecksum("hash2")
       .setMsg("Primary message 2")
       .setLine(2)
+      .setStatus("OPEN")
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello2.java")
       .setModuleKey("project")
@@ -156,7 +157,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
     mockServer.addProtobufResponse(
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       response);
     mockServer.addStringResponse("/api/sources/raw?key=" + StringUtils.urlEncode(FILE_1_KEY), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
@@ -205,6 +206,40 @@ class IssueDownloaderTests {
   }
 
   @Test
+  void test_download_issues_dont_fetch_resolved_vulnerabilities() throws IOException {
+    ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .setChecksum("hash1")
+      .setMsg("Primary message 1")
+      .setLine(1)
+      .setCreationDate(123456789L)
+      .setPath("foo/bar/Hello.java")
+      .setModuleKey("project")
+      .build();
+
+    ScannerInput.ServerIssue taint1 = ScannerInput.ServerIssue.newBuilder()
+      .setRuleRepository("javasecurity")
+      .setRuleKey("S789")
+      .setChecksum("hash2")
+      .setMsg("Primary message 2")
+      .setLine(2)
+      .setStatus("RESOLVED")
+      .setCreationDate(123456789L)
+      .setPath("foo/bar/Hello2.java")
+      .setModuleKey("project")
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
+
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+
+    assertThat(issues).hasSize(1);
+
+    assertThat(mockServer.getRequestCount()).isEqualTo(1);
+  }
+
+  @Test
   void test_ignore_failure_when_fetching_taint_vulnerabilities() throws IOException {
     ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
@@ -230,7 +265,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
     mockServer.addResponse(
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
 
     List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
