@@ -296,11 +296,6 @@
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <minimizeJar>true</minimizeJar>
               <shadeSourcesContent>true</shadeSourcesContent>
-              <artifactSet>
-                <excludes>
-                  <exclude>${project.groupId}:sonarlint-slf4j-sonar-log</exclude>
-                </excludes>
-              </artifactSet>
               <relocations>
                 <relocation>
                   <pattern></pattern>
