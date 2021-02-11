@@ -26,8 +26,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-slf4j-sonar-log</artifactId>
       <version>${project.version}</version>
-      <!-- Not needed in classpath, will be packaged as JAR by m-dep-p -->
-      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
@@ -324,6 +322,13 @@
                   </excludes>
                 </filter>
                 <filter>
+                  <artifact>${project.groupId}:sonarlint-slf4j-sonar-log</artifact>
+                  <excludes>
+                    <!-- Don't shade anything, but still remove the dependency from the pom -->
+                    <exclude>**</exclude>
+                  </excludes>
+                </filter>
+                <filter>
                   <artifact>org.sonarsource.sonarqube:sonar-plugin-api</artifact>
                   <includes>
                     <include>**</include>
@@ -331,6 +336,8 @@
                   <excludes>
                     <exclude>**/JsonWriter.class</exclude>
                     <exclude>**/internal/google/gson/**</exclude>
+                    <!-- Overridden by SonarLint -->
+                    <exclude>org/sonar/api/utils/log/Loggers.class</exclude>
                   </excludes>
                 </filter>
               </filters>
