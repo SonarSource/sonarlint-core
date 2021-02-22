@@ -31,8 +31,10 @@ import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HotspotApiTests {
 
@@ -66,8 +68,8 @@ class HotspotApiTests {
   void it_should_adapt_and_return_the_hotspot() throws InvalidProtocolBufferException {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setMessage("message")
-      .setComponent(Hotspots.Component.newBuilder().setPath("path"))
-      .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
+      .setComponent(Hotspots.Component.newBuilder().setPath("path").setKey("myproject:path"))
+      .setTextRange(Common.TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9).build())
       .setAuthor("author")
       .setStatus("REVIEWED")
       .setResolution("SAFE")
@@ -80,6 +82,7 @@ class HotspotApiTests {
         .setFixRecommendations("fix")
         .build())
       .build());
+    mockServer.addStringResponse("/api/sources/raw?key=" + StringUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
     Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
@@ -87,7 +90,7 @@ class HotspotApiTests {
     ServerHotspot hotspot = remoteHotspot.get();
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
-    assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(1, 2, 3, 4));
+    assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(2, 7, 4, 9));
     assertThat(hotspot.author).isEqualTo("author");
     assertThat(hotspot.status).isEqualTo(ServerHotspot.Status.REVIEWED);
     assertThat(hotspot.resolution).isEqualTo(ServerHotspot.Resolution.SAFE);
@@ -98,6 +101,7 @@ class HotspotApiTests {
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");
+    assertThat(hotspot.codeSnippet).isEqualTo("My\n\tCode\n  Snippet");
   }
 
   @Test
@@ -107,12 +111,10 @@ class HotspotApiTests {
   }
 
   @Test
-  void it_should_return_empty_optional_when_parser_throws_an_exception() throws InvalidProtocolBufferException {
+  void it_should_throw_when_parser_throws_an_exception() throws InvalidProtocolBufferException {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Issues.BulkChangeWsResponse.newBuilder().build());
 
-    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
-
-    assertThat(remoteHotspot).isEmpty();
+    assertThrows(IllegalArgumentException.class, () -> underTest.fetch(new GetSecurityHotspotRequestParams("h", "p")));
   }
 
   @Test

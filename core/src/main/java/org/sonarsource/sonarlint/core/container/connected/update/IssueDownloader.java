@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -43,8 +42,6 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi.DownloadIssuesResult;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-
-import static java.util.stream.Collectors.joining;
 
 public class IssueDownloader {
 
@@ -218,17 +215,8 @@ public class IssueDownloader {
     if (sourceCodeLines.length == 0) {
       return;
     }
-    String[] linesOfTextRange;
     try {
-      if (textRange.getStartLine() == textRange.getEndLine()) {
-        String fullline = sourceCodeLines[textRange.getStartLine() - 1];
-        locationBuilder.setCodeSnippet(fullline.substring(textRange.getStartOffset(), textRange.getEndOffset()));
-      } else {
-        linesOfTextRange = Arrays.copyOfRange(sourceCodeLines, textRange.getStartLine() - 1, textRange.getEndLine());
-        linesOfTextRange[0] = linesOfTextRange[0].substring(textRange.getStartOffset());
-        linesOfTextRange[linesOfTextRange.length - 1] = linesOfTextRange[linesOfTextRange.length - 1].substring(0, textRange.getEndOffset());
-        locationBuilder.setCodeSnippet(Stream.of(linesOfTextRange).collect(joining("\n")));
-      }
+      locationBuilder.setCodeSnippet(SourceApi.getCodeSnippet(sourceCodeLines, textRange));
     } catch (Exception e) {
       LOG.debug("Unable to compute code snippet of '" + fileKey + "' for text range: " + textRange, e);
     }

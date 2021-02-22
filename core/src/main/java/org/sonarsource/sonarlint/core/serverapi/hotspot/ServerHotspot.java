@@ -19,18 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 
 public class ServerHotspot {
   public ServerHotspot(String message,
-                       String filePath,
-                       TextRange textRange,
-                       String author,
-                       Status status,
-                       @Nullable Resolution resolution,
-                       Rule rule) {
+    String filePath,
+    TextRange textRange,
+    String author,
+    Status status,
+    @Nullable Resolution resolution,
+    Rule rule,
+    @Nullable String codeSnippet) {
     this.message = message;
     this.filePath = filePath;
     this.textRange = textRange;
@@ -38,6 +39,7 @@ public class ServerHotspot {
     this.status = status;
     this.resolution = resolution;
     this.rule = rule;
+    this.codeSnippet = codeSnippet;
   }
 
   public final String message;
@@ -47,6 +49,8 @@ public class ServerHotspot {
   public final Status status;
   public final Resolution resolution;
   public final Rule rule;
+  @CheckForNull
+  public final String codeSnippet;
 
   public static class Rule {
 
@@ -59,12 +63,12 @@ public class ServerHotspot {
     public final String fixRecommendations;
 
     public Rule(String key,
-                String name,
-                String securityCategory,
-                Probability vulnerabilityProbability,
-                String riskDescription,
-                String vulnerabilityDescription,
-                String fixRecommendations) {
+      String name,
+      String securityCategory,
+      Probability vulnerabilityProbability,
+      String riskDescription,
+      String vulnerabilityDescription,
+      String fixRecommendations) {
 
       this.key = key;
       this.name = name;
