@@ -19,17 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.source;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient.Response;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-
-import static java.util.stream.Collectors.joining;
 
 public class SourceApi {
 
@@ -53,18 +48,6 @@ public class SourceApi {
     } catch (Exception e) {
       LOG.debug("Unable to fetch source code of '" + fileKey + "'", e);
       return Optional.empty();
-    }
-  }
-
-  public static String getCodeSnippet(String[] sourceCodeLines, TextRange textRange) {
-    if (textRange.getStartLine() == textRange.getEndLine()) {
-      String fullline = sourceCodeLines[textRange.getStartLine() - 1];
-      return fullline.substring(textRange.getStartOffset(), textRange.getEndOffset());
-    } else {
-      String[] linesOfTextRange = Arrays.copyOfRange(sourceCodeLines, textRange.getStartLine() - 1, textRange.getEndLine());
-      linesOfTextRange[0] = linesOfTextRange[0].substring(textRange.getStartOffset());
-      linesOfTextRange[linesOfTextRange.length - 1] = linesOfTextRange[linesOfTextRange.length - 1].substring(0, textRange.getEndOffset());
-      return Stream.of(linesOfTextRange).collect(joining("\n"));
     }
   }
 

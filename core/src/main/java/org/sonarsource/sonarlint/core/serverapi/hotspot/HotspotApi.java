@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class HotspotApi {
@@ -52,15 +53,16 @@ public class HotspotApi {
       return Optional.empty();
     }
     String fileKey = response.getComponent().getKey();
-    String[] lines = new SourceApi(helper)
-      .getRawSourceCode(fileKey)
-      .map(s -> s.split("\\r?\\n"))
-      .orElse(new String[0]);
+    Optional<String> source = new SourceApi(helper).getRawSourceCode(fileKey);
     String codeSnippet;
-    try {
-      codeSnippet = SourceApi.getCodeSnippet(lines, response.getTextRange());
-    } catch (Exception e) {
-      LOG.debug("Unable to compute code snippet of '" + fileKey + "' for text range: " + response.getTextRange(), e);
+    if (source.isPresent()) {
+      try {
+        codeSnippet = ServerApiUtils.extractCodeSnippet(source.get(), response.getTextRange());
+      } catch (Exception e) {
+        LOG.debug("Unable to compute code snippet of '" + fileKey + "' for text range: " + response.getTextRange(), e);
+        codeSnippet = null;
+      }
+    } else {
       codeSnippet = null;
     }
     return Optional.of(adapt(response, codeSnippet));
