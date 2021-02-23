@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -42,9 +41,9 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi.DownloadIssuesResult;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-
-import static java.util.stream.Collectors.joining;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
 
@@ -91,7 +90,7 @@ public class IssueDownloader {
     }
 
     if (fetchTaintVulnerabilities && !taintRuleKeys.isEmpty()) {
-      Map<String, String[]> sourceCodeByKey = new HashMap<>();
+      Map<String, String> sourceCodeByKey = new HashMap<>();
       try {
         DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, progress);
         downloadVulnerabilitiesForRules.getIssues()
@@ -145,7 +144,7 @@ public class IssueDownloader {
 
   private ServerIssue convertTaintIssue(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs,
-    Map<String, Component> componentsByKey, Map<String, String[]> sourceCodeByKey) {
+    Map<String, Component> componentsByKey, Map<String, String> sourceCodeByKey) {
     issueBuilder.clear();
     RuleKey ruleKey = RuleKey.parse(issueFromWs.getRule());
     Location primary = buildPrimaryLocation(projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
@@ -169,7 +168,7 @@ public class IssueDownloader {
 
   private void buildFlows(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs, Map<String, Component> componentsByKey,
-    Map<String, String[]> sourceCodeByKey) {
+    Map<String, String> sourceCodeByKey) {
     for (Flow flowFromWs : issueFromWs.getFlowsList()) {
       flowBuilder.clear();
 
@@ -191,7 +190,7 @@ public class IssueDownloader {
   }
 
   private Location buildPrimaryLocation(ProjectConfiguration projectConfiguration, Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
-    Issue issueFromWs, Map<String, Component> componentsByKey, Map<String, String[]> sourceCodeByKey) {
+    Issue issueFromWs, Map<String, Component> componentsByKey, Map<String, String> sourceCodeByKey) {
     locationBuilder.clear();
     locationBuilder.setMsg(issueFromWs.getMessage());
     Component component = componentsByKey.get(issueFromWs.getComponent());
@@ -213,31 +212,21 @@ public class IssueDownloader {
     locationBuilder.setTextRange(textRangeBuilder);
   }
 
-  private void setCodeSnippet(Location.Builder locationBuilder, String fileKey, TextRange textRange, Map<String, String[]> sourceCodeByKey) {
-    String[] sourceCodeLines = getOrFetchSourceCode(fileKey, sourceCodeByKey);
-    if (sourceCodeLines.length == 0) {
+  private void setCodeSnippet(Location.Builder locationBuilder, String fileKey, TextRange textRange, Map<String, String> sourceCodeByKey) {
+    String sourceCode = getOrFetchSourceCode(fileKey, sourceCodeByKey);
+    if (StringUtils.isEmpty(sourceCode)) {
       return;
     }
-    String[] linesOfTextRange;
     try {
-      if (textRange.getStartLine() == textRange.getEndLine()) {
-        String fullline = sourceCodeLines[textRange.getStartLine() - 1];
-        locationBuilder.setCodeSnippet(fullline.substring(textRange.getStartOffset(), textRange.getEndOffset()));
-      } else {
-        linesOfTextRange = Arrays.copyOfRange(sourceCodeLines, textRange.getStartLine() - 1, textRange.getEndLine());
-        linesOfTextRange[0] = linesOfTextRange[0].substring(textRange.getStartOffset());
-        linesOfTextRange[linesOfTextRange.length - 1] = linesOfTextRange[linesOfTextRange.length - 1].substring(0, textRange.getEndOffset());
-        locationBuilder.setCodeSnippet(Stream.of(linesOfTextRange).collect(joining("\n")));
-      }
+      locationBuilder.setCodeSnippet(ServerApiUtils.extractCodeSnippet(sourceCode, textRange));
     } catch (Exception e) {
       LOG.debug("Unable to compute code snippet of '" + fileKey + "' for text range: " + textRange, e);
     }
   }
 
-  private String[] getOrFetchSourceCode(String fileKey, Map<String, String[]> sourceCodeByKey) {
+  private String getOrFetchSourceCode(String fileKey, Map<String, String> sourceCodeByKey) {
     return sourceCodeByKey.computeIfAbsent(fileKey, k -> sourceApi
       .getRawSourceCode(fileKey)
-      .map(s -> s.split("\\r?\\n"))
-      .orElse(new String[0]));
+      .orElse(""));
   }
 }

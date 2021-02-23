@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.io.InputStream;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common;
@@ -28,6 +29,8 @@ import org.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class HotspotApi {
@@ -42,16 +45,30 @@ public class HotspotApi {
   }
 
   public Optional<ServerHotspot> fetch(GetSecurityHotspotRequestParams params) {
+    Hotspots.ShowWsResponse response;
     try (HttpClient.Response wsResponse = helper.get(getUrl(params.hotspotKey, params.projectKey)); InputStream is = wsResponse.bodyAsStream()) {
-      Hotspots.ShowWsResponse response = Hotspots.ShowWsResponse.parseFrom(is);
-      return Optional.of(adapt(response));
+      response = Hotspots.ShowWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching security hotspot", e);
+      return Optional.empty();
     }
-    return Optional.empty();
+    String fileKey = response.getComponent().getKey();
+    Optional<String> source = new SourceApi(helper).getRawSourceCode(fileKey);
+    String codeSnippet;
+    if (source.isPresent()) {
+      try {
+        codeSnippet = ServerApiUtils.extractCodeSnippet(source.get(), response.getTextRange());
+      } catch (Exception e) {
+        LOG.debug("Unable to compute code snippet of '" + fileKey + "' for text range: " + response.getTextRange(), e);
+        codeSnippet = null;
+      }
+    } else {
+      codeSnippet = null;
+    }
+    return Optional.of(adapt(response, codeSnippet));
   }
 
-  private static ServerHotspot adapt(Hotspots.ShowWsResponse hotspot) {
+  private static ServerHotspot adapt(Hotspots.ShowWsResponse hotspot, @Nullable String codeSnippet) {
     return new ServerHotspot(
       hotspot.getMessage(),
       hotspot.getComponent().getPath(),
@@ -59,7 +76,8 @@ public class HotspotApi {
       hotspot.getAuthor(),
       ServerHotspot.Status.valueOf(hotspot.getStatus()),
       hotspot.hasResolution() ? ServerHotspot.Resolution.valueOf(hotspot.getResolution()) : null,
-      adapt(hotspot.getRule()));
+      adapt(hotspot.getRule()),
+      codeSnippet);
   }
 
   private static ServerHotspot.Rule adapt(Hotspots.Rule rule) {

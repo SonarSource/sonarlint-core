@@ -39,7 +39,8 @@ class ServerHotspotTest {
         ServerHotspot.Rule.Probability.HIGH,
         "risk",
         "vulnerability",
-        "fix"));
+        "fix"),
+      "some code \n content");
 
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
@@ -57,6 +58,7 @@ class ServerHotspotTest {
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");
+    assertThat(hotspot.codeSnippet).isEqualTo("some code \n content");
 
   }
 
