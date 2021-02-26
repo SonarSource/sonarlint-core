@@ -50,4 +50,28 @@ class ProjectBindingTests {
     assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding4.hashCode());
     assertThat(projectBinding1.hashCode()).isEqualTo(projectBinding5.hashCode());
   }
+
+  @Test
+  void serverPathToIdePath_no_match_from_server_path() {
+    ProjectBinding projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    assertThat(projectBinding.serverPathToIdePath("notSqPrefix/some/path")).isEmpty();
+  }
+
+  @Test
+  void serverPathToIdePath_general_case() {
+    ProjectBinding projectBinding = new ProjectBinding("key", "sq/path/prefix", "local/prefix");
+    assertThat(projectBinding.serverPathToIdePath("sq/path/prefix/some/path")).hasValue("local/prefix/some/path");
+  }
+
+  @Test
+  void serverPathToIdePath_empty_local_path() {
+    ProjectBinding projectBinding = new ProjectBinding("key", "sq/path/prefix", "");
+    assertThat(projectBinding.serverPathToIdePath("sq/path/prefix/some/path")).hasValue("some/path");
+  }
+
+  @Test
+  void serverPathToIdePath_empty_sq_path() {
+    ProjectBinding projectBinding = new ProjectBinding("key", "", "local/prefix");
+    assertThat(projectBinding.serverPathToIdePath("some/path")).hasValue("local/prefix/some/path");
+  }
 }
