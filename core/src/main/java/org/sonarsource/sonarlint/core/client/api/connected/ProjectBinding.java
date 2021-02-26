@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Describes the link between a project in the IDE and a project in SonarQube.
@@ -47,6 +48,21 @@ public class ProjectBinding {
 
   public String idePathPrefix() {
     return idePathPrefix;
+  }
+
+  public Optional<String> serverPathToIdePath(String serverPath) {
+    if (!serverPath.startsWith(sqPathPrefix())) {
+      return Optional.empty();
+    }
+    int localPrefixLen = sqPathPrefix().length();
+    if (localPrefixLen > 0) {
+      localPrefixLen++;
+    }
+    String actualLocalPrefix = idePathPrefix();
+    if (!actualLocalPrefix.isEmpty()) {
+      actualLocalPrefix = actualLocalPrefix + "/";
+    }
+    return Optional.of(actualLocalPrefix + serverPath.substring(localPrefixLen));
   }
 
   @Override
