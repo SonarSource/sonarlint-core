@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -64,6 +65,7 @@ import static java.util.Objects.requireNonNull;
 public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
 
   private static final Logger LOG = Loggers.get(ConnectedSonarLintEngineImpl.class);
+  private static final String SECURITY_REPOSITORY_HINT = "security";
 
   private final ConnectedGlobalConfiguration globalConfig;
   private StorageContainer storageContainer;
@@ -310,6 +312,15 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       changeState(State.UNKNOWN);
       rwl.writeLock().unlock();
     }
+  }
+
+  @Override
+  public List<ServerIssue> getUnresolvedTaintVulnerabilities(ProjectBinding binding, String filePath) {
+    List<ServerIssue> serverIssues = getServerIssues(binding, filePath);
+    return serverIssues.stream()
+      .filter(it -> it.ruleKey().contains(SECURITY_REPOSITORY_HINT))
+      .filter(it -> it.resolution().isEmpty())
+      .collect(Collectors.toList());
   }
 
   private <U> U runInConnectedContainer(EndpointParams endpoint, HttpClient client, Function<ConnectedContainer, U> func) {

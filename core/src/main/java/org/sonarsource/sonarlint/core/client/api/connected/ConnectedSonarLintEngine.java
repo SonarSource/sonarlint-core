@@ -197,4 +197,10 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate);
 
+
+  /**
+   *
+   * @return Returns all unresolved taint vulnerabilities from remote server.
+   */
+  List<ServerIssue> getUnresolvedTaintVulnerabilities(ProjectBinding binding, String filePath);
 }
