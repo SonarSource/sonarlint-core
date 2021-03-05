@@ -63,11 +63,12 @@ import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue.Flow;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
@@ -150,10 +151,10 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
     ServerIssue taintIssue = sinkIssues.get(0);
     assertThat(taintIssue.getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
     assertThat(taintIssue.getFlows()).isNotEmpty();
-    Flow flow = taintIssue.getFlows().get(0);
-    assertThat(flow.locations()).isNotEmpty();
-    assertThat(flow.locations().get(0).getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
-    assertThat(flow.locations().get(flow.locations().size() - 1).getCodeSnippet()).isEqualTo("request.getParameter(\"user\")");
+    Issue.Flow<ServerIssueLocation> flow = taintIssue.getFlows().get(0);
+    assertThat(flow.getLocations()).isNotEmpty();
+    assertThat(flow.getLocations().get(0).getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
+    assertThat(flow.getLocations().get(flow.getLocations().size() - 1).getCodeSnippet()).isEqualTo("request.getParameter(\"user\")");
   }
 
   private void analyzeMavenProject(String projectDirName) {

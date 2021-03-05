@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFlow;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
@@ -95,7 +96,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type().name();
 
-    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows());
+    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow<IssueLocation>> flows = mapFlows(issue.flows());
 
     DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows);
@@ -112,12 +113,12 @@ public class SonarLintSensorStorage implements SensorStorage {
       && !StringUtils.containsIgnoreCase(issue.ruleKey().rule(), "nosonar");
   }
 
-  private static List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> mapFlows(List<Flow> flows) {
+  private static List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow<IssueLocation>> mapFlows(List<Flow> flows) {
     return flows.stream()
       .map(f -> new DefaultFlow(f.locations()
         .stream()
         .collect(toList())))
-      .filter(f -> !f.locations().isEmpty())
+      .filter(f -> !f.getLocations().isEmpty())
       .collect(toList());
   }
 

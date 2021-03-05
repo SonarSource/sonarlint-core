@@ -38,7 +38,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public String getRuleKey() {
-    return serverIssue.ruleKey();
+    return serverIssue.getRuleKey();
   }
 
   @Override
@@ -48,12 +48,12 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public String getSeverity() {
-    return serverIssue.severity();
+    return serverIssue.getSeverity();
   }
 
   @Override
   public String getType() {
-    return serverIssue.type();
+    return serverIssue.getType();
   }
 
   @Override
@@ -63,12 +63,12 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Integer getLine() {
-    return serverIssue.getStartLine();
+    return serverIssue.getLocation().getStartLine();
   }
 
   @Override
   public Integer getLineHash() {
-    return serverIssue.lineHash().hashCode();
+    return serverIssue.getLineHash().hashCode();
   }
 
   @Override
@@ -84,21 +84,21 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Long getCreationDate() {
-    return serverIssue.creationDate().toEpochMilli();
+    return serverIssue.getCreationDate().toEpochMilli();
   }
 
   @Override
   public String getServerIssueKey() {
-    return serverIssue.key();
+    return serverIssue.getKey();
   }
 
   @Override
   public boolean isResolved() {
-    return !serverIssue.resolution().isEmpty();
+    return !serverIssue.getResolution().isEmpty();
   }
 
   @Override
   public String getAssignee() {
-    return serverIssue.assigneeLogin();
+    return serverIssue.getAssigneeLogin();
   }
 }

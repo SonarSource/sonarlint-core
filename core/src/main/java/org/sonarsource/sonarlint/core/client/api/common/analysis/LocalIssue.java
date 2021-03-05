@@ -19,33 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
-import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
-
-public interface Issue<L extends IssueRangeAndMessage> {
-
-  default String getSeverity() {
-    return "";
-  }
-
-  default String getType() {
-    return "";
-  }
-
-  default String getRuleKey() {
-    return "";
-  }
-
-  default String getRuleName() {
-    return "";
-  }
-
-  L getLocation();
-
-  List<Flow<L>> getFlows();
-
-  interface Flow<L> {
-    List<L> getLocations();
-  }
-
+public interface LocalIssue extends Issue<IssueLocation> {
 }

@@ -25,9 +25,12 @@ import java.util.Collection;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -154,8 +157,10 @@ public class IssueTrackerTest {
 
   private Issue mockIssue() {
     Issue issue = mock(Issue.class);
+    IssueRangeAndMessage location = mock(IssueRangeAndMessage.class);
     when(issue.getRuleKey()).thenReturn("dummy ruleKey");
-    when(issue.getMessage()).thenReturn("dummy message");
+    when(issue.getLocation()).thenReturn(location);
+    when(location.getMessage()).thenReturn("dummy message");
     return issue;
   }
 
@@ -350,10 +355,10 @@ public class IssueTrackerTest {
     int newLine = 7;
 
     Issue issue = mockIssue();
-    when(issue.getStartLine()).thenReturn(newLine + 3);
+    when(issue.getLocation().getStartLine()).thenReturn(newLine + 3);
 
     Issue movedIssue = mockIssue();
-    when(movedIssue.getStartLine()).thenReturn(newLine);
+    when(movedIssue.getLocation().getStartLine()).thenReturn(newLine);
 
     Trackable trackable = new IssueTrackable(issue, mock(TextRange.class), null, lineContent);
     Trackable movedTrackable = new IssueTrackable(movedIssue, mock(TextRange.class), null, lineContent);
@@ -388,20 +393,24 @@ public class IssueTrackerTest {
 
     Issue issue = mock(Issue.class);
     when(issue.getRuleKey()).thenReturn(ruleKey);
-    when(issue.getMessage()).thenReturn(message);
-    when(issue.getStartLine()).thenReturn(newLine);
+    IssueRangeAndMessage location = mock(IssueRangeAndMessage.class);
+    when(issue.getLocation()).thenReturn(location);
+    when(location.getMessage()).thenReturn(message);
+    when(location.getStartLine()).thenReturn(newLine);
     Trackable trackable = new IssueTrackable(issue, mock(TextRange.class), null, lineContent);
 
     ServerIssue serverIssue = mock(ServerIssue.class);
-    when(serverIssue.ruleKey()).thenReturn(ruleKey);
+    ServerIssueLocation serverLocation = mock(ServerIssueLocation.class);
+    when(serverIssue.getRuleKey()).thenReturn(ruleKey);
     when(serverIssue.getMessage()).thenReturn(message);
-    when(serverIssue.lineHash()).thenReturn(DigestUtils.digest(lineContent));
+    when(serverIssue.getLineHash()).thenReturn(DigestUtils.digest(lineContent));
     TextRange serverTextRange = mock(TextRange.class);
     when(serverTextRange.getStartLine()).thenReturn(newLine + 3);
     when(serverIssue.getTextRange()).thenReturn(serverTextRange);
-    when(serverIssue.creationDate()).thenReturn(Instant.now());
-    when(serverIssue.key()).thenReturn(serverIssueKey);
-    when(serverIssue.resolution()).thenReturn("fixed");
+    when(serverIssue.getCreationDate()).thenReturn(Instant.now());
+    when(serverIssue.getKey()).thenReturn(serverIssueKey);
+    when(serverIssue.getResolution()).thenReturn("fixed");
+    when(serverIssue.getLocation()).thenReturn(serverLocation);
     Trackable movedTrackable = new ServerIssueTrackable(serverIssue);
 
     Trackable nonMatchingTrackable = new IssueTrackable(mockIssue(), mock(TextRange.class), null, lineContent + "x");

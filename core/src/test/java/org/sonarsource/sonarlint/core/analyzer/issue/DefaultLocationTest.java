@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import org.junit.*;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +31,7 @@ public class DefaultLocationTest {
   public void verify_accessors() {
     ClientInputFile inputFile = mock(ClientInputFile.class);
     String message = "fummy";
-    DefaultLocation defaultLocation = new DefaultLocation(inputFile, null, message);
+    DefaultLocation defaultLocation = new DefaultLocation(inputFile, (TextRange) null, message);
 
     assertThat(defaultLocation.getInputFile()).isSameAs(inputFile);
     assertThat(defaultLocation.getMessage()).isSameAs(message);

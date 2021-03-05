@@ -34,6 +34,13 @@ public class DefaultLocation extends TextRangeLocation implements IssueLocation 
     this.message = message;
   }
 
+  public DefaultLocation(ClientInputFile inputFile, org.sonarsource.sonarlint.core.client.api.common.TextRange textRange, String message) {
+    super(textRange);
+    this.inputFile = inputFile;
+    this.message = message;
+
+  }
+
   @Override
   public ClientInputFile getInputFile() {
     return inputFile;

@@ -21,13 +21,14 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 
 import static org.apache.commons.lang.StringUtils.trimToNull;
 
-public class DefaultServerFlow implements ServerIssue.Flow {
+public class DefaultServerFlow implements Issue.Flow<ServerIssueLocation> {
+
   private final List<ServerIssueLocation> locations;
 
   public DefaultServerFlow(List<Location> list) {
@@ -39,7 +40,7 @@ public class DefaultServerFlow implements ServerIssue.Flow {
   }
 
   @Override
-  public List<ServerIssueLocation> locations() {
+  public List<ServerIssueLocation> getLocations() {
     return locations;
   }
 }

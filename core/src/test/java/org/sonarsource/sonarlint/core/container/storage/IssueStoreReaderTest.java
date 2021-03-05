@@ -253,20 +253,20 @@ public class IssueStoreReaderTest {
     assertThat(serverIssue.getCodeSnippet()).isEqualTo("Primary location code");
 
     assertThat(serverIssue.getFlows()).hasSize(1);
-    assertThat(serverIssue.getFlows().get(0).locations()).hasSize(3);
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getFilePath()).isEqualTo("src/path1");
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getMessage()).isEqualTo("Flow 1 - Location 1");
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLine()).isEqualTo(5);
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLineOffset()).isEqualTo(6);
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLine()).isEqualTo(7);
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLineOffset()).isEqualTo(8);
-    assertThat(serverIssue.getFlows().get(0).locations().get(0).getCodeSnippet()).isEqualTo("Some code snipper\n\t with newline");
+    assertThat(serverIssue.getFlows().get(0).getLocations()).hasSize(3);
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getFilePath()).isEqualTo("src/path1");
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getMessage()).isEqualTo("Flow 1 - Location 1");
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getTextRange().getStartLineOffset()).isEqualTo(6);
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getTextRange().getEndLine()).isEqualTo(7);
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getTextRange().getEndLineOffset()).isEqualTo(8);
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(0).getCodeSnippet()).isEqualTo("Some code snipper\n\t with newline");
 
-    assertThat(serverIssue.getFlows().get(0).locations().get(1).getMessage()).isEqualTo("Flow 1 - Location 2 - Without text range");
-    assertThat(serverIssue.getFlows().get(0).locations().get(1).getTextRange()).isNull();
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(1).getMessage()).isEqualTo("Flow 1 - Location 2 - Without text range");
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(1).getTextRange()).isNull();
 
-    assertThat(serverIssue.getFlows().get(0).locations().get(2).getMessage()).isEmpty();
-    assertThat(serverIssue.getFlows().get(0).locations().get(2).getFilePath()).isEqualTo("src/path2");
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(2).getMessage()).isEmpty();
+    assertThat(serverIssue.getFlows().get(0).getLocations().get(2).getFilePath()).isEqualTo("src/path2");
   }
 
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {

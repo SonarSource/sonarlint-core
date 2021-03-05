@@ -45,6 +45,19 @@ public abstract class TextRangeLocation implements IssueRangeAndMessage {
       : null;
   }
 
+  protected TextRangeLocation(@Nullable org.sonarsource.sonarlint.core.client.api.common.TextRange commonApiTextRange) {
+    org.sonarsource.sonarlint.core.client.api.common.TextRange clientTextRange = null;
+    if (commonApiTextRange != null) {
+      Integer startLine = commonApiTextRange.getStartLine();
+      clientTextRange = new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+        startLine != null ? startLine : 0,
+        commonApiTextRange.getStartLineOffset(),
+        commonApiTextRange.getEndLine(),
+        commonApiTextRange.getEndLineOffset());
+    }
+    this.textRange = clientTextRange;
+  }
+
   @Override
   public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
     return textRange;

@@ -150,18 +150,18 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
 
     Map<String, ServerIssue> allIssues = new HashMap<>();
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo").forEach(i -> allIssues.put(i.key(), i));
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo").forEach(i -> allIssues.put(i.key(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
 
     assertThat(allIssues).hasSize(10_500);
 
-    assertThat(allIssues.get(wfIssue.getKey()).resolution()).isEqualTo("WONTFIX");
-    assertThat(allIssues.get(fpIssue.getKey()).resolution()).isEqualTo("FALSE-POSITIVE");
-    assertThat(allIssues.get(overridenSeverityIssue.getKey()).severity()).isEqualTo("BLOCKER");
-    assertThat(allIssues.get(overridenTypeIssue.getKey()).type()).isEqualTo("BUG");
+    assertThat(allIssues.get(wfIssue.getKey()).getResolution()).isEqualTo("WONTFIX");
+    assertThat(allIssues.get(fpIssue.getKey()).getResolution()).isEqualTo("FALSE-POSITIVE");
+    assertThat(allIssues.get(overridenSeverityIssue.getKey()).getSeverity()).isEqualTo("BLOCKER");
+    assertThat(allIssues.get(overridenTypeIssue.getKey()).getType()).isEqualTo("BUG");
 
     // No hotspots
-    assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.type()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
+    assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.getType()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
   }
 
   private static void analyzeProject(String projectDirName) {

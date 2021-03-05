@@ -33,8 +33,8 @@ public class ServerIssueTrackableTest {
   private final Trackable trackable = new ServerIssueTrackable(serverIssue);
 
   public ServerIssueTrackableTest() {
-    when(serverIssue.lineHash()).thenReturn("blah");
-    when(serverIssue.resolution()).thenReturn("non-empty");
+    when(serverIssue.getLineHash()).thenReturn("blah");
+    when(serverIssue.getResolution()).thenReturn("non-empty");
     TextRange serverTextRange = mock(TextRange.class);
     when(serverTextRange.getStartLine()).thenReturn(22);
     when(serverIssue.getTextRange()).thenReturn(serverTextRange);
@@ -53,11 +53,11 @@ public class ServerIssueTrackableTest {
   @Test
   public void should_delegate_fields_to_protobuf_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
-    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
-    assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
-    assertThat(trackable.isResolved()).isEqualTo(!serverIssue.resolution().isEmpty());
-    assertThat(trackable.getAssignee()).isEqualTo(serverIssue.assigneeLogin());
-    assertThat(trackable.getSeverity()).isEqualTo(serverIssue.severity());
+    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.getLineHash().hashCode());
+    assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.getRuleKey());
+    assertThat(trackable.isResolved()).isEqualTo(!serverIssue.getResolution().isEmpty());
+    assertThat(trackable.getAssignee()).isEqualTo(serverIssue.getAssigneeLogin());
+    assertThat(trackable.getSeverity()).isEqualTo(serverIssue.getSeverity());
     assertThat(trackable.getTextRange().getStartLine()).isEqualTo(serverIssue.getTextRange().getStartLine());
   }
 }

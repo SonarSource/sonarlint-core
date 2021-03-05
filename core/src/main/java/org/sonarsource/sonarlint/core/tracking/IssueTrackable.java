@@ -75,12 +75,12 @@ public class IssueTrackable implements Trackable {
 
   @Override
   public String getMessage() {
-    return issue.getMessage();
+    return issue.getLocation().getMessage();
   }
 
   @Override
   public Integer getLine() {
-    return issue.getStartLine();
+    return issue.getLocation().getStartLine();
   }
 
   @Override

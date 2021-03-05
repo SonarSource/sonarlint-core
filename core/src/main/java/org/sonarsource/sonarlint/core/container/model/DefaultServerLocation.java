@@ -36,6 +36,13 @@ public class DefaultServerLocation extends TextRangeLocation implements ServerIs
     this.codeSnippet = codeSnippet;
   }
 
+  public DefaultServerLocation(String filePath, org.sonarsource.sonarlint.core.client.api.common.TextRange textRange, String message, String codeSnippet) {
+    super(textRange);
+    this.filePath = filePath;
+    this.message = message;
+    this.codeSnippet = codeSnippet;
+  }
+
   @Override
   public String getFilePath() {
     return filePath;

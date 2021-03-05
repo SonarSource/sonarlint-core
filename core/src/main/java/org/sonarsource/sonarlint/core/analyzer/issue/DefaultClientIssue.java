@@ -26,18 +26,21 @@ import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 
-public final class DefaultClientIssue extends TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
+public final class DefaultClientIssue extends TextRangeLocation implements Issue<IssueLocation> {
   private final String severity;
   private final String type;
   private final ActiveRule activeRule;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
   private final Rule rule;
-  private final List<Flow> flows;
+  private final List<Flow<IssueLocation>> flows;
+  private IssueLocation location;
 
   public DefaultClientIssue(String severity, String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
-    @Nullable ClientInputFile clientInputFile, List<Flow> flows) {
+    @Nullable ClientInputFile clientInputFile, List<Flow<IssueLocation>> flows) {
     super(textRange);
     this.severity = severity;
     this.type = type;
@@ -64,6 +67,14 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   }
 
   @Override
+  public IssueLocation getLocation() {
+    if (location == null) {
+      location = new DefaultLocation(clientInputFile, getTextRange(), primaryMessage);
+    }
+    return location;
+  }
+
+  @Override
   public String getRuleKey() {
     return activeRule.ruleKey().toString();
   }
@@ -75,13 +86,12 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
 
   @SuppressWarnings("unchecked")
   @CheckForNull
-  @Override
   public ClientInputFile getInputFile() {
-    return clientInputFile;
+    return getLocation().getInputFile();
   }
 
   @Override
-  public List<Flow> flows() {
+  public List<Flow<IssueLocation>> getFlows() {
     return flows;
   }
 

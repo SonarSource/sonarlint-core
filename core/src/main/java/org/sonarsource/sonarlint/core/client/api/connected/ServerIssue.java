@@ -20,28 +20,29 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.time.Instant;
-import java.util.List;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 
-public interface ServerIssue extends ServerIssueLocation {
-  String key();
+public interface ServerIssue extends Issue<ServerIssueLocation> {
+  
+  String getKey();
 
-  String resolution();
+  String getResolution();
 
-  String ruleKey();
-
-  String lineHash();
-
-  String assigneeLogin();
-
-  String severity();
-
-  String type();
-
-  Instant creationDate();
-
-  List<Flow> getFlows();
-
-  interface Flow {
-    List<ServerIssueLocation> locations();
+  default String getMessage(){
+    return getLocation().getMessage();
   }
+
+  String getLineHash();
+
+  String getAssigneeLogin();
+
+  String getFilePath();
+
+  Instant getCreationDate();
+
+
+  TextRange getTextRange();
+
+  String getCodeSnippet();
 }

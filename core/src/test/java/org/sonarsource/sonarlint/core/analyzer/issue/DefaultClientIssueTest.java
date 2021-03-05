@@ -88,6 +88,6 @@ public class DefaultClientIssueTest {
     assertThat(issue.getEndLine()).isNull();
     assertThat(issue.getEndLineOffset()).isNull();
 
-    assertThat(issue.flows()).isEmpty();
+    assertThat(issue.getFlows()).isEmpty();
   }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 
 public class DefaultServerIssue implements ServerIssue {
   private String key;
@@ -37,23 +38,32 @@ public class DefaultServerIssue implements ServerIssue {
   private Instant creationDate;
   private String severity;
   private String type;
-  private List<Flow> flows = new ArrayList<>();
+  private List<Flow<ServerIssueLocation>> flows = new ArrayList<>();
   private TextRange textRange;
   private String codeSnippet;
+  private DefaultServerLocation location;
 
   @Override
-  public String key() {
+  public String getKey() {
     return key;
   }
 
   @Override
-  public String resolution() {
+  public String getResolution() {
     return resolution;
   }
 
   @Override
-  public String ruleKey() {
+  public String getRuleKey() {
     return ruleKey;
+  }
+
+  @Override
+  public ServerIssueLocation getLocation() {
+    if (location == null) {
+      location = new DefaultServerLocation(filePath, getTextRange(), message, codeSnippet);
+    }
+    return location;
   }
 
   @Override
@@ -62,12 +72,12 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public String lineHash() {
+  public String getLineHash() {
     return lineHash;
   }
 
   @Override
-  public String assigneeLogin() {
+  public String getAssigneeLogin() {
     return assigneeLogin;
   }
 
@@ -77,17 +87,17 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public Instant creationDate() {
+  public Instant getCreationDate() {
     return creationDate;
   }
 
   @Override
-  public String severity() {
+  public String getSeverity() {
     return severity;
   }
 
   @Override
-  public String type() {
+  public String getType() {
     return type;
   }
 
@@ -97,7 +107,7 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public List<Flow> getFlows() {
+  public List<Flow<ServerIssueLocation>> getFlows() {
     return flows;
   }
 
@@ -161,7 +171,7 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setFlows(List<Flow> flows) {
+  public DefaultServerIssue setFlows(List<Flow<ServerIssueLocation>> flows) {
     this.flows = flows;
     return this;
   }
