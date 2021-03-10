@@ -73,6 +73,16 @@ public class ServerApiHelper {
     return response;
   }
 
+  public <R, I> R fetch(String path, CheckedFunction<InputStream, I> responseParser, Function<I, R> responseAdapter) {
+    try (HttpClient.Response response = get(path)) {
+      try {
+        return responseAdapter.apply(responseParser.apply(response.bodyAsStream()));
+      } catch (IOException e) {
+        throw new ApiException("Cannot parse response", e);
+      }
+    }
+  }
+
   /**
    * Execute GET and don't check response
    */
