@@ -82,7 +82,8 @@ public class ItUtils {
       cobolVersion = "LATEST_RELEASE";
       apexVersion = "LATEST_RELEASE";
       tsqlVersion = "LATEST_RELEASE";
-      cppVersion = "LATEST_RELEASE";
+      // Temporary hack until release
+      cppVersion = "6.18.0.29113";
     }
   }
 
