@@ -26,18 +26,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -62,7 +62,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetail
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static java.util.Collections.singleton;
-import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -448,9 +447,8 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaNoHotspots() throws Exception {
-    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("squid:S1313");
-    List<Language> ossLanguages = Arrays.asList(
+  void onlyLoadRulesOfEnabledLanguages() throws Exception {
+    Set<Language> enabledLanguages = EnumSet.of(
       Language.JAVA,
       Language.JS,
       Language.PHP,
@@ -459,18 +457,16 @@ class StandaloneIssueMediumTests {
       Language.XOO);
 
     if (COMMERCIAL_ENABLED) {
-      List<Language> commercialLanguages = Arrays.asList(
-        Language.C,
-        Language.CPP,
-        Language.OBJC);
-      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage).collect(toSet()))
-        .containsOnly(Stream.concat(ossLanguages.stream(), commercialLanguages.stream())
-          .toArray(Language[]::new));
-    } else {
-      assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage).collect(toSet())).containsOnly(ossLanguages.toArray(new Language[0]));
+      enabledLanguages.add(Language.C);
     }
+    assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage))
+      .hasSameElementsAs(enabledLanguages);
+  }
 
-    assertThat(sonarlint.getRuleDetails("squid:S1313")).isEmpty();
+  @Test
+  void simpleJavaNoHotspots() throws Exception {
+    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("java:S1313");
+    assertThat(sonarlint.getRuleDetails("java:S1313")).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
       "package foo;\n"
@@ -484,7 +480,7 @@ class StandaloneIssueMediumTests {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRule(new RuleKey("squid", "S1313"))
+        .addIncludedRule(new RuleKey("java", "S1313"))
         .build(),
       issues::add,
       null, null);
