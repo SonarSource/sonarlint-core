@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
 import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
@@ -34,9 +35,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
@@ -50,6 +49,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 public class CommercialAnalyzerTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
@@ -74,9 +74,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
 
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
@@ -127,34 +124,64 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisC() throws Exception {
+  public void analysisC_old_build_wrapper_prop() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_C);
     SaveIssueListener issueListener = new SaveIssueListener();
 
-    File buildWrapperOutput = temp.newFolder();
-    FileUtils.write(
-      new File(buildWrapperOutput, "build-wrapper-dump.json"),
-      "{\"version\":0,\"captures\":[" +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __cplusplus 201703L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{\"compiler\":\"clang\",\"cwd\":\"" +
-        Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
-        "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}",
-      StandardCharsets.UTF_8);
+    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{\"compiler\":\"clang\",\"cwd\":\"" +
+      Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
+      "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c",
-      "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
+    File buildWrapperOutput = temp.newFolder();
+    FileUtils.write(new File(buildWrapperOutput, "build-wrapper-dump.json"), buildWrapperContent, StandardCharsets.UTF_8);
+    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output",
+      buildWrapperOutput.getAbsolutePath());
+
+    engine.analyze(analysisConfiguration, issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisC_new_prop() throws Exception {
+    assumeTrue(Version.create(ItUtils.cppVersion).isGreaterThanOrEquals(6, 18));
+
+    updateGlobal();
+    updateProject(PROJECT_KEY_C);
+    SaveIssueListener issueListener = new SaveIssueListener();
+
+    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{\"compiler\":\"clang\",\"cwd\":\"" +
+      Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
+      "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
+
+    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content",
+      buildWrapperContent);
 
     engine.analyze(analysisConfiguration, issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);

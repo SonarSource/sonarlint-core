@@ -281,39 +281,40 @@ class StandaloneIssueMediumTests {
   @Test
   void simpleC() throws Exception {
     assumeTrue(COMMERCIAL_ENABLED);
+    // prepareInputFile("foo.h", "", false, StandardCharsets.UTF_8, Language.C);
+    // prepareInputFile("foo2.h", "", false, StandardCharsets.UTF_8, Language.C);
     ClientInputFile inputFile = prepareInputFile("foo.c", "#import \"foo.h\"\n"
       + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, Language.C);
 
-    FileUtils.write(
-      new File(baseDir, "build-wrapper-dump.json"),
-      "{\"version\":0,\"captures\":[" +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __cplusplus 201703L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{\"compiler\":\"clang\",\"cwd\":\"" +
-        baseDir.toString().replace("\\", "\\\\") +
-        "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"foo.c\"]}]}",
-      StandardCharsets.UTF_8);
+    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{\"compiler\":\"clang\",\"cwd\":\"" +
+      baseDir.toString().replace("\\", "\\\\") +
+      "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"foo.c\"]}]}";
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .putExtraProperty("sonar.cfamily.build-wrapper-output", baseDir.getAbsolutePath())
+        .putExtraProperty("sonar.cfamily.build-wrapper-content", buildWrapperContent)
         .build(),
-      issues::add, null, null);
+      issues::add, (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("c:S3805", 1, 0, "foo.c"));
+      tuple("c:S3805", 1, 0, "foo.c"),
+      // FIXME no sonar is not supported by the CFamily analyzer
+      tuple("c:S3805", 2, 0, "foo.c"));
   }
 
   @Test
