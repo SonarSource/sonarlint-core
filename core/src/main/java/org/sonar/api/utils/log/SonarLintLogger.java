@@ -20,6 +20,7 @@
 package org.sonar.api.utils.log;
 
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
+import org.sonarsource.sonarlint.core.log.EventArgUtil;
 import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
 import org.sonarsource.sonarlint.core.log.MessageFormat;
 
@@ -27,7 +28,7 @@ import org.sonarsource.sonarlint.core.log.MessageFormat;
  * This class can't be moved to another package because {@link BaseLogger} is not public.
  */
 public class SonarLintLogger extends BaseLogger {
-  private LogOutputDelegator logOutput;
+  private final LogOutputDelegator logOutput;
 
   public SonarLintLogger(LogOutputDelegator logOutput) {
     this.logOutput = logOutput;
@@ -61,20 +62,18 @@ public class SonarLintLogger extends BaseLogger {
 
   @Override
   void doDebug(String msg, Object arg) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg}), Level.DEBUG);
+    doLogExtractingThrowable(Level.DEBUG, msg, new Object[] {arg});
 
   }
 
   @Override
   void doDebug(String msg, Object arg1, Object arg2) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg1, arg2}), Level.DEBUG);
-
+    doLogExtractingThrowable(Level.DEBUG, msg, new Object[] {arg1, arg2});
   }
 
   @Override
   void doDebug(String msg, Object... args) {
-    logOutput.log(MessageFormat.format(msg, args), Level.DEBUG);
-
+    doLogExtractingThrowable(Level.DEBUG, msg, args);
   }
 
   @Override
@@ -85,18 +84,17 @@ public class SonarLintLogger extends BaseLogger {
 
   @Override
   void doInfo(String msg, Object arg) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg}), Level.INFO);
-
+    doLogExtractingThrowable(Level.INFO, msg, new Object[] {arg});
   }
 
   @Override
   void doInfo(String msg, Object arg1, Object arg2) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg1, arg2}), Level.INFO);
+    doLogExtractingThrowable(Level.INFO, msg, new Object[] {arg1, arg2});
   }
 
   @Override
   void doInfo(String msg, Object... args) {
-    logOutput.log(MessageFormat.format(msg, args), Level.INFO);
+    doLogExtractingThrowable(Level.INFO, msg, args);
   }
 
   @Override
@@ -111,17 +109,17 @@ public class SonarLintLogger extends BaseLogger {
 
   @Override
   void doWarn(String msg, Object arg) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg}), Level.WARN);
+    doLogExtractingThrowable(Level.WARN, msg, new Object[] {arg});
   }
 
   @Override
   void doWarn(String msg, Object arg1, Object arg2) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg1, arg2}), Level.WARN);
+    doLogExtractingThrowable(Level.WARN, msg, new Object[] {arg1, arg2});
   }
 
   @Override
   void doWarn(String msg, Object... args) {
-    logOutput.log(MessageFormat.format(msg, args), Level.WARN);
+    doLogExtractingThrowable(Level.WARN, msg, args);
   }
 
   @Override
@@ -131,22 +129,32 @@ public class SonarLintLogger extends BaseLogger {
 
   @Override
   void doError(String msg, Object arg) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg}), Level.ERROR);
+    doLogExtractingThrowable(Level.ERROR, msg, new Object[] {arg});
   }
 
   @Override
   void doError(String msg, Object arg1, Object arg2) {
-    logOutput.log(MessageFormat.format(msg, new Object[] {arg1, arg2}), Level.ERROR);
+    doLogExtractingThrowable(Level.ERROR, msg, new Object[] {arg1, arg2});
   }
 
   @Override
   void doError(String msg, Object... args) {
-    logOutput.log(MessageFormat.format(msg, args), Level.ERROR);
+    doLogExtractingThrowable(Level.ERROR, msg, args);
   }
 
   @Override
   void doError(String msg, Throwable thrown) {
     logOutput.log(msg, Level.ERROR, thrown);
+  }
+
+  private void doLogExtractingThrowable(Level level, String msg, Object[] argArray) {
+    Throwable extractedThrowable = EventArgUtil.extractThrowable(argArray);
+    if (EventArgUtil.successfulExtraction(extractedThrowable)) {
+      Object[] trimmedArgArray = EventArgUtil.trimmedCopy(argArray);
+      logOutput.log(MessageFormat.format(msg, trimmedArgArray), level, extractedThrowable);
+    } else {
+      logOutput.log(MessageFormat.format(msg, argArray), level);
+    }
   }
 
   @Override
