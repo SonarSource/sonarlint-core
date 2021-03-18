@@ -19,27 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
+import java.util.Optional;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 
 public class StandaloneSonarLintRulesProvider extends ProviderAdapter {
   private SonarLintRules singleton = null;
 
-  public SonarLintRules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
+  public SonarLintRules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader, StandaloneGlobalConfiguration config) {
     if (singleton == null) {
-      singleton = createRules(pluginRulesLoader);
+      singleton = createRules(pluginRulesLoader, config);
     }
     return singleton;
   }
 
-  private static SonarLintRules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader) {
+  private static SonarLintRules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader, StandaloneGlobalConfiguration config) {
     SonarLintRules rules = new SonarLintRules();
 
     for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
-      if (!Language.forKey(repoDef.language()).isPresent()) {
+      Optional<Language> repoLanguage = Language.forKey(repoDef.language());
+      if (!repoLanguage.isPresent() || !config.getEnabledLanguages().contains(repoLanguage.get())) {
         continue;
       }
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
