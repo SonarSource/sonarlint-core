@@ -20,45 +20,69 @@
 package org.sonar.api.utils.log;
 
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
 import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class SonarLintLoggerTest {
-  private LogOutputDelegator delegator = mock(LogOutputDelegator.class);
-  private SonarLintLogger logger = new SonarLintLogger(delegator);
+  private final LogOutputDelegator delegator = mock(LogOutputDelegator.class);
+  private final SonarLintLogger logger = new SonarLintLogger(delegator);
 
   @Test
   public void should_not_log_trace() {
     logger.doTrace("msg");
     logger.doTrace("msg", "a");
     logger.doTrace("msg", "a", "a");
-    logger.doTrace("msg", new Object[] {"a"});
+    // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
+    Object[] args = new Object[] {"a"};
+    logger.doTrace("msg", args);
 
-    verifyZeroInteractions(delegator);
+    verifyNoInteractions(delegator);
   }
 
   @Test
   public void should_log_error() {
     logger.doError("msg");
+    logger.doError("msg", (Object) null);
+    // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
+    Object[] emptyArgs = new Object[0];
+    logger.doError("msg", emptyArgs);
     logger.doError("msg {}", "a");
     logger.doError("msg {} {}", "a", "a");
-    logger.doError("msg {}", new Object[] {"b"});
+    // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
+    Object[] args = new Object[] {"b"};
+    logger.doError("msg {}", args);
 
-    verify(delegator).log("msg", Level.ERROR);
-    verify(delegator).log("msg a", Level.ERROR);
-    verify(delegator).log("msg a a", Level.ERROR);
-    verify(delegator).log("msg b", Level.ERROR);
+    InOrder inOrder = Mockito.inOrder(delegator);
+    inOrder.verify(delegator, times(3)).log("msg", Level.ERROR);
+    inOrder.verify(delegator).log("msg a", Level.ERROR);
+    inOrder.verify(delegator).log("msg a a", Level.ERROR);
+    inOrder.verify(delegator).log("msg b", Level.ERROR);
   }
 
   @Test
   public void level_is_always_debug() {
     assertThat(logger.setLevel(LoggerLevel.INFO)).isFalse();
     assertThat(logger.getLevel()).isEqualTo(LoggerLevel.DEBUG);
+  }
 
+  // SLCORE-292
+  @Test
+  public void extract_throwable_from_format_params() {
+    Throwable throwable = new Throwable("thrown");
+    logger.doError("msg", (Object) throwable);
+    logger.doError("msg {}", "a", throwable);
+    logger.doError("msg {} {}", "a", "a", throwable);
+
+    InOrder inOrder = Mockito.inOrder(delegator);
+    inOrder.verify(delegator).log("msg", Level.ERROR, throwable);
+    inOrder.verify(delegator).log("msg a", Level.ERROR, throwable);
+    inOrder.verify(delegator).log("msg a a", Level.ERROR, throwable);
   }
 }
