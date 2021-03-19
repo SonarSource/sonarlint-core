@@ -19,14 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 /**
  * To use SonarLint in connected mode please provide a server id that will identify the storage.
- * To use in standalone mode please provide list of plugin URLs.  
+ * To use in standalone mode please provide list of plugin URLs.
  *
  */
 @Immutable
@@ -36,11 +39,13 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final String serverId;
   private final Path storageRoot;
+  private final Map<String, URL> pluginUrlsByKey;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
     this.serverId = builder.serverId;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
+    this.pluginUrlsByKey = new HashMap<>(builder.pluginUrlsByKey);
   }
 
   public static Builder builder() {
@@ -55,9 +60,14 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return serverId;
   }
 
+  public Map<String, URL> getEmbeddedPluginUrlsByKey() {
+    return pluginUrlsByKey;
+  }
+
   public static final class Builder extends AbstractBuilder<Builder> {
     private String serverId;
     private Path storageRoot;
+    private final Map<String, URL> pluginUrlsByKey = new HashMap<>();
 
     private Builder() {
     }
@@ -82,6 +92,14 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
      */
     public Builder setStorageRoot(Path storageRoot) {
       this.storageRoot = storageRoot;
+      return this;
+    }
+
+    /**
+     * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
+     */
+    public Builder useEmbeddedPlugin(String pluginKey, URL pluginUrl) {
+      pluginUrlsByKey.put(pluginKey, pluginUrl);
       return this;
     }
 
