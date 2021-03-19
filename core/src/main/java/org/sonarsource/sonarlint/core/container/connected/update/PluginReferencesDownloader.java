@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -44,17 +45,19 @@ public class PluginReferencesDownloader {
 
   private final PluginCache pluginCache;
   private final ServerApiHelper serverApiHelper;
+  private final ConnectedGlobalConfiguration configuration;
 
-  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache) {
+  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache, ConnectedGlobalConfiguration configuration) {
     this.serverApiHelper = serverApiHelper;
     this.pluginCache = pluginCache;
+    this.configuration = configuration;
   }
 
   public PluginReferences toReferences(List<SonarAnalyzer> analyzers) {
     Builder builder = PluginReferences.newBuilder();
 
     analyzers.stream()
-      .filter(PluginReferencesDownloader::analyzerFilter)
+      .filter(this::analyzerFilter)
       .map(analyzer -> PluginReference.newBuilder()
         .setKey(analyzer.key())
         .setHash(analyzer.hash())
@@ -65,7 +68,11 @@ public class PluginReferencesDownloader {
     return builder.build();
   }
 
-  private static boolean analyzerFilter(SonarAnalyzer analyzer) {
+  private boolean analyzerFilter(SonarAnalyzer analyzer) {
+    if (configuration.getEmbeddedPluginUrlsByKey().containsKey(analyzer.key())) {
+      LOG.debug("Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", analyzer.key());
+      return false;
+    }
     if (!analyzer.sonarlintCompatible()) {
       LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip downloading it.", analyzer.key());
       return false;
