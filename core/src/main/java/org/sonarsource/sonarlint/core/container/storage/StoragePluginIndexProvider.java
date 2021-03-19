@@ -24,30 +24,42 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 /**
- * List of plugins is in the local storage
+ * List of plugins is in the local storage, plus add the embedded ones
  */
 public class StoragePluginIndexProvider implements PluginIndex {
 
-  private StoragePaths storageManager;
+  private final StoragePaths storageManager;
+  private final ConnectedGlobalConfiguration configuration;
+  private final PluginCache fileCache;
 
-  public StoragePluginIndexProvider(StoragePaths storageManager) {
+  public StoragePluginIndexProvider(StoragePaths storageManager, ConnectedGlobalConfiguration configuration, PluginCache fileCache) {
     this.storageManager = storageManager;
+    this.configuration = configuration;
+    this.fileCache = fileCache;
   }
 
   @Override
   public List<PluginReference> references() {
+
     Path pluginReferencesPath = storageManager.getPluginReferencesPath();
     if (!Files.exists(pluginReferencesPath)) {
       return Collections.emptyList();
     }
     Sonarlint.PluginReferences protoReferences = ProtobufUtil.readFile(pluginReferencesPath, Sonarlint.PluginReferences.parser());
     return protoReferences.getReferenceList().stream()
-      .map(r -> new PluginReference(r.getHash(), r.getFilename()))
+      .map(r -> {
+        if (configuration.getEmbeddedPluginUrlsByKey().containsKey(r.getKey())) {
+          return fileCache.getFromCacheOrCopy(configuration.getEmbeddedPluginUrlsByKey().get(r.getKey()));
+        } else {
+          return new PluginReference(r.getHash(), r.getFilename());
+        }
+      })
       .collect(Collectors.toList());
   }
 }

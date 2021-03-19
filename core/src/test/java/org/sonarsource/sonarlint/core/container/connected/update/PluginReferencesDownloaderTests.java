@@ -47,9 +47,11 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class PluginReferencesDownloaderTests {
@@ -185,8 +187,13 @@ class PluginReferencesDownloaderTests {
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
-      .containsOnly(tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
+      .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
+        tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
         tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
+
+    verify(pluginCache).get(eq("sonar-groovy-plugin-1.2.jar"), anyString(), any(Copier.class));
+    verify(pluginCache).get(eq("sonar-javascript-plugin-2.10.jar"), anyString(), any(Copier.class));
+    verifyNoMoreInteractions(pluginCache);
 
   }
 }

@@ -69,10 +69,6 @@ public class PluginReferencesDownloader {
   }
 
   private boolean analyzerFilter(SonarAnalyzer analyzer) {
-    if (configuration.getEmbeddedPluginUrlsByKey().containsKey(analyzer.key())) {
-      LOG.debug("Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", analyzer.key());
-      return false;
-    }
     if (!analyzer.sonarlintCompatible()) {
       LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip downloading it.", analyzer.key());
       return false;
@@ -84,16 +80,19 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public PluginReferences fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+  public void fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
     float refCount = refs.getReferenceList().size();
     for (PluginReference ref : refs.getReferenceList()) {
+      if (configuration.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey())) {
+        LOG.debug("Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", ref.getKey());
+        continue;
+      }
       progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(serverVersion, ref.getKey()));
     }
     ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
-    return refs;
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Copier {

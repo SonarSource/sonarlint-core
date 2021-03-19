@@ -20,13 +20,19 @@
 package org.sonarsource.sonarlint.core.plugin.cache;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.annotation.CheckForNull;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 
 /**
  * This class is responsible for managing Sonar batch file cache. You can put file into cache and
@@ -149,6 +155,38 @@ public class PluginCache {
       Files.createDirectories(dir);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to create " + debugTitle + dir, e);
+    }
+  }
+
+  public PluginReference getFromCacheOrCopy(final URL pluginUrl) {
+    try (InputStream is = pluginUrl.openStream()) {
+      String hash = org.sonarsource.sonarlint.core.util.StringUtils.md5(is);
+      String filename = StringUtils.substringAfterLast(pluginUrl.getFile(), "/");
+      get(filename, hash, new FileCopier(pluginUrl));
+      return new PluginReference(hash, filename);
+    } catch (StorageException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new IllegalStateException("Fail to copy plugin from URL: " + pluginUrl, e);
+    }
+  }
+
+  private static class FileCopier implements PluginCache.Copier {
+    private final URL url;
+
+    FileCopier(URL pluginUrl) {
+      this.url = pluginUrl;
+    }
+
+    @Override
+    public void copy(String filename, Path toFile) throws IOException {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Copy plugin {} to {}", url, toFile);
+      } else {
+        LOG.info("Copy {}", StringUtils.substringAfterLast(url.getFile(), "/"));
+      }
+
+      FileUtils.copyURLToFile(url, toFile.toFile());
     }
   }
 }

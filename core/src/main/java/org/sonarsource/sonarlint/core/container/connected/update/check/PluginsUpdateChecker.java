@@ -19,35 +19,40 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.MapDifference.ValueDifference;
+import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.MapDifference.ValueDifference;
-import com.google.common.collect.Maps;
-
 public class PluginsUpdateChecker {
 
   private final StorageReader storageReader;
   private final PluginReferencesDownloader pluginReferenceDownloader;
+  private final ConnectedGlobalConfiguration config;
 
-  public PluginsUpdateChecker(StorageReader storageReader, PluginReferencesDownloader pluginReferenceDownloader) {
+  public PluginsUpdateChecker(StorageReader storageReader, PluginReferencesDownloader pluginReferenceDownloader, ConnectedGlobalConfiguration config) {
     this.storageReader = storageReader;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
+    this.config = config;
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result, List<SonarAnalyzer> pluginList) {
     PluginReferences serverPluginReferences = pluginReferenceDownloader.toReferences(pluginList);
     PluginReferences storagePluginReferences = storageReader.readPluginReferences();
-    Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
-    Map<String, String> storagePluginHashes = storagePluginReferences.getReferenceList().stream().collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
+    Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream()
+      .filter(ref -> !config.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey()))
+      .collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
+    Map<String, String> storagePluginHashes = storagePluginReferences.getReferenceList().stream()
+      .filter(ref -> !config.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey()))
+      .collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));
     MapDifference<String, String> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);
     if (!pluginDiff.areEqual()) {
       for (Map.Entry<String, String> entry : pluginDiff.entriesOnlyOnLeft().entrySet()) {
