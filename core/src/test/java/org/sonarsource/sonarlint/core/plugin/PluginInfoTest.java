@@ -144,7 +144,7 @@ public class PluginInfoTest {
     manifest.setMainClass("org.foo.FooPlugin");
 
     Path jarFile = temp.newFile().toPath();
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
+    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest, false);
 
     assertThat(pluginInfo.getKey()).isEqualTo("java");
     assertThat(pluginInfo.getName()).isEqualTo("Java");
@@ -174,7 +174,7 @@ public class PluginInfoTest {
     manifest.setNodeJsMinVersion("12.18.3");
 
     Path jarFile = temp.newFile().toPath();
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
+    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest, false);
 
     assertThat(pluginInfo.getBasePlugin()).isEqualTo("findbugs");
     assertThat(pluginInfo.getImplementationBuild()).isEqualTo("SHA1");
@@ -187,10 +187,22 @@ public class PluginInfoTest {
   @Test
   public void create_from_file() throws URISyntaxException {
     Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
-    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar);
+    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar, false);
 
     assertThat(checkstyleInfo.getName()).isEqualTo("Checkstyle");
     assertThat(checkstyleInfo.getMinimalSqVersion()).isEqualTo(Version.create("2.8"));
+  }
+
+  @Test
+  public void is_embedded() throws URISyntaxException {
+    Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
+    PluginInfo checkstyleInfoEmbedded = PluginInfo.create(checkstyleJar, true);
+
+    assertThat(checkstyleInfoEmbedded.isEmbedded()).isTrue();
+
+    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar, false);
+
+    assertThat(checkstyleInfo.isEmbedded()).isFalse();
   }
 
   @Test
@@ -223,7 +235,7 @@ public class PluginInfoTest {
     expectedException.expect(MessageException.class);
     expectedException.expectMessage("File is not a plugin. Please delete it and restart: " + jar.toAbsolutePath());
 
-    PluginInfo.create(jar);
+    PluginInfo.create(jar, false);
   }
 
   PluginInfo withMinSqVersion(@Nullable String version) {

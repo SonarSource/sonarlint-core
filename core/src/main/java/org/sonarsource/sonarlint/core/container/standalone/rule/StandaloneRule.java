@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
 import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.rule.RuleKey;
@@ -90,7 +89,6 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   }
 
   @Override
-  @CheckForNull
   public RuleType type() {
     return type;
   }

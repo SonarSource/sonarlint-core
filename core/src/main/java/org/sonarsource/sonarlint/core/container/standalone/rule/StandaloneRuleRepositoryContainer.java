@@ -48,7 +48,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, false);
+    getComponentByType(ExtensionInstaller.class).installEmbeddedOnly(this, false);
   }
 
   @Override

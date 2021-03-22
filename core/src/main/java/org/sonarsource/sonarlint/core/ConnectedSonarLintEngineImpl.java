@@ -101,13 +101,13 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   private StorageContainerHandler getHandler() {
-    if (storageContainer == null) {
-      throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
-    }
-    return storageContainer.getHandler();
+    return getGlobalContainer().getHandler();
   }
 
   public StorageContainer getGlobalContainer() {
+    if (storageContainer == null) {
+      throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
+    }
     return storageContainer;
   }
 
@@ -182,12 +182,12 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public ConnectedRuleDetails getRuleDetails(String ruleKey) {
-    return withReadLock(() -> getHandler().getRuleDetails(ruleKey));
+    return withReadLock(() -> getGlobalContainer().getRuleDetails(ruleKey));
   }
 
   @Override
   public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
-    return withReadLock(() -> getHandler().getRuleDetails(ruleKey, projectKey));
+    return withReadLock(() -> getGlobalContainer().getRuleDetails(ruleKey, projectKey));
   }
 
   @Override

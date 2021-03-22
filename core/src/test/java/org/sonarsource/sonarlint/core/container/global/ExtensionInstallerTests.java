@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,8 +33,8 @@ import org.sonar.api.utils.Version;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -45,9 +46,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class ExtensionInstallerTests {
+class ExtensionInstallerTests {
 
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
@@ -68,7 +70,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void install_sonarlint_extensions_for_compatible_plugins() {
+  void install_sonarlint_extensions_for_compatible_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
@@ -79,7 +81,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void install_sensors_for_sonarsource_plugins() {
+  void install_sensors_for_sonarsource_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
@@ -92,7 +94,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void dont_install_sensors_for_non_sonarsource_plugins() {
+  void dont_install_sensors_for_non_sonarsource_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn(null);
@@ -105,7 +107,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
+  void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
@@ -122,7 +124,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
+  void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
@@ -141,7 +143,7 @@ public class ExtensionInstallerTests {
   }
 
   @Test
-  public void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
+  void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
@@ -155,6 +157,28 @@ public class ExtensionInstallerTests {
     underTest.install(container, false);
 
     verify(container).addExtension(pluginInfo, TypeScriptSensor.class);
+  }
+
+  @Test
+  void only_install_component_of_embedded_plugins() {
+    PluginInfo pluginInfoNotEmbedded = new PluginInfo("notembedded");
+    pluginInfoNotEmbedded.setSonarLintSupported(true);
+    pluginInfoNotEmbedded.setEmbedded(false);
+
+    PluginInfo pluginInfoEmbedded = new PluginInfo("embedded");
+    pluginInfoEmbedded.setSonarLintSupported(true);
+    pluginInfoEmbedded.setEmbedded(true);
+
+    when(pluginRepository.getActivePluginInfos()).thenReturn(Arrays.asList(pluginInfoNotEmbedded, pluginInfoEmbedded));
+    when(pluginRepository.getPluginInstance("notembedded")).thenReturn(new FakePlugin());
+    when(pluginRepository.getPluginInstance("embedded")).thenReturn(new FakePlugin());
+
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder().build());
+
+    underTest.installEmbeddedOnly(container, false);
+
+    verify(container).addExtension(pluginInfoEmbedded, FakeComponent.class);
+    verifyNoMoreInteractions(container);
   }
 
   private static class FakePlugin implements Plugin {

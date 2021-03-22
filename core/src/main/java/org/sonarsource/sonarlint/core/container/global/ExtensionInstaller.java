@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
+import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
@@ -54,10 +56,17 @@ public class ExtensionInstaller {
     this.enabledLanguages = globalConfig.getEnabledLanguages();
   }
 
-  public ExtensionInstaller install(ComponentContainer container, boolean global) {
+  public ExtensionInstaller installEmbeddedOnly(ComponentContainer container, boolean global) {
+    Collection<PluginInfo> pluginInfos = pluginRepository.getActivePluginInfos().stream().filter(p -> p.isEmbedded()).collect(Collectors.toList());
+    return install(container, global, pluginInfos);
+  }
 
-    // plugin extensions
-    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
+  public ExtensionInstaller install(ComponentContainer container, boolean global) {
+    return install(container, global, pluginRepository.getActivePluginInfos());
+  }
+
+  private ExtensionInstaller install(ComponentContainer container, boolean global, Collection<PluginInfo> pluginInfos) {
+    for (PluginInfo pluginInfo : pluginInfos) {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
       Plugin.Context context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)

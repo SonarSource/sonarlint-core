@@ -21,17 +21,22 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import javax.annotation.Nullable;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
@@ -42,6 +47,8 @@ import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
@@ -50,6 +57,9 @@ import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
+import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = Loggers.get(StorageContainer.class);
@@ -62,6 +72,7 @@ public class StorageContainer extends ComponentContainer {
   }
 
   private GlobalExtensionContainer globalExtensionContainer;
+  private SonarLintRules rules;
 
   @Override
   protected void doBeforeStart() {
@@ -119,12 +130,19 @@ public class StorageContainer extends ComponentContainer {
     if (updateStatus != null) {
       LOG.info("Using storage for connection '{}' (last update {})", config.getConnectionId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
       installPlugins();
+      loadRulesFromPlugins();
     } else {
       LOG.warn("No storage for connection '{}'. Please update.", config.getConnectionId());
     }
 
     this.globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
+  }
+
+  private void loadRulesFromPlugins() {
+    StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
+    container.execute();
+    rules = container.getRules();
   }
 
   @Override
@@ -153,5 +171,36 @@ public class StorageContainer extends ComponentContainer {
 
   public StorageContainerHandler getHandler() {
     return getComponentByType(StorageContainerHandler.class);
+  }
+
+  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr) {
+    return getRuleDetailsWithSeverity(ruleKeyStr, null);
+  }
+
+  private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
+    Sonarlint.Rules.Rule ruleFromStorage = getHandler().readRuleFromStorage(ruleKeyStr);
+    String type = StringUtils.isEmpty(ruleFromStorage.getType()) ? null : ruleFromStorage.getType();
+
+    Language language = Language.forKey(ruleFromStorage.getLang())
+      .orElseThrow(() -> new IllegalArgumentException("Unknown language for rule " + ruleKeyStr + ": " + ruleFromStorage.getLang()));
+    ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
+    if (config.getEmbeddedPluginUrlsByKey().containsKey(language.getPluginKey())) {
+      // Favor loading rule details from the embedded plugin
+      StandaloneRule ruleFromPlugin = (StandaloneRule) rules.find(RuleKey.parse(ruleKeyStr));
+      if (ruleFromPlugin != null) {
+        return new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.name(), ruleFromPlugin.description(), overridenSeverity != null ? overridenSeverity : ruleFromPlugin.severity(),
+          ruleFromPlugin.type().toString(), language,
+          ruleFromStorage.getHtmlNote());
+      }
+    }
+
+    return new DefaultRuleDetails(ruleKeyStr, ruleFromStorage.getName(), ruleFromStorage.getHtmlDesc(),
+      overridenSeverity != null ? overridenSeverity : ruleFromStorage.getSeverity(), type, language,
+      ruleFromStorage.getHtmlNote());
+  }
+
+  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
+    ActiveRule readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
+    return getRuleDetailsWithSeverity(ruleKeyStr, readActiveRuleFromStorage.getSeverity());
   }
 }

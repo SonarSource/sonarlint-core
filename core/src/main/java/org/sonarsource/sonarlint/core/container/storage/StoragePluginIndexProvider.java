@@ -57,7 +57,7 @@ public class StoragePluginIndexProvider implements PluginIndex {
         if (configuration.getEmbeddedPluginUrlsByKey().containsKey(r.getKey())) {
           return fileCache.getFromCacheOrCopy(configuration.getEmbeddedPluginUrlsByKey().get(r.getKey()));
         } else {
-          return new PluginReference(r.getHash(), r.getFilename());
+          return new PluginReference(r.getHash(), r.getFilename(), false);
         }
       })
       .collect(Collectors.toList());

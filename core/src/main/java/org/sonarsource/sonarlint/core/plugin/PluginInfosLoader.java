@@ -75,7 +75,7 @@ public class PluginInfosLoader {
 
     for (PluginReference ref : pluginReferences) {
       Path jarFilePath = getFromCache(ref);
-      PluginInfo info = PluginInfo.create(jarFilePath);
+      PluginInfo info = PluginInfo.create(jarFilePath, ref.isEmbedded());
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if (sonarLintSupported == null || !sonarLintSupported.booleanValue()) {
         LOG.debug("Plugin '{}' is not compatible with SonarLint. Skip loading it.", info.getName());

@@ -131,6 +131,8 @@ public class PluginInfo implements Comparable<PluginInfo> {
   @CheckForNull
   private SkipReason skipReason;
 
+  private boolean embedded;
+
   public PluginInfo(String key) {
     requireNonNull(key, "Plugin key is missing from manifest");
     this.key = key;
@@ -284,6 +286,14 @@ public class PluginInfo implements Comparable<PluginInfo> {
     this.skipReason = skipReason;
   }
 
+  public void setEmbedded(boolean embedded) {
+    this.embedded = embedded;
+  }
+
+  public boolean isEmbedded() {
+    return embedded;
+  }
+
   /**
    * Find out if this plugin is compatible with a given version of SonarQube.
    * The version of SQ must be greater than or equal to the minimal version
@@ -337,17 +347,17 @@ public class PluginInfo implements Comparable<PluginInfo> {
       .result();
   }
 
-  public static PluginInfo create(Path jarFile) {
+  public static PluginInfo create(Path jarFile, boolean isEmbedded) {
     try {
       PluginManifest manifest = new PluginManifest(jarFile);
-      return create(jarFile, manifest);
+      return create(jarFile, manifest, isEmbedded);
 
     } catch (IOException e) {
       throw new IllegalStateException("Fail to extract plugin metadata from file: " + jarFile, e);
     }
   }
 
-  static PluginInfo create(Path jarPath, PluginManifest manifest) {
+  static PluginInfo create(Path jarPath, PluginManifest manifest, boolean isEmbedded) {
     if (StringUtils.isBlank(manifest.getKey())) {
       throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
@@ -380,6 +390,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     if (nodejsMinVersion != null) {
       info.setMinimalNodeJsVersion(Version.create(nodejsMinVersion));
     }
+    info.setEmbedded(isEmbedded);
     return info;
   }
 
