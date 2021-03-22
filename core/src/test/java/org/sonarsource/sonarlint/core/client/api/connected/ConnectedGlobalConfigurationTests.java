@@ -40,7 +40,7 @@ class ConnectedGlobalConfigurationTests {
   void testDefaults() {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .build();
-    assertThat(config.getServerId()).isNull();
+    assertThat(config.getConnectionId()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getStorageRoot()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "storage"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
@@ -95,9 +95,9 @@ class ConnectedGlobalConfigurationTests {
   @Test
   void configureServerId() throws Exception {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("myServer")
+      .setConnectionId("myServer")
       .build();
-    assertThat(config.getServerId()).isEqualTo("myServer");
+    assertThat(config.getConnectionId()).isEqualTo("myServer");
   }
 
   @Test
@@ -109,10 +109,10 @@ class ConnectedGlobalConfigurationTests {
 
   private void expectFailure(ConnectedGlobalConfiguration.Builder builder, String serverId) {
     try {
-      builder.setServerId(serverId);
+      builder.setConnectionId(serverId);
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).hasMessage("'" + serverId + "' is not a valid server ID");
+      assertThat(e).hasMessage("'" + serverId + "' is not a valid connection ID");
     }
   }
 }

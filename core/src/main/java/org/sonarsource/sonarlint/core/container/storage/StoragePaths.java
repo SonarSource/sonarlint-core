@@ -51,7 +51,7 @@ public class StoragePaths {
   private final Path projectStorageRoot;
 
   public StoragePaths(ConnectedGlobalConfiguration configuration) {
-    serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getServerId()));
+    serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getConnectionId()));
     globalStorageRoot = serverStorageRoot.resolve("global");
     projectStorageRoot = serverStorageRoot.resolve("projects");
   }

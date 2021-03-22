@@ -117,10 +117,10 @@ public class StorageContainer extends ComponentContainer {
     GlobalStorageStatus updateStatus = getComponentByType(StorageContainerHandler.class).getGlobalStorageStatus();
 
     if (updateStatus != null) {
-      LOG.info("Using storage for server '{}' (last update {})", config.getServerId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
+      LOG.info("Using storage for connection '{}' (last update {})", config.getConnectionId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
       installPlugins();
     } else {
-      LOG.warn("No storage for server '{}'. Please update.", config.getServerId());
+      LOG.warn("No storage for connection '{}'. Please update.", config.getConnectionId());
     }
 
     this.globalExtensionContainer = new GlobalExtensionContainer(this);

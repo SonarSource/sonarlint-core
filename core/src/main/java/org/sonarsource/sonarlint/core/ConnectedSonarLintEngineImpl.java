@@ -102,7 +102,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   private StorageContainerHandler getHandler() {
     if (storageContainer == null) {
-      throw new IllegalStateException("SonarLint Engine for server '" + globalConfig.getServerId() + "' is stopped.");
+      throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
     }
     return storageContainer.getHandler();
   }
@@ -224,7 +224,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   private void checkUpdateStatus() {
     if (state != State.UPDATED) {
-      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
   }
 

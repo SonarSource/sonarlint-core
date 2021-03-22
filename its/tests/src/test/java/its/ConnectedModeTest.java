@@ -253,7 +253,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguage(Language.PHP)

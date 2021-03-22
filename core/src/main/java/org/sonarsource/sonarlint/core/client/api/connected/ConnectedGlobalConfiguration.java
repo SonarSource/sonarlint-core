@@ -37,13 +37,13 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   public static final String DEFAULT_STORAGE_DIR = "storage";
 
-  private final String serverId;
+  private final String connectionId;
   private final Path storageRoot;
   private final Map<String, URL> pluginUrlsByKey;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
-    this.serverId = builder.serverId;
+    this.connectionId = builder.connectionId;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
     this.pluginUrlsByKey = new HashMap<>(builder.pluginUrlsByKey);
   }
@@ -56,8 +56,8 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return storageRoot;
   }
 
-  public String getServerId() {
-    return serverId;
+  public String getConnectionId() {
+    return connectionId;
   }
 
   public Map<String, URL> getEmbeddedPluginUrlsByKey() {
@@ -65,7 +65,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
-    private String serverId;
+    private String connectionId;
     private Path storageRoot;
     private final Map<String, URL> pluginUrlsByKey = new HashMap<>();
 
@@ -73,17 +73,17 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     }
 
     /**
-     * Unique identifier for server used for local storage. Only accept a-zA-Z0-9_ characters.
+     * Unique identifier of the connection. Used for local storage. Only accept a-zA-Z0-9_ characters.
      */
-    public Builder setServerId(String serverId) {
-      validate(serverId);
-      this.serverId = serverId;
+    public Builder setConnectionId(String connectionId) {
+      validate(connectionId);
+      this.connectionId = connectionId;
       return this;
     }
 
-    private static void validate(@Nullable String serverId) {
-      if (serverId == null || serverId.isEmpty()) {
-        throw new IllegalArgumentException("'" + serverId + "' is not a valid server ID");
+    private static void validate(@Nullable String connectionId) {
+      if (connectionId == null || connectionId.isEmpty()) {
+        throw new IllegalArgumentException("'" + connectionId + "' is not a valid connection ID");
       }
     }
 

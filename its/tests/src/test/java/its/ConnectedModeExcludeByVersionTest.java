@@ -86,7 +86,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg));
     configurator.accept(builder);

@@ -49,7 +49,7 @@ public class ConnectedEmptyStorageMediumTest {
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("localhost")
+      .setConnectionId("localhost")
       .setSonarLintUserHome(slHome)
       .setLogOutput((msg, level) -> {
       })
