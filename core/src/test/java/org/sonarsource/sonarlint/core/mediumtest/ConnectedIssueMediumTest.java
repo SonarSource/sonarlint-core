@@ -270,6 +270,27 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  public void rule_description_come_from_storage() {
+    assertThat(sonarlint.getRuleDetails("java:S106").getHtmlDescription()).isEqualTo("<p>When logging a message there are two important requirements which must be fulfilled:</p>\n"
+      + "<ul>\n"
+      + "  <li> The user must be able to easily retrieve the logs</li>\n"
+      + "  <li> The format of all logged message must be uniform to allow the user to easily read the log</li>\n"
+      + "</ul>\n"
+      + "\n"
+      + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That's why defining and using a dedicated logger is highly recommended.</p>\n"
+      + "\n"
+      + "<h2>Noncompliant Code Example</h2>\n"
+      + "<pre>\n"
+      + "System.out.println(\"My Message\");  // Noncompliant\n"
+      + "</pre>\n"
+      + "\n"
+      + "<h2>Compliant Solution</h2>\n"
+      + "<pre>\n"
+      + "logger.log(\"My Message\");\n"
+      + "</pre>");
+  }
+
+  @Test
   public void emptyQPJava() throws IOException {
     ClientInputFile inputFile = prepareJavaInputFile();
 
