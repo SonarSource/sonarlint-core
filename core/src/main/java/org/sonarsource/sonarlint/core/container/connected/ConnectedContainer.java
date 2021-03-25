@@ -126,7 +126,7 @@ public class ConnectedContainer extends ComponentContainer {
   public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
-      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }

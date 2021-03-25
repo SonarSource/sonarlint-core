@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -52,7 +51,7 @@ public class DefaultPluginJarExploderTest {
   @Test
   public void copy_and_extract_libs() throws IOException {
     Path fileFromCache = getFileFromCache("sonar-checkstyle-plugin-2.8.jar");
-    ExplodedPlugin exploded = underTest.explode(PluginInfo.create(fileFromCache));
+    ExplodedPlugin exploded = underTest.explode(PluginInfo.create(fileFromCache, false));
 
     assertThat(exploded.getKey()).isEqualTo("checkstyle");
     assertThat(exploded.getMain()).isFile().exists();
@@ -64,7 +63,7 @@ public class DefaultPluginJarExploderTest {
   @Test
   public void extract_only_libs() throws IOException {
     Path fileFromCache = getFileFromCache("sonar-checkstyle-plugin-2.8.jar");
-    underTest.explode(PluginInfo.create(fileFromCache));
+    underTest.explode(PluginInfo.create(fileFromCache, false));
 
     assertThat(fileFromCache.resolveSibling("sonar-checkstyle-plugin-2.8.jar")).exists();
     assertThat(fileFromCache.resolveSibling("sonar-checkstyle-plugin-2.8.jar_unzip/META-INF/MANIFEST.MF")).doesNotExist();

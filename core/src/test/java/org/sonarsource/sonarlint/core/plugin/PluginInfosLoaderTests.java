@@ -104,7 +104,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_fail_if_missing_storage() {
-    when(pluginIndex.references()).thenReturn(singletonList(new PluginIndex.PluginReference("abcd", "sonarjs.jar")));
+    when(pluginIndex.references()).thenReturn(singletonList(new PluginIndex.PluginReference("abcd", "sonarjs.jar", false)));
     when(pluginCache.get("sonarjs.jar", "abcd")).thenReturn(null);
 
     StorageException thrown = assertThrows(StorageException.class, () -> underTest.load(), "Expected exception");
@@ -114,7 +114,7 @@ class PluginInfosLoaderTests {
 
   @Test
   void load_plugin_fail_if_missing_jar(@TempDir Path storage) {
-    when(pluginIndex.references()).thenReturn(singletonList(new PluginIndex.PluginReference("abcd", "sonarjs.jar")));
+    when(pluginIndex.references()).thenReturn(singletonList(new PluginIndex.PluginReference("abcd", "sonarjs.jar", false)));
     when(pluginCache.get("sonarjs.jar", "abcd")).thenReturn(storage.resolve("sonarjs.jar"));
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.load(), "Expected exception");
@@ -442,7 +442,7 @@ class PluginInfosLoaderTests {
     ZipUtils.zipDir(pluginTmpDir.toFile(), pluginJar.toFile());
     String hash = "hash" + filename;
     when(pluginCache.get(filename, hash)).thenReturn(pluginJar);
-    return new PluginIndex.PluginReference(hash, filename);
+    return new PluginIndex.PluginReference(hash, filename, false);
   }
 
   private Stream<String> logsWithoutStartStop() {

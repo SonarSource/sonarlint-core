@@ -19,25 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedList;
-
 import org.junit.Before;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class PluginsUpdateCheckerTest {
 
   private PluginsUpdateChecker checker;
   private StorageReader storageReader;
   private PluginReferencesDownloader pluginReferenceDownloader;
+  private final HashMap<String, URL> embeddedPlugins = new HashMap<>();
 
   @Before
   public void prepare() {
@@ -48,7 +51,9 @@ public class PluginsUpdateCheckerTest {
     when(storageReader.readPluginReferences()).thenReturn(PluginReferences.newBuilder().build());
     when(pluginReferenceDownloader.toReferences(anyList())).thenReturn(PluginReferences.newBuilder().build());
 
-    checker = new PluginsUpdateChecker(storageReader, pluginReferenceDownloader);
+    ConnectedGlobalConfiguration config = mock(ConnectedGlobalConfiguration.class);
+    when(config.getEmbeddedPluginUrlsByKey()).thenReturn(embeddedPlugins);
+    checker = new PluginsUpdateChecker(storageReader, pluginReferenceDownloader, config);
   }
 
   @Test
@@ -96,6 +101,21 @@ public class PluginsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Plugin 'java' updated");
+  }
+
+  @Test
+  public void ignoreEmbeddedPlugins() throws Exception {
+    embeddedPlugins.put("java", new URL("file://java.jar"));
+    when(pluginReferenceDownloader.toReferences(anyList()))
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
+    when(storageReader.readPluginReferences())
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
+
+    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    checker.checkForUpdates(result, new LinkedList<>());
+
+    assertThat(result.needUpdate()).isFalse();
+    assertThat(result.changelog()).isEmpty();
   }
 
 }

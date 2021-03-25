@@ -59,7 +59,7 @@ public class ConnectedStaleStorageMediumTest {
     storage = slHome.resolve("storage").resolve(encodeForFs(storageId));
 
     config = ConnectedGlobalConfiguration.builder()
-      .setServerId(storageId)
+      .setConnectionId(storageId)
       .setSonarLintUserHome(slHome)
       .setLogOutput(createNoOpLogOutput())
       .build();

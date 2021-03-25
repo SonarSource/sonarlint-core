@@ -124,7 +124,7 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   public void start() throws IOException {
     sonarUserHome = temp.newFolder().toPath();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))
       .setExtraProperties(new HashMap<>())

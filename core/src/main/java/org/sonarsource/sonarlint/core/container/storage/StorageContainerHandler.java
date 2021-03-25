@@ -30,12 +30,10 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonar.api.rule.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
@@ -52,7 +50,6 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
@@ -86,20 +83,7 @@ public class StorageContainerHandler {
     return storageAnalyzer.analyze(globalExtensionContainer, configuration, issueListener, progress);
   }
 
-  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr) {
-    return getRuleDetailsWithSeverity(ruleKeyStr, null);
-  }
-
-  private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
-    Sonarlint.Rules.Rule rule = readRule(ruleKeyStr);
-    String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
-
-    Language language = Language.forKey(rule.getLang()).orElseThrow(() -> new IllegalArgumentException("Unknown language for rule " + ruleKeyStr + ": " + rule.getLang()));
-    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), overridenSeverity != null ? overridenSeverity : rule.getSeverity(), type, language,
-      rule.getHtmlNote());
-  }
-
-  private Sonarlint.Rules.Rule readRule(String ruleKeyStr) {
+  public Sonarlint.Rules.Rule readRuleFromStorage(String ruleKeyStr) {
     Sonarlint.Rules rulesFromStorage = storageReader.readRules();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
     Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
@@ -109,7 +93,7 @@ public class StorageContainerHandler {
     return rule;
   }
 
-  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
+  public ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
     QProfiles qProfiles = storageReader.readQProfiles();
     Map<String, String> qProfilesByLanguage;
     if (projectKey == null) {
@@ -120,8 +104,7 @@ public class StorageContainerHandler {
     for (String qProfileKey : qProfilesByLanguage.values()) {
       Sonarlint.ActiveRules activeRulesFromStorage = storageReader.readActiveRules(qProfileKey);
       if (activeRulesFromStorage.getActiveRulesByKeyMap().containsKey(ruleKeyStr)) {
-        ActiveRule ar = activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
-        return getRuleDetailsWithSeverity(ruleKeyStr, ar.getSeverity());
+        return activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
       }
     }
     throw new IllegalArgumentException("Unable to find active rule with key " + ruleKeyStr);

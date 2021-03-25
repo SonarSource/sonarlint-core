@@ -19,19 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,6 +34,13 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class StandalonePluginIndexTest {
   private StandalonePluginIndex index;
@@ -55,10 +55,11 @@ public class StandalonePluginIndexTest {
   @Before
   public void setUp() throws IOException {
     File file = temp.newFile("filename");
-    FileUtils.write(file, "string");
+    FileUtils.write(file, "string", StandardCharsets.UTF_8);
     URL plugin = file.toURI().toURL();
     StandalonePluginUrls urls = new StandalonePluginUrls(Collections.singletonList(plugin));
     cache = mock(PluginCache.class);
+    when(cache.getFromCacheOrCopy(any())).thenCallRealMethod();
     index = new StandalonePluginIndex(urls, cache);
   }
 

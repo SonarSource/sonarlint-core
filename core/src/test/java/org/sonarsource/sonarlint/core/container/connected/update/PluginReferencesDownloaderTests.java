@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,6 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -43,9 +47,12 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class PluginReferencesDownloaderTests {
 
@@ -55,10 +62,13 @@ class PluginReferencesDownloaderTests {
   private final PluginCache pluginCache = mock(PluginCache.class);
   private final List<SonarAnalyzer> pluginList = new LinkedList<>();
   private PluginReferencesDownloader underTest;
+  private final Map<String, URL> embeddedPlugins = new HashMap<>();
 
   @BeforeEach
   public void setUp() throws IOException {
-    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache);
+    ConnectedGlobalConfiguration globalConfiguration = mock(ConnectedGlobalConfiguration.class);
+    when(globalConfiguration.getEmbeddedPluginUrlsByKey()).thenReturn(embeddedPlugins);
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration);
   }
 
   @Test
@@ -163,5 +173,27 @@ class PluginReferencesDownloaderTests {
         tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
 
     verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
+  }
+
+  @Test
+  void filter_embedded_plugins(@TempDir Path dest) throws Exception {
+    embeddedPlugins.put("java", new URL("file://java.jar"));
+
+    pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
+    pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
+    pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
+
+    underTest.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
+
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
+      .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
+        tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
+        tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
+
+    verify(pluginCache).get(eq("sonar-groovy-plugin-1.2.jar"), anyString(), any(Copier.class));
+    verify(pluginCache).get(eq("sonar-javascript-plugin-2.10.jar"), anyString(), any(Copier.class));
+    verifyNoMoreInteractions(pluginCache);
+
   }
 }

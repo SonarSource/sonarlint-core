@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.fail;
 
 class ConnectedGlobalConfigurationTests {
@@ -37,11 +40,12 @@ class ConnectedGlobalConfigurationTests {
   void testDefaults() {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .build();
-    assertThat(config.getServerId()).isNull();
+    assertThat(config.getConnectionId()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getStorageRoot()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "storage"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
+    assertThat(config.getEmbeddedPluginUrlsByKey()).isEmpty();
   }
 
   @Test
@@ -79,11 +83,21 @@ class ConnectedGlobalConfigurationTests {
   }
 
   @Test
+  void overridesPlugins() throws MalformedURLException {
+    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+      .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), URI.create("file://java.jar").toURL())
+      .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), URI.create("file://abap.jar").toURL())
+      .build();
+    assertThat(config.getEmbeddedPluginUrlsByKey()).containsOnly(entry("java", URI.create("file://java.jar").toURL()),
+      entry("abap", URI.create("file://abap.jar").toURL()));
+  }
+
+  @Test
   void configureServerId() throws Exception {
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId("myServer")
+      .setConnectionId("myServer")
       .build();
-    assertThat(config.getServerId()).isEqualTo("myServer");
+    assertThat(config.getConnectionId()).isEqualTo("myServer");
   }
 
   @Test
@@ -95,10 +109,10 @@ class ConnectedGlobalConfigurationTests {
 
   private void expectFailure(ConnectedGlobalConfiguration.Builder builder, String serverId) {
     try {
-      builder.setServerId(serverId);
+      builder.setConnectionId(serverId);
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).hasMessage("'" + serverId + "' is not a valid server ID");
+      assertThat(e).hasMessage("'" + serverId + "' is not a valid connection ID");
     }
   }
 }

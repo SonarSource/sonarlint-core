@@ -19,15 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+
+import static java.util.stream.Collectors.toList;
 
 public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
-  private Rules rules;
-  private StandaloneActiveRules standaloneActiveRules;
+  private SonarLintRules rules;
   private Context ruleDefinitions;
 
   public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
@@ -43,28 +44,26 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   private void addCoreComponents() {
     add(StandaloneRuleDefinitionsLoader.class,
       new StandaloneSonarLintRulesProvider(),
-      StandaloneActiveRulesProvider.class,
       new EmptyConfiguration());
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, false);
+    getComponentByType(ExtensionInstaller.class).installEmbeddedOnly(this, false);
   }
 
   @Override
   public void doAfterStart() {
-    rules = getComponentByType(Rules.class);
-    standaloneActiveRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
+    rules = getComponentByType(SonarLintRules.class);
     StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
   }
 
-  public Rules getRules() {
+  public SonarLintRules getRules() {
     return rules;
   }
 
   public StandaloneActiveRules getStandaloneActiveRules() {
-    return standaloneActiveRules;
+    return new StandaloneActiveRules(rules.findAll().stream().map(StandaloneRule.class::cast).collect(toList()));
   }
 
   public Context getRulesDefinitions() {

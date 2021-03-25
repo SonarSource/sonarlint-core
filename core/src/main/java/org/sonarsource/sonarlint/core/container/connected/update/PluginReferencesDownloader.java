@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
@@ -44,17 +45,19 @@ public class PluginReferencesDownloader {
 
   private final PluginCache pluginCache;
   private final ServerApiHelper serverApiHelper;
+  private final ConnectedGlobalConfiguration configuration;
 
-  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache) {
+  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache, ConnectedGlobalConfiguration configuration) {
     this.serverApiHelper = serverApiHelper;
     this.pluginCache = pluginCache;
+    this.configuration = configuration;
   }
 
   public PluginReferences toReferences(List<SonarAnalyzer> analyzers) {
     Builder builder = PluginReferences.newBuilder();
 
     analyzers.stream()
-      .filter(PluginReferencesDownloader::analyzerFilter)
+      .filter(this::analyzerFilter)
       .map(analyzer -> PluginReference.newBuilder()
         .setKey(analyzer.key())
         .setHash(analyzer.hash())
@@ -65,7 +68,7 @@ public class PluginReferencesDownloader {
     return builder.build();
   }
 
-  private static boolean analyzerFilter(SonarAnalyzer analyzer) {
+  private boolean analyzerFilter(SonarAnalyzer analyzer) {
     if (!analyzer.sonarlintCompatible()) {
       LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip downloading it.", analyzer.key());
       return false;
@@ -77,16 +80,19 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public PluginReferences fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+  public void fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
     float refCount = refs.getReferenceList().size();
     for (PluginReference ref : refs.getReferenceList()) {
+      if (configuration.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey())) {
+        LOG.debug("Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", ref.getKey());
+        continue;
+      }
       progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(serverVersion, ref.getKey()));
     }
     ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
-    return refs;
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Copier {
