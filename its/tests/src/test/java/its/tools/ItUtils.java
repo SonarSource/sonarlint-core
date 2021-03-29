@@ -28,6 +28,7 @@ import java.util.Properties;
 
 public class ItUtils {
 
+  public static final String LATEST_RELEASE = "LATEST_RELEASE";
   public static final String SONAR_VERSION = getSonarVersion();
   public static String javaVersion;
   public static String pythonVersion;
@@ -69,21 +70,20 @@ public class ItUtils {
         throw new IllegalStateException(e);
       }
     } else {
-      javaVersion = "LATEST_RELEASE";
-      pythonVersion = "LATEST_RELEASE";
-      phpVersion = "LATEST_RELEASE";
-      javascriptVersion = "LATEST_RELEASE";
-      typescriptVersion = "LATEST_RELEASE";
-      kotlinVersion = "LATEST_RELEASE";
-      rubyVersion = "LATEST_RELEASE";
-      scalaVersion = "LATEST_RELEASE";
-      webVersion = "LATEST_RELEASE";
-      xmlVersion = "LATEST_RELEASE";
-      cobolVersion = "LATEST_RELEASE";
-      apexVersion = "LATEST_RELEASE";
-      tsqlVersion = "LATEST_RELEASE";
-      // Temporary hack until release
-      cppVersion = "6.18.0.29113";
+      javaVersion = LATEST_RELEASE;
+      pythonVersion = LATEST_RELEASE;
+      phpVersion = LATEST_RELEASE;
+      javascriptVersion = LATEST_RELEASE;
+      typescriptVersion = LATEST_RELEASE;
+      kotlinVersion = LATEST_RELEASE;
+      rubyVersion = LATEST_RELEASE;
+      scalaVersion = LATEST_RELEASE;
+      webVersion = LATEST_RELEASE;
+      xmlVersion = LATEST_RELEASE;
+      cobolVersion = LATEST_RELEASE;
+      apexVersion = LATEST_RELEASE;
+      tsqlVersion = LATEST_RELEASE;
+      cppVersion = LATEST_RELEASE;
     }
   }
 
@@ -93,7 +93,7 @@ public class ItUtils {
 
   private static String getSonarVersion() {
     String versionProperty = System.getProperty("sonar.runtimeVersion");
-    return versionProperty != null ? versionProperty : "LATEST_RELEASE";
+    return versionProperty != null ? versionProperty : LATEST_RELEASE;
   }
 
 }
