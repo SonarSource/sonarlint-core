@@ -157,7 +157,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisC_new_prop() throws Exception {
-    assumeTrue(Version.create(ItUtils.cppVersion).isGreaterThanOrEquals(6, 18));
+    assumeTrue(ItUtils.cppVersion.equals(ItUtils.LATEST_RELEASE) || Version.create(ItUtils.cppVersion).isGreaterThanOrEquals(6, 18));
 
     updateGlobal();
     updateProject(PROJECT_KEY_C);
