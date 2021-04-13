@@ -40,6 +40,8 @@
     <junit.version>4.13.1</junit.version>
     <junit.jupiter.version>5.7.0</junit.jupiter.version>
     <junit.vintage.version>5.7.0</junit.vintage.version>
+    <!-- Release: enable publication to Bintray -->
+    <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
   </properties>
 
   <dependencyManagement>
