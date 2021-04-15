@@ -17,7 +17,7 @@ jobs:
         id: sl_release
         with:
           distribute: true
-          publish_to_binaries: true
+          publish_to_binaries: false
           attach_artifacts_to_github_release: false
           run_rules_cov: false
           slack_channel: sonarlint-java
