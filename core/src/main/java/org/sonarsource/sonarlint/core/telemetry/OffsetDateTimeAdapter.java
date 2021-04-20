@@ -19,28 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import java.lang.reflect.Type;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class OffsetDateTimeAdapter implements JsonSerializer<OffsetDateTime>, JsonDeserializer<OffsetDateTime> {
+public class OffsetDateTimeAdapter extends TypeAdapter<OffsetDateTime> {
 
   private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
   @Override
-  public JsonElement serialize(OffsetDateTime src, Type typeOfSrc, JsonSerializationContext context) {
-    return new JsonPrimitive(FORMATTER.format(src));
+  public void write(JsonWriter jsonWriter, OffsetDateTime offsetDateTime) throws IOException {
+    jsonWriter.value(FORMATTER.format(offsetDateTime));
   }
 
   @Override
-  public OffsetDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
-    JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
-    return OffsetDateTime.parse(jsonPrimitive.getAsString(), FORMATTER);
+  public OffsetDateTime read(JsonReader jsonReader) throws IOException {
+    return OffsetDateTime.parse(jsonReader.nextString(), FORMATTER);
   }
 }
