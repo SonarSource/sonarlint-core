@@ -29,6 +29,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.function.Consumer;
@@ -71,7 +73,7 @@ class TelemetryLocalStorageManager {
     }
   }
 
-  private TelemetryLocalStorage readAtomically(Gson gson, FileChannel fileChannel) throws IOException {
+  private static TelemetryLocalStorage readAtomically(Gson gson, FileChannel fileChannel) throws IOException {
     try {
       if (fileChannel.size() == 0) {
         return new TelemetryLocalStorage();
@@ -92,7 +94,7 @@ class TelemetryLocalStorageManager {
     }
   }
 
-  private void writeAtomically(Gson gson, FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
+  private static void writeAtomically(Gson gson, FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
     fileChannel.truncate(0);
 
     String newJson = gson.toJson(newData);
@@ -121,12 +123,15 @@ class TelemetryLocalStorageManager {
     byte[] bytes = Files.readAllBytes(path);
     byte[] decoded = Base64.getDecoder().decode(bytes);
     String json = new String(decoded, StandardCharsets.UTF_8);
-    return TelemetryLocalStorage.validateAndMigrate(gson.fromJson(json, TelemetryLocalStorage.class));
+    TelemetryLocalStorage rawData = gson.fromJson(json, TelemetryLocalStorage.class);
+    return TelemetryLocalStorage.validateAndMigrate(rawData);
   }
 
   private static Gson createGson() {
     return new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
+      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
       .create();
   }
 
