@@ -19,48 +19,79 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import java.lang.reflect.Type;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
-public class LocalDateTimeAdapter implements JsonSerializer<LocalDateTime>, JsonDeserializer<LocalDateTime> {
+public class LocalDateTimeAdapter extends TypeAdapter<LocalDateTime> {
+
   @Override
-  public LocalDateTime deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-    JsonObject localDateTimeObject = jsonElement.getAsJsonObject();
-    JsonObject date = localDateTimeObject.get("date").getAsJsonObject();
-    JsonObject time = localDateTimeObject.get("time").getAsJsonObject();
-    return LocalDateTime.of(
-      date.get("year").getAsInt(),
-      date.get("month").getAsInt(),
-      date.get("day").getAsInt(),
-      time.get("hour").getAsInt(),
-      time.get("minute").getAsInt(),
-      time.get("second").getAsInt(),
-      time.get("nano").getAsInt()
-    );
+  public void write(JsonWriter jsonWriter, LocalDateTime localDateTime) throws IOException {
+    jsonWriter.beginObject()
+      .name("date");
+    new LocalDateAdapter().nullSafe().write(jsonWriter, localDateTime.toLocalDate());
+    jsonWriter.name("time").beginObject()
+        .name("hour").value(localDateTime.getHour())
+        .name("minute").value(localDateTime.getMinute())
+        .name("second").value(localDateTime.getSecond())
+        .name("nano").value(localDateTime.getNano())
+      .endObject()
+    .endObject();
   }
 
   @Override
-  public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext jsonSerializationContext) {
-    JsonObject date = new JsonObject();
-    date.add("year", new JsonPrimitive(localDateTime.getYear()));
-    date.add("month", new JsonPrimitive(localDateTime.getMonthValue()));
-    date.add("day", new JsonPrimitive(localDateTime.getDayOfMonth()));
-    JsonObject time = new JsonObject();
-    time.add("hour", new JsonPrimitive(localDateTime.getHour()));
-    time.add("minute", new JsonPrimitive(localDateTime.getMinute()));
-    time.add("second", new JsonPrimitive(localDateTime.getSecond()));
-    time.add("nano", new JsonPrimitive(localDateTime.getNano()));
-    JsonObject dateTime = new JsonObject();
-    dateTime.add("date", date);
-    dateTime.add("time", time);
-    return dateTime;
+  public LocalDateTime read(JsonReader jsonReader) throws IOException {
+    LocalDate localDate = null;
+    LocalTime localTime = null;
+    jsonReader.beginObject();
+    while(jsonReader.hasNext()) {
+      switch(jsonReader.nextName()) {
+        case "date":
+          localDate = new LocalDateAdapter().read(jsonReader);
+          break;
+        case "time":
+          localTime = readTime(jsonReader);
+          break;
+        default:
+          break;
+      }
+    }
+    jsonReader.endObject();
+    if (localDate == null || localTime == null) {
+      throw new IllegalStateException("Unable to parse LocalDateTime");
+    }
+    return LocalDateTime.of(localDate, localTime);
+  }
+
+  private static LocalTime readTime(JsonReader jsonReader) throws IOException {
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    int nano = 0;
+    jsonReader.beginObject();
+    while(jsonReader.hasNext()) {
+      switch(jsonReader.nextName()) {
+        case "hour":
+          hour = jsonReader.nextInt();
+          break;
+        case "minute":
+          minute = jsonReader.nextInt();
+          break;
+        case "second":
+          second = jsonReader.nextInt();
+          break;
+        case "nano":
+          nano = jsonReader.nextInt();
+          break;
+        default:
+          break;
+      }
+    }
+    jsonReader.endObject();
+    return LocalTime.of(hour, minute, second, nano);
   }
 }

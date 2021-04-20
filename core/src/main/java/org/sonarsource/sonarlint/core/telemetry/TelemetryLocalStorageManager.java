@@ -129,9 +129,9 @@ class TelemetryLocalStorageManager {
 
   private static Gson createGson() {
     return new GsonBuilder()
-      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
-      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
-      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
+      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
+      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
       .create();
   }
 
