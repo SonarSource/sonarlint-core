@@ -21,6 +21,11 @@
       <artifactId>jsr305</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-plugin-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -339,6 +344,13 @@
                     <!-- Overridden by SonarLint -->
                     <exclude>org/sonar/api/utils/log/Loggers.class</exclude>
                   </excludes>
+                </filter>
+                <filter>
+                    <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
+                  <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
                 </filter>
               </filters>
             </configuration>
