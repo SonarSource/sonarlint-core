@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.sonar.api.server.rule.RulesDefinition;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,8 +46,11 @@ public class PluginClassloaderFactoryTest {
     assertThat(map).containsOnlyKeys(def);
     ClassLoader classLoader = map.get(def);
 
-    // plugin can access to API classes, and of course to its own classes !
+    // plugin can access to sonar-plugin-api classes...
     assertThat(canLoadClass(classLoader, RulesDefinition.class.getCanonicalName())).isTrue();
+    // ... to sonarlint-plugin-api classes...
+    assertThat(canLoadClass(classLoader, ModuleFileListener.class.getCanonicalName())).isTrue();
+    // ... and of course to its own classes !
     assertThat(canLoadClass(classLoader, BASE_PLUGIN_CLASSNAME)).isTrue();
 
     // plugin can not access to core classes
