@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -70,14 +72,87 @@ class ExtensionInstallerTests {
   }
 
   @Test
-  void install_sonarlint_extensions_for_compatible_plugins() {
+  void install_sonarlintside_extensions_with_default_lifespan_in_analysis_container_for_compatible_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
-    underTest.install(container, false);
 
-    verify(container).addExtension(pluginInfo, FakeComponent.class);
+    underTest.install(container, ContainerLifespan.ANALYSIS);
+
+    verify(container).addExtension(pluginInfo, FakeSonarLintDefaultLifespanComponent.class);
+  }
+
+  @Test
+  void install_sonarlintside_extensions_with_single_analysis_lifespan_in_analysis_container_for_compatible_plugins() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class));
+
+    underTest.install(container, ContainerLifespan.ANALYSIS);
+
+    verify(container).addExtension(pluginInfo, FakeSonarLintSingleAnalysisLifespanComponent.class);
+  }
+
+  @Test
+  void install_sonarlintside_extensions_with_multiple_analysis_lifespan_in_global_container_for_compatible_plugins() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class));
+
+    underTest.install(container, ContainerLifespan.ENGINE);
+
+    verify(container).addExtension(pluginInfo, FakeSonarLintMultipleAnalysisLifespanComponent.class);
+  }
+
+  @Test
+  void install_sonarlintside_extensions_with_engine_lifespan_in_global_container_for_compatible_plugins() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintEngineLifespanComponent.class));
+
+    underTest.install(container, ContainerLifespan.ENGINE);
+
+    verify(container).addExtension(pluginInfo, FakeSonarLintEngineLifespanComponent.class);
+  }
+
+  @Test
+  void dont_install_sonarlintside_extensions_with_multiple_analysis_lifespan_in_analysis_container_for_compatible_plugins() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class));
+
+    underTest.install(container, ContainerLifespan.ANALYSIS);
+
+    verifyNoInteractions(container);
+  }
+
+  @Test
+  void dont_install_sonarlintside_extensions_with_single_analysis_lifespan_in_global_container_for_compatible_plugins() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class));
+
+    underTest.install(container, ContainerLifespan.ENGINE);
+
+    verifyNoInteractions(container);
+  }
+
+  @Test
+  void install_sonarlintside_extensions_with_module_lifespan_in_module_container_for_compatible_plugins() {
+    PluginInfo pluginInfo = new PluginInfo("foo");
+    pluginInfo.setSonarLintSupported(true);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintModuleLifespanComponent.class));
+
+    underTest.install(container, ContainerLifespan.MODULE);
+
+    verify(container).addExtension(pluginInfo, FakeSonarLintModuleLifespanComponent.class);
   }
 
   @Test
@@ -88,7 +163,7 @@ class ExtensionInstallerTests {
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
-    underTest.install(container, false);
+    underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container).addExtension(pluginInfo, FakeSensor.class);
   }
@@ -101,7 +176,7 @@ class ExtensionInstallerTests {
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
-    underTest.install(container, false);
+    underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container, never()).addExtension(pluginInfo, FakeSensor.class);
   }
@@ -118,7 +193,7 @@ class ExtensionInstallerTests {
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
-    underTest.install(container, false);
+    underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container).addExtension(pluginInfo, TypeScriptSensor.class);
   }
@@ -135,7 +210,7 @@ class ExtensionInstallerTests {
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
       .addEnabledLanguage(Language.JS).build());
 
-    underTest.install(container, false);
+    underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container, never()).addExtension(pluginInfo, TypeScriptSensor.class);
 
@@ -154,7 +229,7 @@ class ExtensionInstallerTests {
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, StandaloneGlobalConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
-    underTest.install(container, false);
+    underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container).addExtension(pluginInfo, TypeScriptSensor.class);
   }
@@ -175,17 +250,26 @@ class ExtensionInstallerTests {
 
     underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder().build());
 
-    underTest.installEmbeddedOnly(container, false);
+    underTest.installEmbeddedOnly(container, ContainerLifespan.ANALYSIS);
 
-    verify(container).addExtension(pluginInfoEmbedded, FakeComponent.class);
+    verify(container).addExtension(pluginInfoEmbedded, FakeSonarLintDefaultLifespanComponent.class);
     verifyNoMoreInteractions(container);
   }
 
   private static class FakePlugin implements Plugin {
+    private final Object component;
+
+    private FakePlugin() {
+      this(FakeSonarLintDefaultLifespanComponent.class);
+    }
+
+    public FakePlugin(Object component) {
+      this.component = component;
+    }
 
     @Override
     public void define(Context context) {
-      context.addExtension(FakeComponent.class);
+      context.addExtension(component);
       context.addExtension(FakeSensor.class);
       context.addExtension(TypeScriptSensor.class);
     }
@@ -193,7 +277,23 @@ class ExtensionInstallerTests {
   }
 
   @SonarLintSide
-  private static class FakeComponent {
+  private static class FakeSonarLintDefaultLifespanComponent {
+  }
+
+  @SonarLintSide(lifespan = SonarLintSide.SINGLE_ANALYSIS)
+  private static class FakeSonarLintSingleAnalysisLifespanComponent {
+  }
+
+  @SonarLintSide(lifespan = SonarLintSide.MULTIPLE_ANALYSES)
+  private static class FakeSonarLintMultipleAnalysisLifespanComponent {
+  }
+
+  @SonarLintSide(lifespan = "MODULE")
+  private static class FakeSonarLintModuleLifespanComponent {
+  }
+
+  @SonarLintSide(lifespan = "ENGINE")
+  private static class FakeSonarLintEngineLifespanComponent {
   }
 
   private static class FakeSensor implements Sensor {

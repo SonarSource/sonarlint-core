@@ -56,6 +56,7 @@ class ConnectedAnalysisConfigurationTests {
       "  projectKey: foo\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
+      "  moduleKey: null\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
       "    " + srcFile2.toUri().toString() + " (UTF-8) [test]\n" +
@@ -74,6 +75,7 @@ class ConnectedAnalysisConfigurationTests {
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
+      "  moduleKey: null\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
       "    " + srcFile2.toUri().toString() + " (UTF-8) [test]\n" +

@@ -47,6 +47,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
+  private final ModulesProvider modulesProvider;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
@@ -56,10 +57,15 @@ public abstract class AbstractGlobalConfiguration {
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
     this.nodeJsVersion = builder.nodeJsVersion;
+    this.modulesProvider = builder.modulesProvider;
   }
 
   public Map<String, String> extraProperties() {
     return Collections.unmodifiableMap(extraProperties);
+  }
+
+  public ModulesProvider getModulesProvider() {
+    return modulesProvider;
   }
 
   public Path getSonarLintUserHome() {
@@ -97,6 +103,7 @@ public abstract class AbstractGlobalConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private Version nodeJsVersion;
+    private ModulesProvider modulesProvider;
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
@@ -149,6 +156,11 @@ public abstract class AbstractGlobalConfiguration {
     public G setNodeJs(Path nodeJsPath, Version nodeJsVersion) {
       this.nodeJsPath = nodeJsPath;
       this.nodeJsVersion = nodeJsVersion;
+      return (G) this;
+    }
+
+    public G setModulesProvider(ModulesProvider modulesProvider) {
+      this.modulesProvider = modulesProvider;
       return (G) this;
     }
   }

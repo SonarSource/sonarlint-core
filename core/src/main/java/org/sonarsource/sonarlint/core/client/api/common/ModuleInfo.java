@@ -17,23 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.ContainerLifespan;
+public class ModuleInfo {
+  private final Object key;
+  private final ClientFileSystem clientFileSystem;
 
-/**
- * Used to load plugin global extensions
- */
-public class GlobalExtensionContainer extends ComponentContainer {
-
-  public GlobalExtensionContainer(ComponentContainer parent) {
-    super(parent);
+  public ModuleInfo(Object key, ClientFileSystem clientFileSystem) {
+    this.key = key;
+    this.clientFileSystem = clientFileSystem;
   }
 
-  @Override
-  protected void doBeforeStart() {
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ENGINE);
+  public Object key() {
+    return key;
   }
 
+  public ClientFileSystem fileSystem() {
+    return clientFileSystem;
+  }
 }

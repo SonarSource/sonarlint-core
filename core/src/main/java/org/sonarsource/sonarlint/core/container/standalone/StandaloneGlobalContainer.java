@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
+import com.google.common.collect.Streams;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -51,6 +53,7 @@ import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.container.module.ModuleContainers;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
@@ -67,6 +70,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private GlobalExtensionContainer globalExtensionContainer;
+  private ModuleContainers moduleContainers;
 
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
@@ -105,11 +109,16 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     loadRulesAndActiveRulesFromPlugins();
     globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
+    StandaloneGlobalConfiguration globalConfiguration = this.getComponentByType(StandaloneGlobalConfiguration.class);
+    this.moduleContainers = new ModuleContainers(globalExtensionContainer, globalConfiguration.getModulesProvider());
   }
 
   @Override
   public ComponentContainer stopComponents(boolean swallowException) {
     try {
+      if (moduleContainers != null) {
+        moduleContainers.stopAll();
+      }
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents(swallowException);
       }
@@ -135,7 +144,15 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(globalExtensionContainer, progress);
+    Object moduleKey = configuration.moduleKey();
+    ComponentContainer moduleContainer = moduleContainers.getContainerFor(moduleKey);
+    boolean deleteModuleAfterAnalysis = false;
+    if (moduleContainer == null) {
+      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
+      moduleContainer = moduleContainers.createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
+      deleteModuleAfterAnalysis = true;
+    }
+    AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
@@ -150,7 +167,13 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(SensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
-    analysisContainer.execute();
+    try {
+      analysisContainer.execute();
+    } finally {
+      if (deleteModuleAfterAnalysis) {
+        moduleContainer.stopComponents();
+      }
+    }
     return defaultAnalysisResult;
   }
 
@@ -170,6 +193,10 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   public Collection<StandaloneRuleDetails> getAllRuleDetails() {
     return standaloneActiveRules.allRuleDetails();
+  }
+
+  public ModuleContainers getModuleContainers() {
+    return moduleContainers;
   }
 
 }

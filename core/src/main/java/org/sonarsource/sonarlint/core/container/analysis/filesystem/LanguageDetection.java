@@ -61,7 +61,7 @@ public class LanguageDetection {
   }
 
   @CheckForNull
-  Language language(InputFile inputFile) {
+  public Language language(InputFile inputFile) {
     Language detectedLanguage = null;
     for (Entry<Language, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
       if (isCandidateForLanguage(inputFile, languagePatterns.getValue())) {
