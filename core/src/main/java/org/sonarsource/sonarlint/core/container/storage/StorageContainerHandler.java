@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
@@ -78,9 +78,9 @@ public class StorageContainerHandler {
     this.partialUpdaterFactory = partialUpdaterFactory;
   }
 
-  public AnalysisResults analyze(GlobalExtensionContainer globalExtensionContainer, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
+  public AnalysisResults analyze(ComponentContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
     ProgressWrapper progress) {
-    return storageAnalyzer.analyze(globalExtensionContainer, configuration, issueListener, progress);
+    return storageAnalyzer.analyze(container, configuration, issueListener, progress);
   }
 
   public Sonarlint.Rules.Rule readRuleFromStorage(String ruleKeyStr) {

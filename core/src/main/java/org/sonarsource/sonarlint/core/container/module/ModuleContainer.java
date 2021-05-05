@@ -17,23 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.container.module;
 
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
+import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 
-/**
- * Used to load plugin global extensions
- */
-public class GlobalExtensionContainer extends ComponentContainer {
+public class ModuleContainer extends ComponentContainer {
 
-  public GlobalExtensionContainer(ComponentContainer parent) {
+  public ModuleContainer(ComponentContainer parent) {
     super(parent);
   }
 
   @Override
   protected void doBeforeStart() {
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ENGINE);
+    add(
+      SonarLintModuleFileSystem.class,
+      ModuleInputFileBuilder.class,
+      FileMetadata.class,
+      LanguageDetection.class
+    );
+    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
   }
-
 }

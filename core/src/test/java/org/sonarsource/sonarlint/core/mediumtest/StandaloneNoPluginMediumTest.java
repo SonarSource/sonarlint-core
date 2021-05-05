@@ -32,15 +32,19 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
+import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class StandaloneNoPluginMediumTest {
 
@@ -48,13 +52,15 @@ public class StandaloneNoPluginMediumTest {
   public TemporaryFolder temp = new TemporaryFolder();
   private StandaloneSonarLintEngine sonarlint;
   private File baseDir;
-  private Multimap<LogOutput.Level, String> logs = LinkedListMultimap.create();
+  private final Multimap<LogOutput.Level, String> logs = LinkedListMultimap.create();
 
   @Before
   public void prepare() throws IOException {
     LogOutput logOutput = (msg, level) -> logs.put(level, msg);
     sonarlint = new StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration.builder()
-      .setLogOutput(logOutput).build());
+      .setLogOutput(logOutput)
+      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .build());
 
     baseDir = temp.newFolder();
   }

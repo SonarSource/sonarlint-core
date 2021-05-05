@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
@@ -121,7 +122,7 @@ public class AnalysisContainer extends ComponentContainer {
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, false);
+    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
   }
 
   @Override
