@@ -48,7 +48,7 @@ public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
-    private List<URL> pluginUrls = new ArrayList<>();
+    private final List<URL> pluginUrls = new ArrayList<>();
 
     private Builder() {
     }

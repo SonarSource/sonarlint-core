@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.collect.Streams;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -51,6 +53,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
@@ -70,7 +73,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final List<StateListener> stateListeners = new CopyOnWriteArrayList<>();
   private volatile State state = State.UNKNOWN;
-  private LogOutput logOutput = null;
+  private final LogOutput logOutput;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -148,11 +151,23 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     requireNonNull(configuration);
     requireNonNull(issueListener);
     return withReadLock(() -> {
+      setLogging(logOutput);
+      boolean deleteModuleAfterAnalysis = false;
+      Object moduleKey = configuration.moduleKey();
+      ComponentContainer moduleContainer = storageContainer.getModuleContainers().getContainerFor(moduleKey);
+      if (moduleContainer == null) {
+        // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
+        moduleContainer = storageContainer.getModuleContainers().createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
+        deleteModuleAfterAnalysis = true;
+      }
       try {
-        setLogging(logOutput);
-        return getHandler().analyze(storageContainer.getGlobalExtensionContainer(), configuration, issueListener, new ProgressWrapper(monitor));
+        return getHandler().analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.wrap(e);
+      } finally {
+        if (deleteModuleAfterAnalysis) {
+          moduleContainer.stopComponents();
+        }
       }
     });
 
@@ -355,5 +370,15 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     } finally {
       rwl.readLock().unlock();
     }
+  }
+
+  @Override
+  public void declareModule(ModuleInfo module) {
+    getGlobalContainer().getModuleContainers().registerContainer(module);
+  }
+
+  @Override
+  public void stopModule(Object moduleKey) {
+    getGlobalContainer().getModuleContainers().stopContainer(moduleKey);
   }
 }

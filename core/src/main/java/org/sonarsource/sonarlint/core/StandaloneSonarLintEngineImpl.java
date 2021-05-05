@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -45,7 +46,7 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-  private LogOutput logOutput;
+  private final LogOutput logOutput;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -129,6 +130,16 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     } finally {
       rwl.readLock().unlock();
     }
+  }
+
+  @Override
+  public void declareModule(ModuleInfo module) {
+    getGlobalContainer().getModuleContainers().registerContainer(module);
+  }
+
+  @Override
+  public void stopModule(Object moduleKey) {
+    getGlobalContainer().getModuleContainers().stopContainer(moduleKey);
   }
 
 }

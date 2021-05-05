@@ -80,6 +80,7 @@ class StandaloneAnalysisConfigurationTests {
     assertThat(config.toString()).isEqualTo("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar, sonar.foo=bar}\n" +
+      "  moduleKey: null\n" +
       "  excludedRules: [squid:S1135, squid:S1181, squid:S1, squid:S2, squid:S3]\n" +
       "  includedRules: [javascript:S2424, javascript:S1442, squid:I1, squid:I2, squid:I3]\n" +
       "  ruleParameters: {squid:S4={param1=value1}, squid:S5={s5param1=s5value1, s5param2=s5value2}, squid:S6={s6param1=s6value1, s6param2=s6value2}}\n" +

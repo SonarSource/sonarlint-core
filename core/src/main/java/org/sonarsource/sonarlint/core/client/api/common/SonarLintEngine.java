@@ -32,4 +32,7 @@ public interface SonarLintEngine {
    */
   Collection<PluginDetails> getPluginDetails();
 
+  void declareModule(ModuleInfo module);
+
+  void stopModule(Object moduleKey);
 }
