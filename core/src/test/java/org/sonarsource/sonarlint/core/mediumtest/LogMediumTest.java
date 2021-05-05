@@ -32,37 +32,35 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
+import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 
 public class LogMediumTest {
-
-  private final class MyCustomException extends RuntimeException {
-    private MyCustomException(String message) {
-      super(message);
-    }
-  }
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   private StandaloneSonarLintEngine sonarlint;
   private File baseDir;
   private Multimap<LogOutput.Level, String> logs;
-  private StandaloneGlobalConfiguration config;
 
   @Before
   public void prepare() throws IOException {
     logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
-    config = StandaloneGlobalConfiguration.builder()
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .setLogOutput(createLogOutput(logs))
+      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 

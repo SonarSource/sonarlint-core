@@ -37,7 +37,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
@@ -48,8 +50,10 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 class StandaloneNodeJsTests {
 
@@ -94,6 +98,7 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
+      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
@@ -119,6 +124,7 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))
+      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());

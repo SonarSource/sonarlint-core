@@ -21,12 +21,14 @@ package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
@@ -36,8 +38,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
+import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -46,6 +51,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -55,10 +62,12 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
@@ -122,6 +131,7 @@ public class ConnectedIssueMediumTest {
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
+      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
@@ -172,6 +182,7 @@ public class ConnectedIssueMediumTest {
     ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("stale_module")
       .setBaseDir(baseDir.toPath())
+      .setModuleKey("key")
       .build();
 
     try {
@@ -210,6 +221,7 @@ public class ConnectedIssueMediumTest {
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
@@ -224,6 +236,7 @@ public class ConnectedIssueMediumTest {
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -241,6 +254,7 @@ public class ConnectedIssueMediumTest {
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -260,6 +274,7 @@ public class ConnectedIssueMediumTest {
       .setProjectKey(JAVA_MODULE_KEY)
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -299,10 +314,31 @@ public class ConnectedIssueMediumTest {
       .setProjectKey("test-project")
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();
+  }
+
+  @Test
+  public void declare_module_should_create_a_module_container_with_loaded_extensions() {
+    sonarlint.declareModule(new ModuleInfo("key", (suffix, type) -> Stream.of(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+
+    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleContainers().getContainerFor("key");
+
+    assertThat(moduleContainer).isNotNull();
+    assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
+  }
+
+  @Test
+  public void stop_module_should_stop_the_module_container() {
+    sonarlint.declareModule(new ModuleInfo("key", (suffix, type) -> Stream.of(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleContainers().getContainerFor("key");
+
+    sonarlint.stopModule("key");
+
+    assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
   }
 
   private ClientInputFile prepareJavaInputFile() throws IOException {

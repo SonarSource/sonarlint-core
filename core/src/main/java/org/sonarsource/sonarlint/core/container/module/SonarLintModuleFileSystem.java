@@ -17,23 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.container.module;
 
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.ContainerLifespan;
+import java.util.stream.Stream;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileSystem;
 
-/**
- * Used to load plugin global extensions
- */
-public class GlobalExtensionContainer extends ComponentContainer {
+public class SonarLintModuleFileSystem implements ModuleFileSystem {
 
-  public GlobalExtensionContainer(ComponentContainer parent) {
-    super(parent);
+  private final ClientFileSystem clientFileSystem;
+  private final ModuleInputFileBuilder inputFileBuilder;
+
+  public SonarLintModuleFileSystem(ClientFileSystem clientFileSystem, ModuleInputFileBuilder inputFileBuilder) {
+    this.clientFileSystem = clientFileSystem;
+    this.inputFileBuilder = inputFileBuilder;
   }
 
   @Override
-  protected void doBeforeStart() {
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ENGINE);
+  public Stream<InputFile> files(String suffix, InputFile.Type type) {
+    return clientFileSystem.files(suffix, type)
+      .map(inputFileBuilder::create);
   }
-
 }
