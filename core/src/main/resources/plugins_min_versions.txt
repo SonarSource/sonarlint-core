@@ -12,6 +12,7 @@ plsql=3.1.0.1464
 python=1.9.1.2080
 rpg=2.2.0.1005
 ruby=1.2.1.2009
+secrets=1.0
 swift=3.1.0.2067
 sonarapex=1.4.0.155
 sonarscala=1.4.0.155

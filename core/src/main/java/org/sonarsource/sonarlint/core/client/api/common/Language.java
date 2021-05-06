@@ -47,6 +47,7 @@ public enum Language {
   RPG("rpg", "rpg", "RPG", new String[] {".rpg", ".rpgle"}, "sonar.rpg.suffixes"),
   RUBY("ruby", "ruby", "Ruby", new String[] {".rb"}, "sonar.ruby.file.suffixes"),
   SCALA("scala", "sonarscala", "Scala", new String[] {".scala"}, "sonar.scala.file.suffixes"),
+  SECRETS("secrets", "secrets", "Secrets", new String[0], "sonar.secrets.file.suffixes"),
   SWIFT("swift", "swift", "Swift", new String[] {".swift"}, "sonar.swift.file.suffixes"),
   TSQL("tsql", "tsql", "T-SQL", new String[] {".tsql"}, "sonar.tsql.file.suffixes"),
   TS("ts", "javascript", "TypeScript", new String[] {".ts", ".tsx"},
