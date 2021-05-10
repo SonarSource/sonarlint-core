@@ -247,7 +247,7 @@ stages:
         fetchDepth: 1
       - task: Cache@2
         inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml'
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
           path: $(MAVEN_CACHE_FOLDER)
         displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
