@@ -36,11 +36,13 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
+import org.sonarsource.sonarlint.core.client.api.common.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -61,6 +63,8 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginRef
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -325,7 +329,7 @@ public class ConnectedIssueMediumTest {
   public void declare_module_should_create_a_module_container_with_loaded_extensions() {
     sonarlint.declareModule(new ModuleInfo("key", (suffix, type) -> Stream.of(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
-    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleContainers().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
     assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
@@ -334,11 +338,34 @@ public class ConnectedIssueMediumTest {
   @Test
   public void stop_module_should_stop_the_module_container() {
     sonarlint.declareModule(new ModuleInfo("key", (suffix, type) -> Stream.of(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
-    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleContainers().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
 
     assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
+  }
+
+  @Test
+  public void should_forward_module_file_event_to_listener() {
+    // should not be located in global container in real life but easier for testing
+    FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
+    sonarlint.getGlobalContainer().add(moduleFileListener);
+    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
+    sonarlint.declareModule(new ModuleInfo("moduleKey", (suffix, type) -> Stream.empty()));
+
+    sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
+
+    assertThat(moduleFileListener.events).hasSize(1);
+  }
+
+  @SonarLintSide(lifespan = "MODULE")
+  static class FakeModuleFileListener implements ModuleFileListener {
+    private final List<ModuleFileEvent> events = new ArrayList<>();
+
+    @Override
+    public void process(ModuleFileEvent event) {
+      events.add(event);
+    }
   }
 
   private ClientInputFile prepareJavaInputFile() throws IOException {

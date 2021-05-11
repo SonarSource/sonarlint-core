@@ -26,7 +26,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -36,12 +35,13 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.util.Objects.requireNonNull;
 
-public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintEngine {
+public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine implements StandaloneSonarLintEngine {
 
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
@@ -56,6 +56,11 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   public StandaloneGlobalContainer getGlobalContainer() {
     return globalContainer;
+  }
+
+  @Override
+  protected ModuleRegistry getModuleRegistry() {
+    return getGlobalContainer().getModuleRegistry();
   }
 
   public void start() {
@@ -130,16 +135,6 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     } finally {
       rwl.readLock().unlock();
     }
-  }
-
-  @Override
-  public void declareModule(ModuleInfo module) {
-    getGlobalContainer().getModuleContainers().registerContainer(module);
-  }
-
-  @Override
-  public void stopModule(Object moduleKey) {
-    getGlobalContainer().getModuleContainers().stopContainer(moduleKey);
   }
 
 }
