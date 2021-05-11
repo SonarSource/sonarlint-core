@@ -19,22 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.util.Collection;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 
-/**
- * Entry point for SonarLint.
- */
-public interface SonarLintEngine {
+public class DefaultModuleFileEvent implements ModuleFileEvent {
 
-  /**
-   * Get information about the analyzers that are currently loaded.
-   * Should only be called when engine is started.
-   */
-  Collection<PluginDetails> getPluginDetails();
+  private final InputFile target;
+  private final ModuleFileEvent.Type type;
 
-  void declareModule(ModuleInfo module);
+  private DefaultModuleFileEvent(InputFile target, Type type) {
+    this.target = target;
+    this.type = type;
+  }
 
-  void stopModule(Object moduleKey);
+  public static DefaultModuleFileEvent of(InputFile target, Type type) {
+    return new DefaultModuleFileEvent(target, type);
+  }
 
-  void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
+  @Override
+  public InputFile getTarget() {
+    return target;
+  }
+
+  @Override
+  public Type getType() {
+    return type;
+  }
 }

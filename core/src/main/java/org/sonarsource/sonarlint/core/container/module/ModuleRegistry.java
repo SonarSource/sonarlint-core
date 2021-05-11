@@ -29,20 +29,20 @@ import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.ModulesProvider;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 
-public class ModuleContainers {
-  private static final Logger LOG = Loggers.get(ModuleContainers.class);
+public class ModuleRegistry {
+  private static final Logger LOG = Loggers.get(ModuleRegistry.class);
 
   private final Map<Object, ModuleContainer> modules = new HashMap<>();
   private final ComponentContainer parent;
 
-  public ModuleContainers(ComponentContainer parent, ModulesProvider modulesProvider) {
+  public ModuleRegistry(ComponentContainer parent, ModulesProvider modulesProvider) {
     this.parent = parent;
     if (modulesProvider != null) {
-      modulesProvider.getModules().forEach(this::registerContainer);
+      modulesProvider.getModules().forEach(this::registerModule);
     }
   }
 
-  public ModuleContainer registerContainer(ModuleInfo module) {
+  public ModuleContainer registerModule(ModuleInfo module) {
     ModuleContainer moduleContainer = createContainer(module);
     modules.put(module.key(), moduleContainer);
     return moduleContainer;
@@ -63,7 +63,7 @@ public class ModuleContainers {
     return moduleContainer;
   }
 
-  public void stopContainer(Object moduleKey) {
+  public void unregisterModule(Object moduleKey) {
     if (!modules.containsKey(moduleKey)) {
       // can this happen ?
       return;
