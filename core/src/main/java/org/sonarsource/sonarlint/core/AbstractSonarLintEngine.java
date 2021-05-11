@@ -17,31 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.module;
+package org.sonarsource.sonarlint.core;
 
+import org.sonarsource.sonarlint.core.client.api.common.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleFileEventNotifier;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
+import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.ContainerLifespan;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
-import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 
-public class ModuleContainer extends ComponentContainer {
+public abstract class AbstractSonarLintEngine implements SonarLintEngine {
+  protected abstract ModuleRegistry getModuleRegistry();
 
-  public ModuleContainer(ComponentContainer parent) {
-    super(parent);
+  @Override
+  public void declareModule(ModuleInfo module) {
+    getModuleRegistry().registerModule(module);
   }
 
   @Override
-  protected void doBeforeStart() {
-    add(
-      SonarLintModuleFileSystem.class,
-      ModuleInputFileBuilder.class,
-      FileMetadata.class,
-      LanguageDetection.class,
+  public void stopModule(Object moduleKey) {
+    getModuleRegistry().unregisterModule(moduleKey);
+  }
 
-      ModuleFileEventNotifier.class
-    );
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
+  @Override
+  public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+    ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
+    if (moduleContainer != null) {
+      moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
+    }
   }
 }

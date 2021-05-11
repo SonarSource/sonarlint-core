@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.plugin.api.module.file;
 
+/**
+ * Implement this interface and annotate the class with {@code @SonarLintSide(MODULE)} to receive events related to the module file system.
+ */
 public interface ModuleFileListener {
   /**
    * React to a file creation, deletion or modification event

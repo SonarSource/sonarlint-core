@@ -47,7 +47,7 @@ import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
-import org.sonarsource.sonarlint.core.container.module.ModuleContainers;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
@@ -73,7 +73,7 @@ public class StorageContainer extends ComponentContainer {
   }
 
   private GlobalExtensionContainer globalExtensionContainer;
-  private ModuleContainers moduleContainers;
+  private ModuleRegistry moduleRegistry;
   private SonarLintRules rules;
 
   @Override
@@ -139,7 +139,7 @@ public class StorageContainer extends ComponentContainer {
 
     this.globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
-    this.moduleContainers = new ModuleContainers(globalExtensionContainer, config.getModulesProvider());
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, config.getModulesProvider());
   }
 
   private void loadRulesFromPlugins() {
@@ -151,8 +151,8 @@ public class StorageContainer extends ComponentContainer {
   @Override
   public ComponentContainer stopComponents(boolean swallowException) {
     try {
-      if (moduleContainers != null) {
-        moduleContainers.stopAll();
+      if (moduleRegistry != null) {
+        moduleRegistry.stopAll();
       }
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents(swallowException);
@@ -175,8 +175,8 @@ public class StorageContainer extends ComponentContainer {
     return globalExtensionContainer;
   }
 
-  public ModuleContainers getModuleContainers() {
-    return moduleContainers;
+  public ModuleRegistry getModuleRegistry() {
+    return moduleRegistry;
   }
 
   public StorageContainerHandler getHandler() {
