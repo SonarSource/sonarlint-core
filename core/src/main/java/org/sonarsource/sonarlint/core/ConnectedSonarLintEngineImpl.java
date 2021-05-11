@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedExce
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -64,7 +65,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.util.Objects.requireNonNull;
 
-public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
+public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
   private static final Logger LOG = Loggers.get(ConnectedSonarLintEngineImpl.class);
 
@@ -114,6 +115,11 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     return storageContainer;
   }
 
+  @Override
+  protected ModuleRegistry getModuleRegistry() {
+    return getGlobalContainer().getModuleRegistry();
+  }
+
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
@@ -154,10 +160,10 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       setLogging(logOutput);
       boolean deleteModuleAfterAnalysis = false;
       Object moduleKey = configuration.moduleKey();
-      ComponentContainer moduleContainer = storageContainer.getModuleContainers().getContainerFor(moduleKey);
+      ComponentContainer moduleContainer = storageContainer.getModuleRegistry().getContainerFor(moduleKey);
       if (moduleContainer == null) {
         // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-        moduleContainer = storageContainer.getModuleContainers().createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
+        moduleContainer = storageContainer.getModuleRegistry().createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
         deleteModuleAfterAnalysis = true;
       }
       try {
@@ -370,15 +376,5 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     } finally {
       rwl.readLock().unlock();
     }
-  }
-
-  @Override
-  public void declareModule(ModuleInfo module) {
-    getGlobalContainer().getModuleContainers().registerContainer(module);
-  }
-
-  @Override
-  public void stopModule(Object moduleKey) {
-    getGlobalContainer().getModuleContainers().stopContainer(moduleKey);
   }
 }

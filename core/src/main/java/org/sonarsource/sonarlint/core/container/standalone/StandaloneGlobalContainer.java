@@ -53,7 +53,7 @@ import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
-import org.sonarsource.sonarlint.core.container.module.ModuleContainers;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
@@ -70,7 +70,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private GlobalExtensionContainer globalExtensionContainer;
-  private ModuleContainers moduleContainers;
+  private ModuleRegistry moduleRegistry;
 
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
@@ -110,14 +110,14 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
     StandaloneGlobalConfiguration globalConfiguration = this.getComponentByType(StandaloneGlobalConfiguration.class);
-    this.moduleContainers = new ModuleContainers(globalExtensionContainer, globalConfiguration.getModulesProvider());
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfiguration.getModulesProvider());
   }
 
   @Override
   public ComponentContainer stopComponents(boolean swallowException) {
     try {
-      if (moduleContainers != null) {
-        moduleContainers.stopAll();
+      if (moduleRegistry != null) {
+        moduleRegistry.stopAll();
       }
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents(swallowException);
@@ -145,11 +145,11 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
     Object moduleKey = configuration.moduleKey();
-    ComponentContainer moduleContainer = moduleContainers.getContainerFor(moduleKey);
+    ComponentContainer moduleContainer = moduleRegistry.getContainerFor(moduleKey);
     boolean deleteModuleAfterAnalysis = false;
     if (moduleContainer == null) {
       // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleContainers.createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
+      moduleContainer = moduleRegistry.createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
       deleteModuleAfterAnalysis = true;
     }
     AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
@@ -195,8 +195,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return standaloneActiveRules.allRuleDetails();
   }
 
-  public ModuleContainers getModuleContainers() {
-    return moduleContainers;
+  public ModuleRegistry getModuleRegistry() {
+    return moduleRegistry;
   }
 
 }
