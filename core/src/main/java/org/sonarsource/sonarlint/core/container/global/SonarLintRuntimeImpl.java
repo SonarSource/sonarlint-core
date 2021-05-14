@@ -22,22 +22,29 @@ package org.sonarsource.sonarlint.core.container.global;
 import org.sonar.api.SonarEdition;
 import org.sonar.api.SonarProduct;
 import org.sonar.api.SonarQubeSide;
-import org.sonar.api.SonarRuntime;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 import static java.util.Objects.requireNonNull;
 
-public class SonarLintRuntimeImpl implements SonarRuntime {
+public class SonarLintRuntimeImpl implements SonarLintRuntime {
 
-  private final Version version;
+  private final Version sonarPluginApiVersion;
+  private final Version sonarLintPluginApiVersion;
 
-  public SonarLintRuntimeImpl(Version version) {
-    this.version = requireNonNull(version);
+  public SonarLintRuntimeImpl(Version sonarPluginApiVersion, Version sonarLintPluginApiVersion) {
+    this.sonarPluginApiVersion = requireNonNull(sonarPluginApiVersion);
+    this.sonarLintPluginApiVersion = sonarLintPluginApiVersion;
   }
 
   @Override
   public Version getApiVersion() {
-    return version;
+    return sonarPluginApiVersion;
+  }
+
+  @Override
+  public Version getSonarLintPluginApiVersion() {
+    return sonarLintPluginApiVersion;
   }
 
   @Override
@@ -54,5 +61,4 @@ public class SonarLintRuntimeImpl implements SonarRuntime {
   public SonarEdition getEdition() {
     throw new UnsupportedOperationException("Can only be called in SonarQube");
   }
-
 }

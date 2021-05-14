@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
@@ -41,6 +40,7 @@ import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,8 @@ class ExtensionInstallerTests {
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
   private static final Configuration CONFIG = new MapSettings().asConfig();
-  private static final SonarRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0));
+  private static final Version sonarLintPluginApiVersion = Version.create(5, 4, 0);
+  private static final SonarLintRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0), sonarLintPluginApiVersion);
   private ExtensionInstaller underTest;
   private PluginRepository pluginRepository;
   private PluginVersionChecker pluginVersionChecker;
@@ -256,6 +257,21 @@ class ExtensionInstallerTests {
     verifyNoMoreInteractions(container);
   }
 
+  @Test
+  void provide_sonar_lint_context_for_plugin_definition() {
+    PluginInfo plugin = new PluginInfo("plugin");
+    plugin.setSonarLintSupported(true);
+    plugin.setEmbedded(false);
+    when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(plugin));
+    PluginStoringSonarLintPluginApiVersion pluginInstance = new PluginStoringSonarLintPluginApiVersion();
+    when(pluginRepository.getPluginInstance("plugin")).thenReturn(pluginInstance);
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder().build());
+
+    underTest.install(container, ContainerLifespan.ANALYSIS);
+
+    assertThat(pluginInstance.sonarLintPluginApiVersion).isEqualTo(sonarLintPluginApiVersion);
+  }
+
   private static class FakePlugin implements Plugin {
     private final Object component;
 
@@ -272,6 +288,18 @@ class ExtensionInstallerTests {
       context.addExtension(component);
       context.addExtension(FakeSensor.class);
       context.addExtension(TypeScriptSensor.class);
+    }
+
+  }
+
+  private static class PluginStoringSonarLintPluginApiVersion implements Plugin {
+    Version sonarLintPluginApiVersion;
+
+    @Override
+    public void define(Context context) {
+      if (context.getRuntime() instanceof SonarLintRuntime) {
+        sonarLintPluginApiVersion = ((SonarLintRuntime) context.getRuntime()).getSonarLintPluginApiVersion();
+      }
     }
 
   }
