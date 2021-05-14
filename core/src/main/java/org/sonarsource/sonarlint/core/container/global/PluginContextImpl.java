@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
 import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class PluginContextImpl extends Plugin.Context {
 
@@ -37,8 +37,13 @@ public class PluginContextImpl extends Plugin.Context {
     return bootConfiguration;
   }
 
+  @Override
+  public SonarLintRuntime getRuntime() {
+    return (SonarLintRuntime) super.getRuntime();
+  }
+
   public static class Builder {
-    private SonarRuntime sonarRuntime;
+    private SonarLintRuntime sonarRuntime;
     private Configuration bootConfiguration;
 
     /**
@@ -46,7 +51,7 @@ public class PluginContextImpl extends Plugin.Context {
      * @see SonarLintRuntimeImpl
      * @return this
      */
-    public Builder setSonarRuntime(SonarRuntime r) {
+    public Builder setSonarRuntime(SonarLintRuntime r) {
       this.sonarRuntime = r;
       return this;
     }
