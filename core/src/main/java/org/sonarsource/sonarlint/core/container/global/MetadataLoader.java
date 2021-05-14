@@ -19,29 +19,38 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import org.sonar.api.utils.System2;
 import org.sonar.api.utils.Version;
 
 public class MetadataLoader {
 
-  private static final String VERSION_FILE_PATH = "/sonar-api-version.txt";
+  static final String SONAR_PLUGIN_API_VERSION_FILE_PATH = "/sonar-api-version.txt";
+  private static final String SONARLINT_PLUGIN_API_VERSION_FILE_PATH = "/sonarlint-api-version.txt";
 
   private MetadataLoader() {
     // only static methods
   }
 
-  public static Version loadVersion(System2 system) {
-    URL url = system.getResource(VERSION_FILE_PATH);
+  public static Version loadSonarPluginApiVersion() {
+    return loadVersion(SONAR_PLUGIN_API_VERSION_FILE_PATH);
+  }
 
-    try (Scanner scanner = new Scanner(url.openStream(), StandardCharsets.UTF_8.name())) {
+  public static Version loadSonarLintPluginApiVersion() {
+    return loadVersion(SONARLINT_PLUGIN_API_VERSION_FILE_PATH);
+  }
+
+  private static Version loadVersion(String versionFilePath) {
+    return loadVersion(MetadataLoader.class.getResource(versionFilePath), versionFilePath);
+  }
+
+  static Version loadVersion(URL versionFileURL, String versionFilePath) {
+    try (Scanner scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8.name())) {
       String versionInFile = scanner.nextLine();
       return Version.parse(versionInFile);
-    } catch (IOException e) {
-      throw new IllegalStateException("Can not load " + VERSION_FILE_PATH + " from classpath ", e);
+    } catch (Exception e) {
+      throw new IllegalStateException("Can not load " + versionFilePath + " from classpath", e);
     }
   }
 
