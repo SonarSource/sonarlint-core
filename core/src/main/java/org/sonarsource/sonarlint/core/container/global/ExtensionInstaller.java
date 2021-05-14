@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
@@ -37,18 +36,19 @@ import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {
 
   private static final Logger LOG = Loggers.get(ExtensionInstaller.class);
 
-  private final SonarRuntime sonarRuntime;
+  private final SonarLintRuntime sonarRuntime;
   private final PluginRepository pluginRepository;
   private final Configuration bootConfiguration;
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
+  public ExtensionInstaller(SonarLintRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
     AbstractGlobalConfiguration globalConfig) {
     this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;

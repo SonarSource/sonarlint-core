@@ -81,7 +81,9 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version version = MetadataLoader.loadVersion(System2.INSTANCE);
+    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
+    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
+
     add(
       StandalonePluginIndex.class,
       PluginRepository.class,
@@ -94,8 +96,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       NodeJsHelper.class,
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
-      new SonarQubeVersion(version),
-      new SonarLintRuntimeImpl(version),
+      new SonarQubeVersion(sonarPluginApiVersion),
+      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion),
 
       new GlobalTempFolderProvider(),
       UriReader.class,

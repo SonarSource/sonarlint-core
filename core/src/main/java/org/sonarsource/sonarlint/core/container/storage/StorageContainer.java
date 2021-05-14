@@ -78,7 +78,8 @@ public class StorageContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version version = MetadataLoader.loadVersion(System2.INSTANCE);
+    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
+    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
     add(
       StorageContainerHandler.class,
       PartialUpdaterFactory.class,
@@ -119,8 +120,8 @@ public class StorageContainer extends ComponentContainer {
       new StorageRulesProvider(),
       new StorageQProfilesProvider(),
       new SonarLintRulesProvider(),
-      new SonarQubeVersion(version),
-      new SonarLintRuntimeImpl(version),
+      new SonarQubeVersion(sonarPluginApiVersion),
+      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion),
       System2.INSTANCE);
   }
 
