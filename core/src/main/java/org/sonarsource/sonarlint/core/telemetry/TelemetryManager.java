@@ -119,6 +119,18 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
   }
 
+  public void addDisabledRule(String disabledRule) {
+    storage.tryUpdateAtomically(s -> s.addExplicitlyDisabledRule(disabledRule));
+  }
+
+  public void addEnabledRule(String enabledRule) {
+    storage.tryUpdateAtomically(s -> s.addExplicitlyEnabledRule(enabledRule));
+  }
+
+  public void addReportedRule(String ruleKey) {
+    storage.tryUpdateAtomically(s -> s.addReportedRule(ruleKey));
+  }
+
   /**
    * Save and upload lazily telemetry data.
    */

@@ -366,6 +366,23 @@ public class TelemetryManagerTest {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
   }
 
+  @Test
+  public void accumulate_rules_activation_settings_and_reported_rules() {
+    createAndSaveSampleData(storage);
+
+    manager.addDisabledRule("disabledRule1");
+    manager.addDisabledRule("disabledRule2");
+    manager.addEnabledRule("enabledRule1");
+    manager.addEnabledRule("enabledRule2");
+    manager.addEnabledRule("enabledRule3");
+    manager.addReportedRule("reportedRule1");
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+    assertThat(reloaded.getExplicitlyDisabledRules()).hasSize(2);
+    assertThat(reloaded.getExplicitlyEnabledRules()).hasSize(3);
+    assertThat(reloaded.getReportedRules()).hasSize(1);
+  }
+
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
