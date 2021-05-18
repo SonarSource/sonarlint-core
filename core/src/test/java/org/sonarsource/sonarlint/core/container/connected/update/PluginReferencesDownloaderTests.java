@@ -72,40 +72,7 @@ class PluginReferencesDownloaderTests {
   }
 
   @Test
-  void update_all_plugins_before_7_2(@TempDir Path tmp) throws Exception {
-    Path dest = tmp.resolve("destDir");
-    Files.createDirectory(dest);
-
-    pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", true));
-    pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
-    pluginList.add(new DefaultSonarAnalyzer("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true));
-    pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
-    pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
-
-    underTest.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
-
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
-    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
-      .containsOnly(
-        tuple("scmsvn", "d0a68d150314d96d3469e0f2246f3537", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar"),
-        tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"),
-        tuple("csharp", "e78bc8ac2e376c4a7a2a2cae914bdc52", "sonar-csharp-plugin-4.4.jar"),
-        tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
-        tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"));
-
-    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), any(Copier.class));
-
-    ArgumentCaptor<Copier> downloaderCaptor = ArgumentCaptor.forClass(Copier.class);
-    verify(pluginCache).get(eq("sonar-java-plugin-3.12-SNAPSHOT.jar"), eq("de5308f43260d357acc97712ce4c5475"), downloaderCaptor.capture());
-    Copier downloader = downloaderCaptor.getValue();
-    mockServer.addStringResponse("/deploy/plugins/java/test.jar", "content");
-    Path testFile = tmp.resolve("testFile");
-    downloader.copy("test.jar", testFile);
-    assertThat(testFile).hasContent("content");
-  }
-
-  @Test
-  void update_all_plugins_from_7_2(@TempDir Path tmp) throws Exception {
+  void update_all_plugins(@TempDir Path tmp) throws Exception {
     Path dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
 

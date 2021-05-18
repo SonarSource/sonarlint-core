@@ -71,7 +71,7 @@ class GlobalStorageUpdateExecutorTests {
     tempFolder = mock(TempFolder.class);
     rulesDownloader = mock(RulesDownloader.class);
 
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
 
     tempDir = temp.resolve("tmp").toFile();
     tempDir.mkdir();
@@ -95,7 +95,7 @@ class GlobalStorageUpdateExecutorTests {
 
     ServerInfos serverInfos = ProtobufUtil.readFile(destDir.resolve(StoragePaths.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");
-    assertThat(serverInfos.getVersion()).isEqualTo("6.7");
+    assertThat(serverInfos.getVersion()).isEqualTo("7.9");
   }
 
   @Test

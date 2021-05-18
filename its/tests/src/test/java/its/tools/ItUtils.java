@@ -46,21 +46,19 @@ public class ItUtils {
   public static String cppVersion;
 
   static {
-    if ("LATEST_RELEASE[6.7]".equals(System.getProperty("sonar.runtimeVersion"))) {
+    if ("LATEST_RELEASE[7.9]".equals(System.getProperty("sonar.runtimeVersion"))) {
       Properties props = new Properties();
       try (Reader r = Files.newBufferedReader(Paths.get("../../core/src/main/resources/plugins_min_versions.txt"), StandardCharsets.UTF_8)) {
         props.load(r);
         javaVersion = props.getProperty("java");
         pythonVersion = props.getProperty("python");
         phpVersion = props.getProperty("php");
-        // Can't test the version 4.0.0 since there was a change of custom rule API
-        javascriptVersion = "4.2.0.6476";
+        javascriptVersion = props.getProperty("javascript");
         typescriptVersion = props.getProperty("typescript");
         kotlinVersion = props.getProperty("kotlin");
         rubyVersion = props.getProperty("ruby");
         scalaVersion = props.getProperty("sonarscala");
-        // Because of SONARHTML-91, it is simpler to test with 3.0.1.1444
-        webVersion = "3.0.1.1444";
+        webVersion = props.getProperty("web");
         xmlVersion = props.getProperty("xml");
         cobolVersion = props.getProperty("cobol");
         apexVersion = props.getProperty("sonarapex");

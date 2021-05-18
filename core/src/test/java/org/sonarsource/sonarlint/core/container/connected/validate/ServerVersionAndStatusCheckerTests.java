@@ -41,7 +41,7 @@ class ServerVersionAndStatusCheckerTests {
   }
 
   @Test
-  void serverNotReady() throws Exception {
+  void serverNotReady() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
     ValidationResult validateStatusAndVersion = underTest.validateStatusAndVersion();
@@ -51,7 +51,7 @@ class ServerVersionAndStatusCheckerTests {
   }
 
   @Test
-  void failWhenServerNotReady() throws Exception {
+  void failWhenServerNotReady() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.checkVersionAndStatus());
@@ -59,25 +59,25 @@ class ServerVersionAndStatusCheckerTests {
   }
 
   @Test
-  void incompatibleVersion() throws Exception {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"4.5\",\"status\": \"UP\"}");
+  void incompatibleVersion() {
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
     ValidationResult validateStatusAndVersion = underTest.validateStatusAndVersion();
 
     assertThat(validateStatusAndVersion.success()).isFalse();
-    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 4.5. Version should be greater or equal to 6.7");
+    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
 
   @Test
-  void failWhenIncompatibleVersion() throws Exception {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.6\",\"status\": \"UP\"}");
+  void failWhenIncompatibleVersion() {
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
     UnsupportedServerException thrown = assertThrows(UnsupportedServerException.class, () -> underTest.checkVersionAndStatus());
-    assertThat(thrown).hasMessage("SonarQube server has version 5.6. Version should be greater or equal to 6.7");
+    assertThat(thrown).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
 
   @Test
-  void responseParsingError() throws Exception {
+  void responseParsingError() {
     mockServer.addStringResponse("/api/system/status", "bla bla");
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.checkVersionAndStatus());

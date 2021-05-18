@@ -9,8 +9,8 @@
       <key>S1313</key>
       <priority>MAJOR</priority>
     </rule>
-    
-    <!-- DEPRECATED keys for 6.7 axis -->
+
+    <!-- Keep for pre 6.0 sonar-java version -->
     <rule>
       <repositoryKey>squid</repositoryKey>
       <key>S1313</key>

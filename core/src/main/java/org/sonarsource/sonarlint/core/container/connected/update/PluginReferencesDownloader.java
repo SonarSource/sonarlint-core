@@ -106,13 +106,7 @@ public class PluginReferencesDownloader {
 
     @Override
     public void copy(String filename, Path toFile) throws IOException {
-      String url;
-
-      if (serverVersion.compareTo(Version.create("7.2")) >= 0) {
-        url = "api/plugins/download?plugin=" + key;
-      } else {
-        url = format("/deploy/plugins/%s/%s", key, filename);
-      }
+      String url = "api/plugins/download?plugin=" + key;
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("Download plugin '{}' to '{}'...", filename, toFile);
