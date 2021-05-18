@@ -50,21 +50,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 /**
- * This test verifies that SonarPython 1.9 gets excluded due to being below minimum supported version.
+ * This test verifies that SonarPython 1.13 gets excluded due to being below minimum supported version.
  */
 public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void beforeClass() {
-    boolean atMost72 = SONAR_VERSION.contains("6.7");
-    assumeTrue(atMost72);
+    boolean isLowestSupportedVersion = SONAR_VERSION.contains("7.9");
+    assumeTrue(isLowestSupportedVersion);
   }
 
   @Rule
   public Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
-    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.0.2010")).build();
+    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.13.0.2922")).build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -111,7 +111,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     UpdateResult update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
-    assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1.2080'). Skip downloading it.");
+    assertThat(logs).contains("Code analyzer 'python' version '1.13.0.2922' is not supported (minimal version is '1.14.0.3086'). Skip downloading it.");
   }
 
   @Test

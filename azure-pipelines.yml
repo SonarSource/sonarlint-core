@@ -231,13 +231,13 @@ stages:
             SQ_VERSION: 'LATEST_RELEASE'
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
           Lts79:
             SQ_VERSION: 'LATEST_RELEASE[7.9]'
             JDKVersion: '1.11'
-            Category: '-DexcludedGroups=SonarCloud'
-          Lts67:
-            SQ_VERSION: 'LATEST_RELEASE[6.7]'
-            JDKVersion: '1.8'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository

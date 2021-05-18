@@ -1,23 +1,23 @@
-# Minimum supported analyzer versions: the first versions supported by SonarQube 6.7,
+# Minimum supported analyzer versions: the first versions supported by SonarQube 7.9,
 # as defined in https://github.com/SonarSource/sonar-update-center-properties
-abap=3.5.0.1080
-cobol=4.2.0.2826
-cpp=5.0.0.9359
-java=5.1.0.13090
-javascript=4.0.0.5862
-kotlin=1.2.1.2009
-php=2.12.0.2871
-pli=1.8.0.1302
-plsql=3.1.0.1464
-python=1.9.1.2080
-rpg=2.2.0.1005
-ruby=1.2.1.2009
-swift=3.1.0.2067
-sonarapex=1.4.0.155
-sonarscala=1.4.0.155
-tsql=1.1.0.2177
-typescript=1.5.0.2122
-web=3.0.0.1411
+abap=3.8.0.2034
+cobol=4.4.0.3403
+cpp=6.3.0.11371
+java=5.13.1.18282
+javascript=5.2.1.7778
+kotlin=1.5.0.315
+php=3.2.0.4868
+pli=1.10.0.1880
+plsql=3.4.1.2576
+python=1.14.0.3086
+rpg=2.3.0.1187
+ruby=1.5.0.315
+swift=4.1.0.3087
+sonarapex=1.5.0.315
+sonarscala=1.5.0.315
+tsql=1.4.0.3334
+typescript=1.9.0.3766
+web=3.1.0.1615
 xml=2.0.1.2020
 # Only used by ITs
 xoo=1.0

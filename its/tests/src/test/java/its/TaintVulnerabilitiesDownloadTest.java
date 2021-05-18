@@ -77,12 +77,6 @@ import static org.junit.Assume.assumeFalse;
 public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "sample-java-taint";
 
-  @BeforeClass
-  public static void beforeClass() {
-    // No taint vulnerabilities on 6.7
-    assumeFalse(SONAR_VERSION.contains("6.7"));
-  }
-
   @Rule
   public Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .defaultForceAuthentication()

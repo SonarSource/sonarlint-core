@@ -63,7 +63,7 @@
           <!-- Need to be one part of the sensor whitelist -->
           <pluginKey>xoo</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
-          <sonarQubeMinVersion>6.7</sonarQubeMinVersion>
+          <sonarQubeMinVersion>7.9</sonarQubeMinVersion>
         </configuration>
       </plugin>
       <plugin>

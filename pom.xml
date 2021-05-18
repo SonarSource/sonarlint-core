@@ -33,7 +33,7 @@
     <!-- Don't forget to also update PluginInfosLoader::IMPLEMENTED_SQ_API -->
     <sonarqube.version>8.9.0.43852</sonarqube.version>
     <sonar-ws.version>8.5.1.38104</sonar-ws.version>
-    <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
+    <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
     <protobuf.version>3.13.0</protobuf.version>
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>

@@ -110,10 +110,10 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     adminWsClient.issues().setSeverity(new SetSeverityRequest().setIssue(overridenSeverityIssue.getKey()).setSeverity("BLOCKER"));
     adminWsClient.issues().setType(new SetTypeRequest().setIssue(overridenTypeIssue.getKey()).setType("BUG"));
 
-    // Ensure an hostpot has been reported on server side (except for SQ 6.7 because there was no hotspots at that time)
+    // Ensure an hostpot has been reported on server side
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2)) {
       assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY)).getHotspotsList()).isNotEmpty();
-    } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(7, 0)) {
+    } else {
       assertThat(
         adminWsClient.issues().search(new SearchRequest().setTypes(asList("SECURITY_HOTSPOT")).setComponentKeys(asList(PROJECT_KEY))).getIssuesList())
           .isNotEmpty();

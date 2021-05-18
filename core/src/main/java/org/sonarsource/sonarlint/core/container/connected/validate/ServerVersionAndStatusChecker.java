@@ -33,7 +33,7 @@ public class ServerVersionAndStatusChecker {
 
   private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
 
-  private static final String MIN_SQ_VERSION = "6.7";
+  private static final String MIN_SQ_VERSION = "7.9";
   private final ServerApiHelper serverApiHelper;
 
   public ServerVersionAndStatusChecker(ServerApiHelper serverApiHelper) {

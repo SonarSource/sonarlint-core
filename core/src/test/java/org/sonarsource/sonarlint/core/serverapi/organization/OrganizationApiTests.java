@@ -43,7 +43,7 @@ class OrganizationApiTests {
   void testListUserOrganizationWithMoreThan20Pages() throws IOException {
     OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
 
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
 
     for (int i = 0; i < 21; i++) {
       mockOrganizationsPage(i + 1, 10500);
