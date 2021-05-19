@@ -22,23 +22,23 @@ package org.sonarsource.sonarlint.plugin.api.module.file;
 import org.sonar.api.batch.fs.InputFile;
 
 /**
- * @since 5.4
+ * @since 6.0
  */
 public interface ModuleFileEvent {
   /**
    * @return the InputFile concerned by the event
-   * @since 5.4
+   * @since 6.0
    */
   InputFile getTarget();
 
   /**
    * @return the event Type
-   * @since 5.4
+   * @since 6.0
    */
   Type getType();
 
   /**
-   * @since 5.4
+   * @since 6.0
    */
   enum Type {
     CREATED, MODIFIED, DELETED

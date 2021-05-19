@@ -27,10 +27,11 @@ import org.sonar.api.utils.Version;
  * Provides extra runtime related information when in the context of SonarLint.
  *
  * An instance of this class can be accessed through the context passed in {@link org.sonar.api.Plugin.Context#define(Plugin.Context)}.
+ * @since 6.0
  */
 public interface SonarLintRuntime extends SonarRuntime {
   /**
-   * @since 5.4
+   * @since 6.0
    * @return the version of the sonarlint-plugin-api
    */
   Version getSonarLintPluginApiVersion();
