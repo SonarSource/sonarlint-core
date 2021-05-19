@@ -24,7 +24,7 @@ import org.sonar.api.batch.fs.InputFile;
 
 /**
  * This class is made available to components annotated with {@code @SonarLintSide(MODULE)}.
- * @since 5.4
+ * @since 6.0
  */
 public interface ModuleFileSystem {
   /**
@@ -33,7 +33,7 @@ public interface ModuleFileSystem {
    * @param suffix a suffix to filter the files
    * @param type   the type of file
    * @return a stream of files that match the given suffix and type in the module
-   * @since 5.4
+   * @since 6.0
    */
   Stream<InputFile> files(String suffix, InputFile.Type type);
 }
