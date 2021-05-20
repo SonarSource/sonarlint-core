@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.collect.Streams;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,6 @@ import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -53,7 +51,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
@@ -158,25 +155,15 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(issueListener);
     return withReadLock(() -> {
       setLogging(logOutput);
-      boolean deleteModuleAfterAnalysis = false;
-      Object moduleKey = configuration.moduleKey();
-      ComponentContainer moduleContainer = storageContainer.getModuleRegistry().getContainerFor(moduleKey);
-      if (moduleContainer == null) {
-        // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-        moduleContainer = storageContainer.getModuleRegistry().createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
-        deleteModuleAfterAnalysis = true;
-      }
-      try {
-        return getHandler().analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
-      } catch (RuntimeException e) {
-        throw SonarLintWrappedException.wrap(e);
-      } finally {
-        if (deleteModuleAfterAnalysis) {
-          moduleContainer.stopComponents();
+      return withModule(configuration, moduleContainer -> {
+        try {
+          return getHandler().analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
+        } catch (RuntimeException e) {
+          throw SonarLintWrappedException.wrap(e);
         }
-      }
-    });
+      });
 
+    });
   }
 
   @Override

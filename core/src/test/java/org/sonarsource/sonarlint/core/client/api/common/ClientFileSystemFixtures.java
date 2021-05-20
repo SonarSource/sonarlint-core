@@ -17,32 +17,38 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.module;
+package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileSystem;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
-public class SonarLintModuleFileSystem implements ModuleFileSystem {
+public class ClientFileSystemFixtures {
+  public static ClientFileSystem aClientFileSystemWith(ClientInputFile... clientInputFile) {
+    return new ClientFileSystem() {
+      @Override
+      public Stream<ClientInputFile> files(String language, InputFile.Type type) {
+        return files();
+      }
 
-  private final ClientFileSystem clientFileSystem;
-  private final ModuleInputFileBuilder inputFileBuilder;
-
-  public SonarLintModuleFileSystem(ClientFileSystem clientFileSystem, ModuleInputFileBuilder inputFileBuilder) {
-    this.clientFileSystem = clientFileSystem;
-    this.inputFileBuilder = inputFileBuilder;
+      @Override
+      public Stream<ClientInputFile> files() {
+        return Stream.of(clientInputFile);
+      }
+    };
   }
 
-  @Override
-  public Stream<InputFile> files(String suffix, InputFile.Type type) {
-    return clientFileSystem.files(suffix, type)
-      .map(inputFileBuilder::create);
-  }
+  public static ClientFileSystem anEmptyClientFileSystem() {
+    return new ClientFileSystem() {
+      @Override
+      public Stream<ClientInputFile> files(String language, InputFile.Type type) {
+        return files();
+      }
 
-  @Override
-  public Stream<InputFile> files() {
-    return clientFileSystem.files()
-      .map(inputFileBuilder::create);
+      @Override
+      public Stream<ClientInputFile> files() {
+        return Stream.empty();
+      }
+    };
   }
 }

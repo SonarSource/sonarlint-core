@@ -36,4 +36,13 @@ public interface ModuleFileSystem {
    * @since 6.0
    */
   Stream<InputFile> files(String suffix, InputFile.Type type);
+
+
+  /**
+   * Returns all the files within the module.
+   *
+   * @return a stream of module files
+   * @since 6.0
+   */
+  Stream<InputFile> files();
 }
