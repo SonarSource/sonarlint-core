@@ -25,4 +25,5 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 
 public interface ClientFileSystem {
   Stream<ClientInputFile> files(String language, InputFile.Type type);
+  Stream<ClientInputFile> files();
 }

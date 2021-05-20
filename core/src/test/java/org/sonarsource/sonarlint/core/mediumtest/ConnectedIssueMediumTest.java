@@ -28,7 +28,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
@@ -74,6 +73,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
+import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedIssueMediumTest {
@@ -327,7 +328,7 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void declare_module_should_create_a_module_container_with_loaded_extensions() {
-    sonarlint.declareModule(new ModuleInfo("key", (suffix, type) -> Stream.of(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
     ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
@@ -337,7 +338,7 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void stop_module_should_stop_the_module_container() {
-    sonarlint.declareModule(new ModuleInfo("key", (suffix, type) -> Stream.of(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
     ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
@@ -351,7 +352,7 @@ public class ConnectedIssueMediumTest {
     FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
     sonarlint.getGlobalContainer().add(moduleFileListener);
     OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
-    sonarlint.declareModule(new ModuleInfo("moduleKey", (suffix, type) -> Stream.empty()));
+    sonarlint.declareModule(new ModuleInfo("moduleKey", anEmptyClientFileSystem()));
 
     sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
 

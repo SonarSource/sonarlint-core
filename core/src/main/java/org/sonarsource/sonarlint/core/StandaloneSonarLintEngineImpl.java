@@ -92,13 +92,15 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     requireNonNull(issueListener);
     setLogging(logOutput);
     rwl.readLock().lock();
-    try {
-      return globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.readLock().unlock();
-    }
+    return withModule(configuration, moduleContainer -> {
+      try {
+        return globalContainer.analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
+      } catch (RuntimeException e) {
+        throw SonarLintWrappedException.wrap(e);
+      } finally {
+        rwl.readLock().unlock();
+      }
+    });
   }
 
   private void setLogging(@Nullable LogOutput logOutput) {

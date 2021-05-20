@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
-import com.google.common.collect.Streams;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +33,6 @@ import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -145,15 +143,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     standaloneActiveRules = container.getStandaloneActiveRules();
   }
 
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    Object moduleKey = configuration.moduleKey();
-    ComponentContainer moduleContainer = moduleRegistry.getContainerFor(moduleKey);
-    boolean deleteModuleAfterAnalysis = false;
-    if (moduleContainer == null) {
-      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleRegistry.createContainer(new ModuleInfo(moduleKey, (a, b) -> Streams.stream(configuration.inputFiles())));
-      deleteModuleAfterAnalysis = true;
-    }
+  public AnalysisResults analyze(ComponentContainer moduleContainer, StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
     AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
@@ -169,13 +159,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(SensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
-    try {
-      analysisContainer.execute();
-    } finally {
-      if (deleteModuleAfterAnalysis) {
-        moduleContainer.stopComponents();
-      }
-    }
+    analysisContainer.execute();
     return defaultAnalysisResult;
   }
 
