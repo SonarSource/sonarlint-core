@@ -873,30 +873,6 @@ class StandaloneIssueMediumTests {
     assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
   }
 
-  @Test
-  void python_symbol_table_should_bring_cross_file_issues() throws IOException {
-    ClientInputFile mainFile = prepareInputFile("main.py",
-      "from mod import add\n"
-        + "def main():\n"
-        + "  add(1, 2)\n"
-        + "  add(1)\n",
-      false);
-    ClientInputFile moduleFile = prepareInputFile("mod.py",
-      "def add(a, b): return a+b",
-      false);
-    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(mainFile, moduleFile)));
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-      .setBaseDir(baseDir.toPath())
-      .addInputFile(mainFile)
-      .setModuleKey("key")
-      .build(), issues::add, null, null);
-
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath())
-      .containsExactly(tuple("python:S930", 4, "main.py"));
-  }
-
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable Language language) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
