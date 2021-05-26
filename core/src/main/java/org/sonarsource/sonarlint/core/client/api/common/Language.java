@@ -34,6 +34,7 @@ public enum Language {
   APEX("apex", "sonarapex", "Apex", new String[] {".cls", ".trigger"}, "sonar.apex.file.suffixes"),
   C("c", "cpp", "C", new String[] {".c", ".h"}, "sonar.c.file.suffixes"),
   CPP("cpp", "cpp", "C++", new String[] {".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
+  CS("cs", "csharp", "C#", new String[] {".cs"}, "sonar.cs.file.suffixes"),
   OBJC("objc", "cpp", "Objective-C", new String[] {".m"}, "sonar.objc.file.suffixes"),
   COBOL("cobol", "cobol", "COBOL", new String[0], "sonar.cobol.file.suffixes"),
   HTML("web", "web", "HTML", new String[] {".html", ".xhtml", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtm", ".shtml"}, "sonar.html.file.suffixes"),

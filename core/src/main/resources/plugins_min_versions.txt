@@ -19,5 +19,3 @@ tsql=1.4.0.3334
 typescript=1.9.0.3766
 web=3.1.0.1615
 xml=2.0.1.2020
-# Only used by ITs
-xoo=1.0

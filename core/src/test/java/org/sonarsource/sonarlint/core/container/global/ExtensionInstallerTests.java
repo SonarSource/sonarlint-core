@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
@@ -61,15 +60,13 @@ class ExtensionInstallerTests {
   private static final SonarLintRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0), sonarLintPluginApiVersion);
   private ExtensionInstaller underTest;
   private PluginRepository pluginRepository;
-  private PluginVersionChecker pluginVersionChecker;
   private ComponentContainer container;
 
   @BeforeEach
   public void prepare() {
     pluginRepository = mock(PluginRepository.class);
-    pluginVersionChecker = mock(PluginVersionChecker.class);
     container = mock(ComponentContainer.class);
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, StandaloneGlobalConfiguration.builder().build());
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder().build());
   }
 
   @Test
@@ -158,12 +155,11 @@ class ExtensionInstallerTests {
 
   @Test
   void install_sensors_for_sonarsource_plugins() {
-    PluginInfo pluginInfo = new PluginInfo("foo");
+    PluginInfo pluginInfo = new PluginInfo("java");
     pluginInfo.setSonarLintSupported(true);
-    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
-    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
+    when(pluginRepository.getPluginInstance("java")).thenReturn(new FakePlugin());
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container).addExtension(pluginInfo, FakeSensor.class);
@@ -173,7 +169,6 @@ class ExtensionInstallerTests {
   void dont_install_sensors_for_non_sonarsource_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
-    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn(null);
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
@@ -184,14 +179,13 @@ class ExtensionInstallerTests {
 
   @Test
   void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
-    PluginInfo pluginInfo = new PluginInfo("foo");
+    PluginInfo pluginInfo = new PluginInfo("javascript");
     pluginInfo.setSonarLintSupported(true);
-    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
-    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
+    when(pluginRepository.getPluginInstance("javascript")).thenReturn(new FakePlugin());
 
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, ConnectedGlobalConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -203,12 +197,11 @@ class ExtensionInstallerTests {
   void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
-    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
 
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder()
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, ConnectedGlobalConfiguration.builder()
       .addEnabledLanguage(Language.JS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -220,14 +213,13 @@ class ExtensionInstallerTests {
 
   @Test
   void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
-    PluginInfo pluginInfo = new PluginInfo("foo");
+    PluginInfo pluginInfo = new PluginInfo("javascript");
     pluginInfo.setSonarLintSupported(true);
-    when(pluginVersionChecker.getMinimumVersion("foo")).thenReturn("1.0");
 
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
-    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin());
+    when(pluginRepository.getPluginInstance("javascript")).thenReturn(new FakePlugin());
 
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, StandaloneGlobalConfiguration.builder()
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -249,7 +241,7 @@ class ExtensionInstallerTests {
     when(pluginRepository.getPluginInstance("notembedded")).thenReturn(new FakePlugin());
     when(pluginRepository.getPluginInstance("embedded")).thenReturn(new FakePlugin());
 
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder().build());
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, ConnectedGlobalConfiguration.builder().build());
 
     underTest.installEmbeddedOnly(container, ContainerLifespan.ANALYSIS);
 
@@ -265,7 +257,7 @@ class ExtensionInstallerTests {
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(plugin));
     PluginStoringSonarLintPluginApiVersion pluginInstance = new PluginStoringSonarLintPluginApiVersion();
     when(pluginRepository.getPluginInstance("plugin")).thenReturn(pluginInstance);
-    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, pluginVersionChecker, ConnectedGlobalConfiguration.builder().build());
+    underTest = new ExtensionInstaller(RUNTIME, pluginRepository, CONFIG, ConnectedGlobalConfiguration.builder().build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
