@@ -103,6 +103,12 @@
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonarqube.version}</version>
     </dependency>
+    <!-- For RulesDefinitionXmlLoader, can be removed after upgrading sonar-plugin-api to 9.0 (SONAR-14882) -->
+    <dependency>
+      <groupId>com.fasterxml.staxmate</groupId>
+      <artifactId>staxmate</artifactId>
+      <version>2.4.0</version>
+    </dependency>
 
     <!-- unit tests -->
     <dependency>
@@ -346,8 +352,22 @@
                   </excludes>
                 </filter>
                 <filter>
-                    <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
+                  <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
                   <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- Shade staxmate (but avoids minimization) as it is used by plugins -->
+                  <artifact>com.fasterxml.staxmate:staxmate</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- Shade stax2-api (but avoids minimization) as it is used by plugins -->
+                  <artifact>org.codehaus.woodstox:stax2-api</artifact>
                   <includes>
                     <include>**</include>
                   </includes>
