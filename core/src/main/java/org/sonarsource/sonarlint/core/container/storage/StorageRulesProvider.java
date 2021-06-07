@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import org.picocontainer.injectors.ProviderAdapter;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class StorageRulesProvider extends ProviderAdapter {
