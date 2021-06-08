@@ -1,5 +1,5 @@
 /*
- * JavaScript Custom Rules Plugin
+ * Java Custom Rules Plugin
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.samples.javascript;
+package org.sonar.samples.java;
 
 import org.sonar.api.Plugin;
 
 /**
- * Extension point to define a SonarQube Plugin.
+ * Entry point of your plugin containing your custom rules
  */
-public class JavaScriptCustomRulesPlugin implements Plugin {
+public class MyJavaRulesPlugin implements Plugin {
 
   @Override
   public void define(Context context) {
-    context.addExtension(JavaScriptCustomRulesDefinition.class);
+    // server extensions -> objects are instantiated during server startup
+    context.addExtension(MyJavaRulesDefinition.class);
+
+    // batch extensions -> objects are instantiated during code analysis
+    context.addExtension(MyJavaFileCheckRegistrar.class);
+
   }
 
 }

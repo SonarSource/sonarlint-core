@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Java Custom</name>
+  <language>java</language>
+  <rules>
+    <rule>
+      <repositoryKey>mycompany-java</repositoryKey>
+      <key>AvoidAnnotation</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
