@@ -12,9 +12,12 @@
   
   <modules>
     <module>plugins/custom-sensor-plugin</module>
-    <module>plugins/javascript-custom-rules</module>
+    <module>plugins/java-custom-rules</module>
     <module>plugins/global-extension-plugin</module>
     <module>tests</module>
   </modules>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
 </project>

@@ -10,15 +10,16 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <groupId>com.sonarsource.it.javascript</groupId>
-  <artifactId>javascript-custom-rules-plugin</artifactId>
+  <groupId>com.sonarsource.it.java</groupId>
+  <artifactId>java-custom-rules-plugin</artifactId>
   <packaging>sonar-plugin</packaging>
 
-  <name>JavaScript Custom Rules Plugin</name>
-  <description>JavaScript Custom Rules</description>
+  <name>Java Custom Rules Plugin</name>
+  <description>Java Custom Rules</description>
 
   <properties>
-    <javascript.buildVersion>4.2.0.6476</javascript.buildVersion>
+    <sonarjava.version>5.13.1.18282</sonarjava.version>
+    <analyzer.commons.version>1.14.1.690</analyzer.commons.version>
   </properties>
 
   <dependencies>
@@ -30,16 +31,16 @@
     </dependency>
 
     <dependency>
-      <groupId>org.sonarsource.javascript</groupId>
-      <artifactId>javascript-frontend</artifactId>
-      <version>${javascript.buildVersion}</version>
+      <groupId>org.sonarsource.java</groupId>
+      <artifactId>sonar-java-plugin</artifactId>
+      <type>sonar-plugin</type>
+      <version>${sonarjava.version}</version>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.sonarsource.analyzer-commons</groupId>
+      <artifactId>sonar-analyzer-commons</artifactId>
+      <version>${analyzer.commons.version}</version>
     </dependency>
 
     <dependency>
@@ -55,14 +56,14 @@
       <plugin>
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
+        <version>1.20.0.405</version>
         <extensions>true</extensions>
         <configuration>
-          <pluginClass>org.sonar.samples.javascript.JavaScriptCustomRulesPlugin</pluginClass>
+          <pluginClass>org.sonar.samples.java.MyJavaRulesPlugin</pluginClass>
           <sonarQubeMinVersion>7.9</sonarQubeMinVersion>
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
-          <requirePlugins>javascript:4.2</requirePlugins>
-          <basePlugin>javascript</basePlugin>
+          <requirePlugins>java:${sonarjava.version}</requirePlugins>
         </configuration>
       </plugin>
 
