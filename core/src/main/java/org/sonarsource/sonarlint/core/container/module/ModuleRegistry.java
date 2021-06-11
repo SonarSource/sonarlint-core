@@ -49,11 +49,13 @@ public class ModuleRegistry {
   }
 
   public ModuleContainer createContainer(ModuleInfo module) {
-    if (modules.containsKey(module.key())) {
-      // can this happen ?
-      LOG.info("Module container already started with key=" + module.key());
+    Object moduleKey = module.key();
+    if (modules.containsKey(moduleKey)) {
+      // this could happen if the creation is delayed while the engine is updating but the provider already returned the module
+      LOG.info("Module container already started with key=" + moduleKey);
+      return modules.get(moduleKey);
     }
-    LOG.info("Creating container for module with key=" + module.key());
+    LOG.info("Creating container for module with key=" + moduleKey);
     ModuleContainer moduleContainer = new ModuleContainer(parent);
     ClientFileSystem clientFileSystem = module.fileSystem();
     if (clientFileSystem != null) {

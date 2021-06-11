@@ -23,8 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -68,14 +66,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   private final ConnectedGlobalConfiguration globalConfig;
   private StorageContainer storageContainer;
-  private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final List<StateListener> stateListeners = new CopyOnWriteArrayList<>();
   private volatile State state = State.UNKNOWN;
-  private final LogOutput logOutput;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
+    super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-    this.logOutput = globalConfig.getLogOutput();
     start();
   }
 
@@ -138,14 +134,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       changeState(State.UNKNOWN);
     } finally {
       rwl.writeLock().unlock();
-    }
-  }
-
-  private void setLogging(@Nullable LogOutput logOutput) {
-    if (logOutput != null) {
-      Loggers.setTarget(logOutput);
-    } else {
-      Loggers.setTarget(this.logOutput);
     }
   }
 
@@ -331,18 +319,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       } catch (Exception e) {
         // Ignore
       }
-    }
-  }
-
-  private <T> T withRwLock(Supplier<T> callable) {
-    setLogging(null);
-    rwl.writeLock().lock();
-    try {
-      return callable.get();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.writeLock().unlock();
     }
   }
 
