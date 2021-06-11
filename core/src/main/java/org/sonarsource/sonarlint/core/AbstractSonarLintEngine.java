@@ -20,38 +20,57 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.collect.Streams;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 
 public abstract class AbstractSonarLintEngine implements SonarLintEngine {
+  protected final ReadWriteLock rwl = new ReentrantReadWriteLock();
   protected abstract ModuleRegistry getModuleRegistry();
+  private final LogOutput logOutput;
+
+  protected AbstractSonarLintEngine(@Nullable LogOutput logOutput) {
+    this.logOutput = logOutput;
+  }
 
   @Override
   public void declareModule(ModuleInfo module) {
-    getModuleRegistry().registerModule(module);
+    withRwLock(() -> getModuleRegistry().registerModule(module));
   }
 
   @Override
   public void stopModule(Object moduleKey) {
-    getModuleRegistry().unregisterModule(moduleKey);
+    withRwLock(() -> {
+      getModuleRegistry().unregisterModule(moduleKey);
+      return null;
+    });
   }
 
   @Override
   public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
-    if (moduleContainer != null) {
-      moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
-    }
+    withRwLock(() -> {
+      ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
+      if (moduleContainer != null) {
+        moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
+      }
+      return null;
+    });
   }
 
   protected <T> T withModule(AbstractAnalysisConfiguration configuration, Function<ComponentContainer, T> consumer) {
@@ -69,6 +88,26 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
       if (deleteModuleAfterAnalysis) {
         moduleContainer.stopComponents();
       }
+    }
+  }
+
+  protected <T> T withRwLock(Supplier<T> callable) {
+    setLogging(null);
+    rwl.writeLock().lock();
+    try {
+      return callable.get();
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    } finally {
+      rwl.writeLock().unlock();
+    }
+  }
+
+  protected void setLogging(@Nullable LogOutput logOutput) {
+    if (logOutput != null) {
+      Loggers.setTarget(logOutput);
+    } else {
+      Loggers.setTarget(this.logOutput);
     }
   }
 
