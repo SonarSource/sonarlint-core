@@ -37,8 +37,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginRef
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
-import static java.lang.String.format;
-
 public class PluginReferencesDownloader {
 
   private static final Logger LOG = Loggers.get(PluginReferencesDownloader.class);
@@ -57,18 +55,28 @@ public class PluginReferencesDownloader {
     Builder builder = PluginReferences.newBuilder();
 
     analyzers.stream()
-      .filter(this::analyzerFilter)
-      .map(analyzer -> PluginReference.newBuilder()
-        .setKey(analyzer.key())
-        .setHash(analyzer.hash())
-        .setFilename(analyzer.filename())
-        .build())
+      .filter(this::isCompatible)
+      .map(this::toPluginReference)
       .forEach(builder::addReference);
 
     return builder.build();
   }
 
-  private boolean analyzerFilter(SonarAnalyzer analyzer) {
+  private PluginReference toPluginReference(SonarAnalyzer analyzer) {
+    org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference.Builder builder = PluginReference.newBuilder()
+      .setKey(analyzer.key());
+    if (!configuration.getEmbeddedPluginUrlsByKey().containsKey(analyzer.key())) {
+      // For embedded plugins, ignore hash and filename
+      builder.setHash(analyzer.hash())
+        .setFilename(analyzer.filename());
+    }
+    return builder.build();
+  }
+
+  private boolean isCompatible(SonarAnalyzer analyzer) {
+    if (configuration.getEmbeddedPluginUrlsByKey().containsKey(analyzer.key())) {
+      return true;
+    }
     if (!analyzer.sonarlintCompatible()) {
       LOG.debug("Code analyzer '{}' is not compatible with SonarLint. Skip downloading it.", analyzer.key());
       return false;

@@ -107,9 +107,9 @@ public class PluginsUpdateCheckerTest {
   public void ignoreEmbeddedPlugins() throws Exception {
     embeddedPlugins.put("java", new URL("file://java.jar"));
     when(pluginReferenceDownloader.toReferences(anyList()))
-      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("").build()).build());
     when(storageReader.readPluginReferences())
-      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
+      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, new LinkedList<>());

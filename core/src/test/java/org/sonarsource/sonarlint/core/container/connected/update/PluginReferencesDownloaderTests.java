@@ -143,7 +143,7 @@ class PluginReferencesDownloaderTests {
   }
 
   @Test
-  void filter_embedded_plugins(@TempDir Path dest) throws Exception {
+  void dont_download_embedded_plugins(@TempDir Path dest) throws Exception {
     embeddedPlugins.put("java", new URL("file://java.jar"));
 
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
@@ -154,13 +154,42 @@ class PluginReferencesDownloaderTests {
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
-      .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
+      .containsOnly(tuple("java", "", ""),
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
         tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-2.10.jar"));
 
     verify(pluginCache).get(eq("sonar-groovy-plugin-1.2.jar"), anyString(), any(Copier.class));
     verify(pluginCache).get(eq("sonar-javascript-plugin-2.10.jar"), anyString(), any(Copier.class));
     verifyNoMoreInteractions(pluginCache);
+  }
 
+  @Test
+  void dont_check_compatibility_for_embedded_plugins(@TempDir Path dest) throws Exception {
+    embeddedPlugins.put("java", new URL("file://java.jar"));
+
+    pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", false));
+
+    underTest.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
+
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
+      .containsOnly(tuple("java", "", ""));
+
+    verifyNoMoreInteractions(pluginCache);
+  }
+
+  @Test
+  void dont_check_version_compatibility_for_embedded_plugins(@TempDir Path dest) throws Exception {
+    embeddedPlugins.put("java", new URL("file://java.jar"));
+
+    pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-0.1.jar", "de5308f43260d357acc97712ce4c5475", "0.1", true));
+
+    underTest.fetchPluginsTo(Version.create("7.1"), dest, pluginList, new ProgressWrapper(null));
+
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
+      .containsOnly(tuple("java", "", ""));
+
+    verifyNoMoreInteractions(pluginCache);
   }
 }
