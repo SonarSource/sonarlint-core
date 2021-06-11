@@ -60,4 +60,19 @@ class SonarLintWrappedExceptionTests {
     Exception a = new IllegalStateException("a", new IllegalStateException("b", e));
     assertThat(SonarLintWrappedException.wrap(a)).isEqualTo(e);
   }
+
+  @Test
+  void suppressedExceptionsWrappingTest() {
+    MyCustomException myCustomException = new MyCustomException("Foo");
+    myCustomException.addSuppressed(new MyCustomException("Bar"));
+    myCustomException.addSuppressed(new MyCustomException("Baz"));
+
+    try {
+      throw SonarLintWrappedException.wrap(myCustomException);
+    } catch (Exception e) {
+      assertThat(e.getSuppressed()[0]).hasMessage("Bar");
+      assertThat(e.getSuppressed()[1]).hasMessage("Baz");
+    }
+  }
+
 }
