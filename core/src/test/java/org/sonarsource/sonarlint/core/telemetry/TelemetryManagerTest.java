@@ -403,8 +403,11 @@ public class TelemetryManagerTest {
 
     TelemetryLocalStorage reloaded = storage.tryRead();
     assertThat(reloaded.getExplicitlyDisabledRules()).hasSize(2);
+    assertThat(reloaded.getExplicitlyDisabledRules()).contains("disabledRule1", "disabledRule2");
     assertThat(reloaded.getExplicitlyEnabledRules()).hasSize(3);
+    assertThat(reloaded.getExplicitlyEnabledRules()).contains("enabledRule1","enabledRule2","enabledRule3");
     assertThat(reloaded.getReportedRules()).hasSize(1);
+    assertThat(reloaded.getReportedRules()).contains("reportedRule1");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
