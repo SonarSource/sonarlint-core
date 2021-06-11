@@ -84,6 +84,8 @@ public class TelemetryHttpClient {
     ShowHotspotPayload showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
     TaintVulnerabilitiesPayload taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
+    TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(data.getExplicitlyEnabledRules(), data.getExplicitlyDisabledRules(), data.getReportedRules());
+
     String os = System.getProperty("os.name");
     String jre = System.getProperty("java.version");
     TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
