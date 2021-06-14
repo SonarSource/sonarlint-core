@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import javax.annotation.Nullable;
+import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.rule.RuleKey;
@@ -74,7 +75,7 @@ public class StorageContainer extends ComponentContainer {
 
   private GlobalExtensionContainer globalExtensionContainer;
   private ModuleRegistry moduleRegistry;
-  private SonarLintRules rules;
+  private SonarLintRules rulesFromPlugins;
 
   @Override
   protected void doBeforeStart() {
@@ -130,7 +131,9 @@ public class StorageContainer extends ComponentContainer {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
     GlobalStorageStatus updateStatus = getComponentByType(StorageContainerHandler.class).getGlobalStorageStatus();
 
+    SonarLintRules rulesFromStorage = null;
     if (updateStatus != null) {
+      rulesFromStorage = getComponentByType(SonarLintRules.class);
       LOG.info("Using storage for connection '{}' (last update {})", config.getConnectionId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
       installPlugins();
       loadRulesFromPlugins();
@@ -141,12 +144,23 @@ public class StorageContainer extends ComponentContainer {
     this.globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
     this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, config.getModulesProvider());
+    if (rulesFromStorage != null) {
+      SonarLintRules mergedRules = merge(rulesFromPlugins, rulesFromStorage);
+      this.globalExtensionContainer.add(new MergedSonarLintRulesProvider(mergedRules));
+    }
+  }
+
+  private SonarLintRules merge(SonarLintRules rulesFromPlugins, SonarLintRules rulesFromStorage) {
+    SonarLintRules merged = new SonarLintRules();
+    rulesFromPlugins.findAll().forEach(merged::add);
+    rulesFromStorage.findAll().forEach(merged::add);
+    return merged;
   }
 
   private void loadRulesFromPlugins() {
     StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
-    rules = container.getRules();
+    rulesFromPlugins = container.getRules();
   }
 
   @Override
@@ -197,7 +211,7 @@ public class StorageContainer extends ComponentContainer {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
     if (config.getEmbeddedPluginUrlsByKey().containsKey(language.getPluginKey())) {
       // Favor loading rule details from the embedded plugin
-      StandaloneRule ruleFromPlugin = (StandaloneRule) rules.find(RuleKey.parse(ruleKeyStr));
+      StandaloneRule ruleFromPlugin = (StandaloneRule) rulesFromPlugins.find(RuleKey.parse(ruleKeyStr));
       if (ruleFromPlugin != null) {
         return new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.name(), ruleFromPlugin.description(), overridenSeverity != null ? overridenSeverity : ruleFromPlugin.severity(),
           ruleFromPlugin.type().toString(), language,
@@ -213,5 +227,18 @@ public class StorageContainer extends ComponentContainer {
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
     ActiveRule readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
     return getRuleDetailsWithSeverity(ruleKeyStr, readActiveRuleFromStorage.getSeverity());
+  }
+
+  public static class MergedSonarLintRulesProvider extends ProviderAdapter {
+
+    private final SonarLintRules mergedRules;
+
+    public MergedSonarLintRulesProvider(SonarLintRules mergedRules) {
+      this.mergedRules = mergedRules;
+    }
+
+    public SonarLintRules provide() {
+      return mergedRules;
+    }
   }
 }
