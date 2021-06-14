@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -46,5 +47,15 @@ public interface TelemetryClientAttributesProvider {
    * Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
    */
   boolean devNotificationsDisabled();
+
+  /**
+   * Rule keys for rules that disabled by default, but was enabled by user in settings.
+   */
+  Collection<String> getExplicitlyEnabledRules();
+
+  /**
+   * Rule keys for rules that enabled by default, but was disabled by user in settings.
+   */
+  Collection<String> getExplicitlyDisabledRules();
 
 }

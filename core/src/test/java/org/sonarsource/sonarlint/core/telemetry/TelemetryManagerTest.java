@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -74,6 +75,16 @@ public class TelemetryManagerTest {
     @Override
     public boolean devNotificationsDisabled() {
       return true;
+    }
+
+    @Override
+    public Collection<String> getExplicitlyEnabledRules() {
+      return null;
+    }
+
+    @Override
+    public Collection<String> getExplicitlyDisabledRules() {
+      return null;
     }
 
   };
@@ -364,6 +375,17 @@ public class TelemetryManagerTest {
     assertThat(reloaded.notifications()).isEmpty();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
+  }
+
+  @Test
+  public void accumulate_rules_activation_settings_and_reported_rules() {
+    createAndSaveSampleData(storage);
+
+    manager.addReportedRule("reportedRule1");
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+    assertThat(reloaded.getReportedRules()).hasSize(1);
+    assertThat(reloaded.getReportedRules()).contains("reportedRule1");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
