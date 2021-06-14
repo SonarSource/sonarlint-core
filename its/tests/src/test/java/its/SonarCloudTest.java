@@ -195,7 +195,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
     PostRequest request = new PostRequest("api/qualityprofiles/restore");
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     request.setPart("backup", new PostRequest.Part(MediaTypes.XML, backupFile));
-    adminWsClient.wsConnector().call(request);
+    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+    }
   }
 
   private static void provisionProject(String key, String name) {
