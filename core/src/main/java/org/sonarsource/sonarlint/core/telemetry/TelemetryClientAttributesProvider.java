@@ -51,11 +51,11 @@ public interface TelemetryClientAttributesProvider {
   /**
    * Rule keys for rules that disabled by default, but was enabled by user in settings.
    */
-  Collection<String> getExplicitlyEnabledRules();
+  Collection<String> getNonDefaultEnabledRules();
 
   /**
    * Rule keys for rules that enabled by default, but was disabled by user in settings.
    */
-  Collection<String> getExplicitlyDisabledRules();
+  Collection<String> getDefaultDisabledRules();
 
 }

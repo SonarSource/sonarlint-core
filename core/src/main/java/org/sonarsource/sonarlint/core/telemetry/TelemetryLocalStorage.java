@@ -45,22 +45,22 @@ class TelemetryLocalStorage {
   private int showHotspotRequestsCount;
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
-  private final Collection<String> reportedRules;
+  private final Collection<String> raisedIssuesRules;
 
   TelemetryLocalStorage() {
     enabled = true;
     installTime = OffsetDateTime.now();
     analyzers = new LinkedHashMap<>();
     notificationsCountersByEventType = new LinkedHashMap<>();
-    reportedRules = new HashSet<>();
+    raisedIssuesRules = new HashSet<>();
   }
 
-  public Collection<String> getReportedRules() {
-    return reportedRules;
+  public Collection<String> getRaisedIssuesRules() {
+    return raisedIssuesRules;
   }
 
   public void addReportedRule(String reportedRule) {
-    this.reportedRules.add(reportedRule);
+    this.raisedIssuesRules.add(reportedRule);
   }
 
   @Deprecated

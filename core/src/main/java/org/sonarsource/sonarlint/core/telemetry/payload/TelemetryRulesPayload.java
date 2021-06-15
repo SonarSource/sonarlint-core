@@ -24,17 +24,17 @@ import java.util.Collection;
 
 public class TelemetryRulesPayload {
 
-  @SerializedName("explicitly_enabled_rules")
-  private final Collection<String> explicitlyEnabledRules;
-  @SerializedName("explicitly_disabled_rules")
-  private final Collection<String> explicitlyDisabledRules;
-  @SerializedName("reported_rules")
-  private final Collection<String> reportedRules;
+  @SerializedName("non_default_enabled")
+  private final Collection<String> nonDefaultEnabled;
+  @SerializedName("default_disabled")
+  private final Collection<String> defaultDisabled;
+  @SerializedName("raised_issues")
+  private final Collection<String> raisedIssues;
 
-  public TelemetryRulesPayload(Collection<String> explicitlyEnabledRules, Collection<String> explicitlyDisabledRules, Collection<String> reportedRules) {
-    this.explicitlyEnabledRules = explicitlyEnabledRules;
-    this.explicitlyDisabledRules = explicitlyDisabledRules;
-    this.reportedRules = reportedRules;
+  public TelemetryRulesPayload(Collection<String> nonDefaultEnabled, Collection<String> defaultDisabled, Collection<String> raisedIssues) {
+    this.nonDefaultEnabled = nonDefaultEnabled;
+    this.defaultDisabled = defaultDisabled;
+    this.raisedIssues = raisedIssues;
   }
 
 }

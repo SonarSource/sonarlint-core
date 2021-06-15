@@ -78,12 +78,12 @@ public class TelemetryManagerTest {
     }
 
     @Override
-    public Collection<String> getExplicitlyEnabledRules() {
+    public Collection<String> getNonDefaultEnabledRules() {
       return null;
     }
 
     @Override
-    public Collection<String> getExplicitlyDisabledRules() {
+    public Collection<String> getDefaultDisabledRules() {
       return null;
     }
 
@@ -384,8 +384,8 @@ public class TelemetryManagerTest {
     manager.addReportedRule("reportedRule1");
 
     TelemetryLocalStorage reloaded = storage.tryRead();
-    assertThat(reloaded.getReportedRules()).hasSize(1);
-    assertThat(reloaded.getReportedRules()).contains("reportedRule1");
+    assertThat(reloaded.getRaisedIssuesRules()).hasSize(1);
+    assertThat(reloaded.getRaisedIssuesRules()).contains("reportedRule1");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
