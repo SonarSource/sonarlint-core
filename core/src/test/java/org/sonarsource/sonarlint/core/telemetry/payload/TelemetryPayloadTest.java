@@ -67,7 +67,7 @@ public class TelemetryPayloadTest {
       + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}},"
       + "\"show_hotspot\":{\"requests_count\":4},"
       + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
-      + "\"rules\":{\"explicitly_enabled_rules\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"explicitly_disabled_rules\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"reported_rules\":[\"reportedRuleKey1\",\"reportedRuleKey2\"]}}");
+      + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"]}}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);

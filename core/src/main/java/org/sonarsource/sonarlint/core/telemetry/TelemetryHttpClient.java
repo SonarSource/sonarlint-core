@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
@@ -87,8 +86,8 @@ public class TelemetryHttpClient {
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
     String os = System.getProperty("os.name");
     String jre = System.getProperty("java.version");
-    TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getExplicitlyEnabledRules(),
-      attributesProvider.getExplicitlyDisabledRules(), data.getReportedRules());
+    TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
+      attributesProvider.getDefaultDisabledRules(), data.getRaisedIssuesRules());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
       analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload, telemetryRulesPayload);
