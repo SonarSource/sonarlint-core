@@ -34,7 +34,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.TestUtils;
@@ -54,8 +53,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginRef
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -180,16 +177,6 @@ public class ConnectedExtraPluginMediumTest {
       tuple("java:NoSonar", 5, inputFile.getPath(), "MAJOR"));
   }
 
-  @SonarLintSide(lifespan = "MODULE")
-  static class FakeModuleFileListener implements ModuleFileListener {
-    private final List<ModuleFileEvent> events = new ArrayList<>();
-
-    @Override
-    public void process(ModuleFileEvent event) {
-      events.add(event);
-    }
-  }
-
   private ClientInputFile prepareJavaInputFile() throws IOException {
     return prepareInputFile("Foo.java",
       "public class Foo {\n"
@@ -200,15 +187,6 @@ public class ConnectedExtraPluginMediumTest {
         + "  }\n"
         + "}",
       false);
-  }
-
-  private ClientInputFile prepareJavaTestInputFile() throws IOException {
-    return prepareInputFile("FooTest.java",
-      "public class FooTest {\n"
-        + "  public void foo() {\n"
-        + "  }\n"
-        + "}",
-      true);
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
