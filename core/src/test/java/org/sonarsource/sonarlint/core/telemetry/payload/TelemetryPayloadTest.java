@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,8 +46,9 @@ public class TelemetryPayloadTest {
     TelemetryNotificationsPayload notifPayload = new TelemetryNotificationsPayload(true, counters);
     ShowHotspotPayload showHotspotPayload = new ShowHotspotPayload(4);
     TaintVulnerabilitiesPayload taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
+    TelemetryRulesPayload rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"), Arrays.asList("reportedRuleKey1", "reportedRuleKey2"));
     TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
-      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload);
+      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload);
     String s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -64,7 +66,8 @@ public class TelemetryPayloadTest {
       + "\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}],"
       + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}},"
       + "\"show_hotspot\":{\"requests_count\":4},"
-      + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7}}");
+      + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
+      + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"]}}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);
