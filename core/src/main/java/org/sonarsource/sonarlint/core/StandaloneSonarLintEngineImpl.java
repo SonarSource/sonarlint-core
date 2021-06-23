@@ -64,7 +64,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
-    this.globalContainer = StandaloneGlobalContainer.create(globalConfig);
+    this.globalContainer = new StandaloneGlobalContainer(globalConfig);
     try {
       globalContainer.startComponents();
     } catch (RuntimeException e) {

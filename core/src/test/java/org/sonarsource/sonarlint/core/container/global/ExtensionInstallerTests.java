@@ -56,8 +56,9 @@ class ExtensionInstallerTests {
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
   private static final Configuration CONFIG = new MapSettings().asConfig();
-  private static final Version sonarLintPluginApiVersion = Version.create(5, 4, 0);
-  private static final SonarLintRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0), sonarLintPluginApiVersion);
+  private static final Version PLUGIN_API_VERSION = Version.create(5, 4, 0);
+  private static final long FAKE_PID = 123L;
+  private static final SonarLintRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0), PLUGIN_API_VERSION, FAKE_PID);
   private ExtensionInstaller underTest;
   private PluginRepository pluginRepository;
   private ComponentContainer container;
@@ -250,7 +251,7 @@ class ExtensionInstallerTests {
   }
 
   @Test
-  void provide_sonar_lint_context_for_plugin_definition() {
+  void provide_sonarlint_context_for_plugin_definition() {
     PluginInfo plugin = new PluginInfo("plugin");
     plugin.setSonarLintSupported(true);
     plugin.setEmbedded(false);
@@ -261,7 +262,8 @@ class ExtensionInstallerTests {
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
-    assertThat(pluginInstance.sonarLintPluginApiVersion).isEqualTo(sonarLintPluginApiVersion);
+    assertThat(pluginInstance.sonarLintPluginApiVersion).isEqualTo(PLUGIN_API_VERSION);
+    assertThat(pluginInstance.clientPid).isEqualTo(FAKE_PID);
   }
 
   private static class FakePlugin implements Plugin {
@@ -286,11 +288,13 @@ class ExtensionInstallerTests {
 
   private static class PluginStoringSonarLintPluginApiVersion implements Plugin {
     Version sonarLintPluginApiVersion;
+    long clientPid;
 
     @Override
     public void define(Context context) {
       if (context.getRuntime() instanceof SonarLintRuntime) {
         sonarLintPluginApiVersion = ((SonarLintRuntime) context.getRuntime()).getSonarLintPluginApiVersion();
+        clientPid = ((SonarLintRuntime) context.getRuntime()).getClientPid();
       }
     }
 

@@ -65,11 +65,10 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = Loggers.get(StorageContainer.class);
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat();
+  private final ConnectedGlobalConfiguration globalConfig;
 
-  public static StorageContainer create(ConnectedGlobalConfiguration globalConfig) {
-    StorageContainer container = new StorageContainer();
-    container.add(globalConfig);
-    return container;
+  public StorageContainer(ConnectedGlobalConfiguration globalConfig) {
+    this.globalConfig = globalConfig;
   }
 
   private GlobalExtensionContainer globalExtensionContainer;
@@ -81,6 +80,7 @@ public class StorageContainer extends ComponentContainer {
     Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
     Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
     add(
+      globalConfig,
       StorageContainerHandler.class,
       PartialUpdaterFactory.class,
 
@@ -121,7 +121,7 @@ public class StorageContainer extends ComponentContainer {
       new StorageQProfilesProvider(),
       new SonarLintRulesProvider(),
       new SonarQubeVersion(sonarPluginApiVersion),
-      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion),
+      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
       System2.INSTANCE);
   }
 

@@ -31,8 +31,10 @@ public class SonarLintRuntimeImpl implements SonarLintRuntime {
 
   private final Version sonarPluginApiVersion;
   private final Version sonarLintPluginApiVersion;
+  private final long clientPid;
 
-  public SonarLintRuntimeImpl(Version sonarPluginApiVersion, Version sonarLintPluginApiVersion) {
+  public SonarLintRuntimeImpl(Version sonarPluginApiVersion, Version sonarLintPluginApiVersion, long clientPid) {
+    this.clientPid = clientPid;
     this.sonarPluginApiVersion = requireNonNull(sonarPluginApiVersion);
     this.sonarLintPluginApiVersion = sonarLintPluginApiVersion;
   }
@@ -61,4 +63,10 @@ public class SonarLintRuntimeImpl implements SonarLintRuntime {
   public SonarEdition getEdition() {
     throw new UnsupportedOperationException("Can only be called in SonarQube");
   }
+
+  @Override
+  public long getClientPid() {
+    return clientPid;
+  }
+
 }

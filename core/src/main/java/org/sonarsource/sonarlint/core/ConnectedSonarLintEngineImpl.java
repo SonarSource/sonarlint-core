@@ -116,7 +116,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
-    storageContainer = StorageContainer.create(globalConfig);
+    storageContainer = new StorageContainer(globalConfig);
     try {
       storageContainer.startComponents();
       if (getHandler().getGlobalStorageStatus() == null) {
