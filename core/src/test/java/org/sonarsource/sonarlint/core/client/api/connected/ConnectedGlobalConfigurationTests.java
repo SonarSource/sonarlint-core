@@ -46,6 +46,7 @@ class ConnectedGlobalConfigurationTests {
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
     assertThat(config.getEmbeddedPluginUrlsByKey()).isEmpty();
+    assertThat(config.getClientPid()).isZero();
   }
 
   @Test
@@ -114,5 +115,11 @@ class ConnectedGlobalConfigurationTests {
     } catch (Exception e) {
       assertThat(e).hasMessage("'" + serverId + "' is not a valid connection ID");
     }
+  }
+
+  @Test
+  void providePid() {
+    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder().setClientPid(123).build();
+    assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

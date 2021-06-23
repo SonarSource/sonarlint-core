@@ -69,12 +69,10 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private StandaloneActiveRules standaloneActiveRules;
   private GlobalExtensionContainer globalExtensionContainer;
   private ModuleRegistry moduleRegistry;
+  private final StandaloneGlobalConfiguration globalConfig;
 
-  public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
-    StandaloneGlobalContainer container = new StandaloneGlobalContainer();
-    container.add(globalConfig);
-    container.add(new StandalonePluginUrls(globalConfig.getPluginUrls()));
-    return container;
+  public StandaloneGlobalContainer(StandaloneGlobalConfiguration globalConfig) {
+    this.globalConfig = globalConfig;
   }
 
   @Override
@@ -83,6 +81,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
 
     add(
+      globalConfig,
+      new StandalonePluginUrls(globalConfig.getPluginUrls()),
       StandalonePluginIndex.class,
       PluginRepository.class,
       PluginVersionChecker.class,
@@ -95,7 +95,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
       new SonarQubeVersion(sonarPluginApiVersion),
-      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion),
+      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
 
       new GlobalTempFolderProvider(),
       UriReader.class,

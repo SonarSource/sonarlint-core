@@ -32,7 +32,7 @@ import javax.annotation.concurrent.Immutable;
 
 /**
  * To use SonarLint in connected mode please provide a server id that will identify the storage.
- * To use in standalone mode please provide list of plugin URLs.  
+ * To use in standalone mode please provide list of plugin URLs.
  *
  */
 @Immutable
@@ -48,6 +48,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
   private final ModulesProvider modulesProvider;
+  private final long clientPid;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
@@ -58,6 +59,7 @@ public abstract class AbstractGlobalConfiguration {
     this.nodeJsPath = builder.nodeJsPath;
     this.nodeJsVersion = builder.nodeJsVersion;
     this.modulesProvider = builder.modulesProvider;
+    this.clientPid = builder.clientPid;
   }
 
   public Map<String, String> extraProperties() {
@@ -95,15 +97,20 @@ public abstract class AbstractGlobalConfiguration {
     return nodeJsVersion;
   }
 
+  public long getClientPid() {
+    return clientPid;
+  }
+
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
     private LogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
-    private EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
+    private final EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private Version nodeJsVersion;
     private ModulesProvider modulesProvider;
+    private long clientPid;
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
@@ -161,6 +168,11 @@ public abstract class AbstractGlobalConfiguration {
 
     public G setModulesProvider(ModulesProvider modulesProvider) {
       this.modulesProvider = modulesProvider;
+      return (G) this;
+    }
+
+    public G setClientPid(long clientPid) {
+      this.clientPid = clientPid;
       return (G) this;
     }
   }
