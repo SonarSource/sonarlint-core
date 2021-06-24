@@ -69,7 +69,13 @@ public class StorageReader {
   }
 
   public Sonarlint.Rules readRules() {
-    return ProtobufUtil.readFile(storagePaths.getRulesPath(), Sonarlint.Rules.parser());
+    Path rulesPath = storagePaths.getRulesPath();
+    if (Files.exists(rulesPath)) {
+      return ProtobufUtil.readFile(rulesPath, Sonarlint.Rules.parser());
+    } else {
+      LOG.info("Unable to find rules in the SonarLint storage. You should update the storage.");
+      return Sonarlint.Rules.newBuilder().build();
+    }
   }
 
   public Sonarlint.ActiveRules readActiveRules(String qProfileKey) {
