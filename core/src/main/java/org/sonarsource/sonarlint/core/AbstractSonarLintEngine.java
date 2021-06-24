@@ -82,11 +82,22 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
       moduleContainer = getModuleRegistry().createContainer(new ModuleInfo(moduleKey, new AnalysisScopeFileSystem(configuration.inputFiles())));
       deleteModuleAfterAnalysis = true;
     }
+    Throwable originalException = null;
     try {
       return consumer.apply(moduleContainer);
+    } catch (Throwable e) {
+      originalException = e;
+      throw e;
     } finally {
-      if (deleteModuleAfterAnalysis) {
-        moduleContainer.stopComponents();
+      try {
+        if (deleteModuleAfterAnalysis) {
+          moduleContainer.stopComponents();
+        }
+      } catch (Exception e) {
+        if (originalException != null) {
+          e.addSuppressed(originalException);
+        }
+        throw e;
       }
     }
   }
