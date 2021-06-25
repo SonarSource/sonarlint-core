@@ -101,21 +101,21 @@ class ExtensionInstallerTests {
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class));
 
-    underTest.install(container, ContainerLifespan.ENGINE);
+    underTest.install(container, ContainerLifespan.INSTANCE);
 
     verify(container).addExtension(pluginInfo, FakeSonarLintMultipleAnalysisLifespanComponent.class);
   }
 
   @Test
-  void install_sonarlintside_extensions_with_engine_lifespan_in_global_container_for_compatible_plugins() {
+  void install_sonarlintside_extensions_with_instance_lifespan_in_global_container_for_compatible_plugins() {
     PluginInfo pluginInfo = new PluginInfo("foo");
     pluginInfo.setSonarLintSupported(true);
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
-    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintEngineLifespanComponent.class));
+    when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintInstanceLifespanComponent.class));
 
-    underTest.install(container, ContainerLifespan.ENGINE);
+    underTest.install(container, ContainerLifespan.INSTANCE);
 
-    verify(container).addExtension(pluginInfo, FakeSonarLintEngineLifespanComponent.class);
+    verify(container).addExtension(pluginInfo, FakeSonarLintInstanceLifespanComponent.class);
   }
 
   @Test
@@ -137,7 +137,7 @@ class ExtensionInstallerTests {
     when(pluginRepository.getActivePluginInfos()).thenReturn(singletonList(pluginInfo));
     when(pluginRepository.getPluginInstance("foo")).thenReturn(new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class));
 
-    underTest.install(container, ContainerLifespan.ENGINE);
+    underTest.install(container, ContainerLifespan.INSTANCE);
 
     verifyNoInteractions(container);
   }
@@ -316,8 +316,8 @@ class ExtensionInstallerTests {
   private static class FakeSonarLintModuleLifespanComponent {
   }
 
-  @SonarLintSide(lifespan = "ENGINE")
-  private static class FakeSonarLintEngineLifespanComponent {
+  @SonarLintSide(lifespan = "INSTANCE")
+  private static class FakeSonarLintInstanceLifespanComponent {
   }
 
   private static class FakeSensor implements Sensor {

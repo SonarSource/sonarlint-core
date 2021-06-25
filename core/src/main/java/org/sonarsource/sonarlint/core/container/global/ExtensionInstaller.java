@@ -78,7 +78,7 @@ public class ExtensionInstaller {
   private void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context, ContainerLifespan lifespan) {
     Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
     boolean isExplicitlySonarLintCompatible = isSlPluginOrNull != null && isSlPluginOrNull;
-    if (lifespan.equals(ContainerLifespan.ENGINE) && !isExplicitlySonarLintCompatible) {
+    if (lifespan.equals(ContainerLifespan.INSTANCE) && !isExplicitlySonarLintCompatible) {
       // Don't support global extensions for old plugins
       return;
     }
@@ -105,11 +105,11 @@ public class ExtensionInstaller {
   }
 
   private static ContainerLifespan getSonarLintSideLifespan(Object extension) {
-    SonarLintSide sonarPluginLegacyAnnotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
-    if (sonarPluginLegacyAnnotation != null) {
-      String lifespan = sonarPluginLegacyAnnotation.lifespan();
-      if (SonarLintSide.MULTIPLE_ANALYSES.equals(lifespan) || "ENGINE".equals(lifespan)) {
-        return ContainerLifespan.ENGINE;
+    SonarLintSide annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
+    if (annotation != null) {
+      String lifespan = annotation.lifespan();
+      if (SonarLintSide.MULTIPLE_ANALYSES.equals(lifespan) || "INSTANCE".equals(lifespan)) {
+        return ContainerLifespan.INSTANCE;
       }
       if ("MODULE".equals(lifespan)) {
         return ContainerLifespan.MODULE;
