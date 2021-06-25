@@ -121,6 +121,7 @@ class TelemetryLocalStorage {
     showHotspotRequestsCount = 0;
     taintVulnerabilitiesInvestigatedLocallyCount = 0;
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
+    raisedIssuesRules.clear();
   }
 
   long numUseDays() {

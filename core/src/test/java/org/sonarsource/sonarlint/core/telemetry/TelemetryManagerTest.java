@@ -366,6 +366,7 @@ public class TelemetryManagerTest {
     manager.devNotificationsClicked(FOO_EVENT);
     manager.taintVulnerabilitiesInvestigatedLocally();
     manager.taintVulnerabilitiesInvestigatedRemotely();
+    manager.addReportedRule("ruleKey");
 
     manager.uploadLazily();
 
@@ -375,6 +376,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.notifications()).isEmpty();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
+    assertThat(reloaded.getRaisedIssuesRules()).isEmpty();
   }
 
   @Test
