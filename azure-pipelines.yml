@@ -180,36 +180,6 @@ stages:
           javaHomeOption: 'JDKVersion'
           jdkVersionOption: '1.11'
           mavenOptions: $(MAVEN_OPTS)
-    - job: sonarqube
-      displayName: SonarQube analysis on Next
-      variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-      steps:
-      - task: Cache@2
-        inputs:
-          key: 'sq | maven | "$(Agent.OS)" | **/pom.xml, !its/**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
-      - task: DownloadSecureFile@1
-        displayName: 'Download Maven settings'
-        name: mavenSettings
-        inputs:
-          secureFile: 'maven-settings.xml'
-      - template: prepare-sq-analysis-steps.yml
-      - task: Maven@3
-        env:
-          ARTIFACTORY_PRIVATE_READER_USERNAME: $(ARTIFACTORY_PRIVATE_READER_USERNAME)
-          ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
-        inputs:
-          goals: 'verify'
-          options: -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private -Pcoverage
-          publishJUnitResults: false
-          javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '1.11'
-          mavenOptions: $(MAVEN_OPTS)
-          sonarQubeRunAnalysis: true
-          sqMavenPluginVersionChoice: 'latest'
 - template: stage-with-burgr-notifications.yml@commonTemplates
   parameters:
     burgrName: 'qa'
