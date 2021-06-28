@@ -25,13 +25,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sonar.api.batch.rule.ActiveRule;
+import org.sonar.api.batch.rule.ActiveRules;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +50,8 @@ public class StorageAnalyzerTest {
   private ProjectStorageStatusReader moduleReader;
   @Mock
   private ConnectedAnalysisConfiguration config;
+  @Mock
+  private AnalysisContainer analysisContainer;
 
   private StorageAnalyzer analyzer;
 
@@ -52,7 +59,7 @@ public class StorageAnalyzerTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     when(config.projectKey()).thenReturn("module1");
-    analyzer = new StorageAnalyzer(globalReader, moduleReader);
+    analyzer = new StorageAnalyzer(globalReader, moduleReader, analysisContainer);
   }
 
   @Test
@@ -84,6 +91,19 @@ public class StorageAnalyzerTest {
     exception.expect(StorageException.class);
     exception.expectMessage("Stored data for project 'module1' is stale");
     analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
+  }
+
+  @Test
+  public void getRuleFromAnalysisContainer() {
+    String ruleKey = "rule:Key";
+    ActiveRules activeRules = mock(ActiveRules.class);
+    ActiveRule activeRuleMock = mock(ActiveRule.class);
+    when(analysisContainer.getComponentByType(ActiveRules.class)).thenReturn(activeRules);
+    when(activeRules.find(RuleKey.parse(ruleKey))).thenReturn(activeRuleMock);
+
+    ActiveRule rule = analyzer.getRule(ruleKey);
+
+    assertThat(rule).isEqualTo(activeRuleMock);
   }
 
 }

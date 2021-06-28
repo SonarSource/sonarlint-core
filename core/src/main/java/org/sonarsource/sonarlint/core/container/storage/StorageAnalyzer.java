@@ -46,6 +46,12 @@ public class StorageAnalyzer {
     this.moduleUpdateStatusReader = moduleUpdateStatusReader;
   }
 
+  StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ProjectStorageStatusReader moduleUpdateStatusReader, AnalysisContainer analysisContainer) {
+    this.globalUpdateStatusReader = globalUpdateStatusReader;
+    this.moduleUpdateStatusReader = moduleUpdateStatusReader;
+    this.analysisContainer = analysisContainer;
+  }
+
   private void checkStatus(@Nullable String projectKey) {
     GlobalStorageStatus updateStatus = globalUpdateStatusReader.get();
     if (updateStatus == null) {
