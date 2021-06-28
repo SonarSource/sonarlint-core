@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import javax.annotation.Nullable;
+import org.sonar.api.batch.rule.ActiveRule;
+import org.sonar.api.batch.rule.ActiveRules;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -36,6 +39,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 public class StorageAnalyzer {
   private final ProjectStorageStatusReader moduleUpdateStatusReader;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
+  private AnalysisContainer analysisContainer;
 
   public StorageAnalyzer(GlobalUpdateStatusReader globalUpdateStatusReader, ProjectStorageStatusReader moduleUpdateStatusReader) {
     this.globalUpdateStatusReader = globalUpdateStatusReader;
@@ -61,7 +65,7 @@ public class StorageAnalyzer {
   public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
     checkStatus(configuration.projectKey());
 
-    AnalysisContainer analysisContainer = new AnalysisContainer(parent, progress);
+    analysisContainer = new AnalysisContainer(parent, progress);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
 
     analysisContainer.add(
@@ -74,5 +78,10 @@ public class StorageAnalyzer {
 
     analysisContainer.execute();
     return defaultAnalysisResult;
+  }
+
+  public ActiveRule getRule(String ruleKey) {
+    ActiveRules activeRules = analysisContainer.getComponentByType(ActiveRules.class);
+    return activeRules.find(RuleKey.parse(ruleKey));
   }
 }

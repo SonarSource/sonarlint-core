@@ -85,12 +85,7 @@ public class StorageContainerHandler {
 
   public Sonarlint.Rules.Rule readRuleFromStorage(String ruleKeyStr) {
     Sonarlint.Rules rulesFromStorage = storageReader.readRules();
-    RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
-    Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
-    if (rule == null) {
-      throw new IllegalArgumentException("Unable to find rule with key " + ruleKey);
-    }
-    return rule;
+    return rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
   }
 
   public ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
@@ -107,7 +102,7 @@ public class StorageContainerHandler {
         return activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
       }
     }
-    throw new IllegalArgumentException("Unable to find active rule with key " + ruleKeyStr);
+    return null;
   }
 
   public GlobalStorageStatus getGlobalStorageStatus() {

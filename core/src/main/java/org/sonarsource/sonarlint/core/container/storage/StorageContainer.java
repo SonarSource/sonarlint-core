@@ -152,8 +152,8 @@ public class StorageContainer extends ComponentContainer {
 
   private SonarLintRules merge(SonarLintRules rulesFromPlugins, SonarLintRules rulesFromStorage) {
     SonarLintRules merged = new SonarLintRules();
-    rulesFromPlugins.findAll().forEach(merged::add);
     rulesFromStorage.findAll().forEach(merged::add);
+    rulesFromPlugins.findAll().forEach(merged::add);
     return merged;
   }
 
@@ -204,29 +204,41 @@ public class StorageContainer extends ComponentContainer {
 
   private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
     Sonarlint.Rules.Rule ruleFromStorage = getHandler().readRuleFromStorage(ruleKeyStr);
-    String type = StringUtils.isEmpty(ruleFromStorage.getType()) ? null : ruleFromStorage.getType();
+    StandaloneRule ruleFromPlugin = (StandaloneRule) rulesFromPlugins.find(RuleKey.parse(ruleKeyStr));
+    if (ruleFromStorage != null) {
+      String type = StringUtils.isEmpty(ruleFromStorage.getType()) ? null : ruleFromStorage.getType();
 
-    Language language = Language.forKey(ruleFromStorage.getLang())
-      .orElseThrow(() -> new IllegalArgumentException("Unknown language for rule " + ruleKeyStr + ": " + ruleFromStorage.getLang()));
-    ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
-    if (config.getEmbeddedPluginUrlsByKey().containsKey(language.getPluginKey())) {
-      // Favor loading rule details from the embedded plugin
-      StandaloneRule ruleFromPlugin = (StandaloneRule) rulesFromPlugins.find(RuleKey.parse(ruleKeyStr));
-      if (ruleFromPlugin != null) {
+      Language language = Language.forKey(ruleFromStorage.getLang())
+        .orElseThrow(() -> new IllegalArgumentException("Unknown language for rule " + ruleKeyStr + ": " + ruleFromStorage.getLang()));
+      ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
+      if (config.getEmbeddedPluginUrlsByKey().containsKey(language.getPluginKey()) && ruleFromPlugin != null) {
+        // Favor loading rule details from the embedded plugin
         return new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.name(), ruleFromPlugin.description(), overridenSeverity != null ? overridenSeverity : ruleFromPlugin.severity(),
           ruleFromPlugin.type().toString(), language,
           ruleFromStorage.getHtmlNote());
       }
-    }
 
-    return new DefaultRuleDetails(ruleKeyStr, ruleFromStorage.getName(), ruleFromStorage.getHtmlDesc(),
-      overridenSeverity != null ? overridenSeverity : ruleFromStorage.getSeverity(), type, language,
-      ruleFromStorage.getHtmlNote());
+      return new DefaultRuleDetails(ruleKeyStr, ruleFromStorage.getName(), ruleFromStorage.getHtmlDesc(),
+        overridenSeverity != null ? overridenSeverity : ruleFromStorage.getSeverity(), type, language,
+        ruleFromStorage.getHtmlNote());
+    } else {
+      return new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.getName(), ruleFromPlugin.getHtmlDescription(),
+        overridenSeverity != null ? overridenSeverity : ruleFromPlugin.getSeverity(), ruleFromPlugin.getType(), ruleFromPlugin.getLanguage(),
+        ruleFromPlugin.getHtmlDescription());
+    }
   }
 
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
     ActiveRule readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
-    return getRuleDetailsWithSeverity(ruleKeyStr, readActiveRuleFromStorage.getSeverity());
+    String severity;
+    if (readActiveRuleFromStorage != null) {
+      severity = readActiveRuleFromStorage.getSeverity();
+    } else {
+      StorageAnalyzer storageAnalyzer = getComponentByType(StorageAnalyzer.class);
+      org.sonar.api.batch.rule.ActiveRule rule = storageAnalyzer.getRule(ruleKeyStr);
+      severity = rule.severity();
+    }
+    return getRuleDetailsWithSeverity(ruleKeyStr, severity);
   }
 
   public static class MergedSonarLintRulesProvider extends ProviderAdapter {
