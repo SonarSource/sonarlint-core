@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayl
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryRulesPayload;
 
 public class TelemetryHttpClient {
 
@@ -85,9 +86,11 @@ public class TelemetryHttpClient {
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
     String os = System.getProperty("os.name");
     String jre = System.getProperty("java.version");
+    TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
+      attributesProvider.getDefaultDisabledRules(), data.getRaisedIssuesRules());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
-      analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload);
+      analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload, telemetryRulesPayload);
   }
 
   private void sendDelete(TelemetryPayload payload) {

@@ -23,6 +23,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
@@ -43,12 +45,22 @@ class TelemetryLocalStorage {
   private int showHotspotRequestsCount;
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
+  private final Collection<String> raisedIssuesRules;
 
   TelemetryLocalStorage() {
     enabled = true;
     installTime = OffsetDateTime.now();
     analyzers = new LinkedHashMap<>();
     notificationsCountersByEventType = new LinkedHashMap<>();
+    raisedIssuesRules = new HashSet<>();
+  }
+
+  public Collection<String> getRaisedIssuesRules() {
+    return raisedIssuesRules;
+  }
+
+  public void addReportedRule(String reportedRule) {
+    this.raisedIssuesRules.add(reportedRule);
   }
 
   @Deprecated
@@ -109,6 +121,7 @@ class TelemetryLocalStorage {
     showHotspotRequestsCount = 0;
     taintVulnerabilitiesInvestigatedLocallyCount = 0;
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
+    raisedIssuesRules.clear();
   }
 
   long numUseDays() {
