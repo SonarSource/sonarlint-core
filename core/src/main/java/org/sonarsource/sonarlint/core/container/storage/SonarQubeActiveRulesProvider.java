@@ -95,11 +95,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
       .stream().anyMatch(extraPluginKey -> ruleLanguage.getLanguageKey().equals(extraPluginKey));
   }
 
-  public ActiveRules getActiveRules() {
-    return activeRules;
-  }
-
-  public static org.sonar.api.batch.rule.ActiveRule createNewActiveRule(ActiveRule activeRule, Sonarlint.Rules storageRules) {
+  private static org.sonar.api.batch.rule.ActiveRule createNewActiveRule(ActiveRule activeRule, Sonarlint.Rules storageRules) {
     RuleKey ruleKey = RuleKey.of(activeRule.getRepo(), activeRule.getKey());
     Sonarlint.Rules.Rule storageRule;
     try {
