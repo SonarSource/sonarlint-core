@@ -156,6 +156,7 @@ public class ConnectedExtraPluginMediumTest {
   @Test
   public void readRuleDescriptionFromExtraPlugin() {
     assertThat(sonarlint.getRuleDetails("php:S3334").getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails("php:S3334", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
   }
 
 

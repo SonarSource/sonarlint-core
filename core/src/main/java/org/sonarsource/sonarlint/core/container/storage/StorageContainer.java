@@ -230,13 +230,10 @@ public class StorageContainer extends ComponentContainer {
 
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
     ActiveRule readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
-    String severity;
+    // for extra plugins there will no be rule in the storage
+    String severity = null;
     if (readActiveRuleFromStorage != null) {
       severity = readActiveRuleFromStorage.getSeverity();
-    } else {
-      StorageAnalyzer storageAnalyzer = getComponentByType(StorageAnalyzer.class);
-      org.sonar.api.batch.rule.ActiveRule rule = storageAnalyzer.getRule(ruleKeyStr);
-      severity = rule.severity();
     }
     return getRuleDetailsWithSeverity(ruleKeyStr, severity);
   }

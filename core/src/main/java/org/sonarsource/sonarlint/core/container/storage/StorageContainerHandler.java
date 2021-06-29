@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonar.api.rule.RuleKey;
@@ -88,6 +89,7 @@ public class StorageContainerHandler {
     return rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
   }
 
+  @CheckForNull
   public ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
     QProfiles qProfiles = storageReader.readQProfiles();
     Map<String, String> qProfilesByLanguage;
