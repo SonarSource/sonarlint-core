@@ -110,8 +110,9 @@ public class ConnectedExtraPluginMediumTest {
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
-      .addEnabledLanguages(Language.JAVA, Language.JS)
+      .addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP)
       .addExtraPlugin(Language.JAVA.getPluginKey(), PluginLocator.getJavaPluginUrl())
+      .addExtraPlugin(Language.PHP.getPluginKey(), PluginLocator.getPhpPluginUrl())
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
@@ -153,7 +154,14 @@ public class ConnectedExtraPluginMediumTest {
   }
 
   @Test
-  public void simpleJavaBinded() throws Exception {
+  public void readRuleDescriptionFromExtraPlugin() {
+    assertThat(sonarlint.getRuleDetails("php:S3334").getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails("php:S3334", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
+  }
+
+
+  @Test
+  public void analyzeFileWithExtraPlugin() throws Exception {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();

@@ -386,8 +386,7 @@ public class TelemetryManagerTest {
     manager.addReportedRule("reportedRule1");
 
     TelemetryLocalStorage reloaded = storage.tryRead();
-    assertThat(reloaded.getRaisedIssuesRules()).hasSize(1);
-    assertThat(reloaded.getRaisedIssuesRules()).contains("reportedRule1");
+    assertThat(reloaded.getRaisedIssuesRules()).containsOnly("reportedRule1");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
