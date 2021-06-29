@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -366,7 +367,7 @@ public class TelemetryManagerTest {
     manager.devNotificationsClicked(FOO_EVENT);
     manager.taintVulnerabilitiesInvestigatedLocally();
     manager.taintVulnerabilitiesInvestigatedRemotely();
-    manager.addReportedRule("ruleKey");
+    manager.addReportedRules(Arrays.asList("ruleKey1", "ruleKey2"));
 
     manager.uploadLazily();
 
@@ -383,10 +384,11 @@ public class TelemetryManagerTest {
   public void accumulate_rules_activation_settings_and_reported_rules() {
     createAndSaveSampleData(storage);
 
-    manager.addReportedRule("reportedRule1");
+    manager.addReportedRules(Arrays.asList("ruleKey1", "ruleKey1", "ruleKey2"));
 
     TelemetryLocalStorage reloaded = storage.tryRead();
-    assertThat(reloaded.getRaisedIssuesRules()).containsOnly("reportedRule1");
+    assertThat(reloaded.getRaisedIssuesRules()).hasSize(2);
+    assertThat(reloaded.getRaisedIssuesRules()).contains("ruleKey1", "ruleKey2");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

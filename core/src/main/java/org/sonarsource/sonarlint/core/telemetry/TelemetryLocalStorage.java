@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -45,7 +46,7 @@ class TelemetryLocalStorage {
   private int showHotspotRequestsCount;
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
-  private final Collection<String> raisedIssuesRules;
+  private final Set<String> raisedIssuesRules;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -59,8 +60,8 @@ class TelemetryLocalStorage {
     return raisedIssuesRules;
   }
 
-  public void addReportedRule(String reportedRule) {
-    this.raisedIssuesRules.add(reportedRule);
+  public void addReportedRules(Collection<String> reportedRule) {
+    this.raisedIssuesRules.addAll(reportedRule);
   }
 
   @Deprecated
