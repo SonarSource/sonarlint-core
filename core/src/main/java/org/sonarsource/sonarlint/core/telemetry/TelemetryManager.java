@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 
@@ -120,7 +120,7 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
   }
 
-  public void addReportedRules(Collection<String> ruleKeys) {
+  public void addReportedRules(Set<String> ruleKeys) {
     storage.tryUpdateAtomically(s -> s.addReportedRules(ruleKeys));
   }
 
