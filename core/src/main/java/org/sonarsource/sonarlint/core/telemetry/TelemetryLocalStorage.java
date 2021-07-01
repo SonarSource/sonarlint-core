@@ -60,8 +60,8 @@ class TelemetryLocalStorage {
     return raisedIssuesRules;
   }
 
-  public void addReportedRules(Set<String> reportedRule) {
-    this.raisedIssuesRules.addAll(reportedRule);
+  public void addReportedRules(Set<String> reportedRuleKeys) {
+    this.raisedIssuesRules.addAll(reportedRuleKeys);
   }
 
   @Deprecated
