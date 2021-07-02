@@ -29,6 +29,7 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -73,6 +74,16 @@ public class ServerApiHelper {
     return response;
   }
 
+  public CompletableFuture<HttpClient.Response> getAsync(String path) {
+    return rawGetAsync(path)
+      .thenApply(response -> {
+        if (!response.isSuccessful()) {
+          throw handleError(response);
+        }
+        return response;
+      });
+  }
+
   /**
    * Execute GET and don't check response
    */
@@ -86,6 +97,17 @@ public class ServerApiHelper {
       LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
     }
     return response;
+  }
+
+  public CompletableFuture<HttpClient.Response> rawGetAsync(String relativePath) {
+    long startTime = System2.INSTANCE.now();
+    String url = buildEndpointUrl(relativePath);
+
+    return client.getAsync(url)
+      .whenComplete((response, error) -> {
+        long duration = System2.INSTANCE.now() - startTime;
+        LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
+      });
   }
 
   private String buildEndpointUrl(String relativePath) {
@@ -202,6 +224,22 @@ public class ServerApiHelper {
     }
     durationConsummer.accept(System2.INSTANCE.now() - startTime);
     return result;
+  }
+
+  public static <G> CompletableFuture<G> processTimed(CompletableFuture<HttpClient.Response> futureResponse, IOFunction<HttpClient.Response, G> responseProcessor,
+    LongConsumer durationConsumer) {
+    long startTime = System2.INSTANCE.now();
+    return futureResponse.thenApply(response -> {
+      try {
+        G processed = responseProcessor.apply(response);
+        durationConsumer.accept(System2.INSTANCE.now() - startTime);
+        return processed;
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);
+      } finally {
+        response.close();
+      }
+    });
   }
 
   public static void consumeTimed(Supplier<HttpClient.Response> responseSupplier, IOConsummer<HttpClient.Response> responseConsumer,
