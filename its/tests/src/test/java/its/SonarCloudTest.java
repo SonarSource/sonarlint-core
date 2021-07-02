@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
@@ -575,15 +576,15 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void testConnection() {
+  public void testConnection() throws ExecutionException, InterruptedException {
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().success())
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
         .isTrue();
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().success())
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
         .isTrue();
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().success())
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
         .isFalse();
   }
 

@@ -20,8 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
+import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -37,25 +36,22 @@ public class ConnectionValidator {
     this.helper = helper;
   }
 
-  public ValidationResult validateConnection() {
+  public CompletableFuture<ValidationResult> validateConnection() {
     ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(helper);
     AuthenticationChecker authChecker = new AuthenticationChecker(helper);
-    try {
-      serverChecker.checkVersionAndStatus();
-      ValidationResult validateCredentials = authChecker.validateCredentials();
-      Optional<String> organizationKey = helper.getOrganizationKey();
-      if (validateCredentials.success() && organizationKey.isPresent()) {
-        Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(), new ProgressWrapper(null));
-        if (!organization.isPresent()) {
-          return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
+    return serverChecker.checkVersionAndStatusAsync()
+      .thenApply(check -> {
+        ValidationResult validateCredentials = authChecker.validateCredentials();
+        Optional<String> organizationKey = helper.getOrganizationKey();
+        if (validateCredentials.success() && organizationKey.isPresent()) {
+          Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(), new ProgressWrapper(null));
+          if (!organization.isPresent()) {
+            return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
+          }
         }
-      }
-      return validateCredentials;
-    } catch (UnsupportedServerException e) {
-      return new DefaultValidationResult(false, e.getMessage());
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
+        return validateCredentials;
+      })
+      .exceptionally(e -> new DefaultValidationResult(false, e.getCause().getMessage()));
   }
 
 }

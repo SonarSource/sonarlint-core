@@ -19,15 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class ServerVersionAndStatusCheckerTests {
 
@@ -41,47 +42,52 @@ class ServerVersionAndStatusCheckerTests {
   }
 
   @Test
-  void serverNotReady() {
+  void serverNotReady() throws ExecutionException, InterruptedException {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    ValidationResult validateStatusAndVersion = underTest.validateStatusAndVersion();
+    CompletableFuture<ValidationResult> futureResult = underTest.validateStatusAndVersion();
 
-    assertThat(validateStatusAndVersion.success()).isFalse();
-    assertThat(validateStatusAndVersion.message()).isEqualTo("Server not ready (DOWN)");
+    ValidationResult validationResult = futureResult.get();
+    assertThat(validationResult.success()).isFalse();
+    assertThat(validationResult.message()).isEqualTo("Server not ready (DOWN)");
   }
 
   @Test
   void failWhenServerNotReady() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.checkVersionAndStatus());
-    assertThat(thrown).hasMessage("Server not ready (DOWN)");
+    Throwable throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+
+    assertThat(throwable).hasMessage("Server not ready (DOWN)");
   }
 
   @Test
-  void incompatibleVersion() {
+  void incompatibleVersion() throws ExecutionException, InterruptedException {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    ValidationResult validateStatusAndVersion = underTest.validateStatusAndVersion();
+    CompletableFuture<ValidationResult> futureResult = underTest.validateStatusAndVersion();
 
-    assertThat(validateStatusAndVersion.success()).isFalse();
-    assertThat(validateStatusAndVersion.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
+    ValidationResult validationResult = futureResult.get();
+    assertThat(validationResult.success()).isFalse();
+    assertThat(validationResult.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
 
   @Test
   void failWhenIncompatibleVersion() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    UnsupportedServerException thrown = assertThrows(UnsupportedServerException.class, () -> underTest.checkVersionAndStatus());
-    assertThat(thrown).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
+    Throwable throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+
+    assertThat(throwable).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
 
   @Test
   void responseParsingError() {
     mockServer.addStringResponse("/api/system/status", "bla bla");
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.checkVersionAndStatus());
-    assertThat(thrown).hasMessage("Unable to parse server infos from: bla bla");
+    Throwable throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+
+    assertThat(throwable).hasMessage("Unable to parse server infos from: bla bla");
   }
 
 }

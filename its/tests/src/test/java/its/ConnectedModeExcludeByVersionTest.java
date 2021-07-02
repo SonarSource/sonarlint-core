@@ -24,6 +24,7 @@ import com.sonar.orchestrator.locator.MavenLocation;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Before;
@@ -115,9 +116,9 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
+  public void dontCheckMinimalPluginVersionWhenValidatingConnection() throws ExecutionException, InterruptedException {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
-    ValidationResult result = new ConnectionValidator(new ServerApiHelper(endpointParams(ORCHESTRATOR), sqHttpClient())).validateConnection();
+    ValidationResult result = new ConnectionValidator(new ServerApiHelper(endpointParams(ORCHESTRATOR), sqHttpClient())).validateConnection().get();
     assertThat(result.success()).isTrue();
   }
 

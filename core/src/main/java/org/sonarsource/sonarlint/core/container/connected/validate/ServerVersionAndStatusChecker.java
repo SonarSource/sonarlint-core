@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.gson.Gson;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -40,14 +42,28 @@ public class ServerVersionAndStatusChecker {
     this.serverApiHelper = serverApiHelper;
   }
 
+  public ServerInfos checkVersionAndStatus() {
+    try {
+      return checkVersionAndStatusAsync().get();
+    } catch (InterruptedException e) {
+      throw new IllegalStateException("Cannot check server version and status", e);
+    } catch (ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof RuntimeException) {
+        throw (RuntimeException) cause;
+      }
+      throw new IllegalStateException("Cannot check server version and status", cause);
+    }
+  }
+
   /**
    * Checks SonarQube version against the minimum version supported by the library
    * @return ServerInfos
    * @throws UnsupportedServerException if version &lt; minimum supported version
    * @throws IllegalStateException If server is not ready
    */
-  public ServerInfos checkVersionAndStatus() {
-    return checkVersionAndStatus(MIN_SQ_VERSION);
+  public CompletableFuture<ServerInfos> checkVersionAndStatusAsync() {
+    return checkVersionAndStatusAsync(MIN_SQ_VERSION);
   }
 
   /**
@@ -56,16 +72,18 @@ public class ServerVersionAndStatusChecker {
    * @throws UnsupportedServerException if version &lt; minimum supported version
    * @throws IllegalStateException If server is not ready
    */
-  public ServerInfos checkVersionAndStatus(String minVersion) {
-    ServerInfos serverStatus = fetchServerInfos();
-    if (!"UP".equals(serverStatus.getStatus())) {
-      throw new IllegalStateException(serverNotReady(serverStatus));
-    }
-    Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
-      throw new UnsupportedServerException(unsupportedVersion(serverStatus, minVersion));
-    }
-    return serverStatus;
+  public CompletableFuture<ServerInfos> checkVersionAndStatusAsync(String minVersion) {
+    return fetchServerInfos()
+      .thenApply(serverStatus -> {
+        if (!"UP".equals(serverStatus.getStatus())) {
+          throw new IllegalStateException(serverNotReady(serverStatus));
+        }
+        Version serverVersion = Version.create(serverStatus.getVersion());
+        if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
+          throw new UnsupportedServerException(unsupportedVersion(serverStatus, minVersion));
+        }
+        return serverStatus;
+      });
   }
 
   private static String unsupportedVersion(ServerInfos serverStatus, String minVersion) {
@@ -76,25 +94,27 @@ public class ServerVersionAndStatusChecker {
     return "Server not ready (" + serverStatus.getStatus() + ")";
   }
 
-  public ValidationResult validateStatusAndVersion() {
+  public CompletableFuture<ValidationResult> validateStatusAndVersion() {
     return validateStatusAndVersion(MIN_SQ_VERSION);
   }
 
-  public ValidationResult validateStatusAndVersion(String minVersion) {
-    ServerInfos serverStatus = fetchServerInfos();
-    if (!"UP".equals(serverStatus.getStatus())) {
-      return new DefaultValidationResult(false, serverNotReady(serverStatus));
-    }
-    Version serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
-      return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
-    }
-    return new DefaultValidationResult(true, "Compatible and ready");
+  public CompletableFuture<ValidationResult> validateStatusAndVersion(String minVersion) {
+    return fetchServerInfos()
+      .thenApply(serverStatus -> {
+        if (!"UP".equals(serverStatus.getStatus())) {
+          return new DefaultValidationResult(false, serverNotReady(serverStatus));
+        }
+        Version serverVersion = Version.create(serverStatus.getVersion());
+        if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
+          return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
+        }
+        return new DefaultValidationResult(true, "Compatible and ready");
+      });
   }
 
-  private ServerInfos fetchServerInfos() {
+  private CompletableFuture<ServerInfos> fetchServerInfos() {
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.get("api/system/status"),
+      serverApiHelper.getAsync("api/system/status"),
       response -> {
         String responseStr = response.bodyAsString();
         try {
