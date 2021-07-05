@@ -210,8 +210,8 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command 'where node'...",
-      "Command 'where node' exited with 0",
+      "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
+      "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0",
       "Unable to locate node");
     assertThat(underTest.getNodeJsPath()).isNull();
     assertThat(underTest.getNodeJsVersion()).isNull();
@@ -229,8 +229,8 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command 'where node'...",
-      "Command 'where node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
+      "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
@@ -255,8 +255,8 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command 'where node'...",
-      "Command 'where node' exited with 0\nstdout: "
+      "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
+      "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: "
         + FAKE_NODE_PATH.toString() + "\n" + fake_node_path2
           .toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
@@ -380,7 +380,7 @@ class NodeJsHelperTests {
   }
 
   private void registerWhereAnswer(String... whereOutput) {
-    registeredCommandAnswers.put(c -> c.toString().endsWith("where node"), (stdOut, stdErr) -> {
+    registeredCommandAnswers.put(c -> c.toString().endsWith("C:\\Windows\\System32\\where.exe $PATH:node.exe"), (stdOut, stdErr) -> {
       Stream.of(whereOutput).forEach(l -> stdOut.consumeLine(l));
       return 0;
     });
