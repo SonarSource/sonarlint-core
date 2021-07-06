@@ -20,45 +20,32 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
-import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectListDownloader {
-
-  private static final String PROJECT_SEARCH_URL = "api/components/search.protobuf?qualifiers=TRK";
-  private final ServerApiHelper serverApiHelper;
+  private final ProjectApi projectApi;
 
   public ProjectListDownloader(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+    this.projectApi = new ServerApi(serverApiHelper).project();
   }
 
   public void fetchTo(Path dest, ProgressWrapper progress) {
     ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
     Builder projectBuilder = ProjectList.Project.newBuilder();
-
-    StringBuilder searchUrl = new StringBuilder();
-    searchUrl.append(PROJECT_SEARCH_URL);
-    serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
-    serverApiHelper.getPaginated(searchUrl.toString(),
-      Components.SearchWsResponse::parseFrom,
-      Components.SearchWsResponse::getPaging,
-      Components.SearchWsResponse::getComponentsList,
-      project -> {
-        projectBuilder.clear();
-        projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
-          .setKey(project.getKey())
-          .setName(project.getName())
-          .build());
-      },
-      true,
-      progress);
+    projectApi.getAllProjects(progress).forEach(project -> {
+      projectBuilder.clear();
+      projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
+        .setKey(project.getKey())
+        .setName(project.getName())
+        .build());
+    });
 
     ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
   }
