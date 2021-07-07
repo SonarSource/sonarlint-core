@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchy
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
@@ -57,6 +56,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -94,6 +94,7 @@ class ProjectStorageUpdateExecutorTests {
     Files.createDirectory(tempDir);
 
     mockServer.addResponseFromResource(getQualityProfileUrl(organizationKey), "/update/qualityprofiles_project.pb");
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?component=" + StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH), ValuesWsResponse.newBuilder().build());
 
     ValuesWsResponse response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()
@@ -125,8 +126,8 @@ class ProjectStorageUpdateExecutorTests {
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
-    projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(mockServer.serverApiHelper(organizationKey)),
-      mock(SettingsDownloader.class));
+    ServerApiHelper serverApiHelper = mockServer.serverApiHelper(organizationKey);
+    projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(serverApiHelper), serverApiHelper);
 
     underTest = new ProjectStorageUpdateExecutor(storageReader, storagePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);
   }
