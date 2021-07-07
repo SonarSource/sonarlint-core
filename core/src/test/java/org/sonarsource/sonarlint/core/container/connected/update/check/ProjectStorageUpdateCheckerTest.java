@@ -56,12 +56,12 @@ public class ProjectStorageUpdateCheckerTest {
     projectConfigurationDownloader = mock(ProjectConfigurationDownloader.class);
 
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(Sonarlint.ProjectConfiguration.newBuilder().build());
-    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().build());
 
     SettingsDownloader settingsDownloader = mock(SettingsDownloader.class);
     when(settingsDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().build());
-    checker = new ProjectStorageUpdateChecker(storageReader, projectConfigurationDownloader, settingsDownloader);
+    checker = new ProjectStorageUpdateChecker(storageReader, projectConfigurationDownloader);
   }
 
   @AfterClass
@@ -80,7 +80,7 @@ public class ProjectStorageUpdateCheckerTest {
 
   @Test
   public void addedProp() {
-    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
@@ -104,7 +104,7 @@ public class ProjectStorageUpdateCheckerTest {
   @Test
   public void changedProp() {
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
-    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
@@ -116,7 +116,7 @@ public class ProjectStorageUpdateCheckerTest {
 
   @Test
   public void addedProfile() {
-    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
@@ -138,7 +138,7 @@ public class ProjectStorageUpdateCheckerTest {
 
   @Test
   public void changedQualityProfile() {
-    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(GlobalProperties.class), any(ProgressWrapper.class)))
+    when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-456").build());
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
