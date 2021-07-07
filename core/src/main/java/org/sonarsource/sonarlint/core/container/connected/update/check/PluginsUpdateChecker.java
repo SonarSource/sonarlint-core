@@ -28,25 +28,25 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 
 public class PluginsUpdateChecker {
 
-  private final StorageReader storageReader;
   private final PluginReferencesDownloader pluginReferenceDownloader;
   private final ConnectedGlobalConfiguration config;
+  private final PluginReferenceStore pluginReferenceStore;
 
-  public PluginsUpdateChecker(StorageReader storageReader, PluginReferencesDownloader pluginReferenceDownloader, ConnectedGlobalConfiguration config) {
-    this.storageReader = storageReader;
+  public PluginsUpdateChecker(PluginReferenceStore pluginReferenceStore, PluginReferencesDownloader pluginReferenceDownloader, ConnectedGlobalConfiguration config) {
+    this.pluginReferenceStore = pluginReferenceStore;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.config = config;
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result, List<SonarAnalyzer> pluginList) {
     PluginReferences serverPluginReferences = pluginReferenceDownloader.toReferences(pluginList);
-    PluginReferences storagePluginReferences = storageReader.readPluginReferences();
+    PluginReferences storagePluginReferences = pluginReferenceStore.getAll();
     Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream()
       .filter(ref -> !config.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey()))
       .collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));

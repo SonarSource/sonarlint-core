@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
@@ -33,80 +33,98 @@ import org.sonarsource.sonarlint.core.container.connected.update.QualityProfiles
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
+import org.sonarsource.sonarlint.core.container.storage.RulesStore;
+import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
+import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
+import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
+import org.sonarsource.sonarlint.core.container.storage.StorageStatusStore;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalStorageUpdateExecutor {
 
-  private final StoragePaths storageManager;
-  private final PluginReferencesDownloader pluginReferenceDownloader;
-  private final SettingsDownloader globalSettingsDownloader;
-  private final RulesDownloader rulesDownloader;
+  private final ServerStorage serverStorage;
+  private final PluginCache pluginCache;
+  private final ConnectedGlobalConfiguration connectedGlobalConfiguration;
   private final TempFolder tempFolder;
-  private final ProjectListDownloader projectListDownloader;
+  private final ServerApiHelper serverApiHelper;
   private final ServerVersionAndStatusChecker statusChecker;
-  private final QualityProfilesDownloader qualityProfilesDownloader;
   private final PluginListDownloader pluginListDownloader;
 
-  public GlobalStorageUpdateExecutor(StoragePaths storageManager, ServerVersionAndStatusChecker statusChecker,
-    PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
-    ProjectListDownloader projectListDownloader, QualityProfilesDownloader qualityProfilesDownloader, PluginListDownloader pluginListDownloader, TempFolder tempFolder) {
-    this.storageManager = storageManager;
+  public GlobalStorageUpdateExecutor(ServerStorage serverStorage, ServerApiHelper serverApiHelper, ServerVersionAndStatusChecker statusChecker,
+    PluginCache pluginCache, PluginListDownloader pluginListDownloader, ConnectedGlobalConfiguration connectedGlobalConfiguration,
+    TempFolder tempFolder) {
+    this.serverStorage = serverStorage;
+    this.serverApiHelper = serverApiHelper;
     this.statusChecker = statusChecker;
-    this.pluginReferenceDownloader = pluginReferenceDownloader;
-    this.globalSettingsDownloader = globalPropertiesDownloader;
-    this.rulesDownloader = rulesDownloader;
-    this.projectListDownloader = projectListDownloader;
-    this.qualityProfilesDownloader = qualityProfilesDownloader;
+    this.pluginCache = pluginCache;
     this.pluginListDownloader = pluginListDownloader;
+    this.connectedGlobalConfiguration = connectedGlobalConfiguration;
     this.tempFolder = tempFolder;
   }
 
   public List<SonarAnalyzer> update(ProgressWrapper progress) {
     Path temp = tempFolder.newDir().toPath();
+    StorageFolder storageFolder = new StorageFolder.Default(temp);
+    ServerInfoStore serverInfoStore = new ServerInfoStore(storageFolder);
+    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(storageFolder);
+    PluginReferenceStore pluginReferenceStore = new PluginReferenceStore(storageFolder);
+    RulesStore rulesStore = new RulesStore(storageFolder);
+    ActiveRulesStore activeRulesStore = new ActiveRulesStore(storageFolder);
+    QualityProfileStore qualityProfileStore = new QualityProfileStore(storageFolder);
+    ServerProjectsStore serverProjectsStore = new ServerProjectsStore(storageFolder);
+    StorageStatusStore storageStatusStore = new StorageStatusStore(storageFolder);
 
     try {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfos serverStatus = statusChecker.checkVersionAndStatus();
-      Version serverVersion = Version.create(serverStatus.getVersion());
 
       progress.setProgressAndCheckCancel("Fetching list of code analyzers", 0.12f);
       List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList();
-      ProtobufUtil.writeToFile(serverStatus, temp.resolve(StoragePaths.SERVER_INFO_PB));
+      serverInfoStore.store(serverStatus);
 
       progress.setProgressAndCheckCancel("Fetching global properties", 0.15f);
-      globalSettingsDownloader.fetchGlobalSettingsTo(temp);
+      SettingsDownloader globalSettingsDownloader = new SettingsDownloader(serverApiHelper, globalSettingsStore);
+      globalSettingsDownloader.fetchGlobalSettings();
 
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
-      pluginReferenceDownloader.fetchPluginsTo(temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
+      PluginReferencesDownloader pluginReferenceDownloader = new PluginReferencesDownloader(serverApiHelper, pluginCache, connectedGlobalConfiguration,
+        pluginReferenceStore);
+      pluginReferenceDownloader.fetchPlugins(analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f, "Fetching rules"));
+      RulesDownloader rulesDownloader = new RulesDownloader(serverApiHelper, connectedGlobalConfiguration, rulesStore, activeRulesStore);
+      rulesDownloader.fetchRules(progress.subProgress(0.4f, 0.6f, "Fetching rules"));
 
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.6f);
-      qualityProfilesDownloader.fetchQualityProfilesTo(temp);
+      QualityProfilesDownloader qualityProfilesDownloader = new QualityProfilesDownloader(serverApiHelper, qualityProfileStore);
+      qualityProfilesDownloader.fetchQualityProfiles();
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
-      projectListDownloader.fetchTo(temp, progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
+      ProjectListDownloader projectListDownloader = new ProjectListDownloader(serverApiHelper, serverProjectsStore);
+      projectListDownloader.fetch(progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
 
       progress.executeNonCancelableSection(() -> {
         StorageStatus storageStatus = StorageStatus.newBuilder()
-          .setStorageVersion(StoragePaths.STORAGE_VERSION)
+          .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
           .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
           .setUpdateTimestamp(new Date().getTime())
           .build();
-        ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
+        storageStatusStore.store(storageStatus);
 
-        Path dest = storageManager.getGlobalStorageRoot();
-        FileUtils.deleteRecursively(dest);
-        FileUtils.mkdirs(dest.getParent());
-        FileUtils.moveDir(temp, dest);
+        serverStorage.replaceStorageWith(temp);
       });
       return analyzers;
     } catch (RuntimeException e) {

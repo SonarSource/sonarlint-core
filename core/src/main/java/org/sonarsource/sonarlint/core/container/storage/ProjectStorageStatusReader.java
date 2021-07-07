@@ -28,20 +28,20 @@ import org.sonarsource.sonarlint.core.container.model.DefaultProjectStorageStatu
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class ProjectStorageStatusReader implements Function<String, ProjectStorageStatus> {
-  private final StoragePaths storageManager;
+  private final ProjectStoragePaths projectStoragePaths;
 
-  public ProjectStorageStatusReader(StoragePaths storageManager) {
-    this.storageManager = storageManager;
+  public ProjectStorageStatusReader(ProjectStoragePaths projectStoragePaths) {
+    this.projectStoragePaths = projectStoragePaths;
   }
 
   @Override
   @CheckForNull
   public ProjectStorageStatus apply(String projectKey) {
-    Path updateStatusPath = storageManager.getProjectUpdateStatusPath(projectKey);
+    Path updateStatusPath = projectStoragePaths.getProjectUpdateStatusPath(projectKey);
 
     if (updateStatusPath.toFile().exists()) {
       final Sonarlint.StorageStatus statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());
-      final boolean stale = !statusFromStorage.getStorageVersion().equals(StoragePaths.STORAGE_VERSION);
+      final boolean stale = !statusFromStorage.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
       return new DefaultProjectStorageStatus(new Date(statusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;

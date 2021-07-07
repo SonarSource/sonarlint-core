@@ -36,8 +36,9 @@ import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -62,12 +63,12 @@ class PluginReferencesDownloaderTests {
   private final List<SonarAnalyzer> pluginList = new LinkedList<>();
   private PluginReferencesDownloader underTest;
   private final Map<String, URL> embeddedPlugins = new HashMap<>();
+  private ConnectedGlobalConfiguration globalConfiguration;
 
   @BeforeEach
   public void setUp() throws IOException {
-    ConnectedGlobalConfiguration globalConfiguration = mock(ConnectedGlobalConfiguration.class);
+    globalConfiguration = mock(ConnectedGlobalConfiguration.class);
     when(globalConfiguration.getEmbeddedPluginUrlsByKey()).thenReturn(embeddedPlugins);
-    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration);
   }
 
   @Test
@@ -75,14 +76,15 @@ class PluginReferencesDownloaderTests {
     Path dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
 
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
     pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", true));
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
     pluginList.add(new DefaultSonarAnalyzer("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", true));
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("scmsvn", "d0a68d150314d96d3469e0f2246f3537", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar"),
@@ -103,16 +105,17 @@ class PluginReferencesDownloaderTests {
   }
 
   @Test
-  void filter_not_compatible(@TempDir Path dest) throws Exception {
+  void filter_not_compatible(@TempDir Path dest) {
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
     pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", false));
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
     pluginList.add(new DefaultSonarAnalyzer("csharp", "sonar-csharp-plugin-4.4.jar", "e78bc8ac2e376c4a7a2a2cae914bdc52", "4.4", false));
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
 
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
@@ -122,7 +125,8 @@ class PluginReferencesDownloaderTests {
   }
 
   @Test
-  void filter_version_not_supported(@TempDir Path dest) throws Exception {
+  void filter_version_not_supported(@TempDir Path dest) {
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
     pluginList.add(new DefaultSonarAnalyzer("scmsvn", "sonar-scm-svn-plugin-1.3-SNAPSHOT.jar", "d0a68d150314d96d3469e0f2246f3537", "1.3-SNAPSHOT", true)
       .versionSupported(false));
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
@@ -130,9 +134,9 @@ class PluginReferencesDownloaderTests {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
 
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-3.12-SNAPSHOT.jar"),
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
@@ -143,15 +147,16 @@ class PluginReferencesDownloaderTests {
 
   @Test
   void dont_download_embedded_plugins(@TempDir Path dest) throws Exception {
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
     embeddedPlugins.put("java", new URL("file://java.jar"));
 
     pluginList.add(new DefaultSonarAnalyzer("javascript", "sonar-javascript-plugin-2.10.jar", "79dba9cab72d8d31767f47c03d169598", "2.10", true));
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
 
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "", ""),
         tuple("groovy", "14908dd5f3a9b9d795dbc103f0af546f", "sonar-groovy-plugin-1.2.jar"),
@@ -164,13 +169,14 @@ class PluginReferencesDownloaderTests {
 
   @Test
   void dont_check_compatibility_for_embedded_plugins(@TempDir Path dest) throws Exception {
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
     embeddedPlugins.put("java", new URL("file://java.jar"));
 
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", false));
 
-    underTest.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
 
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "", ""));
 
@@ -179,13 +185,14 @@ class PluginReferencesDownloaderTests {
 
   @Test
   void dont_check_version_compatibility_for_embedded_plugins(@TempDir Path dest) throws Exception {
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
     embeddedPlugins.put("java", new URL("file://java.jar"));
 
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-0.1.jar", "de5308f43260d357acc97712ce4c5475", "0.1", true));
 
-    underTest.fetchPluginsTo(dest, pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
 
-    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB), PluginReferences.parser());
+    PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "", ""));
 

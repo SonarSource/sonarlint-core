@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
@@ -44,7 +42,6 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
 
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
-  private final ReadWriteLock rwl = new ReentrantReadWriteLock();
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());

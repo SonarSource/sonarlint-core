@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -36,24 +34,22 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
  */
 public class StoragePluginIndexProvider implements PluginIndex {
 
-  private final StoragePaths storageManager;
+  private final PluginReferenceStore pluginReferenceStore;
   private final ConnectedGlobalConfiguration configuration;
   private final PluginCache fileCache;
 
-  public StoragePluginIndexProvider(StoragePaths storageManager, ConnectedGlobalConfiguration configuration, PluginCache fileCache) {
-    this.storageManager = storageManager;
+  public StoragePluginIndexProvider(PluginReferenceStore pluginReferenceStore, ConnectedGlobalConfiguration configuration, PluginCache fileCache) {
+    this.pluginReferenceStore = pluginReferenceStore;
     this.configuration = configuration;
     this.fileCache = fileCache;
   }
 
   @Override
   public List<PluginReference> references() {
-
-    Path pluginReferencesPath = storageManager.getPluginReferencesPath();
-    if (!Files.exists(pluginReferencesPath)) {
+    if (pluginReferenceStore.isEmpty()) {
       return Collections.emptyList();
     }
-    Sonarlint.PluginReferences protoReferences = ProtobufUtil.readFile(pluginReferencesPath, Sonarlint.PluginReferences.parser());
+    Sonarlint.PluginReferences protoReferences = pluginReferenceStore.getAll();
     Map<String, URL> extraPluginsUrlsByKey = configuration.getExtraPluginsUrlsByKey();
     List<PluginReference> pluginsRefs = protoReferences.getReferenceList().stream()
       .map(r -> {

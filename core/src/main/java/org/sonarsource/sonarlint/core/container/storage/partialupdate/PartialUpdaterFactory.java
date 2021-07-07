@@ -23,8 +23,7 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -32,12 +31,12 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
 public class PartialUpdaterFactory {
-  private final StoragePaths storagePaths;
+  private final ProjectStoragePaths projectStoragePaths;
   private final IssueStorePaths issueStorePaths;
   private final TempFolder tempFolder;
 
-  public PartialUpdaterFactory(StoragePaths storagePaths, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
-    this.storagePaths = storagePaths;
+  public PartialUpdaterFactory(ProjectStoragePaths projectStoragePaths, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
+    this.projectStoragePaths = projectStoragePaths;
     this.issueStorePaths = issueStorePaths;
     this.tempFolder = tempFolder;
   }
@@ -46,7 +45,6 @@ public class PartialUpdaterFactory {
     ServerApiHelper serverApiHelper = new ServerApiHelper(endpoint, client);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
     IssueDownloader downloader = new IssueDownloader(new IssueApi(serverApiHelper), new SourceApi(serverApiHelper), issueStorePaths);
-    ProjectListDownloader projectListDownloader = new ProjectListDownloader(serverApiHelper);
-    return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
+    return new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths, tempFolder);
   }
 }

@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -30,60 +30,71 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class StorageAnalyzerTest {
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
-
+class StorageAnalyzerTest {
   @Mock
   private GlobalUpdateStatusReader globalReader;
   @Mock
   private ProjectStorageStatusReader moduleReader;
   @Mock
   private ConnectedAnalysisConfiguration config;
+  @TempDir
+  Path tempDir;
 
+  private GlobalSettingsStore globalSettingsStore;
   private StorageAnalyzer analyzer;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     when(config.projectKey()).thenReturn("module1");
+    globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    globalSettingsStore.store(Sonarlint.GlobalProperties.newBuilder().build());
     analyzer = new StorageAnalyzer(globalReader, moduleReader);
   }
 
   @Test
-  public void testNoGlobalStorage() {
-    when(globalReader.get()).thenReturn(null);
+  void testNoGlobalStorage() {
+    when(globalReader.read()).thenReturn(null);
 
-    exception.expect(StorageException.class);
-    exception.expectMessage("Missing global data");
-    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressWrapper(null)));
+
+    assertThat(exception)
+      .isInstanceOf(StorageException.class)
+      .hasMessage("Missing global data. Please update server.");
   }
 
   @Test
-  public void testNoModuleStorage() {
-    when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
+  void testNoModuleStorage() {
+    when(globalReader.read()).thenReturn(mock(GlobalStorageStatus.class));
     when(moduleReader.apply("module1")).thenReturn(null);
 
-    exception.expect(StorageException.class);
-    exception.expectMessage("No data stored for project");
-    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressWrapper(null)));
+
+    assertThat(exception)
+      .isInstanceOf(StorageException.class)
+      .hasMessage("No data stored for project 'module1'. Please update the binding.");
   }
 
   @Test
-  public void testStaleModuleStorage() {
-    when(globalReader.get()).thenReturn(mock(GlobalStorageStatus.class));
+  void testStaleModuleStorage() {
+    when(globalReader.read()).thenReturn(mock(GlobalStorageStatus.class));
     ProjectStorageStatus moduleStatus = mock(ProjectStorageStatus.class);
     when(moduleStatus.isStale()).thenReturn(true);
     when(moduleReader.apply("module1")).thenReturn(moduleStatus);
 
-    exception.expect(StorageException.class);
-    exception.expectMessage("Stored data for project 'module1' is stale");
-    analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressWrapper(null));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressWrapper(null)));
+
+    assertThat(exception)
+      .isInstanceOf(StorageException.class)
+      .hasMessage("Stored data for project 'module1' is stale because it was created with a different version of SonarLint. Please update the binding.");
   }
 
 }

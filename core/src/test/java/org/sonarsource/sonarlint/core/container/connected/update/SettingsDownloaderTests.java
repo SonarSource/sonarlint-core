@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,8 +27,9 @@ import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.Values;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,15 +41,10 @@ class SettingsDownloaderTests {
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
-  private SettingsDownloader underTest;
-
-  @BeforeEach
-  public void setUp() {
-    underTest = new SettingsDownloader(mockServer.serverApiHelper());
-  }
-
   @Test
   void testFetchGlobalSettings(@TempDir Path tempDir) {
+    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    SettingsDownloader underTest = new SettingsDownloader(mockServer.serverApiHelper(), globalSettingsStore);
     ValuesWsResponse response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()
         .setKey("sonar.core.treemap.colormetric")
@@ -64,9 +59,9 @@ class SettingsDownloaderTests {
       .build();
     mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
 
-    underTest.fetchGlobalSettingsTo(tempDir);
+    underTest.fetchGlobalSettings();
 
-    GlobalProperties properties = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.PROPERTIES_PB), GlobalProperties.parser());
+    GlobalProperties properties = ProtobufUtil.readFile(tempDir.resolve(GlobalSettingsStore.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(
       entry("sonar.core.treemap.sizemetric", "ncloc"),
       entry("views.servers", "135817900907501"));
@@ -74,9 +69,11 @@ class SettingsDownloaderTests {
 
   @Test
   void invalidResponseSettings(@TempDir Path tempDir) {
+    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    SettingsDownloader underTest = new SettingsDownloader(mockServer.serverApiHelper(), globalSettingsStore);
     mockServer.addStringResponse("/api/settings/values.protobuf", "foo bar");
 
-    assertThrows(IllegalStateException.class, () -> underTest.fetchGlobalSettingsTo(tempDir));
+    assertThrows(IllegalStateException.class, underTest::fetchGlobalSettings);
   }
 
 }
