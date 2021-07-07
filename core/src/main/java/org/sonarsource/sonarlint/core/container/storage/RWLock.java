@@ -19,17 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.picocontainer.injectors.ProviderAdapter;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
-public class StorageQProfilesProvider extends ProviderAdapter {
+public class RWLock {
+  private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
-  private Sonarlint.QProfiles qProfilesFromStorage;
-
-  public Sonarlint.QProfiles provide(QualityProfileStore qualityProfileStore) {
-    if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = qualityProfileStore.getAll();
+  public <T> T read(Supplier<T> supplier) {
+    readWriteLock.readLock().lock();
+    try {
+      return supplier.get();
+    } finally {
+      readWriteLock.readLock().unlock();
     }
-    return qProfilesFromStorage;
+  }
+
+  public void write(Runnable runnable) {
+    readWriteLock.writeLock().lock();
+    try {
+      runnable.run();
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
   }
 }

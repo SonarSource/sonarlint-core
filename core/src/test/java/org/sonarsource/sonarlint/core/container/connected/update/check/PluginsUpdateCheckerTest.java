@@ -20,13 +20,16 @@
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 
@@ -35,29 +38,29 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PluginsUpdateCheckerTest {
+class PluginsUpdateCheckerTest {
+  @TempDir
+  Path tempDir;
 
   private PluginsUpdateChecker checker;
-  private StorageReader storageReader;
   private PluginReferencesDownloader pluginReferenceDownloader;
   private final HashMap<String, URL> embeddedPlugins = new HashMap<>();
+  private PluginReferenceStore pluginReferenceStore;
 
-  @Before
-  public void prepare() {
-
-    storageReader = mock(StorageReader.class);
+  @BeforeEach
+  void prepare() {
+    pluginReferenceStore = new PluginReferenceStore(new StorageFolder.Default(tempDir));
     pluginReferenceDownloader = mock(PluginReferencesDownloader.class);
-
-    when(storageReader.readPluginReferences()).thenReturn(PluginReferences.newBuilder().build());
+    pluginReferenceStore.store(PluginReferences.newBuilder().build());
     when(pluginReferenceDownloader.toReferences(anyList())).thenReturn(PluginReferences.newBuilder().build());
 
     ConnectedGlobalConfiguration config = mock(ConnectedGlobalConfiguration.class);
     when(config.getEmbeddedPluginUrlsByKey()).thenReturn(embeddedPlugins);
-    checker = new PluginsUpdateChecker(storageReader, pluginReferenceDownloader, config);
+    checker = new PluginsUpdateChecker(pluginReferenceStore, pluginReferenceDownloader, config);
   }
 
   @Test
-  public void testNoChanges() {
+  void testNoChanges() {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, new LinkedList<>());
 
@@ -66,7 +69,7 @@ public class PluginsUpdateCheckerTest {
   }
 
   @Test
-  public void addedPlugin() {
+  void addedPlugin() {
     when(pluginReferenceDownloader.toReferences(anyList()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
 
@@ -78,9 +81,8 @@ public class PluginsUpdateCheckerTest {
   }
 
   @Test
-  public void removedPlugin() {
-    when(storageReader.readPluginReferences())
-      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
+  void removedPlugin() {
+    pluginReferenceStore.store(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, new LinkedList<>());
@@ -90,11 +92,10 @@ public class PluginsUpdateCheckerTest {
   }
 
   @Test
-  public void updatedPlugin() {
+  void updatedPlugin() {
     when(pluginReferenceDownloader.toReferences(anyList()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("123").build()).build());
-    when(storageReader.readPluginReferences())
-      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
+    pluginReferenceStore.store(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("456").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, new LinkedList<>());
@@ -104,12 +105,11 @@ public class PluginsUpdateCheckerTest {
   }
 
   @Test
-  public void ignoreEmbeddedPlugins() throws Exception {
+  void ignoreEmbeddedPlugins() throws Exception {
     embeddedPlugins.put("java", new URL("file://java.jar"));
     when(pluginReferenceDownloader.toReferences(anyList()))
       .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("").build()).build());
-    when(storageReader.readPluginReferences())
-      .thenReturn(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("").build()).build());
+    pluginReferenceStore.store(PluginReferences.newBuilder().addReference(PluginReference.newBuilder().setKey("java").setHash("").build()).build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(result, new LinkedList<>());

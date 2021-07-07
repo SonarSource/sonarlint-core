@@ -19,22 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
+import java.nio.file.Path;
 import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class GlobalSettingsUpdateCheckerTest {
 
@@ -43,19 +44,20 @@ class GlobalSettingsUpdateCheckerTest {
 
   @RegisterExtension
   public LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  @TempDir
+  Path tempDir;
 
   private GlobalSettingsUpdateChecker checker;
-  private StorageReader storageReader;
+  private GlobalSettingsStore globalSettingsStore;
 
   @BeforeEach
   void prepare() {
-    storageReader = mock(StorageReader.class);
-
-    when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().build());
+    globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    globalSettingsStore.store(GlobalProperties.newBuilder().build());
     Settings.ValuesWsResponse response = Settings.ValuesWsResponse.newBuilder().build();
     mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
 
-    checker = new GlobalSettingsUpdateChecker(storageReader, mockServer.serverApiHelper());
+    checker = new GlobalSettingsUpdateChecker(mockServer.serverApiHelper());
   }
 
   @AfterAll
@@ -67,7 +69,7 @@ class GlobalSettingsUpdateCheckerTest {
   @Test
   void testNoChanges() {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
@@ -78,7 +80,7 @@ class GlobalSettingsUpdateCheckerTest {
     mockServerProperty("sonar.foo", "value");
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();
@@ -89,7 +91,7 @@ class GlobalSettingsUpdateCheckerTest {
     mockServerProperty("sonar.test.inclusions", "value");
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -101,7 +103,7 @@ class GlobalSettingsUpdateCheckerTest {
     mockServerProperty("sonar.java.license.secured", "value");
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -113,7 +115,7 @@ class GlobalSettingsUpdateCheckerTest {
     mockServerProperty("sonar.issue.enforce.allFiles", StringUtils.repeat("abcde", 10));
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -122,10 +124,10 @@ class GlobalSettingsUpdateCheckerTest {
 
   @Test
   void removedProp() {
-    when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
+    globalSettingsStore.store(GlobalProperties.newBuilder().putProperties("sonar.issue.ignore.allFiles", "value").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -134,11 +136,11 @@ class GlobalSettingsUpdateCheckerTest {
 
   @Test
   void changedProp() {
-    when(storageReader.readGlobalProperties()).thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "old").build());
+    globalSettingsStore.store(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "old").build());
     mockServerProperty("sonar.exclusions", "new");
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -148,11 +150,10 @@ class GlobalSettingsUpdateCheckerTest {
   @Test
   void changedPropDiffAbbreviateEnd() {
     mockServerProperty("sonar.exclusions", "four,five,six,seven,eight");
-    when(storageReader.readGlobalProperties())
-      .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
+    globalSettingsStore.store(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
@@ -161,12 +162,11 @@ class GlobalSettingsUpdateCheckerTest {
 
   @Test
   void changedPropDiffAbbreviateBeginEnd() {
-    when(storageReader.readGlobalProperties())
-      .thenReturn(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
+    globalSettingsStore.store(GlobalProperties.newBuilder().putProperties("sonar.exclusions", "one,two,three,four,five,six,seven,eight").build());
     mockServerProperty("sonar.exclusions", "one,four,five,six,seven,eight");
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
-    checker.checkForUpdates(result);
+    checker.checkForUpdates(globalSettingsStore, result);
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");

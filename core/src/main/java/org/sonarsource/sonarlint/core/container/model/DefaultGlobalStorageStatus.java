@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.Date;
 
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 
 public class DefaultGlobalStorageStatus implements GlobalStorageStatus {
@@ -28,7 +29,7 @@ public class DefaultGlobalStorageStatus implements GlobalStorageStatus {
   private final Date lastUpdate;
   private final boolean stale;
 
-  public DefaultGlobalStorageStatus(String serverVersion, Date lastUpdate, boolean stale) {
+  public DefaultGlobalStorageStatus(@Nullable String serverVersion, Date lastUpdate, boolean stale) {
     this.serverVersion = serverVersion;
     this.lastUpdate = lastUpdate;
     this.stale = stale;

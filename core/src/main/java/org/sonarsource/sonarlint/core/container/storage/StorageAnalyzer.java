@@ -43,7 +43,7 @@ public class StorageAnalyzer {
   }
 
   private void checkStatus(@Nullable String projectKey) {
-    GlobalStorageStatus updateStatus = globalUpdateStatusReader.get();
+    GlobalStorageStatus updateStatus = globalUpdateStatusReader.read();
     if (updateStatus == null) {
       throw new StorageException("Missing global data. Please update server.", false);
     }
@@ -58,13 +58,15 @@ public class StorageAnalyzer {
     }
   }
 
-  public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
+  public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, GlobalSettingsStore globalSettingsStore,
+    ProgressWrapper progress) {
     checkStatus(configuration.projectKey());
 
     AnalysisContainer analysisContainer = new AnalysisContainer(parent, progress);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
 
     analysisContainer.add(
+      globalSettingsStore,
       configuration,
       issueListener,
       new SonarQubeActiveRulesProvider(),

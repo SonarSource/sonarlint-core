@@ -25,7 +25,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -37,24 +38,26 @@ class ProjectListDownloaderTests {
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   @Test
-  void update_modules(@TempDir Path tempDir) throws Exception {
+  void update_modules(@TempDir Path tempDir) {
+    ServerProjectsStore serverProjectsStore = new ServerProjectsStore(new StorageFolder.Default(tempDir));
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", "/update/searchmodulesp1.pb");
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper());
+    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper(), serverProjectsStore);
 
-    moduleListUpdate.fetchTo(tempDir, new ProgressWrapper(null));
+    moduleListUpdate.fetch(new ProgressWrapper(null));
 
-    ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
+    ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
   }
 
   @Test
-  void update_modules_with_org(@TempDir Path tempDir) throws Exception {
+  void update_modules_with_org(@TempDir Path tempDir) {
+    ServerProjectsStore serverProjectsStore = new ServerProjectsStore(new StorageFolder.Default(tempDir));
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper("myOrg"));
+    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper("myOrg"), serverProjectsStore);
 
-    moduleListUpdate.fetchTo(tempDir, new ProgressWrapper(null));
+    moduleListUpdate.fetch(new ProgressWrapper(null));
 
-    ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.PROJECT_LIST_PB), ProjectList.parser());
+    ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
   }
 }

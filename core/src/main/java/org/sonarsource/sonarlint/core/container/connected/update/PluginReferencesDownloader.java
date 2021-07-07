@@ -27,8 +27,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
@@ -45,11 +44,14 @@ public class PluginReferencesDownloader {
   private final PluginCache pluginCache;
   private final PluginsApi pluginsApi;
   private final ConnectedGlobalConfiguration configuration;
+  private final PluginReferenceStore pluginReferenceStore;
 
-  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache, ConnectedGlobalConfiguration configuration) {
+  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache, ConnectedGlobalConfiguration configuration,
+    PluginReferenceStore pluginReferenceStore) {
     this.pluginsApi = new ServerApi(serverApiHelper).plugins();
     this.pluginCache = pluginCache;
     this.configuration = configuration;
+    this.pluginReferenceStore = pluginReferenceStore;
   }
 
   public PluginReferences toReferences(List<SonarAnalyzer> analyzers) {
@@ -89,7 +91,7 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public void fetchPluginsTo(Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+  public void fetchPlugins(List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
     float refCount = refs.getReferenceList().size();
@@ -101,7 +103,7 @@ public class PluginReferencesDownloader {
       progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
     }
-    ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    pluginReferenceStore.store(refs);
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Copier {

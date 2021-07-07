@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfiguration;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
@@ -44,8 +45,9 @@ public class ServerConfigurationProvider {
   /**
    * Connected mode
    */
-  public ServerConfigurationProvider(StorageReader storage, ConnectedAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, config, propertyDefinitions));
+  public ServerConfigurationProvider(StorageReader storage, GlobalSettingsStore globalSettingsStore, ConnectedAnalysisConfiguration config,
+    PropertyDefinitions propertyDefinitions) {
+    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, globalSettingsStore, config, propertyDefinitions));
   }
 
   /**
@@ -68,10 +70,11 @@ public class ServerConfigurationProvider {
       addProperties(properties);
     }
 
-    private ServerConfiguration(@Nullable StorageReader storage, AbstractAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
+    private ServerConfiguration(@Nullable StorageReader storage, GlobalSettingsStore globalSettingsStore, AbstractAnalysisConfiguration config,
+      PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions);
       if (storage != null) {
-        GlobalProperties globalProps = storage.readGlobalProperties();
+        GlobalProperties globalProps = globalSettingsStore.getAll();
         addProperties(globalProps.getPropertiesMap());
         if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).projectKey() != null) {
           Sonarlint.ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).projectKey());

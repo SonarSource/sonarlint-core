@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -37,9 +36,8 @@ import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
+import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
@@ -49,7 +47,6 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.stream.Collectors.joining;
-import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
@@ -57,14 +54,17 @@ public class RulesDownloader {
 
   private final ServerApiHelper serverApiHelper;
   private final Set<Language> enabledLanguages;
+  private final RulesStore rulesStore;
+  private final ActiveRulesStore activeRulesStore;
 
-  public RulesDownloader(ServerApiHelper serverApiHelper, ConnectedGlobalConfiguration globalConfiguration) {
+  public RulesDownloader(ServerApiHelper serverApiHelper, ConnectedGlobalConfiguration globalConfiguration, RulesStore rulesStore, ActiveRulesStore activeRulesStore) {
     this.serverApiHelper = serverApiHelper;
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();
+    this.rulesStore = rulesStore;
+    this.activeRulesStore = activeRulesStore;
   }
 
-  public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
-
+  public void fetchRules(ProgressWrapper progress) {
     Rules.Builder rulesBuilder = Rules.newBuilder();
     Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile = new HashMap<>();
 
@@ -76,13 +76,8 @@ public class RulesDownloader {
         (i + 1) / (float) Severity.values().length, severity.name().toLowerCase(Locale.US));
       fetchRulesAndActiveRules(rulesBuilder, severity.name(), activeRulesBuildersByQProfile, severityProgress);
     }
-    Path activeRulesDir = destDir.resolve(StoragePaths.ACTIVE_RULES_FOLDER);
-    FileUtils.mkdirs(activeRulesDir);
-    for (Map.Entry<String, ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-      ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(encodeForFs(entry.getKey()) + ".pb"));
-    }
-
-    ProtobufUtil.writeToFile(rulesBuilder.build(), destDir.resolve(StoragePaths.RULES_PB));
+    activeRulesStore.store(activeRulesBuildersByQProfile);
+    rulesStore.store(rulesBuilder.build());
   }
 
   private void fetchRulesAndActiveRules(Rules.Builder rulesBuilder, String severity, Map<String, ActiveRules.Builder> activeRulesBuildersByQProfile, ProgressWrapper progress) {

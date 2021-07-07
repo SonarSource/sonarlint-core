@@ -19,21 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 
 public class SettingsDownloader {
   private final SettingsApi settingsApi;
+  private final GlobalSettingsStore globalSettingsStore;
 
-  public SettingsDownloader(ServerApiHelper serverApiHelper) {
+  public SettingsDownloader(ServerApiHelper serverApiHelper, GlobalSettingsStore globalSettingsStore) {
     this.settingsApi = new ServerApi(serverApiHelper).settings();
+    this.globalSettingsStore = globalSettingsStore;
   }
 
-  public void fetchGlobalSettingsTo(Path dest) {
-    ProtobufUtil.writeToFile(settingsApi.getGlobalSettings(), dest.resolve(StoragePaths.PROPERTIES_PB));
+  public GlobalProperties fetchGlobalSettings() {
+    GlobalProperties globalSettings = settingsApi.getGlobalSettings();
+    globalSettingsStore.store(globalSettings);
+    return globalSettings;
   }
 }

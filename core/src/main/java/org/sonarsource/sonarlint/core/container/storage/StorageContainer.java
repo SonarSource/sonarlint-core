@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.Plugin;
@@ -67,9 +68,13 @@ public class StorageContainer extends ComponentContainer {
   private static final Logger LOG = Loggers.get(StorageContainer.class);
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat();
   private final ConnectedGlobalConfiguration globalConfig;
+  private final GlobalStores globalStores;
+  private final GlobalUpdateStatusReader globalUpdateStatusReader;
 
-  public StorageContainer(ConnectedGlobalConfiguration globalConfig) {
+  public StorageContainer(ConnectedGlobalConfiguration globalConfig, GlobalStores globalStores, GlobalUpdateStatusReader globalUpdateStatusReader) {
     this.globalConfig = globalConfig;
+    this.globalStores = globalStores;
+    this.globalUpdateStatusReader = globalUpdateStatusReader;
   }
 
   private GlobalExtensionContainer globalExtensionContainer;
@@ -82,11 +87,21 @@ public class StorageContainer extends ComponentContainer {
     Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
     add(
       globalConfig,
+      globalStores,
+      globalStores.getGlobalStorage(),
+      globalStores.getActiveRulesStore(),
+      globalStores.getRulesStore(),
+      globalStores.getGlobalSettingsStore(),
+      globalStores.getStorageStatusStore(),
+      globalStores.getPluginReferenceStore(),
+      globalStores.getServerInfoStore(),
+      globalStores.getServerProjectsStore(),
+      globalStores.getQualityProfileStore(),
       StorageContainerHandler.class,
       PartialUpdaterFactory.class,
 
       // storage directories and tmp
-      StoragePaths.class,
+      ProjectStoragePaths.class,
       StorageReader.class,
       IssueStorePaths.class,
       new GlobalTempFolderProvider(),
@@ -102,9 +117,8 @@ public class StorageContainer extends ComponentContainer {
       new PluginCacheProvider(),
 
       // storage readers
-      AllProjectReader.class,
       IssueStoreReader.class,
-      GlobalUpdateStatusReader.class,
+      globalUpdateStatusReader,
       ProjectStorageStatusReader.class,
       IssueStoreFactory.class,
 
@@ -129,7 +143,7 @@ public class StorageContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
-    GlobalStorageStatus updateStatus = getComponentByType(StorageContainerHandler.class).getGlobalStorageStatus();
+    GlobalStorageStatus updateStatus = globalUpdateStatusReader.read();
 
     SonarLintRules rulesFromStorage = null;
     if (updateStatus != null) {
@@ -203,9 +217,9 @@ public class StorageContainer extends ComponentContainer {
   }
 
   private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
-    Sonarlint.Rules.Rule ruleFromStorage = getHandler().readRuleFromStorage(ruleKeyStr);
+    Optional<Sonarlint.Rules.Rule> optionalRule = globalStores.getRulesStore().getRuleWithKey(ruleKeyStr);
     StandaloneRule ruleFromPlugin = (StandaloneRule) rulesFromPlugins.find(RuleKey.parse(ruleKeyStr));
-    if (ruleFromStorage != null) {
+    return optionalRule.map(ruleFromStorage -> {
       String type = StringUtils.isEmpty(ruleFromStorage.getType()) ? null : ruleFromStorage.getType();
 
       Language language = Language.forKey(ruleFromStorage.getLang())
@@ -221,11 +235,9 @@ public class StorageContainer extends ComponentContainer {
       return new DefaultRuleDetails(ruleKeyStr, ruleFromStorage.getName(), ruleFromStorage.getHtmlDesc(),
         overridenSeverity != null ? overridenSeverity : ruleFromStorage.getSeverity(), type, language,
         ruleFromStorage.getHtmlNote());
-    } else {
-      return new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.getName(), ruleFromPlugin.getHtmlDescription(),
-        overridenSeverity != null ? overridenSeverity : ruleFromPlugin.getSeverity(), ruleFromPlugin.getType(), ruleFromPlugin.getLanguage(),
-        ruleFromPlugin.getHtmlDescription());
-    }
+    }).orElseGet(() -> new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.getName(), ruleFromPlugin.getHtmlDescription(),
+      overridenSeverity != null ? overridenSeverity : ruleFromPlugin.getSeverity(), ruleFromPlugin.getType(), ruleFromPlugin.getLanguage(),
+      ruleFromPlugin.getHtmlDescription()));
   }
 
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {

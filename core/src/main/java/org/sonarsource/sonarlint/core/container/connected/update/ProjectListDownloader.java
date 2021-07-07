@@ -19,35 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
+import java.util.List;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ProjectListDownloader {
   private final ProjectApi projectApi;
+  private final ServerProjectsStore store;
 
-  public ProjectListDownloader(ServerApiHelper serverApiHelper) {
+  public ProjectListDownloader(ServerApiHelper serverApiHelper, ServerProjectsStore store) {
     this.projectApi = new ServerApi(serverApiHelper).project();
+    this.store = store;
   }
 
-  public void fetchTo(Path dest, ProgressWrapper progress) {
-    ProjectList.Builder projectListBuilder = ProjectList.newBuilder();
-    Builder projectBuilder = ProjectList.Project.newBuilder();
-    projectApi.getAllProjects(progress).forEach(project -> {
-      projectBuilder.clear();
-      projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder
-        .setKey(project.getKey())
-        .setName(project.getName())
-        .build());
-    });
-
-    ProtobufUtil.writeToFile(projectListBuilder.build(), dest.resolve(StoragePaths.PROJECT_LIST_PB));
+  public Map<String, ServerProject> fetch(ProgressWrapper progress) {
+    List<ServerProject> allProjects = projectApi.getAllProjects(progress);
+    store.store(allProjects);
+    return store.getAll();
   }
 
 }

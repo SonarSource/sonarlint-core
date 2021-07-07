@@ -38,6 +38,7 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -46,11 +47,13 @@ import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchy
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
+import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
+import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
@@ -80,8 +83,7 @@ class ProjectStorageUpdateExecutorTests {
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   private ProjectStorageUpdateExecutor underTest;
-  private final StoragePaths storagePaths = mock(StoragePaths.class);
-  private final StorageReader storageReader = mock(StorageReader.class);
+  private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
   private final TempFolder tempFolder = mock(TempFolder.class);
   private final ModuleHierarchyDownloader moduleHierarchy = mock(ModuleHierarchyDownloader.class);
   private final IssueStore issueStore = new InMemoryIssueStore();
@@ -89,6 +91,7 @@ class ProjectStorageUpdateExecutorTests {
   private final ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
   private ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
+  private QualityProfileStore qualityProfileStore;
 
   public void setUp(@Nullable String organizationKey, Path tempDir) throws IOException {
     Files.createDirectory(tempDir);
@@ -112,11 +115,8 @@ class ProjectStorageUpdateExecutorTests {
     mockServer.addProtobufResponse("/api/settings/values.protobufcomponent=" + MODULE_KEY_WITH_BRANCH_URLENCODED, response);
 
     when(tempFolder.newDir()).thenReturn(tempDir.toFile());
-    org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties.Builder propBuilder = GlobalProperties.newBuilder();
-    propBuilder.putProperties("sonar.qualitygate", "2");
-    propBuilder.putProperties("sonar.core.version", "6.7.1.23");
-    when(storageReader.readGlobalProperties()).thenReturn(propBuilder.build());
-    when(storageReader.readServerInfos()).thenReturn(ServerInfos.newBuilder().build());
+    ServerInfoStore serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
+    serverInfoStore.store(ServerInfos.newBuilder().build());
 
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
@@ -129,7 +129,8 @@ class ProjectStorageUpdateExecutorTests {
     ServerApiHelper serverApiHelper = mockServer.serverApiHelper(organizationKey);
     projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(serverApiHelper), serverApiHelper);
 
-    underTest = new ProjectStorageUpdateExecutor(storageReader, storagePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);
+    qualityProfileStore = new QualityProfileStore(new StorageFolder.Default(tempDir));
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader,  serverIssueUpdater, qualityProfileStore);
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -146,8 +147,8 @@ class ProjectStorageUpdateExecutorTests {
 
     builder.putQprofilesByKey("java-empty-74333", QProfiles.QProfile.newBuilder().build());
 
-    when(storageReader.readQProfiles()).thenReturn(builder.build());
-    when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
+    qualityProfileStore.store(builder.build());
+    when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
     assertThat(thrown)
@@ -162,19 +163,21 @@ class ProjectStorageUpdateExecutorTests {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
     Path storageDir = tempDir.resolve("destDir");
-    QProfiles.Builder builder = QProfiles.newBuilder();
+    Path globalStoragePath = storageDir.resolve("global");
+    FileUtils.mkdirs(globalStoragePath);
 
+    QProfiles.Builder builder = QProfiles.newBuilder();
     builder.putQprofilesByKey("cs-sonar-way-58886", QProfiles.QProfile.newBuilder().build());
     builder.putQprofilesByKey("java-empty-74333", QProfiles.QProfile.newBuilder().build());
     builder.putQprofilesByKey("js-sonar-way-60746", QProfiles.QProfile.newBuilder().build());
     builder.putQprofilesByKey("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
-    when(storageReader.readQProfiles()).thenReturn(builder.build());
-    when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
+    qualityProfileStore.store(builder.build());
+    when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
     underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
-    ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(StoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
+    ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
     assertThat(projectConfiguration.getQprofilePerLanguageMap()).containsOnly(
       entry("cs", "cs-sonar-way-58886"),
       entry("java", "java-empty-74333"),
@@ -192,15 +195,16 @@ class ProjectStorageUpdateExecutorTests {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
     Path storageDir = tempDir.resolve("destDir");
+    Path globalStoragePath = storageDir.resolve("global");
+    FileUtils.mkdirs(globalStoragePath);
 
     QProfiles.Builder builder = QProfiles.newBuilder();
-
     builder.putQprofilesByKey("cs-sonar-way-58886", QProfiles.QProfile.newBuilder().build());
     builder.putQprofilesByKey("java-empty-74333", QProfiles.QProfile.newBuilder().build());
     builder.putQprofilesByKey("xoo2-basic-34035", QProfiles.QProfile.newBuilder().build());
 
-    when(storageReader.readQProfiles()).thenReturn(builder.build());
-    when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
+    qualityProfileStore.store(builder.build());
+    when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
     assertThat(thrown).hasMessageContaining("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
@@ -213,11 +217,14 @@ class ProjectStorageUpdateExecutorTests {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
     Path storageDir = tempDir.resolve("destDir");
+    Path globalStoragePath = storageDir.resolve("global");
+    FileUtils.mkdirs(globalStoragePath);
 
     mockServer.addStringResponse(getQualityProfileUrl(organizationKey), "");
-    when(storageReader.readQProfiles()).thenReturn(QProfiles.getDefaultInstance());
 
-    when(storagePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
+    qualityProfileStore.store(QProfiles.getDefaultInstance());
+
+    when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
     ServerIssue fileIssue1 = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("some/path"))
@@ -230,16 +237,13 @@ class ProjectStorageUpdateExecutorTests {
     ServerIssue anotherFileIssue = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("another/path"))
       .build();
-    ServerIssue notDownloadedIssue = ServerIssue.newBuilder()
-      .setPrimaryLocation(Location.newBuilder().setPath("yet/another/path"))
-      .build();
 
     IssueDownloader issueDownloader = mock(IssueDownloader.class);
     when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), any(ProgressWrapper.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
-    underTest = new ProjectStorageUpdateExecutor(storageReader, storagePaths, tempFolder, projectConfigurationDownloader,
-      projectFileListDownloader, serverIssueUpdater);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
+      projectFileListDownloader, serverIssueUpdater, qualityProfileStore);
     underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
     verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressWrapper.class));
@@ -252,8 +256,8 @@ class ProjectStorageUpdateExecutorTests {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
     Path temp = tempFolder.newDir().toPath();
-    underTest = new ProjectStorageUpdateExecutor(storageReader, storagePaths, tempFolder, projectConfigurationDownloader,
-      projectFileListDownloader, serverIssueUpdater);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
+      projectFileListDownloader, serverIssueUpdater, qualityProfileStore);
     ProjectConfiguration.Builder projectConfigurationBuilder = ProjectConfiguration.newBuilder();
     projectConfigurationBuilder.putModulePathByKey("rootModule", "");
     projectConfigurationBuilder.putModulePathByKey("moduleA", "A");
@@ -268,7 +272,7 @@ class ProjectStorageUpdateExecutorTests {
     when(projectFileListDownloader.get(eq("rootModule"), any(ProgressWrapper.class))).thenReturn(fileList);
     underTest.updateComponents("rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressWrapper.class));
 
-    Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(StoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "unknownFile", "A/a.java", "B/b.java");
   }

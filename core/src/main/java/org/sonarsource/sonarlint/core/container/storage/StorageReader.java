@@ -19,96 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Date;
-import javax.annotation.CheckForNull;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class StorageReader {
 
-  private static final Logger LOG = Loggers.get(StorageReader.class);
+  private final ProjectStoragePaths projectStoragePaths;
 
-  private final StoragePaths storagePaths;
-  private final GlobalStorageStatus storageStatus;
-
-  public StorageReader(StoragePaths storagePaths) {
-    this.storagePaths = storagePaths;
-    this.storageStatus = initStorageStatus();
-  }
-
-  @CheckForNull
-  public GlobalStorageStatus getGlobalStorageStatus() {
-    return storageStatus;
-  }
-
-  @CheckForNull
-  private GlobalStorageStatus initStorageStatus() {
-    Path storageStatusPath = storagePaths.getStorageStatusPath();
-    if (Files.exists(storageStatusPath)) {
-      final Sonarlint.StorageStatus currentStorageStatus = ProtobufUtil.readFile(storageStatusPath, Sonarlint.StorageStatus.parser());
-      final boolean stale = !currentStorageStatus.getStorageVersion().equals(StoragePaths.STORAGE_VERSION);
-
-      String version = null;
-      if (!stale) {
-        final Sonarlint.ServerInfos serverInfoFromStorage = ProtobufUtil.readFile(storagePaths.getServerInfosPath(), Sonarlint.ServerInfos.parser());
-        version = serverInfoFromStorage.getVersion();
-      }
-
-      return new DefaultGlobalStorageStatus(version, new Date(currentStorageStatus.getUpdateTimestamp()), stale);
-    }
-    return null;
-  }
-
-  public Sonarlint.ServerInfos readServerInfos() {
-    return ProtobufUtil.readFile(storagePaths.getServerInfosPath(), Sonarlint.ServerInfos.parser());
-  }
-
-  public Sonarlint.Rules readRules() {
-    Path rulesPath = storagePaths.getRulesPath();
-    if (Files.exists(rulesPath)) {
-      return ProtobufUtil.readFile(rulesPath, Sonarlint.Rules.parser());
-    } else {
-      LOG.info("Unable to find rules in the SonarLint storage. You should update the storage.");
-      return Sonarlint.Rules.newBuilder().build();
-    }
-  }
-
-  public Sonarlint.ActiveRules readActiveRules(String qProfileKey) {
-    Path activeRulesPath = storagePaths.getActiveRulesPath(qProfileKey);
-    if (Files.exists(activeRulesPath)) {
-      return ProtobufUtil.readFile(activeRulesPath, Sonarlint.ActiveRules.parser());
-    } else {
-      LOG.info("Unable to find the quality profile {} in the SonarLint storage. You should update the storage, or ignore this message if the profile is empty.", qProfileKey);
-      return Sonarlint.ActiveRules.newBuilder().build();
-    }
-  }
-
-  public Sonarlint.QProfiles readQProfiles() {
-    return ProtobufUtil.readFile(storagePaths.getQProfilesPath(), Sonarlint.QProfiles.parser());
-  }
-
-  public Sonarlint.GlobalProperties readGlobalProperties() {
-    return ProtobufUtil.readFile(storagePaths.getGlobalPropertiesPath(), Sonarlint.GlobalProperties.parser());
-  }
-
-  public Sonarlint.PluginReferences readPluginReferences() {
-    return ProtobufUtil.readFile(storagePaths.getPluginReferencesPath(), Sonarlint.PluginReferences.parser());
+  public StorageReader(ProjectStoragePaths projectStoragePaths) {
+    this.projectStoragePaths = projectStoragePaths;
   }
 
   public Sonarlint.ProjectConfiguration readProjectConfig(String projectKey) {
-    return ProtobufUtil.readFile(storagePaths.getProjectConfigurationPath(projectKey), Sonarlint.ProjectConfiguration.parser());
-  }
-
-  public Sonarlint.ProjectList readProjectList() {
-    return ProtobufUtil.readFile(storagePaths.getProjectListPath(), Sonarlint.ProjectList.parser());
+    return ProtobufUtil.readFile(projectStoragePaths.getProjectConfigurationPath(projectKey), Sonarlint.ProjectConfiguration.parser());
   }
 
   public Sonarlint.ProjectComponents readProjectComponents(String projectKey) {
-    return ProtobufUtil.readFile(storagePaths.getComponentListPath(projectKey), Sonarlint.ProjectComponents.parser());
+    return ProtobufUtil.readFile(projectStoragePaths.getComponentListPath(projectKey), Sonarlint.ProjectComponents.parser());
   }
 }

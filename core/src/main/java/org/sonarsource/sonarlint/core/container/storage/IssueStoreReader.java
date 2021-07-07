@@ -32,15 +32,15 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class IssueStoreReader {
   private final IssueStoreFactory issueStoreFactory;
-  private final StoragePaths storagePaths;
+  private final ProjectStoragePaths projectStoragePaths;
   private final IssueStorePaths issueStorePaths;
   private final StorageReader storageReader;
 
-  public IssueStoreReader(IssueStoreFactory issueStoreFactory, IssueStorePaths issueStorePaths, StoragePaths storagePaths, StorageReader storageReader) {
+  public IssueStoreReader(IssueStoreFactory issueStoreFactory, IssueStorePaths issueStorePaths, ProjectStoragePaths projectStoragePaths, StorageReader storageReader) {
     this.issueStoreFactory = issueStoreFactory;
     this.issueStorePaths = issueStorePaths;
     this.storageReader = storageReader;
-    this.storagePaths = storagePaths;
+    this.projectStoragePaths = projectStoragePaths;
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
@@ -54,7 +54,7 @@ public class IssueStoreReader {
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
+    Path serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
 
     List<Sonarlint.ServerIssue> loadedIssues = issueStore.load(sqPath);

@@ -19,17 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.picocontainer.injectors.ProviderAdapter;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import java.nio.file.Path;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class StorageQProfilesProvider extends ProviderAdapter {
+public interface StorageFolder {
+  <T> T readAction(Function<Path, T> reader);
 
-  private Sonarlint.QProfiles qProfilesFromStorage;
+  void writeAction(Consumer<Path> writer);
 
-  public Sonarlint.QProfiles provide(QualityProfileStore qualityProfileStore) {
-    if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = qualityProfileStore.getAll();
+  class Default implements StorageFolder {
+    private final Path folderPath;
+
+    public Default(Path folderPath) {
+      this.folderPath = folderPath;
     }
-    return qProfilesFromStorage;
+
+    @Override
+    public <T> T readAction(Function<Path, T> reader) {
+      return reader.apply(folderPath);
+    }
+
+    @Override
+    public void writeAction(Consumer<Path> writer) {
+      writer.accept(folderPath);
+    }
   }
 }

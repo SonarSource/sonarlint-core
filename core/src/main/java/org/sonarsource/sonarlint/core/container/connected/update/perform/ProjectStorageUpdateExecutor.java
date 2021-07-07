@@ -29,9 +29,9 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -39,36 +39,35 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ProjectStorageUpdateExecutor {
-
-  private final StorageReader storageReader;
   private final TempFolder tempFolder;
   private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader;
   private final ServerIssueUpdater serverIssueUpdater;
-  private final StoragePaths storagePaths;
+  private final ProjectStoragePaths projectStoragePaths;
+  private final QualityProfileStore qualityProfileStore;
 
-  public ProjectStorageUpdateExecutor(StorageReader storageReader, StoragePaths storagePaths, TempFolder tempFolder,
-    ProjectConfigurationDownloader projectConfigurationDownloader, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
-    this.storageReader = storageReader;
-    this.storagePaths = storagePaths;
+  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, TempFolder tempFolder, ProjectConfigurationDownloader projectConfigurationDownloader,
+    ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater, QualityProfileStore qualityProfileStore) {
+    this.projectStoragePaths = projectStoragePaths;
     this.tempFolder = tempFolder;
     this.projectConfigurationDownloader = projectConfigurationDownloader;
     this.projectFileListDownloader = projectFileListDownloader;
     this.serverIssueUpdater = serverIssueUpdater;
+    this.qualityProfileStore = qualityProfileStore;
   }
 
   public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     FileUtils.replaceDir(temp -> {
-      ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, temp, progress);
+      ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, qualityProfileStore, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
-    }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
+    }, projectStoragePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
 
-  private ProjectConfiguration updateConfiguration(String projectKey, Path temp, ProgressWrapper progress) {
+  private ProjectConfiguration updateConfiguration(String projectKey, QualityProfileStore qualityProfileStore, Path temp, ProgressWrapper progress) {
     ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, progress);
-    final Set<String> qProfileKeys = storageReader.readQProfiles().getQprofilesByKeyMap().keySet();
+    final Set<String> qProfileKeys = qualityProfileStore.getAll().getQprofilesByKeyMap().keySet();
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
         throw new IllegalStateException(
@@ -76,7 +75,7 @@ public class ProjectStorageUpdateExecutor {
             + "The SonarQube server binding is probably outdated,  please update it.");
       }
     }
-    ProtobufUtil.writeToFile(projectConfiguration, temp.resolve(StoragePaths.PROJECT_CONFIGURATION_PB));
+    ProtobufUtil.writeToFile(projectConfiguration, temp.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB));
     return projectConfiguration;
   }
 
@@ -95,21 +94,21 @@ public class ProjectStorageUpdateExecutor {
       }
       componentsBuilder.addComponent(prefix + relativePath);
     }
-    ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(StoragePaths.COMPONENT_LIST_PB));
+    ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
   private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    Path basedir = temp.resolve(StoragePaths.SERVER_ISSUES_DIR);
+    Path basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
     serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
   }
 
   private void updateStatus(Path temp) {
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StoragePaths.STORAGE_VERSION)
+      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
       .build();
-    ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, temp.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
 }
