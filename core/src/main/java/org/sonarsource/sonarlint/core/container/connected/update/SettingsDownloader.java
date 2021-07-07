@@ -62,7 +62,7 @@ public class SettingsDownloader {
     return builder.build();
   }
 
-  public void fetchProjectSettings(String projectKey, GlobalProperties globalProps, ProjectConfiguration.Builder projectConfigurationBuilder) {
+  public void fetchProjectSettings(String projectKey, ProjectConfiguration.Builder projectConfigurationBuilder) {
     fetchSettings(projectKey, projectConfigurationBuilder::putProperties);
   }
 

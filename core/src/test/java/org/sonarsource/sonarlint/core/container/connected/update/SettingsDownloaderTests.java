@@ -54,7 +54,7 @@ class SettingsDownloaderTests {
   }
 
   @Test
-  void testFetchGlobalSettings(@TempDir Path tempDir) throws Exception {
+  void testFetchGlobalSettings(@TempDir Path tempDir) {
     ValuesWsResponse response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()
         .setKey("sonar.core.treemap.colormetric")
@@ -78,7 +78,7 @@ class SettingsDownloaderTests {
   }
 
   @Test
-  void testFetchProjectSettings() throws Exception {
+  void testFetchProjectSettings() {
 
     Settings.FieldValues.Value.Builder valuesBuilder = Value.newBuilder();
     valuesBuilder.putValue("filepattern", "**/*.xml");
@@ -103,7 +103,7 @@ class SettingsDownloaderTests {
     mockServer.addProtobufResponse("/api/settings/values.protobuf?component=foo", response);
 
     Builder builder = ProjectConfiguration.newBuilder();
-    underTest.fetchProjectSettings("foo", null, builder);
+    underTest.fetchProjectSettings("foo", builder);
 
     assertThat(builder.getPropertiesMap()).containsOnly(
       entry("sonar.inclusions", "**/*.java"),

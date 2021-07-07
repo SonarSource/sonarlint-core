@@ -39,11 +39,11 @@ public class ProjectConfigurationDownloader {
     this.settingsDownloader = settingsDownloader;
   }
 
-  public Sonarlint.ProjectConfiguration fetch(String projectKey, GlobalProperties globalProps, ProgressWrapper progress) {
+  public Sonarlint.ProjectConfiguration fetch(String projectKey, ProgressWrapper progress) {
     ProjectConfiguration.Builder builder = Sonarlint.ProjectConfiguration.newBuilder();
     fetchQualityProfiles(projectKey, builder);
     progress.setProgressAndCheckCancel("Fetching project settings", 0.1f);
-    settingsDownloader.fetchProjectSettings(projectKey, globalProps, builder);
+    settingsDownloader.fetchProjectSettings(projectKey, builder);
     progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
     fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
 
