@@ -19,104 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.Settings.FieldValues.Value;
-import org.sonarqube.ws.Settings.Setting;
-import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
-
-import static java.util.stream.Collectors.joining;
+import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 
 public class SettingsDownloader {
-  private static final Logger LOG = Loggers.get(SettingsDownloader.class);
-
-  private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
-  private final ServerApiHelper serverApiHelper;
+  private final SettingsApi settingsApi;
 
   public SettingsDownloader(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+    this.settingsApi = new ServerApi(serverApiHelper).settings();
   }
 
   public void fetchGlobalSettingsTo(Path dest) {
-    ProtobufUtil.writeToFile(fetchGlobalSettings(), dest.resolve(StoragePaths.PROPERTIES_PB));
+    ProtobufUtil.writeToFile(settingsApi.getGlobalSettings(), dest.resolve(StoragePaths.PROPERTIES_PB));
   }
-
-  public GlobalProperties fetchGlobalSettings() {
-    GlobalProperties.Builder builder = GlobalProperties.newBuilder();
-    fetchSettings(null, builder::putProperties);
-    return builder.build();
-  }
-
-  public void fetchProjectSettings(String projectKey, ProjectConfiguration.Builder projectConfigurationBuilder) {
-    fetchSettings(projectKey, projectConfigurationBuilder::putProperties);
-  }
-
-  private void fetchSettings(@Nullable String projectKey, BiConsumer<String, String> consumer) {
-    StringBuilder url = new StringBuilder();
-    url.append(API_SETTINGS_PATH);
-    if (projectKey != null) {
-      url.append("?component=").append(StringUtils.urlEncode(projectKey));
-    }
-    ServerApiHelper.consumeTimed(
-      () -> serverApiHelper.get(url.toString()),
-      response -> {
-        try (InputStream is = response.bodyAsStream()) {
-          ValuesWsResponse values = ValuesWsResponse.parseFrom(is);
-          for (Setting s : values.getSettingsList()) {
-            // Storage optimisation: don't store settings having same value than global settings
-            if (!s.getInherited()) {
-              processSetting(consumer, s);
-            }
-          }
-        } catch (IOException e) {
-          throw new IllegalStateException("Unable to parse properties from: " + response.bodyAsString(), e);
-        }
-      },
-      duration -> LOG.info("Downloaded settings in {}ms", duration));
-  }
-
-  private static void processSetting(BiConsumer<String, String> consumer, Setting s) {
-    switch (s.getValueOneOfCase()) {
-      case VALUE:
-        consumer.accept(s.getKey(), s.getValue());
-        break;
-      case VALUES:
-        consumer.accept(s.getKey(), s.getValues().getValuesList().stream().collect(joining(",")));
-        break;
-      case FIELDVALUES:
-        processPropertySet(s, consumer);
-        break;
-      default:
-        throw new IllegalStateException("Unknow property value for " + s.getKey());
-    }
-  }
-
-  private static void processPropertySet(Setting s, BiConsumer<String, String> consumer) {
-    List<String> ids = new ArrayList<>();
-    int id = 1;
-    for (Value v : s.getFieldValues().getFieldValuesList()) {
-      for (Map.Entry<String, String> entry : v.getValue().entrySet()) {
-        consumer.accept(s.getKey() + "." + id + "." + entry.getKey(), entry.getValue());
-      }
-      ids.add(String.valueOf(id));
-      id++;
-    }
-    consumer.accept(s.getKey(), ids.stream().collect(Collectors.joining(",")));
-  }
-
 }
