@@ -49,7 +49,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
   private ActiveRules activeRules;
 
   public ActiveRules provide(Sonarlint.Rules storageRules, Sonarlint.QProfiles qProfiles, StorageReader storageReader, SonarLintRules rules,
-    ConnectedAnalysisConfiguration analysisConfiguration, Languages languages, ConnectedGlobalConfiguration globalConfiguration) {
+    ConnectedAnalysisConfiguration analysisConfiguration, Languages languages, ConnectedGlobalConfiguration globalConfiguration, ActiveRulesStore activeRulesStore) {
     if (activeRules == null) {
 
       Map<String, String> qProfilesByLanguage = loadQualityProfilesFromStorage(qProfiles, storageReader, analysisConfiguration);
@@ -69,7 +69,7 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
           continue;
         }
 
-        Sonarlint.ActiveRules activeRulesFromStorage = storageReader.readActiveRules(qProfileKey);
+        Sonarlint.ActiveRules activeRulesFromStorage = activeRulesStore.getActiveRules(qProfileKey);
 
         LOG.debug("  * {}: '{}' ({} rules)", language, qProfile.getName(), activeRulesFromStorage.getActiveRulesByKeyMap().size());
 

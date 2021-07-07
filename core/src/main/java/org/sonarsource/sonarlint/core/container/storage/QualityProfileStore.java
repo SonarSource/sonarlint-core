@@ -19,32 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+public class QualityProfileStore {
+  public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
 
-public class AllProjectReaderTest {
-  private StorageReader storageReader;
+  private final StorageFolder storageFolder;
+  private final RWLock rwLock = new RWLock();
 
-  @Before
-  public void setUp() {
-    storageReader = mock(StorageReader.class);
+  public QualityProfileStore(StorageFolder storageFolder) {
+    this.storageFolder = storageFolder;
   }
 
-  @Test
-  public void should_get_modules() {
-    ProjectList.Builder list = ProjectList.newBuilder();
-    Project m1 = Project.newBuilder().setKey("module1").build();
-    list.getMutableProjectsByKey().put("module1", m1);
+  public void store(Sonarlint.QProfiles qualityProfiles) {
+    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(qualityProfiles, dest.resolve(QUALITY_PROFILES_PB))));
+  }
 
-    when(storageReader.readProjectList()).thenReturn(list.build());
-
-    AllProjectReader modulesReader = new AllProjectReader(storageReader);
-    assertThat(modulesReader.get()).containsOnlyKeys("module1");
+  public Sonarlint.QProfiles getAll() {
+    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(QUALITY_PROFILES_PB), Sonarlint.QProfiles.parser())));
   }
 }

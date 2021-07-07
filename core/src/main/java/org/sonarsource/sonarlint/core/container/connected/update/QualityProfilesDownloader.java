@@ -19,21 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 
 public class QualityProfilesDownloader {
   private final QualityProfileApi qualityProfileApi;
+  private final QualityProfileStore qualityProfileStore;
 
-  public QualityProfilesDownloader(ServerApiHelper serverApiHelper) {
+  public QualityProfilesDownloader(ServerApiHelper serverApiHelper, QualityProfileStore qualityProfileStore) {
     this.qualityProfileApi = new ServerApi(serverApiHelper).qualityProfile();
+    this.qualityProfileStore = qualityProfileStore;
   }
 
-  public void fetchQualityProfilesTo(Path destDir) {
-    ProtobufUtil.writeToFile(qualityProfileApi.getQualityProfiles(), destDir.resolve(StoragePaths.QUALITY_PROFILES_PB));
+  public void fetchQualityProfiles() {
+    qualityProfileStore.store(qualityProfileApi.getQualityProfiles());
   }
 }

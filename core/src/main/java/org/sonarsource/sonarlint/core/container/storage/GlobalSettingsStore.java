@@ -19,20 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.junit.Test;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonar.api.internal.apachecommons.lang.StringUtils.repeat;
-import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
+public class GlobalSettingsStore {
+  public static final String PROPERTIES_PB = "properties.pb";
 
-public class StoragePathsTest {
-  @Test
-  public void encode_paths_for_fs() {
-    assertThat(encodeForFs("my/string%to encode**")).isEqualTo("6d792f737472696e6725746f20656e636f64652a2a");
-    assertThat(encodeForFs("AU-TpxcA-iU5OvuD2FLz").toLowerCase()).isNotEqualTo(encodeForFs("AU-TpxcA-iU5OvuD2FLZ"));
-    assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000))).hasSize(255);
-    assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000)))
-      .isNotEqualTo(encodeForFs("too_long_for_most_fs" + repeat("a", 1000) + "2"));
+  private final StorageFolder storageFolder;
+  private final RWLock rwLock = new RWLock();
+
+  public GlobalSettingsStore(StorageFolder storageFolder) {
+    this.storageFolder = storageFolder;
   }
 
+  public void store(Sonarlint.GlobalProperties globalProperties) {
+    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(globalProperties, dest.resolve(PROPERTIES_PB))));
+  }
+
+  public Sonarlint.GlobalProperties getAll() {
+    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(PROPERTIES_PB), Sonarlint.GlobalProperties.parser())));
+  }
 }

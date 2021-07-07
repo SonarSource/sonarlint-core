@@ -19,19 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.util.function.Supplier;
-
+import java.util.Date;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class GlobalUpdateStatusReader implements Supplier<GlobalStorageStatus> {
-  private final StorageReader storageReader;
+public class GlobalUpdateStatusReader {
+  private final ServerInfoStore serverInfoStore;
+  private final StorageStatusStore storageStatusStore;
 
-  public GlobalUpdateStatusReader(StorageReader storageReader) {
-    this.storageReader = storageReader;
+  public GlobalUpdateStatusReader(ServerInfoStore serverInfoStore, StorageStatusStore storageStatusStore) {
+    this.serverInfoStore = serverInfoStore;
+    this.storageStatusStore = storageStatusStore;
   }
 
-  @Override
-  public GlobalStorageStatus get() {
-    return storageReader.getGlobalStorageStatus();
+  public GlobalStorageStatus read() {
+    if (storageStatusStore.exists()) {
+      final Sonarlint.StorageStatus currentStorageStatus = storageStatusStore.getAll();
+      final boolean stale = !currentStorageStatus.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
+
+      String version = null;
+      if (!stale) {
+        final Sonarlint.ServerInfos serverInfoFromStorage = serverInfoStore.getAll();
+        version = serverInfoFromStorage.getVersion();
+      }
+
+      return new DefaultGlobalStorageStatus(version, new Date(currentStorageStatus.getUpdateTimestamp()), stale);
+    }
+    return null;
   }
 }

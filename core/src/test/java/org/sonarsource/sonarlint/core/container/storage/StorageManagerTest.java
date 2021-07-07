@@ -38,7 +38,7 @@ public class StorageManagerTest {
   public void encodeModuleKeyForFs() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
+    ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId("server_id")
       .build());
@@ -52,34 +52,34 @@ public class StorageManagerTest {
   public void encodeServerIdForFs() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
+    ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId("complicated.:name/with_invalid%chars")
       .build());
 
-    Path storageRoot = manager.getServerStorageRoot();
-    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("636f6d706c6963617465642e3a6e616d652f776974685f696e76616c6964256368617273"));
+    Path storageRoot = manager.getProjectStorageRoot("projectKey");
+    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("636f6d706c6963617465642e3a6e616d652f776974685f696e76616c6964256368617273").resolve("projects").resolve("70726f6a6563744b6579"));
   }
 
   @Test
   public void encodeTooLongServerId() throws Exception {
 
     Path sonarUserHome = temp.newFolder().toPath();
-    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
+    ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId(StringUtils.repeat("a", 260))
       .build());
 
-    Path storageRoot = manager.getServerStorageRoot();
+    Path storageRoot = manager.getProjectStorageRoot("projectKey");
     String folderName = StringUtils.repeat("61", 111) + "6" + "6eeae9bf4dbb517d471f397af83bc76b";
     assertThat(folderName.length()).isLessThanOrEqualTo(255);
-    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve(folderName));
+    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve(folderName).resolve("projects").resolve("70726f6a6563744b6579"));
   }
 
   @Test
   public void paths() throws IOException {
     Path sonarUserHome = temp.newFolder().toPath();
-    StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
+    ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId("server")
       .build());
@@ -91,23 +91,12 @@ public class StorageManagerTest {
       .resolve("70726f6a656374")
       .resolve("server_issues"));
 
-    assertThat(manager.getProjectListPath()).isEqualTo(sonarUserHome
-      .resolve("storage")
-      .resolve("736572766572")
-      .resolve("global")
-      .resolve("project_list.pb"));
-
     assertThat(manager.getComponentListPath("project")).isEqualTo(sonarUserHome
       .resolve("storage")
       .resolve("736572766572")
       .resolve("projects")
       .resolve("70726f6a656374")
       .resolve("component_list.pb"));
-  }
-
-  @Test
-  public void readModuleList() {
-
   }
 
 }

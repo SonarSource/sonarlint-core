@@ -19,17 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.picocontainer.injectors.ProviderAdapter;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class StorageQProfilesProvider extends ProviderAdapter {
+public class ServerInfoStore {
+  public static final String SERVER_INFO_PB = "server_info.pb";
 
-  private Sonarlint.QProfiles qProfilesFromStorage;
+  private final StorageFolder storageFolder;
+  private final RWLock rwLock = new RWLock();
 
-  public Sonarlint.QProfiles provide(QualityProfileStore qualityProfileStore) {
-    if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = qualityProfileStore.getAll();
-    }
-    return qProfilesFromStorage;
+  public ServerInfoStore(StorageFolder storageFolder) {
+    this.storageFolder = storageFolder;
+  }
+
+  public void store(Sonarlint.ServerInfos serverInfo) {
+    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(serverInfo, dest.resolve(SERVER_INFO_PB))));
+  }
+
+  public Sonarlint.ServerInfos getAll() {
+    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(SERVER_INFO_PB), Sonarlint.ServerInfos.parser())));
   }
 }

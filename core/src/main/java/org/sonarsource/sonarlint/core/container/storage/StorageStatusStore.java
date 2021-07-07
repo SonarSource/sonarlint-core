@@ -19,17 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.picocontainer.injectors.ProviderAdapter;
+import java.nio.file.Files;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class StorageQProfilesProvider extends ProviderAdapter {
+public class StorageStatusStore {
+  public static final String STORAGE_STATUS_PB = "storage_status.pb";
 
-  private Sonarlint.QProfiles qProfilesFromStorage;
+  private final StorageFolder storageFolder;
+  private final RWLock rwLock = new RWLock();
 
-  public Sonarlint.QProfiles provide(QualityProfileStore qualityProfileStore) {
-    if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = qualityProfileStore.getAll();
-    }
-    return qProfilesFromStorage;
+  public StorageStatusStore(StorageFolder storageFolder) {
+    this.storageFolder = storageFolder;
+  }
+
+  public void store(Sonarlint.StorageStatus storageStatus) {
+    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(storageStatus, dest.resolve(STORAGE_STATUS_PB))));
+  }
+
+  public Sonarlint.StorageStatus getAll() {
+    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(STORAGE_STATUS_PB), Sonarlint.StorageStatus.parser())));
+  }
+
+  public boolean exists() {
+    return rwLock.read(() -> storageFolder.readAction(source -> Files.exists(source.resolve(STORAGE_STATUS_PB))));
   }
 }

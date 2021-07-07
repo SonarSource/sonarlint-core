@@ -28,9 +28,8 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -38,24 +37,22 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 public class PartialUpdater {
   private final IssueStoreFactory issueStoreFactory;
   private final IssueDownloader downloader;
-  private final ProjectListDownloader projectListDownloader;
   private final IssueStorePaths issueStorePaths;
   private final TempFolder tempFolder;
-  private final StoragePaths storagePaths;
+  private final ProjectStoragePaths projectStoragePaths;
 
   public PartialUpdater(IssueStoreFactory issueStoreFactory, IssueDownloader downloader,
-    StoragePaths storagePaths, ProjectListDownloader projectListDownloader, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
+    ProjectStoragePaths projectStoragePaths, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
     this.issueStoreFactory = issueStoreFactory;
     this.downloader = downloader;
-    this.storagePaths = storagePaths;
-    this.projectListDownloader = projectListDownloader;
+    this.projectStoragePaths = projectStoragePaths;
     this.issueStorePaths = issueStorePaths;
     this.tempFolder = tempFolder;
   }
 
   public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
     ProgressWrapper progress) {
-    Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
+    Path serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
     if (fileKey == null) {
@@ -72,15 +69,6 @@ public class PartialUpdater {
   }
 
   public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
-  }
-
-  public void updateProjectList(ProgressWrapper progress) {
-    try {
-      projectListDownloader.fetchTo(storagePaths.getGlobalStorageRoot(), progress);
-    } catch (Exception e) {
-      // null as cause so that it doesn't get wrapped
-      throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
-    }
+    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
   }
 }
