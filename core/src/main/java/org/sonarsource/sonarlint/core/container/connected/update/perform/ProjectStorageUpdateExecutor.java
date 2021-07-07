@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -59,18 +58,16 @@ public class ProjectStorageUpdateExecutor {
   }
 
   public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    GlobalProperties globalProps = storageReader.readGlobalProperties();
-
     FileUtils.replaceDir(temp -> {
-      ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
+      ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
 
-  private ProjectConfiguration updateConfiguration(String projectKey, GlobalProperties globalProps, Path temp, ProgressWrapper progress) {
-    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, globalProps, progress);
+  private ProjectConfiguration updateConfiguration(String projectKey, Path temp, ProgressWrapper progress) {
+    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, progress);
     final Set<String> qProfileKeys = storageReader.readQProfiles().getQprofilesByKeyMap().keySet();
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
