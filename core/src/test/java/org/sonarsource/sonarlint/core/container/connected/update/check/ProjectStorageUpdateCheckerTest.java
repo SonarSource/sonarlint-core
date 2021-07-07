@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
+import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
@@ -59,8 +60,6 @@ public class ProjectStorageUpdateCheckerTest {
     when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().build());
 
-    SettingsDownloader settingsDownloader = mock(SettingsDownloader.class);
-    when(settingsDownloader.fetchGlobalSettings()).thenReturn(GlobalProperties.newBuilder().build());
     checker = new ProjectStorageUpdateChecker(storageReader, projectConfigurationDownloader);
   }
 

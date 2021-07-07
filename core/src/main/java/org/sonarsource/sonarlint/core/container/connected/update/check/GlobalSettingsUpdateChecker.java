@@ -32,9 +32,11 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 
 public class GlobalSettingsUpdateChecker {
 
@@ -51,15 +53,15 @@ public class GlobalSettingsUpdateChecker {
     CoreProperties.GLOBAL_TEST_EXCLUSIONS_PROPERTY);
 
   private final StorageReader storageReader;
-  private final SettingsDownloader globalPropertiesDownloader;
+  private final SettingsApi settingsApi;
 
-  public GlobalSettingsUpdateChecker(StorageReader storageManager, SettingsDownloader globalPropertiesDownloader) {
+  public GlobalSettingsUpdateChecker(StorageReader storageManager, ServerApiHelper serverApiHelper) {
     this.storageReader = storageManager;
-    this.globalPropertiesDownloader = globalPropertiesDownloader;
+    this.settingsApi = new ServerApi(serverApiHelper).settings();
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
-    GlobalProperties serverGlobalProperties = globalPropertiesDownloader.fetchGlobalSettings();
+    GlobalProperties serverGlobalProperties = settingsApi.getGlobalSettings();
     GlobalProperties storageGlobalProperties = storageReader.readGlobalProperties();
     MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties.getPropertiesMap()), filter(serverGlobalProperties.getPropertiesMap()));
     if (!propDiff.areEqual()) {
