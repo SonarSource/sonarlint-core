@@ -82,7 +82,7 @@ public class GlobalStorageUpdateExecutor {
       globalSettingsDownloader.fetchGlobalSettingsTo(temp);
 
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
-      pluginReferenceDownloader.fetchPluginsTo(serverVersion, temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
+      pluginReferenceDownloader.fetchPluginsTo(temp, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
       rulesDownloader.fetchRulesTo(temp, progress.subProgress(0.4f, 0.6f, "Fetching rules"));
