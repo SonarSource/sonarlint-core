@@ -19,27 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import com.google.gson.Gson;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import org.apache.commons.lang.StringUtils;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerVersionAndStatusChecker {
 
-  private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
-
   private static final String MIN_SQ_VERSION = "7.9";
-  private final ServerApiHelper serverApiHelper;
+  private final SystemApi systemApi;
 
   public ServerVersionAndStatusChecker(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+    this.systemApi = new ServerApi(serverApiHelper).system();
   }
 
   public ServerInfos checkVersionAndStatus() {
@@ -73,7 +69,7 @@ public class ServerVersionAndStatusChecker {
    * @throws IllegalStateException If server is not ready
    */
   public CompletableFuture<ServerInfos> checkVersionAndStatusAsync(String minVersion) {
-    return fetchServerInfos()
+    return systemApi.getStatus()
       .thenApply(serverStatus -> {
         if (!"UP".equals(serverStatus.getStatus())) {
           throw new IllegalStateException(serverNotReady(serverStatus));
@@ -99,7 +95,7 @@ public class ServerVersionAndStatusChecker {
   }
 
   public CompletableFuture<ValidationResult> validateStatusAndVersion(String minVersion) {
-    return fetchServerInfos()
+    return systemApi.getStatus()
       .thenApply(serverStatus -> {
         if (!"UP".equals(serverStatus.getStatus())) {
           return new DefaultValidationResult(false, serverNotReady(serverStatus));
@@ -111,30 +107,4 @@ public class ServerVersionAndStatusChecker {
         return new DefaultValidationResult(true, "Compatible and ready");
       });
   }
-
-  private CompletableFuture<ServerInfos> fetchServerInfos() {
-    return ServerApiHelper.processTimed(
-      serverApiHelper.getAsync("api/system/status"),
-      response -> {
-        String responseStr = response.bodyAsString();
-        try {
-          SystemStatus status = new Gson().fromJson(responseStr, SystemStatus.class);
-          ServerInfos.Builder builder = ServerInfos.newBuilder();
-          builder.setId(status.id);
-          builder.setStatus(status.status);
-          builder.setVersion(status.version);
-          return builder.build();
-        } catch (Exception e) {
-          throw new IllegalStateException("Unable to parse server infos from: " + StringUtils.abbreviate(responseStr, 100), e);
-        }
-      },
-      duration -> LOG.debug("Downloaded server infos in {}ms", duration));
-  }
-
-  static class SystemStatus {
-    String id;
-    String version;
-    String status;
-  }
-
 }
