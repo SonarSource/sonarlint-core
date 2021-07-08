@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerApi {
   private final ServerApiHelper helper;
@@ -74,5 +75,9 @@ public class ServerApi {
 
   public RulesApi rules() {
     return new RulesApi(helper);
+  }
+
+  public SystemApi system() {
+    return new SystemApi(helper);
   }
 }
