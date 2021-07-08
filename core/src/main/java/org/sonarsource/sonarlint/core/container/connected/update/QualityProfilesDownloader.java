@@ -20,61 +20,20 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.Qualityprofiles;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 
 public class QualityProfilesDownloader {
-  private static final Logger LOG = Loggers.get(QualityProfilesDownloader.class);
-
-  private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
-  private final ServerApiHelper serverApiHelper;
+  private final QualityProfileApi qualityProfileApi;
 
   public QualityProfilesDownloader(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+    this.qualityProfileApi = new ServerApi(serverApiHelper).qualityProfile();
   }
 
   public void fetchQualityProfilesTo(Path destDir) {
-    ProtobufUtil.writeToFile(fetchQualityProfiles(), destDir.resolve(StoragePaths.QUALITY_PROFILES_PB));
-  }
-
-  public QProfiles fetchQualityProfiles() {
-    QProfiles.Builder qProfileBuilder = QProfiles.newBuilder();
-
-    StringBuilder searchUrl = new StringBuilder();
-    searchUrl.append(DEFAULT_QP_SEARCH_URL);
-    serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("?organization=").append(StringUtils.urlEncode(org)));
-    ServerApiHelper.consumeTimed(
-      () -> serverApiHelper.get(searchUrl.toString()),
-      response -> {
-        SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream());
-        for (QualityProfile qp : qpResponse.getProfilesList()) {
-          QProfile.Builder qpBuilder = QProfile.newBuilder();
-          qpBuilder.setKey(qp.getKey());
-          qpBuilder.setName(qp.getName());
-          qpBuilder.setLanguage(qp.getLanguage());
-          qpBuilder.setLanguageName(qp.getLanguageName());
-          qpBuilder.setActiveRuleCount(qp.getActiveRuleCount());
-          qpBuilder.setRulesUpdatedAt(qp.getRulesUpdatedAt());
-          qpBuilder.setUserUpdatedAt(qp.getUserUpdatedAt());
-
-          qProfileBuilder.putQprofilesByKey(qp.getKey(), qpBuilder.build());
-          if (qp.getIsDefault()) {
-            qProfileBuilder.putDefaultQProfilesByLanguage(qp.getLanguage(), qp.getKey());
-          }
-        }
-      },
-      duration -> LOG.debug("Downloaded quality profiles in {}ms", duration));
-
-    return qProfileBuilder.build();
+    ProtobufUtil.writeToFile(qualityProfileApi.getQualityProfiles(), destDir.resolve(StoragePaths.QUALITY_PROFILES_PB));
   }
 }

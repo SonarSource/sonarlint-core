@@ -23,6 +23,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
@@ -59,5 +60,9 @@ public class ServerApi {
 
   public SettingsApi settings() {
     return new SettingsApi(helper);
+  }
+
+  public QualityProfileApi qualityProfile() {
+    return new QualityProfileApi(helper);
   }
 }
