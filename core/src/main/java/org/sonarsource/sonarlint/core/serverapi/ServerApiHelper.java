@@ -242,7 +242,7 @@ public class ServerApiHelper {
     });
   }
 
-  public static void consumeTimed(Supplier<HttpClient.Response> responseSupplier, IOConsummer<HttpClient.Response> responseConsumer,
+  public static void consumeTimed(Supplier<HttpClient.Response> responseSupplier, IOConsumer<HttpClient.Response> responseConsumer,
     LongConsumer durationConsummer) {
     processTimed(responseSupplier, r -> {
       responseConsumer.accept(r);
@@ -256,7 +256,7 @@ public class ServerApiHelper {
   }
 
   @FunctionalInterface
-  public interface IOConsummer<T> {
+  public interface IOConsumer<T> {
     void accept(T t) throws IOException;
   }
 
