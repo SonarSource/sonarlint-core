@@ -25,6 +25,7 @@ import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
 import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
+import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
@@ -69,5 +70,9 @@ public class ServerApi {
 
   public PluginsApi plugins() {
     return new PluginsApi(helper);
+  }
+
+  public RulesApi rules() {
+    return new RulesApi(helper);
   }
 }
