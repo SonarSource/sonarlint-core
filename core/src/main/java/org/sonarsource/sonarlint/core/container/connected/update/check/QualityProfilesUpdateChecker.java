@@ -23,23 +23,25 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 
 public class QualityProfilesUpdateChecker {
 
   private final StorageReader storageReader;
-  private final QualityProfilesDownloader qualityProfilesDownloader;
+  private final QualityProfileApi qualityProfileApi;
 
-  public QualityProfilesUpdateChecker(StorageReader storageReader, QualityProfilesDownloader qualityProfilesDownloader) {
+  public QualityProfilesUpdateChecker(StorageReader storageReader, ServerApiHelper serverApiHelper) {
     this.storageReader = storageReader;
-    this.qualityProfilesDownloader = qualityProfilesDownloader;
+    this.qualityProfileApi = new ServerApi(serverApiHelper).qualityProfile();
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result) {
-    QProfiles serverQualityProfiles = qualityProfilesDownloader.fetchQualityProfiles();
+    QProfiles serverQualityProfiles = qualityProfileApi.getQualityProfiles();
     QProfiles storageQProfiles = storageReader.readQProfiles();
     Map<String, QProfile> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap();
     Map<String, QProfile> storagePluginHashes = storageQProfiles.getQprofilesByKeyMap();
