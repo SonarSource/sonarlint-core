@@ -40,12 +40,12 @@ public class ActiveRulesStore {
     this.storageFolder = storageFolder;
   }
 
-  public void store(Map<String, Sonarlint.ActiveRules.Builder> activeRulesBuildersByQProfile) {
+  public void store(Map<String, Sonarlint.ActiveRules> activeRulesBuildersByQProfile) {
     rwLock.write(() -> storageFolder.writeAction(dest -> {
       Path activeRulesDir = dest.resolve(ACTIVE_RULES_FOLDER);
       FileUtils.mkdirs(activeRulesDir);
-      for (Map.Entry<String, Sonarlint.ActiveRules.Builder> entry : activeRulesBuildersByQProfile.entrySet()) {
-        ProtobufUtil.writeToFile(entry.getValue().build(), activeRulesDir.resolve(encodeForFs(entry.getKey()) + ".pb"));
+      for (Map.Entry<String, Sonarlint.ActiveRules> entry : activeRulesBuildersByQProfile.entrySet()) {
+        ProtobufUtil.writeToFile(entry.getValue(), activeRulesDir.resolve(encodeForFs(entry.getKey()) + ".pb"));
       }
     }));
   }
