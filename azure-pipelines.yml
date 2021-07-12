@@ -66,7 +66,7 @@ stages:
           mavenSettingsFilePath: $(mavenSettings.secureFilePath)
       - task: Maven@3
         displayName: 'Run Maven deploy and sign'
-        condition: ne(variables['Build.Reason'], 'PullRequest')
+        condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
         env:
           ARTIFACTORY_DEPLOY_USERNAME: $(ARTIFACTORY_DEPLOY_USERNAME)
           ARTIFACTORY_DEPLOY_PASSWORD: $(ARTIFACTORY_DEPLOY_PASSWORD)
@@ -89,7 +89,7 @@ stages:
           mavenOptions: $(MAVEN_OPTS)
       - task: Maven@3
         displayName: 'Run Maven deploy'
-        condition: eq(variables['Build.Reason'], 'PullRequest')
+        condition: and(succeeded(),eq(variables['Build.Reason'], 'PullRequest'))
         env:
           ARTIFACTORY_DEPLOY_USERNAME: $(ARTIFACTORY_DEPLOY_USERNAME)
           ARTIFACTORY_DEPLOY_PASSWORD: $(ARTIFACTORY_DEPLOY_PASSWORD)
