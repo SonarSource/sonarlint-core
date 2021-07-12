@@ -25,7 +25,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.tracking.DigestUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-public class StoragePaths {
+public class ProjectStoragePaths {
 
   private static final int MAX_FOLDER_NAME_SIZE = 255;
 
@@ -34,34 +34,16 @@ public class StoragePaths {
    */
   public static final String STORAGE_VERSION = "3";
 
-  public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
-  public static final String PROPERTIES_PB = "properties.pb";
   public static final String PROJECT_CONFIGURATION_PB = "configuration.pb";
-  public static final String RULES_PB = "rules.pb";
-  public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
   public static final String STORAGE_STATUS_PB = "storage_status.pb";
-  public static final String SERVER_INFO_PB = "server_info.pb";
-  public static final String ACTIVE_RULES_FOLDER = "active_rules";
-  public static final String PROJECT_LIST_PB = "project_list.pb";
   public static final String SERVER_ISSUES_DIR = "server_issues";
   public static final String COMPONENT_LIST_PB = "component_list.pb";
 
-  private final Path serverStorageRoot;
-  private final Path globalStorageRoot;
   private final Path projectStorageRoot;
 
-  public StoragePaths(ConnectedGlobalConfiguration configuration) {
-    serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getConnectionId()));
-    globalStorageRoot = serverStorageRoot.resolve("global");
+  public ProjectStoragePaths(ConnectedGlobalConfiguration configuration) {
+    Path serverStorageRoot = configuration.getStorageRoot().resolve(encodeForFs(configuration.getConnectionId()));
     projectStorageRoot = serverStorageRoot.resolve("projects");
-  }
-
-  public Path getServerStorageRoot() {
-    return serverStorageRoot;
-  }
-
-  public Path getGlobalStorageRoot() {
-    return globalStorageRoot;
   }
 
   public Path getProjectStorageRoot(String projectKey) {
@@ -89,38 +71,6 @@ public class StoragePaths {
 
   public Path getProjectUpdateStatusPath(String projectKey) {
     return getProjectStorageRoot(projectKey).resolve(STORAGE_STATUS_PB);
-  }
-
-  public Path getPluginReferencesPath() {
-    return getGlobalStorageRoot().resolve(PLUGIN_REFERENCES_PB);
-  }
-
-  public Path getGlobalPropertiesPath() {
-    return getGlobalStorageRoot().resolve(PROPERTIES_PB);
-  }
-
-  public Path getProjectListPath() {
-    return getGlobalStorageRoot().resolve(PROJECT_LIST_PB);
-  }
-
-  public Path getRulesPath() {
-    return getGlobalStorageRoot().resolve(RULES_PB);
-  }
-
-  public Path getQProfilesPath() {
-    return getGlobalStorageRoot().resolve(QUALITY_PROFILES_PB);
-  }
-
-  public Path getActiveRulesPath(String qProfileKey) {
-    return getGlobalStorageRoot().resolve(ACTIVE_RULES_FOLDER).resolve(encodeForFs(qProfileKey) + ".pb");
-  }
-
-  public Path getStorageStatusPath() {
-    return getGlobalStorageRoot().resolve(STORAGE_STATUS_PB);
-  }
-
-  public Path getServerInfosPath() {
-    return getGlobalStorageRoot().resolve(SERVER_INFO_PB);
   }
 
   public Path getServerIssuesPath(String projectKey) {

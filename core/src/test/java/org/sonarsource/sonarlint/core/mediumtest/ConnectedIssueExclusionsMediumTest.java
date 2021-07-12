@@ -45,8 +45,10 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -60,7 +62,7 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
-import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
 public class ConnectedIssueExclusionsMediumTest {
 
@@ -72,7 +74,7 @@ public class ConnectedIssueExclusionsMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
   private static File baseDir;
-  private static StoragePaths storagePaths;
+  private static ProjectStoragePaths projectStoragePaths;
   private static StorageReader storageReader;
   private static ProjectConfiguration originalModuleConfig;
 
@@ -100,7 +102,9 @@ public class ConnectedIssueExclusionsMediumTest {
     cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH,
       (filename, target) -> FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), target.toFile()));
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    Path globalFolderPath = tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global");
+    org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(globalFolderPath);
+    new PluginReferenceStore(new StorageFolder.Default(globalFolderPath)).store(builder.build());
 
     // update versions in test storage and create an empty stale module storage
     writeProjectStatus(tmpStorage, "test-project", VersionUtils.getLibraryVersion());
@@ -115,7 +119,7 @@ public class ConnectedIssueExclusionsMediumTest {
       .addEnabledLanguage(Language.JAVA)
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
-    storagePaths = sonarlint.getGlobalContainer().getComponentByType(StoragePaths.class);
+    projectStoragePaths = sonarlint.getGlobalContainer().getComponentByType(ProjectStoragePaths.class);
     storageReader = sonarlint.getGlobalContainer().getComponentByType(StorageReader.class);
     originalModuleConfig = storageReader.readProjectConfig(JAVA_MODULE_KEY);
 
@@ -126,24 +130,24 @@ public class ConnectedIssueExclusionsMediumTest {
     Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("projects").resolve(encodeForFs(name));
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StoragePaths.STORAGE_VERSION)
+      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
     Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StoragePaths.STORAGE_VERSION)
+      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
   @AfterClass
@@ -156,7 +160,7 @@ public class ConnectedIssueExclusionsMediumTest {
 
   @Before
   public void restoreConfig() {
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of());
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of());
   }
 
   @Test
@@ -172,12 +176,12 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).isEmpty();
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
@@ -186,7 +190,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
       tuple("java:S1220", null, FILE2_PATH, "MINOR"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
@@ -194,7 +198,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE1_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1,2",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.multicriteria", "1,2",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.ignore.multicriteria.2.resourceKey", FILE1_PATH,
@@ -219,14 +223,14 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.allfile", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL1"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
       tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.allfile", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL(1|2)"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).isEmpty();
   }
@@ -244,7 +248,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.block", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.ignore.block", "1",
       "sonar.issue.ignore.block.1.beginBlockRegexp", "SON.*-OFF",
       "sonar.issue.ignore.block.1.endBlockRegexp", "SON.*-ON"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
@@ -260,7 +264,7 @@ public class ConnectedIssueExclusionsMediumTest {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
@@ -271,7 +275,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
@@ -281,7 +285,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
@@ -289,7 +293,7 @@ public class ConnectedIssueExclusionsMediumTest {
       tuple("java:S1220", null, FILE2_PATH, "MINOR"),
       tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
 
-    updateProjectConfig(storagePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1,2",
+    updateProjectConfig(projectStoragePaths, originalModuleConfig, ImmutableMap.of("sonar.issue.enforce.multicriteria", "1,2",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.enforce.multicriteria.2.resourceKey", FILE1_PATH,
@@ -313,10 +317,10 @@ public class ConnectedIssueExclusionsMediumTest {
     return issues;
   }
 
-  private void updateProjectConfig(StoragePaths storagePaths, ProjectConfiguration originalProjectConfig, Map<String, String> props) {
+  private void updateProjectConfig(ProjectStoragePaths projectStoragePaths, ProjectConfiguration originalProjectConfig, Map<String, String> props) {
     Builder newBuilder = ProjectConfiguration.newBuilder(originalProjectConfig);
     newBuilder.putAllProperties(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), storagePaths.getProjectConfigurationPath(JAVA_MODULE_KEY));
+    ProtobufUtil.writeToFile(newBuilder.build(), projectStoragePaths.getProjectConfigurationPath(JAVA_MODULE_KEY));
   }
 
   private ClientInputFile prepareJavaInputFile1() throws IOException {

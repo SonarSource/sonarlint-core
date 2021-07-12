@@ -26,9 +26,9 @@ public class StorageRulesProvider extends ProviderAdapter {
 
   private Sonarlint.Rules rulesFromStorage;
 
-  public Sonarlint.Rules provide(StorageReader storageReader) {
+  public Sonarlint.Rules provide(RulesStore rulesStore) {
     if (rulesFromStorage == null) {
-      rulesFromStorage = storageReader.readRules();
+      rulesFromStorage = rulesStore.getAll();
     }
     return rulesFromStorage;
   }

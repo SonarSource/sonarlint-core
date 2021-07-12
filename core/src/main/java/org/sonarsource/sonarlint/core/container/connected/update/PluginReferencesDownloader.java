@@ -25,16 +25,16 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PluginReferencesDownloader {
@@ -42,13 +42,16 @@ public class PluginReferencesDownloader {
   private static final Logger LOG = Loggers.get(PluginReferencesDownloader.class);
 
   private final PluginCache pluginCache;
-  private final ServerApiHelper serverApiHelper;
+  private final PluginsApi pluginsApi;
   private final ConnectedGlobalConfiguration configuration;
+  private final PluginReferenceStore pluginReferenceStore;
 
-  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache, ConnectedGlobalConfiguration configuration) {
-    this.serverApiHelper = serverApiHelper;
+  public PluginReferencesDownloader(ServerApiHelper serverApiHelper, PluginCache pluginCache, ConnectedGlobalConfiguration configuration,
+    PluginReferenceStore pluginReferenceStore) {
+    this.pluginsApi = new ServerApi(serverApiHelper).plugins();
     this.pluginCache = pluginCache;
     this.configuration = configuration;
+    this.pluginReferenceStore = pluginReferenceStore;
   }
 
   public PluginReferences toReferences(List<SonarAnalyzer> analyzers) {
@@ -88,7 +91,7 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public void fetchPluginsTo(Version serverVersion, Path dest, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+  public void fetchPlugins(List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
     float refCount = refs.getReferenceList().size();
@@ -98,34 +101,26 @@ public class PluginReferencesDownloader {
         continue;
       }
       progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
-      pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(serverVersion, ref.getKey()));
+      pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
     }
-    ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    pluginReferenceStore.store(refs);
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Copier {
     private final String key;
-    private final Version serverVersion;
 
-    SonarQubeServerPluginDownloader(Version serverVersion, String key) {
-      this.serverVersion = serverVersion;
+    SonarQubeServerPluginDownloader(String key) {
       this.key = key;
     }
 
     @Override
     public void copy(String filename, Path toFile) throws IOException {
-      String url = "api/plugins/download?plugin=" + key;
-
       if (LOG.isDebugEnabled()) {
         LOG.debug("Download plugin '{}' to '{}'...", filename, toFile);
       } else {
         LOG.info("Download '{}'...", filename);
       }
-
-      ServerApiHelper.consumeTimed(
-        () -> serverApiHelper.get(url),
-        response -> FileUtils.copyInputStreamToFile(response.bodyAsStream(), toFile.toFile()),
-        duration -> LOG.info("Downloaded '{}' in {}ms", filename, duration));
+      pluginsApi.getPlugin(key, pluginInputStream -> FileUtils.copyInputStreamToFile(pluginInputStream, toFile.toFile()));
     }
   }
 }

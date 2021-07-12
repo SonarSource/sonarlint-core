@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.project;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -27,6 +29,7 @@ import org.sonarqube.ws.Components.ShowWsResponse;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectApi {
@@ -39,6 +42,26 @@ public class ProjectApi {
 
   public Optional<ServerProject> getProject(String projectKey, ProgressMonitor monitor) {
     return fetchComponent(projectKey).map(DefaultRemoteProject::new);
+  }
+
+  public List<ServerProject> getAllProjects(ProgressWrapper progress) {
+    List<ServerProject> serverProjects = new ArrayList<>();
+    helper.getPaginated(getAllProjectsUrl(),
+      Components.SearchWsResponse::parseFrom,
+      Components.SearchWsResponse::getPaging,
+      Components.SearchWsResponse::getComponentsList,
+      project -> serverProjects.add(new DefaultRemoteProject(project)),
+      true,
+      progress);
+    return serverProjects;
+  }
+
+  private String getAllProjectsUrl() {
+    StringBuilder searchUrl = new StringBuilder();
+    searchUrl.append("api/components/search.protobuf?qualifiers=TRK");
+    helper.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+    return searchUrl.toString();
   }
 
   public Optional<ShowWsResponse> fetchComponent(String componentKey) {

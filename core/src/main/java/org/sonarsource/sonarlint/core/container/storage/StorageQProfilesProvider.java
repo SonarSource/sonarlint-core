@@ -26,9 +26,9 @@ public class StorageQProfilesProvider extends ProviderAdapter {
 
   private Sonarlint.QProfiles qProfilesFromStorage;
 
-  public Sonarlint.QProfiles provide(StorageReader storageReader) {
+  public Sonarlint.QProfiles provide(QualityProfileStore qualityProfileStore) {
     if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = storageReader.readQProfiles();
+      qProfilesFromStorage = qualityProfileStore.getAll();
     }
     return qProfilesFromStorage;
   }
