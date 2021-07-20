@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 public class ProgressReport implements Runnable {
 
@@ -31,6 +31,7 @@ public class ProgressReport implements Runnable {
   private Supplier<String> messageSupplier = () -> "";
   private final Thread thread;
   private String stopMessage = null;
+  private volatile boolean stop = false;
 
   public ProgressReport(String threadName, long period) {
     this.period = period;
@@ -40,7 +41,7 @@ public class ProgressReport implements Runnable {
 
   @Override
   public void run() {
-    while (!Thread.interrupted()) {
+    while (!stop) {
       try {
         Thread.sleep(period);
         log(messageSupplier.get());
@@ -64,19 +65,17 @@ public class ProgressReport implements Runnable {
 
   public void stop(@Nullable String stopMessage) {
     this.stopMessage = stopMessage;
+    this.stop = true;
     thread.interrupt();
     try {
-      thread.join();
+      thread.join(1000);
     } catch (InterruptedException e) {
       // Ignore
     }
   }
 
   private static void log(String message) {
-    synchronized (LOG) {
-      LOG.info(message);
-      LOG.notifyAll();
-    }
+    LOG.info(message);
   }
 
 }
