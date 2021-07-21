@@ -65,7 +65,7 @@ public class DefaultClientIssueTest {
 
     when(rule.name()).thenReturn("name");
 
-    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", textRange, clientInputFile, Collections.emptyList());
+    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", textRange, clientInputFile, Collections.emptyList(), Collections.emptyList());
 
     assertThat(issue.getStartLine()).isEqualTo(1);
     assertThat(issue.getStartLineOffset()).isEqualTo(2);
@@ -81,7 +81,7 @@ public class DefaultClientIssueTest {
 
   @Test
   public void nullRange() {
-    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", null, null, Collections.emptyList());
+    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, rule, "msg", null, null, Collections.emptyList(), Collections.emptyList());
 
     assertThat(issue.getStartLine()).isNull();
     assertThat(issue.getStartLineOffset()).isNull();
@@ -89,5 +89,6 @@ public class DefaultClientIssueTest {
     assertThat(issue.getEndLineOffset()).isNull();
 
     assertThat(issue.flows()).isEmpty();
+    assertThat(issue.quickFixes()).isEmpty();
   }
 }

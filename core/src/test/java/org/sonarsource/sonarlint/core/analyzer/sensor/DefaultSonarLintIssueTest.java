@@ -21,17 +21,26 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.TestInputFileBuilder;
+import org.sonarsource.sonarlint.core.client.api.common.ClientInputFileEdit;
+import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import org.sonarsource.sonarlint.core.client.api.common.QuickFixable;
+import org.sonarsource.sonarlint.core.client.api.common.TextEdit;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputDir;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
+import org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit;
+import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
 
 import static org.apache.commons.lang.StringUtils.repeat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,10 +69,11 @@ public class DefaultSonarLintIssueTest {
   @Test
   public void build_file_issue() {
     SensorStorage storage = mock(SensorStorage.class);
+    TextRange range = inputFile.selectLine(1);
     DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
         .on(inputFile)
-        .at(inputFile.selectLine(1))
+        .at(range)
         .message("Wrong way!"))
       .forRule(RuleKey.of("repo", "rule"))
       .gap(10.0);
@@ -76,6 +86,25 @@ public class DefaultSonarLintIssueTest {
     assertThatExceptionOfType(UnsupportedOperationException.class)
       .isThrownBy(() -> issue.gap())
       .withMessage("No gap in SonarLint");
+
+    NewQuickFix newQuickFix = issue.newQuickFix().message("Fix this issue");
+    NewInputFileEdit newInputFileEdit = newQuickFix.newInputFileEdit().on(inputFile);
+    newInputFileEdit.addTextEdit(newInputFileEdit.newTextEdit().at(range).withNewText("// Fixed!"));
+    newQuickFix.addInputFileEdit(newInputFileEdit);
+    issue.addQuickFix(newQuickFix);
+
+    List<QuickFix> quickFixes = ((QuickFixable) issue).quickFixes();
+    assertThat(quickFixes).hasSize(1);
+    QuickFix quickFix = quickFixes.get(0);
+    assertThat(quickFix.message()).isEqualTo("Fix this issue");
+    List<ClientInputFileEdit> inputFileEdits = quickFix.inputFileEdits();
+    assertThat(inputFileEdits).hasSize(1);
+    ClientInputFileEdit inputFileEdit = inputFileEdits.get(0);
+    assertThat(inputFileEdit.target()).isEqualTo(((SonarLintInputFile) inputFile).getClientInputFile());
+    assertThat(inputFileEdit.textEdits()).hasSize(1);
+    TextEdit textEdit = inputFileEdit.textEdits().get(0);
+    assertThat(textEdit.range()).isEqualTo(range);
+    assertThat(textEdit.newText()).isEqualTo("// Fixed!");
 
     issue.save();
 

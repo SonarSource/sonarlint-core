@@ -17,27 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common.analysis;
+package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
 
-public interface Issue extends IssueLocation {
+public interface QuickFix {
 
-  String getSeverity();
+  List<ClientInputFileEdit> inputFileEdits();
 
-  String getType();
-
-  String getRuleKey();
-
-  String getRuleName();
-
-  List<Flow> flows();
-
-  List<QuickFix> quickFixes();
-
-  interface Flow {
-    List<IssueLocation> locations();
-  }
-
+  String message();
 }

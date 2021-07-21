@@ -19,23 +19,35 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import org.junit.Test;
-import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.scan.issue.filter.FilterableIssue;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
+import org.sonarsource.sonarlint.core.client.api.common.TextEdit;
+import org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+public class DefaultTextEdit implements TextEdit, NewTextEdit {
 
-public class DefaultFilterableIssueTest {
+  private TextRange range;
 
-  @Test
-  public void delegate_textRange_to_rawIssue() {
-    TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
-    DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, null, null, null, textRange, null, null, null);
-    FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
-    assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
+  private String newText;
+
+  @Override
+  public NewTextEdit at(TextRange range) {
+    this.range = range;
+    return this;
+  }
+
+  @Override
+  public NewTextEdit withNewText(String newText) {
+    this.newText = newText;
+    return this;
+  }
+
+  @Override
+  public TextRange range() {
+    return range;
+  }
+
+  @Override
+  public String newText() {
+    return newText;
   }
 }

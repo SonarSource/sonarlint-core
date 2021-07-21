@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
+import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public final class DefaultClientIssue extends TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
@@ -35,9 +36,10 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   private final ClientInputFile clientInputFile;
   private final Rule rule;
   private final List<Flow> flows;
+  private final List<QuickFix> quickFixes;
 
   public DefaultClientIssue(String severity, String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
-    @Nullable ClientInputFile clientInputFile, List<Flow> flows) {
+    @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes) {
     super(textRange);
     this.severity = severity;
     this.type = type;
@@ -46,6 +48,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
     this.flows = flows;
+    this.quickFixes = quickFixes;
   }
 
   @Override
@@ -83,6 +86,11 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   @Override
   public List<Flow> flows() {
     return flows;
+  }
+
+  @Override
+  public List<QuickFix> quickFixes() {
+    return quickFixes;
   }
 
   @Override
