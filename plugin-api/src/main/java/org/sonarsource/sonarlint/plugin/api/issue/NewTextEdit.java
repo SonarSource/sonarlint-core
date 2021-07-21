@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Plugin API
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common.analysis;
+package org.sonarsource.sonarlint.plugin.api.issue;
 
-import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import org.sonar.api.batch.fs.TextRange;
 
-public interface Issue extends IssueLocation {
+/**
+ * Describe a text edit for a {@link NewInputFileEdit} as a replacement text for a given {@link TextRange}
+ * @since 6.3
+ */
+public interface NewTextEdit {
 
-  String getSeverity();
+  /**
+   * @param range the range on which to apply this edit
+   * @return the modified edit
+   */
+  NewTextEdit at(TextRange range);
 
-  String getType();
-
-  String getRuleKey();
-
-  String getRuleName();
-
-  List<Flow> flows();
-
-  List<QuickFix> quickFixes();
-
-  interface Flow {
-    List<IssueLocation> locations();
-  }
-
+  /**
+   * @param newText the replacement text
+   * @return the modified edit
+   */
+  NewTextEdit withNewText(String newText);
 }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Plugin API
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common.analysis;
+package org.sonarsource.sonarlint.plugin.api.issue;
 
-import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+/**
+ * Extension interface to add {@link NewQuickFix}es to a {@link org.sonar.api.batch.sensor.issue.NewIssue}
+ * @since 6.3
+ */
+public interface NewSonarLintIssue {
 
-public interface Issue extends IssueLocation {
+  /**
+   * Create a new quick fix
+   * @return a new uninitialized instance of a quick fix for a given issue
+   */
+  NewQuickFix newQuickFix();
 
-  String getSeverity();
-
-  String getType();
-
-  String getRuleKey();
-
-  String getRuleName();
-
-  List<Flow> flows();
-
-  List<QuickFix> quickFixes();
-
-  interface Flow {
-    List<IssueLocation> locations();
-  }
-
+  /**
+   * Add a new quick fix to this issue
+   * @param newQuickFix the quick fix to add
+   * @return this object
+   */
+  NewSonarLintIssue addQuickFix(NewQuickFix newQuickFix);
 }

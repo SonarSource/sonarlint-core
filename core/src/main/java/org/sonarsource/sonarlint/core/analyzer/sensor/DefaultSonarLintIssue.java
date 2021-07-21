@@ -36,7 +36,12 @@ import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.PathUtils;
+import org.sonarsource.sonarlint.core.analyzer.issue.DefaultQuickFix;
+import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import org.sonarsource.sonarlint.core.client.api.common.QuickFixable;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
+import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
+import org.sonarsource.sonarlint.plugin.api.issue.NewSonarLintIssue;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -44,7 +49,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue {
+public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue, NewSonarLintIssue, QuickFixable {
 
   private final SonarLintInputProject project;
   private final Path baseDir;
@@ -52,11 +57,13 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   protected List<List<IssueLocation>> flows = new ArrayList<>();
   private RuleKey ruleKey;
   private Severity overriddenSeverity;
+  private final List<QuickFix> quickFixes;
 
   public DefaultSonarLintIssue(SonarLintInputProject project, Path baseDir, @Nullable SensorStorage storage) {
     super(storage);
     this.project = project;
     this.baseDir = baseDir;
+    this.quickFixes = new ArrayList<>();
   }
 
   @Override
@@ -164,4 +171,19 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     storage.store(this);
   }
 
+  @Override
+  public NewQuickFix newQuickFix() {
+    return new DefaultQuickFix();
+  }
+
+  @Override
+  public NewSonarLintIssue addQuickFix(NewQuickFix newQuickFix) {
+    quickFixes.add((DefaultQuickFix) newQuickFix);
+    return this;
+  }
+
+  @Override
+  public List<QuickFix> quickFixes() {
+    return Collections.unmodifiableList(quickFixes);
+  }
 }
