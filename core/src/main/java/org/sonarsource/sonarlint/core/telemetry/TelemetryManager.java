@@ -124,6 +124,10 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(s -> s.addReportedRules(ruleKeys));
   }
 
+  public void addQuickFixAppliedForRule(String ruleKey) {
+    storage.tryUpdateAtomically(s -> s.addQuickFixAppliedForRule(ruleKey));
+  }
+
   /**
    * Save and upload lazily telemetry data.
    */

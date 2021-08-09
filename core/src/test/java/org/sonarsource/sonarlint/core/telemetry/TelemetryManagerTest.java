@@ -369,6 +369,7 @@ public class TelemetryManagerTest {
     manager.taintVulnerabilitiesInvestigatedLocally();
     manager.taintVulnerabilitiesInvestigatedRemotely();
     manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey2")));
+    manager.addQuickFixAppliedForRule("ruleKey1");
 
     manager.uploadLazily();
 
@@ -379,6 +380,7 @@ public class TelemetryManagerTest {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.getRaisedIssuesRules()).isEmpty();
+    assertThat(reloaded.getQuickFixesApplied()).isEmpty();
   }
 
   @Test
@@ -390,6 +392,18 @@ public class TelemetryManagerTest {
     TelemetryLocalStorage reloaded = storage.tryRead();
     assertThat(reloaded.getRaisedIssuesRules()).hasSize(2);
     assertThat(reloaded.getRaisedIssuesRules()).contains("ruleKey1", "ruleKey2");
+  }
+
+  @Test
+  public void accumulate_applied_quick_fixes() {
+    createAndSaveSampleData(storage);
+
+    manager.addQuickFixAppliedForRule("ruleKey1");
+    manager.addQuickFixAppliedForRule("ruleKey2");
+    manager.addQuickFixAppliedForRule("ruleKey1");
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+    assertThat(reloaded.getQuickFixesApplied()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

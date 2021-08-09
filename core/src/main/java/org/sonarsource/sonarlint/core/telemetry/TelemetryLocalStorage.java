@@ -47,6 +47,7 @@ class TelemetryLocalStorage {
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private final Set<String> raisedIssuesRules;
+  private final Set<String> quickFixesApplied;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -54,6 +55,7 @@ class TelemetryLocalStorage {
     analyzers = new LinkedHashMap<>();
     notificationsCountersByEventType = new LinkedHashMap<>();
     raisedIssuesRules = new HashSet<>();
+    quickFixesApplied = new HashSet<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -62,6 +64,14 @@ class TelemetryLocalStorage {
 
   public void addReportedRules(Set<String> reportedRuleKeys) {
     this.raisedIssuesRules.addAll(reportedRuleKeys);
+  }
+
+  public Collection<String> getQuickFixesApplied() {
+    return quickFixesApplied;
+  }
+
+  public void addQuickFixAppliedForRule(String ruleKey) {
+    this.quickFixesApplied.add(ruleKey);
   }
 
   @Deprecated
@@ -123,6 +133,7 @@ class TelemetryLocalStorage {
     taintVulnerabilitiesInvestigatedLocallyCount = 0;
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
     raisedIssuesRules.clear();
+    quickFixesApplied.clear();
   }
 
   long numUseDays() {
