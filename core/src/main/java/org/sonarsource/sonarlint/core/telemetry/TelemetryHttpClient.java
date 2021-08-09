@@ -87,7 +87,7 @@ public class TelemetryHttpClient {
     String os = System.getProperty("os.name");
     String jre = System.getProperty("java.version");
     TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
-      attributesProvider.getDefaultDisabledRules(), data.getRaisedIssuesRules());
+      attributesProvider.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
       analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload, telemetryRulesPayload);

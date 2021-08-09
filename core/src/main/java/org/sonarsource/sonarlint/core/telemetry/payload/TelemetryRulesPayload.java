@@ -30,11 +30,14 @@ public class TelemetryRulesPayload {
   private final Collection<String> defaultDisabled;
   @SerializedName("raised_issues")
   private final Collection<String> raisedIssues;
+  @SerializedName("quick_fix_applied")
+  private final Collection<String> quickFixesApplied;
 
-  public TelemetryRulesPayload(Collection<String> nonDefaultEnabled, Collection<String> defaultDisabled, Collection<String> raisedIssues) {
+  public TelemetryRulesPayload(Collection<String> nonDefaultEnabled, Collection<String> defaultDisabled, Collection<String> raisedIssues, Collection<String> quickFixesApplied) {
     this.nonDefaultEnabled = nonDefaultEnabled;
     this.defaultDisabled = defaultDisabled;
     this.raisedIssues = raisedIssues;
+    this.quickFixesApplied = quickFixesApplied;
   }
 
 }
