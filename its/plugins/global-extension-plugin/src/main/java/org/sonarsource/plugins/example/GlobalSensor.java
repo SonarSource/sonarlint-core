@@ -19,6 +19,7 @@
  */
 package org.sonarsource.plugins.example;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
@@ -35,6 +36,12 @@ public class GlobalSensor implements Sensor {
 
   private static final Logger LOGGER = Loggers.get(GlobalSensor.class);
 
+  private final Clock clock;
+
+  public GlobalSensor(Clock clock) {
+    this.clock = clock;
+  }
+
   @Override
   public void describe(final SensorDescriptor descriptor) {
     descriptor.name("Global")
@@ -43,6 +50,7 @@ public class GlobalSensor implements Sensor {
 
   @Override
   public void execute(final SensorContext context) {
+    long timeBefore = clock.millis();
     RuleKey globalRuleKey = RuleKey.of(GlobalRulesDefinition.KEY, GlobalRulesDefinition.RULE_KEY);
     ActiveRule activeGlobalRule = context.activeRules().find(globalRuleKey);
     if (activeGlobalRule != null) {
@@ -59,6 +67,8 @@ public class GlobalSensor implements Sensor {
         .at(newIssue.newLocation().on(f).message("Issue number " + GlobalExtension.getInstance().getAndInc()))
         .save();
     }
+    long timeAfter = clock.millis();
+    LOGGER.info(String.format("Executed Global Sensor in %d ms", timeAfter - timeBefore));
   }
 
 }
