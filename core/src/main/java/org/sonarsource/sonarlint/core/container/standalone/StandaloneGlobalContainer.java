@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -100,6 +101,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       new GlobalTempFolderProvider(),
       UriReader.class,
       new PluginCacheProvider(),
+      Clock.systemDefaultZone(),
       System2.INSTANCE);
   }
 

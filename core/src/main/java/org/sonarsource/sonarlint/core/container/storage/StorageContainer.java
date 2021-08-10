@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Clock;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.picocontainer.injectors.ProviderAdapter;
@@ -137,6 +138,7 @@ public class StorageContainer extends ComponentContainer {
       new SonarLintRulesProvider(),
       new SonarQubeVersion(sonarPluginApiVersion),
       new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
+      Clock.systemDefaultZone(),
       System2.INSTANCE);
   }
 
