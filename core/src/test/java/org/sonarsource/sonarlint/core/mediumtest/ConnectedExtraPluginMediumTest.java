@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
@@ -159,7 +160,9 @@ public class ConnectedExtraPluginMediumTest {
 
   @Test
   public void readRuleDescriptionFromExtraPlugin() {
-    assertThat(sonarlint.getRuleDetails("php:S3334").getSeverity()).isEqualTo("BLOCKER");
+    ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails("php:S3334");
+    assertThat(ruleDetails.getSeverity()).isEqualTo("BLOCKER");
+    assertThat(ruleDetails.getExtendedDescription()).isEmpty();
     assertThat(sonarlint.getActiveRuleDetails("php:S3334", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
   }
 

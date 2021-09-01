@@ -239,7 +239,7 @@ public class StorageContainer extends ComponentContainer {
         ruleFromStorage.getHtmlNote());
     }).orElseGet(() -> new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.getName(), ruleFromPlugin.getHtmlDescription(),
       overridenSeverity != null ? overridenSeverity : ruleFromPlugin.getSeverity(), ruleFromPlugin.getType(), ruleFromPlugin.getLanguage(),
-      ruleFromPlugin.getHtmlDescription()));
+      ""));
   }
 
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
