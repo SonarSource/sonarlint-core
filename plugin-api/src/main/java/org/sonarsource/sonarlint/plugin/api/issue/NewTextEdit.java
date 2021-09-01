@@ -34,7 +34,7 @@ public interface NewTextEdit {
   NewTextEdit at(TextRange range);
 
   /**
-   * @param newText the replacement text
+   * @param newText the replacement text. Line returns must be represented with the '\n' character.
    * @return the modified edit
    */
   NewTextEdit withNewText(String newText);
