@@ -90,7 +90,7 @@ public class TelemetryHttpClient {
       attributesProvider.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
-      analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload, telemetryRulesPayload);
+      analyzers, notifications, showHotspotPayload, taintVulnerabilitiesPayload, telemetryRulesPayload, attributesProvider.additionalAttributes());
   }
 
   private void sendDelete(TelemetryPayload payload) {

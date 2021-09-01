@@ -27,7 +27,9 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -87,6 +89,11 @@ public class TelemetryManagerTest {
     @Override
     public Collection<String> getDefaultDisabledRules() {
       return null;
+    }
+
+    @Override
+    public Map<String, Object> additionalAttributes() {
+      return Collections.emptyMap();
     }
 
   };
