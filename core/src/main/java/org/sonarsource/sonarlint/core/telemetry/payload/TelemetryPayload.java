@@ -21,8 +21,13 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 import java.time.OffsetDateTime;
+import java.util.Map;
+import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
 
@@ -79,12 +84,14 @@ public class TelemetryPayload {
   private final TaintVulnerabilitiesPayload taintVulnerabilitiesPayload;
 
   @SerializedName("rules")
-  private TelemetryRulesPayload telemetryRulesPayload;
+  private final TelemetryRulesPayload telemetryRulesPayload;
+
+  private final transient Map<String, Object> additionalAttributes;
 
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
     OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
-    TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload) {
+    TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -102,6 +109,7 @@ public class TelemetryPayload {
     this.showHotspotPayload = showHotspotPayload;
     this.taintVulnerabilitiesPayload = taintVulnerabilitiesPayload;
     this.telemetryRulesPayload = telemetryRulesPayload;
+    this.additionalAttributes = additionalAttributes;
   }
 
   public long daysSinceInstallation() {
@@ -152,10 +160,33 @@ public class TelemetryPayload {
     return notifications;
   }
 
+  public Map<String, Object> additionalAttributes() {
+    return additionalAttributes;
+  }
+
   public String toJson() {
     Gson gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
       .create();
-    return gson.toJson(this);
+    JsonObject jsonPayload = gson.toJsonTree(this).getAsJsonObject();
+    JsonObject jsonAdditional = gson.toJsonTree(additionalAttributes, new TypeToken<Map<String, Object>>() {
+    }.getType()).getAsJsonObject();
+    return gson.toJson(mergeObjects(jsonAdditional, jsonPayload));
+  }
+
+  static JsonObject mergeObjects(JsonObject source, JsonObject target) {
+    for (Entry<String, JsonElement> entry : source.entrySet()) {
+      JsonElement value = entry.getValue();
+      if (!target.has(entry.getKey())) {
+        // new value for "key":
+        target.add(entry.getKey(), value);
+      } else if (value.isJsonObject()) {
+        // existing value for "key" - recursively deep merge:
+        JsonObject valueJson = (JsonObject) value;
+        mergeObjects(valueJson, target.getAsJsonObject(entry.getKey()));
+      }
+      // Don't override value if it already exists in the target
+    }
+    return target;
   }
 }

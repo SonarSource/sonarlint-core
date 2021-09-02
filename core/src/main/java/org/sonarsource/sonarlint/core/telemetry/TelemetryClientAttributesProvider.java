@@ -20,10 +20,11 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * Telemetry attributes provided by the client (IDE) at the time the telemetry ping is sent. *
+ * Telemetry attributes provided by the client (IDE) at the time the telemetry ping is sent.
  */
 public interface TelemetryClientAttributesProvider {
 
@@ -57,5 +58,10 @@ public interface TelemetryClientAttributesProvider {
    * Rule keys for rules that enabled by default, but was disabled by user in settings.
    */
   Collection<String> getDefaultDisabledRules();
+
+  /**
+   * Map of additional attributes to be passed to the telemetry. Values types can be {@link String}, {@link Boolean} or {@link Number}. You can also pass a Map for nested objects.
+   */
+  Map<String, Object> additionalAttributes();
 
 }
