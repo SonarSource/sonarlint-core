@@ -86,7 +86,7 @@ public class TelemetryPayload {
   @SerializedName("rules")
   private final TelemetryRulesPayload telemetryRulesPayload;
 
-  private transient final Map<String, Object> additionalAttributes;
+  private final transient Map<String, Object> additionalAttributes;
 
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
     OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
