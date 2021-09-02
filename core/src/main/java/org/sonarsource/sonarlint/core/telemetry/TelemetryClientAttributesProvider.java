@@ -60,7 +60,7 @@ public interface TelemetryClientAttributesProvider {
   Collection<String> getDefaultDisabledRules();
 
   /**
-   * Map of additional attributes to be passed to the telemetry. Values can be {@link String}, {@link Boolean} or {@link Number}
+   * Map of additional attributes to be passed to the telemetry. Values types can be {@link String}, {@link Boolean} or {@link Number}. You can also pass a Map for nested objects.
    */
   Map<String, Object> additionalAttributes();
 

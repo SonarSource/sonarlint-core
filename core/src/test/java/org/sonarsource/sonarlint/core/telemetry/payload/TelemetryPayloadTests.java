@@ -57,6 +57,9 @@ class TelemetryPayloadTests {
     additionalProps.put("aString", "stringValue");
     additionalProps.put("aBool", false);
     additionalProps.put("aNumber", 1.5);
+    Map<String, Object> additionalPropsSub = new LinkedHashMap<>();
+    additionalPropsSub.put("aSubNumber", 2);
+    additionalProps.put("sub", additionalPropsSub);
     TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, additionalProps);
     String s = m.toJson();
@@ -80,7 +83,8 @@ class TelemetryPayloadTests {
       + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
-      + "\"aNumber\":1.5}");
+      + "\"aNumber\":1.5,"
+      + "\"sub\":{\"aSubNumber\":2}}");
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);
