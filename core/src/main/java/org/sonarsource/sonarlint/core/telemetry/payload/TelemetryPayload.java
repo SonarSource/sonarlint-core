@@ -174,7 +174,7 @@ public class TelemetryPayload {
     return gson.toJson(mergeObjects(jsonAdditional, jsonPayload));
   }
 
-  private static JsonObject mergeObjects(JsonObject source, JsonObject target) {
+  static JsonObject mergeObjects(JsonObject source, JsonObject target) {
     for (Entry<String, JsonElement> entry : source.entrySet()) {
       JsonElement value = entry.getValue();
       if (!target.has(entry.getKey())) {

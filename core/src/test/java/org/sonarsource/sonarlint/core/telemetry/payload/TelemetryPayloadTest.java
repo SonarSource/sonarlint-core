@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -26,13 +30,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TelemetryPayloadTest {
+class TelemetryPayloadTest {
+
   @Test
-  public void testGenerationJson() {
+  void testGenerationJson() {
     OffsetDateTime installTime = OffsetDateTime.of(2017, 11, 10, 12, 1, 14, 984_123_123, ZoneOffset.ofHours(2));
     OffsetDateTime systemTime = installTime.plusMinutes(1);
     TelemetryAnalyzerPerformancePayload[] perf = new TelemetryAnalyzerPerformancePayload[1];
@@ -90,5 +95,103 @@ public class TelemetryPayloadTest {
     assertThat(m.systemTime()).isEqualTo(systemTime);
     assertThat(m.notifications().disabled()).isTrue();
     assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
+    assertThat(m.additionalAttributes()).containsExactlyEntriesOf(additionalProps);
   }
+
+  @Test
+  void testMergeEmptyJson() {
+    Map<String, Object> source = new LinkedHashMap<>();
+    Map<String, Object> target = new LinkedHashMap<>();
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+
+    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    assertThat(merged).isEqualTo("{}");
+  }
+
+  @Test
+  void testMergeEmptyTargetJson() {
+    Map<String, Object> source = new LinkedHashMap<>();
+    source.put("keyInSource", "valueInSource");
+    Map<String, Object> target = new LinkedHashMap<>();
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+
+    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    assertThat(merged).isEqualTo("{\"keyInSource\":\"valueInSource\"}");
+  }
+
+  @Test
+  void testMergeEmptySourceJson() {
+    Map<String, Object> source = new LinkedHashMap<>();
+    Map<String, Object> target = new LinkedHashMap<>();
+    target.put("keyInTarget", "valueInTarget");
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+
+    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    assertThat(merged).isEqualTo("{\"keyInTarget\":\"valueInTarget\"}");
+  }
+
+  @Test
+  void testMergeJson() {
+    Map<String, Object> source = new LinkedHashMap<>();
+    source.put("keyInSource", "valueInSource");
+    Map<String, Object> target = new LinkedHashMap<>();
+    target.put("keyInTarget", "valueInTarget");
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+
+    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    assertThat(merged).isEqualTo("{\"keyInTarget\":\"valueInTarget\",\"keyInSource\":\"valueInSource\"}");
+  }
+
+  @Test
+  void testDeepMergeJson() {
+    Map<String, Object> source = new LinkedHashMap<>();
+    Map<String, Object> sourceSub = new LinkedHashMap<>();
+    source.put("key", sourceSub);
+    sourceSub.put("sub2", "sub2Value");
+    Map<String, Object> target = new LinkedHashMap<>();
+    Map<String, Object> targetSub = new LinkedHashMap<>();
+    target.put("key", targetSub);
+    targetSub.put("sub1", "sub1Value");
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+
+    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    assertThat(merged).isEqualTo("{\"key\":{\"sub1\":\"sub1Value\",\"sub2\":\"sub2Value\"}}");
+  }
+
+  @Test
+  void testMergeJsonDontOverrideExistingKey() {
+    Map<String, Object> source = new LinkedHashMap<>();
+    source.put("key", "valueInSource");
+    Map<String, Object> target = new LinkedHashMap<>();
+    target.put("key", "valueInTarget");
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+
+    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    assertThat(merged).isEqualTo("{\"key\":\"valueInTarget\"}");
+  }
+
 }
