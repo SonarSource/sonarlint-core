@@ -34,7 +34,10 @@ public interface NewTextEdit {
   NewTextEdit at(TextRange range);
 
   /**
-   * @param newText the replacement text. Line returns must be represented with the '\n' character.
+   * Prior to 6.4, line returns had to be represented with the '\n' character.
+   * From 6.4 on, analyzers can use any EOL character they see fit, SonarLint takes care of adapting this to the one
+   * expected by the IDE.
+   * @param newText the replacement text.
    * @return the modified edit
    */
   NewTextEdit withNewText(String newText);
