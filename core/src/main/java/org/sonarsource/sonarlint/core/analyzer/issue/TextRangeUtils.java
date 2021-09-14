@@ -19,20 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import org.junit.*;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+public class TextRangeUtils {
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
-
-public class DefaultLocationTest {
-  @Test
-  public void verify_accessors() {
-    ClientInputFile inputFile = mock(ClientInputFile.class);
-    String message = "fummy";
-    DefaultLocation defaultLocation = new DefaultLocation(inputFile, null, message);
-
-    assertThat(defaultLocation.getInputFile()).isSameAs(inputFile);
-    assertThat(defaultLocation.getMessage()).isSameAs(message);
+  private TextRangeUtils() {
   }
+
+  public static org.sonarsource.sonarlint.core.client.api.common.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
+    return new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+      analyzerTextRange.start().line(),
+      analyzerTextRange.start().lineOffset(),
+      analyzerTextRange.end().line(),
+      analyzerTextRange.end().lineOffset());
+  }
+
+  public static org.sonarsource.sonarlint.core.client.api.common.TextRange convert(org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange serverStorageTextRange) {
+    return new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+      serverStorageTextRange.getStartLine(),
+      serverStorageTextRange.getStartLineOffset(),
+      serverStorageTextRange.getEndLine(),
+      serverStorageTextRange.getEndLineOffset());
+  }
+
 }

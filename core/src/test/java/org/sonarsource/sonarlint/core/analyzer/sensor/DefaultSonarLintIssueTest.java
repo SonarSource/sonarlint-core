@@ -56,7 +56,7 @@ public class DefaultSonarLintIssueTest {
   private SonarLintInputProject project;
   private Path baseDir;
 
-  private InputFile inputFile = new TestInputFileBuilder("src/Foo.php")
+  private final InputFile inputFile = new TestInputFileBuilder("src/Foo.php")
     .initMetadata("Foo\nBar\n")
     .build();
 
@@ -103,7 +103,10 @@ public class DefaultSonarLintIssueTest {
     assertThat(inputFileEdit.target()).isEqualTo(((SonarLintInputFile) inputFile).getClientInputFile());
     assertThat(inputFileEdit.textEdits()).hasSize(1);
     TextEdit textEdit = inputFileEdit.textEdits().get(0);
-    assertThat(textEdit.range()).isEqualTo(range);
+    assertThat(textEdit.range().getStartLine()).isEqualTo(range.start().line());
+    assertThat(textEdit.range().getStartLineOffset()).isEqualTo(range.start().lineOffset());
+    assertThat(textEdit.range().getEndLine()).isEqualTo(range.end().line());
+    assertThat(textEdit.range().getEndLineOffset()).isEqualTo(range.end().lineOffset());
     assertThat(textEdit.newText()).isEqualTo("// Fixed!");
 
     issue.save();

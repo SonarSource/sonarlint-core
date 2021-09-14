@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.TextEdit;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit;
 
 public class DefaultTextEdit implements TextEdit, NewTextEdit {
@@ -30,8 +30,8 @@ public class DefaultTextEdit implements TextEdit, NewTextEdit {
   private String newText;
 
   @Override
-  public NewTextEdit at(TextRange range) {
-    this.range = range;
+  public NewTextEdit at(org.sonar.api.batch.fs.TextRange range) {
+    this.range = TextRangeUtils.convert(range);
     return this;
   }
 
