@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.sonar.api.batch.fs.TextRange;
-
 public interface TextEdit {
 
   TextRange range();
