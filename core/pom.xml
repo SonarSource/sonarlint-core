@@ -435,7 +435,7 @@
         <artifactId>maven-jarsigner-plugin</artifactId>
         <version>3.0.0</version>
         <configuration>
-          <alias>sonarsource-codesign-2019-2021</alias>
+          <alias>sonarsource-codesign-2021-2023</alias>
           <keystore>${sonarsource.keystore.path}</keystore>
           <storepass>${sonarsource.keystore.password}</storepass>
           <tsa>http://timestamp.digicert.com</tsa>
