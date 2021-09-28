@@ -43,6 +43,7 @@
     <junit.vintage.version>5.7.0</junit.vintage.version>
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
+    <jdk.min.version>11</jdk.min.version>
   </properties>
 
   <dependencyManagement>
