@@ -9,7 +9,7 @@
   <artifactId>sonarlint-core</artifactId>
   <packaging>bundle</packaging>
   <name>SonarLint Core - Implementation</name>
-  <description>Library used by SonarLint clients (CLI, Eclipse, ...)</description>
+  <description>Common library used by some SonarLint flavors</description>
 
   <properties>
     <jarsigner.skip>true</jarsigner.skip>
