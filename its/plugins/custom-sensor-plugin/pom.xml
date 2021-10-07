@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>7.0-SNAPSHOT</version>
+    <version>7.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   
   <groupId>org.sonarsource.plugins.example</groupId>
   <artifactId>custom-sensor-plugin</artifactId>
   <packaging>sonar-plugin</packaging>
-  <version>7.0-SNAPSHOT</version>
+  <version>7.1-SNAPSHOT</version>
 
   <name>Example Plugin for SonarQube</name>
   <description>Example of plugin for SonarQube</description>
