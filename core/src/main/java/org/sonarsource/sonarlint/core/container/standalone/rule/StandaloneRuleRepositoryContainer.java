@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
@@ -30,7 +29,6 @@ import static java.util.stream.Collectors.toList;
 public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   private SonarLintRules rules;
-  private Context ruleDefinitions;
 
   public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
     super(parent);
@@ -55,8 +53,6 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   @Override
   public void doAfterStart() {
     rules = getComponentByType(SonarLintRules.class);
-    StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
-    ruleDefinitions = offlineRulesLoader.getContext();
   }
 
   public SonarLintRules getRules() {
@@ -65,9 +61,5 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
   public StandaloneActiveRules getStandaloneActiveRules() {
     return new StandaloneActiveRules(rules.findAll().stream().map(StandaloneRule.class::cast).collect(toList()));
-  }
-
-  public Context getRulesDefinitions() {
-    return ruleDefinitions;
   }
 }

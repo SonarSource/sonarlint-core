@@ -202,10 +202,6 @@ public class StorageContainer extends ComponentContainer {
     }
   }
 
-  public GlobalExtensionContainer getGlobalExtensionContainer() {
-    return globalExtensionContainer;
-  }
-
   public ModuleRegistry getModuleRegistry() {
     return moduleRegistry;
   }

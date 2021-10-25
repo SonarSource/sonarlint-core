@@ -40,7 +40,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
-public class ComponentContainer implements ContainerPopulator.Container {
+public class ComponentContainer {
 
   private static final class ExtendedDefaultPicoContainer extends DefaultPicoContainer {
     private ExtendedDefaultPicoContainer(ComponentFactory componentFactory, LifecycleStrategy lifecycleStrategy, PicoContainer parent) {
@@ -176,7 +176,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
   /**
    * @since 3.5
    */
-  @Override
   public ComponentContainer add(Object... objects) {
     for (Object object : objects) {
       if (object instanceof ComponentAdapter) {
@@ -186,20 +185,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
       } else {
         addSingleton(object);
       }
-    }
-    return this;
-  }
-
-  public void addIfMissing(Object object, Class<?> objectType) {
-    if (getComponentByType(objectType) == null) {
-      add(object);
-    }
-  }
-
-  @Override
-  public ComponentContainer addSingletons(Iterable<?> components) {
-    for (Object component : components) {
-      addSingleton(component);
     }
     return this;
   }
@@ -241,18 +226,12 @@ public class ComponentContainer implements ContainerPopulator.Container {
     propertyDefinitions.addComponent(extension, pluginInfo != null ? pluginInfo.getName() : "");
   }
 
-  public ComponentContainer addPicoAdapter(ComponentAdapter<?> adapter) {
+  private void addPicoAdapter(ComponentAdapter<?> adapter) {
     pico.addAdapter(adapter);
-    return this;
   }
 
-  @Override
   public <T> T getComponentByType(Class<T> type) {
     return pico.getComponent(type);
-  }
-
-  public Object getComponentByKey(Object key) {
-    return pico.getComponent(key);
   }
 
   public <T> List<T> getComponentsByType(Class<T> tClass) {
@@ -274,10 +253,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
       }
     };
     return new ExtendedDefaultPicoContainer(new OptInCaching(), lifecycleStrategy, null);
-  }
-
-  public ComponentContainer getParent() {
-    return parent;
   }
 
   public MutablePicoContainer getPicoContainer() {

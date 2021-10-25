@@ -115,7 +115,6 @@ public class ComponentContainerTest {
     child.addSingleton(StartableComponent.class);
     child.startComponents();
 
-    assertThat(child.getParent()).isSameAs(parent);
     assertThat(child.getComponentByType(ComponentContainer.class)).isSameAs(child);
     assertThat(parent.getComponentByType(ComponentContainer.class)).isSameAs(parent);
     assertThat(child.getComponentByType(StartableComponent.class)).isNotNull();
@@ -170,7 +169,6 @@ public class ComponentContainerTest {
     PropertyDefinitions propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
     assertThat(propertyDefinitions.get("foo")).isNotNull();
     assertThat(container.getComponentByType(ComponentWithProperty.class)).isNotNull();
-    assertThat(container.getComponentByKey(ComponentWithProperty.class)).isNotNull();
   }
 
   @Test
