@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
@@ -175,15 +174,15 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(endpoint);
     setLogging(null);
     return withRwLock(() -> {
-      stop(false);
       changeState(State.UPDATING);
-      List<SonarAnalyzer> analyzers;
-      try {
-        analyzers = runInConnectedContainer(endpoint, client, container -> container.update(new ProgressWrapper(monitor)));
-      } finally {
+      var updateResult = runInConnectedContainer(endpoint, client, container -> container.update(new ProgressWrapper(monitor)));
+      if (updateResult.didUpdateAnalyzers()) {
+        stop(false);
         start();
+      } else {
+        changeState(State.UPDATED);
       }
-      return new UpdateResult(globalStatusReader.read(), analyzers);
+      return updateResult;
     });
   }
 

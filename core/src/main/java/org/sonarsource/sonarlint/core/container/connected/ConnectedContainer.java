@@ -19,15 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import java.util.List;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
@@ -95,6 +94,9 @@ public class ConnectedContainer extends ComponentContainer {
       globalStores.getGlobalStorage(),
       globalStores.getPluginReferenceStore(),
       globalStores.getQualityProfileStore(),
+      globalStores.getGlobalSettingsStore(),
+      globalStores.getActiveRulesStore(),
+      globalStores.getRulesStore(),
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginVersionChecker.class,
@@ -129,7 +131,7 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectStorageStatusReader.class);
   }
 
-  public List<SonarAnalyzer> update(ProgressWrapper progress) {
+  public UpdateResult update(ProgressWrapper progress) {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 

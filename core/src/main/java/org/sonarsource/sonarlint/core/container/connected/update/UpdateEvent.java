@@ -17,26 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.connected;
+package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.util.Collection;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.container.connected.update.UpdateEvent;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-class UpdateResultTests {
-  @Test
-  void testRoundTrip() {
-    GlobalStorageStatus status = mock(GlobalStorageStatus.class);
-    Collection<SonarAnalyzer> analyzers = mock(Collection.class);
-    UpdateEvent event = new UpdateEvent() {
-    };
-    UpdateResult result = new UpdateResult(status, analyzers, List.of(event));
-    assertThat(result.analyzers()).isEqualTo(analyzers);
-    assertThat(result.status()).isEqualTo(status);
-    assertThat(result.updateEvents()).containsExactly(event);
-  }
+public interface UpdateEvent {
 }

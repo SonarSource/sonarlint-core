@@ -54,6 +54,14 @@ public class RulesStore {
     }));
   }
 
+  public Sonarlint.Rules getAllOrEmpty() {
+    try {
+      return getAll();
+    } catch (Exception e) {
+      return Sonarlint.Rules.newBuilder().build();
+    }
+  }
+
   public Optional<Sonarlint.Rules.Rule> getRuleWithKey(String ruleKey) {
     return Optional.ofNullable(getAll().getRulesByKeyMap().get(ruleKey));
   }

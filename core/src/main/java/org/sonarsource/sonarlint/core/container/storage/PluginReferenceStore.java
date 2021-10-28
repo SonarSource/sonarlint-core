@@ -40,6 +40,14 @@ public class PluginReferenceStore {
     return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(PLUGIN_REFERENCES_PB), Sonarlint.PluginReferences.parser())));
   }
 
+  public Sonarlint.PluginReferences getAllOrEmpty() {
+    try {
+      return getAll();
+    } catch (Exception e) {
+      return Sonarlint.PluginReferences.newBuilder().build();
+    }
+  }
+
   public boolean isEmpty() {
     return rwLock.read(() -> storageFolder.readAction(source -> !Files.exists(source.resolve(PLUGIN_REFERENCES_PB))));
   }

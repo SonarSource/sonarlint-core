@@ -35,15 +35,16 @@ import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.RULES_SEARCH_URL;
@@ -56,6 +57,8 @@ class RulesDownloaderTests {
   private final ProgressMonitor monitor = mock(ProgressMonitor.class);
   private final ProgressWrapper progressWrapper = new ProgressWrapper(monitor);
   private final ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
+  private final ActiveRulesStore currentActiveRulesStore = mock(ActiveRulesStore.class);
+  private final RulesStore currentRulesStore = mock(RulesStore.class);
 
   @BeforeEach
   public void prepare() throws IOException {
@@ -63,6 +66,8 @@ class RulesDownloaderTests {
     context.createRepository("javascript", "js").done();
     context.createRepository("squid", "java").done();
     when(globalConfig.getEnabledLanguages()).thenReturn(Collections.singleton(Language.JS));
+    when(currentActiveRulesStore.getActiveRules(any())).thenReturn(ActiveRules.newBuilder().build());
+    when(currentRulesStore.getAllOrEmpty()).thenReturn(Rules.newBuilder().build());
   }
 
   @Test
@@ -76,7 +81,7 @@ class RulesDownloaderTests {
     when(globalConfig.getEnabledLanguages()).thenReturn(new LinkedHashSet<>(Arrays.asList(Language.JS, Language.JAVA)));
 
     RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig, rulesStore, activeRulesStore);
-    rulesUpdate.fetchRules(progressWrapper);
+    rulesUpdate.fetchRules(currentActiveRulesStore, currentRulesStore, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(RulesStore.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
@@ -95,7 +100,7 @@ class RulesDownloaderTests {
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&languages=js&p=2&ps=500", "/update/rulesp2.pb");
 
     RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper("myOrg"), globalConfig, rulesStore, activeRulesStore);
-    rulesUpdate.fetchRules(progressWrapper);
+    rulesUpdate.fetchRules(currentActiveRulesStore, currentRulesStore, progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(RulesStore.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);

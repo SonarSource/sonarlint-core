@@ -19,12 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
+import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
@@ -32,7 +33,9 @@ import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDown
 import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.UpdateEvent;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
@@ -57,13 +60,19 @@ public class GlobalStorageUpdateExecutor {
   private final PluginCache pluginCache;
   private final ConnectedGlobalConfiguration connectedGlobalConfiguration;
   private final TempFolder tempFolder;
+  private final GlobalSettingsStore currentGlobalSettingsStore;
+  private final PluginReferenceStore currentPluginReferenceStore;
+  private final ActiveRulesStore currentActiveRulesStore;
+  private final RulesStore currentRulesStore;
+  private final QualityProfileStore currentQualityProfileStore;
   private final ServerApiHelper serverApiHelper;
   private final ServerVersionAndStatusChecker statusChecker;
   private final PluginListDownloader pluginListDownloader;
 
   public GlobalStorageUpdateExecutor(ServerStorage serverStorage, ServerApiHelper serverApiHelper, ServerVersionAndStatusChecker statusChecker,
     PluginCache pluginCache, PluginListDownloader pluginListDownloader, ConnectedGlobalConfiguration connectedGlobalConfiguration,
-    TempFolder tempFolder) {
+    TempFolder tempFolder, GlobalSettingsStore currentGlobalSettingsStore, PluginReferenceStore currentPluginReferenceStore,
+    ActiveRulesStore currentActiveRulesStore, RulesStore currentRulesStore, QualityProfileStore currentQualityProfileStore) {
     this.serverStorage = serverStorage;
     this.serverApiHelper = serverApiHelper;
     this.statusChecker = statusChecker;
@@ -71,19 +80,24 @@ public class GlobalStorageUpdateExecutor {
     this.pluginListDownloader = pluginListDownloader;
     this.connectedGlobalConfiguration = connectedGlobalConfiguration;
     this.tempFolder = tempFolder;
+    this.currentGlobalSettingsStore = currentGlobalSettingsStore;
+    this.currentPluginReferenceStore = currentPluginReferenceStore;
+    this.currentActiveRulesStore = currentActiveRulesStore;
+    this.currentRulesStore = currentRulesStore;
+    this.currentQualityProfileStore = currentQualityProfileStore;
   }
 
-  public List<SonarAnalyzer> update(ProgressWrapper progress) {
-    Path temp = tempFolder.newDir().toPath();
+  public UpdateResult update(ProgressWrapper progress) {
+    var temp = tempFolder.newDir().toPath();
     StorageFolder storageFolder = new StorageFolder.Default(temp);
-    ServerInfoStore serverInfoStore = new ServerInfoStore(storageFolder);
-    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(storageFolder);
-    PluginReferenceStore pluginReferenceStore = new PluginReferenceStore(storageFolder);
-    RulesStore rulesStore = new RulesStore(storageFolder);
-    ActiveRulesStore activeRulesStore = new ActiveRulesStore(storageFolder);
-    QualityProfileStore qualityProfileStore = new QualityProfileStore(storageFolder);
-    ServerProjectsStore serverProjectsStore = new ServerProjectsStore(storageFolder);
-    StorageStatusStore storageStatusStore = new StorageStatusStore(storageFolder);
+    var serverInfoStore = new ServerInfoStore(storageFolder);
+    var globalSettingsStore = new GlobalSettingsStore(storageFolder);
+    var pluginReferenceStore = new PluginReferenceStore(storageFolder);
+    var rulesStore = new RulesStore(storageFolder);
+    var activeRulesStore = new ActiveRulesStore(storageFolder);
+    var qualityProfileStore = new QualityProfileStore(storageFolder);
+    var serverProjectsStore = new ServerProjectsStore(storageFolder);
+    var storageStatusStore = new StorageStatusStore(storageFolder);
 
     try {
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
@@ -94,39 +108,39 @@ public class GlobalStorageUpdateExecutor {
       serverInfoStore.store(serverStatus);
 
       progress.setProgressAndCheckCancel("Fetching global properties", 0.15f);
-      SettingsDownloader globalSettingsDownloader = new SettingsDownloader(serverApiHelper, globalSettingsStore);
-      globalSettingsDownloader.fetchGlobalSettings();
+      var globalSettingsDownloader = new SettingsDownloader(serverApiHelper, globalSettingsStore);
+      List<UpdateEvent> updateEvents = new ArrayList<>(globalSettingsDownloader.fetchGlobalSettings(currentGlobalSettingsStore));
 
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
-      PluginReferencesDownloader pluginReferenceDownloader = new PluginReferencesDownloader(serverApiHelper, pluginCache, connectedGlobalConfiguration,
+      var pluginReferenceDownloader = new PluginReferencesDownloader(serverApiHelper, pluginCache, connectedGlobalConfiguration,
         pluginReferenceStore);
-      pluginReferenceDownloader.fetchPlugins(analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
+      updateEvents.addAll(pluginReferenceDownloader.fetchPlugins(currentPluginReferenceStore, analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers")));
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      RulesDownloader rulesDownloader = new RulesDownloader(serverApiHelper, connectedGlobalConfiguration, rulesStore, activeRulesStore);
-      rulesDownloader.fetchRules(progress.subProgress(0.4f, 0.6f, "Fetching rules"));
+      var rulesDownloader = new RulesDownloader(serverApiHelper, connectedGlobalConfiguration, rulesStore, activeRulesStore);
+      updateEvents.addAll(rulesDownloader.fetchRules(currentActiveRulesStore, currentRulesStore, progress.subProgress(0.4f, 0.6f, "Fetching rules")));
 
       progress.setProgressAndCheckCancel("Fetching quality profiles", 0.6f);
-      QualityProfilesDownloader qualityProfilesDownloader = new QualityProfilesDownloader(serverApiHelper, qualityProfileStore);
-      qualityProfilesDownloader.fetchQualityProfiles();
+      var qualityProfilesDownloader = new QualityProfilesDownloader(serverApiHelper, qualityProfileStore);
+      updateEvents.addAll(qualityProfilesDownloader.fetchQualityProfiles(currentQualityProfileStore));
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
-      ProjectListDownloader projectListDownloader = new ProjectListDownloader(serverApiHelper, serverProjectsStore);
+      var projectListDownloader = new ProjectListDownloader(serverApiHelper, serverProjectsStore);
       projectListDownloader.fetch(progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
-
+      var updateDate = new Date();
       progress.executeNonCancelableSection(() -> {
-        StorageStatus storageStatus = StorageStatus.newBuilder()
+        var storageStatus = StorageStatus.newBuilder()
           .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
           .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
-          .setUpdateTimestamp(new Date().getTime())
+          .setUpdateTimestamp(updateDate.getTime())
           .build();
         storageStatusStore.store(storageStatus);
 
         serverStorage.replaceStorageWith(temp);
       });
-      return analyzers;
+      return new UpdateResult(new DefaultGlobalStorageStatus(serverStatus.getVersion(), updateDate, false), analyzers, updateEvents);
     } catch (RuntimeException e) {
       try {
         FileUtils.deleteRecursively(temp);

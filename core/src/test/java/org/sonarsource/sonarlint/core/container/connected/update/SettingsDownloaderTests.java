@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,11 +37,19 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SettingsDownloaderTests {
 
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
+  private final GlobalSettingsStore currentGlobalSettingsStore = mock(GlobalSettingsStore.class);
+
+  @BeforeEach
+  void setUp() {
+    when(currentGlobalSettingsStore.getAllOrEmpty()).thenReturn(GlobalProperties.newBuilder().build());
+  }
 
   @Test
   void testFetchGlobalSettings(@TempDir Path tempDir) {
@@ -59,7 +69,7 @@ class SettingsDownloaderTests {
       .build();
     mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
 
-    underTest.fetchGlobalSettings();
+    underTest.fetchGlobalSettings(currentGlobalSettingsStore);
 
     GlobalProperties properties = ProtobufUtil.readFile(tempDir.resolve(GlobalSettingsStore.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(
@@ -73,7 +83,37 @@ class SettingsDownloaderTests {
     SettingsDownloader underTest = new SettingsDownloader(mockServer.serverApiHelper(), globalSettingsStore);
     mockServer.addStringResponse("/api/settings/values.protobuf", "foo bar");
 
-    assertThrows(IllegalStateException.class, underTest::fetchGlobalSettings);
+    assertThrows(IllegalStateException.class, () -> underTest.fetchGlobalSettings(currentGlobalSettingsStore));
+  }
+
+  @Test
+  void return_all_events_after_an_update(@TempDir Path tempDir) {
+    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    when(currentGlobalSettingsStore.getAllOrEmpty()).thenReturn(GlobalProperties.newBuilder()
+      .putProperties("prop1", "value1")
+      .putProperties("prop2", "value2")
+      .build());
+
+    ValuesWsResponse response = ValuesWsResponse.newBuilder()
+      .addSettings(Setting.newBuilder()
+        .setKey("prop1")
+        .setValue("value2"))
+      .addSettings(Setting.newBuilder()
+        .setKey("prop3")
+        .setValue("value3"))
+      .build();
+    mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
+
+    SettingsDownloader underTest = new SettingsDownloader(mockServer.serverApiHelper(), globalSettingsStore);
+
+    List<UpdateEvent> events = underTest.fetchGlobalSettings(currentGlobalSettingsStore);
+
+    assertThat(events)
+      .hasSize(3)
+      .hasOnlyElementsOfTypes(
+        SettingsDownloader.SettingsAdded.class,
+        SettingsDownloader.SettingsRemoved.class,
+        SettingsDownloader.SettingsValueChanged.class);
   }
 
 }

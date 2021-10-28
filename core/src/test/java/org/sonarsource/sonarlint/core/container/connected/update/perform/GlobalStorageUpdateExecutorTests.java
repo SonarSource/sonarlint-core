@@ -36,11 +36,17 @@ import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
+import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -86,8 +92,18 @@ class GlobalStorageUpdateExecutorTests {
     destDir = temp.resolve("storage/6964/global");
 
     when(tempFolder.newDir()).thenReturn(tempDir);
+    GlobalSettingsStore currentGlobalSettingsStore = mock(GlobalSettingsStore.class);
+    when(currentGlobalSettingsStore.getAllOrEmpty()).thenReturn(Sonarlint.GlobalProperties.newBuilder().build());
+    PluginReferenceStore currentPluginReferenceStore = mock(PluginReferenceStore.class);
+    when(currentPluginReferenceStore.getAllOrEmpty()).thenReturn(Sonarlint.PluginReferences.newBuilder().build());
+    ActiveRulesStore currentActiveRulesStore = mock(ActiveRulesStore.class);
+    when(currentActiveRulesStore.getActiveRules(any())).thenReturn(Sonarlint.ActiveRules.newBuilder().build());
+    RulesStore currentRulesStore = mock(RulesStore.class);
+    when(currentRulesStore.getAllOrEmpty()).thenReturn(Sonarlint.Rules.newBuilder().build());
+    QualityProfileStore currentQualityProfileStore = mock(QualityProfileStore.class);
+    when(currentQualityProfileStore.getAllOrEmpty()).thenReturn(Sonarlint.QProfiles.newBuilder().build());
     globalUpdate = new GlobalStorageUpdateExecutor(new ServerStorage(destDir), mockServer.serverApiHelper(), new ServerVersionAndStatusChecker(mockServer.serverApiHelper()),
-      mock(PluginCache.class), mock(PluginListDownloader.class), mock(ConnectedGlobalConfiguration.class), tempFolder);
+      mock(PluginCache.class), mock(PluginListDownloader.class), mock(ConnectedGlobalConfiguration.class), tempFolder, currentGlobalSettingsStore, currentPluginReferenceStore, currentActiveRulesStore, currentRulesStore, currentQualityProfileStore);
   }
 
   @Test

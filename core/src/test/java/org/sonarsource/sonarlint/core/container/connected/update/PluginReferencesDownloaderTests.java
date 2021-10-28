@@ -58,6 +58,7 @@ class PluginReferencesDownloaderTests {
 
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
+  private final PluginReferenceStore currentPluginReferenceStore = mock(PluginReferenceStore.class);
 
   private final PluginCache pluginCache = mock(PluginCache.class);
   private final List<SonarAnalyzer> pluginList = new LinkedList<>();
@@ -69,6 +70,7 @@ class PluginReferencesDownloaderTests {
   public void setUp() throws IOException {
     globalConfiguration = mock(ConnectedGlobalConfiguration.class);
     when(globalConfiguration.getEmbeddedPluginUrlsByKey()).thenReturn(embeddedPlugins);
+    when(currentPluginReferenceStore.getAllOrEmpty()).thenReturn(PluginReferences.newBuilder().build());
   }
 
   @Test
@@ -83,7 +85,7 @@ class PluginReferencesDownloaderTests {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(
@@ -113,7 +115,7 @@ class PluginReferencesDownloaderTests {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
@@ -134,7 +136,7 @@ class PluginReferencesDownloaderTests {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
@@ -154,7 +156,7 @@ class PluginReferencesDownloaderTests {
     pluginList.add(new DefaultSonarAnalyzer("groovy", "sonar-groovy-plugin-1.2.jar", "14908dd5f3a9b9d795dbc103f0af546f", "1.2", true));
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", true));
 
-    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
@@ -174,7 +176,7 @@ class PluginReferencesDownloaderTests {
 
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-3.12-SNAPSHOT.jar", "de5308f43260d357acc97712ce4c5475", "3.12-SNAPSHOT", false));
 
-    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
@@ -190,12 +192,35 @@ class PluginReferencesDownloaderTests {
 
     pluginList.add(new DefaultSonarAnalyzer("java", "sonar-java-plugin-0.1.jar", "de5308f43260d357acc97712ce4c5475", "0.1", true));
 
-    underTest.fetchPlugins(pluginList, new ProgressWrapper(null));
+    underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
 
     PluginReferences pluginReferences = ProtobufUtil.readFile(dest.resolve(PluginReferenceStore.PLUGIN_REFERENCES_PB), PluginReferences.parser());
     assertThat(pluginReferences.getReferenceList()).extracting("key", "hash", "filename")
       .containsOnly(tuple("java", "", ""));
 
     verifyNoMoreInteractions(pluginCache);
+  }
+
+  @Test
+  void return_all_events_after_an_update(@TempDir Path dest) {
+    PluginReferences.PluginReference plugin1 = PluginReferences.PluginReference.newBuilder().setKey("key1").setHash("hash1").build();
+    PluginReferences.PluginReference plugin2 = PluginReferences.PluginReference.newBuilder().setKey("key2").setHash("hash2").build();
+    when(currentPluginReferenceStore.getAllOrEmpty()).thenReturn(PluginReferences.newBuilder()
+      .addReference(plugin1)
+      .addReference(plugin2)
+      .build());
+    underTest = new PluginReferencesDownloader(mockServer.serverApiHelper(), pluginCache, globalConfiguration, new PluginReferenceStore(new StorageFolder.Default(dest)));
+
+    pluginList.add(new DefaultSonarAnalyzer("key1", "filename1.jar", "newHash1", "0.1", true));
+    pluginList.add(new DefaultSonarAnalyzer("key3", "filename3.jar", "hash3", "0.1", true));
+
+    List<UpdateEvent> events = underTest.fetchPlugins(currentPluginReferenceStore, pluginList, new ProgressWrapper(null));
+
+    assertThat(events)
+      .hasSize(3)
+      .hasOnlyElementsOfTypes(
+        PluginReferencesDownloader.PluginAddedEvent.class,
+        PluginReferencesDownloader.PluginRemovedEvent.class,
+        PluginReferencesDownloader.PluginUpdatedEvent.class);
   }
 }

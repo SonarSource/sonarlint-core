@@ -19,7 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
@@ -33,7 +37,134 @@ public class QualityProfilesDownloader {
     this.qualityProfileStore = qualityProfileStore;
   }
 
-  public void fetchQualityProfiles() {
-    qualityProfileStore.store(qualityProfileApi.getQualityProfiles());
+  public List<UpdateEvent> fetchQualityProfiles(QualityProfileStore currentQualityProfileStore) {
+    var previousQProfiles = currentQualityProfileStore.getAllOrEmpty();
+    var newQualityProfiles = qualityProfileApi.getQualityProfiles();
+    List<UpdateEvent> events = new ArrayList<>(diffProfiles(previousQProfiles.getQprofilesByKeyMap(), newQualityProfiles.getQprofilesByKeyMap()));
+    events.addAll(diffDefaultProfiles(previousQProfiles.getDefaultQProfilesByLanguageMap(), newQualityProfiles.getDefaultQProfilesByLanguageMap()));
+    qualityProfileStore.store(newQualityProfiles);
+    return events;
+  }
+
+  private static List<UpdateEvent> diffProfiles(Map<String, Sonarlint.QProfiles.QProfile> previousQualityProfilesByKey,
+    Map<String, Sonarlint.QProfiles.QProfile> qProfilesByKeyMap) {
+    List<UpdateEvent> events = new ArrayList<>();
+    for (Map.Entry<String, Sonarlint.QProfiles.QProfile> newQualityProfile : qProfilesByKeyMap.entrySet()) {
+      String newQualityProfileKey = newQualityProfile.getKey();
+      Sonarlint.QProfiles.QProfile newProfile = newQualityProfile.getValue();
+      if (previousQualityProfilesByKey.containsKey(newQualityProfileKey)) {
+        Sonarlint.QProfiles.QProfile previousProfile = previousQualityProfilesByKey.get(newQualityProfileKey);
+        if (!previousProfile.equals(newProfile)) {
+          events.add(new QualityProfileChanged(newQualityProfileKey, previousProfile, newProfile));
+        }
+      } else {
+        events.add(new QualityProfileAdded(newQualityProfileKey, newProfile));
+      }
+    }
+    for (Map.Entry<String, Sonarlint.QProfiles.QProfile> previousQualityProfile : previousQualityProfilesByKey.entrySet()) {
+      String previousKey = previousQualityProfile.getKey();
+      if (!qProfilesByKeyMap.containsKey(previousKey)) {
+        events.add(new QualityProfileRemoved(previousKey, previousQualityProfile.getValue()));
+      }
+    }
+    return events;
+  }
+
+  private static List<UpdateEvent> diffDefaultProfiles(Map<String, String> previousDefaultQProfilesByLanguage, Map<String, String> defaultQProfilesByLanguageMap) {
+    List<UpdateEvent> events = new ArrayList<>();
+    for (Map.Entry<String, String> newDefaultProfileKeyByLanguage : defaultQProfilesByLanguageMap.entrySet()) {
+      String languageKey = newDefaultProfileKeyByLanguage.getKey();
+      String profileKey = newDefaultProfileKeyByLanguage.getValue();
+      if (previousDefaultQProfilesByLanguage.containsKey(languageKey)) {
+        if (!previousDefaultQProfilesByLanguage.get(languageKey).equals(profileKey)) {
+          events.add(new DefaultQualityProfileChanged(languageKey, profileKey));
+        }
+      } else {
+        events.add(new DefaultQualityProfileChanged(languageKey, profileKey));
+      }
+    }
+    return events;
+  }
+
+  public static class QualityProfileAdded implements UpdateEvent {
+
+    private final String key;
+    private final Sonarlint.QProfiles.QProfile profile;
+
+    public QualityProfileAdded(String key, Sonarlint.QProfiles.QProfile profile) {
+      this.key = key;
+      this.profile = profile;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public Sonarlint.QProfiles.QProfile getProfile() {
+      return profile;
+    }
+  }
+
+  public static class QualityProfileRemoved implements UpdateEvent {
+
+    private final String key;
+    private final Sonarlint.QProfiles.QProfile profile;
+
+    public QualityProfileRemoved(String key, Sonarlint.QProfiles.QProfile profile) {
+      this.key = key;
+      this.profile = profile;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public Sonarlint.QProfiles.QProfile getProfile() {
+      return profile;
+    }
+  }
+
+  public static class QualityProfileChanged implements UpdateEvent {
+
+    private final String key;
+    private final Sonarlint.QProfiles.QProfile oldProfile;
+    private final Sonarlint.QProfiles.QProfile newProfile;
+
+    public QualityProfileChanged(String key, Sonarlint.QProfiles.QProfile oldProfile, Sonarlint.QProfiles.QProfile newProfile) {
+      this.key = key;
+      this.oldProfile = oldProfile;
+      this.newProfile = newProfile;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public Sonarlint.QProfiles.QProfile getOldProfile() {
+      return oldProfile;
+    }
+
+    public Sonarlint.QProfiles.QProfile getNewProfile() {
+      return newProfile;
+    }
+  }
+
+  public static class DefaultQualityProfileChanged implements UpdateEvent {
+
+    private final String languageKey;
+    private final String profileKey;
+
+    public DefaultQualityProfileChanged(String languageKey, String profileKey) {
+      this.languageKey = languageKey;
+      this.profileKey = profileKey;
+    }
+
+    public String getLanguageKey() {
+      return languageKey;
+    }
+
+    public String getProfileKey() {
+      return profileKey;
+    }
   }
 }

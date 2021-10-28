@@ -38,4 +38,12 @@ public class GlobalSettingsStore {
   public Sonarlint.GlobalProperties getAll() {
     return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(PROPERTIES_PB), Sonarlint.GlobalProperties.parser())));
   }
+
+  public Sonarlint.GlobalProperties getAllOrEmpty() {
+    try {
+      return getAll();
+    } catch (Exception e) {
+      return Sonarlint.GlobalProperties.newBuilder().build();
+    }
+  }
 }

@@ -38,4 +38,12 @@ public class QualityProfileStore {
   public Sonarlint.QProfiles getAll() {
     return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(QUALITY_PROFILES_PB), Sonarlint.QProfiles.parser())));
   }
+
+  public Sonarlint.QProfiles getAllOrEmpty() {
+    try {
+      return getAll();
+    } catch (Exception e) {
+      return Sonarlint.QProfiles.newBuilder().build();
+    }
+  }
 }

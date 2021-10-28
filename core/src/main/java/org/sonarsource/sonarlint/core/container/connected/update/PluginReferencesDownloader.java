@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -91,19 +93,33 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public void fetchPlugins(List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
-    PluginReferences refs = toReferences(analyzers);
-    int i = 0;
-    float refCount = refs.getReferenceList().size();
-    for (PluginReference ref : refs.getReferenceList()) {
-      if (configuration.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey())) {
-        LOG.debug("Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", ref.getKey());
+  public List<UpdateEvent> fetchPlugins(PluginReferenceStore currentPluginReferenceStore, List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+    PluginReferences newReferences = toReferences(analyzers);
+    var i = 0;
+    float refCount = newReferences.getReferenceList().size();
+    List<UpdateEvent> pluginEvents = new ArrayList<>();
+    var previousReferences = currentPluginReferenceStore.getAllOrEmpty();
+    for (PluginReference newRef : newReferences.getReferenceList()) {
+      if (configuration.getEmbeddedPluginUrlsByKey().containsKey(newRef.getKey())) {
+        LOG.debug("Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", newRef.getKey());
         continue;
       }
-      progress.setProgressAndCheckCancel("Loading analyzer " + ref.getKey(), i / refCount);
-      pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
+      progress.setProgressAndCheckCancel("Loading analyzer " + newRef.getKey(), i / refCount);
+      pluginCache.get(newRef.getFilename(), newRef.getHash(), new SonarQubeServerPluginDownloader(newRef.getKey()));
+      Optional<PluginReference> sameOrOlderPlugin = previousReferences.getReferenceList().stream().filter(r -> r.getKey().equals(newRef.getKey())).findFirst();
+      if (sameOrOlderPlugin.isEmpty()) {
+        pluginEvents.add(new PluginAddedEvent(newRef));
+      } else if (!sameOrOlderPlugin.get().getHash().equals(newRef.getHash())) {
+        pluginEvents.add(new PluginUpdatedEvent(newRef));
+      }
     }
-    pluginReferenceStore.store(refs);
+    for (PluginReference previousRef : previousReferences.getReferenceList()) {
+      if (newReferences.getReferenceList().stream().noneMatch(r -> r.getKey().equals(previousRef.getKey()))) {
+        pluginEvents.add(new PluginRemovedEvent(previousRef));
+      }
+    }
+    pluginReferenceStore.store(newReferences);
+    return pluginEvents;
   }
 
   private class SonarQubeServerPluginDownloader implements PluginCache.Copier {
@@ -121,6 +137,36 @@ public class PluginReferencesDownloader {
         LOG.info("Download '{}'...", filename);
       }
       pluginsApi.getPlugin(key, pluginInputStream -> FileUtils.copyInputStreamToFile(pluginInputStream, toFile.toFile()));
+    }
+  }
+
+  public static class PluginEvent implements UpdateEvent {
+    private final PluginReference pluginReference;
+
+    protected PluginEvent(PluginReference pluginReference) {
+      this.pluginReference = pluginReference;
+    }
+
+    public PluginReference getPluginReference() {
+      return pluginReference;
+    }
+  }
+
+  public static class PluginAddedEvent extends PluginEvent {
+    public PluginAddedEvent(PluginReference pluginReference) {
+      super(pluginReference);
+    }
+  }
+
+  public static class PluginRemovedEvent extends PluginEvent {
+    public PluginRemovedEvent(PluginReference pluginReference) {
+      super(pluginReference);
+    }
+  }
+
+  public static class PluginUpdatedEvent extends PluginEvent {
+    public PluginUpdatedEvent(PluginReference pluginReference) {
+      super(pluginReference);
     }
   }
 }

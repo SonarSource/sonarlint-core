@@ -20,15 +20,19 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Collection;
+import java.util.List;
+import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.UpdateEvent;
 
 public class UpdateResult {
-  private GlobalStorageStatus status;
-  private Collection<SonarAnalyzer> analyzers;
+  private final GlobalStorageStatus status;
+  private final Collection<SonarAnalyzer> analyzers;
+  private final List<UpdateEvent> updateEvents;
 
-  public UpdateResult(GlobalStorageStatus status, Collection<SonarAnalyzer> analyzers) {
+  public UpdateResult(GlobalStorageStatus status, Collection<SonarAnalyzer> analyzers, List<UpdateEvent> updateEvents) {
     this.status = status;
     this.analyzers = analyzers;
-
+    this.updateEvents = updateEvents;
   }
 
   public GlobalStorageStatus status() {
@@ -37,5 +41,13 @@ public class UpdateResult {
 
   public Collection<SonarAnalyzer> analyzers() {
     return analyzers;
+  }
+
+  public List<UpdateEvent> updateEvents() {
+    return updateEvents;
+  }
+
+  public boolean didUpdateAnalyzers() {
+    return updateEvents.stream().anyMatch(event -> event instanceof PluginReferencesDownloader.PluginEvent);
   }
 }

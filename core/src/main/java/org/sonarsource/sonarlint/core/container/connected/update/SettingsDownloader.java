@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -34,9 +37,86 @@ public class SettingsDownloader {
     this.globalSettingsStore = globalSettingsStore;
   }
 
-  public GlobalProperties fetchGlobalSettings() {
-    GlobalProperties globalSettings = settingsApi.getGlobalSettings();
-    globalSettingsStore.store(globalSettings);
-    return globalSettings;
+  public List<UpdateEvent> fetchGlobalSettings(GlobalSettingsStore currentGlobalSettingsStore) {
+    GlobalProperties newSettings = settingsApi.getGlobalSettings();
+    Map<String, String> oldSettings = currentGlobalSettingsStore.getAllOrEmpty().getPropertiesMap();
+    List<UpdateEvent> settingsEvents = new ArrayList<>();
+    for (Map.Entry<String, String> entry : newSettings.getPropertiesMap().entrySet()) {
+      if (oldSettings.containsKey(entry.getKey())) {
+        String oldValue = oldSettings.get(entry.getKey());
+        if (!oldValue.equals(entry.getValue())) {
+          settingsEvents.add(new SettingsValueChanged(entry.getKey(), oldValue, entry.getValue()));
+        }
+      } else {
+        settingsEvents.add(new SettingsAdded(entry.getKey(), entry.getValue()));
+      }
+    }
+    for (Map.Entry<String, String> oldEntry : oldSettings.entrySet()) {
+      if (!newSettings.getPropertiesMap().containsKey(oldEntry.getKey())) {
+        settingsEvents.add(new SettingsRemoved(oldEntry.getKey(), oldEntry.getValue()));
+      }
+    }
+    globalSettingsStore.store(newSettings);
+    return settingsEvents;
+  }
+
+  public static class SettingsAdded implements UpdateEvent {
+    private final String key;
+    private final String value;
+
+    public SettingsAdded(String key, String value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getValue() {
+      return value;
+    }
+  }
+
+  public static class SettingsRemoved implements UpdateEvent {
+    private final String key;
+    private final String value;
+
+    public SettingsRemoved(String key, String value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getValue() {
+      return value;
+    }
+  }
+
+  public static class SettingsValueChanged implements UpdateEvent {
+    private final String key;
+    private final String oldValue;
+    private final String newValue;
+
+    public SettingsValueChanged(String key, String oldValue, String newValue) {
+      this.key = key;
+      this.oldValue = oldValue;
+      this.newValue = newValue;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getOldValue() {
+      return oldValue;
+    }
+
+    public String getNewValue() {
+      return newValue;
+    }
   }
 }
