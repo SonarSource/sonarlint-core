@@ -26,15 +26,15 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.Language;
 
 public class OnDiskTestClientInputFile implements ClientInputFile {
-  private Path path;
-  private boolean isTest;
-  private Charset encoding;
-  private Language language;
-  private String relativePath;
+  private final Path path;
+  private final boolean isTest;
+  private final Charset encoding;
+  private final Language language;
+  private final String relativePath;
 
   public OnDiskTestClientInputFile(final Path path, String relativePath, final boolean isTest, final Charset encoding) {
     this(path, relativePath, isTest, encoding, null);

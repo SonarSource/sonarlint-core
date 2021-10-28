@@ -46,7 +46,7 @@ class AbstractSonarLintEngineTests {
     AbstractSonarLintEngine underTest = prepareFakeEngine(mockedModuleContainerThatFailsOnStop);
 
     AbstractAnalysisConfiguration configuration = mock(AbstractAnalysisConfiguration.class);
-    when(configuration.moduleKey()).thenReturn(MODULE_KEY);
+    when(configuration.moduleId()).thenReturn(MODULE_KEY);
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.withModule(configuration, c -> "Result"));
 
@@ -63,7 +63,7 @@ class AbstractSonarLintEngineTests {
     AbstractSonarLintEngine underTest = prepareFakeEngine(mockedModuleContainerThatFailsOnStop);
 
     AbstractAnalysisConfiguration configuration = mock(AbstractAnalysisConfiguration.class);
-    when(configuration.moduleKey()).thenReturn(MODULE_KEY);
+    when(configuration.moduleId()).thenReturn(MODULE_KEY);
 
     IllegalStateException originalException = new IllegalStateException("Original exception");
 

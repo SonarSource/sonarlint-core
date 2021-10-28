@@ -80,7 +80,7 @@ public class DefaultSonarLintIssueTest {
 
     assertThat(issue.primaryLocation().inputComponent()).isEqualTo(inputFile);
     assertThat(issue.ruleKey()).isEqualTo(RuleKey.of("repo", "rule"));
-    assertThat(issue.primaryLocation().textRange().start().line()).isEqualTo(1);
+    assertThat(issue.primaryLocation().textRange().loadPluginMetadata().line()).isEqualTo(1);
     assertThat(issue.primaryLocation().message()).isEqualTo("Wrong way!");
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
@@ -103,8 +103,8 @@ public class DefaultSonarLintIssueTest {
     assertThat(inputFileEdit.target()).isEqualTo(((SonarLintInputFile) inputFile).getClientInputFile());
     assertThat(inputFileEdit.textEdits()).hasSize(1);
     TextEdit textEdit = inputFileEdit.textEdits().get(0);
-    assertThat(textEdit.range().getStartLine()).isEqualTo(range.start().line());
-    assertThat(textEdit.range().getStartLineOffset()).isEqualTo(range.start().lineOffset());
+    assertThat(textEdit.range().getStartLine()).isEqualTo(range.loadPluginMetadata().line());
+    assertThat(textEdit.range().getStartLineOffset()).isEqualTo(range.loadPluginMetadata().lineOffset());
     assertThat(textEdit.range().getEndLine()).isEqualTo(range.end().line());
     assertThat(textEdit.range().getEndLineOffset()).isEqualTo(range.end().lineOffset());
     assertThat(textEdit.newText()).isEqualTo("// Fixed!");

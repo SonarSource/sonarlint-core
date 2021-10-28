@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.analysis;
+package org.sonarsource.sonarlint.core.container.storage;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.sonar.api.batch.fs.InputFile;
@@ -25,6 +25,7 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.scan.filesystem.FileExclusions;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
 
 public class ExclusionFilters {
 

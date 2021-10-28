@@ -22,21 +22,16 @@ package org.sonarsource.sonarlint.core;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.function.Consumer;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 
 public class TestUtils {
 
-  public static class NoOpIssueListener implements IssueListener {
-    @Override
-    public void handle(Issue issue) {
-    }
-  };
-
-  public static NoOpIssueListener createNoOpIssueListener() {
-    return new NoOpIssueListener();
+  public static Consumer<Issue> createNoOpIssueListener() {
+    return i -> {
+    };
   }
 
   public static class NoOpLogOutput implements LogOutput {

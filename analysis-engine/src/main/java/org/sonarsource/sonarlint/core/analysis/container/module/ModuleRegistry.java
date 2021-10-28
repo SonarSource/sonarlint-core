@@ -19,68 +19,60 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.module;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.ModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.api.ModulesProvider;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 
 public class ModuleRegistry {
   private static final Logger LOG = Loggers.get(ModuleRegistry.class);
 
-  private final Map<Object, ModuleContainer> modules = new HashMap<>();
+  private final ConcurrentHashMap<String, ModuleContainer> moduleContainersById = new ConcurrentHashMap<>();
   private final ComponentContainer parent;
+  private final ClientFileSystem clientFs;
 
-  public ModuleRegistry(ComponentContainer parent, ModulesProvider modulesProvider) {
+  public ModuleRegistry(ComponentContainer parent, ClientFileSystem clientFs) {
     this.parent = parent;
-    if (modulesProvider != null) {
-      modulesProvider.getModules().forEach(this::registerModule);
-    }
+    this.clientFs = clientFs;
   }
 
-  public ModuleContainer registerModule(ModuleInfo module) {
-    ModuleContainer moduleContainer = createContainer(module);
-    modules.put(module.key(), moduleContainer);
+  public ModuleContainer registerModule(String moduleId) {
+    return moduleContainersById.computeIfAbsent(moduleId, id -> createContainer(id, new DefaultModuleFileSystem(id, clientFs)));
+  }
+
+  private ModuleContainer createContainer(String moduleId, ModuleFileSystem moduleFileSystem) {
+    LOG.debug("Creating container for module '" + moduleId + "'");
+    ModuleContainer moduleContainer = new ModuleContainer(parent, false);
+    moduleContainer.add(moduleFileSystem);
+    moduleContainer.startComponents();
     return moduleContainer;
   }
 
-  public ModuleContainer createContainer(ModuleInfo module) {
-    Object moduleKey = module.key();
-    if (modules.containsKey(moduleKey)) {
-      // this could happen if the creation is delayed while the engine is updating but the provider already returned the module
-      LOG.info("Module container already started with key=" + moduleKey);
-      return modules.get(moduleKey);
-    }
-    LOG.info("Creating container for module with key=" + moduleKey);
-    ModuleContainer moduleContainer = new ModuleContainer(parent);
-    ClientFileSystem clientFileSystem = module.fileSystem();
-    if (clientFileSystem != null) {
-      moduleContainer.add(clientFileSystem);
-    }
+  public ModuleContainer createTranscientContainer(Iterable<ClientInputFile> filesToAnalyze) {
+    LOG.debug("Creating transcient module container");
+    ModuleContainer moduleContainer = new ModuleContainer(parent, true);
+    moduleContainer.add(new TranscientModuleFileSystem(filesToAnalyze));
     moduleContainer.startComponents();
     return moduleContainer;
   }
 
   public void unregisterModule(Object moduleKey) {
-    if (!modules.containsKey(moduleKey)) {
-      // can this happen ?
-      return;
+    ModuleContainer moduleContainer = moduleContainersById.remove(moduleKey);
+    if (moduleContainer != null) {
+      moduleContainer.stopComponents();
     }
-    ModuleContainer moduleContainer = modules.remove(moduleKey);
-    moduleContainer.stopComponents();
   }
 
   public void stopAll() {
-    modules.values().forEach(ComponentContainer::stopComponents);
-    modules.clear();
+    moduleContainersById.values().forEach(ComponentContainer::stopComponents);
+    moduleContainersById.clear();
   }
 
   @CheckForNull
-  public ModuleContainer getContainerFor(Object moduleKey) {
-    return modules.get(moduleKey);
+  public ModuleContainer getContainerFor(String moduleId) {
+    return moduleContainersById.get(moduleId);
   }
 }

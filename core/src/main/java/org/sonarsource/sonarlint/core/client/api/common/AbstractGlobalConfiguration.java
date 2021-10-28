@@ -29,6 +29,8 @@ import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.Language;
 
 /**
  * To use SonarLint in connected mode please provide a server id that will identify the storage.
@@ -47,7 +49,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
-  private final ModulesProvider modulesProvider;
+  private final ClientFileSystem clientFileSystem;
   private final long clientPid;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
@@ -58,7 +60,7 @@ public abstract class AbstractGlobalConfiguration {
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
     this.nodeJsVersion = builder.nodeJsVersion;
-    this.modulesProvider = builder.modulesProvider;
+    this.clientFileSystem = builder.clientFileSystem;
     this.clientPid = builder.clientPid;
   }
 
@@ -66,8 +68,8 @@ public abstract class AbstractGlobalConfiguration {
     return Collections.unmodifiableMap(extraProperties);
   }
 
-  public ModulesProvider getModulesProvider() {
-    return modulesProvider;
+  public ClientFileSystem getClientFileSystem() {
+    return clientFileSystem;
   }
 
   public Path getSonarLintUserHome() {
@@ -109,7 +111,7 @@ public abstract class AbstractGlobalConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private Version nodeJsVersion;
-    private ModulesProvider modulesProvider;
+    private ClientFileSystem clientFileSystem;
     private long clientPid;
 
     public G setLogOutput(@Nullable LogOutput logOutput) {
@@ -166,8 +168,8 @@ public abstract class AbstractGlobalConfiguration {
       return (G) this;
     }
 
-    public G setModulesProvider(ModulesProvider modulesProvider) {
-      this.modulesProvider = modulesProvider;
+    public G setClientFileSystem(ClientFileSystem clientFileSystem) {
+      this.clientFileSystem = clientFileSystem;
       return (G) this;
     }
 

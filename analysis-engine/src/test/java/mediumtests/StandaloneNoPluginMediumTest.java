@@ -35,10 +35,8 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Language;
-import org.sonarsource.sonarlint.core.analysis.api.ModuleInfo;
 import testutils.TestUtils;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -52,7 +50,7 @@ public class StandaloneNoPluginMediumTest {
   @Before
   public void prepare() throws IOException {
     sonarlint = new AnalysisEngine(GlobalAnalysisConfiguration.builder()
-      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setClientFileSystem(mock(ClientFileSystem.class))
       .build());
 
     baseDir = temp.newFolder();

@@ -23,6 +23,11 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-analysis-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-plugin-api</artifactId>
       <version>${project.version}</version>
     </dependency>

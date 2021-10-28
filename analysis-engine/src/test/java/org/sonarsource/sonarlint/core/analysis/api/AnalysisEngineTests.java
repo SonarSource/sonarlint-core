@@ -21,65 +21,58 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
+import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static testutils.TestUtils.noOpIssueListener;
 
 class AnalysisEngineTests {
 
   private static final String MODULE_KEY = "moduleKey";
 
+  private static IllegalStateException onStopException = new IllegalStateException("Exception during container stop");
+  private static IllegalStateException originalException = new IllegalStateException("Original exception");
+
   @Test
   void testThrowOnStop() {
-    ModuleContainer mockedModuleContainerThatFailsOnStop = mock(ModuleContainer.class);
-    IllegalStateException onStopException = new IllegalStateException("Exception during container stop");
-    when(mockedModuleContainerThatFailsOnStop.stopComponents()).thenThrow(onStopException);
+    AnalysisEngine underTest = prepareFakeEngine(false);
 
-    AnalysisEngine underTest = prepareFakeEngine(mockedModuleContainerThatFailsOnStop);
+    SonarLintException thrown = assertThrows(SonarLintException.class, () -> underTest.analyze(mock(AnalysisConfiguration.class), noOpIssueListener(), null, null));
 
-    AnalysisConfiguration configuration = mock(AnalysisConfiguration.class);
-    when(configuration.moduleKey()).thenReturn(MODULE_KEY);
-
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.withModule(configuration, c -> "Result"));
-
-    assertThat(thrown).isEqualTo(onStopException).hasNoSuppressedExceptions();
+    assertThat(thrown).hasMessage(onStopException.getMessage()).hasNoSuppressedExceptions();
 
   }
 
   @Test
   void dontLoseOriginalExceptionWhenErrorDuringModuleContainerStop() {
-    ModuleContainer mockedModuleContainerThatFailsOnStop = mock(ModuleContainer.class);
-    IllegalStateException onStopException = new IllegalStateException("Exception during container stop");
-    when(mockedModuleContainerThatFailsOnStop.stopComponents()).thenThrow(onStopException);
+    AnalysisEngine underTest = prepareFakeEngine(true);
 
-    AnalysisEngine underTest = prepareFakeEngine(mockedModuleContainerThatFailsOnStop);
+    SonarLintException thrown = assertThrows(SonarLintException.class, () -> underTest.analyze(mock(AnalysisConfiguration.class), noOpIssueListener(), null, null));
 
-    AnalysisConfiguration configuration = mock(AnalysisConfiguration.class);
-    when(configuration.moduleKey()).thenReturn(MODULE_KEY);
-
-    IllegalStateException originalException = new IllegalStateException("Original exception");
-
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.withModule(configuration, c -> {
-      throw originalException;
-    }));
-
-    assertThat(thrown).isEqualTo(onStopException).hasSuppressedException(originalException);
+    assertThat(thrown).hasMessage(onStopException.getMessage());
+    assertThat(thrown.getSuppressed()[0]).hasMessage(originalException.getMessage());
 
   }
 
-  private AnalysisEngine prepareFakeEngine(ModuleContainer mockedModuleContainerThatFailsOnStop) {
-    ModuleRegistry mockModuleRegistry = mock(ModuleRegistry.class);
+  private AnalysisEngine prepareFakeEngine(boolean throwDuringAnalyze) {
+    ModuleContainer mockedModuleContainerThatFailsOnStop = mock(ModuleContainer.class);
+    if (throwDuringAnalyze) {
+      when(mockedModuleContainerThatFailsOnStop.analyze(any(), any(), any())).thenThrow(originalException);
+    }
+
+    // Create transcient container to force the engine to call stop immediately
+    when(mockedModuleContainerThatFailsOnStop.isTranscient()).thenReturn(true);
+    when(mockedModuleContainerThatFailsOnStop.stopComponents()).thenThrow(onStopException);
 
     AnalysisEngine underTest = new AnalysisEngine(GlobalAnalysisConfiguration.builder().setLogOutput(mock(LogOutput.class)).build());
     underTest = spy(underTest);
-    when(underTest.getModuleRegistry()).thenReturn(mockModuleRegistry);
-    when(mockModuleRegistry.getContainerFor(MODULE_KEY)).thenReturn(null);
-    when(mockModuleRegistry.createContainer(any())).thenReturn(mockedModuleContainerThatFailsOnStop);
+    doReturn(mockedModuleContainerThatFailsOnStop).when(underTest).getModuleContainer(any());
     return underTest;
   }
 

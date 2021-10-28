@@ -20,7 +20,6 @@
 package testutils;
 
 import java.util.stream.Stream;
-import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
@@ -28,12 +27,12 @@ public class ClientFileSystemFixtures {
   public static ClientFileSystem aClientFileSystemWith(ClientInputFile... clientInputFile) {
     return new ClientFileSystem() {
       @Override
-      public Stream<ClientInputFile> files(String language, InputFile.Type type) {
-        return files();
+      public Stream<ClientInputFile> listFiles(String moduleId, String language, FileType type) {
+        return listAllFiles(moduleId);
       }
 
       @Override
-      public Stream<ClientInputFile> files() {
+      public Stream<ClientInputFile> listAllFiles(String moduleId) {
         return Stream.of(clientInputFile);
       }
     };
@@ -42,12 +41,12 @@ public class ClientFileSystemFixtures {
   public static ClientFileSystem anEmptyClientFileSystem() {
     return new ClientFileSystem() {
       @Override
-      public Stream<ClientInputFile> files(String language, InputFile.Type type) {
-        return files();
+      public Stream<ClientInputFile> listFiles(String moduleId, String suffix, FileType type) {
+        return listAllFiles(moduleId);
       }
 
       @Override
-      public Stream<ClientInputFile> files() {
+      public Stream<ClientInputFile> listAllFiles(String moduleId) {
         return Stream.empty();
       }
     };

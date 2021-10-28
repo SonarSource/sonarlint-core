@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -48,8 +49,8 @@ public class GlobalAnalysisConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
-  private final ModulesProvider modulesProvider;
   private final long clientPid;
+  private final ClientFileSystem clientFileSystem;
 
   private GlobalAnalysisConfiguration(Builder builder) {
     this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
@@ -59,9 +60,9 @@ public class GlobalAnalysisConfiguration {
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
     this.nodeJsVersion = builder.nodeJsVersion;
-    this.modulesProvider = builder.modulesProvider;
     this.clientPid = builder.clientPid;
     this.pluginUrls = builder.pluginUrls;
+    this.clientFileSystem = builder.clientFileSystem;
   }
 
   public static Builder builder() {
@@ -70,10 +71,6 @@ public class GlobalAnalysisConfiguration {
 
   public Map<String, String> extraProperties() {
     return Collections.unmodifiableMap(extraProperties);
-  }
-
-  public ModulesProvider getModulesProvider() {
-    return modulesProvider;
   }
 
   public Path getSonarLintUserHome() {
@@ -111,6 +108,10 @@ public class GlobalAnalysisConfiguration {
     return Collections.unmodifiableList(pluginUrls);
   }
 
+  public ClientFileSystem getClientFileSystem() {
+    return clientFileSystem;
+  }
+
   public Map<String, String> getEffectiveConfig() {
     Map<String, String> props = new HashMap<>();
     if (nodeJsPath != null) {
@@ -128,9 +129,9 @@ public class GlobalAnalysisConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private Version nodeJsVersion;
-    private ModulesProvider modulesProvider;
     private long clientPid;
     private final List<URL> pluginUrls = new ArrayList<>();
+    private ClientFileSystem clientFileSystem;
 
     private Builder() {
 
@@ -182,16 +183,19 @@ public class GlobalAnalysisConfiguration {
     }
 
     /**
-     * Set the location of the nodejs executable used by some analyzers.
+     * Explicitly enable several {@link Language}s
      */
-    public Builder setNodeJs(Path nodeJsPath, Version nodeJsVersion) {
-      this.nodeJsPath = nodeJsPath;
-      this.nodeJsVersion = nodeJsVersion;
+    public Builder addEnabledLanguages(Collection<Language> languages) {
+      enabledLanguages.addAll(languages);
       return this;
     }
 
-    public Builder setModulesProvider(ModulesProvider modulesProvider) {
-      this.modulesProvider = modulesProvider;
+    /**
+     * Set the location of the nodejs executable used by some analyzers.
+     */
+    public Builder setNodeJs(@Nullable Path nodeJsPath, @Nullable Version nodeJsVersion) {
+      this.nodeJsPath = nodeJsPath;
+      this.nodeJsVersion = nodeJsVersion;
       return this;
     }
 
@@ -205,8 +209,18 @@ public class GlobalAnalysisConfiguration {
       return this;
     }
 
+    public Builder addPlugins(Collection<URL> pluginUrls) {
+      this.pluginUrls.addAll(pluginUrls);
+      return this;
+    }
+
     public Builder addPlugin(URL pluginUrl) {
       this.pluginUrls.add(pluginUrl);
+      return this;
+    }
+
+    public Builder setClientFileSystem(ClientFileSystem clientFileSystem) {
+      this.clientFileSystem = clientFileSystem;
       return this;
     }
 

@@ -21,17 +21,15 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
-import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
+import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
 
@@ -50,54 +48,25 @@ public class AnalysisEngine {
     start();
   }
 
-  public void declareModule(ModuleInfo module) {
-    withRwLock(() -> getModuleRegistry().registerModule(module));
+  public void startModule(String moduleId) {
+    withRwLock(() -> getModuleRegistry().registerModule(moduleId));
   }
 
-  public void stopModule(Object moduleKey) {
+  public void stopModule(String moduleId) {
     withRwLock(() -> {
-      getModuleRegistry().unregisterModule(moduleKey);
+      getModuleRegistry().unregisterModule(moduleId);
       return null;
     });
   }
 
-  public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+  public void fireModuleFileEvent(String moduleId, ClientModuleFileEvent event) {
     withRwLock(() -> {
-      ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
+      ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleId);
       if (moduleContainer != null) {
         moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
       }
       return null;
     });
-  }
-
-  <T> T withModule(AnalysisConfiguration configuration, Function<ModuleContainer, T> consumer) {
-    boolean deleteModuleAfterAnalysis = false;
-    Object moduleKey = configuration.moduleKey();
-    ModuleContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
-    if (moduleContainer == null) {
-      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = getModuleRegistry().createContainer(new ModuleInfo(moduleKey, new AnalysisScopeFileSystem(configuration.inputFiles())));
-      deleteModuleAfterAnalysis = true;
-    }
-    Throwable originalException = null;
-    try {
-      return consumer.apply(moduleContainer);
-    } catch (Throwable e) {
-      originalException = e;
-      throw e;
-    } finally {
-      try {
-        if (deleteModuleAfterAnalysis) {
-          moduleContainer.stopComponents();
-        }
-      } catch (Exception e) {
-        if (originalException != null) {
-          e.addSuppressed(originalException);
-        }
-        throw e;
-      }
-    }
   }
 
   private <T> T withRwLock(Supplier<T> callable) {
@@ -120,32 +89,11 @@ public class AnalysisEngine {
     }
   }
 
-  private static class AnalysisScopeFileSystem implements ClientFileSystem {
-
-    private final Iterable<ClientInputFile> filesToAnalyze;
-
-    private AnalysisScopeFileSystem(Iterable<ClientInputFile> filesToAnalyze) {
-      this.filesToAnalyze = filesToAnalyze;
-    }
-
-    @Override
-    public Stream<ClientInputFile> files(String suffix, InputFile.Type type) {
-      return files()
-        .filter(file -> file.relativePath().endsWith(suffix))
-        .filter(file -> file.isTest() == (type == InputFile.Type.TEST));
-    }
-
-    @Override
-    public Stream<ClientInputFile> files() {
-      return StreamSupport.stream(filesToAnalyze.spliterator(), false);
-    }
-  }
-
   public GlobalAnalysisContainer getGlobalContainer() {
     return globalContainer;
   }
 
-  ModuleRegistry getModuleRegistry() {
+  private ModuleRegistry getModuleRegistry() {
     return getGlobalContainer().getModuleRegistry();
   }
 
@@ -162,20 +110,44 @@ public class AnalysisEngine {
     }
   }
 
-  public AnalysisResults analyze(AnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
     setLogging(logOutput);
     rwl.readLock().lock();
-    return withModule(configuration, moduleContainer -> {
+    try {
+      ModuleContainer moduleContainer = getModuleContainer(configuration);
+      SonarLintException originalException = null;
       try {
         return moduleContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
-      } catch (RuntimeException e) {
-        throw SonarLintWrappedException.wrap(e);
+      } catch (Throwable e) {
+        originalException = SonarLintWrappedException.wrap(e);
+        throw e;
       } finally {
-        rwl.readLock().unlock();
+        try {
+          if (moduleContainer.isTranscient()) {
+            moduleContainer.stopComponents();
+          }
+        } catch (Exception e) {
+          if (originalException != null) {
+            e.addSuppressed(originalException);
+          }
+          throw SonarLintWrappedException.wrap(e);
+        }
       }
-    });
+    } finally {
+      rwl.readLock().unlock();
+    }
+  }
+
+  ModuleContainer getModuleContainer(AnalysisConfiguration configuration) {
+    String moduleId = configuration.moduleId();
+    ModuleContainer moduleContainer = moduleId != null ? getModuleRegistry().getContainerFor(moduleId) : null;
+    if (moduleContainer == null) {
+      // if not found or moduleId is null, means we are outside of any module (e.g. single file analysis on VSCode)
+      moduleContainer = getModuleRegistry().createTranscientContainer(configuration.inputFiles());
+    }
+    return moduleContainer;
   }
 
   public void stop() {

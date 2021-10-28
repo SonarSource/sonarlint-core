@@ -22,7 +22,6 @@ package mediumtests;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,17 +34,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.LogOutput;
-import org.sonarsource.sonarlint.core.analysis.api.ModuleInfo;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static testutils.TestUtils.createNoOpIssueListener;
+import static testutils.TestUtils.noOpIssueListener;
 
 public class LogMediumTest {
 
@@ -61,7 +57,6 @@ public class LogMediumTest {
     GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .setLogOutput(createLogOutput(logs))
-      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
     sonarlint = new AnalysisEngine(config);
 
@@ -97,13 +92,13 @@ public class LogMediumTest {
   public void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
-    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
+    sonarlint.analyze(createConfig(inputFile), noOpIssueListener(), null, null);
     assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
     final Map<LogOutput.Level, Queue<String>> logs2 = new ConcurrentHashMap<>();
 
-    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2), null);
+    sonarlint.analyze(createConfig(inputFile), noOpIssueListener(), createLogOutput(logs2), null);
     assertThat(logs.get(LogOutput.Level.DEBUG)).isNullOrEmpty();
     assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
   }

@@ -20,9 +20,8 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import javax.annotation.CheckForNull;
-
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 
 public interface Trackable {
 

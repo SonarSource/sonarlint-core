@@ -32,7 +32,7 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public org.sonarsource.sonarlint.core.client.api.common.analysis.Issue getIssue() {
+  public org.sonarsource.sonarlint.core.analysis.api.Issue getIssue() {
     throw new UnsupportedOperationException();
   }
 
@@ -90,7 +90,7 @@ public class ProtobufIssueTrackable implements Trackable {
   public String getSeverity() {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
   public String getType() {
     throw new UnsupportedOperationException();

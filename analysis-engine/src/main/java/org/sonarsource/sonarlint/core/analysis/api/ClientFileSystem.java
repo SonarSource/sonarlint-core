@@ -20,11 +20,14 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.stream.Stream;
-import org.sonar.api.batch.fs.InputFile;
 
 public interface ClientFileSystem {
-  Stream<ClientInputFile> files(String suffix, InputFile.Type type);
 
-  Stream<ClientInputFile> files();
+  enum FileType {
+    MAIN, TEST;
+  }
 
+  Stream<ClientInputFile> listFiles(String moduleId, String suffix, FileType type);
+
+  Stream<ClientInputFile> listAllFiles(String moduleId);
 }

@@ -81,7 +81,7 @@ public class GlobalAnalysisContainer extends ComponentContainer {
     globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
     GlobalAnalysisConfiguration globalConfiguration = this.getComponentByType(GlobalAnalysisConfiguration.class);
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfiguration.getModulesProvider());
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfiguration.getClientFileSystem());
   }
 
   @Override

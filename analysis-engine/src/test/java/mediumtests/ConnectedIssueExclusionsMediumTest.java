@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,7 +39,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.IssueListener;
 import org.sonarsource.sonarlint.core.analysis.api.Language;
 import org.sonarsource.sonarlint.core.analysis.api.RuleKey;
 import testutils.PluginLocator;
@@ -265,7 +265,7 @@ public class ConnectedIssueExclusionsMediumTest {
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 
-  static class StoreIssueListener implements IssueListener {
+  static class StoreIssueListener implements Consumer<Issue> {
     private final List<Issue> issues;
 
     StoreIssueListener(List<Issue> issues) {
@@ -273,8 +273,8 @@ public class ConnectedIssueExclusionsMediumTest {
     }
 
     @Override
-    public void handle(Issue issue) {
-      issues.add(issue);
+    public void accept(Issue t) {
+      issues.add(t);
     }
   }
 

@@ -28,21 +28,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.Language;
 
 @Immutable
 public abstract class AbstractAnalysisConfiguration {
 
-  private final Iterable<ClientInputFile> inputFiles;
+  private final Collection<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path baseDir;
-  private final Object moduleKey;
+  private final String moduleId;
 
   protected AbstractAnalysisConfiguration(AbstractBuilder<?> builder) {
     this.baseDir = builder.baseDir;
     this.inputFiles = builder.inputFiles;
     this.extraProperties = builder.extraProperties;
-    this.moduleKey = builder.moduleKey;
+    this.moduleId = builder.moduleId;
   }
 
   public Map<String, String> extraProperties() {
@@ -53,18 +54,18 @@ public abstract class AbstractAnalysisConfiguration {
     return baseDir;
   }
 
-  public Object moduleKey() {
-    return moduleKey;
+  public String moduleId() {
+    return moduleId;
   }
 
-  public Iterable<ClientInputFile> inputFiles() {
+  public Collection<ClientInputFile> inputFiles() {
     return inputFiles;
   }
 
   protected void generateToStringCommon(StringBuilder sb) {
     sb.append("  baseDir: ").append(baseDir()).append("\n");
     sb.append("  extraProperties: ").append(extraProperties()).append("\n");
-    sb.append("  moduleKey: ").append(moduleKey()).append("\n");
+    sb.append("  moduleId: ").append(moduleId()).append("\n");
   }
 
   protected void generateToStringInputFiles(StringBuilder sb) {
@@ -90,10 +91,10 @@ public abstract class AbstractAnalysisConfiguration {
   }
 
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
-    private List<ClientInputFile> inputFiles = new ArrayList<>();
-    private Map<String, String> extraProperties = new HashMap<>();
+    private final List<ClientInputFile> inputFiles = new ArrayList<>();
+    private final Map<String, String> extraProperties = new HashMap<>();
     private Path baseDir;
-    private Object moduleKey;
+    private String moduleId;
 
     public G addInputFiles(ClientInputFile... inputFiles) {
       Collections.addAll(this.inputFiles, inputFiles);
@@ -125,8 +126,8 @@ public abstract class AbstractAnalysisConfiguration {
       return (G) this;
     }
 
-    public G setModuleKey(Object moduleKey) {
-      this.moduleKey = moduleKey;
+    public G setModuleKey(String moduleId) {
+      this.moduleId = moduleId;
       return (G) this;
     }
 

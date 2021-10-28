@@ -86,14 +86,14 @@ class SonarLintInputFileTests {
       URI.create("file://foo.php"), null);
     SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> metadata);
 
-    assertThat(file.selectLine(1).start().line()).isEqualTo(1);
-    assertThat(file.selectLine(1).start().lineOffset()).isEqualTo(0);
+    assertThat(file.selectLine(1).loadPluginMetadata().line()).isEqualTo(1);
+    assertThat(file.selectLine(1).loadPluginMetadata().lineOffset()).isEqualTo(0);
     assertThat(file.selectLine(1).end().line()).isEqualTo(1);
     assertThat(file.selectLine(1).end().lineOffset()).isEqualTo(9);
 
     // Don't fail when selecting empty line
-    assertThat(file.selectLine(3).start().line()).isEqualTo(3);
-    assertThat(file.selectLine(3).start().lineOffset()).isEqualTo(0);
+    assertThat(file.selectLine(3).loadPluginMetadata().line()).isEqualTo(3);
+    assertThat(file.selectLine(3).loadPluginMetadata().lineOffset()).isEqualTo(0);
     assertThat(file.selectLine(3).end().line()).isEqualTo(3);
     assertThat(file.selectLine(3).end().lineOffset()).isEqualTo(0);
   }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Analysis Engine
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analyzer.noop;
+package org.sonarsource.sonarlint.core.analysis.container.module;
 
-import org.sonar.api.measures.FileLinesContext;
+import java.util.stream.Stream;
+import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
-public class NoOpFileLinesContext implements FileLinesContext {
+public interface ModuleFileSystem {
 
-  @Override
-  public void setIntValue(String metricKey, int line, int value) {
-  }
+  Stream<ClientInputFile> listFiles(String suffix, ClientFileSystem.FileType type);
 
-  @Override
-  public void setStringValue(String metricKey, int line, String value) {
-  }
-
-  @Override
-  public void save() {
-  }
-
+  Stream<ClientInputFile> listAllFiles();
 }

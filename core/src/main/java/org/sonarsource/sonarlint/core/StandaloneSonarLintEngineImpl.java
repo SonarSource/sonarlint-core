@@ -20,110 +20,133 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonar.api.batch.rule.ActiveRules;
+import org.sonar.api.batch.rule.Rules;
+import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.analysis.api.Version;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine implements StandaloneSonarLintEngine {
 
   private final StandaloneGlobalConfiguration globalConfig;
-  private StandaloneGlobalContainer globalContainer;
+  private Collection<PluginDetails> pluginDetails;
+  private Rules rules;
+  private StandaloneActiveRules standaloneActiveRules;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-    start();
+
+    loadPluginMetadata();
+
+    GlobalAnalysisConfiguration analysisGlobalConfig = GlobalAnalysisConfiguration.builder()
+      .addEnabledLanguages(globalConfig.getEnabledLanguages().stream().map(l -> Language.forKey(l.getLanguageKey()).get()).collect(toList()))
+      .addPlugins(globalConfig.getPluginUrls())
+      .setClientPid(globalConfig.getClientPid())
+      // TODO Convert LogOutput
+      .setExtraProperties(globalConfig.extraProperties())
+      .setNodeJs(globalConfig.getNodeJsPath(), Optional.ofNullable(globalConfig.getNodeJsVersion()).map(v -> Version.create(v.toString())).orElse(null))
+      .setSonarLintUserHome(globalConfig.getSonarLintUserHome())
+      .setWorkDir(globalConfig.getWorkDir())
+      .setClientFileSystem(globalConfig.getClientFileSystem())
+      .build();
+    startAnalysisEngine(analysisGlobalConfig);
   }
 
-  public StandaloneGlobalContainer getGlobalContainer() {
-    return globalContainer;
-  }
-
-  @Override
-  protected ModuleRegistry getModuleRegistry() {
-    return getGlobalContainer().getModuleRegistry();
-  }
-
-  public void start() {
-    setLogging(null);
-    rwl.writeLock().lock();
-    this.globalContainer = new StandaloneGlobalContainer(globalConfig);
+  public void loadPluginMetadata() {
+    StandaloneGlobalContainer globalContainer = new StandaloneGlobalContainer(globalConfig);
     try {
-      globalContainer.startComponents();
+      globalContainer.execute();
+      pluginDetails = globalContainer.getPluginDetails();
+      rules = globalContainer.getRules();
+      standaloneActiveRules = globalContainer.getStandaloneActiveRules();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.writeLock().unlock();
     }
   }
 
   @Override
   public Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey) {
-    return Optional.ofNullable(globalContainer.getRuleDetails(ruleKey));
+    return Optional.ofNullable(standaloneActiveRules.ruleDetails(ruleKey));
   }
 
   @Override
   public Collection<StandaloneRuleDetails> getAllRuleDetails() {
-    return globalContainer.getAllRuleDetails();
+    return standaloneActiveRules.allRuleDetails();
   }
 
   @Override
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
-    setLogging(logOutput);
-    rwl.readLock().lock();
-    return withModule(configuration, moduleContainer -> {
-      try {
-        return globalContainer.analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
-      } catch (RuntimeException e) {
-        throw SonarLintWrappedException.wrap(e);
-      } finally {
-        rwl.readLock().unlock();
-      }
-    });
+
+    Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(Collectors.toSet());
+    Set<String> includedRules = configuration.includedRules().stream()
+      .map(RuleKey::toString)
+      .filter(r -> !excludedRules.contains(r))
+      .collect(Collectors.toSet());
+    Map<String, Map<String, String>> ruleParameters = new HashMap<>();
+    configuration.ruleParameters().forEach((k, v) -> ruleParameters.put(k.toString(), v));
+    ActiveRules sqApiActiveRules = standaloneActiveRules.filtered(excludedRules, includedRules, ruleParameters);
+    List<ActiveRule> activeRules = sqApiActiveRules.findAll().stream().map(ar -> {
+      SonarLintRule rule = (SonarLintRule) rules.find(ar.ruleKey());
+      ActiveRule activeRule = new ActiveRule(convert(ar.ruleKey()), rule.type().toString(), ar.severity(), rule.name(), ar.language());
+      activeRule.setInternalKey(ar.internalKey());
+      activeRule.setTemplateRuleKey(ar.templateRuleKey());
+      activeRule.setParams(ar.params());
+      return activeRule;
+    })
+      .collect(Collectors.toList());
+
+    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(configuration.inputFiles())
+      .putAllExtraProperties(configuration.extraProperties())
+      .addActiveRules(activeRules)
+      .setBaseDir(configuration.baseDir())
+      .setModuleId(configuration.moduleId())
+      .build();
+    return analysisEngine.analyze(analysisConfig, issueListener, null, null);
+  }
+
+  private static org.sonarsource.sonarlint.core.analysis.api.RuleKey convert(org.sonar.api.rule.RuleKey ruleKey) {
+    return new org.sonarsource.sonarlint.core.analysis.api.RuleKey(ruleKey.repository(), ruleKey.rule());
   }
 
   @Override
   public void stop() {
-    setLogging(null);
-    rwl.writeLock().lock();
-    try {
-      if (globalContainer == null) {
-        return;
-      }
-      globalContainer.stopComponents(false);
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      this.globalContainer = null;
-      rwl.writeLock().unlock();
-    }
+    analysisEngine.stop();
   }
 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getPluginDetails();
-    } finally {
-      rwl.readLock().unlock();
-    }
+    return pluginDetails;
   }
 
 }

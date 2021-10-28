@@ -36,19 +36,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.Language;
-import org.sonarsource.sonarlint.core.analysis.api.ModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Version;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 class StandaloneNodeJsTests {
 
@@ -92,7 +89,6 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
-      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new AnalysisEngine(configBuilder.build());
@@ -111,7 +107,6 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))
-      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new AnalysisEngine(configBuilder.build());

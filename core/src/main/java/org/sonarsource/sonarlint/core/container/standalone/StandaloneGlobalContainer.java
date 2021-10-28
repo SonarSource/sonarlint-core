@@ -21,11 +21,6 @@ package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.time.Clock;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
@@ -33,26 +28,16 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvider;
-import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
-import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
-import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
@@ -62,15 +47,13 @@ import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StandaloneGlobalContainer extends ComponentContainer {
 
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
-  private GlobalExtensionContainer globalExtensionContainer;
-  private ModuleRegistry moduleRegistry;
   private final StandaloneGlobalConfiguration globalConfig;
+  private Collection<PluginDetails> pluginDetails;
 
   public StandaloneGlobalContainer(StandaloneGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -109,25 +92,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   protected void doAfterStart() {
     installPlugins();
     loadRulesAndActiveRulesFromPlugins();
-    globalExtensionContainer = new GlobalExtensionContainer(this);
-    globalExtensionContainer.startComponents();
-    StandaloneGlobalConfiguration globalConfiguration = this.getComponentByType(StandaloneGlobalConfiguration.class);
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfiguration.getModulesProvider());
-  }
-
-  @Override
-  public ComponentContainer stopComponents(boolean swallowException) {
-    try {
-      if (moduleRegistry != null) {
-        moduleRegistry.stopAll();
-      }
-      if (globalExtensionContainer != null) {
-        globalExtensionContainer.stopComponents(swallowException);
-      }
-    } finally {
-      super.stopComponents(swallowException);
-    }
-    return this;
   }
 
   private void installPlugins() {
@@ -143,48 +107,19 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     container.execute();
     rules = container.getRules();
     standaloneActiveRules = container.getStandaloneActiveRules();
-  }
-
-  public AnalysisResults analyze(ComponentContainer moduleContainer, StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
-    analysisContainer.add(configuration);
-    analysisContainer.add(issueListener);
-    analysisContainer.add(rules);
-    Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(Collectors.toSet());
-    Set<String> includedRules = configuration.includedRules().stream()
-      .map(RuleKey::toString)
-      .filter(r -> !excludedRules.contains(r))
-      .collect(Collectors.toSet());
-    Map<String, Map<String, String>> ruleParameters = new HashMap<>();
-    configuration.ruleParameters().forEach((k, v) -> ruleParameters.put(k.toString(), v));
-    analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules, ruleParameters));
-    analysisContainer.add(SensorsExecutor.class);
-    DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
-    analysisContainer.add(defaultAnalysisResult);
-    analysisContainer.execute();
-    return defaultAnalysisResult;
+    pluginDetails = getComponentByType(PluginRepository.class).getPluginDetails();
   }
 
   public Collection<PluginDetails> getPluginDetails() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    return pluginRepository.getPluginDetails();
+    return pluginDetails;
   }
 
-  @CheckForNull
-  public StandaloneRuleDetails getRuleDetails(String ruleKeyStr) {
-    return standaloneActiveRules.ruleDetails(ruleKeyStr);
+  public Rules getRules() {
+    return rules;
   }
 
-  public Collection<String> getActiveRuleKeys() {
-    return standaloneActiveRules.getActiveRuleKeys();
-  }
-
-  public Collection<StandaloneRuleDetails> getAllRuleDetails() {
-    return standaloneActiveRules.allRuleDetails();
-  }
-
-  public ModuleRegistry getModuleRegistry() {
-    return moduleRegistry;
+  public StandaloneActiveRules getStandaloneActiveRules() {
+    return standaloneActiveRules;
   }
 
 }

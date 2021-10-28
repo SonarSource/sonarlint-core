@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,10 +50,9 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.Language;
-import org.sonarsource.sonarlint.core.analysis.api.ModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.analysis.container.module.SonarLintModuleFileSystem;
+import org.sonarsource.sonarlint.core.analysis.container.module.SonarLintApiModuleFileSystemAdapter;
 import testutils.NodeJsHelper;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
@@ -65,7 +63,6 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static testutils.ClientFileSystemFixtures.aClientFileSystemWith;
 
 class StandaloneIssueMediumTests {
 
@@ -671,19 +668,19 @@ class StandaloneIssueMediumTests {
 
   @Test
   void declare_module_should_create_a_module_container_with_loaded_extensions() {
-    sonarlint
-      .declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    // aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))
+    sonarlint.startModule("key");
 
     ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
-    assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
+    assertThat(moduleContainer.getComponentsByType(SonarLintApiModuleFileSystemAdapter.class)).isNotEmpty();
   }
 
   @Test
   void stop_module_should_stop_the_module_container() {
-    sonarlint
-      .declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    // aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))
+    sonarlint.startModule("key");
     ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
