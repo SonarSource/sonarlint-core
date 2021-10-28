@@ -20,9 +20,9 @@
 package org.sonar.api.utils.log;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
-import org.sonarsource.sonarlint.core.log.SonarLintLoggerFactory;
+import org.sonarsource.sonarlint.core.analysis.api.LogOutput;
+import org.sonarsource.sonarlint.core.analysis.log.LogOutputDelegator;
+import org.sonarsource.sonarlint.core.analysis.log.SonarLintLoggerFactory;
 
 /**
  * Overrides the behavior of loggers in the sonar API.

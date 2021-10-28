@@ -22,8 +22,8 @@ package org.sonar.api.utils.log;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
-import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
+import org.sonarsource.sonarlint.core.analysis.api.LogOutput.Level;
+import org.sonarsource.sonarlint.core.analysis.log.LogOutputDelegator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

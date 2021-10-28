@@ -19,10 +19,10 @@
  */
 package org.sonar.api.utils.log;
 
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
-import org.sonarsource.sonarlint.core.log.EventArgUtil;
-import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
-import org.sonarsource.sonarlint.core.log.MessageFormat;
+import org.sonarsource.sonarlint.core.analysis.api.LogOutput.Level;
+import org.sonarsource.sonarlint.core.analysis.log.EventArgUtil;
+import org.sonarsource.sonarlint.core.analysis.log.LogOutputDelegator;
+import org.sonarsource.sonarlint.core.analysis.log.MessageFormat;
 
 /**
  * This class can't be moved to another package because {@link BaseLogger} is not public.
