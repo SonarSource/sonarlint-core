@@ -25,14 +25,14 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.ModuleFileEventNotifier;
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
-import org.sonarsource.sonarlint.core.analysis.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class ModuleContainer extends ComponentContainer {
 
@@ -52,7 +52,7 @@ public class ModuleContainer extends ComponentContainer {
       LanguageDetection.class,
 
       ModuleFileEventNotifier.class);
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
+    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressWrapper progressWrapper) {

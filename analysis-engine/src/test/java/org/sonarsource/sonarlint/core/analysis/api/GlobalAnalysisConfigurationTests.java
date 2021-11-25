@@ -19,15 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +37,7 @@ class GlobalAnalysisConfigurationTests {
   void testDefaults() {
     GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
       .build();
-    assertThat(config.getPluginUrls()).isEmpty();
+    assertThat(config.getPluginsJarPaths()).isEmpty();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
@@ -82,14 +80,14 @@ class GlobalAnalysisConfigurationTests {
 
   @Test
   void configurePlugins() throws Exception {
-    URL plugin1 = new URL("file://plugin1.jar");
-    URL plugin2 = new URL("file://plugin2.jar");
-    URL plugin3 = new URL("file://plugin3.jar");
+    Path plugin1 = Paths.get("plugin1.jar");
+    Path plugin2 = Paths.get("plugin2.jar");
+    Path plugin3 = Paths.get("plugin3.jar");
     GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
-    assertThat(config.getPluginUrls()).containsExactly(plugin1, plugin2, plugin3);
+    assertThat(config.getPluginsJarPaths()).containsExactlyInAnyOrder(plugin1, plugin2, plugin3);
   }
 
   @Test

@@ -34,7 +34,7 @@ import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.analysis.api.Version;
+import org.sonarsource.sonarlint.core.plugin.common.Version;
 
 public class NodeJsHelper {
 

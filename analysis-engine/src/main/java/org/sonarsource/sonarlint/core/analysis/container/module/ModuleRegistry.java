@@ -25,7 +25,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class ModuleRegistry {
   private static final Logger LOG = Loggers.get(ModuleRegistry.class);

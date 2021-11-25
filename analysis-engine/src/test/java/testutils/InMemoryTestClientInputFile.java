@@ -29,14 +29,14 @@ import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 
 public class InMemoryTestClientInputFile implements ClientInputFile {
-  private boolean isTest;
-  private Language language;
-  private String relativePath;
-  private String contents;
-  private Path path;
+  private final boolean isTest;
+  private final Language language;
+  private final String relativePath;
+  private final String contents;
+  private final Path path;
 
   public InMemoryTestClientInputFile(String contents, String relativePath, @Nullable Path path, final boolean isTest, @Nullable Language language) {
     this.contents = contents;

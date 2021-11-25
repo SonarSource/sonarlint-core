@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 
 @Immutable
 public class AnalysisConfiguration {

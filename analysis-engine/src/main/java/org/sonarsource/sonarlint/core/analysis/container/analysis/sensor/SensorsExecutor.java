@@ -74,10 +74,15 @@ public class SensorsExecutor {
   }
 
   private static void executeSensor(SensorContext context, Sensor sensor, DefaultSensorDescriptor descriptor) {
+    String name = descriptor.name() != null ? descriptor.name() : StringUtils.describe(sensor);
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Execute Sensor: {}", descriptor.name() != null ? descriptor.name() : StringUtils.describe(sensor));
+      LOG.debug("Execute Sensor: {}", name);
     }
-    sensor.execute(context);
+    try {
+      sensor.execute(context);
+    } catch (Throwable e) {
+      LOG.error("Error while executing Sensor {}", name, e);
+    }
   }
 
   private static <T> Collection<T> sort(Collection<T> extensions) {

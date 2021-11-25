@@ -25,13 +25,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 import static java.util.Objects.requireNonNull;
 

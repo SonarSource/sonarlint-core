@@ -24,7 +24,6 @@ import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
@@ -48,9 +47,10 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.Default
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SonarLintSensorStorage;
-import org.sonarsource.sonarlint.core.analysis.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.analysis.container.global.PluginApiConfigurationProvider;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class AnalysisContainer extends ComponentContainer {
 
@@ -120,7 +120,7 @@ public class AnalysisContainer extends ComponentContainer {
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
+    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
   }
 
   @Override

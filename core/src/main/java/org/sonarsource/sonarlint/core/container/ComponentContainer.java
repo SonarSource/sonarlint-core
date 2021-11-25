@@ -40,7 +40,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
-public class ComponentContainer implements ContainerPopulator.Container {
+public class ComponentContainer {
 
   private static final class ExtendedDefaultPicoContainer extends DefaultPicoContainer {
     private ExtendedDefaultPicoContainer(ComponentFactory componentFactory, LifecycleStrategy lifecycleStrategy, PicoContainer parent) {
@@ -173,10 +173,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     this.pico.removeChildContainer(child);
   }
 
-  /**
-   * @since 3.5
-   */
-  @Override
   public ComponentContainer add(Object... objects) {
     for (Object object : objects) {
       if (object instanceof ComponentAdapter) {
@@ -196,7 +192,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     }
   }
 
-  @Override
   public ComponentContainer addSingletons(Iterable<?> components) {
     for (Object component : components) {
       addSingleton(component);
@@ -246,7 +241,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     return this;
   }
 
-  @Override
   public <T> T getComponentByType(Class<T> type) {
     return pico.getComponent(type);
   }

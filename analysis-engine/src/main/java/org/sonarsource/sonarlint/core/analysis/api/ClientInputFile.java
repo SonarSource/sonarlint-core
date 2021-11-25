@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 
 /**
  * InputFile as provided by client

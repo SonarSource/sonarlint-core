@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 /**
  * Used to load plugin global extensions
@@ -33,7 +33,7 @@ public class GlobalExtensionContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.INSTANCE);
+    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.INSTANCE);
   }
 
 }

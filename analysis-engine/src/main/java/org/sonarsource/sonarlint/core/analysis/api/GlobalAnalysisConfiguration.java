@@ -19,21 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Version;
 
 @Immutable
 public class GlobalAnalysisConfiguration {
@@ -41,7 +42,7 @@ public class GlobalAnalysisConfiguration {
   public static final String DEFAULT_WORK_DIR = "work";
   private static final String NODE_EXECUTABLE_PROPERTY = "sonar.nodejs.executable";
 
-  private final List<URL> pluginUrls;
+  private final Set<Path> pluginsJarPaths;
   private final LogOutput logOutput;
   private final Path sonarLintUserHome;
   private final Path workDir;
@@ -61,7 +62,7 @@ public class GlobalAnalysisConfiguration {
     this.nodeJsPath = builder.nodeJsPath;
     this.nodeJsVersion = builder.nodeJsVersion;
     this.clientPid = builder.clientPid;
-    this.pluginUrls = builder.pluginUrls;
+    this.pluginsJarPaths = Set.copyOf(builder.pluginsJarPaths);
     this.clientFileSystem = builder.clientFileSystem;
   }
 
@@ -95,17 +96,16 @@ public class GlobalAnalysisConfiguration {
     return nodeJsPath;
   }
 
-  @CheckForNull
-  public Version getNodeJsVersion() {
-    return nodeJsVersion;
+  public Optional<Version> getNodeJsVersion() {
+    return Optional.ofNullable(nodeJsVersion);
   }
 
   public long getClientPid() {
     return clientPid;
   }
 
-  public List<URL> getPluginUrls() {
-    return Collections.unmodifiableList(pluginUrls);
+  public Set<Path> getPluginsJarPaths() {
+    return pluginsJarPaths;
   }
 
   public ClientFileSystem getClientFileSystem() {
@@ -130,7 +130,7 @@ public class GlobalAnalysisConfiguration {
     private Path nodeJsPath;
     private Version nodeJsVersion;
     private long clientPid;
-    private final List<URL> pluginUrls = new ArrayList<>();
+    private final Set<Path> pluginsJarPaths = new LinkedHashSet<>();
     private ClientFileSystem clientFileSystem;
 
     private Builder() {
@@ -204,18 +204,18 @@ public class GlobalAnalysisConfiguration {
       return this;
     }
 
-    public Builder addPlugins(URL... pluginUrls) {
-      Collections.addAll(this.pluginUrls, pluginUrls);
+    public Builder addPlugins(Path... pluginsJarPaths) {
+      Collections.addAll(this.pluginsJarPaths, pluginsJarPaths);
       return this;
     }
 
-    public Builder addPlugins(Collection<URL> pluginUrls) {
-      this.pluginUrls.addAll(pluginUrls);
+    public Builder addPlugins(Collection<Path> pluginsJarPaths) {
+      this.pluginsJarPaths.addAll(pluginsJarPaths);
       return this;
     }
 
-    public Builder addPlugin(URL pluginUrl) {
-      this.pluginUrls.add(pluginUrl);
+    public Builder addPlugin(Path pluginJarPath) {
+      this.pluginsJarPaths.add(pluginJarPath);
       return this;
     }
 

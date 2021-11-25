@@ -55,7 +55,7 @@ public class LogMediumTest {
   public void prepare() throws IOException {
     logs = new ConcurrentHashMap<>();
     GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .setLogOutput(createLogOutput(logs))
       .build();
     sonarlint = new AnalysisEngine(config);

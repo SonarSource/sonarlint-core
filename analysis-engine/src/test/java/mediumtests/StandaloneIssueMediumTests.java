@@ -49,10 +49,10 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
 import org.sonarsource.sonarlint.core.analysis.api.RuleKey;
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.SonarLintApiModuleFileSystemAdapter;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 import testutils.NodeJsHelper;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
@@ -128,15 +128,16 @@ class StandaloneIssueMediumTests {
     nodeJsHelper.detect(null);
 
     GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
-      .addPlugin(PluginLocator.getJavaPluginUrl())
-      .addPlugin(PluginLocator.getPhpPluginUrl())
-      .addPlugin(PluginLocator.getPythonPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
+      .addPlugin(PluginLocator.getJavaPluginPath())
+      .addPlugin(PluginLocator.getPhpPluginPath())
+      .addPlugin(PluginLocator.getPythonPluginPath())
       .addPlugin(PluginLocator.getXooPluginUrl())
       .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setExtraProperties(extraProperties);
+      .setExtraProperties(extraProperties)
+      .setLogOutput((m, l) -> System.out.println(m));
 
     if (COMMERCIAL_ENABLED) {
       configBuilder.addPlugin(PluginLocator.getCppPluginUrl());

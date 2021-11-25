@@ -39,8 +39,8 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
-import org.sonarsource.sonarlint.core.analysis.api.Version;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Version;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
 
@@ -85,7 +85,7 @@ class StandaloneNodeJsTests {
   void wrong_node_path() throws Exception {
     List<String> logs = new ArrayList<>();
     GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
@@ -103,7 +103,7 @@ class StandaloneNodeJsTests {
   void unsatisfied_node_version() throws Exception {
     List<String> logs = new ArrayList<>();
     GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))

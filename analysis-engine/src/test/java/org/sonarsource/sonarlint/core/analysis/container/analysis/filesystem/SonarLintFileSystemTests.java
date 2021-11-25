@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +37,7 @@ class SonarLintFileSystemTests {
   private SonarLintFileSystem fs;
   @TempDir
   Path basedir;
-  private InputFileIndex inputFileCache = new InputFileIndex();
+  private final InputFileIndex inputFileCache = new InputFileIndex();
 
   @BeforeEach
   public void prepare() throws Exception {

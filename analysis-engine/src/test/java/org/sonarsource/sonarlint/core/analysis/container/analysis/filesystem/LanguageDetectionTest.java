@@ -27,8 +27,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.resources.Language;
 import org.sonarsource.sonarlint.core.analysis.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,14 +54,14 @@ public class LanguageDetectionTest {
   public void search_by_file_extension() throws Exception {
     LanguageDetection detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
-    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.JAVA);
-    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(Language.JAVA);
+    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(Language.JAVA);
 
-    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.ABAP);
-    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(org.sonarsource.sonarlint.core.analysis.api.Language.ABAP);
+    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(Language.ABAP);
+    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(Language.ABAP);
 
     assertThat(detection.language(newInputFile("abc.truc"))).isNull();
     assertThat(detection.language(newInputFile("abap"))).isNull();
@@ -75,8 +75,8 @@ public class LanguageDetectionTest {
 
   @Test
   public void fail_if_conflicting_language_suffix() throws Exception {
-    MapSettings settings = new MapSettings(Map.of(org.sonarsource.sonarlint.core.analysis.api.Language.XML.getFileSuffixesPropKey(), "xhtml",
-      org.sonarsource.sonarlint.core.analysis.api.Language.HTML.getFileSuffixesPropKey(), "xhtml"));
+    MapSettings settings = new MapSettings(Map.of(Language.XML.getFileSuffixesPropKey(), "xhtml",
+      Language.HTML.getFileSuffixesPropKey(), "xhtml"));
     LanguageDetection detection = new LanguageDetection(settings.asConfig());
     InputFile newInputFile = newInputFile("abc.xhtml");
     IllegalStateException e = assertThrows(IllegalStateException.class, () -> detection.language(newInputFile));
@@ -92,28 +92,4 @@ public class LanguageDetectionTest {
     return new TestInputFileBuilder(path).setBaseDir(basedir.toPath()).build();
   }
 
-  static class MockLanguage implements Language {
-    private final String key;
-    private final String[] extensions;
-
-    MockLanguage(String key, String... extensions) {
-      this.key = key;
-      this.extensions = extensions;
-    }
-
-    @Override
-    public String getKey() {
-      return key;
-    }
-
-    @Override
-    public String getName() {
-      return key;
-    }
-
-    @Override
-    public String[] getFileSuffixes() {
-      return extensions;
-    }
-  }
 }

@@ -34,7 +34,7 @@ import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFile.Type;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -184,7 +184,7 @@ class DefaultFilePredicatesTests {
   public void and() {
     // empty
     assertThat(predicates.and().apply(javaFile)).isTrue();
-    assertThat(predicates.and(new FilePredicate[0]).apply(javaFile)).isTrue();
+    assertThat(predicates.and().apply(javaFile)).isTrue();
     assertThat(predicates.and(Collections.<FilePredicate>emptyList()).apply(javaFile)).isTrue();
 
     // two arguments
@@ -205,7 +205,7 @@ class DefaultFilePredicatesTests {
   public void or() {
     // empty
     assertThat(predicates.or().apply(javaFile)).isTrue();
-    assertThat(predicates.or(new FilePredicate[0]).apply(javaFile)).isTrue();
+    assertThat(predicates.or().apply(javaFile)).isTrue();
     assertThat(predicates.or(Collections.<FilePredicate>emptyList()).apply(javaFile)).isTrue();
 
     // two arguments

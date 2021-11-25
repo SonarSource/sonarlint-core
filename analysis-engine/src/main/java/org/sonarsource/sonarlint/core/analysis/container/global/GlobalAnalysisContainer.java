@@ -26,16 +26,15 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
-import org.sonarsource.sonarlint.core.analysis.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.analysis.plugin.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.analysis.plugin.PluginInfo;
-import org.sonarsource.sonarlint.core.analysis.plugin.PluginInfosLoader;
-import org.sonarsource.sonarlint.core.analysis.plugin.PluginInstancesLoader;
-import org.sonarsource.sonarlint.core.analysis.plugin.PluginRepository;
-import org.sonarsource.sonarlint.core.analysis.plugin.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.analysis.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.plugin.common.ApiVersions;
+import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.common.PluginMinVersions;
+import org.sonarsource.sonarlint.core.plugin.common.load.PluginClassloaderFactory;
+import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfo;
+import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfosLoader;
+import org.sonarsource.sonarlint.core.plugin.common.load.PluginInstancesLoader;
+import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class GlobalAnalysisContainer extends ComponentContainer {
 
@@ -49,28 +48,25 @@ public class GlobalAnalysisContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
-    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
+    Version sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
+    Version sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
 
     add(
       globalConfig,
-      new StandalonePluginUrls(globalConfig.getPluginUrls()),
-      StandalonePluginIndex.class,
-      PluginRepository.class,
-      PluginVersionChecker.class,
+      new PluginInstancesRepositoryConfigProvider(),
+      PluginMinVersions.class,
+      PluginInstancesRepository.class,
       PluginInfosLoader.class,
       PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
-      DefaultPluginJarExploder.class,
       new PluginApiGlobalSettingsProvider(),
       new PluginApiConfigurationProvider(),
-      ExtensionInstaller.class,
+      AnalysisExtensionInstaller.class,
       new SonarQubeVersion(sonarPluginApiVersion),
       new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
 
       new GlobalTempFolderProvider(),
       UriReader.class,
-      new PluginCacheProvider(),
       Clock.systemDefaultZone(),
       System2.INSTANCE);
   }
@@ -100,10 +96,10 @@ public class GlobalAnalysisContainer extends ComponentContainer {
   }
 
   private void installPlugins() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
+    PluginInstancesRepository pluginRepository = getComponentByType(PluginInstancesRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      addExtension(pluginInfo, instance);
+      addExtension(pluginInfo.getKey(), instance);
     }
   }
 

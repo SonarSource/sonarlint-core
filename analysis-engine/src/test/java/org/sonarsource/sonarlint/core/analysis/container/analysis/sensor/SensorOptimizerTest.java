@@ -31,14 +31,12 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.InputFileIndex;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintFileSystem;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.DefaultSensorDescriptor;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analysis.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRulesAdapter;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.TestInputFileBuilder;
 
 import static java.util.Arrays.asList;
