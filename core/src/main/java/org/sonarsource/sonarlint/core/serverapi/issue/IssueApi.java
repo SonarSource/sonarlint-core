@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -63,9 +64,12 @@ public class IssueApi {
    *
    * @param key project key, or file key.
    */
-  public DownloadIssuesResult downloadVulnerabilitiesForRules(String key, Set<String> ruleKeys, ProgressWrapper progress) {
+  public DownloadIssuesResult downloadVulnerabilitiesForRules(String key, Set<String> ruleKeys, @Nullable String branchName, ProgressWrapper progress) {
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(getVulnerabilitiesUrl(key, ruleKeys));
+    if (branchName != null) {
+      searchUrl.append(getVulnerabilitiesUrlBranchParameter(branchName));
+    }
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
     List<Issue> result = new ArrayList<>();
@@ -106,12 +110,21 @@ public class IssueApi {
 
   private static String getVulnerabilitiesUrl(String key, Set<String> ruleKeys) {
     return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys="
-      + urlEncode(key) + "&rules=" + urlEncode(ruleKeys.stream().collect(joining(",")));
+      + urlEncode(key) + "&rules=" + urlEncode(String.join(",", ruleKeys));
   }
 
-  public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key) {
+  private static String getVulnerabilitiesUrlBranchParameter(String branchName) {
+    return "&branch=" + urlEncode(branchName);
+  }
+
+  public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName) {
+    StringBuilder batchIssueUrl = new StringBuilder();
+    batchIssueUrl.append(getBatchIssuesUrl(key));
+    if (branchName != null) {
+      batchIssueUrl.append("&branch=").append(branchName);
+    }
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.rawGet(getBatchIssuesUrl(key)),
+      () -> serverApiHelper.rawGet(batchIssueUrl.toString()),
       response -> {
         if (response.code() == 403 || response.code() == 404) {
           return Collections.emptyList();

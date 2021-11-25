@@ -176,6 +176,18 @@
       <version>4.0.3</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-netty</artifactId>
+      <version>5.11.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-client-java</artifactId>
+      <version>5.11.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -465,6 +477,33 @@
         <configuration>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.mock-server</groupId>
+        <artifactId>mockserver-maven-plugin</artifactId>
+        <version>5.11.2</version>
+        <configuration>
+          <serverPort>1080</serverPort>
+          <proxyPort>1090</proxyPort>
+          <logLevel>DEBUG</logLevel>
+          <initializationClass>org.mockserver.maven.ExampleInitializationClass</initializationClass>
+        </configuration>
+        <executions>
+          <execution>
+            <id>process-test-classes</id>
+            <phase>process-test-classes</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

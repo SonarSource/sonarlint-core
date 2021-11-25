@@ -164,6 +164,11 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.type()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
   }
 
+  @Test
+  public void download_all_issues_from_master_branch() throws IOException {
+
+  }
+
   private static void analyzeProject(String projectDirName) {
     Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())

@@ -80,7 +80,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, false, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, false, null, PROGRESS);
     assertThat(issues).hasSize(1);
 
     ServerIssue serverIssue = issues.get(0);
@@ -161,7 +161,7 @@ class IssueDownloaderTests {
       response);
     mockServer.addStringResponse("/api/sources/raw?key=" + StringUtils.urlEncode(FILE_1_KEY), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
     assertThat(issues).hasSize(2);
 
@@ -232,7 +232,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
 
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
     assertThat(issues).hasSize(1);
 
@@ -268,7 +268,7 @@ class IssueDownloaderTests {
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
 
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
     assertThat(issues).hasSize(1);
   }
@@ -277,7 +277,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() throws IOException {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -285,7 +285,7 @@ class IssueDownloaderTests {
   void test_fail_other_codes() throws IOException {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
@@ -293,7 +293,9 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() throws IOException {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, PROGRESS);
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
+
+
 }
