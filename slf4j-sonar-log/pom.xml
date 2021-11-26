@@ -9,25 +9,11 @@
   <name>SonarLint slf4j log adaptor</name>
   <description>Adapts slf4j logs to sonar logging framework</description>
   <dependencies>
-
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonarqube.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jfree</groupId>
-          <artifactId>jcommon</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jfree</groupId>
-          <artifactId>jfreechart</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.codehaus.woodstox</groupId>
-          <artifactId>woodstox-core-lgpl</artifactId>
-        </exclusion>
-      </exclusions>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>

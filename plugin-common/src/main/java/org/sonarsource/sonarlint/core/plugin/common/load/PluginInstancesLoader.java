@@ -47,6 +47,7 @@ public class PluginInstancesLoader {
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
 
   private final PluginClassloaderFactory classloaderFactory;
+  private final ClassLoader baseClassLoader;
 
   public PluginInstancesLoader() {
     this(new PluginClassloaderFactory());
@@ -54,11 +55,12 @@ public class PluginInstancesLoader {
 
   PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
     this.classloaderFactory = classloaderFactory;
+    this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
   }
 
   public Map<String, Plugin> instantiatePluginClasses(Collection<SonarPluginManifestAndJarPath> plugins) {
     Collection<PluginClassLoaderDef> defs = defineClassloaders(plugins);
-    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader(), defs);
+    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader, defs);
     return instantiatePluginClasses(classloaders);
   }
 
@@ -120,7 +122,7 @@ public class PluginInstancesLoader {
   public void unload(Collection<Plugin> plugins) {
     for (Plugin plugin : plugins) {
       ClassLoader classLoader = plugin.getClass().getClassLoader();
-      if (classLoader instanceof Closeable && classLoader != baseClassLoader()) {
+      if (classLoader instanceof Closeable && classLoader != baseClassLoader) {
         try {
           ((Closeable) classLoader).close();
         } catch (Exception e) {
@@ -128,10 +130,6 @@ public class PluginInstancesLoader {
         }
       }
     }
-  }
-
-  private ClassLoader baseClassLoader() {
-    return getClass().getClassLoader();
   }
 
   /**

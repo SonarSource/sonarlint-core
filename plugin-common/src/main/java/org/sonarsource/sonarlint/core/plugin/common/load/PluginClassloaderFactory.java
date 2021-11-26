@@ -116,6 +116,7 @@ public class PluginClassloaderFactory {
       .addInclusion("com/sonarsource/plugins/license/api/")
       .addInclusion("org/sonarsource/sonarlint/plugin/api/")
       .addInclusion("com/google/gson/")
+      .addInclusion("org/slf4j/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");

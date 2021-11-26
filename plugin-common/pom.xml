@@ -15,6 +15,13 @@
   </properties>
 
   <dependencies>
+    <!-- Declare a dependency to force Maven build order -->
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
@@ -68,5 +75,38 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  
+  <build>
+     <plugins>
+       <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-dependency-plugin</artifactId>
+         <executions>
+           <execution>
+             <id>unpack</id>
+             <phase>generate-resources</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+             <configuration>
+               <artifactItems>
+                 <artifactItem>
+                   <groupId>${project.groupId}</groupId>
+                   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+                   <version>${project.version}</version>
+                   <type>jar</type>
+                   <overWrite>false</overWrite>
+                   <outputDirectory>${project.build.directory}/slf4j-sonar-log</outputDirectory>
+                   <includes>**/*.class</includes>
+                 </artifactItem>
+               </artifactItems>
+               <overWriteReleases>false</overWriteReleases>
+               <overWriteSnapshots>true</overWriteSnapshots>
+             </configuration>
+           </execution>
+         </executions>
+       </plugin>
+     </plugins>
+   </build>
 
 </project>
