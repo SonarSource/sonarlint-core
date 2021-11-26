@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.LogOutput;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 
 public class TestUtils {
 

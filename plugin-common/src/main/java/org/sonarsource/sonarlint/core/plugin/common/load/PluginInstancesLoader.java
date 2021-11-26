@@ -48,13 +48,17 @@ public class PluginInstancesLoader {
 
   private final PluginClassloaderFactory classloaderFactory;
 
-  public PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
+  public PluginInstancesLoader() {
+    this(new PluginClassloaderFactory());
+  }
+
+  PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
     this.classloaderFactory = classloaderFactory;
   }
 
-  public Map<String, Plugin> load(Collection<PluginInfo> pluginInfos) {
-    Collection<PluginClassLoaderDef> defs = defineClassloaders(pluginInfos);
-    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(defs);
+  public Map<String, Plugin> instantiatePluginClasses(Collection<SonarPluginManifestAndJarPath> plugins) {
+    Collection<PluginClassLoaderDef> defs = defineClassloaders(plugins);
+    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader(), defs);
     return instantiatePluginClasses(classloaders);
   }
 
@@ -62,21 +66,17 @@ public class PluginInstancesLoader {
    * Defines the different classloaders to be created. Number of classloaders can be
    * different than number of plugins.
    */
-  Collection<PluginClassLoaderDef> defineClassloaders(Collection<PluginInfo> pluginInfos) {
+  Collection<PluginClassLoaderDef> defineClassloaders(Collection<SonarPluginManifestAndJarPath> plugins) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
-    for (PluginInfo pluginInfo : pluginInfos) {
-      PluginManifest manifest = pluginInfo.getManifest();
-      String baseKey = basePluginKey(manifest, pluginInfos.stream().collect(Collectors.toMap(i -> i.getManifest().getKey(), PluginInfo::getManifest)));
+    for (SonarPluginManifestAndJarPath plugin : plugins) {
+      SonarPluginManifest manifest = plugin.getManifest();
+      String baseKey = basePluginKey(manifest, plugins.stream().collect(Collectors.toMap(i -> i.getManifest().getKey(), SonarPluginManifestAndJarPath::getManifest)));
       if (baseKey == null) {
         continue;
       }
-      PluginClassLoaderDef def = classloadersByBasePlugin.get(baseKey);
-      if (def == null) {
-        def = new PluginClassLoaderDef(baseKey);
-        classloadersByBasePlugin.put(baseKey, def);
-      }
-      def.addFiles(List.of(pluginInfo.getJarPath()));
+      PluginClassLoaderDef def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
+      def.addFiles(List.of(plugin.getJarPath()));
       def.addMainClass(manifest.getKey(), manifest.getMainClass());
 
       for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
@@ -120,7 +120,7 @@ public class PluginInstancesLoader {
   public void unload(Collection<Plugin> plugins) {
     for (Plugin plugin : plugins) {
       ClassLoader classLoader = plugin.getClass().getClassLoader();
-      if (classLoader instanceof Closeable && classLoader != classloaderFactory.baseClassLoader()) {
+      if (classLoader instanceof Closeable && classLoader != baseClassLoader()) {
         try {
           ((Closeable) classLoader).close();
         } catch (Exception e) {
@@ -130,16 +130,20 @@ public class PluginInstancesLoader {
     }
   }
 
+  private ClassLoader baseClassLoader() {
+    return getClass().getClassLoader();
+  }
+
   /**
    * Get the root key of a tree of plugins. For example if plugin C declares B as base plugin, which declares A as base plugin, then
    * B and C must be attached to the classloader of A. The method returns A in the three cases.
    */
   @CheckForNull
-  static String basePluginKey(PluginManifest plugin, Map<String, PluginManifest> allPluginsPerKey) {
+  static String basePluginKey(SonarPluginManifest plugin, Map<String, SonarPluginManifest> allPluginsPerKey) {
     String base = plugin.getKey();
     String parentKey = plugin.getBasePluginKey();
     while (isNotEmpty(parentKey)) {
-      PluginManifest parentPlugin = allPluginsPerKey.get(parentKey);
+      SonarPluginManifest parentPlugin = allPluginsPerKey.get(parentKey);
       Objects.requireNonNull(parentPlugin, "Unable to find base plugin '" + parentKey + "' referenced by plugin '" + base + "'");
       base = parentPlugin.getKey();
       parentKey = parentPlugin.getBasePluginKey();

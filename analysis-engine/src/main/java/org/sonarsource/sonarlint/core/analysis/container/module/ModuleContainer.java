@@ -31,14 +31,15 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
-import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
+import org.sonarsource.sonarlint.core.analysis.progress.ProgressWrapper;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class ModuleContainer extends ComponentContainer {
 
   private final boolean isTranscient;
 
-  public ModuleContainer(ComponentContainer parent, boolean isTranscient) {
+  public ModuleContainer(GlobalAnalysisContainer parent, boolean isTranscient) {
     super(parent);
     this.isTranscient = isTranscient;
   }
@@ -52,13 +53,14 @@ public class ModuleContainer extends ComponentContainer {
       LanguageDetection.class,
 
       ModuleFileEventNotifier.class);
-    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
+
+    // Add module level plugin extensions
+    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressWrapper progressWrapper) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(this);
+    AnalysisContainer analysisContainer = new AnalysisContainer(this, configuration);
     analysisContainer.add(progressWrapper);
-    analysisContainer.add(configuration);
     analysisContainer.add(new IssueListener(issueListener));
     AnalysisResults analysisResult = new AnalysisResults();
     analysisContainer.add(analysisResult);

@@ -38,8 +38,7 @@ class GlobalAnalysisConfigurationTests {
     GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
       .build();
     assertThat(config.getPluginsJarPaths()).isEmpty();
-    assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
-    assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
+    assertThat(config.getWorkDir()).isNull();
     assertThat(config.extraProperties()).isEmpty();
     assertThat(config.getEnabledLanguages()).isEmpty();
     assertThat(config.getClientPid()).isZero();
@@ -71,10 +70,8 @@ class GlobalAnalysisConfigurationTests {
     Path sonarUserHome = createDirectory(temp.resolve("userHome"));
     Path work = createDirectory(temp.resolve("work"));
     GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
-      .setSonarLintUserHome(sonarUserHome)
       .setWorkDir(work)
       .build();
-    assertThat(config.getSonarLintUserHome()).isEqualTo(sonarUserHome);
     assertThat(config.getWorkDir()).isEqualTo(work);
   }
 

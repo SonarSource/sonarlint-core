@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.LogOutput;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 

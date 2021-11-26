@@ -49,11 +49,11 @@ public class PluginLocator {
     return getPluginPath(SONAR_PYTHON_PLUGIN_JAR);
   }
 
-  public static Path getCppPluginUrl() {
+  public static Path getCppPluginPath() {
     return getPluginPath("sonar-cfamily-plugin-6.18.0.29274.jar");
   }
 
-  public static Path getXooPluginUrl() {
+  public static Path getXooPluginPath() {
     return getPluginUrlUnknownVersion(SONAR_XOO_PLUGIN_NAME);
   }
 

@@ -34,8 +34,7 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.analysis.util.StringUtils;
+import org.sonarsource.sonarlint.core.analysis.progress.ProgressWrapper;
 
 import static java.util.Arrays.asList;
 
@@ -74,7 +73,7 @@ public class SensorsExecutor {
   }
 
   private static void executeSensor(SensorContext context, Sensor sensor, DefaultSensorDescriptor descriptor) {
-    String name = descriptor.name() != null ? descriptor.name() : StringUtils.describe(sensor);
+    String name = descriptor.name() != null ? descriptor.name() : describe(sensor);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Execute Sensor: {}", name);
     }
@@ -165,5 +164,20 @@ public class SensorsExecutor {
     for (Class<?> anInterface : interfaces) {
       evaluateClass(anInterface, annotationClass, results);
     }
+  }
+
+  private static String describe(Object o) {
+    try {
+      if (o.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
+        String str = o.toString();
+        if (str != null) {
+          return str;
+        }
+      }
+    } catch (Exception e) {
+      // fallback
+    }
+
+    return o.getClass().getName();
   }
 }

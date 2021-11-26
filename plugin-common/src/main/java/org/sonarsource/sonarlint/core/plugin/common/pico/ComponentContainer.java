@@ -230,7 +230,7 @@ public class ComponentContainer {
     return getName(extension.getClass());
   }
 
-  void declareProperties(Object extension) {
+  protected void declareProperties(Object extension) {
     propertyDefinitions.addComponent(extension, "");
   }
 
@@ -278,5 +278,9 @@ public class ComponentContainer {
 
   public int size() {
     return pico.getComponentAdapters().size();
+  }
+
+  protected PropertyDefinitions getPropertyDefinitions() {
+    return propertyDefinitions;
   }
 }

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin.common.load;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -38,12 +39,12 @@ class PluginClassloaderFactoryTests {
   private static final String BASE_PLUGIN_KEY = "base";
   private static final String DEPENDENT_PLUGIN_KEY = "dependent";
 
-  private final PluginClassloaderFactory factory = new PluginClassloaderFactory();
+  private final PluginClassloaderFactory underTest = new PluginClassloaderFactory();
 
   @Test
   void create_isolated_classloader() {
     PluginClassLoaderDef def = basePluginDef();
-    Map<PluginClassLoaderDef, ClassLoader> map = factory.create(asList(def));
+    Map<PluginClassLoaderDef, ClassLoader> map = underTest.create(getClass().getClassLoader(), List.of(def));
 
     assertThat(map).containsOnlyKeys(def);
     ClassLoader classLoader = map.get(def);
@@ -65,7 +66,7 @@ class PluginClassloaderFactoryTests {
   void classloader_exports_resources_to_other_classloaders() {
     PluginClassLoaderDef baseDef = basePluginDef();
     PluginClassLoaderDef dependentDef = dependentPluginDef();
-    Map<PluginClassLoaderDef, ClassLoader> map = factory.create(asList(baseDef, dependentDef));
+    Map<PluginClassLoaderDef, ClassLoader> map = underTest.create(getClass().getClassLoader(), List.of(baseDef, dependentDef));
     ClassLoader baseClassloader = map.get(baseDef);
     ClassLoader dependentClassloader = map.get(dependentDef);
 

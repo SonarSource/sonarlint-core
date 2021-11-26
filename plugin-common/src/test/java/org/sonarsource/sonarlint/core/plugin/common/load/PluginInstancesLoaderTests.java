@@ -63,11 +63,11 @@ class PluginInstancesLoaderTests {
   @Test
   void define_classloader(@TempDir Path tmp) throws Exception {
     Path jarFile = tmp.resolve("fakePlugin.jar");
-    PluginManifest manifest = mock(PluginManifest.class);
+    SonarPluginManifest manifest = mock(SonarPluginManifest.class);
     when(manifest.getKey()).thenReturn("foo");
     when(manifest.getMainClass()).thenReturn("org.foo.FooPlugin");
     when(manifest.getSonarMinVersion()).thenReturn(Optional.of(Version.create("5.2")));
-    PluginInfo info = PluginInfo.create(jarFile, manifest);
+    SonarPluginManifestAndJarPath info = new SonarPluginManifestAndJarPath(jarFile, manifest);
 
     Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(List.of(info));
 
@@ -84,24 +84,24 @@ class PluginInstancesLoaderTests {
   @Test
   void test_plugins_sharing_the_same_classloader(@TempDir Path tmp) throws Exception {
     Path baseJarFile = tmp.resolve("fakeBasePlugin.jar");
-    PluginManifest manifestBase = mock(PluginManifest.class);
+    SonarPluginManifest manifestBase = mock(SonarPluginManifest.class);
     when(manifestBase.getKey()).thenReturn("foo");
     when(manifestBase.getMainClass()).thenReturn("org.foo.FooPlugin");
-    PluginInfo base = PluginInfo.create(baseJarFile, manifestBase);
+    SonarPluginManifestAndJarPath base = new SonarPluginManifestAndJarPath(baseJarFile, manifestBase);
 
     Path extensionJar1 = tmp.resolve("fakePlugin1.jar");
-    PluginManifest manifestJar1 = mock(PluginManifest.class);
+    SonarPluginManifest manifestJar1 = mock(SonarPluginManifest.class);
     when(manifestJar1.getKey()).thenReturn("fooExtension1");
     when(manifestJar1.getMainClass()).thenReturn("org.foo.Extension1Plugin");
     when(manifestJar1.getBasePluginKey()).thenReturn("foo");
-    PluginInfo extension1 = PluginInfo.create(extensionJar1, manifestJar1);
+    SonarPluginManifestAndJarPath extension1 = new SonarPluginManifestAndJarPath(extensionJar1, manifestJar1);
 
     Path extensionJar2 = tmp.resolve("fakePlugin2.jar");
-    PluginManifest manifestJar2 = mock(PluginManifest.class);
+    SonarPluginManifest manifestJar2 = mock(SonarPluginManifest.class);
     when(manifestJar2.getKey()).thenReturn("fooExtension2");
     when(manifestJar2.getMainClass()).thenReturn("org.foo.Extension2Plugin");
     when(manifestJar2.getBasePluginKey()).thenReturn("foo");
-    PluginInfo extension2 = PluginInfo.create(extensionJar2, manifestJar2);
+    SonarPluginManifestAndJarPath extension2 = new SonarPluginManifestAndJarPath(extensionJar2, manifestJar2);
 
     Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(List.of(base, extension1, extension2));
 

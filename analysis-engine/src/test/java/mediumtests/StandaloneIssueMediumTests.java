@@ -66,7 +66,7 @@ import static org.junit.Assume.assumeTrue;
 
 class StandaloneIssueMediumTests {
 
-  private static Path sonarlintUserHome;
+  private static Path workDir;
   private static Path fakeTypeScriptProjectPath;
 
   private static final String A_JAVA_FILE_PATH = "Foo.java";
@@ -102,7 +102,7 @@ class StandaloneIssueMediumTests {
 
   @BeforeAll
   static void prepare(@TempDir Path temp) throws Exception {
-    sonarlintUserHome = temp.resolve("home");
+    workDir = temp.resolve("workDir");
     fakeTypeScriptProjectPath = temp.resolve("ts");
 
     Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
@@ -132,15 +132,15 @@ class StandaloneIssueMediumTests {
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())
       .addPlugin(PluginLocator.getPythonPluginPath())
-      .addPlugin(PluginLocator.getXooPluginUrl())
+      .addPlugin(PluginLocator.getXooPluginPath())
       .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
-      .setSonarLintUserHome(sonarlintUserHome)
+      .setWorkDir(workDir)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties)
       .setLogOutput((m, l) -> System.out.println(m));
 
     if (COMMERCIAL_ENABLED) {
-      configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
+      configBuilder.addPlugin(PluginLocator.getCppPluginPath());
     }
     sonarlint = new AnalysisEngine(configBuilder.build());
   }

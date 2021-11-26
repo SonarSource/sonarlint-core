@@ -19,11 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
@@ -48,26 +52,29 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SensorO
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
-import org.sonarsource.sonarlint.core.analysis.container.global.PluginApiConfigurationProvider;
+import org.sonarsource.sonarlint.core.analysis.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class AnalysisContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(AnalysisContainer.class);
+  private final AnalysisConfiguration analysisConfig;
 
-  public AnalysisContainer(ModuleContainer parent) {
+  public AnalysisContainer(ModuleContainer parent, AnalysisConfiguration analysisConfig) {
     super(parent);
+    this.analysisConfig = analysisConfig;
   }
 
   @Override
   protected void doBeforeStart() {
-    addCoreComponents();
-    addPluginExtensions();
-  }
+    MapSettings settings = buildAnalysisSettings(analysisConfig);
 
-  private void addCoreComponents() {
     add(
+      analysisConfig,
+      settings,
+      settings.asConfig(),
+
       SensorsExecutor.class,
       SonarLintInputProject.class,
       NoOpFileLinesContextFactory.class,
@@ -84,9 +91,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       // lang
       Languages.class,
-
-      new PluginApiAnalysisSettingsProvider(),
-      new PluginApiConfigurationProvider(),
 
       // file system
       InputFileIndex.class,
@@ -117,10 +121,16 @@ public class AnalysisContainer extends ComponentContainer {
 
       // Perspectives
       BatchPerspectives.class);
+
+    // Add analysis level plugin extensions
+    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
   }
 
-  private void addPluginExtensions() {
-    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
+  private MapSettings buildAnalysisSettings(AnalysisConfiguration analysisConfig) {
+    Map<String, String> props = new HashMap<>();
+    props.putAll(getParent().getComponentByType(GlobalAnalysisConfiguration.class).getEffectiveConfig());
+    props.putAll(analysisConfig.extraProperties());
+    return new MapSettings(getPropertyDefinitions(), props);
   }
 
   @Override

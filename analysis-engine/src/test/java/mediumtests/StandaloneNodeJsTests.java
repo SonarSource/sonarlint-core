@@ -51,13 +51,13 @@ class StandaloneNodeJsTests {
 
   private AnalysisEngine sonarlint;
 
-  private Path sonarlintUserHome;
+  private Path workDir;
   private Path fakeTypeScriptProjectPath;
   private Path baseDir;
 
   @BeforeEach
   void prepare(@TempDir Path temp) throws Exception {
-    sonarlintUserHome = temp.resolve("home");
+    workDir = temp.resolve("workDir");
     fakeTypeScriptProjectPath = temp.resolve("ts");
     baseDir = temp.resolve("basedir");
     Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
@@ -87,7 +87,7 @@ class StandaloneNodeJsTests {
     GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
-      .setSonarLintUserHome(sonarlintUserHome)
+      .setWorkDir(workDir)
       .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
       .setLogOutput((msg, level) -> logs.add(msg));
 
@@ -105,7 +105,7 @@ class StandaloneNodeJsTests {
     GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
-      .setSonarLintUserHome(sonarlintUserHome)
+      .setWorkDir(workDir)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))
       .setLogOutput((msg, level) -> logs.add(msg));
 

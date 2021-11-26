@@ -19,76 +19,45 @@
  */
 package org.sonarsource.sonarlint.core.plugin.common;
 
-import java.util.Collection;
-import java.util.Set;
-import java.util.function.Predicate;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.BiPredicate;
 import org.sonar.api.Plugin;
-import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.common.sonarapi.PluginContextImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {
 
-  private static final Logger LOG = Loggers.get(ExtensionInstaller.class);
-
   private final SonarLintRuntime sonarRuntime;
-  private final PluginInstancesRepository pluginInstancesRepository;
   private final Configuration bootConfiguration;
-  private final Set<Language> enabledLanguages;
 
-  public ExtensionInstaller(SonarLintRuntime sonarRuntime, PluginInstancesRepository pluginInstancesRepository, Configuration bootConfiguration,
-    Set<Language> enabledLanguages) {
+  public ExtensionInstaller(SonarLintRuntime sonarRuntime, Configuration bootConfiguration) {
     this.sonarRuntime = sonarRuntime;
-    this.pluginInstancesRepository = pluginInstancesRepository;
     this.bootConfiguration = bootConfiguration;
-    this.enabledLanguages = enabledLanguages;
   }
 
-  public ExtensionInstaller install(ComponentContainer container, Predicate<Object> extensionFilter) {
-    return install(container, pluginInstancesRepository.getActivePluginInfos(), extensionFilter);
-  }
-
-  private ExtensionInstaller install(ComponentContainer container, Collection<PluginInfo> pluginInfos, Predicate<Object> extensionFilter) {
-    for (PluginInfo pluginInfo : pluginInfos) {
-      Plugin plugin = pluginInstancesRepository.getPluginInstance(pluginInfo.getKey());
+  public ExtensionInstaller install(ComponentContainer container, Map<String, Plugin> pluginInstancesByKey, BiPredicate<String, Object> extensionFilter) {
+    for (Entry<String, Plugin> pluginInstanceEntry : pluginInstancesByKey.entrySet()) {
+      Plugin plugin = pluginInstanceEntry.getValue();
       Plugin.Context context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)
         .setBootConfiguration(bootConfiguration)
         .build();
       plugin.define(context);
-      loadExtensions(container, pluginInfo.getKey(), context, extensionFilter);
+      loadExtensions(container, pluginInstanceEntry.getKey(), context, extensionFilter);
     }
     return this;
   }
 
-  private void loadExtensions(ComponentContainer container, String pluginKey, Plugin.Context context, Predicate<Object> extensionFilter) {
+  private void loadExtensions(ComponentContainer container, String pluginKey, Plugin.Context context, BiPredicate<String, Object> extensionFilter) {
     for (Object extension : context.getExtensions()) {
       // filter out non officially supported Sensors
-      if (extensionFilter.test(extension) && onlySonarSourceSensor(pluginKey, extension)) {
+      if (extensionFilter.test(pluginKey, extension)) {
         container.addExtension(pluginKey, extension);
       }
     }
-  }
-
-  private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
-    // SLCORE-259
-    if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
-      LOG.debug("TypeScript sensor excluded");
-      return false;
-    }
-    return Language.containsPlugin(pluginKey) || isNotSensor(extension);
-  }
-
-  private static boolean isNotSensor(Object extension) {
-    return !ExtensionUtils.isType(extension, Sensor.class);
-  }
-
-  private static String className(Object extension) {
-    return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
   }
 
 }

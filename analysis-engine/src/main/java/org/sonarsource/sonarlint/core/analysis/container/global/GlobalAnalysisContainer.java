@@ -19,26 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
-import java.time.Clock;
-import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
-import org.sonar.api.utils.System2;
-import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.plugin.common.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.common.PluginMinVersions;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfosLoader;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginInstancesLoader;
+import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository.Configuration;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.common.sonarapi.SonarLintRuntimeImpl;
+import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class GlobalAnalysisContainer extends ComponentContainer {
 
-  private GlobalExtensionContainer globalExtensionContainer;
   private ModuleRegistry moduleRegistry;
   private final GlobalAnalysisConfiguration globalConfig;
 
@@ -51,33 +45,29 @@ public class GlobalAnalysisContainer extends ComponentContainer {
     Version sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
     Version sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
 
+    Configuration pluginConfiguration = new Configuration(globalConfig.getPluginsJarPaths(), globalConfig.getEnabledLanguages(), globalConfig.getNodeJsVersion());
+    PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(pluginConfiguration);
+    pluginInstancesRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
+
+    SonarLintRuntime sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid());
+    MapSettings globalSettings = new MapSettings(getPropertyDefinitions(), globalConfig.getEffectiveConfig());
+    AnalysisExtensionInstaller analysisExtensionInstaller = new AnalysisExtensionInstaller(sonarLintRuntime, pluginInstancesRepository, globalSettings.asConfig(), globalConfig);
     add(
       globalConfig,
-      new PluginInstancesRepositoryConfigProvider(),
-      PluginMinVersions.class,
-      PluginInstancesRepository.class,
-      PluginInfosLoader.class,
-      PluginInstancesLoader.class,
-      PluginClassloaderFactory.class,
-      new PluginApiGlobalSettingsProvider(),
-      new PluginApiConfigurationProvider(),
-      AnalysisExtensionInstaller.class,
-      new SonarQubeVersion(sonarPluginApiVersion),
-      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
-
+      analysisExtensionInstaller,
+      globalSettings,
+      globalSettings.asConfig(),
+      pluginInstancesRepository,
       new GlobalTempFolderProvider(),
-      UriReader.class,
-      Clock.systemDefaultZone(),
-      System2.INSTANCE);
+      new SonarQubeVersion(sonarPluginApiVersion),
+      sonarLintRuntime);
+    // Add plugin instance level extensions
+    analysisExtensionInstaller.install(this, ContainerLifespan.INSTANCE);
   }
 
   @Override
   protected void doAfterStart() {
-    installPlugins();
-    globalExtensionContainer = new GlobalExtensionContainer(this);
-    globalExtensionContainer.startComponents();
-    GlobalAnalysisConfiguration globalConfiguration = this.getComponentByType(GlobalAnalysisConfiguration.class);
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfiguration.getClientFileSystem());
+    this.moduleRegistry = new ModuleRegistry(this, globalConfig.getClientFileSystem());
   }
 
   @Override
@@ -86,21 +76,10 @@ public class GlobalAnalysisContainer extends ComponentContainer {
       if (moduleRegistry != null) {
         moduleRegistry.stopAll();
       }
-      if (globalExtensionContainer != null) {
-        globalExtensionContainer.stopComponents(swallowException);
-      }
     } finally {
       super.stopComponents(swallowException);
     }
     return this;
-  }
-
-  private void installPlugins() {
-    PluginInstancesRepository pluginRepository = getComponentByType(PluginInstancesRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
-      Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      addExtension(pluginInfo.getKey(), instance);
-    }
   }
 
   public ModuleRegistry getModuleRegistry() {

@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.picocontainer.ComponentLifecycle;
 import org.picocontainer.PicoContainer;
@@ -38,7 +39,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
 
   private static final Logger LOG = Loggers.get(GlobalTempFolderProvider.class);
   private static final long CLEAN_MAX_AGE = TimeUnit.DAYS.toMillis(21);
-  static final String TMP_NAME_PREFIX = ".sonartmp_";
+  static final String TMP_NAME_PREFIX = "sonarlint_tmp_";
   private boolean started = false;
 
   private GlobalTempFolder tempFolder;
@@ -47,38 +48,41 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
     if (tempFolder == null) {
 
       Path workingPath = globalConfiguration.getWorkDir();
-      try {
-        cleanTempFolders(workingPath);
-      } catch (IOException e) {
-        LOG.error(String.format("failed to clean global working directory: %s", workingPath), e);
+
+      if (workingPath != null) {
+        tryCleanPreviousTempFolders(workingPath);
       }
+
       Path tempDir = createTempFolder(workingPath);
       tempFolder = new GlobalTempFolder(tempDir.toFile(), true);
     }
     return tempFolder;
   }
 
-  private static Path createTempFolder(Path workingPath) {
+  private static Path createTempFolder(@Nullable Path workingPath) {
     try {
-      Files.createDirectories(workingPath);
+      if (workingPath != null) {
+        Files.createDirectories(workingPath);
+        return Files.createTempDirectory(workingPath, TMP_NAME_PREFIX);
+      } else {
+        return Files.createTempDirectory(TMP_NAME_PREFIX);
+      }
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to create working path: " + workingPath, e);
-    }
-
-    try {
-      return Files.createTempDirectory(workingPath, TMP_NAME_PREFIX);
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to create temporary folder in " + workingPath, e);
+      throw new IllegalStateException("Failed to create temporary folder", e);
     }
   }
 
-  private static void cleanTempFolders(Path path) throws IOException {
-    if (Files.exists(path)) {
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(path, new CleanFilter())) {
-        for (Path p : stream) {
-          FileUtils.deleteQuietly(p.toFile());
+  private static void tryCleanPreviousTempFolders(Path path) {
+    try {
+      if (Files.exists(path)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path, new CleanFilter())) {
+          for (Path p : stream) {
+            FileUtils.deleteQuietly(p.toFile());
+          }
         }
       }
+    } catch (IOException e) {
+      LOG.error(String.format("failed to clean global working directory: %s", path), e);
     }
   }
 

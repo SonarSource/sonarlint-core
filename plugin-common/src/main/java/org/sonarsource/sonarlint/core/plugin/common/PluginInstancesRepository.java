@@ -25,31 +25,33 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.common.load.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.common.load.PluginInstancesLoader;
+import org.sonarsource.sonarlint.core.plugin.common.load.PluginRequirementsCheckResult;
+import org.sonarsource.sonarlint.core.plugin.common.load.SonarPluginManifestAndJarPath;
+import org.sonarsource.sonarlint.core.plugin.common.load.SonarPluginRequirementsChecker;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toList;
 
 /**
- * Orchestrates the installation and loading of plugins
+ * Orchestrates the loading and instantiation of plugins
  */
-public class PluginInstancesRepository implements Startable {
+public class PluginInstancesRepository implements AutoCloseable, Startable {
   private static final Logger LOG = Loggers.get(PluginInstancesRepository.class);
 
-  private final PluginInfosLoader pluginInfosLoader;
+  private final SonarPluginRequirementsChecker pluginRequirementChecker;
   private final PluginInstancesLoader pluginInstancesLoader;
   private final Configuration configuration;
   private final System2 system2;
 
   private Map<String, Plugin> pluginInstancesByKeys;
-  private Map<String, PluginInfo> infosByKeys;
+  private Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
   public static class Configuration {
     private final Set<Path> pluginJarLocations;
@@ -63,50 +65,62 @@ public class PluginInstancesRepository implements Startable {
     }
   }
 
-  public PluginInstancesRepository(Configuration configuration, PluginInfosLoader pluginInfosLoader, PluginInstancesLoader pluginInstancesLoader, System2 system2) {
-    this.configuration = configuration;
-    this.pluginInfosLoader = pluginInfosLoader;
-    this.pluginInstancesLoader = pluginInstancesLoader;
-    this.system2 = system2;
+  public PluginInstancesRepository(Configuration configuration) {
+    this(configuration, new SonarPluginRequirementsChecker(), new PluginInstancesLoader(), System2.INSTANCE);
   }
 
-  @Override
-  public void start() {
+  PluginInstancesRepository(Configuration configuration, SonarPluginRequirementsChecker pluginRequirementChecker, PluginInstancesLoader pluginInstancesLoader, System2 system2) {
+    this.configuration = configuration;
+    this.pluginRequirementChecker = pluginRequirementChecker;
+    this.pluginInstancesLoader = pluginInstancesLoader;
+    this.system2 = system2;
+    init();
+  }
+
+  private void init() {
     String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
-    infosByKeys = pluginInfosLoader.loadPlugins(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
+    pluginCheckResultByKeys = pluginRequirementChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
       configuration.nodeCurrentVersion);
-    Map<String, PluginInfo> nonSkippedPlugins = infosByKeys.entrySet().stream().filter(e -> !e.getValue().isSkipped())
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    pluginInstancesByKeys = pluginInstancesLoader.load(nonSkippedPlugins.values());
+    Collection<SonarPluginManifestAndJarPath> nonSkippedPlugins = getNonSkippedPlugins();
+    pluginInstancesByKeys = pluginInstancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
     logPlugins(nonSkippedPlugins);
   }
 
-  private static void logPlugins(Map<String, PluginInfo> nonSkippedPlugins) {
+  private static void logPlugins(Collection<SonarPluginManifestAndJarPath> nonSkippedPlugins) {
     LOG.debug("Loaded {} plugins", nonSkippedPlugins.size());
-    for (PluginInfo p : nonSkippedPlugins.values()) {
+    for (SonarPluginManifestAndJarPath p : nonSkippedPlugins) {
       LOG.debug("  * {} {} ({})", p.getManifest().getName(), p.getManifest().getVersion(), p.getManifest().getKey());
     }
   }
 
   @Override
-  public void stop() {
-    LOG.debug("Unloading plugins");
-    // close plugin classloaders
-    pluginInstancesLoader.unload(pluginInstancesByKeys.values());
+  public void close() throws Exception {
+    if (!pluginInstancesByKeys.isEmpty()) {
+      LOG.debug("Unloading plugins");
+      // close plugins classloaders
+      pluginInstancesLoader.unload(pluginInstancesByKeys.values());
 
-    pluginInstancesByKeys.clear();
-    infosByKeys.clear();
+      pluginInstancesByKeys.clear();
+      pluginCheckResultByKeys.clear();
+    }
   }
 
-  public Collection<PluginInfo> getActivePluginInfos() {
-    return infosByKeys.values().stream().filter(p -> !p.isSkipped()).collect(Collectors.toList());
+  public Collection<SonarPluginManifestAndJarPath> getNonSkippedPlugins() {
+    return pluginCheckResultByKeys.values().stream()
+      .filter(not(PluginRequirementsCheckResult::isSkipped))
+      .map(PluginRequirementsCheckResult::getPlugin)
+      .collect(toList());
   }
 
-  public PluginInfo getPluginInfo(String key) {
-    PluginInfo info = infosByKeys.get(key);
+  public PluginRequirementsCheckResult getPluginCheckResult(String key) {
+    PluginRequirementsCheckResult info = pluginCheckResultByKeys.get(key);
     requireNonNull(info, () -> "Plugin [" + key + "] does not exist");
     return info;
+  }
+
+  public Map<String, Plugin> getPluginInstancesByKeys() {
+    return Map.copyOf(pluginInstancesByKeys);
   }
 
   public Plugin getPluginInstance(String key) {
@@ -116,6 +130,20 @@ public class PluginInstancesRepository implements Startable {
   }
 
   public boolean hasPlugin(String key) {
-    return infosByKeys.containsKey(key);
+    return pluginCheckResultByKeys.containsKey(key);
+  }
+
+  @Override
+  public void start() {
+    // Nothing to do
+  }
+
+  @Override
+  public void stop() {
+    try {
+      close();
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to properly close plugin repository", e);
+    }
   }
 }

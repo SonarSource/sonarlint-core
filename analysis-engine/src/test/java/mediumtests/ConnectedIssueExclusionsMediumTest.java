@@ -64,7 +64,7 @@ public class ConnectedIssueExclusionsMediumTest {
     GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addEnabledLanguages(Language.JAVA)
-      .setSonarLintUserHome(slHome);
+      .setWorkDir(slHome);
     sonarlint = new AnalysisEngine(configBuilder.build());
 
     baseDir = temp.newFolder();

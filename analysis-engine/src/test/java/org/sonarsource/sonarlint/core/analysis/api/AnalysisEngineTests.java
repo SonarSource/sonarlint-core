@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis.api;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintException;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,8 +34,6 @@ import static org.mockito.Mockito.when;
 import static testutils.TestUtils.noOpIssueListener;
 
 class AnalysisEngineTests {
-
-  private static final String MODULE_KEY = "moduleKey";
 
   private static IllegalStateException onStopException = new IllegalStateException("Exception during container stop");
   private static IllegalStateException originalException = new IllegalStateException("Original exception");

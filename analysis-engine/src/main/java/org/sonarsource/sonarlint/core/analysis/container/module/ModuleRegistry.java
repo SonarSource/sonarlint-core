@@ -25,16 +25,17 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class ModuleRegistry {
   private static final Logger LOG = Loggers.get(ModuleRegistry.class);
 
   private final ConcurrentHashMap<String, ModuleContainer> moduleContainersById = new ConcurrentHashMap<>();
-  private final ComponentContainer parent;
+  private final GlobalAnalysisContainer parent;
   private final ClientFileSystem clientFs;
 
-  public ModuleRegistry(ComponentContainer parent, ClientFileSystem clientFs) {
+  public ModuleRegistry(GlobalAnalysisContainer parent, ClientFileSystem clientFs) {
     this.parent = parent;
     this.clientFs = clientFs;
   }

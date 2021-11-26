@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import org.sonar.api.Plugin;
 import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.core.plugin.common.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class PluginContextImpl extends Plugin.Context {

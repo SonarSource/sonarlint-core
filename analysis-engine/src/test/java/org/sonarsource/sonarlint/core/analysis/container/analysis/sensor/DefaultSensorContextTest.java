@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.noop.No
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.noop.NoOpNewSymbolTable;
-import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.analysis.progress.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;

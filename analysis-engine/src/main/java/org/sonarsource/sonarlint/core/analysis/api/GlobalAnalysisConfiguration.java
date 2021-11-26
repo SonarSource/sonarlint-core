@@ -35,16 +35,15 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.plugin.common.Version;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 
 @Immutable
 public class GlobalAnalysisConfiguration {
 
-  public static final String DEFAULT_WORK_DIR = "work";
   private static final String NODE_EXECUTABLE_PROPERTY = "sonar.nodejs.executable";
 
   private final Set<Path> pluginsJarPaths;
   private final LogOutput logOutput;
-  private final Path sonarLintUserHome;
   private final Path workDir;
   private final EnumSet<Language> enabledLanguages;
   private final Map<String, String> extraProperties;
@@ -54,8 +53,7 @@ public class GlobalAnalysisConfiguration {
   private final ClientFileSystem clientFileSystem;
 
   private GlobalAnalysisConfiguration(Builder builder) {
-    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
-    this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
+    this.workDir = builder.workDir;
     this.enabledLanguages = builder.enabledLanguages;
     this.logOutput = builder.logOutput;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
@@ -74,10 +72,7 @@ public class GlobalAnalysisConfiguration {
     return Collections.unmodifiableMap(extraProperties);
   }
 
-  public Path getSonarLintUserHome() {
-    return sonarLintUserHome;
-  }
-
+  @CheckForNull
   public Path getWorkDir() {
     return workDir;
   }
@@ -123,7 +118,6 @@ public class GlobalAnalysisConfiguration {
 
   public static final class Builder {
     private LogOutput logOutput;
-    private Path sonarlintUserHome;
     private Path workDir;
     private final EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
@@ -139,14 +133,6 @@ public class GlobalAnalysisConfiguration {
 
     public Builder setLogOutput(@Nullable LogOutput logOutput) {
       this.logOutput = logOutput;
-      return this;
-    }
-
-    /**
-     * Override default user home (~/.sonarlint)
-     */
-    public Builder setSonarLintUserHome(Path sonarlintUserHome) {
-      this.sonarlintUserHome = sonarlintUserHome;
       return this;
     }
 

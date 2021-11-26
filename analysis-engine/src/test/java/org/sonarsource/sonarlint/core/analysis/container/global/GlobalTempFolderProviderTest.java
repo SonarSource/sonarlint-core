@@ -38,7 +38,7 @@ public class GlobalTempFolderProviderTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
-  private GlobalTempFolderProvider tempFolderProvider = new GlobalTempFolderProvider();
+  private final GlobalTempFolderProvider tempFolderProvider = new GlobalTempFolderProvider();
 
   @Test
   public void createTempFolderProps() throws Exception {
@@ -72,18 +72,14 @@ public class GlobalTempFolderProviderTest {
   }
 
   @Test
-  public void createTempFolderSonarHome() throws Exception {
-    // with sonar home, it will be in {sonar.home}/.sonartmp
-    File sonarHome = temp.newFolder();
-    File workingDir = new File(sonarHome, GlobalAnalysisConfiguration.DEFAULT_WORK_DIR).getAbsoluteFile();
+  public void createWorkingDir() throws Exception {
+    File workingDir = temp.newFolder();
 
-    TempFolder tempFolder = tempFolderProvider.provide(GlobalAnalysisConfiguration.builder().setSonarLintUserHome(sonarHome.toPath()).build());
+    TempFolder tempFolder = tempFolderProvider.provide(GlobalAnalysisConfiguration.builder().setWorkDir(workingDir.toPath()).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();
     assertThat(getCreatedTempDir(workingDir).list()).hasSize(2);
-
-    FileUtils.deleteQuietly(sonarHome);
   }
 
   private File getCreatedTempDir(File workingDir) {

@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.sonar.classloader.ClassloaderBuilder;
 import org.sonar.classloader.Mask;
-import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.PARENT_FIRST;
 
@@ -39,7 +38,6 @@ import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.PARENT_FIRST
  *   <li>loading of the libraries embedded in plugin JAR files (directory META-INF/libs)</li>
  * </ul>
  */
-@SonarLintSide
 public class PluginClassloaderFactory {
 
   // underscores are used to not conflict with plugin keys (if someday a plugin key is "api")
@@ -48,9 +46,7 @@ public class PluginClassloaderFactory {
   /**
    * Creates as many classloaders as requested by the input parameter.
    */
-  public Map<PluginClassLoaderDef, ClassLoader> create(Collection<PluginClassLoaderDef> defs) {
-    ClassLoader baseClassLoader = baseClassLoader();
-
+  public Map<PluginClassLoaderDef, ClassLoader> create(ClassLoader baseClassLoader, Collection<PluginClassLoaderDef> defs) {
     ClassloaderBuilder builder = new ClassloaderBuilder();
     builder.newClassloader(API_CLASSLOADER_KEY, baseClassLoader);
     builder.setMask(API_CLASSLOADER_KEY, apiMask());
@@ -97,10 +93,6 @@ public class PluginClassloaderFactory {
     return result;
   }
 
-  ClassLoader baseClassLoader() {
-    return getClass().getClassLoader();
-  }
-
   private static URL fileToUrl(Path file) {
     try {
       return file.toUri().toURL();
@@ -123,6 +115,7 @@ public class PluginClassloaderFactory {
       .addInclusion("net/sourceforge/pmd/")
       .addInclusion("com/sonarsource/plugins/license/api/")
       .addInclusion("org/sonarsource/sonarlint/plugin/api/")
+      .addInclusion("com/google/gson/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");

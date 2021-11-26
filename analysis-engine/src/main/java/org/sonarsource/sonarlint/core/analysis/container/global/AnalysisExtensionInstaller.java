@@ -19,26 +19,40 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
+import java.util.Set;
+import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.common.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.plugin.common.ExtensionUtils;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
+  private static final Logger LOG = Loggers.get(AnalysisExtensionInstaller.class);
+
+  private final Set<Language> enabledLanguages;
+
+  private final PluginInstancesRepository pluginInstancesRepository;
+
   public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, PluginInstancesRepository pluginInstancesRepository, Configuration bootConfiguration,
     GlobalAnalysisConfiguration globalConfig) {
-    super(sonarRuntime, pluginInstancesRepository, bootConfiguration, globalConfig.getEnabledLanguages());
+    super(sonarRuntime, bootConfiguration);
+    this.pluginInstancesRepository = pluginInstancesRepository;
+    enabledLanguages = globalConfig.getEnabledLanguages();
   }
 
   public AnalysisExtensionInstaller install(ComponentContainer container, ContainerLifespan lifespan) {
-    super.install(container, extension -> {
-      return lifespan.equals(getSonarLintSideLifespan(extension));
+    super.install(container, pluginInstancesRepository.getPluginInstancesByKeys(), (pluginKey, extension) -> {
+      return lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension);
     });
     return this;
   }
@@ -58,6 +72,23 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
       }
     }
     return null;
+  }
+
+  private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
+    // SLCORE-259
+    if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
+      LOG.debug("TypeScript sensor excluded");
+      return false;
+    }
+    return Language.containsPlugin(pluginKey) || isNotSensor(extension);
+  }
+
+  private static boolean isNotSensor(Object extension) {
+    return !ExtensionUtils.isType(extension, Sensor.class);
+  }
+
+  private static String className(Object extension) {
+    return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
   }
 
 }

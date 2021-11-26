@@ -30,7 +30,8 @@ import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.analysis.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.analysis.progress.ProgressWrapper;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 import static java.util.Objects.requireNonNull;
