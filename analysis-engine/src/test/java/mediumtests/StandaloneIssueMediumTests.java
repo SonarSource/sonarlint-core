@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.container.module.SonarLintApiModuleFileSystemAdapter;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
@@ -78,22 +77,22 @@ class StandaloneIssueMediumTests {
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
-  private static ActiveRule s1220 = createActiveRule("java:S1220", "MINOR");
-  private static ActiveRule java_s1481 = createActiveRule("java:S1481", "MINOR");
-  private static ActiveRule s106 = createActiveRule("java:S106", "MAJOR");
-  private static ActiveRule s1135 = createActiveRule("java:S1135", "INFO");
-  private static ActiveRule s1313 = createActiveRule("java:S1313", "INFO");
-  private static ActiveRule s3421 = createActiveRule("java:S3421", "MINOR");
-  private static ActiveRule s1144 = createActiveRule("java:S1144", "INFO");
-  private static ActiveRule s1186 = createActiveRule("java:S1186", "INFO");
-  private static ActiveRule s1228 = createActiveRule("java:S1228", "MINOR");
-  private static ActiveRule s2094 = createActiveRule("java:S2094", "MINOR");
-  private static ActiveRule js_s1481 = createActiveRule("javascript:S1481", "MINOR");
-  private static ActiveRule s3827 = createActiveRule("javascript:S3827", "MINOR");
-  private static ActiveRule s1764 = createActiveRule("typescript:S1764", "MINOR");
-  private static ActiveRule cS3805 = createActiveRule("c:S3805", "MINOR");
-  private static ActiveRule s1172 = createActiveRule("php:S1172", "MINOR");
-  private static ActiveRule printStatementUsage = createActiveRule("python:PrintStatementUsage", "MINOR");
+  private static ActiveRule s1220 = createActiveRule("java:S1220");
+  private static ActiveRule java_s1481 = createActiveRule("java:S1481");
+  private static ActiveRule s106 = createActiveRule("java:S106");
+  private static ActiveRule s1135 = createActiveRule("java:S1135");
+  private static ActiveRule s1313 = createActiveRule("java:S1313");
+  private static ActiveRule s3421 = createActiveRule("java:S3421");
+  private static ActiveRule s1144 = createActiveRule("java:S1144");
+  private static ActiveRule s1186 = createActiveRule("java:S1186");
+  private static ActiveRule s1228 = createActiveRule("java:S1228");
+  private static ActiveRule s2094 = createActiveRule("java:S2094");
+  private static ActiveRule js_s1481 = createActiveRule("javascript:S1481");
+  private static ActiveRule s3827 = createActiveRule("javascript:S3827");
+  private static ActiveRule s1764 = createActiveRule("typescript:S1764");
+  private static ActiveRule cS3805 = createActiveRule("c:S3805");
+  private static ActiveRule s1172 = createActiveRule("php:S1172");
+  private static ActiveRule printStatementUsage = createActiveRule("python:PrintStatementUsage");
 
   static {
     // The CFamilySensor relies on internal key
@@ -413,11 +412,11 @@ class StandaloneIssueMediumTests {
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
-      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, "MAJOR"),
-        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, "INFO"));
+      i -> i.getInputFile().relativePath()).containsOnly(
+        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH),
+        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH),
+        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH),
+        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH));
   }
 
   @Test
@@ -440,8 +439,8 @@ class StandaloneIssueMediumTests {
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
-      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-        tuple("java:S1313", 3, 14, 3, 29, A_JAVA_FILE_PATH, "INFO"));
+      i -> i.getInputFile().relativePath()).containsOnly(
+        tuple("java:S1313", 3, 14, 3, 29, A_JAVA_FILE_PATH));
   }
 
   @Test
@@ -464,8 +463,8 @@ class StandaloneIssueMediumTests {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3421", 6, "pom.xml", "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S3421", 6, "pom.xml"));
   }
 
   @Test
@@ -489,9 +488,9 @@ class StandaloneIssueMediumTests {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S1220", null, A_JAVA_FILE_PATH),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH));
   }
 
   @Test
@@ -537,9 +536,9 @@ class StandaloneIssueMediumTests {
       issues::add, null, null);
 
     // No S106
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S1220", null, A_JAVA_FILE_PATH),
+      tuple("java:S1481", 3, A_JAVA_FILE_PATH));
   }
 
   @Test
@@ -559,9 +558,9 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, Issue::getSeverity).containsOnly(
-      tuple("java:S2094", 2, "foo/Foo.java", "MINOR"),
-      tuple("java:S1228", null, null, "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null).containsOnly(
+      tuple("java:S2094", 2, "foo/Foo.java"),
+      tuple("java:S1228", null, null));
   }
 
   @Test
@@ -672,8 +671,8 @@ class StandaloneIssueMediumTests {
     return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8, null);
   }
 
-  private static ActiveRule createActiveRule(String ruleKey, String severity) {
-    return new ActiveRule(RuleKey.parse(ruleKey), null, severity, null, null);
+  private static ActiveRule createActiveRule(String ruleKey) {
+    return new ActiveRule(ruleKey, null);
   }
 
 }

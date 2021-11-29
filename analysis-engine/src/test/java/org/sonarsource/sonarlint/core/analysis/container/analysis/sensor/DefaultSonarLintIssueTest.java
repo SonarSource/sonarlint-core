@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
@@ -38,8 +37,6 @@ import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputDir;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.DefaultSonarLintIssue;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.DefaultSonarLintIssueLocation;
 import org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit;
 import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
 import testutils.TestInputFileBuilder;
@@ -157,14 +154,12 @@ public class DefaultSonarLintIssueTest {
       .at(new DefaultSonarLintIssueLocation()
         .on(new SonarLintInputDir(baseDir.resolve("src/main")))
         .message("Wrong way!"))
-      .forRule(RuleKey.of("repo", "rule"))
-      .overrideSeverity(Severity.BLOCKER);
+      .forRule(RuleKey.of("repo", "rule"));
 
     assertThat(issue.primaryLocation().inputComponent()).isEqualTo(project);
     assertThat(issue.ruleKey()).isEqualTo(RuleKey.of("repo", "rule"));
     assertThat(issue.primaryLocation().textRange()).isNull();
     assertThat(issue.primaryLocation().message()).isEqualTo("[src/main] Wrong way!");
-    assertThat(issue.overriddenSeverity()).isEqualTo(Severity.BLOCKER);
 
     issue.save();
 

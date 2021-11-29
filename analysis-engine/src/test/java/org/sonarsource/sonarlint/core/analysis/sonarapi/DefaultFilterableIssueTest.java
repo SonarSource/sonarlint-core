@@ -17,31 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
+package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import org.junit.Test;
 import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
-import org.sonar.api.scan.issue.filter.IssueFilter;
-import org.sonar.api.scan.issue.filter.IssueFilterChain;
-import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 
-@SonarLintSide
-public class IssueFilters {
-  private final IssueFilter[] filters;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-  public IssueFilters(IssueFilter[] exclusionFilters) {
-    this.filters = exclusionFilters;
+public class DefaultFilterableIssueTest {
+
+  @Test
+  public void delegate_textRange_to_rawIssue() {
+    TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
+    DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, textRange, null, null, null);
+    FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
+    assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
   }
-
-  public IssueFilters() {
-    this(new IssueFilter[0]);
-  }
-
-  public boolean accept(InputComponent inputComponent, DefaultClientIssue rawIssue) {
-    IssueFilterChain filterChain = new DefaultIssueFilterChain(filters);
-    FilterableIssue fIssue = new DefaultFilterableIssue(rawIssue, inputComponent);
-    return filterChain.accept(fIssue);
-  }
-
 }

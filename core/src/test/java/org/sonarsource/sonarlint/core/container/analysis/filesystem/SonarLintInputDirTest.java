@@ -42,7 +42,7 @@ public class SonarLintInputDirTest {
   public void testInputDir() {
     assertThat(inputDir.absolutePath()).isEqualTo(PathUtils.canonicalPath(path.toFile()));
     assertThat(inputDir.file()).isEqualTo(path.toFile());
-    assertThat(inputDir.key()).isEqualTo(PathUtils.canonicalPath(path.toFile()));
+    assertThat(inputDir.getKey()).isEqualTo(PathUtils.canonicalPath(path.toFile()));
     assertThat(inputDir.isFile()).isFalse();
     assertThat(inputDir.path()).isEqualTo(path);
     assertThat(inputDir.relativePath()).isEqualTo(inputDir.absolutePath());

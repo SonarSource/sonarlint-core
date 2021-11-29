@@ -238,7 +238,7 @@ public class StorageContainer extends ComponentContainer {
         overridenSeverity != null ? overridenSeverity : ruleFromStorage.getSeverity(), type, language,
         ruleFromStorage.getHtmlNote());
     }).orElseGet(() -> new DefaultRuleDetails(ruleKeyStr, ruleFromPlugin.getName(), ruleFromPlugin.getHtmlDescription(),
-      overridenSeverity != null ? overridenSeverity : ruleFromPlugin.getSeverity(), ruleFromPlugin.getType(), ruleFromPlugin.getLanguage(),
+      overridenSeverity != null ? overridenSeverity : ruleFromPlugin.getOverridenSeverity(), ruleFromPlugin.getType(), ruleFromPlugin.getLanguage(),
       ""));
   }
 

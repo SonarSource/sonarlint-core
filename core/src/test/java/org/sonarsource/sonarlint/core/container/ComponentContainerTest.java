@@ -339,7 +339,7 @@ public class ComponentContainerTest {
     }
   }
 
-  @Property(key = "foo", defaultValue = "bar", name = "Foo")
+  @Property(getKey = "foo", defaultValue = "bar", name = "Foo")
   public static class ComponentWithProperty {
 
   }

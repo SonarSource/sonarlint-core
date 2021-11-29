@@ -23,10 +23,6 @@ import java.util.List;
 
 public interface Issue extends IssueLocation {
 
-  String getSeverity();
-
-  String getType();
-
   String getRuleKey();
 
   String getRuleName();
@@ -38,5 +34,4 @@ public interface Issue extends IssueLocation {
   interface Flow {
     List<IssueLocation> locations();
   }
-
 }

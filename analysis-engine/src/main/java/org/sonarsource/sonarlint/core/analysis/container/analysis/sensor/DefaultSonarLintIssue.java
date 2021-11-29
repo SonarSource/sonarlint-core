@@ -54,7 +54,6 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   protected DefaultSonarLintIssueLocation primaryLocation;
   protected List<List<IssueLocation>> flows = new ArrayList<>();
   private RuleKey ruleKey;
-  private Severity overriddenSeverity;
   private final List<QuickFix> quickFixes;
 
   public DefaultSonarLintIssue(SonarLintInputProject project, Path baseDir, @Nullable SensorStorage storage) {
@@ -88,13 +87,12 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
 
   @Override
   public DefaultSonarLintIssue overrideSeverity(@Nullable Severity severity) {
-    this.overriddenSeverity = severity;
-    return this;
+    throw new UnsupportedOperationException("No overrideSeverity in SonarLint");
   }
 
   @Override
   public Severity overriddenSeverity() {
-    return this.overriddenSeverity;
+    throw new UnsupportedOperationException("No overriddenSeverity in SonarLint");
   }
 
   @Override

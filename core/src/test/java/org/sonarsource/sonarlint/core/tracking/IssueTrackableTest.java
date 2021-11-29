@@ -66,7 +66,7 @@ public class IssueTrackableTest {
     when(issue.getRuleName()).thenReturn(ruleName);
 
     String severity = "dummy severity";
-    when(issue.getSeverity()).thenReturn(severity);
+    when(issue.getOverridenSeverity()).thenReturn(severity);
 
     IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
     assertThat(trackable.getIssue()).isEqualTo(issue);

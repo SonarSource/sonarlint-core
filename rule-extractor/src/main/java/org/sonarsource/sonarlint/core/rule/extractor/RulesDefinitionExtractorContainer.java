@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.rule.extractor;
 
 import org.sonar.api.SonarQubeVersion;
-import org.sonar.api.Startable;
 import org.sonar.api.server.rule.RulesDefinition.Context;
+import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.Version;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.plugin.common.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.common.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.plugin.common.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.common.sonarapi.SonarLintRuntimeImpl;
@@ -51,7 +51,12 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
 
     ExtensionInstaller extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
     extensionInstaller.install(this, pluginInstancesRepository.getPluginInstancesByKeys(), (key, ext) -> {
-      return !ExtensionUtils.isType(ext, Startable.class);
+      SonarLintSide annotation = AnnotationUtils.getAnnotation(ext, SonarLintSide.class);
+      if (annotation != null) {
+        String lifespan = annotation.lifespan();
+        return SonarLintSide.SINGLE_ANALYSIS.equals(lifespan);
+      }
+      return false;
     });
 
     add(

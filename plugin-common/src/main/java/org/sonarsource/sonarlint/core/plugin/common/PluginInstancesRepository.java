@@ -35,7 +35,6 @@ import org.sonarsource.sonarlint.core.plugin.common.load.PluginRequirementsCheck
 import org.sonarsource.sonarlint.core.plugin.common.load.SonarPluginManifestAndJarPath;
 import org.sonarsource.sonarlint.core.plugin.common.load.SonarPluginRequirementsChecker;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
@@ -106,31 +105,19 @@ public class PluginInstancesRepository implements AutoCloseable, Startable {
     }
   }
 
-  public Collection<SonarPluginManifestAndJarPath> getNonSkippedPlugins() {
+  private Collection<SonarPluginManifestAndJarPath> getNonSkippedPlugins() {
     return pluginCheckResultByKeys.values().stream()
       .filter(not(PluginRequirementsCheckResult::isSkipped))
       .map(PluginRequirementsCheckResult::getPlugin)
       .collect(toList());
   }
 
-  public PluginRequirementsCheckResult getPluginCheckResult(String key) {
-    PluginRequirementsCheckResult info = pluginCheckResultByKeys.get(key);
-    requireNonNull(info, () -> "Plugin [" + key + "] does not exist");
-    return info;
+  public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
+    return Map.copyOf(pluginCheckResultByKeys);
   }
 
   public Map<String, Plugin> getPluginInstancesByKeys() {
     return Map.copyOf(pluginInstancesByKeys);
-  }
-
-  public Plugin getPluginInstance(String key) {
-    Plugin instance = pluginInstancesByKeys.get(key);
-    requireNonNull(instance, () -> "Plugin [" + key + "] does not exist");
-    return instance;
-  }
-
-  public boolean hasPlugin(String key) {
-    return pluginCheckResultByKeys.containsKey(key);
   }
 
   @Override

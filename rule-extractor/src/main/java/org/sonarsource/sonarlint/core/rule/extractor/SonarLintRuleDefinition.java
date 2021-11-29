@@ -19,12 +19,94 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
-import org.sonar.api.server.rule.RulesDefinition.Rule;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import org.sonar.api.rule.RuleKey;
+import org.sonar.api.rules.RuleType;
+import org.sonar.api.server.rule.RulesDefinition;
+import org.sonar.api.server.rule.RulesDefinition.Param;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 public class SonarLintRuleDefinition {
 
-  public SonarLintRuleDefinition(Rule ruleDef) {
-    // TODO Auto-generated constructor stub
+  private final String key;
+  private final String name;
+  private final String severity;
+  private final RuleType type;
+  private final String description;
+  private final String internalKey;
+  private final Map<String, SonarLintRuleParamDefinition> params;
+  private final boolean isActiveByDefault;
+  private final Language language;
+  private final String[] tags;
+  private final Set<String> deprecatedKeys;
+
+  public SonarLintRuleDefinition(RulesDefinition.Rule rule) {
+    this.key = RuleKey.of(rule.repository().key(), rule.key()).toString();
+    this.name = rule.name();
+    this.severity = rule.severity();
+    this.type = rule.type();
+    this.description = requireNonNull(rule.htmlDescription(), "HTML description is mandatory in SonarLint");
+    this.internalKey = rule.internalKey();
+    this.isActiveByDefault = rule.activatedByDefault();
+    this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
+    this.tags = rule.tags().toArray(new String[0]);
+    this.deprecatedKeys = rule.deprecatedRuleKeys().stream().map(RuleKey::toString).collect(toSet());
+
+    Map<String, SonarLintRuleParamDefinition> builder = new HashMap<>();
+    for (Param param : rule.params()) {
+      builder.put(param.key(), new SonarLintRuleParamDefinition(param));
+    }
+    params = Collections.unmodifiableMap(builder);
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getSeverity() {
+    return severity;
+  }
+
+  public RuleType getType() {
+    return type;
+  }
+
+  public String getInternalKey() {
+    return internalKey;
+  }
+
+  public Map<String, SonarLintRuleParamDefinition> getParams() {
+    return params;
+  }
+
+  public boolean isActiveByDefault() {
+    return isActiveByDefault;
+  }
+
+  public String getHtmlDescription() {
+    return description;
+  }
+
+  public Language getLanguage() {
+    return language;
+  }
+
+  public String[] getTags() {
+    return tags;
+  }
+
+  public Set<String> getDeprecatedKeys() {
+    return deprecatedKeys;
   }
 
 }

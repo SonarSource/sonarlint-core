@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 
 @Immutable
 public abstract class AbstractAnalysisConfiguration {

@@ -27,7 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 
 public class OnDiskTestClientInputFile implements ClientInputFile {
   private final Path path;

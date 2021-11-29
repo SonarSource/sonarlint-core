@@ -31,9 +31,9 @@ import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata.Metadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultFilterableIssue;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssuePattern;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;

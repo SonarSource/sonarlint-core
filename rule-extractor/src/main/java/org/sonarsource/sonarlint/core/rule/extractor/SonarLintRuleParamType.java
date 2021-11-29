@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Rule Extractor
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.rule.extractor;
 
-import java.util.Optional;
-import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.plugin.common.SkipReason;
-
-public interface PluginDetails {
-  String key();
-
-  String name();
-
-  @CheckForNull
-  String version();
+public enum SonarLintRuleParamType {
 
   /**
-   * Why the plugin was skipped. Empty if the plugin was loaded.
+   * Keep in sync with constants in org.sonar.api.server.rule.RuleParamType
    */
-  Optional<SkipReason> skipReason();
+  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
 
 }

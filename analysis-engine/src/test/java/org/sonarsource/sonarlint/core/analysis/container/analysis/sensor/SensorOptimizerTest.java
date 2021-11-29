@@ -34,8 +34,8 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.InputFileIndex;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.analysis.container.global.MapSettings;
-import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRuleAdapter;
-import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRulesAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.TestInputFileBuilder;
 

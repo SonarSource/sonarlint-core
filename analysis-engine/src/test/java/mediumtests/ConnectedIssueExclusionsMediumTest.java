@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.RuleKey;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -279,7 +278,7 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   private static ActiveRule createActiveRule(String ruleKey) {
-    return new ActiveRule(RuleKey.parse(ruleKey), null, null, null, null);
+    return new ActiveRule(ruleKey, null);
   }
 
 }

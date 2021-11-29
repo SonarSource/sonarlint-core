@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
+import java.util.Map;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
@@ -27,17 +28,20 @@ import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.plugin.common.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository.Configuration;
+import org.sonarsource.sonarlint.core.plugin.common.load.PluginRequirementsCheckResult;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.common.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class GlobalAnalysisContainer extends ComponentContainer {
 
-  private ModuleRegistry moduleRegistry;
+  private final ModuleRegistry moduleRegistry;
   private final GlobalAnalysisConfiguration globalConfig;
+  private Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
   public GlobalAnalysisContainer(GlobalAnalysisConfiguration globalConfig) {
     this.globalConfig = globalConfig;
+    this.moduleRegistry = new ModuleRegistry(this, globalConfig.getClientFileSystem());
   }
 
   @Override
@@ -48,6 +52,7 @@ public class GlobalAnalysisContainer extends ComponentContainer {
     Configuration pluginConfiguration = new Configuration(globalConfig.getPluginsJarPaths(), globalConfig.getEnabledLanguages(), globalConfig.getNodeJsVersion());
     PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(pluginConfiguration);
     pluginInstancesRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
+    pluginCheckResultByKeys = pluginInstancesRepository.getPluginCheckResultByKeys();
 
     SonarLintRuntime sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid());
     MapSettings globalSettings = new MapSettings(getPropertyDefinitions(), globalConfig.getEffectiveConfig());
@@ -66,11 +71,6 @@ public class GlobalAnalysisContainer extends ComponentContainer {
   }
 
   @Override
-  protected void doAfterStart() {
-    this.moduleRegistry = new ModuleRegistry(this, globalConfig.getClientFileSystem());
-  }
-
-  @Override
   public ComponentContainer stopComponents(boolean swallowException) {
     try {
       if (moduleRegistry != null) {
@@ -84,6 +84,10 @@ public class GlobalAnalysisContainer extends ComponentContainer {
 
   public ModuleRegistry getModuleRegistry() {
     return moduleRegistry;
+  }
+
+  public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
+    return pluginCheckResultByKeys;
   }
 
 }

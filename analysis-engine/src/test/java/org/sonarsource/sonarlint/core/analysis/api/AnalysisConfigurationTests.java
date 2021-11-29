@@ -48,7 +48,7 @@ class AnalysisConfigurationTests {
     ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, Language.JAVA);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, Language.PHP);
     Path baseDir = createDirectory(temp.resolve("baseDir"));
-    ActiveRule activeRuleWithParams = new ActiveRule(RuleKey.parse("php:S123"), null, null, null, null);
+    ActiveRule activeRuleWithParams = new ActiveRule("php:S123", null);
     activeRuleWithParams.setParams(Map.of("param1", "value1"));
     AnalysisConfiguration config = AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
@@ -57,9 +57,9 @@ class AnalysisConfigurationTests {
       .addInputFiles(Arrays.asList(testInputFile))
       .putAllExtraProperties(props)
       .putExtraProperty("sonar.foo", "bar")
-      .addActiveRules(List.of(new ActiveRule(RuleKey.parse("java:S123"), null, null, null, null), new ActiveRule(RuleKey.parse("java:S456"), null, null, null, null)))
+      .addActiveRules(List.of(new ActiveRule("java:S123", null), new ActiveRule("java:S456", null)))
       .addActiveRule(activeRuleWithParams)
-      .addActiveRules(new ActiveRule(RuleKey.parse("python:S123"), null, null, null, null), new ActiveRule(RuleKey.parse("python:S456"), null, null, null, null))
+      .addActiveRules(new ActiveRule("python:S123", null), new ActiveRule("python:S456", null))
       .build();
     assertThat(config).hasToString("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +

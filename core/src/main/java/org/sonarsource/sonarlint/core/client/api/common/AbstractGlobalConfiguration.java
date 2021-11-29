@@ -30,7 +30,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 
 /**
  * To use SonarLint in connected mode please provide a server id that will identify the storage.

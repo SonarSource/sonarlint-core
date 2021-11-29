@@ -64,7 +64,7 @@ public class IssueTrackable implements Trackable {
 
   @Override
   public String getSeverity() {
-    return issue.getSeverity();
+    return issue.getOverridenSeverity();
   }
 
   @Override

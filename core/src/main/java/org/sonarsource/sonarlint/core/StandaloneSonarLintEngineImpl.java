@@ -19,46 +19,43 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.api.batch.rule.ActiveRules;
-import org.sonar.api.batch.rule.Rules;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
-import org.sonarsource.sonarlint.core.analysis.api.Version;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
-import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
+import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
+import org.sonarsource.sonarlint.core.plugin.common.Version;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
+import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
-public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine implements StandaloneSonarLintEngine {
+public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine {
+
+  private static final Logger LOG = Loggers.get(StandaloneSonarLintEngineImpl.class);
 
   private final StandaloneGlobalConfiguration globalConfig;
-  private Collection<PluginDetails> pluginDetails;
-  private Rules rules;
-  private StandaloneActiveRules standaloneActiveRules;
+  private Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
@@ -67,13 +64,12 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     loadPluginMetadata();
 
     GlobalAnalysisConfiguration analysisGlobalConfig = GlobalAnalysisConfiguration.builder()
-      .addEnabledLanguages(globalConfig.getEnabledLanguages().stream().map(l -> Language.forKey(l.getLanguageKey()).get()).collect(toList()))
-      .addPlugins(globalConfig.getPluginUrls())
+      .addEnabledLanguages(globalConfig.getEnabledLanguages())
+      .addPlugins(globalConfig.getPluginJarPaths())
       .setClientPid(globalConfig.getClientPid())
-      // TODO Convert LogOutput
+      .setLogOutput(globalConfig.getLogOutput())
       .setExtraProperties(globalConfig.extraProperties())
       .setNodeJs(globalConfig.getNodeJsPath(), Optional.ofNullable(globalConfig.getNodeJsVersion()).map(v -> Version.create(v.toString())).orElse(null))
-      .setSonarLintUserHome(globalConfig.getSonarLintUserHome())
       .setWorkDir(globalConfig.getWorkDir())
       .setClientFileSystem(globalConfig.getClientFileSystem())
       .build();
@@ -81,49 +77,50 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   }
 
   public void loadPluginMetadata() {
-    StandaloneGlobalContainer globalContainer = new StandaloneGlobalContainer(globalConfig);
-    try {
-      globalContainer.execute();
-      pluginDetails = globalContainer.getPluginDetails();
-      rules = globalContainer.getRules();
-      standaloneActiveRules = globalContainer.getStandaloneActiveRules();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
+    RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
+    allRulesDefinitionsByKey = ruleExtractor.extractRules(globalConfig.getPluginJarPaths(), globalConfig.getEnabledLanguages()).stream()
+      .collect(toMap(r -> r.getKey().toString(), r -> r));
   }
 
-  @Override
-  public Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey) {
-    return Optional.ofNullable(standaloneActiveRules.ruleDetails(ruleKey));
+  public Optional<SonarLintRuleDefinition> getRuleDetails(String ruleKey) {
+    return Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey));
   }
 
-  @Override
-  public Collection<StandaloneRuleDetails> getAllRuleDetails() {
-    return standaloneActiveRules.allRuleDetails();
+  public Collection<SonarLintRuleDefinition> getAllRuleDetails() {
+    return allRulesDefinitionsByKey.values();
   }
 
-  @Override
   public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
 
-    Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(Collectors.toSet());
+    Set<String> excludedRules = Set.copyOf(configuration.excludedRules());
     Set<String> includedRules = configuration.includedRules().stream()
-      .map(RuleKey::toString)
       .filter(r -> !excludedRules.contains(r))
-      .collect(Collectors.toSet());
-    Map<String, Map<String, String>> ruleParameters = new HashMap<>();
-    configuration.ruleParameters().forEach((k, v) -> ruleParameters.put(k.toString(), v));
-    ActiveRules sqApiActiveRules = standaloneActiveRules.filtered(excludedRules, includedRules, ruleParameters);
-    List<ActiveRule> activeRules = sqApiActiveRules.findAll().stream().map(ar -> {
-      SonarLintRule rule = (SonarLintRule) rules.find(ar.ruleKey());
-      ActiveRule activeRule = new ActiveRule(convert(ar.ruleKey()), rule.type().toString(), ar.severity(), rule.name(), ar.language());
-      activeRule.setInternalKey(ar.internalKey());
-      activeRule.setTemplateRuleKey(ar.templateRuleKey());
-      activeRule.setParams(ar.params());
+      .collect(toSet());
+
+    Collection<SonarLintRuleDefinition> filteredActiveRules = new ArrayList<>();
+
+    filteredActiveRules.addAll(allRulesDefinitionsByKey.values().stream()
+      .filter(SonarLintRuleDefinition::isActiveByDefault)
+      .filter(isExcludedByConfiguration(excludedRules))
+      .collect(Collectors.toList()));
+    filteredActiveRules.addAll(allRulesDefinitionsByKey.values().stream()
+      .filter(r -> !r.isActiveByDefault())
+      .filter(isIncludedByConfiguration(includedRules))
+      .collect(Collectors.toList()));
+
+    Collection<ActiveRule> activeRules = filteredActiveRules.stream().map(rd -> {
+      ActiveRule activeRule = new ActiveRule(rd.getKey(), rd.getLanguage().getLanguageKey());
+      activeRule.setInternalKey(rd.getInternalKey());
+      Map<String, String> effectiveParams = new HashMap<>();
+      rd.getParams().forEach((paramKey, paramDef) -> {
+        effectiveParams.put(paramKey, paramDef.defaultValue());
+      });
+      Optional.ofNullable(configuration.ruleParameters().get(rd.getKey())).ifPresent(params -> params.forEach((k, v) -> effectiveParams.put(k.toString(), v)));
+      activeRule.setParams(effectiveParams);
       return activeRule;
-    })
-      .collect(Collectors.toList());
+    }).collect(Collectors.toList());
 
     AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
       .addInputFiles(configuration.inputFiles())
@@ -135,18 +132,45 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     return analysisEngine.analyze(analysisConfig, issueListener, null, null);
   }
 
-  private static org.sonarsource.sonarlint.core.analysis.api.RuleKey convert(org.sonar.api.rule.RuleKey ruleKey) {
-    return new org.sonarsource.sonarlint.core.analysis.api.RuleKey(ruleKey.repository(), ruleKey.rule());
+  private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
+    return r -> {
+      if (excludedRules.contains(r.getKey())) {
+        return false;
+      }
+      for (String deprecatedKey : r.getDeprecatedKeys()) {
+        if (excludedRules.contains(deprecatedKey)) {
+          LOG.warn("Rule '{}' was excluded using its deprecated key '{}'. Please fix your configuration.", r.getKey(), deprecatedKey);
+          return false;
+        }
+      }
+      return true;
+    };
   }
 
-  @Override
+  private static Predicate<? super SonarLintRuleDefinition> isIncludedByConfiguration(Set<String> includedRules) {
+    return r -> {
+      if (includedRules.contains(r.getKey())) {
+        return true;
+      }
+      for (String deprecatedKey : r.getDeprecatedKeys()) {
+        if (includedRules.contains(deprecatedKey)) {
+          LOG.warn("Rule '{}' was included using its deprecated key '{}'. Please fix your configuration.", r.getKey(), deprecatedKey);
+          return true;
+        }
+      }
+      return false;
+    };
+  }
+
   public void stop() {
     analysisEngine.stop();
   }
 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
-    return pluginDetails;
+    return analysisEngine.getGlobalContainer().getPluginCheckResultByKeys().values().stream()
+      .map(c -> new DefaultLoadedAnalyzer(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getManifest().getVersion(), c.getSkipReason().orElse(null)))
+      .collect(Collectors.toList());
   }
 
 }

@@ -96,7 +96,7 @@ public class StandaloneActiveRulesTest {
   private static StandaloneRule mockActiveRule(String rule, boolean activeByDefault) {
     StandaloneRule activeRule = mock(StandaloneRule.class);
     org.sonar.api.rule.RuleKey ruleKey = org.sonar.api.rule.RuleKey.of(REPOSITORY, rule);
-    when(activeRule.key()).thenReturn(ruleKey);
+    when(activeRule.getKey()).thenReturn(ruleKey);
     when(activeRule.getKey()).thenReturn(ruleKey.toString());
     when(activeRule.getLanguage()).thenReturn(Language.JAVA);
     when(activeRule.internalKey()).thenReturn(rule);

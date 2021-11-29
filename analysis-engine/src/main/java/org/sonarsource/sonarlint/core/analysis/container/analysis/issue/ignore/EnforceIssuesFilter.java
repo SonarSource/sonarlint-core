@@ -29,9 +29,9 @@ import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultFilterableIssue;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssuePattern;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 
 public class EnforceIssuesFilter implements IssueFilter {
 

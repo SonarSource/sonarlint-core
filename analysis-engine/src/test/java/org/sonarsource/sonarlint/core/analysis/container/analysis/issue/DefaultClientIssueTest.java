@@ -29,8 +29,7 @@ import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultClientIssue;
-import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -63,7 +62,7 @@ public class DefaultClientIssueTest {
 
     when(activeRule.getRuleName()).thenReturn("name");
 
-    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, "msg", textRange, clientInputFile, Collections.emptyList(), Collections.emptyList());
+    issue = new DefaultClientIssue(activeRule, "msg", textRange, clientInputFile, Collections.emptyList(), Collections.emptyList());
 
     assertThat(issue.getStartLine()).isEqualTo(1);
     assertThat(issue.getStartLineOffset()).isEqualTo(2);
@@ -71,7 +70,6 @@ public class DefaultClientIssueTest {
     assertThat(issue.getEndLineOffset()).isEqualTo(3);
 
     assertThat(issue.getMessage()).isEqualTo("msg");
-    assertThat(issue.getSeverity()).isEqualTo("MAJOR");
     assertThat(issue.getInputFile()).isEqualTo(clientInputFile);
 
     assertThat(issue.getRuleName()).isEqualTo("name");
@@ -79,7 +77,7 @@ public class DefaultClientIssueTest {
 
   @Test
   public void nullRange() {
-    issue = new DefaultClientIssue("MAJOR", "BUG", activeRule, "msg", null, null, Collections.emptyList(), Collections.emptyList());
+    issue = new DefaultClientIssue(activeRule, "msg", null, null, Collections.emptyList(), Collections.emptyList());
 
     assertThat(issue.getStartLine()).isNull();
     assertThat(issue.getStartLineOffset()).isNull();

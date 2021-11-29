@@ -67,7 +67,7 @@ public class InputFileBuilderTest {
     assertThat(inputFile.file()).isEqualTo(path.toFile());
     assertThat(inputFile.absolutePath()).isEqualTo(toSonarQubePath(path.toString()));
     assertThat(inputFile.language()).isEqualTo("java");
-    assertThat(inputFile.key()).isEqualTo(path.toUri().toString());
+    assertThat(inputFile.getKey()).isEqualTo(path.toUri().toString());
     assertThat(inputFile.lines()).isEqualTo(1);
 
     assertThat(builder.langDetection()).isEqualTo(langDetection);

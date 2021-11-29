@@ -46,6 +46,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
@@ -53,17 +54,14 @@ import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
-import org.sonarsource.sonarlint.core.util.PluginLocator;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import testutils.PluginLocator;
 
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -108,18 +106,17 @@ class StandaloneIssueMediumTests {
     nodeJsHelper.detect(null);
 
     StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
-      .addPlugin(PluginLocator.getJavaPluginUrl())
-      .addPlugin(PluginLocator.getPhpPluginUrl())
-      .addPlugin(PluginLocator.getPythonPluginUrl())
-      .addPlugin(PluginLocator.getXooPluginUrl())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
+      .addPlugin(PluginLocator.getJavaPluginPath())
+      .addPlugin(PluginLocator.getPhpPluginPath())
+      .addPlugin(PluginLocator.getPythonPluginPath())
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
 
     if (COMMERCIAL_ENABLED) {
-      configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
+      configBuilder.addPlugin(PluginLocator.getCppPluginPath());
     }
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
   }
@@ -137,7 +134,7 @@ class StandaloneIssueMediumTests {
   @Test
   void simpleJavaScript() throws Exception {
 
-    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("javascript:S1481").get();
+    SonarLintRuleDefinition ruleDetails = sonarlint.getRuleDetails("javascript:S1481").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
@@ -186,7 +183,7 @@ class StandaloneIssueMediumTests {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRule(RuleKey.parse("javascript:S3827"))
+        .addIncludedRule("javascript:S3827")
         .build(),
       issues::add, null,
       null);
@@ -201,7 +198,7 @@ class StandaloneIssueMediumTests {
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .putExtraProperty("sonar.javascript.globals", "LOCAL1")
-        .addIncludedRule(RuleKey.parse("javascript:S3827"))
+        .addIncludedRule("javascript:S3827")
         .build(),
       issues::add, null,
       null);
@@ -212,7 +209,7 @@ class StandaloneIssueMediumTests {
 
   @Test
   void simpleTypeScript() throws Exception {
-    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
+    SonarLintRuleDefinition ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.TS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
@@ -235,46 +232,6 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("typescript:S1764", 2, "foo.ts"));
 
-  }
-
-  @Test
-  void fileEncoding() throws IOException {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
-      + "  var xoo1, xoo2;\n"
-      + "  var xoo; //NOSONAR\n"
-      + "}", false, StandardCharsets.UTF_16, null);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
-  }
-
-  @Test
-  void simpleXoo() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
-      + "  var xoo1, xoo2;\n"
-      + "  var xoo; //NOSONAR\n"
-      + "}", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
   }
 
   @Test
@@ -334,23 +291,6 @@ class StandaloneIssueMediumTests {
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("xoo:HasTag", 2, 6, "foo.xoo"));
-  }
-
-  @Test
-  void returnLanguagePerFile() throws IOException {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
-      + "  var xoo;\n"
-      + "  var y; //NOSONAR\n"
-      + "}", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    AnalysisResults results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null, null);
-    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.XOO));
   }
 
   @Test
@@ -432,17 +372,17 @@ class StandaloneIssueMediumTests {
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
-      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, "MAJOR"),
-        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, "INFO"));
+      i -> i.getInputFile().relativePath()).containsOnly(
+        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH),
+        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH),
+        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH),
+        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH));
   }
 
   // SLCORE-251
   @Test
   void noRuleTemplates() throws Exception {
-    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("python:XPath", "xoo:xoo-template");
+    assertThat(sonarlint.getAllRuleDetails()).extracting(SonarLintRuleDefinition::getKey).doesNotContain("python:XPath", "xoo:xoo-template");
     assertThat(sonarlint.getRuleDetails("python:XPath")).isEmpty();
     assertThat(sonarlint.getRuleDetails("xoo:xoo-template")).isEmpty();
   }
@@ -454,19 +394,18 @@ class StandaloneIssueMediumTests {
       Language.JS,
       Language.PHP,
       Language.PYTHON,
-      Language.TS,
-      Language.XOO);
+      Language.TS);
 
     if (COMMERCIAL_ENABLED) {
       enabledLanguages.add(Language.C);
     }
-    assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage))
+    assertThat(sonarlint.getAllRuleDetails().stream().map(SonarLintRuleDefinition::getLanguage))
       .hasSameElementsAs(enabledLanguages);
   }
 
   @Test
   void simpleJavaNoHotspots() throws Exception {
-    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("java:S1313");
+    assertThat(sonarlint.getAllRuleDetails()).extracting(SonarLintRuleDefinition::getKey).doesNotContain("java:S1313");
     assertThat(sonarlint.getRuleDetails("java:S1313")).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo/Foo.java",
@@ -481,7 +420,7 @@ class StandaloneIssueMediumTests {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRule(new RuleKey("java", "S1313"))
+        .addIncludedRule("java:S1313")
         .build(),
       issues::add,
       null, null);
@@ -508,7 +447,7 @@ class StandaloneIssueMediumTests {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("java:S3421", 6, "pom.xml", "MINOR"));
   }
 
@@ -532,7 +471,7 @@ class StandaloneIssueMediumTests {
       .build(), issues::add,
       null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getOverridenSeverity).containsOnly(
       tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
       tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
   }
@@ -579,7 +518,7 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getOverridenSeverity).containsOnly(
       tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
       tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
   }
@@ -606,7 +545,7 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, (msg, lvl) -> logs.add(msg), null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getOverridenSeverity).containsOnly(
       tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
       tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
 
@@ -635,7 +574,7 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getOverridenSeverity).containsOnly(
       tuple("java:S3553", 3, A_JAVA_FILE_PATH, "MAJOR"),
       tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
       tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
@@ -665,7 +604,7 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, (msg, lvl) -> logs.add(msg), null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getOverridenSeverity).containsOnly(
       tuple("java:S3553", 3, A_JAVA_FILE_PATH, "MAJOR"),
       tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
       tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
@@ -692,9 +631,10 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, Issue::getSeverity).containsOnly(
-      tuple("java:S2094", 2, "foo/Foo.java", "MINOR"),
-      tuple("java:S1228", null, null, "MINOR"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, Issue::getOverridenSeverity)
+      .containsOnly(
+        tuple("java:S2094", 2, "foo/Foo.java", "MINOR"),
+        tuple("java:S1228", null, null, "MINOR"));
   }
 
   @Test
@@ -722,7 +662,7 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null, null);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getOverridenSeverity).containsOnly(
       tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
       tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
       tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));

@@ -45,18 +45,18 @@ public class MapSettingsTest {
   private PropertyDefinitions definitions;
 
   @Properties({
-    @Property(key = "hello", name = "Hello", defaultValue = "world"),
-    @Property(key = "date", name = "Date", defaultValue = "2010-05-18"),
-    @Property(key = "datetime", name = "DateTime", defaultValue = "2010-05-18T15:50:45+0100"),
-    @Property(key = "boolean", name = "Boolean", defaultValue = "true"),
-    @Property(key = "falseboolean", name = "False Boolean", defaultValue = "false"),
-    @Property(key = "integer", name = "Integer", defaultValue = "12345"),
-    @Property(key = "array", name = "Array", defaultValue = "one,two,three"),
-    @Property(key = "multi_values", name = "Array", defaultValue = "1,2,3", multiValues = true),
-    @Property(key = "sonar.jira", name = "Jira Server", type = PropertyType.PROPERTY_SET, propertySetKey = "jira"),
-    @Property(key = "newKey", name = "New key", deprecatedKey = "oldKey"),
-    @Property(key = "newKeyWithDefaultValue", name = "New key with default value", deprecatedKey = "oldKeyWithDefaultValue", defaultValue = "default_value"),
-    @Property(key = "new_multi_values", name = "New multi values", defaultValue = "1,2,3", multiValues = true, deprecatedKey = "old_multi_values")
+    @Property(getKey = "hello", name = "Hello", defaultValue = "world"),
+    @Property(getKey = "date", name = "Date", defaultValue = "2010-05-18"),
+    @Property(getKey = "datetime", name = "DateTime", defaultValue = "2010-05-18T15:50:45+0100"),
+    @Property(getKey = "boolean", name = "Boolean", defaultValue = "true"),
+    @Property(getKey = "falseboolean", name = "False Boolean", defaultValue = "false"),
+    @Property(getKey = "integer", name = "Integer", defaultValue = "12345"),
+    @Property(getKey = "array", name = "Array", defaultValue = "one,two,three"),
+    @Property(getKey = "multi_values", name = "Array", defaultValue = "1,2,3", multiValues = true),
+    @Property(getKey = "sonar.jira", name = "Jira Server", type = PropertyType.PROPERTY_SET, propertySetKey = "jira"),
+    @Property(getKey = "newKey", name = "New key", deprecatedKey = "oldKey"),
+    @Property(getKey = "newKeyWithDefaultValue", name = "New key with default value", deprecatedKey = "oldKeyWithDefaultValue", defaultValue = "default_value"),
+    @Property(getKey = "new_multi_values", name = "New multi values", defaultValue = "1,2,3", multiValues = true, deprecatedKey = "old_multi_values")
   })
   private static class Init {
   }
@@ -340,7 +340,7 @@ public class MapSettingsTest {
     assertThat(settings.getDefaultValue("foo")).isEqualTo("bar");
   }
 
-  @Property(key = "foo", name = "Foo", defaultValue = "bar")
+  @Property(getKey = "foo", name = "Foo", defaultValue = "bar")
   public static class MyComponent {
 
   }

@@ -25,11 +25,9 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
-import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 
 public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.analysis.api.Issue {
-  private final String severity;
-  private final String type;
   private final ActiveRuleAdapter activeRule;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
@@ -37,26 +35,14 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
   private final List<QuickFix> quickFixes;
   private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
-  public DefaultClientIssue(String severity, String type, ActiveRuleAdapter activeRule, String primaryMessage, @Nullable TextRange textRange,
+  public DefaultClientIssue(ActiveRuleAdapter activeRule, String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes) {
     this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
-    this.severity = severity;
-    this.type = type;
     this.activeRule = activeRule;
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
     this.flows = flows;
     this.quickFixes = quickFixes;
-  }
-
-  @Override
-  public String getSeverity() {
-    return severity;
-  }
-
-  @Override
-  public String getType() {
-    return type;
   }
 
   @Override
@@ -101,7 +87,6 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
     StringBuilder sb = new StringBuilder();
     sb.append("[");
     sb.append("rule=").append(activeRule.ruleKey());
-    sb.append(", severity=").append(severity);
     Integer startLine = getStartLine();
     if (startLine != null) {
       sb.append(", line=").append(startLine);

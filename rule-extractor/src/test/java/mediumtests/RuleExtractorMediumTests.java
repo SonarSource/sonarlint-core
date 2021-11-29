@@ -51,7 +51,7 @@ class RuleExtractorMediumTests {
       assertThat(allRules).hasSize(2863);
     } else {
       assertThat(allJars).hasSize(10);
-      assertThat(allRules).hasSize(707);
+      assertThat(allRules).hasSize(1199);
     }
 
   }

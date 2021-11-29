@@ -57,9 +57,9 @@ public class DefaultClientIssueTest {
   public void transformIssue() {
     InputComponent currentFile = mock(InputComponent.class);
     String currentFileKey = "currentFileKey";
-    when(currentFile.key()).thenReturn(currentFileKey);
+    when(currentFile.getKey()).thenReturn(currentFileKey);
     InputComponent anotherFile = mock(InputComponent.class);
-    when(anotherFile.key()).thenReturn("anotherFileKey");
+    when(anotherFile.getKey()).thenReturn("anotherFileKey");
 
     textRange = new DefaultTextRange(new DefaultTextPointer(1, 2), new DefaultTextPointer(2, 3));
 
@@ -73,7 +73,7 @@ public class DefaultClientIssueTest {
     assertThat(issue.getEndLineOffset()).isEqualTo(3);
 
     assertThat(issue.getMessage()).isEqualTo("msg");
-    assertThat(issue.getSeverity()).isEqualTo("MAJOR");
+    assertThat(issue.getOverridenSeverity()).isEqualTo("MAJOR");
     assertThat(issue.getInputFile()).isEqualTo(clientInputFile);
 
     assertThat(issue.getRuleName()).isEqualTo("name");

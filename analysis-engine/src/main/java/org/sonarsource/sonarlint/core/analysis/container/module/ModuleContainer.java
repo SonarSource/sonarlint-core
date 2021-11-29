@@ -33,6 +33,8 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Lan
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.progress.ProgressWrapper;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 
 public class ModuleContainer extends ComponentContainer {

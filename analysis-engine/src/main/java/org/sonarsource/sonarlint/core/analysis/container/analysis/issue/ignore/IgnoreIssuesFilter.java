@@ -32,7 +32,7 @@ import org.sonar.api.utils.WildcardPattern;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultFilterableIssue;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 
 public class IgnoreIssuesFilter implements IssueFilter {
 

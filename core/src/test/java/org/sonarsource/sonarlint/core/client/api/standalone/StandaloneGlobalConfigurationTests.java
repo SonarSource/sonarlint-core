@@ -37,7 +37,7 @@ class StandaloneGlobalConfigurationTests {
   void testDefaults() {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .build();
-    assertThat(config.getPluginUrls()).isEmpty();
+    assertThat(config.getPluginJarPaths()).isEmpty();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
@@ -76,7 +76,7 @@ class StandaloneGlobalConfigurationTests {
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
-    assertThat(config.getPluginUrls()).containsExactly(plugin1, plugin2, plugin3);
+    assertThat(config.getPluginJarPaths()).containsExactly(plugin1, plugin2, plugin3);
   }
 
   @Test

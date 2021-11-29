@@ -31,7 +31,7 @@ import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.rule.RuleKey;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Rules;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;

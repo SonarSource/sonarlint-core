@@ -43,11 +43,10 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Son
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultFlow;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.IssueFilters;
-import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRuleAdapter;
-import org.sonarsource.sonarlint.core.analysis.container.module.ActiveRulesAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 public class SonarLintSensorStorage implements SensorStorage {
 
@@ -86,15 +85,11 @@ public class SonarLintSensorStorage implements SensorStorage {
       return;
     }
 
-    String primaryMessage = defaultIfEmpty(sonarLintIssue.primaryLocation().message(), activeRule.getRuleName());
-    org.sonar.api.batch.rule.Severity overriddenSeverity = sonarLintIssue.overriddenSeverity();
-    String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
-    String type = activeRule.type();
-
+    String primaryMessage = sonarLintIssue.primaryLocation().message();
     List<org.sonarsource.sonarlint.core.analysis.api.Issue.Flow> flows = mapFlows(sonarLintIssue.flows());
     List<QuickFix> quickFixes = sonarLintIssue.quickFixes();
 
-    DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, primaryMessage, issue.primaryLocation().textRange(),
+    DefaultClientIssue newIssue = new DefaultClientIssue(activeRule, primaryMessage, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes);
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);

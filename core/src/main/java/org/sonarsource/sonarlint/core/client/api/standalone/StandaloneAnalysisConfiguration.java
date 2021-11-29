@@ -26,21 +26,20 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 @Immutable
 public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfiguration {
 
-  private final Collection<RuleKey> excludedRules;
-  private final Collection<RuleKey> includedRules;
-  private final Map<RuleKey, Map<String, String>> ruleParameters;
+  private final Collection<String> excludedRules;
+  private final Collection<String> includedRules;
+  private final Map<String, Map<String, String>> ruleParametersByRuleKeys;
   private final String toString;
 
   private StandaloneAnalysisConfiguration(Builder builder) {
     super(builder);
     this.excludedRules = builder.excludedRules;
     this.includedRules = builder.includedRules;
-    this.ruleParameters = builder.ruleParameters;
+    this.ruleParametersByRuleKeys = builder.ruleParameters;
     this.toString = generateToString();
   }
 
@@ -48,16 +47,16 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
     return new Builder();
   }
 
-  public Collection<RuleKey> excludedRules() {
+  public Collection<String> excludedRules() {
     return excludedRules;
   }
 
-  public Collection<RuleKey> includedRules() {
+  public Collection<String> includedRules() {
     return includedRules;
   }
 
-  public Map<RuleKey, Map<String, String>> ruleParameters() {
-    return ruleParameters;
+  public Map<String, Map<String, String>> ruleParameters() {
+    return ruleParametersByRuleKeys;
   }
 
   @Override
@@ -71,62 +70,62 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
     generateToStringCommon(sb);
     sb.append("  excludedRules: ").append(excludedRules).append("\n");
     sb.append("  includedRules: ").append(includedRules).append("\n");
-    sb.append("  ruleParameters: ").append(ruleParameters).append("\n");
+    sb.append("  ruleParameters: ").append(ruleParametersByRuleKeys).append("\n");
     generateToStringInputFiles(sb);
     sb.append("]\n");
     return sb.toString();
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
-    private final Collection<RuleKey> excludedRules = new ArrayList<>();
-    private final Collection<RuleKey> includedRules = new ArrayList<>();
-    private final Map<RuleKey, Map<String, String>> ruleParameters = new LinkedHashMap<>();
+    private final Collection<String> excludedRules = new ArrayList<>();
+    private final Collection<String> includedRules = new ArrayList<>();
+    private final Map<String, Map<String, String>> ruleParameters = new LinkedHashMap<>();
 
     private Builder() {
     }
 
-    public Builder addExcludedRules(RuleKey... excludedRules) {
-      Collections.addAll(this.excludedRules, excludedRules);
+    public Builder addExcludedRules(String... excludedRuleKeys) {
+      Collections.addAll(this.excludedRules, excludedRuleKeys);
       return this;
     }
 
-    public Builder addExcludedRules(Collection<? extends RuleKey> excludedRules) {
-      this.excludedRules.addAll(excludedRules);
+    public Builder addExcludedRules(Collection<String> excludedRuleKeys) {
+      this.excludedRules.addAll(excludedRuleKeys);
       return this;
     }
 
-    public Builder addExcludedRule(RuleKey excludedRule) {
-      this.excludedRules.add(excludedRule);
+    public Builder addExcludedRule(String excludedRuleKey) {
+      this.excludedRules.add(excludedRuleKey);
       return this;
     }
 
-    public Builder addIncludedRules(RuleKey... includedRules) {
-      Collections.addAll(this.includedRules, includedRules);
+    public Builder addIncludedRules(String... includedRuleKeys) {
+      Collections.addAll(this.includedRules, includedRuleKeys);
       return this;
     }
 
-    public Builder addIncludedRules(Collection<? extends RuleKey> includedRules) {
-      this.includedRules.addAll(includedRules);
+    public Builder addIncludedRules(Collection<String> includedRuleKeys) {
+      this.includedRules.addAll(includedRuleKeys);
       return this;
     }
 
-    public Builder addIncludedRule(RuleKey includedRule) {
-      this.includedRules.add(includedRule);
+    public Builder addIncludedRule(String includedRuleKey) {
+      this.includedRules.add(includedRuleKey);
       return this;
     }
 
-    public Builder addRuleParameter(RuleKey rule, String parameterKey, String parameterValue) {
-      this.ruleParameters.computeIfAbsent(rule, k -> new LinkedHashMap<>()).put(parameterKey, parameterValue);
+    public Builder addRuleParameter(String ruleKey, String parameterKey, String parameterValue) {
+      this.ruleParameters.computeIfAbsent(ruleKey, k -> new LinkedHashMap<>()).put(parameterKey, parameterValue);
       return this;
     }
 
-    public Builder addRuleParameters(RuleKey rule, Map<String, String> parameters) {
-      parameters.forEach((k, v) -> this.addRuleParameter(rule, k, v));
+    public Builder addRuleParameters(String ruleKey, Map<String, String> parameters) {
+      parameters.forEach((k, v) -> this.addRuleParameter(ruleKey, k, v));
       return this;
     }
 
-    public Builder addRuleParameters(Map<RuleKey, Map<String, String>> parameters) {
-      parameters.forEach(this::addRuleParameters);
+    public Builder addRuleParameters(Map<String, Map<String, String>> parametersByRuleKeys) {
+      parametersByRuleKeys.forEach(this::addRuleParameters);
       return this;
     }
 

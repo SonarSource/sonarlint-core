@@ -25,37 +25,19 @@ import java.util.Objects;
 
 public class ActiveRule {
 
-  private final RuleKey ruleKey;
-  private final String ruleName;
-  private final String severity;
-  private final String type;
+  private final String ruleKey;
   private final String languageKey;
   private Map<String, String> params = Collections.emptyMap();
   private String internalKey = null;
   private String templateRuleKey = null;
 
-  public ActiveRule(RuleKey ruleKey, String type, String severity, String ruleName, String languageKey) {
+  public ActiveRule(String ruleKey, String languageKey) {
     this.ruleKey = ruleKey;
-    this.ruleName = ruleName;
-    this.severity = severity;
-    this.type = type;
     this.languageKey = languageKey;
   }
 
-  public RuleKey getRuleKey() {
+  public String getRuleKey() {
     return ruleKey;
-  }
-
-  public String getRuleName() {
-    return ruleName;
-  }
-
-  public String getSeverity() {
-    return severity;
-  }
-
-  public String getType() {
-    return type;
   }
 
   public String getLanguageKey() {

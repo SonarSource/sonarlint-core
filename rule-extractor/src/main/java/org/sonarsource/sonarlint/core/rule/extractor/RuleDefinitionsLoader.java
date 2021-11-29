@@ -29,7 +29,7 @@ public class RuleDefinitionsLoader {
 
   public RuleDefinitionsLoader() {
     // No plugin installed
-    context = new RulesDefinition.Context();
+    context = new SonarLintRulesDefinitionContext();
   }
 
   public RuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
