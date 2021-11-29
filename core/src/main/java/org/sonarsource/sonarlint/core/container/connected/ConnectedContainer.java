@@ -59,8 +59,6 @@ import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 import org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
@@ -120,8 +118,6 @@ public class ConnectedContainer extends ComponentContainer {
       IssueApi.class,
       SourceApi.class,
       IssueStoreFactory.class,
-      new PluginCacheProvider(),
-      PluginHashes.class,
       ProjectStoragePaths.class,
       StorageReader.class,
       ProjectStorageStatusReader.class);

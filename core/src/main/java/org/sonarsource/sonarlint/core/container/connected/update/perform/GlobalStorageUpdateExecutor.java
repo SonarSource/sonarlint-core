@@ -44,7 +44,6 @@ import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.container.storage.StorageStatusStore;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -54,7 +53,6 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 public class GlobalStorageUpdateExecutor {
 
   private final ServerStorage serverStorage;
-  private final PluginCache pluginCache;
   private final ConnectedGlobalConfiguration connectedGlobalConfiguration;
   private final TempFolder tempFolder;
   private final ServerApiHelper serverApiHelper;
@@ -62,12 +60,11 @@ public class GlobalStorageUpdateExecutor {
   private final PluginListDownloader pluginListDownloader;
 
   public GlobalStorageUpdateExecutor(ServerStorage serverStorage, ServerApiHelper serverApiHelper, ServerVersionAndStatusChecker statusChecker,
-    PluginCache pluginCache, PluginListDownloader pluginListDownloader, ConnectedGlobalConfiguration connectedGlobalConfiguration,
+    PluginListDownloader pluginListDownloader, ConnectedGlobalConfiguration connectedGlobalConfiguration,
     TempFolder tempFolder) {
     this.serverStorage = serverStorage;
     this.serverApiHelper = serverApiHelper;
     this.statusChecker = statusChecker;
-    this.pluginCache = pluginCache;
     this.pluginListDownloader = pluginListDownloader;
     this.connectedGlobalConfiguration = connectedGlobalConfiguration;
     this.tempFolder = tempFolder;

@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;

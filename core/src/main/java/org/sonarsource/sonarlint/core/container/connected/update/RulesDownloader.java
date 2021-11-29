@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Set;
-import org.sonarsource.sonarlint.core.analysis.api.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;

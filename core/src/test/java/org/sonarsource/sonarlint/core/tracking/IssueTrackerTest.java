@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.ExtendedIssue;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -152,8 +152,8 @@ public class IssueTrackerTest {
     return new MockTrackableBuilder();
   }
 
-  private Issue mockIssue() {
-    Issue issue = mock(Issue.class);
+  private ExtendedIssue mockIssue() {
+    ExtendedIssue issue = mock(ExtendedIssue.class);
     when(issue.getRuleKey()).thenReturn("dummy ruleKey");
     when(issue.getMessage()).thenReturn("dummy message");
     return issue;
@@ -349,10 +349,10 @@ public class IssueTrackerTest {
     String lineContent = "dummy content";
     int newLine = 7;
 
-    Issue issue = mockIssue();
+    ExtendedIssue issue = mockIssue();
     when(issue.getStartLine()).thenReturn(newLine + 3);
 
-    Issue movedIssue = mockIssue();
+    ExtendedIssue movedIssue = mockIssue();
     when(movedIssue.getStartLine()).thenReturn(newLine);
 
     Trackable trackable = new IssueTrackable(issue, mock(TextRange.class), null, lineContent);
@@ -386,7 +386,7 @@ public class IssueTrackerTest {
     int newLine = 7;
     String serverIssueKey = "dummy serverIssueKey";
 
-    Issue issue = mock(Issue.class);
+    ExtendedIssue issue = mock(ExtendedIssue.class);
     when(issue.getRuleKey()).thenReturn(ruleKey);
     when(issue.getMessage()).thenReturn(message);
     when(issue.getStartLine()).thenReturn(newLine);

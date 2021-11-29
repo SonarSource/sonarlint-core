@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.analysis.exceptions.SonarLintWrappedException;

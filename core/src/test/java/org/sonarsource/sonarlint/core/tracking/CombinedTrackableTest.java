@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 
 public class CombinedTrackableTest {
   @Test
@@ -45,7 +45,6 @@ public class CombinedTrackableTest {
     assertThat(combined.getMessage()).isEqualTo("nextMessage");
     assertThat(combined.getLineHash()).isEqualTo(1);
     assertThat(combined.getRuleKey()).isEqualTo("nextRuleKey");
-    assertThat(combined.getRuleName()).isEqualTo("nextRuleName");
     assertThat(combined.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(combined.getTextRangeHash()).isEqualTo(1);
   }
@@ -58,7 +57,6 @@ public class CombinedTrackableTest {
     when(t.getLineHash()).thenReturn(number);
     when(t.getMessage()).thenReturn(name + "Message");
     when(t.getRuleKey()).thenReturn(name + "RuleKey");
-    when(t.getRuleName()).thenReturn(name + "RuleName");
     when(t.getServerIssueKey()).thenReturn(name + "ServerIssueKey");
     when(t.getSeverity()).thenReturn(name + "Severity");
     when(t.getTextRangeHash()).thenReturn(number);

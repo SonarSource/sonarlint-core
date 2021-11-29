@@ -31,7 +31,7 @@ import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-class GlobalAnalysisConfigurationTests {
+class AnalysisEngineConfigurationTests {
 
   @Test
   void testDefaults() {
@@ -67,7 +67,6 @@ class GlobalAnalysisConfigurationTests {
 
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
-    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
     Path work = createDirectory(temp.resolve("work"));
     AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .setWorkDir(work)

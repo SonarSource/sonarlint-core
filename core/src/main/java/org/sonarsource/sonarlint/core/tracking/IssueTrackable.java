@@ -21,22 +21,23 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.ExtendedIssue;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
 public class IssueTrackable implements Trackable {
 
-  private final Issue issue;
+  private final ExtendedIssue issue;
   private final TextRange textRange;
   private final Integer textRangeHash;
   private final Integer lineHash;
 
-  public IssueTrackable(Issue issue) {
+  public IssueTrackable(ExtendedIssue issue) {
     this(issue, null, null, null);
   }
 
-  public IssueTrackable(Issue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
+  public IssueTrackable(ExtendedIssue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
     this.issue = issue;
     this.textRange = textRange;
     this.textRangeHash = hashOrNull(textRangeContent);
@@ -58,13 +59,8 @@ public class IssueTrackable implements Trackable {
   }
 
   @Override
-  public String getRuleName() {
-    return issue.getRuleName();
-  }
-
-  @Override
   public String getSeverity() {
-    return issue.getOverridenSeverity();
+    return issue.getSeverity();
   }
 
   @Override

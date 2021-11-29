@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+package org.sonarsource.sonarlint.core.analysis.container.module;
 
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;

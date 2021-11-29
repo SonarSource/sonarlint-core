@@ -34,11 +34,6 @@ import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.plugin.common.Version;
 import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 
-/**
- * To use SonarLint in connected mode please provide a server id that will identify the storage.
- * To use in standalone mode please provide list of plugin URLs.
- *
- */
 @Immutable
 public abstract class AbstractGlobalConfiguration {
 

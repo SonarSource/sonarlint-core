@@ -20,12 +20,11 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.Collections;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
@@ -34,23 +33,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultClientIssueTest {
-  @Mock
+class IssueTests {
   private ActiveRuleAdapter activeRule;
-  @Mock
   private TextRange textRange;
-  @Mock
   private ClientInputFile clientInputFile;
 
   private Issue issue;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
+    activeRule = mock(ActiveRuleAdapter.class);
+    when(activeRule.ruleKey()).thenReturn(RuleKey.parse("foo:S123"));
+
+    textRange = mock(TextRange.class);
+    clientInputFile = mock(ClientInputFile.class);
   }
 
   @Test
-  public void transformIssue() {
+  void transformIssue() {
     InputComponent currentFile = mock(InputComponent.class);
     String currentFileKey = "currentFileKey";
     when(currentFile.key()).thenReturn(currentFileKey);
@@ -58,8 +58,6 @@ public class DefaultClientIssueTest {
     when(anotherFile.key()).thenReturn("anotherFileKey");
 
     textRange = new DefaultTextRange(new DefaultTextPointer(1, 2), new DefaultTextPointer(2, 3));
-
-    when(activeRule.getRuleName()).thenReturn("name");
 
     issue = new Issue(activeRule, "msg", textRange, clientInputFile, Collections.emptyList(), Collections.emptyList());
 
@@ -71,11 +69,11 @@ public class DefaultClientIssueTest {
     assertThat(issue.getMessage()).isEqualTo("msg");
     assertThat(issue.getInputFile()).isEqualTo(clientInputFile);
 
-    assertThat(issue.getRuleName()).isEqualTo("name");
+    assertThat(issue.getRuleKey()).isEqualTo("foo:S123");
   }
 
   @Test
-  public void nullRange() {
+  void nullRange() {
     issue = new Issue(activeRule, "msg", null, null, Collections.emptyList(), Collections.emptyList());
 
     assertThat(issue.getStartLine()).isNull();

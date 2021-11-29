@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 
-public interface ServerIssueLocation extends IssueRangeAndMessage {
+public interface ServerIssueLocation {
 
   /**
    * @return null for global issues
@@ -35,4 +35,37 @@ public interface ServerIssueLocation extends IssueRangeAndMessage {
    */
   @CheckForNull
   String getCodeSnippet();
+
+  /**
+   * @return null for file level issues
+   */
+  @CheckForNull
+  TextRange getTextRange();
+
+  @CheckForNull
+  String getMessage();
+
+  @CheckForNull
+  default Integer getStartLine() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getStartLine() : null;
+  }
+
+  @CheckForNull
+  default Integer getStartLineOffset() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getStartLineOffset() : null;
+  }
+
+  @CheckForNull
+  default Integer getEndLine() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getEndLine() : null;
+  }
+
+  @CheckForNull
+  default Integer getEndLineOffset() {
+    TextRange textRange = getTextRange();
+    return textRange != null ? textRange.getEndLineOffset() : null;
+  }
 }

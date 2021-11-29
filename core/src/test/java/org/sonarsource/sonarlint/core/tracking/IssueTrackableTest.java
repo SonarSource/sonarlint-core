@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.client.api.common.ExtendedIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -29,7 +29,7 @@ import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
 public class IssueTrackableTest {
 
-  private final Issue issue = mock(Issue.class);
+  private final ExtendedIssue issue = mock(ExtendedIssue.class);
 
   @Test
   public void should_have_null_content_hashes_when_constructed_without_content_info() {
@@ -62,15 +62,12 @@ public class IssueTrackableTest {
 
   @Test
   public void should_delegate_fields_to_issue() {
-    String ruleName = "dummy rule";
-    when(issue.getRuleName()).thenReturn(ruleName);
 
     String severity = "dummy severity";
-    when(issue.getOverridenSeverity()).thenReturn(severity);
+    when(issue.getSeverity()).thenReturn(severity);
 
     IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
     assertThat(trackable.getIssue()).isEqualTo(issue);
-    assertThat(trackable.getRuleName()).isEqualTo(ruleName);
     assertThat(trackable.getSeverity()).isEqualTo(severity);
   }
 }

@@ -20,36 +20,41 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.TextRangeUtils;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 
-public final class Issue implements IssueLocation {
-  private final ActiveRuleAdapter activeRule;
+public class Issue implements IssueLocation {
+  private final String ruleKey;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
   private final List<DefaultFlow> flows;
   private final List<QuickFix> quickFixes;
-  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
+  private final TextRange textRange;
 
-  public Issue(ActiveRuleAdapter activeRule, String primaryMessage, @Nullable TextRange textRange,
+  public Issue(ActiveRuleAdapter activeRule, String primaryMessage, @Nullable org.sonar.api.batch.fs.TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<DefaultFlow> flows, List<QuickFix> quickFixes) {
-    this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
-    this.activeRule = activeRule;
+    this(activeRule.ruleKey().toString(), primaryMessage, Optional.ofNullable(textRange).map(TextRangeUtils::convert).orElse(null), clientInputFile, flows, quickFixes);
+  }
+
+  public Issue(String ruleKey, String primaryMessage, @Nullable TextRange textRange,
+    @Nullable ClientInputFile clientInputFile, List<DefaultFlow> flows, List<QuickFix> quickFixes) {
+    this.textRange = textRange;
+    this.ruleKey = ruleKey;
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
     this.flows = flows;
     this.quickFixes = quickFixes;
   }
 
-  public String getRuleName() {
-    return activeRule.getRuleName();
+  public Issue(Issue another) {
+    this(another.ruleKey, another.primaryMessage, another.textRange, another.clientInputFile, another.flows, another.quickFixes);
   }
 
   public String getRuleKey() {
-    return activeRule.ruleKey().toString();
+    return ruleKey;
   }
 
   @Override
@@ -73,7 +78,7 @@ public final class Issue implements IssueLocation {
 
   @Override
   @CheckForNull
-  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
+  public TextRange getTextRange() {
     return textRange;
   }
 
@@ -81,7 +86,7 @@ public final class Issue implements IssueLocation {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[");
-    sb.append("rule=").append(activeRule.ruleKey());
+    sb.append("rule=").append(ruleKey);
     if (textRange != null) {
       Integer startLine = textRange.getStartLine();
       if (startLine != null) {

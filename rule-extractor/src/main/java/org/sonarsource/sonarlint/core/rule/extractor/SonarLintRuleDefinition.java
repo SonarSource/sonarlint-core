@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
@@ -37,7 +37,7 @@ public class SonarLintRuleDefinition {
   private final String key;
   private final String name;
   private final String severity;
-  private final RuleType type;
+  private final String type;
   private final String description;
   private final String internalKey;
   private final Map<String, SonarLintRuleParamDefinition> params;
@@ -50,7 +50,7 @@ public class SonarLintRuleDefinition {
     this.key = RuleKey.of(rule.repository().key(), rule.key()).toString();
     this.name = rule.name();
     this.severity = rule.severity();
-    this.type = rule.type();
+    this.type = rule.type().toString();
     this.description = requireNonNull(rule.htmlDescription(), "HTML description is mandatory in SonarLint");
     this.internalKey = rule.internalKey();
     this.isActiveByDefault = rule.activatedByDefault();
@@ -77,7 +77,7 @@ public class SonarLintRuleDefinition {
     return severity;
   }
 
-  public RuleType getType() {
+  public String getType() {
     return type;
   }
 
@@ -107,6 +107,23 @@ public class SonarLintRuleDefinition {
 
   public Set<String> getDeprecatedKeys() {
     return deprecatedKeys;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(key);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof SonarLintRuleDefinition)) {
+      return false;
+    }
+    SonarLintRuleDefinition other = (SonarLintRuleDefinition) obj;
+    return Objects.equals(key, other.key);
   }
 
 }

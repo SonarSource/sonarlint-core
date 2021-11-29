@@ -25,7 +25,6 @@ import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 public class AbstractTrackable implements Trackable {
   protected Issue issue;
   protected String ruleKey;
-  protected String ruleName;
   protected String severity;
   protected String type;
   protected String message;
@@ -42,7 +41,6 @@ public class AbstractTrackable implements Trackable {
     // copy fieds instead of using given trackable to avoid always increase level of proxying
     this.issue = trackable.getIssue();
     this.ruleKey = trackable.getRuleKey();
-    this.ruleName = trackable.getRuleName();
     this.severity = trackable.getSeverity();
     this.type = trackable.getType();
     this.message = trackable.getMessage();
@@ -64,11 +62,6 @@ public class AbstractTrackable implements Trackable {
   @Override
   public String getRuleKey() {
     return ruleKey;
-  }
-
-  @Override
-  public String getRuleName() {
-    return ruleName;
   }
 
   @Override

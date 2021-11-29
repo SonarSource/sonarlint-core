@@ -28,7 +28,7 @@ import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 /**
- * To use in standalone mode please provide list of plugin URLs.
+ * In standalone mode the client provides the list of plugin paths.
  */
 @Immutable
 public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {

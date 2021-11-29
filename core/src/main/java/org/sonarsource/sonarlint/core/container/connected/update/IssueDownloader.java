@@ -82,7 +82,7 @@ public class IssueDownloader {
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
       if (IssueApi.TAINT_REPOS.contains(batchIssue.getRuleRepository())) {
         if (NON_CLOSED_STATUSES.contains(batchIssue.getStatus())) {
-          taintRuleKeys.add(new org.sonarsource.sonarlint.core.client.api.common.RuleKey(batchIssue.getRuleRepository(), batchIssue.getRuleKey()).toString());
+          taintRuleKeys.add(RuleKey.of(batchIssue.getRuleRepository(), batchIssue.getRuleKey()).toString());
         }
       } else {
         result.add(toStorageIssue(batchIssue, projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder));

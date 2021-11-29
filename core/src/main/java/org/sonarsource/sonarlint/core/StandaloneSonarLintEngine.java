@@ -33,8 +33,9 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.ExtendedIssue;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -89,7 +90,8 @@ public final class StandaloneSonarLintEngine extends AbstractSonarLintEngine {
     return allRulesDefinitionsByKey.values();
   }
 
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, Consumer<ExtendedIssue> issueListener, @Nullable LogOutput logOutput,
+    @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
 
@@ -126,11 +128,7 @@ public final class StandaloneSonarLintEngine extends AbstractSonarLintEngine {
       .setBaseDir(configuration.baseDir())
       .setModuleId(configuration.moduleId())
       .build();
-    return analysisEngine.analyze(analysisConfig, issueListener, null, null);
-  }
-
-  public static class ExtendedIssue implements Issue {
-
+    return analysisEngine.analyze(analysisConfig, i -> issueListener.accept(new ExtendedIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))), null, null);
   }
 
   private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
