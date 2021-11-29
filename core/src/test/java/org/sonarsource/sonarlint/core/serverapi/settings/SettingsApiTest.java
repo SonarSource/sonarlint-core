@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.serverapi.settings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Settings;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;

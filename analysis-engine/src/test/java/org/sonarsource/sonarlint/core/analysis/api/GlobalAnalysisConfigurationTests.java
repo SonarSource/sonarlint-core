@@ -35,7 +35,7 @@ class GlobalAnalysisConfigurationTests {
 
   @Test
   void testDefaults() {
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .build();
     assertThat(config.getPluginsJarPaths()).isEmpty();
     assertThat(config.getWorkDir()).isNull();
@@ -48,7 +48,7 @@ class GlobalAnalysisConfigurationTests {
   void extraProps() throws Exception {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.extraProperties()).containsOnly(entry("foo", "bar"));
@@ -58,7 +58,7 @@ class GlobalAnalysisConfigurationTests {
   void effectiveConfig_should_add_nodejs() throws Exception {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .setExtraProperties(extraProperties)
       .setNodeJs(Paths.get("nodejsPath"), null)
       .build();
@@ -69,7 +69,7 @@ class GlobalAnalysisConfigurationTests {
   void overrideDirs(@TempDir Path temp) throws Exception {
     Path sonarUserHome = createDirectory(temp.resolve("userHome"));
     Path work = createDirectory(temp.resolve("work"));
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .setWorkDir(work)
       .build();
     assertThat(config.getWorkDir()).isEqualTo(work);
@@ -80,7 +80,7 @@ class GlobalAnalysisConfigurationTests {
     Path plugin1 = Paths.get("plugin1.jar");
     Path plugin2 = Paths.get("plugin2.jar");
     Path plugin3 = Paths.get("plugin3.jar");
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
@@ -89,7 +89,7 @@ class GlobalAnalysisConfigurationTests {
 
   @Test
   void configureLanguages() throws Exception {
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)
       .build();
@@ -98,7 +98,7 @@ class GlobalAnalysisConfigurationTests {
 
   @Test
   void providePid() {
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder().setClientPid(123).build();
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

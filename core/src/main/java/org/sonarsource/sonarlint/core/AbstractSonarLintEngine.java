@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
@@ -40,7 +40,7 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
     this.logOutput = logOutput;
   }
 
-  protected void startAnalysisEngine(GlobalAnalysisConfiguration analysisGlobalConfig) {
+  protected void startAnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig) {
     analysisEngine = new AnalysisEngine(analysisGlobalConfig);
   }
 

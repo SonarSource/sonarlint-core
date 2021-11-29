@@ -32,7 +32,6 @@ import org.sonarqube.ws.Components;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Rules;
 import org.sonarqube.ws.Settings;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
@@ -45,6 +44,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+import testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;

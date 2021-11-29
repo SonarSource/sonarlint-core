@@ -27,10 +27,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.plugin.common.Language;
+import testutils.TestClientInputFile;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,16 +49,16 @@ class StandaloneAnalysisConfigurationTests {
     ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, Language.JAVA);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, Language.PHP);
     Path baseDir = createDirectory(temp.resolve("baseDir"));
-    Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
-    Collection<RuleKey> includedRules = Arrays.asList(new RuleKey("javascript", "S2424"), new RuleKey("javascript", "S1442"));
+    Collection<String> excludedRules = Arrays.asList("squid:S1135", "squid:S1181");
+    Collection<String> includedRules = Arrays.asList("javascript:S2424", "javascript:S1442");
     Map<String, String> squidS5Parameters = new HashMap<>();
     squidS5Parameters.put("s5param1", "s5value1");
     squidS5Parameters.put("s5param2", "s5value2");
     Map<String, String> squidS6Parameters = new HashMap<>();
     squidS6Parameters.put("s6param1", "s6value1");
     squidS6Parameters.put("s6param2", "s6value2");
-    Map<RuleKey, Map<String, String>> ruleParameters = new HashMap<>();
-    ruleParameters.put(RuleKey.parse("squid:S6"), squidS6Parameters);
+    Map<String, Map<String, String>> ruleParameters = new HashMap<>();
+    ruleParameters.put("squid:S6", squidS6Parameters);
     StandaloneAnalysisConfiguration config = StandaloneAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
@@ -68,13 +67,13 @@ class StandaloneAnalysisConfigurationTests {
       .putAllExtraProperties(props)
       .putExtraProperty("sonar.foo", "bar")
       .addExcludedRules(excludedRules)
-      .addExcludedRule(RuleKey.parse("squid:S1"))
-      .addExcludedRules(RuleKey.parse("squid:S2"), RuleKey.parse("squid:S3"))
+      .addExcludedRule("squid:S1")
+      .addExcludedRules("squid:S2", "squid:S3")
       .addIncludedRules(includedRules)
-      .addIncludedRule(RuleKey.parse("squid:I1"))
-      .addIncludedRules(RuleKey.parse("squid:I2"), RuleKey.parse("squid:I3"))
-      .addRuleParameter(RuleKey.parse("squid:S4"), "param1", "value1")
-      .addRuleParameters(RuleKey.parse("squid:S5"), squidS5Parameters)
+      .addIncludedRule("squid:I1")
+      .addIncludedRules("squid:I2", "squid:I3")
+      .addRuleParameter("squid:S4", "param1", "value1")
+      .addRuleParameters("squid:S5", squidS5Parameters)
       .addRuleParameters(ruleParameters)
       .build();
     assertThat(config.toString()).isEqualTo("[\n" +
@@ -93,8 +92,8 @@ class StandaloneAnalysisConfigurationTests {
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, inputFileWithLanguage, testInputFile);
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"), entry("sonar.foo", "bar"));
-    assertThat(config.excludedRules()).extracting(RuleKey::toString).containsExactly("squid:S1135", "squid:S1181", "squid:S1", "squid:S2", "squid:S3");
-    assertThat(config.includedRules()).extracting(RuleKey::toString).containsExactly("javascript:S2424", "javascript:S1442", "squid:I1", "squid:I2", "squid:I3");
-    assertThat(config.ruleParameters()).containsKeys(RuleKey.parse("squid:S4"), RuleKey.parse("squid:S5"), RuleKey.parse("squid:S6"));
+    assertThat(config.excludedRules()).containsExactly("squid:S1135", "squid:S1181", "squid:S1", "squid:S2", "squid:S3");
+    assertThat(config.includedRules()).containsExactly("javascript:S2424", "javascript:S1442", "squid:I1", "squid:I2", "squid:I3");
+    assertThat(config.ruleParameters()).containsKeys("squid:S4", "squid:S5", "squid:S6");
   }
 }

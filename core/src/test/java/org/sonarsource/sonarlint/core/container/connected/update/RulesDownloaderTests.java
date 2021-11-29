@@ -30,7 +30,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -42,6 +41,7 @@ import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

@@ -21,11 +21,14 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import javax.annotation.CheckForNull;
 
-public interface IssueLocation extends IssueRangeAndMessage {
+public interface IssueLocation extends WithTextRange {
 
   /**
    * @return null for global issues
    */
   @CheckForNull
   ClientInputFile getInputFile();
+
+  @CheckForNull
+  String getMessage();
 }

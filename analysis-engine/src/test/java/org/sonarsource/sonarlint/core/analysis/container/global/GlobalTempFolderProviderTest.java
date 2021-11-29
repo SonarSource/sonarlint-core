@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +44,7 @@ public class GlobalTempFolderProviderTest {
   public void createTempFolderProps() throws Exception {
     File workingDir = temp.newFolder();
 
-    TempFolder tempFolder = tempFolderProvider.provide(GlobalAnalysisConfiguration.builder().setWorkDir(workingDir.toPath()).build());
+    TempFolder tempFolder = tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir.toPath()).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();
@@ -64,7 +64,7 @@ public class GlobalTempFolderProviderTest {
       setFileCreationDate(tmp, creationTime);
     }
 
-    tempFolderProvider.provide(GlobalAnalysisConfiguration.builder().setWorkDir(workingDir.toPath()).build());
+    tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir.toPath()).build());
     // this also checks that all other temps were deleted
     assertThat(getCreatedTempDir(workingDir)).exists();
 
@@ -75,7 +75,7 @@ public class GlobalTempFolderProviderTest {
   public void createWorkingDir() throws Exception {
     File workingDir = temp.newFolder();
 
-    TempFolder tempFolder = tempFolderProvider.provide(GlobalAnalysisConfiguration.builder().setWorkDir(workingDir.toPath()).build());
+    TempFolder tempFolder = tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir.toPath()).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();

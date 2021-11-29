@@ -52,7 +52,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.check.QualityPr
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
@@ -97,7 +96,6 @@ public class ConnectedContainer extends ComponentContainer {
       globalStores.getQualityProfileStore(),
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
-      PluginVersionChecker.class,
       new ServerApiHelper(endpoint, client),
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,

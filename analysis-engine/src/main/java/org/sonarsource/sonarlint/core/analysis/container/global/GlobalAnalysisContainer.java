@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.analysis.container.global;
 import java.util.Map;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.Version;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.plugin.common.ApiVersions;
@@ -36,10 +36,10 @@ import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 public class GlobalAnalysisContainer extends ComponentContainer {
 
   private final ModuleRegistry moduleRegistry;
-  private final GlobalAnalysisConfiguration globalConfig;
+  private final AnalysisEngineConfiguration globalConfig;
   private Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
-  public GlobalAnalysisContainer(GlobalAnalysisConfiguration globalConfig) {
+  public GlobalAnalysisContainer(AnalysisEngineConfiguration globalConfig) {
     this.globalConfig = globalConfig;
     this.moduleRegistry = new ModuleRegistry(this, globalConfig.getClientFileSystem());
   }

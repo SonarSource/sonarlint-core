@@ -19,21 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import java.util.Optional;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultClientIssue;
 
 public class DefaultFilterableIssue implements FilterableIssue {
-  private final DefaultClientIssue rawIssue;
+  private final Issue rawIssue;
   private final InputComponent component;
 
-  public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent component) {
+  public DefaultFilterableIssue(Issue rawIssue, InputComponent component) {
     this.rawIssue = rawIssue;
     this.component = component;
   }
@@ -60,7 +61,9 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public Integer line() {
-    return rawIssue.getStartLine();
+    return Optional.ofNullable(rawIssue.getTextRange())
+      .map(org.sonarsource.sonarlint.core.analysis.api.TextRange::getStartLine)
+      .orElse(null);
   }
 
   @Override

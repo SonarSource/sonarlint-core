@@ -33,7 +33,7 @@ import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 
 public class GlobalTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
 
@@ -44,7 +44,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
 
   private GlobalTempFolder tempFolder;
 
-  public GlobalTempFolder provide(GlobalAnalysisConfiguration globalConfiguration) {
+  public GlobalTempFolder provide(AnalysisEngineConfiguration globalConfiguration) {
     if (tempFolder == null) {
 
       Path workingPath = globalConfiguration.getWorkDir();

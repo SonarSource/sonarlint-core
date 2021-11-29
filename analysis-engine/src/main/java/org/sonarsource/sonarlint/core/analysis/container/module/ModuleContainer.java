@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisContainer;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
@@ -63,7 +63,7 @@ public class ModuleContainer extends ComponentContainer {
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressWrapper progressWrapper) {
     AnalysisContainer analysisContainer = new AnalysisContainer(this, configuration);
     analysisContainer.add(progressWrapper);
-    analysisContainer.add(new IssueListener(issueListener));
+    analysisContainer.add(new IssueListenerHolder(issueListener));
     AnalysisResults analysisResult = new AnalysisResults();
     analysisContainer.add(analysisResult);
     analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).collect(Collectors.toList())));

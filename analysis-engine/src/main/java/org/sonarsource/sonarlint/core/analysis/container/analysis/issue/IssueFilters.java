@@ -24,6 +24,7 @@ import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 
 @SonarLintSide
@@ -38,7 +39,7 @@ public class IssueFilters {
     this(new IssueFilter[0]);
   }
 
-  public boolean accept(InputComponent inputComponent, DefaultClientIssue rawIssue) {
+  public boolean accept(InputComponent inputComponent, Issue rawIssue) {
     IssueFilterChain filterChain = new DefaultIssueFilterChain(filters);
     FilterableIssue fIssue = new DefaultFilterableIssue(rawIssue, inputComponent);
     return filterChain.accept(fIssue);

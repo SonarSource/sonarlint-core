@@ -37,8 +37,8 @@ import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -60,7 +60,7 @@ public class ConnectedIssueExclusionsMediumTest {
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
 
-    GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration.Builder configBuilder = AnalysisEngineConfiguration.builder()
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addEnabledLanguages(Language.JAVA)
       .setWorkDir(slHome);

@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
+import org.sonarsource.sonarlint.core.plugin.common.Version;
 import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 
 /**

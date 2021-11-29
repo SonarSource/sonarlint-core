@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import testutils.TestUtils;
 
@@ -47,7 +47,7 @@ class StandaloneNoPluginMediumTests {
 
   @BeforeEach
   public void prepare(@TempDir Path tmp) throws IOException {
-    sonarlint = new AnalysisEngine(GlobalAnalysisConfiguration.builder()
+    sonarlint = new AnalysisEngine(AnalysisEngineConfiguration.builder()
       .setClientFileSystem(mock(ClientFileSystem.class))
       .build());
 

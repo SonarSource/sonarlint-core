@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.module.SonarLintApiModuleFileSystemAdapter;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
@@ -126,7 +126,7 @@ class StandaloneIssueMediumTests {
     NodeJsHelper nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration.Builder configBuilder = AnalysisEngineConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())

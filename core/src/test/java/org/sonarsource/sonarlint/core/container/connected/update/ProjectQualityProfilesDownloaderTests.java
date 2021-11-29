@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
+import testutils.MockWebServerExtension;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

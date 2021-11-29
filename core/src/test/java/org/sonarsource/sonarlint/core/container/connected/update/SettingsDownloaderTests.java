@@ -26,11 +26,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.Values;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
+import testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;

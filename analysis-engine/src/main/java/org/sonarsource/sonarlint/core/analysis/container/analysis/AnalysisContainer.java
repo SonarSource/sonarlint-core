@@ -27,7 +27,7 @@ import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
@@ -128,7 +128,7 @@ public class AnalysisContainer extends ComponentContainer {
 
   private MapSettings buildAnalysisSettings(AnalysisConfiguration analysisConfig) {
     Map<String, String> props = new HashMap<>();
-    props.putAll(getParent().getComponentByType(GlobalAnalysisConfiguration.class).getEffectiveConfig());
+    props.putAll(getParent().getComponentByType(AnalysisEngineConfiguration.class).getEffectiveConfig());
     props.putAll(analysisConfig.extraProperties());
     return new MapSettings(getPropertyDefinitions(), props);
   }

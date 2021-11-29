@@ -35,7 +35,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -54,7 +54,7 @@ public class LogMediumTest {
   @Before
   public void prepare() throws IOException {
     logs = new ConcurrentHashMap<>();
-    GlobalAnalysisConfiguration config = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .setLogOutput(createLogOutput(logs))
       .build();

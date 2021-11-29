@@ -29,8 +29,8 @@ import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Organizations;
 import org.sonarqube.ws.Organizations.Organization;
 import org.sonarqube.ws.Organizations.SearchWsResponse;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

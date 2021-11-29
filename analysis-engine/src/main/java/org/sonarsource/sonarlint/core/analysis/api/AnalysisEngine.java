@@ -40,10 +40,10 @@ public class AnalysisEngine {
 
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final LogOutput logOutput;
-  private final GlobalAnalysisConfiguration globalConfig;
+  private final AnalysisEngineConfiguration globalConfig;
   private GlobalAnalysisContainer globalContainer;
 
-  public AnalysisEngine(GlobalAnalysisConfiguration globalConfig) {
+  public AnalysisEngine(AnalysisEngineConfiguration globalConfig) {
     this.logOutput = globalConfig.getLogOutput();
     this.globalConfig = globalConfig;
     start();
@@ -111,7 +111,8 @@ public class AnalysisEngine {
     }
   }
 
-  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput,
+    @Nullable ProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
     setLogging(logOutput);

@@ -28,8 +28,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Components.Component;
 import org.sonarqube.ws.Components.TreeWsResponse;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;

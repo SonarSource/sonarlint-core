@@ -32,7 +32,7 @@ import org.sonar.api.utils.Version;
 import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.plugin.common.PluginInstancesRepository;
@@ -68,7 +68,7 @@ class AnalysisExtensionInstallerTests {
   public void prepare() {
     pluginRepository = mock(PluginInstancesRepository.class);
     container = mock(ComponentContainer.class);
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, GlobalAnalysisConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder().build());
   }
 
   @Test
@@ -156,7 +156,7 @@ class AnalysisExtensionInstallerTests {
   void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, GlobalAnalysisConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -168,7 +168,7 @@ class AnalysisExtensionInstallerTests {
   void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, GlobalAnalysisConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.JS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -182,7 +182,7 @@ class AnalysisExtensionInstallerTests {
   void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, GlobalAnalysisConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -195,7 +195,7 @@ class AnalysisExtensionInstallerTests {
     PluginStoringSonarLintPluginApiVersion pluginInstance = new PluginStoringSonarLintPluginApiVersion();
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, GlobalAnalysisConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder().build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 

@@ -19,11 +19,14 @@
  */
 package mediumtests;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
@@ -37,14 +40,18 @@ class RuleExtractorMediumTests {
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
+  private static Set<Path> allJars;
+
+  @BeforeAll
+  public static void prepare() throws IOException {
+    Path dir = Paths.get("target/plugins/");
+    allJars = Files.list(dir)
+      .filter(x -> x.getFileName().toString().endsWith(".jar"))
+      .collect(toSet());
+  }
 
   @Test
   void extractAllRules() throws Exception {
-    Path dir = Paths.get("target/plugins/");
-    Set<Path> allJars = Files.list(dir)
-      .filter(x -> x.getFileName().toString().endsWith(".jar"))
-      .collect(toSet());
-
     List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(allJars, Set.of(Language.values()));
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
@@ -53,7 +60,23 @@ class RuleExtractorMediumTests {
       assertThat(allJars).hasSize(10);
       assertThat(allRules).hasSize(1199);
     }
+  }
 
+  @Test
+  void onlyLoadRulesOfEnabledLanguages() throws Exception {
+    Set<Language> enabledLanguages = EnumSet.of(
+      Language.JAVA,
+      Language.JS,
+      Language.PHP,
+      Language.PYTHON,
+      Language.TS);
+
+    if (COMMERCIAL_ENABLED) {
+      enabledLanguages.add(Language.C);
+    }
+    List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(allJars, Set.of(Language.values()));
+
+    assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
   }
 
 }

@@ -23,9 +23,9 @@ import org.junit.Test;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +36,7 @@ public class DefaultFilterableIssueTest {
   @Test
   public void delegate_textRange_to_rawIssue() {
     TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
-    DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, textRange, null, null, null);
+    Issue rawIssue = new Issue(null, null, textRange, null, null, null);
     FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
     assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
   }

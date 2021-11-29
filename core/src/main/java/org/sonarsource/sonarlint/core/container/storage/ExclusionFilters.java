@@ -25,7 +25,7 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.scan.filesystem.FileExclusions;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.container.analysis.SonarLintPathPattern;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.SonarLintPathPattern;
 
 public class ExclusionFilters {
 

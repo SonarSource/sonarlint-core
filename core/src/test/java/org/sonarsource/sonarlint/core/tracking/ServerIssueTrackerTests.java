@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import testutils.MockWebServerExtension;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

@@ -39,7 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
@@ -57,7 +57,7 @@ public class StandaloneTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-  private static StandaloneSonarLintEngineImpl sonarlint;
+  private static StandaloneSonarLintEngine sonarlint;
   private static List<String> logs;
   private File baseDir;
 
@@ -73,7 +73,7 @@ public class StandaloneTest {
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))
       .setExtraProperties(globalProps).build();
-    sonarlint = new StandaloneSonarLintEngineImpl(config);
+    sonarlint = new StandaloneSonarLintEngine(config);
 
     assertThat(logs).containsOnlyOnce("Start Global Extension It works");
   }

@@ -69,7 +69,7 @@ class AnalysisEngineTests {
     when(mockedModuleContainerThatFailsOnStop.isTranscient()).thenReturn(true);
     when(mockedModuleContainerThatFailsOnStop.stopComponents()).thenThrow(onStopException);
 
-    AnalysisEngine underTest = new AnalysisEngine(GlobalAnalysisConfiguration.builder().setLogOutput(mock(LogOutput.class)).build());
+    AnalysisEngine underTest = new AnalysisEngine(AnalysisEngineConfiguration.builder().setLogOutput(mock(LogOutput.class)).build());
     underTest = spy(underTest);
     doReturn(mockedModuleContainerThatFailsOnStop).when(underTest).getModuleContainer(any());
     return underTest;

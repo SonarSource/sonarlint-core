@@ -26,7 +26,7 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.common.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.common.ExtensionUtils;
@@ -44,7 +44,7 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
   private final PluginInstancesRepository pluginInstancesRepository;
 
   public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, PluginInstancesRepository pluginInstancesRepository, Configuration bootConfiguration,
-    GlobalAnalysisConfiguration globalConfig) {
+    AnalysisEngineConfiguration globalConfig) {
     super(sonarRuntime, bootConfiguration);
     this.pluginInstancesRepository = pluginInstancesRepository;
     enabledLanguages = globalConfig.getEnabledLanguages();

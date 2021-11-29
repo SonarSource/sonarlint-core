@@ -37,11 +37,10 @@ import org.sonar.api.batch.sensor.rule.AdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.DefaultFlow;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultClientIssue;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultFlow;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
@@ -52,10 +51,10 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   private final ActiveRulesAdapter activeRules;
   private final IssueFilters filters;
-  private final IssueListener issueListener;
+  private final IssueListenerHolder issueListener;
   private final AnalysisResults analysisResult;
 
-  public SonarLintSensorStorage(ActiveRulesAdapter activeRules, IssueFilters filters, IssueListener issueListener, AnalysisResults analysisResult) {
+  public SonarLintSensorStorage(ActiveRulesAdapter activeRules, IssueFilters filters, IssueListenerHolder issueListener, AnalysisResults analysisResult) {
     this.activeRules = activeRules;
     this.filters = filters;
     this.issueListener = issueListener;
@@ -86,10 +85,11 @@ public class SonarLintSensorStorage implements SensorStorage {
     }
 
     String primaryMessage = sonarLintIssue.primaryLocation().message();
-    List<org.sonarsource.sonarlint.core.analysis.api.Issue.Flow> flows = mapFlows(sonarLintIssue.flows());
+    List<DefaultFlow> flows = mapFlows(sonarLintIssue.flows());
     List<QuickFix> quickFixes = sonarLintIssue.quickFixes();
 
-    DefaultClientIssue newIssue = new DefaultClientIssue(activeRule, primaryMessage, issue.primaryLocation().textRange(),
+    org.sonarsource.sonarlint.core.analysis.api.Issue newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage,
+      issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes);
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
@@ -104,7 +104,7 @@ public class SonarLintSensorStorage implements SensorStorage {
       && !StringUtils.containsIgnoreCase(issue.ruleKey().rule(), "nosonar");
   }
 
-  private static List<org.sonarsource.sonarlint.core.analysis.api.Issue.Flow> mapFlows(List<Flow> flows) {
+  private static List<DefaultFlow> mapFlows(List<Flow> flows) {
     return flows.stream()
       .map(f -> new DefaultFlow(f.locations()
         .stream()

@@ -20,18 +20,78 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonar.api.batch.fs.TextRange;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.TextRangeUtils;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 
-public interface Issue extends IssueLocation {
+public final class Issue implements IssueLocation {
+  private final ActiveRuleAdapter activeRule;
+  private final String primaryMessage;
+  private final ClientInputFile clientInputFile;
+  private final List<DefaultFlow> flows;
+  private final List<QuickFix> quickFixes;
+  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
-  String getRuleKey();
+  public Issue(ActiveRuleAdapter activeRule, String primaryMessage, @Nullable TextRange textRange,
+    @Nullable ClientInputFile clientInputFile, List<DefaultFlow> flows, List<QuickFix> quickFixes) {
+    this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
+    this.activeRule = activeRule;
+    this.primaryMessage = primaryMessage;
+    this.clientInputFile = clientInputFile;
+    this.flows = flows;
+    this.quickFixes = quickFixes;
+  }
 
-  String getRuleName();
+  public String getRuleName() {
+    return activeRule.getRuleName();
+  }
 
-  List<Flow> flows();
+  public String getRuleKey() {
+    return activeRule.ruleKey().toString();
+  }
 
-  List<QuickFix> quickFixes();
+  @Override
+  public String getMessage() {
+    return primaryMessage;
+  }
 
-  interface Flow {
-    List<IssueLocation> locations();
+  @Override
+  @CheckForNull
+  public ClientInputFile getInputFile() {
+    return clientInputFile;
+  }
+
+  public List<DefaultFlow> flows() {
+    return flows;
+  }
+
+  public List<QuickFix> quickFixes() {
+    return quickFixes;
+  }
+
+  @Override
+  @CheckForNull
+  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
+    return textRange;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append("rule=").append(activeRule.ruleKey());
+    if (textRange != null) {
+      Integer startLine = textRange.getStartLine();
+      if (startLine != null) {
+        sb.append(", line=").append(startLine);
+      }
+    }
+    if (clientInputFile != null) {
+      sb.append(", file=").append(clientInputFile.uri());
+    }
+    sb.append("]");
+    return sb.toString();
   }
 }

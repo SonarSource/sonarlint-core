@@ -37,7 +37,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.GlobalAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.plugin.common.Version;
@@ -84,7 +84,7 @@ class StandaloneNodeJsTests {
   @Test
   void wrong_node_path() throws Exception {
     List<String> logs = new ArrayList<>();
-    GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration.Builder configBuilder = AnalysisEngineConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setWorkDir(workDir)
@@ -102,7 +102,7 @@ class StandaloneNodeJsTests {
   @Test
   void unsatisfied_node_version() throws Exception {
     List<String> logs = new ArrayList<>();
-    GlobalAnalysisConfiguration.Builder configBuilder = GlobalAnalysisConfiguration.builder()
+    AnalysisEngineConfiguration.Builder configBuilder = AnalysisEngineConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setWorkDir(workDir)
