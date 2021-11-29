@@ -109,6 +109,7 @@ public class IssueApi {
   }
 
   private static String getVulnerabilitiesUrl(String key, Set<String> ruleKeys) {
+
     return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys="
       + urlEncode(key) + "&rules=" + urlEncode(String.join(",", ruleKeys));
   }

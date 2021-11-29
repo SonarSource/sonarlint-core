@@ -20,8 +20,11 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
+import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
+import okio.Buffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,6 +44,7 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 class IssueDownloaderTests {
 
@@ -297,5 +301,63 @@ class IssueDownloaderTests {
     assertThat(issues).isEmpty();
   }
 
+  @Test
+  void test_filter_batch_issues_by_branch() {
+    ScannerInput.ServerIssue response = ScannerInput.ServerIssue.newBuilder()
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);
+
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, false, "branchName", PROGRESS);
+    assertThat(issues).hasSize(1);
+  }
+
+  @Test
+  void test_filter_batch_issues_by_branch_() {
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName",
+      ScannerInput.ServerIssue.newBuilder().build());
+
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, false, null, PROGRESS);
+    assertThat(issues).isEmpty();
+  }
+
+  @Test
+  void test_filter_taint_issues_by_branch() {
+    ScannerInput.ServerIssue batchResponse = ScannerInput.ServerIssue.newBuilder()
+      .setRuleRepository("javasecurity")
+      .setRuleKey("S789")
+      .setChecksum("hash2")
+      .setMsg("Primary message 2")
+      .setLine(2)
+      .setStatus("OPEN")
+      .setCreationDate(123456789L)
+      .setPath("foo/bar/Hello2.java")
+      .setModuleKey("project")
+      .build();
+
+    Issues.SearchWsResponse response = Issues.SearchWsResponse.newBuilder()
+      .addIssues(Issues.Issue.newBuilder()
+        .setRule("javasecurity:S789")
+        .setHash("hash2")
+        .setMessage("Primary message 2")
+        .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9))
+        .setCreationDate("2021-01-11T18:17:31+0000"))
+      .setPaging(Paging.newBuilder()
+        .setPageIndex(1)
+        .setPageSize(500)
+        .setTotal(1))
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" +
+      DUMMY_KEY + "&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
+    mockServer.addProtobufResponseDelimited("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName", response);
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", batchResponse);
+
+    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, "branchName", PROGRESS);
+    assertThat(issues).hasSize(1);
+  }
 
 }
