@@ -59,7 +59,7 @@ public class GlobalTempFolderProviderTest {
     File workingDir = temp.newFolder();
 
     for (int i = 0; i < 3; i++) {
-      File tmp = new File(workingDir, ".sonartmp_" + i);
+      File tmp = new File(workingDir, "sonarlint_tmp_" + i);
       tmp.mkdirs();
       setFileCreationDate(tmp, creationTime);
     }

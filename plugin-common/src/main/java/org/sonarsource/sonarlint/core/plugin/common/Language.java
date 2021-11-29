@@ -54,9 +54,7 @@ public enum Language {
   TS("ts", "javascript", "TypeScript", new String[] {".ts", ".tsx"},
     "sonar.typescript.file.suffixes"),
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
-  XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
-  // For ITs
-  XOO("xoo", "xoo", "Xoo", new String[] {".xoo"}, "sonar.xoo.file.suffixes");
+  XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes");
 
   private String languageKey;
   private String pluginKey;

@@ -45,15 +45,15 @@ class RuleExtractorMediumTests {
       .filter(x -> x.getFileName().toString().endsWith(".jar"))
       .collect(toSet());
 
+    List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(allJars, Set.of(Language.values()));
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
+      assertThat(allRules).hasSize(2863);
     } else {
       assertThat(allJars).hasSize(10);
+      assertThat(allRules).hasSize(707);
     }
 
-    List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(allJars, Set.of(Language.values()));
-
-    assertThat(allRules).hasSize(707);
   }
 
 }

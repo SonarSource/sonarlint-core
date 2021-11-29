@@ -42,6 +42,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngine;
@@ -86,7 +88,6 @@ class StandaloneIssueMediumTests {
   private static ActiveRule s1186 = createActiveRule("java:S1186", "INFO");
   private static ActiveRule s1228 = createActiveRule("java:S1228", "MINOR");
   private static ActiveRule s2094 = createActiveRule("java:S2094", "MINOR");
-  private static ActiveRule hasTag = createActiveRule("xoo:HasTag", "INFO");
   private static ActiveRule js_s1481 = createActiveRule("javascript:S1481", "MINOR");
   private static ActiveRule s3827 = createActiveRule("javascript:S3827", "MINOR");
   private static ActiveRule s1764 = createActiveRule("typescript:S1764", "MINOR");
@@ -95,7 +96,6 @@ class StandaloneIssueMediumTests {
   private static ActiveRule printStatementUsage = createActiveRule("python:PrintStatementUsage", "MINOR");
 
   static {
-    hasTag.setParams(Map.of("tag", "xoo"));
     // The CFamilySensor relies on internal key
     cS3805.setInternalKey("S3805");
   }
@@ -132,8 +132,7 @@ class StandaloneIssueMediumTests {
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())
       .addPlugin(PluginLocator.getPythonPluginPath())
-      .addPlugin(PluginLocator.getXooPluginPath())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C)
       .setWorkDir(workDir)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties)
@@ -241,48 +240,6 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void fileEncoding() throws IOException {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
-      + "  var xoo1, xoo2;\n"
-      + "  var xoo; //NOSONAR\n"
-      + "}", false, StandardCharsets.UTF_16, null);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .addActiveRule(hasTag)
-        .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
-  }
-
-  @Test
-  void simpleXoo() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
-      + "  var xoo1, xoo2;\n"
-      + "  var xoo; //NOSONAR\n"
-      + "}", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .addActiveRule(hasTag)
-        .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
-  }
-
-  @Test
   void simpleC() throws Exception {
     assumeTrue(COMMERCIAL_ENABLED);
     // prepareInputFile("foo.h", "", false, StandardCharsets.UTF_8, Language.C);
@@ -324,40 +281,55 @@ class StandaloneIssueMediumTests {
 
   @Test
   void analysisErrors() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
-      + "  var xoo;\n"
-      + "  var y; //NOSONAR\n"
-      + "}", false);
-    prepareInputFile("foo.xoo.error", "1,2,error analysing\n2,3,error analysing", false);
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
+      "public class Foo {\n"
+        + "  public void foo() \n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "    // TODO full line issue\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    List<String> logs = new ArrayList<>();
 
     final List<Issue> issues = new ArrayList<>();
     AnalysisResults results = sonarlint.analyze(
       AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addActiveRule(hasTag)
+        .addActiveRules(s106, s1135, s1220, java_s1481)
         .build(),
-      issues::add, null, null);
+      issues::add, (m, l) -> logs.add(m), null);
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"));
+    assertThat(issues).isEmpty();
+    assertThat(logs).contains("Unable to parse source file : '[uri=" + inputFile.uri() + "]'");
   }
 
   @Test
   void returnLanguagePerFile() throws IOException {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
-      + "  var xoo;\n"
-      + "  var y; //NOSONAR\n"
-      + "}", false);
+    ClientInputFile phpInputFile = prepareInputFile("foo.php", "<?php\n"
+      + "function writeMsg($fname) {\n"
+      + "    $i = 0; // NOSONAR\n"
+      + "    echo \"Hello world!\";\n"
+      + "}\n"
+      + "?>", false);
+    ClientInputFile pyInputFile = prepareInputFile("foo.py", "def my_function(name):\n"
+      + "    print \"Hello\"\n"
+      + "    print \"world!\" # NOSONAR\n"
+      + "\n", false);
 
     final List<Issue> issues = new ArrayList<>();
     AnalysisResults results = sonarlint.analyze(
       AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
+        .addInputFiles(phpInputFile, pyInputFile)
         .build(),
       issues::add, null, null);
-    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.XOO));
+    assertThat(results.languagePerFile())
+      .containsOnly(
+        entry(phpInputFile, Language.PHP),
+        entry(pyInputFile, Language.PYTHON));
   }
 
   @Test
@@ -419,8 +391,9 @@ class StandaloneIssueMediumTests {
       tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
 
-  @Test
-  void simpleJava() throws Exception {
+  @ParameterizedTest
+  @ValueSource(strings = {"UTF-8", "UTF_16"})
+  void simpleJava(String charset) throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -429,7 +402,7 @@ class StandaloneIssueMediumTests {
         + "    // TODO full line issue\n"
         + "  }\n"
         + "}",
-      false);
+      false, Charset.forName(charset), null);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(AnalysisConfiguration.builder()

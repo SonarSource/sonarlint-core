@@ -206,7 +206,7 @@ class ComponentContainerTests {
     IllegalStateException expected = assertThrows(IllegalStateException.class, () -> container.addExtension("myPlugin", UnstartableComponent.class));
     assertThat(expected.getMessage())
       .isEqualTo(
-        "Unable to register extension org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainerTest$UnstartableComponent from plugin 'myPlugin'");
+        "Unable to register extension org.sonarsource.sonarlint.core.plugin.common.pico.ComponentContainerTests$UnstartableComponent from plugin 'myPlugin'");
   }
 
   @Test

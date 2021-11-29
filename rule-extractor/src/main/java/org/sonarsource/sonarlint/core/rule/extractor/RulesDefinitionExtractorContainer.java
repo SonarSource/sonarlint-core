@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
+import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.Startable;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.utils.Version;
@@ -56,6 +57,7 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
     add(
       config,
       sonarLintRuntime,
+      new SonarQubeVersion(sonarPluginApiVersion),
       RuleDefinitionsLoader.class,
       NoopTempFolder.class,
       EmptySettings.class);
