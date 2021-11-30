@@ -10,10 +10,6 @@
   <name>SonarLint Core - Plugin Common</name>
   <description>Common code used to load/execute SonarQube plugins</description>
 
-  <properties>
-    <jarsigner.skip>true</jarsigner.skip>
-  </properties>
-
   <dependencies>
     <!-- Declare a dependency to force Maven build order -->
     <dependency>

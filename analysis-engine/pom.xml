@@ -10,10 +10,6 @@
   <name>SonarLint Core - Analysis Engine</name>
   <description>Load code analyzer and execute the analysis</description>
 
-  <properties>
-    <jarsigner.skip>true</jarsigner.skip>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
