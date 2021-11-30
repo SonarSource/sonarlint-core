@@ -565,17 +565,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisJavaPomXml() throws Exception {
-    updateGlobal();
-    updateProject(PROJECT_KEY_JAVA);
-
-    SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "pom.xml"), issueListener, null, null);
-
-    assertThat(issueListener.getIssues()).hasSize(1);
-  }
-
-  @Test
   public void analysisTemplateRule() throws Exception {
     SearchRequest searchReq = new SearchRequest();
     searchReq.setQualityProfile("SonarLint IT Java");

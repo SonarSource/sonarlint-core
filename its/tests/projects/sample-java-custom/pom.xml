@@ -6,11 +6,6 @@
   <version>1.0-SNAPSHOT</version>
   <name>Sample Java</name>
   <description>Sample project for ITs</description>
-  
-  <properties>
-    <!-- Create an issue for test analysisJavaPomXml -->
-    <old.version>${pom.version}</old.version>
-  </properties>
 
   <build>
     <plugins>

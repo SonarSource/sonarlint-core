@@ -15,12 +15,6 @@
       <key>S2325</key>
       <priority>MAJOR</priority>
     </rule>
-    <!-- Deprecated pom properties -->
-    <rule>
-      <repositoryKey>java</repositoryKey>
-      <key>S3421</key>
-      <priority>MAJOR</priority>
-    </rule>
 
     <!-- Keep for pre 6.0 sonar-java version -->
     <rule>
@@ -33,12 +27,6 @@
     <rule>
       <repositoryKey>squid</repositoryKey>
       <key>S2325</key>
-      <priority>MAJOR</priority>
-    </rule>
-    <!-- Deprecated pom properties -->
-    <rule>
-      <repositoryKey>squid</repositoryKey>
-      <key>S3421</key>
       <priority>MAJOR</priority>
     </rule>
   </rules>
