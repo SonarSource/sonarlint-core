@@ -117,7 +117,6 @@ public class ConnectedContainer extends ComponentContainer {
       IssueDownloader.class,
       IssueApi.class,
       SourceApi.class,
-      IssueStoreFactory.class,
       ProjectStoragePaths.class,
       StorageReader.class,
       ProjectStorageStatusReader.class);

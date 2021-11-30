@@ -33,15 +33,10 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-plugin-api</artifactId>
+      <artifactId>sonarlint-local-storage</artifactId>
       <version>${project.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-ws</artifactId>
@@ -81,11 +76,6 @@
       <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.picocontainer</groupId>
-      <artifactId>picocontainer</artifactId>
-      <version>2.15</version>
-    </dependency>
-    <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-markdown</artifactId>
       <version>${sonarqube.version}</version>
@@ -96,27 +86,6 @@
           <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.sonar</groupId>
-      <artifactId>sonar-classloader</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>${protobuf.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
-      <artifactId>sonar-plugin-api</artifactId>
-      <version>${sonarqube.version}</version>
-    </dependency>
-    <!-- For RulesDefinitionXmlLoader, can be removed after upgrading sonar-plugin-api to 9.0 (SONAR-14882) -->
-    <dependency>
-      <groupId>com.fasterxml.staxmate</groupId>
-      <artifactId>staxmate</artifactId>
-      <version>2.4.0</version>
     </dependency>
 
     <!-- unit tests -->
@@ -200,55 +169,11 @@
         <filtering>false</filtering>
       </resource>
     </resources>
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.6.2</version>
-      </extension>
-    </extensions>
     <plugins>
-      <plugin>
-        <groupId>org.xolstice.maven.plugins</groupId>
-        <artifactId>protobuf-maven-plugin</artifactId>
-        <version>0.6.1</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>test-compile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
-          <execution>
-            <id>copy-slf4j-sonar-log</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.outputDirectory}/</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <stripVersion>true</stripVersion>
-            </configuration>
-          </execution>
           <execution>
             <id>copy-sonar-plugins</id>
             <phase>generate-test-resources</phase>

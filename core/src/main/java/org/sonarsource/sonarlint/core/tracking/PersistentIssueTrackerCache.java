@@ -24,8 +24,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.CheckForNull;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.storage.issuetracking.IssueStore;
 
 public class PersistentIssueTrackerCache implements IssueTrackerCache {
 
@@ -59,7 +62,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
       String key = eldest.getKey();
       try {
         LOGGER.debug("Persisting issues for " + key);
-        store.save(key, eldest.getValue());
+        store.save(key, eldest.getValue(), PersistentIssueTrackerCache::transform);
       } catch (IOException e) {
         throw new IllegalStateException(String.format("Error persisting issues for %s", key), e);
       }
@@ -93,7 +96,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
     }
 
     try {
-      Collection<Trackable> storedTrackables = store.read(file);
+      Collection<Trackable> storedTrackables = store.read(file, PersistentIssueTrackerCache::transform);
       if (storedTrackables != null) {
         return Collections.unmodifiableCollection(storedTrackables);
       }
@@ -122,7 +125,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
     LOGGER.debug("Persisting all issues");
     cache.forEach((path, trackables) -> {
       try {
-        store.save(path, trackables);
+        store.save(path, trackables, PersistentIssueTrackerCache::transform);
       } catch (IOException e) {
         throw new IllegalStateException("Failed to flush cache", e);
       }
@@ -132,5 +135,34 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
   @Override
   public synchronized void shutdown() {
     flushAll();
+  }
+
+  private static Trackable transform(Sonarlint.Issues.Issue issue) {
+    return new ProtobufIssueTrackable(issue);
+  }
+
+  @CheckForNull
+  private static Sonarlint.Issues.Issue transform(Trackable localIssue) {
+    Sonarlint.Issues.Issue.Builder builder = Sonarlint.Issues.Issue.newBuilder()
+      .setRuleKey(localIssue.getRuleKey())
+      .setMessage(localIssue.getMessage())
+      .setResolved(localIssue.isResolved());
+
+    if (localIssue.getAssignee() != null) {
+      builder.setAssignee(localIssue.getAssignee());
+    }
+    if (localIssue.getCreationDate() != null) {
+      builder.setCreationDate(localIssue.getCreationDate());
+    }
+    if (localIssue.getLineHash() != null) {
+      builder.setChecksum(localIssue.getLineHash());
+    }
+    if (localIssue.getServerIssueKey() != null) {
+      builder.setServerIssueKey(localIssue.getServerIssueKey());
+    }
+    if (localIssue.getLine() != null) {
+      builder.setLine(localIssue.getLine());
+    }
+    return builder.build();
   }
 }

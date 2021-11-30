@@ -10,10 +10,6 @@
   <name>SonarLint Core - Rule Extractor</name>
   <description>Extract rules metadata from analyzers</description>
 
-  <properties>
-    <jarsigner.skip>true</jarsigner.skip>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -24,6 +20,12 @@
       <groupId>org.sonarsource.sonarlint.core</groupId>
       <artifactId>sonarlint-plugin-common</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <!-- For RulesDefinitionXmlLoader, can be removed after upgrading sonar-plugin-api to 9.0 (SONAR-14882) -->
+    <dependency>
+      <groupId>com.fasterxml.staxmate</groupId>
+      <artifactId>staxmate</artifactId>
+      <version>2.4.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
