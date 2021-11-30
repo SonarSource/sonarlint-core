@@ -20,11 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.List;
-import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
-import okio.Buffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,7 +41,6 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 class IssueDownloaderTests {
 
