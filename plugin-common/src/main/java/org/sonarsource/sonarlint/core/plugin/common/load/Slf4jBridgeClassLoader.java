@@ -33,8 +33,12 @@ public class Slf4jBridgeClassLoader extends URLClassLoader {
   @Override
   protected Class<?> findClass(final String name) throws ClassNotFoundException {
     if (name.startsWith("org.slf4j")) {
-      String path = name.replace('.', '/').concat(".class");
-      try (InputStream is = getParent().getResourceAsStream("/slf4j-sonar-log/" + path)) {
+      String path = name.replace('.', '/').concat(".clazz");
+      String classContentPath = "slf4j-sonar-log/" + path;
+      try (InputStream is = getParent().getResourceAsStream(classContentPath)) {
+        if (is == null) {
+          throw new IllegalStateException("Unable to find resource " + classContentPath);
+        }
         byte[] classBytes = is.readAllBytes();
         return defineClass(name, classBytes, 0, classBytes.length);
       } catch (IOException e) {

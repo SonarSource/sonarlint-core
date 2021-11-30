@@ -20,7 +20,8 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-slf4j-sonar-log</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <!-- Use test dependency just to force build order -->
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -81,6 +82,7 @@
        <plugin>
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-dependency-plugin</artifactId>
+         <version>3.2.0</version>
          <executions>
            <execution>
              <id>unpack</id>
@@ -96,8 +98,14 @@
                    <version>${project.version}</version>
                    <type>jar</type>
                    <overWrite>false</overWrite>
-                   <outputDirectory>${project.build.directory}/slf4j-sonar-log</outputDirectory>
+                   <outputDirectory>${project.build.outputDirectory}/slf4j-sonar-log</outputDirectory>
                    <includes>**/*.class</includes>
+                   <fileMappers>
+                     <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                       <pattern>\Q.class\E$</pattern>
+                       <replacement>.clazz</replacement>
+                     </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                   </fileMappers>
                  </artifactItem>
                </artifactItems>
                <overWriteReleases>false</overWriteReleases>

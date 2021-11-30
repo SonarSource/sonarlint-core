@@ -42,11 +42,6 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
-  public String getRuleName() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public String getSeverity() {
     return serverIssue.severity();
   }

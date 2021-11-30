@@ -74,7 +74,7 @@ class RuleExtractorMediumTests {
     if (COMMERCIAL_ENABLED) {
       enabledLanguages.add(Language.C);
     }
-    List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(allJars, Set.of(Language.values()));
+    List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(allJars, enabledLanguages);
 
     assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
   }
