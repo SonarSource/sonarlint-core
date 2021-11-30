@@ -302,7 +302,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_filter_batch_issues_by_branch() {
+  void test_filter_batch_issues_by_branch_if_branch_parameter_provided() {
     ScannerInput.ServerIssue response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -315,48 +315,30 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_filter_batch_issues_by_branch_() {
-    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName",
-      ScannerInput.ServerIssue.newBuilder().build());
-
-    List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, false, null, PROGRESS);
-    assertThat(issues).isEmpty();
-  }
-
-  @Test
-  void test_filter_taint_issues_by_branch() {
-    ScannerInput.ServerIssue batchResponse = ScannerInput.ServerIssue.newBuilder()
-      .setRuleRepository("javasecurity")
-      .setRuleKey("S789")
-      .setChecksum("hash2")
-      .setMsg("Primary message 2")
-      .setLine(2)
-      .setStatus("OPEN")
-      .setCreationDate(123456789L)
-      .setPath("foo/bar/Hello2.java")
-      .setModuleKey("project")
-      .build();
-
+  void test_filter_taint_issues_by_branch_if_branch_parameter_provided() {
     Issues.SearchWsResponse response = Issues.SearchWsResponse.newBuilder()
       .addIssues(Issues.Issue.newBuilder()
         .setRule("javasecurity:S789")
-        .setHash("hash2")
-        .setMessage("Primary message 2")
-        .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9))
-        .setCreationDate("2021-01-11T18:17:31+0000"))
+        .setCreationDate("2021-01-11T18:17:31+0000")
+        .setComponent(FILE_1_KEY))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey(FILE_1_KEY)
+        .setPath("foo/bar/Hello2.java"))
       .setPaging(Paging.newBuilder()
         .setPageIndex(1)
         .setPageSize(500)
         .setTotal(1))
       .build();
-
-    mockServer.addProtobufResponseDelimited("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" +
-      DUMMY_KEY + "&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
-    mockServer.addProtobufResponseDelimited("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName", response);
-
-    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", batchResponse);
+    ScannerInput.ServerIssue taint1 = ScannerInput.ServerIssue.newBuilder()
+      .setRuleRepository("javasecurity")
+      .setRuleKey("S789")
+      .setStatus("OPEN")
+      .build();
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", taint1);
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
     List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, "branchName", PROGRESS);
+
     assertThat(issues).hasSize(1);
   }
 
