@@ -424,17 +424,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisJavaPomXml() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
-    SaveIssueListener issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA, "pom.xml"), issueListener, null, null);
-
-    assertThat(issueListener.getIssues()).hasSize(1);
-  }
-
-  @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA_EMPTY));
