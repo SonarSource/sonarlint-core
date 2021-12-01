@@ -72,12 +72,14 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
-import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -108,6 +110,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
+  private final ProgressWrapperAdapter progress = new ProgressWrapperAdapter(new ProgressWrapper(null));
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -505,13 +508,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
   @Test
   public void downloadUserOrganizations() {
     OrganizationApi helper = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
-    assertThat(helper.listUserOrganizations(null)).hasSize(1);
+    assertThat(helper.listUserOrganizations(progress)).hasSize(1);
   }
 
   @Test
   public void getOrganization() {
     OrganizationApi helper = new ServerApi(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
-    Optional<ServerOrganization> org = helper.getOrganization(SONARCLOUD_ORGANIZATION, null);
+    Optional<ServerOrganization> org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
     assertThat(org).isPresent();
     assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
     assertThat(org.get().getName()).isEqualTo("SonarLint IT Tests");
@@ -519,9 +522,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void getProject() {
-    ProjectApi helper = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).project();
-    assertThat(helper.getProject(projectKey("foo"), null)).isNotPresent();
-    assertThat(helper.getProject(projectKey(PROJECT_KEY_RUBY), null)).isPresent();
+    ComponentApi api = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).component();
+    assertThat(api.getProject(projectKey("foo"))).isNotPresent();
+    assertThat(api.getProject(projectKey(PROJECT_KEY_RUBY))).isPresent();
   }
 
   @Test

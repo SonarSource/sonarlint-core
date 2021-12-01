@@ -27,6 +27,7 @@
     <module>core</module>
     <module>plugin-api</module>
     <module>slf4j-sonar-log</module>
+    <module>server-api</module>
   </modules>
 
   <properties>

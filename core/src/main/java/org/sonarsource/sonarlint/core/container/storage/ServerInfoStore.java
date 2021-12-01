@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 
 public class ServerInfoStore {
   public static final String SERVER_INFO_PB = "server_info.pb";
@@ -31,11 +32,13 @@ public class ServerInfoStore {
     this.storageFolder = storageFolder;
   }
 
-  public void store(Sonarlint.ServerInfos serverInfo) {
-    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(serverInfo, dest.resolve(SERVER_INFO_PB))));
+  public void store(ServerInfo serverInfo) {
+    var protoServerInfo = Sonarlint.ServerInfos.newBuilder().setId(serverInfo.getId()).setStatus(serverInfo.getStatus()).setVersion(serverInfo.getVersion()).build();
+    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(protoServerInfo, dest.resolve(SERVER_INFO_PB))));
   }
 
-  public Sonarlint.ServerInfos getAll() {
-    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(SERVER_INFO_PB), Sonarlint.ServerInfos.parser())));
+  public ServerInfo getAll() {
+    var protoServerInfo = rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(SERVER_INFO_PB), Sonarlint.ServerInfos.parser())));
+    return new ServerInfo(protoServerInfo.getId(), protoServerInfo.getStatus(), protoServerInfo.getVersion());
   }
 }

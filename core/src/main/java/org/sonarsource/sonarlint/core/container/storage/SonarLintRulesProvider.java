@@ -19,22 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.util.Map;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class SonarLintRulesProvider extends ProviderAdapter {
 
   private SonarLintRules rules;
 
-  public SonarLintRules provide(Sonarlint.Rules storageRules) {
+  public SonarLintRules provide(RulesStore rulesStore) {
     if (rules == null) {
       rules = new SonarLintRules();
 
-      for (Map.Entry<String, Sonarlint.Rules.Rule> entry : storageRules.getRulesByKeyMap().entrySet()) {
-        Sonarlint.Rules.Rule r = entry.getValue();
-        rules.add(new StorageRuleAdapter(r));
+      for (ServerRules.Rule rule : rulesStore.getAll()) {
+        rules.add(new StorageRuleAdapter(rule));
       }
 
     }

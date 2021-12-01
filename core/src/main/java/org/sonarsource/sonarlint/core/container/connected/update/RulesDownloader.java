@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
 import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -44,8 +46,8 @@ public class RulesDownloader {
   }
 
   public void fetchRules(ProgressWrapper progress) {
-    ServerRules serverRules = rulesApi.getAll(enabledLanguages, progress);
-    activeRulesStore.store(serverRules.getActiveRulesByQualityProfile());
+    var serverRules = rulesApi.getAll(enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.toSet()), new ProgressWrapperAdapter(progress));
+    activeRulesStore.store(serverRules.getActiveRulesByQualityProfileKey());
     rulesStore.store(serverRules.getAll());
   }
 }

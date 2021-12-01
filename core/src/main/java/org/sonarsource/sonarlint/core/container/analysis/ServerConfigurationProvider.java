@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfigurati
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 
 /**
  * Can't put {@link ConnectionConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
@@ -74,8 +73,7 @@ public class ServerConfigurationProvider {
       PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions);
       if (storage != null) {
-        GlobalProperties globalProps = globalSettingsStore.getAll();
-        addProperties(globalProps.getPropertiesMap());
+        addProperties(globalSettingsStore.getAll());
         if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).projectKey() != null) {
           Sonarlint.ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).projectKey());
           addProperties(projectConfig.getPropertiesMap());

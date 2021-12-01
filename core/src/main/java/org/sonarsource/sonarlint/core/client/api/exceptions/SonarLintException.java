@@ -27,6 +27,10 @@ public class SonarLintException extends RuntimeException {
     super();
   }
 
+  public SonarLintException(String msg) {
+    super(msg);
+  }
+
   public SonarLintException(String msg, @Nullable Throwable cause) {
     super(msg, cause);
   }

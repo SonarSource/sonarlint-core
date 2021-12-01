@@ -20,11 +20,11 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Map;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -42,10 +42,10 @@ public class ProjectConfigurationDownloader {
   }
 
   public Sonarlint.ProjectConfiguration fetch(String projectKey, ProgressWrapper progress) {
-    ProjectConfiguration.Builder builder = Sonarlint.ProjectConfiguration.newBuilder();
+    var builder = Sonarlint.ProjectConfiguration.newBuilder();
     fetchQualityProfiles(projectKey, builder);
     progress.setProgressAndCheckCancel("Fetching project settings", 0.1f);
-    settingsApi.getProjectSettings(projectKey, builder);
+    builder.putAllProperties(settingsApi.getProjectSettings(projectKey));
     progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
     fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
 

@@ -71,8 +71,8 @@ class RulesDownloaderTests {
     RulesStore rulesStore = new RulesStore(storageFolder);
     ActiveRulesStore activeRulesStore = new ActiveRulesStore(storageFolder);
     emptyMockForAllSeverities();
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=js,java&p=1&ps=500", "/update/rulesp1.pb");
-    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=js,java&p=2&ps=500", "/update/rulesp2.pb");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=java,js&p=1&ps=500", "/update/rulesp1.pb");
+    mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=java,js&p=2&ps=500", "/update/rulesp2.pb");
     when(globalConfig.getEnabledLanguages()).thenReturn(new LinkedHashSet<>(Arrays.asList(Language.JS, Language.JAVA)));
 
     RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig, rulesStore, activeRulesStore);
@@ -105,7 +105,7 @@ class RulesDownloaderTests {
   }
 
   private void emptyMockForAllSeverities() {
-    emptyMockForAllSeverities(RULES_SEARCH_URL, "js,java");
+    emptyMockForAllSeverities(RULES_SEARCH_URL, "java,js");
   }
 
   private void emptyMockForAllSeverities(String baseUrl, String languages) {

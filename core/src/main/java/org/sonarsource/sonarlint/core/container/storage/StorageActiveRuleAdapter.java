@@ -20,24 +20,26 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class StorageActiveRuleAdapter implements ActiveRule {
 
-  private final org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule activeRule;
+  private final ServerRules.ActiveRule activeRule;
   private final Rule storageRule;
 
-  public StorageActiveRuleAdapter(org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule activeRule, Rule storageRule) {
+  public StorageActiveRuleAdapter(ServerRules.ActiveRule activeRule, Rule storageRule) {
     this.activeRule = activeRule;
     this.storageRule = storageRule;
   }
 
   @Override
   public RuleKey ruleKey() {
-    return RuleKey.of(activeRule.getRepo(), activeRule.getKey());
+    return RuleKey.of(activeRule.getRepository(), activeRule.getRule());
   }
 
   @Override
@@ -52,12 +54,12 @@ public class StorageActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String param(String key) {
-    return activeRule.getParamsMap().get(key);
+    return params().get(key);
   }
 
   @Override
   public Map<String, String> params() {
-    return activeRule.getParamsMap();
+    return activeRule.getParams().stream().collect(Collectors.toMap(ServerRules.ActiveRule.Param::getKey, ServerRules.ActiveRule.Param::getValue));
   }
 
   @Override

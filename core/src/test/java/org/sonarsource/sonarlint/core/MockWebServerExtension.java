@@ -22,8 +22,10 @@ package org.sonarsource.sonarlint.core;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -43,7 +45,6 @@ import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -125,8 +126,22 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   public void addProtobufResponseDelimited(String path, Message... m) {
     try (Buffer b = new Buffer()) {
-      ProtobufUtil.writeMessages(b.outputStream(), Arrays.asList(m).iterator());
+      writeMessages(b.outputStream(), Arrays.asList(m).iterator());
       responsesByPath.put(path, new MockResponse().setBody(b));
+    }
+  }
+
+  public static <T extends Message> void writeMessages(OutputStream output, Iterator<T> messages) {
+    while (messages.hasNext()) {
+      writeMessage(output, messages.next());
+    }
+  }
+
+  public static <T extends Message> void writeMessage(OutputStream output, T message) {
+    try {
+      message.writeDelimitedTo(output);
+    } catch (IOException e) {
+      throw new IllegalStateException("failed to write message: " + message, e);
     }
   }
 

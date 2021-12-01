@@ -19,14 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.util.List;
 import org.picocontainer.injectors.ProviderAdapter;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 
 public class StorageQProfilesProvider extends ProviderAdapter {
 
-  private Sonarlint.QProfiles qProfilesFromStorage;
+  private List<QualityProfile> qProfilesFromStorage;
 
-  public Sonarlint.QProfiles provide(QualityProfileStore qualityProfileStore) {
+  public List<QualityProfile> provide(QualityProfileStore qualityProfileStore) {
     if (qProfilesFromStorage == null) {
       qProfilesFromStorage = qualityProfileStore.getAll();
     }

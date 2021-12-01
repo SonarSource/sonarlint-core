@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 import org.sonarqube.ws.Organizations.Organization;
+import org.sonarsource.sonarlint.core.serverapi.organization.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 
 public class DefaultRemoteOrganizationTest {

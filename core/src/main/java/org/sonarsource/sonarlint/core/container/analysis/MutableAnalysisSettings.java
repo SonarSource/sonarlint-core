@@ -26,7 +26,6 @@ import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 
 public class MutableAnalysisSettings extends MapSettings {
@@ -45,8 +44,7 @@ public class MutableAnalysisSettings extends MapSettings {
   public MutableAnalysisSettings(StorageReader storage, GlobalSettingsStore globalSettingsStore, GlobalSettings globalSettings, AbstractAnalysisConfiguration analysisConfig,
     PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
-    GlobalProperties globalProps = globalSettingsStore.getAll();
-    addProperties(globalProps.getPropertiesMap());
+    addProperties(globalSettingsStore.getAll());
     if (analysisConfig instanceof ConnectedAnalysisConfiguration) {
       String projectKey = ((ConnectedAnalysisConfiguration) analysisConfig).projectKey();
       if (projectKey != null) {

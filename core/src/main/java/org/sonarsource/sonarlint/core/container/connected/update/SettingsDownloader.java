@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
@@ -34,9 +33,7 @@ public class SettingsDownloader {
     this.globalSettingsStore = globalSettingsStore;
   }
 
-  public GlobalProperties fetchGlobalSettings() {
-    GlobalProperties globalSettings = settingsApi.getGlobalSettings();
-    globalSettingsStore.store(globalSettings);
-    return globalSettings;
+  public void fetchGlobalSettings() {
+    globalSettingsStore.store(settingsApi.getGlobalSettings());
   }
 }

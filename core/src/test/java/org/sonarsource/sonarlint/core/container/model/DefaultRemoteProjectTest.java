@@ -19,29 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project;
+import org.sonarsource.sonarlint.core.serverapi.component.DefaultRemoteProject;
+import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultRemoteProjectTest {
-  private DefaultRemoteProject remoteProject;
-  private Project project;
-
-  @Before
-  public void setUp() {
-    project = Project.newBuilder()
-      .setKey("key")
-      .setName("name")
-      .build();
-    remoteProject = new DefaultRemoteProject(project);
-  }
-
   @Test
   public void testGetters() {
-    assertThat(remoteProject.getKey()).isEqualTo("key");
-    assertThat(remoteProject.getName()).isEqualTo("name");
+    ServerProject project = new DefaultRemoteProject("key", "name");
+
+    assertThat(project.getKey()).isEqualTo("key");
+    assertThat(project.getName()).isEqualTo("name");
   }
 
 }

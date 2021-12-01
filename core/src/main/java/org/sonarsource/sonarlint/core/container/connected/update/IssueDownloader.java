@@ -33,8 +33,8 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.TextRange;
-import org.sonarqube.ws.Issues.Component;
 import org.sonarqube.ws.Issues.Issue;
+import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
@@ -95,10 +95,10 @@ public class IssueDownloader {
     if (fetchTaintVulnerabilities && !taintRuleKeys.isEmpty()) {
       Map<String, String> sourceCodeByKey = new HashMap<>();
       try {
-        DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
+        DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, new ProgressWrapperAdapter(progress));
         downloadVulnerabilitiesForRules.getIssues()
           .forEach(i -> result.add(
-            convertTaintIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i, downloadVulnerabilitiesForRules.getComponentsByKey(),
+            convertTaintIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i, downloadVulnerabilitiesForRules.getComponentPathsByKey(),
               sourceCodeByKey)));
       } catch (Exception e) {
         LOG.warn("Unable to fetch taint vulnerabilities", e);
@@ -147,7 +147,7 @@ public class IssueDownloader {
 
   private ServerIssue convertTaintIssue(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs,
-    Map<String, Component> componentsByKey, Map<String, String> sourceCodeByKey) {
+    Map<String, String> componentsByKey, Map<String, String> sourceCodeByKey) {
     issueBuilder.clear();
     RuleKey ruleKey = RuleKey.parse(issueFromWs.getRule());
     Location primary = buildPrimaryLocation(projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
@@ -170,7 +170,7 @@ public class IssueDownloader {
   }
 
   private void buildFlows(ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
-    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs, Map<String, Component> componentsByKey,
+    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs, Map<String, String> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     for (Flow flowFromWs : issueFromWs.getFlowsList()) {
       flowBuilder.clear();
@@ -178,8 +178,8 @@ public class IssueDownloader {
       for (org.sonarqube.ws.Common.Location locationFromWs : flowFromWs.getLocationsList()) {
         locationBuilder.clear();
         locationBuilder.setMsg(locationFromWs.getMsg());
-        Component component = componentsByKey.get(locationFromWs.getComponent());
-        String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), component.getPath());
+        String componentPath = componentPathsByKey.get(locationFromWs.getComponent());
+        String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
         locationBuilder.setPath(sqPath);
         if (locationFromWs.hasTextRange()) {
           copyTextRangeFromWs(locationBuilder, textRangeBuilder, locationFromWs.getTextRange());
@@ -193,11 +193,11 @@ public class IssueDownloader {
   }
 
   private Location buildPrimaryLocation(ProjectConfiguration projectConfiguration, Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
-    Issue issueFromWs, Map<String, Component> componentsByKey, Map<String, String> sourceCodeByKey) {
+    Issue issueFromWs, Map<String, String> componentPathsByKey, Map<String, String> sourceCodeByKey) {
     locationBuilder.clear();
     locationBuilder.setMsg(issueFromWs.getMessage());
-    Component component = componentsByKey.get(issueFromWs.getComponent());
-    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), component.getPath());
+    String componentPath = componentPathsByKey.get(issueFromWs.getComponent());
+    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
     locationBuilder.setPath(sqPath);
     if (issueFromWs.hasTextRange()) {
       copyTextRangeFromWs(locationBuilder, textRangeBuilder, issueFromWs.getTextRange());
