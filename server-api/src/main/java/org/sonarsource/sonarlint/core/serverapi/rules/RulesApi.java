@@ -27,11 +27,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
@@ -40,13 +43,26 @@ import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class RulesApi {
+  private static final Logger LOG = Loggers.get(RulesApi.class);
+
   public static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
+  public static final String RULE_SHOW_URL = "/api/rules/show.protobuf?key=";
 
   private final ServerApiHelper helper;
 
   public RulesApi(ServerApiHelper helper) {
     this.helper = helper;
+  }
+
+  public Optional<String> getRuleDescription(String ruleKey) {
+    try(var response = helper.get(RULE_SHOW_URL + ruleKey)) {
+      var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
+      return Optional.of(rule.getHtmlDesc() + "\n" + rule.getHtmlNote());
+    } catch (Exception e) {
+      LOG.error("Error when fetching rule", e);
+      return Optional.empty();
+    }
   }
 
   public ServerRules getAll(Set<String> enabledLanguageKeys, Progress progress) {
