@@ -24,10 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class ProjectBranchesDownloaderTest {
 
@@ -35,8 +33,6 @@ class ProjectBranchesDownloaderTest {
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   private final static String PROJECT_KEY = "project1";
-
-  private final ProgressWrapper progressWrapper = mock(ProgressWrapper.class);
 
   private ProjectBranchesDownloader underTest;
 
@@ -76,6 +72,20 @@ class ProjectBranchesDownloaderTest {
     Collection<String> branches = underTest.getBranches(PROJECT_KEY);
 
     assertThat(branches).hasSize(2);
+  }
+
+  @Test
+  void returnEmptyListOnMalformedResponse() {
+    mockServer.addStringResponse("/api/project_branches/list?project=project1",
+      "{\n" +
+        "  \"branches\": [\n" +
+        "    { }" +
+        "  ]\n" +
+        "}");
+
+    Collection<String> branches = underTest.getBranches(PROJECT_KEY);
+
+    assertThat(branches).isEmpty();
   }
 
 }
