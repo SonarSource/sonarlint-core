@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -67,7 +69,7 @@ public class ProjectStorageUpdateExecutor {
 
   private ProjectConfiguration updateConfiguration(String projectKey, QualityProfileStore qualityProfileStore, Path temp, ProgressWrapper progress) {
     ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, progress);
-    final Set<String> qProfileKeys = qualityProfileStore.getAll().getQprofilesByKeyMap().keySet();
+    final Set<String> qProfileKeys = qualityProfileStore.getAll().stream().map(QualityProfile::getKey).collect(Collectors.toSet());
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
         throw new IllegalStateException(

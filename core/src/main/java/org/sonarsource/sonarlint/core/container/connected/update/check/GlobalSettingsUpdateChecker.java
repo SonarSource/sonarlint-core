@@ -33,7 +33,6 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
@@ -59,9 +58,9 @@ public class GlobalSettingsUpdateChecker {
   }
 
   public void checkForUpdates(GlobalSettingsStore globalSettingsStore, DefaultStorageUpdateCheckResult result) {
-    GlobalProperties serverGlobalProperties = settingsApi.getGlobalSettings();
-    GlobalProperties storageGlobalProperties = globalSettingsStore.getAll();
-    MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties.getPropertiesMap()), filter(serverGlobalProperties.getPropertiesMap()));
+    Map<String, String> serverGlobalProperties = settingsApi.getGlobalSettings();
+    Map<String, String> storageGlobalProperties = globalSettingsStore.getAll();
+    MapDifference<String, String> propDiff = Maps.difference(filter(storageGlobalProperties), filter(serverGlobalProperties));
     if (!propDiff.areEqual()) {
       result.appendToChangelog("Global settings updated");
       for (Map.Entry<String, String> entry : propDiff.entriesOnlyOnLeft().entrySet()) {

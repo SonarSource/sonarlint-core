@@ -23,10 +23,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,12 +36,11 @@ import static org.mockito.Mockito.when;
 public class GlobalStorageUpdateCheckerTest {
 
   private GlobalStorageUpdateChecker checker;
-  private ServerVersionAndStatusChecker statusChecker;
 
   @Before
   public void prepare() {
-    statusChecker = mock(ServerVersionAndStatusChecker.class);
-    when(statusChecker.checkVersionAndStatus()).thenReturn(ServerInfos.newBuilder().build());
+    ServerVersionAndStatusChecker statusChecker = mock(ServerVersionAndStatusChecker.class);
+    when(statusChecker.checkVersionAndStatus()).thenReturn(new ServerInfo("", "", ""));
     checker = new GlobalStorageUpdateChecker(statusChecker, mock(PluginsUpdateChecker.class),
       mock(PluginListDownloader.class), mock(GlobalSettingsUpdateChecker.class), mock(QualityProfilesUpdateChecker.class));
   }

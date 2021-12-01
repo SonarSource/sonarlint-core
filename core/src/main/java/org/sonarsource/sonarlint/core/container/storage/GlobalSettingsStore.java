@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.util.Map;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class GlobalSettingsStore {
@@ -31,11 +32,12 @@ public class GlobalSettingsStore {
     this.storageFolder = storageFolder;
   }
 
-  public void store(Sonarlint.GlobalProperties globalProperties) {
-    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(globalProperties, dest.resolve(PROPERTIES_PB))));
+  public void store(Map<String, String> globalProperties) {
+    rwLock.write(() -> storageFolder
+      .writeAction(dest -> ProtobufUtil.writeToFile(Sonarlint.GlobalProperties.newBuilder().putAllProperties(globalProperties).build(), dest.resolve(PROPERTIES_PB))));
   }
 
-  public Sonarlint.GlobalProperties getAll() {
-    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(PROPERTIES_PB), Sonarlint.GlobalProperties.parser())));
+  public Map<String, String> getAll() {
+    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(PROPERTIES_PB), Sonarlint.GlobalProperties.parser()))).getPropertiesMap();
   }
 }

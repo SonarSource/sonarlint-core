@@ -20,42 +20,20 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.List;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.Qualityprofiles;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
-import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
-import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 
 public class ProjectQualityProfilesDownloader {
-
-  private static final Logger LOG = Loggers.get(ProjectQualityProfilesDownloader.class);
-
-  private final ServerApiHelper serverApiHelper;
+  private final QualityProfileApi qualityProfileApi;
 
   public ProjectQualityProfilesDownloader(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+    this.qualityProfileApi = new ServerApi(serverApiHelper).qualityProfile();
   }
 
   public List<QualityProfile> fetchModuleQualityProfiles(String projectKey) {
-    SearchWsResponse qpResponse;
-    StringBuilder url = new StringBuilder();
-    url.append("/api/qualityprofiles/search.protobuf?project=");
-    url.append(StringUtils.urlEncode(projectKey));
-    serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
-    try {
-      qpResponse = ServerApiHelper.processTimed(
-        () -> serverApiHelper.get(url.toString()),
-        response -> Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream()),
-        duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
-    } catch (NotFoundException e) {
-      throw new ProjectNotFoundException(projectKey, serverApiHelper.getOrganizationKey().orElse(null));
-    }
-    return qpResponse.getProfilesList();
+    return qualityProfileApi.getQualityProfiles(projectKey);
   }
 
 }

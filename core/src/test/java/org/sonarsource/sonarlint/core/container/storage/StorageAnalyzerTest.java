@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -30,7 +31,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +56,7 @@ class StorageAnalyzerTest {
     MockitoAnnotations.initMocks(this);
     when(config.projectKey()).thenReturn("module1");
     globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
-    globalSettingsStore.store(Sonarlint.GlobalProperties.newBuilder().build());
+    globalSettingsStore.store(Collections.emptyMap());
     analyzer = new StorageAnalyzer(globalReader, moduleReader);
   }
 

@@ -81,10 +81,10 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
@@ -723,9 +723,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void getProject() {
-    ProjectApi helper = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).project();
-    assertThat(helper.getProject("foo", null)).isNotPresent();
-    assertThat(helper.getProject(PROJECT_KEY_RUBY, null)).isPresent();
+    ComponentApi api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
+    assertThat(api.getProject("foo")).isNotPresent();
+    assertThat(api.getProject(PROJECT_KEY_RUBY)).isPresent();
   }
 
   @Test

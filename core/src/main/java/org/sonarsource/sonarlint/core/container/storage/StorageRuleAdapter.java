@@ -26,43 +26,44 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.RuleStatus;
 import org.sonar.api.rules.RuleType;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class StorageRuleAdapter implements SonarLintRule {
 
-  private final org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule r;
+  private final ServerRules.Rule rule;
 
-  public StorageRuleAdapter(org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule r) {
-    this.r = r;
+  public StorageRuleAdapter(ServerRules.Rule rule) {
+    this.rule = rule;
   }
 
   @Override
   public RuleKey key() {
-    return RuleKey.of(r.getRepo(), r.getKey());
+    return RuleKey.of(rule.getRepository(), rule.getRule());
   }
 
   @Override
   public String name() {
-    return r.getName();
+    return rule.getName();
   }
 
   @Override
   public String description() {
-    return r.getHtmlDesc();
+    return rule.getHtmlDesc();
   }
 
   @Override
   public String internalKey() {
-    return r.getInternalKey();
+    return rule.getInternalKey();
   }
 
   @Override
   public String severity() {
-    return r.getSeverity();
+    return rule.getSeverity();
   }
 
   @Override
   public RuleType type() {
-    return RuleType.valueOf(r.getType().toUpperCase(Locale.ENGLISH));
+    return RuleType.valueOf(rule.getType().toUpperCase(Locale.ENGLISH));
   }
 
   @Override

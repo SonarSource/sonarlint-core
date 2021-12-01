@@ -20,11 +20,13 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class RulesStore {
 
@@ -38,13 +40,50 @@ public class RulesStore {
     this.storageFolder = storageFolder;
   }
 
-  public void store(Sonarlint.Rules rules) {
-    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(rules, dest.resolve(RULES_PB))));
+  public void store(List<ServerRules.Rule> rules) {
+    var protoRules = Sonarlint.Rules.newBuilder()
+      .putAllRulesByKey(
+        rules.stream().collect(Collectors.toMap(ServerRules.Rule::getRuleKey, r -> Sonarlint.Rules.Rule.newBuilder()
+          .setRepo(r.getRepository())
+          .setKey(r.getRule())
+          .setName(r.getName())
+          .setSeverity(r.getSeverity())
+          .setLang(r.getLang())
+          .setInternalKey(r.getInternalKey())
+          .setHtmlDesc(r.getHtmlDesc())
+          .setHtmlNote(r.getHtmlNote())
+          .setIsTemplate(r.isTemplate())
+          .setTemplateKey(r.getTemplateKey())
+          .setType(r.getType())
+          .build(), (r1, r2) -> r1)))
+      .build();
+    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(protoRules, dest.resolve(RULES_PB))));
   }
 
-  public Sonarlint.Rules getAll() {
+  public List<ServerRules.Rule> getAll() {
+    return getProtoRules().getRulesByKeyMap().values()
+      .stream().map(r -> new ServerRules.Rule(
+        r.getRepo(),
+        r.getKey(),
+        r.getName(),
+        r.getSeverity(),
+        r.getLang(),
+        r.getInternalKey(),
+        r.getHtmlDesc(),
+        r.getHtmlNote(),
+        r.getIsTemplate(),
+        r.getTemplateKey(),
+        r.getType()
+      )).collect(Collectors.toList());
+  }
+
+  public Optional<Sonarlint.Rules.Rule> getRuleWithKey(String ruleKey) {
+    return Optional.ofNullable(getProtoRules().getRulesByKeyMap().get(ruleKey));
+  }
+
+  private Sonarlint.Rules getProtoRules() {
     return rwLock.read(() -> storageFolder.readAction(source -> {
-      Path rulesPath = source.resolve(RULES_PB);
+      var rulesPath = source.resolve(RULES_PB);
       if (Files.exists(rulesPath)) {
         return ProtobufUtil.readFile(rulesPath, Sonarlint.Rules.parser());
       } else {
@@ -52,10 +91,6 @@ public class RulesStore {
         return Sonarlint.Rules.newBuilder().build();
       }
     }));
-  }
-
-  public Optional<Sonarlint.Rules.Rule> getRuleWithKey(String ruleKey) {
-    return Optional.ofNullable(getAll().getRulesByKeyMap().get(ruleKey));
   }
 
 }

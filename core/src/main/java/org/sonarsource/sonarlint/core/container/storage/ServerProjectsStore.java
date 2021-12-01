@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.container.model.DefaultRemoteProject;
+import org.sonarsource.sonarlint.core.serverapi.component.DefaultRemoteProject;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 public class ServerProjectsStore {
   public static final String PROJECT_LIST_PB = "project_list.pb";
@@ -67,7 +67,8 @@ public class ServerProjectsStore {
     Map<String, ServerProject> converted = new HashMap<>();
     Map<String, Sonarlint.ProjectList.Project> projectsByKey = projectList.getProjectsByKeyMap();
     for (Map.Entry<String, Sonarlint.ProjectList.Project> entry : projectsByKey.entrySet()) {
-      converted.put(entry.getKey(), new DefaultRemoteProject(entry.getValue()));
+      var project = entry.getValue();
+      converted.put(entry.getKey(), new DefaultRemoteProject(project.getKey(), project.getName()));
     }
     return converted;
   }

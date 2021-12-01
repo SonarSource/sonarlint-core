@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,8 +30,7 @@ import org.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +48,7 @@ class QualityProfilesUpdateCheckerTest {
   @BeforeEach
   public void prepare() {
     qualityProfileStore = new QualityProfileStore(new StorageFolder.Default(tempDir));
-    qualityProfileStore.store(QProfiles.newBuilder().build());
+    qualityProfileStore.store(Collections.emptyList());
     mockServer.addProtobufResponse("/api/qualityprofiles/search.protobuf", Qualityprofiles.SearchWsResponse.newBuilder().build());
 
     checker = new QualityProfilesUpdateChecker(mockServer.serverApiHelper());
@@ -79,8 +80,8 @@ class QualityProfilesUpdateCheckerTest {
 
   @Test
   void removedQProfile() {
-    qualityProfileStore.store(QProfiles.newBuilder().putQprofilesByKey("java-123", QProfile.newBuilder().setKey("java-123").setName("Sonar Way")
-        .setLanguageName("Java").build()).build());
+    qualityProfileStore.store(List.of(new QualityProfile(
+      false, "java-123", "Sonar Way", "java", "Java", 0, "", "")));
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(qualityProfileStore, result);
@@ -96,14 +97,8 @@ class QualityProfilesUpdateCheckerTest {
         Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder().setKey("java-123").setLanguageName("Java")
           .setName("Sonar Way").setRulesUpdatedAt("foo").build())
         .build());
-    qualityProfileStore.store(QProfiles.newBuilder().putQprofilesByKey("java-123",
-        QProfile.newBuilder()
-          .setKey("java-123")
-          .setName("Sonar Way")
-          .setLanguageName("Java")
-          .setRulesUpdatedAt("foo2")
-          .build())
-        .build());
+    qualityProfileStore.store(List.of(new QualityProfile(
+      false, "java-123", "Sonar Way", "java", "Java", 0, "foo2", "")));
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(qualityProfileStore, result);
@@ -119,14 +114,8 @@ class QualityProfilesUpdateCheckerTest {
         Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder().setKey("java-123").setLanguageName("Java")
           .setName("Sonar Way").setRulesUpdatedAt("foo").setUserUpdatedAt("user").build())
         .build());
-    qualityProfileStore.store(QProfiles.newBuilder().putQprofilesByKey("java-123",
-        QProfile.newBuilder()
-          .setKey("java-123")
-          .setName("Sonar Way")
-          .setLanguageName("Java")
-          .setRulesUpdatedAt("foo")
-          .build())
-        .build());
+    qualityProfileStore.store(List.of(new QualityProfile(
+      false, "java-123", "Sonar Way", "java", "Java", 0, "foo", "")));
 
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
     checker.checkForUpdates(qualityProfileStore, result);

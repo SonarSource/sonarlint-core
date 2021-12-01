@@ -19,30 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
-import org.sonarqube.ws.Components;
-import org.sonarqube.ws.Components.Component;
+import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentPath;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
-  private final ServerApiHelper serverApiHelper;
+  private final ComponentApi componentApi;
 
   public ModuleHierarchyDownloader(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+    this.componentApi = new ServerApi(serverApiHelper).component();
   }
 
   /**
@@ -53,23 +50,15 @@ public class ModuleHierarchyDownloader {
    * @return Mapping of moduleKey -&gt; relativePath from given module
    */
   public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
-    List<Component> modules = new ArrayList<>();
-
-    serverApiHelper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
-      Components.TreeWsResponse::parseFrom,
-      Components.TreeWsResponse::getPaging,
-      Components.TreeWsResponse::getComponentsList,
-      modules::add,
-      true,
-      progress);
+    List<ComponentPath> modules = componentApi.getSubProjects(projectKey, new ProgressWrapperAdapter(progress));
 
     // doesn't include root
-    Map<String, Component> modulesByKey = modules.stream().collect(Collectors.toMap(Component::getKey, Function.identity()));
+    Map<String, ComponentPath> modulesByKey = modules.stream().collect(Collectors.toMap(ComponentPath::getKey, Function.identity()));
 
     // component -> ancestorComponent. Doesn't include root
-    Map<Component, Component> ancestors = new HashMap<>();
-    for (Component c : modules) {
-      ancestors.put(c, modulesByKey.get(fetchAncestorKey(c.getKey())));
+    Map<ComponentPath, ComponentPath> ancestors = new HashMap<>();
+    for (ComponentPath c : modules) {
+      ancestors.put(c, modulesByKey.get(componentApi.fetchFirstAncestorKey(c.getKey()).orElse(null)));
     }
 
     // module key -> path from root project base directory
@@ -80,9 +69,9 @@ public class ModuleHierarchyDownloader {
     return modulesWithPath;
   }
 
-  private static String findPathFromRoot(Component component, Map<Component, Component> ancestors) {
-    Component c = component;
-    Path path = Paths.get("");
+  private static String findPathFromRoot(ComponentPath component, Map<ComponentPath, ComponentPath> ancestors) {
+    var c = component;
+    var path = Paths.get("");
 
     do {
       path = Paths.get(c.getPath()).resolve(path);
@@ -90,14 +79,5 @@ public class ModuleHierarchyDownloader {
     } while (c != null);
 
     return toSonarQubePath(path.toString());
-  }
-
-  @CheckForNull
-  private String fetchAncestorKey(String moduleKey) {
-    return new ServerApi(serverApiHelper)
-      .project()
-      .fetchComponent(moduleKey)
-      .flatMap(r -> r.getAncestorsList().stream().map(Component::getKey).findFirst())
-      .orElse(null);
   }
 }

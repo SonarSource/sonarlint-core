@@ -45,7 +45,7 @@ public class StringUtils {
   public static String describe(Object o) {
     try {
       if (o.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
-        String str = o.toString();
+        var str = o.toString();
         if (str != null) {
           return str;
         }
@@ -70,7 +70,7 @@ public class StringUtils {
     if (str == null || (strLen = str.length()) == 0) {
       return true;
     }
-    for (int i = 0; i < strLen; i++) {
+    for (var i = 0; i < strLen; i++) {
       if (!Character.isWhitespace(str.charAt(i))) {
         return false;
       }
@@ -95,8 +95,8 @@ public class StringUtils {
       // Should never occur
       throw new IllegalStateException(e);
     }
-    int bufLen = 8192;
-    final byte[] buffer = new byte[bufLen];
+    var bufLen = 8192;
+    final var buffer = new byte[bufLen];
     int read = data.read(buffer, 0, bufLen);
 
     while (read > -1) {
@@ -105,8 +105,8 @@ public class StringUtils {
     }
 
     byte[] array = md.digest();
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < array.length; ++i) {
+    var sb = new StringBuilder();
+    for (var i = 0; i < array.length; ++i) {
       sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
     }
     return sb.toString();

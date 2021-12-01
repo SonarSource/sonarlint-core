@@ -21,6 +21,10 @@ package org.sonarsource.sonarlint.core.client.api.exceptions;
 
 public class StorageException extends SonarLintException {
 
+  public StorageException(String msg) {
+    super(msg);
+  }
+
   public StorageException(String msg, Throwable cause) {
     super(msg, cause);
   }

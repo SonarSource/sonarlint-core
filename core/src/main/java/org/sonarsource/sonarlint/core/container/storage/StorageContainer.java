@@ -25,12 +25,10 @@ import java.time.Clock;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.picocontainer.injectors.ProviderAdapter;
-import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonar.api.utils.Version;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
@@ -62,7 +60,6 @@ import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainer extends ComponentContainer {
@@ -84,8 +81,8 @@ public class StorageContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
-    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
+    var sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
+    var sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
     add(
       globalConfig,
       globalStores,
@@ -133,7 +130,6 @@ public class StorageContainer extends ComponentContainer {
       NodeJsHelper.class,
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
-      new StorageRulesProvider(),
       new StorageQProfilesProvider(),
       new SonarLintRulesProvider(),
       new SonarQubeVersion(sonarPluginApiVersion),
@@ -167,14 +163,14 @@ public class StorageContainer extends ComponentContainer {
   }
 
   private SonarLintRules merge(SonarLintRules rulesFromPlugins, SonarLintRules rulesFromStorage) {
-    SonarLintRules merged = new SonarLintRules();
+    var merged = new SonarLintRules();
     rulesFromStorage.findAll().forEach(merged::add);
     rulesFromPlugins.findAll().forEach(merged::add);
     return merged;
   }
 
   private void loadRulesFromPlugins() {
-    StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
+    var container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
     rulesFromPlugins = container.getRules();
   }
@@ -195,9 +191,9 @@ public class StorageContainer extends ComponentContainer {
   }
 
   protected void installPlugins() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
+    var pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
-      Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
+      var instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
   }
@@ -224,7 +220,7 @@ public class StorageContainer extends ComponentContainer {
     return optionalRule.map(ruleFromStorage -> {
       String type = StringUtils.isEmpty(ruleFromStorage.getType()) ? null : ruleFromStorage.getType();
 
-      Language language = Language.forKey(ruleFromStorage.getLang())
+      var language = Language.forKey(ruleFromStorage.getLang())
         .orElseThrow(() -> new IllegalArgumentException("Unknown language for rule " + ruleKeyStr + ": " + ruleFromStorage.getLang()));
       ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
       if (config.getEmbeddedPluginUrlsByKey().containsKey(language.getPluginKey()) && ruleFromPlugin != null) {
@@ -243,7 +239,7 @@ public class StorageContainer extends ComponentContainer {
   }
 
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
-    ActiveRule readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
+    var readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
     // for extra plugins there will no be rule in the storage
     String severity = null;
     if (readActiveRuleFromStorage != null) {

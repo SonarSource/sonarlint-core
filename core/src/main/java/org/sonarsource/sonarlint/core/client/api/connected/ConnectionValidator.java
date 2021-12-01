@@ -21,12 +21,14 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
-import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationChecker;
+import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
+import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectionValidator {
@@ -37,15 +39,16 @@ public class ConnectionValidator {
   }
 
   public CompletableFuture<ValidationResult> validateConnection() {
-    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(helper);
-    AuthenticationChecker authChecker = new AuthenticationChecker(helper);
+    var serverChecker = new ServerVersionAndStatusChecker(helper);
+    var authChecker = new AuthenticationChecker(helper);
     return serverChecker.checkVersionAndStatusAsync()
       .thenApply(check -> {
         ValidationResult validateCredentials = authChecker.validateCredentials();
         Optional<String> organizationKey = helper.getOrganizationKey();
         if (validateCredentials.success() && organizationKey.isPresent()) {
-          Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(), new ProgressWrapper(null));
-          if (!organization.isPresent()) {
+          Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(),
+            new ProgressWrapperAdapter(new ProgressWrapper(null)));
+          if (organization.isEmpty()) {
             return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
           }
         }

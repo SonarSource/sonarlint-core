@@ -20,14 +20,15 @@
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import com.google.common.collect.MapDifference;
-import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 
 public class QualityProfilesUpdateChecker {
@@ -38,19 +39,19 @@ public class QualityProfilesUpdateChecker {
   }
 
   public void checkForUpdates(QualityProfileStore qualityProfileStore, DefaultStorageUpdateCheckResult result) {
-    QProfiles serverQualityProfiles = qualityProfileApi.getQualityProfiles();
-    QProfiles storageQProfiles = qualityProfileStore.getAll();
-    Map<String, QProfile> serverPluginHashes = serverQualityProfiles.getQprofilesByKeyMap();
-    Map<String, QProfile> storagePluginHashes = storageQProfiles.getQprofilesByKeyMap();
-    MapDifference<String, QProfile> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);
+    List<QualityProfile> serverQualityProfiles = qualityProfileApi.getQualityProfiles();
+    List<QualityProfile> storageQProfiles = qualityProfileStore.getAll();
+    Map<String, QualityProfile> serverPluginHashes = serverQualityProfiles.stream().collect(Collectors.toMap(QualityProfile::getKey, Function.identity()));
+    Map<String, QualityProfile> storagePluginHashes = storageQProfiles.stream().collect(Collectors.toMap(QualityProfile::getKey, Function.identity()));
+    MapDifference<String, QualityProfile> pluginDiff = Maps.difference(storagePluginHashes, serverPluginHashes);
     if (!pluginDiff.areEqual()) {
-      for (Map.Entry<String, QProfile> entry : pluginDiff.entriesOnlyOnLeft().entrySet()) {
+      for (var entry : pluginDiff.entriesOnlyOnLeft().entrySet()) {
         result.appendToChangelog(String.format("Quality profile '%s' for language '%s' removed", entry.getValue().getName(), entry.getValue().getLanguageName()));
       }
-      for (Map.Entry<String, QProfile> entry : pluginDiff.entriesOnlyOnRight().entrySet()) {
+      for (var entry : pluginDiff.entriesOnlyOnRight().entrySet()) {
         result.appendToChangelog(String.format("Quality profile '%s' for language '%s' added", entry.getValue().getName(), entry.getValue().getLanguageName()));
       }
-      for (Map.Entry<String, ValueDifference<QProfile>> entry : pluginDiff.entriesDiffering().entrySet()) {
+      for (var entry : pluginDiff.entriesDiffering().entrySet()) {
         result.appendToChangelog(
           String.format("Quality profile '%s' for language '%s' updated", entry.getValue().rightValue().getName(), entry.getValue().rightValue().getLanguageName()));
       }

@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.util.Date;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.container.model.DefaultGlobalStorageStatus;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class GlobalUpdateStatusReader {
   private final ServerInfoStore serverInfoStore;
@@ -35,12 +34,12 @@ public class GlobalUpdateStatusReader {
 
   public GlobalStorageStatus read() {
     if (storageStatusStore.exists()) {
-      final Sonarlint.StorageStatus currentStorageStatus = storageStatusStore.getAll();
+      final var currentStorageStatus = storageStatusStore.getAll();
       final boolean stale = !currentStorageStatus.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
 
       String version = null;
       if (!stale) {
-        final Sonarlint.ServerInfos serverInfoFromStorage = serverInfoStore.getAll();
+        final var serverInfoFromStorage = serverInfoStore.getAll();
         version = serverInfoFromStorage.getVersion();
       }
 

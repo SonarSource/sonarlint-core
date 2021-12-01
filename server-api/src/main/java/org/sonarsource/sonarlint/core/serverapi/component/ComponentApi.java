@@ -1,0 +1,122 @@
+/*
+ * SonarLint Server API
+ * Copyright (C) 2016-2021 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.serverapi.component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+import org.sonarqube.ws.Components;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.util.Progress;
+import org.sonarsource.sonarlint.core.util.StringUtils;
+
+public class ComponentApi {
+  private static final Logger LOG = Loggers.get(ComponentApi.class);
+
+  private final ServerApiHelper helper;
+
+  public ComponentApi(ServerApiHelper helper) {
+    this.helper = helper;
+  }
+
+  public List<ComponentPath> getSubProjects(String componentKey, Progress progress) {
+    List<ComponentPath> modules = new ArrayList<>();
+
+    helper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(componentKey),
+      Components.TreeWsResponse::parseFrom,
+      Components.TreeWsResponse::getPaging,
+      Components.TreeWsResponse::getComponentsList,
+      m -> modules.add(new ComponentPath(m.getKey(), m.getPath())),
+      true,
+      progress);
+    return modules;
+  }
+
+  public List<String> getAllFileKeys(String projectKey, Progress progress) {
+    String path = buildAllFileKeysPath(projectKey);
+    List<String> files = new ArrayList<>();
+
+    helper.getPaginated(path,
+      Components.TreeWsResponse::parseFrom,
+      Components.TreeWsResponse::getPaging,
+      Components.TreeWsResponse::getComponentsList,
+      component -> files.add(component.getKey()), false, progress);
+    return files;
+  }
+
+  private String buildAllFileKeysPath(String projectKey) {
+    var url = new StringBuilder();
+    url.append("api/components/tree.protobuf?qualifiers=FIL,UTS&");
+    url.append("component=").append(StringUtils.urlEncode(projectKey));
+    helper.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    return url.toString();
+  }
+
+  public Optional<ServerProject> getProject(String projectKey) {
+    return fetchComponent(projectKey).map(component -> new DefaultRemoteProject(component.getKey(), component.getName()));
+  }
+
+  public List<ServerProject> getAllProjects(Progress progress) {
+    List<ServerProject> serverProjects = new ArrayList<>();
+    helper.getPaginated(getAllProjectsUrl(),
+      Components.SearchWsResponse::parseFrom,
+      Components.SearchWsResponse::getPaging,
+      Components.SearchWsResponse::getComponentsList,
+      project -> serverProjects.add(new DefaultRemoteProject(project.getKey(), project.getName())),
+      true,
+      progress);
+    return serverProjects;
+  }
+
+  private String getAllProjectsUrl() {
+    var searchUrl = new StringBuilder();
+    searchUrl.append("api/components/search.protobuf?qualifiers=TRK");
+    helper.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+    return searchUrl.toString();
+  }
+
+  public Optional<Component> fetchComponent(String componentKey) {
+    return fetchComponent(componentKey, response -> {
+      var wsComponent = response.getComponent();
+      return new Component(wsComponent.getKey(), wsComponent.getName());
+    });
+  }
+
+  public Optional<String> fetchFirstAncestorKey(String componentKey) {
+    return fetchComponent(componentKey, response -> response.getAncestorsList().stream().map(Components.Component::getKey).findFirst().orElse(null));
+  }
+
+  private <T> Optional<T> fetchComponent(String componentKey, Function<Components.ShowWsResponse, T> responseConsumer) {
+    return ServerApiHelper.processTimed(
+      () -> helper.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey)),
+      response -> {
+        if (response.isSuccessful()) {
+          var wsResponse = Components.ShowWsResponse.parseFrom(response.bodyAsStream());
+          return Optional.ofNullable(responseConsumer.apply(wsResponse));
+        }
+        return Optional.empty();
+      },
+      duration -> LOG.debug("Downloaded project details in {}ms", duration));
+  }
+}

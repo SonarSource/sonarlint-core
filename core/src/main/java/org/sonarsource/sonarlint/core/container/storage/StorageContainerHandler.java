@@ -42,10 +42,10 @@ import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpd
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainerHandler {
@@ -81,18 +81,17 @@ public class StorageContainerHandler {
   }
 
   @CheckForNull
-  public ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
-    QProfiles qProfiles = qualityProfileStore.getAll();
+  public ServerRules.ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
     Map<String, String> qProfilesByLanguage;
     if (projectKey == null) {
-      qProfilesByLanguage = qProfiles.getDefaultQProfilesByLanguageMap();
+      qProfilesByLanguage = qualityProfileStore.getAll().stream().filter(QualityProfile::isDefault).collect(Collectors.toMap(QualityProfile::getKey, QualityProfile::getLanguage));
     } else {
       qProfilesByLanguage = storageReader.readProjectConfig(projectKey).getQprofilePerLanguageMap();
     }
     for (String qProfileKey : qProfilesByLanguage.values()) {
-      Sonarlint.ActiveRules activeRulesFromStorage = activeRulesStore.getActiveRules(qProfileKey);
-      if (activeRulesFromStorage.getActiveRulesByKeyMap().containsKey(ruleKeyStr)) {
-        return activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
+      var activeRule = activeRulesStore.getActiveRule(qProfileKey, ruleKeyStr);
+      if (activeRule != null) {
+        return activeRule;
       }
     }
     return null;
@@ -116,14 +115,14 @@ public class StorageContainerHandler {
 
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
+    var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
     updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
   public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
+    var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
     updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, progress);
   }
@@ -137,7 +136,7 @@ public class StorageContainerHandler {
       .map(Paths::get)
       .collect(Collectors.toList());
 
-    FileMatcher fileMatcher = new FileMatcher();
+    var fileMatcher = new FileMatcher();
     FileMatcher.Result match = fileMatcher.match(sqPathList, idePathList);
     return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.sqPrefix().toString()),
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
