@@ -19,16 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.branches;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ProjectBranchesApi {
@@ -42,24 +39,24 @@ public class ProjectBranchesApi {
   }
 
   public Collection<String> getAllBranchNames(String projectKey) {
-    HttpClient.Response response = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + projectKey);
-    String bodyAsString = response.bodyAsString();
+    var response = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + projectKey);
+    var bodyAsString = response.bodyAsString();
     return getBranchNamesFromResponse(bodyAsString);
   }
 
-  private Collection<String> getBranchNamesFromResponse(String bodyAsString) {
+  private static Collection<String> getBranchNamesFromResponse(String bodyAsString) {
     Collection<String> parsedBranchNames = new ArrayList<>();
     try {
-      JsonObject root = JsonParser.parseString(bodyAsString).getAsJsonObject();
-      JsonArray branches = root.get("branches").getAsJsonArray();
+      var root = JsonParser.parseString(bodyAsString).getAsJsonObject();
+      var branches = root.get("branches").getAsJsonArray();
 
       for (JsonElement el : branches) {
-        JsonObject branch = el.getAsJsonObject();
-        JsonElement element = branch.get("name");
+        var branch = el.getAsJsonObject();
+        var element = branch.get("name");
         if (element == null) {
           throw new IllegalStateException("Failed to parse response. Missing field 'name'.");
         }
-        String name = element.getAsString();
+        var name = element.getAsString();
         parsedBranchNames.add(name);
       }
 
