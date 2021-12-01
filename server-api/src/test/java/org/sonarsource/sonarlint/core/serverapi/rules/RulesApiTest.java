@@ -118,6 +118,23 @@ class RulesApiTest {
     assertThat(thrown).hasMessage("Failed to load rules");
   }
 
+  @Test
+  void should_get_rule_description() {
+    mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
+      Rules.ShowResponse.newBuilder().setRule(
+        Rules.Rule.newBuilder()
+          .setHtmlDesc("htmlDesc")
+          .setHtmlNote("htmlNote")
+          .build())
+        .build());
+
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
+
+    var ruleDescription = rulesApi.getRuleDescription("java:S1234");
+
+    assertThat(ruleDescription).contains("htmlDesc\nhtmlNote");
+  }
+
   private void emptyMockForAllSeverities() {
     for (Severity s : Severity.values()) {
       mockServer.addResponseFromResource(RulesApi.RULES_SEARCH_URL + "&severities=" + s.name() + "&languages=" + "js" + "&p=1&ps=500", "/update/empty_rules.pb");
