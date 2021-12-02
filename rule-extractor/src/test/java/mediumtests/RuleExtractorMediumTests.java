@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonar.api.utils.log.LogTesterJUnit5;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.plugin.common.Language;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -41,6 +44,9 @@ class RuleExtractorMediumTests {
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
   private static Set<Path> allJars;
+
+  @RegisterExtension
+  public LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
   @BeforeAll
   public static void prepare() throws IOException {
@@ -56,6 +62,10 @@ class RuleExtractorMediumTests {
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(2863);
+      assertThat(logTester.logs(LoggerLevel.WARN)).containsExactlyInAnyOrder(
+        "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
     } else {
       assertThat(allJars).hasSize(10);
       assertThat(allRules).hasSize(1199);

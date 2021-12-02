@@ -20,6 +20,13 @@
 package org.sonarsource.sonarlint.core.plugin.common.load;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +36,7 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonar.api.Plugin;
+import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -43,6 +51,8 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.Plugin}.
  */
 public class PluginInstancesLoader {
+
+  private static final Logger LOG = Loggers.get(PluginInstancesLoader.class);
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
 
@@ -79,6 +89,13 @@ public class PluginInstancesLoader {
       }
       PluginClassLoaderDef def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
       def.addFiles(List.of(plugin.getJarPath()));
+      if (plugin.getManifest().getDependencies().length > 0) {
+        LOG.warn("Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.", plugin.getKey());
+        for (String dependency : plugin.getManifest().getDependencies()) {
+          Path tmpDepFile = extractDependencyInTempFile(plugin, dependency);
+          def.addFiles(List.of(tmpDepFile));
+        }
+      }
       def.addMainClass(manifest.getKey(), manifest.getMainClass());
 
       for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
@@ -86,6 +103,46 @@ public class PluginInstancesLoader {
       }
     }
     return classloadersByBasePlugin.values();
+  }
+
+  private Path extractDependencyInTempFile(SonarPluginManifestAndJarPath plugin, String dependency) {
+    Path tmpDepFile;
+    try {
+      tmpDepFile = Files.createTempFile("sonarlint_" + plugin.getKey() + "_" + filenameWithoutExtension(dependency), ".jar");
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        @Override
+        public void run() {
+          try {
+            Files.delete(tmpDepFile);
+          } catch (IOException e) {
+            System.err.println("Unable to delete temporary file " + tmpDepFile + ". " + e.getMessage());
+            e.printStackTrace(System.err);
+          }
+        }
+      });
+      extractFile(plugin.getJarPath(), dependency, tmpDepFile);
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to extract plugin dependency: " + dependency, e);
+    }
+    return tmpDepFile;
+  }
+
+  private String filenameWithoutExtension(String dependency) {
+    String fileName = Paths.get(dependency).getFileName().toString();
+    int pos = fileName.lastIndexOf(".");
+    if (pos > 0 && pos < (fileName.length() - 1)) { // If '.' is not the first or last character.
+      fileName = fileName.substring(0, pos);
+    }
+    return fileName;
+  }
+
+  public void extractFile(Path zipFile, String fileName, Path outputFile) throws IOException {
+    // Wrap the file system in a try-with-resources statement
+    // to auto-close it when finished and prevent a memory leak
+    try (FileSystem fileSystem = FileSystems.newFileSystem(zipFile, null)) {
+      Path fileToExtract = fileSystem.getPath(fileName);
+      Files.copy(fileToExtract, outputFile, StandardCopyOption.REPLACE_EXISTING);
+    }
   }
 
   /**

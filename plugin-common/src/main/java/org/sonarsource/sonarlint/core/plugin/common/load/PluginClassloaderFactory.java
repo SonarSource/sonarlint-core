@@ -114,8 +114,6 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonar/check/")
       .addInclusion("com/sonarsource/plugins/license/api/")
       .addInclusion("org/sonarsource/sonarlint/plugin/api/")
-      // Some plugins are packaging gson, but we don't want to explode plugins anymore, so we simply provide it
-      .addInclusion("com/google/gson/")
       // Some plugins still use slf4j
       .addInclusion("org/slf4j/")
 
