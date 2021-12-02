@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.IOException;
 import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +65,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_one_issue_no_taint() throws IOException {
+  void test_download_one_issue_no_taint() {
     ScannerInput.ServerIssue response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -89,15 +88,15 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(1);
     // Unset
-    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLineOffset()).isEqualTo(0);
-    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLine()).isEqualTo(0);
-    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLineOffset()).isEqualTo(0);
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getStartLineOffset()).isZero();
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLine()).isZero();
+    assertThat(serverIssue.getPrimaryLocation().getTextRange().getEndLineOffset()).isZero();
 
     assertThat(serverIssue.getFlowList()).isEmpty();
   }
 
   @Test
-  void test_download_issues_fetch_vulnerabilities() throws IOException {
+  void test_download_issues_fetch_vulnerabilities() {
     ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -206,7 +205,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_issues_dont_fetch_resolved_vulnerabilities() throws IOException {
+  void test_download_issues_dont_fetch_resolved_vulnerabilities() {
     ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -240,7 +239,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_ignore_failure_when_fetching_taint_vulnerabilities() throws IOException {
+  void test_ignore_failure_when_fetching_taint_vulnerabilities() {
     ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -274,7 +273,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_no_issues() throws IOException {
+  void test_download_no_issues() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
     List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
@@ -282,7 +281,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_fail_other_codes() throws IOException {
+  void test_fail_other_codes() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
     IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS));
@@ -290,7 +289,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_return_empty_if_404() throws IOException {
+  void test_return_empty_if_404() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
     List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);

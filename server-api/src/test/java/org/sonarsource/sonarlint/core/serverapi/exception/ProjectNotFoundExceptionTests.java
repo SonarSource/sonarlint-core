@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

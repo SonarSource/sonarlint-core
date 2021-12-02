@@ -19,8 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
-public class QualityProfileFixtures {
-  public QualityProfile aQualityProfile(String name) {
-    return new QualityProfile(false, name, "", "", "", 0, "", "");
+import okhttp3.mockwebserver.MockResponse;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class QualityProfileApiTest {
+
+  @RegisterExtension
+  static MockWebServerExtension mockServer = new MockWebServerExtension();
+
+  @Test
+  void not_found() {
+    QualityProfileApi underTest = new QualityProfileApi(mockServer.serverApiHelper());
+
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=key", new MockResponse().setResponseCode(404));
+
+    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("key"));
   }
 }

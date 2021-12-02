@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Server API
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,61 +17,59 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.serverapi.component;
 
-import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.util.Progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-class ProjectFileListDownloaderTests {
-
+class ComponentApiTest {
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   private final static String PROJECT_KEY = "project1";
 
-  private final ProgressWrapper progressWrapper = mock(ProgressWrapper.class);
+  private final Progress progress = mock(Progress.class);
 
-  private ProjectFileListDownloader underTest;
+  private ComponentApi underTest;
 
   @BeforeEach
   public void setUp() {
-    underTest = new ProjectFileListDownloader(mockServer.serverApiHelper());
+    underTest = new ComponentApi(mockServer.serverApiHelper());
   }
 
   @Test
-  void should_get_files() throws IOException {
+  void should_get_files() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/component_tree.pb");
 
-    List<String> files = underTest.get(PROJECT_KEY, progressWrapper);
+    List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files).hasSize(187);
     assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
   }
 
   @Test
-  void should_get_files_with_organization() throws IOException {
-    underTest = new ProjectFileListDownloader(mockServer.serverApiHelper("myorg"));
+  void should_get_files_with_organization() {
+    underTest = new ComponentApi(mockServer.serverApiHelper("myorg"));
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&organization=myorg&ps=500&p=1", "/update/component_tree.pb");
 
-    List<String> files = underTest.get(PROJECT_KEY, progressWrapper);
+    List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files).hasSize(187);
     assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
   }
 
   @Test
-  void should_get_empty_files_if_tree_is_empty() throws IOException {
+  void should_get_empty_files_if_tree_is_empty() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/empty_component_tree.pb");
 
-    List<String> files = underTest.get(PROJECT_KEY, progressWrapper);
+    List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files.size()).isZero();
   }

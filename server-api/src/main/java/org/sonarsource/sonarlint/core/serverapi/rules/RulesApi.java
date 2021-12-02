@@ -73,7 +73,7 @@ public class RulesApi {
       var severity = Severity.values()[i];
       progress.setProgressAndCheckCancel("Loading severity '" + severity.name().toLowerCase(Locale.US) + "'",
         i / (float) Severity.values().length);
-      Progress severityProgress = progress.subProgress(i / (float) Severity.values().length,
+      var severityProgress = progress.subProgress(i / (float) Severity.values().length,
         (i + 1) / (float) Severity.values().length, severity.name().toLowerCase(Locale.US));
       fetchRulesAndActiveRules(rulesByKey, severity.name(), activeRulesByQProfileKey, enabledLanguageKeys, severityProgress);
     }

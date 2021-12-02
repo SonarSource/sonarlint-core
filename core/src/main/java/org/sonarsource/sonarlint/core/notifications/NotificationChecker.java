@@ -43,7 +43,7 @@ class NotificationChecker {
    */
   @CheckForNull
   public List<ServerNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
-    return developersApi.request(projectTimestamps)
+    return developersApi.getEvents(projectTimestamps)
       .stream().map(e -> new DefaultServerNotification(
         e.getCategory(),
         e.getMessage(),
