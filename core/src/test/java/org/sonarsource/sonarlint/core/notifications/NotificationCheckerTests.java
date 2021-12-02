@@ -64,13 +64,13 @@ class NotificationCheckerTests {
 
   @Test
   void testSuccess() {
-    ZonedDateTime timestamp = ZonedDateTime.of(2017, 06, 04, 20, 0, 0, 0, ZoneOffset.ofHours(0));
+    ZonedDateTime timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
     String expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
     mockServer.addStringResponse(expectedUrl, VALID_RESPONSE);
 
     List<ServerNotification> notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
 
-    assertThat(notifications.size()).isEqualTo(2);
+    assertThat(notifications).hasSize(2);
     assertThat(notifications.get(0).category()).isEqualTo("QUALITY_GATE");
     assertThat(notifications.get(0).message()).isEqualTo("Quality Gate is Red (was Orange)");
     assertThat(notifications.get(0).link()).isEqualTo("https://sonarcloud.io/dashboard?id=myproject");
@@ -81,7 +81,7 @@ class NotificationCheckerTests {
 
   @Test
   void testFailParsing() {
-    ZonedDateTime timestamp = ZonedDateTime.of(2017, 06, 04, 20, 0, 0, 0, ZoneOffset.ofHours(0));
+    ZonedDateTime timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
     String expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
     mockServer.addStringResponse(expectedUrl, INVALID_RESPONSE);
 
@@ -105,7 +105,7 @@ class NotificationCheckerTests {
 
   @Test
   void testFailCode() {
-    ZonedDateTime timestamp = ZonedDateTime.of(2017, 06, 04, 20, 0, 0, 0, ZoneOffset.ofHours(0));
+    ZonedDateTime timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
     String expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
 
     mockServer.addResponse(expectedUrl, new MockResponse().setResponseCode(500).setBody("failed"));

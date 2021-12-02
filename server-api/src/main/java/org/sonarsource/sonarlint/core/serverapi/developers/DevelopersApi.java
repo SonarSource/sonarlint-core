@@ -53,7 +53,7 @@ public class DevelopersApi {
     }
   }
 
-  public List<Event> request(Map<String, ZonedDateTime> projectTimestamps) {
+  public List<Event> getEvents(Map<String, ZonedDateTime> projectTimestamps) {
     String path = getWsPath(projectTimestamps);
     try (var wsResponse = helper.rawGet(path)) {
       if (!wsResponse.isSuccessful()) {
