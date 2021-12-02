@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
@@ -87,7 +88,7 @@ public class ActiveRulesStore {
 
   private static List<ServerRules.ActiveRule> adaptProto(Sonarlint.ActiveRules rules) {
     return rules.getActiveRulesByKeyMap().values().stream().map(r -> new ServerRules.ActiveRule(
-      r.getRepo(), r.getKey(), r.getSeverity(),
+      RuleKey.of(r.getRepo(), r.getKey()), r.getSeverity(),
       r.getParamsMap().entrySet().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()))).collect(Collectors.toList());
   }
 

@@ -56,7 +56,7 @@ public class RulesApi {
   }
 
   public Optional<String> getRuleDescription(String ruleKey) {
-    try(var response = helper.get(RULE_SHOW_URL + ruleKey)) {
+    try (var response = helper.get(RULE_SHOW_URL + ruleKey)) {
       var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
       return Optional.of(rule.getHtmlDesc() + "\n" + rule.getHtmlNote());
     } catch (Exception e) {
@@ -80,6 +80,33 @@ public class RulesApi {
     return new ServerRules(new ArrayList<>(rulesByKey.values()), activeRulesByQProfileKey);
   }
 
+  public List<ServerRules.ActiveRule> getAllActiveRules(String qualityProfileKey, Progress progress) {
+    List<ServerRules.ActiveRule> activeRules = new ArrayList<>();
+    var page = 0;
+    var loaded = 0;
+
+    while (true) {
+      page++;
+      Rules.SearchResponse response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
+      for (var entry : response.getActives().getActives().entrySet()) {
+        var ruleKey = RuleKey.parse(entry.getKey());
+        for (Rules.Active ar : entry.getValue().getActiveListList()) {
+          activeRules.add(new ServerRules.ActiveRule(
+            ruleKey,
+            ar.getSeverity(),
+            ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList())));
+        }
+      }
+      loaded += response.getPs();
+
+      if (response.getTotal() <= loaded) {
+        break;
+      }
+      progress.setProgressAndCheckCancel("Loading page " + page, loaded / (float) response.getTotal());
+    }
+    return activeRules;
+  }
+
   private void fetchRulesAndActiveRules(Map<RuleKey, ServerRules.Rule> rulesByKey, String severity, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey,
     Set<String> enabledLanguageKeys, Progress progress) {
     var page = 0;
@@ -88,7 +115,7 @@ public class RulesApi {
 
     while (true) {
       page++;
-      Rules.SearchResponse response = loadFromStream(helper.get(getUrl(severity, enabledLanguageKeys, page, pageSize)));
+      Rules.SearchResponse response = loadFromStream(helper.get(getSearchBySeverityUrl(severity, enabledLanguageKeys, page, pageSize)));
       if (response.getTotal() > 10_000) {
         throw new IllegalStateException(
           String.format("Found more than 10000 rules for severity '%s' in the SonarQube server, which is not supported by SonarLint.", severity));
@@ -103,7 +130,17 @@ public class RulesApi {
     }
   }
 
-  private String getUrl(String severity, Set<String> enabledLanguageKeys, int page, int pageSize) {
+  private String getSearchByQualityProfileUrl(String qualityProfileKey, int page) {
+    var builder = new StringBuilder();
+    builder.append("/api/rules/search.protobuf?qprofile=");
+    builder.append(qualityProfileKey);
+    helper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
+    builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&ps=500&p=");
+    builder.append(page);
+    return builder.toString();
+  }
+
+  private String getSearchBySeverityUrl(String severity, Set<String> enabledLanguageKeys, int page, int pageSize) {
     var builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
     helper.getOrganizationKey()
@@ -148,11 +185,9 @@ public class RulesApi {
       for (Rules.Active ar : entry.getValue().getActiveListList()) {
         String qProfileKey = ar.getQProfile();
         var activeRule = new ServerRules.ActiveRule(
-          ruleKey.repository(),
-          ruleKey.rule(),
+          ruleKey,
           ar.getSeverity(),
-          ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList())
-        );
+          ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()));
         activeRulesByQProfileKey.computeIfAbsent(qProfileKey, k -> new ArrayList<>()).add(activeRule);
       }
     }
