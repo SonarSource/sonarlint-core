@@ -67,7 +67,7 @@ public class IssueDownloader {
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
    *
    * @param key project key, or file key.
-   * @param branchName name of the branch. If null - issues will be downloaded for all branches.
+   * @param branchName name of the branch. If null - issues will be downloaded only for the main branch.
    * @return Iterator of issues. It can be empty but never null.
    */
   public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration,
