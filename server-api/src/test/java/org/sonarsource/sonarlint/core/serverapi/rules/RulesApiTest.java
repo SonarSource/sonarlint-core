@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.util.Progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -133,6 +134,36 @@ class RulesApiTest {
     var ruleDescription = rulesApi.getRuleDescription("java:S1234");
 
     assertThat(ruleDescription).contains("htmlDesc\nhtmlNote");
+  }
+
+  @Test
+  void should_get_active_rules_of_a_given_quality_profile() {
+    mockServer.addProtobufResponse("/api/rules/search.protobuf?qprofile=QPKEY&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&ps=500&p=1",
+      Rules.SearchResponse.newBuilder()
+        .setTotal(1)
+        .setPs(1)
+        .setActives(
+        Rules.Actives.newBuilder()
+          .putActives("repo:key", Rules.ActiveList.newBuilder().addActiveList(
+            Rules.Active.newBuilder()
+              .setSeverity("MAJOR")
+              .addParams(Rules.Active.Param.newBuilder().setKey("paramKey").setValue("paramValue").build())
+              .build())
+            .build())
+          .build())
+        .build());
+
+    var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));
+
+    var activeRules = rulesApi.getAllActiveRules("QPKEY", progress);
+
+    assertThat(activeRules)
+      .extracting("repository", "rule", "severity")
+      .containsOnly(tuple("repo", "key", "MAJOR"));
+    assertThat(activeRules)
+      .flatExtracting("params")
+      .extracting("key", "value")
+      .containsOnly(tuple("paramKey", "paramValue"));
   }
 
   private void emptyMockForAllSeverities() {

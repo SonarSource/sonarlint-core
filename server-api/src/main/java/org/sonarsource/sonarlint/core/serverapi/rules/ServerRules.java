@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.sonar.api.rule.RuleKey;
 
 public class ServerRules {
   private final List<Rule> allRules;
@@ -120,26 +121,22 @@ public class ServerRules {
     }
   }
   public static class ActiveRule {
-    private final String repository;
-    private final String rule;
+    private final RuleKey ruleKey;
     private final String severity;
     private final List<Param> params;
-    private final String ruleKey;
 
-    public ActiveRule(String repository, String rule, String severity, List<Param> params) {
-      this.repository = repository;
-      this.rule = rule;
+    public ActiveRule(RuleKey ruleKey, String severity, List<Param> params) {
+      this.ruleKey = ruleKey;
       this.severity = severity;
       this.params = params;
-      this.ruleKey = repository + ":" + rule;
     }
 
     public String getRepository() {
-      return repository;
+      return ruleKey.repository();
     }
 
     public String getRule() {
-      return rule;
+      return ruleKey.rule();
     }
 
     public String getSeverity() {
@@ -151,7 +148,7 @@ public class ServerRules {
     }
 
     public String getRuleKey() {
-      return ruleKey;
+      return ruleKey.toString();
     }
 
     public static class Param {
