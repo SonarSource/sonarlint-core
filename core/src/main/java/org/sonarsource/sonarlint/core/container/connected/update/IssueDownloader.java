@@ -70,7 +70,8 @@ public class IssueDownloader {
    * @param branchName name of the branch. If null - issues will be downloaded for all branches.
    * @return Iterator of issues. It can be empty but never null.
    */
-  public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
+  public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration,
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     Sonarlint.ServerIssue.Builder issueBuilder = Sonarlint.ServerIssue.newBuilder();
     Location.Builder locationBuilder = Location.newBuilder();
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder = Sonarlint.ServerIssue.TextRange.newBuilder();

@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
-import static java.util.stream.Collectors.joining;
 import static org.sonarsource.sonarlint.core.util.StringUtils.urlEncode;
 
 public class IssueApi {
@@ -118,7 +117,7 @@ public class IssueApi {
   }
 
   public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName) {
-    StringBuilder batchIssueUrl = new StringBuilder();
+    var batchIssueUrl = new StringBuilder();
     batchIssueUrl.append(getBatchIssuesUrl(key));
     if (branchName != null) {
       batchIssueUrl.append("&branch=").append(branchName);
