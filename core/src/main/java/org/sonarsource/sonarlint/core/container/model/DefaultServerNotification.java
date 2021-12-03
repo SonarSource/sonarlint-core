@@ -22,8 +22,7 @@ package org.sonarsource.sonarlint.core.container.model;
 import java.time.ZonedDateTime;
 
 import javax.annotation.concurrent.Immutable;
-
-import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
+import org.sonarsource.sonarlint.core.notifications.ServerNotification;
 
 @Immutable
 public class DefaultServerNotification implements ServerNotification {

@@ -24,25 +24,19 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
+import org.sonarsource.sonarlint.core.storage.StorageException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ServerIssueStoreTest {
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
+public class ServerIssueStoreTests {
 
   private final String path1 = "path1";
   private final String path2 = "path2";
@@ -50,14 +44,14 @@ public class ServerIssueStoreTest {
   private Path root;
   private ServerIssueStore store;
 
-  @Before
-  public void start() throws IOException {
-    root = temporaryFolder.newFolder().toPath();
+  @BeforeEach
+  public void start(@TempDir Path root) throws IOException {
+    this.root = root;
     store = new ServerIssueStore(root);
   }
 
   @Test
-  public void should_read_object_written() {
+  void should_read_object_written() {
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
@@ -73,7 +67,7 @@ public class ServerIssueStoreTest {
   }
 
   @Test
-  public void should_read_object_replaced() {
+  void should_read_object_replaced() {
     ServerIssue issue1 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(11))).build();
     ServerIssue issue2 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(22))).build();
 
@@ -85,7 +79,7 @@ public class ServerIssueStoreTest {
   }
 
   @Test
-  public void should_fail_to_save_object_if_cannot_write_to_filesystem() throws IOException {
+  void should_fail_to_save_object_if_cannot_write_to_filesystem() throws IOException {
     // the sha1sum of path
     String sha1sum = "074aeb9c5551d3b52d26cf3d6568599adbff99f1";
 
@@ -95,13 +89,12 @@ public class ServerIssueStoreTest {
     if (!wouldBeFile.toFile().mkdirs()) {
       fail("could not create dummy directory");
     }
-
-    exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1)).build()));
+    List<ServerIssue> serverIssues = List.of(ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1)).build());
+    assertThrows(StorageException.class, () -> store.save(serverIssues));
   }
 
   @Test
-  public void should_fail_to_delete_object() {
+  void should_fail_to_delete_object() {
     String fileKey = "module1:path1";
     // the sha1sum of fileKey
     String sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
@@ -112,12 +105,11 @@ public class ServerIssueStoreTest {
     if (!dummySubDir.toFile().mkdirs()) {
       fail("could not create dummy sub-directory");
     }
-    exception.expect(StorageException.class);
-    store.delete(fileKey);
+    assertThrows(StorageException.class, () -> store.delete(fileKey));
   }
 
   @Test
-  public void should_delete_entries() {
+  void should_delete_entries() {
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 

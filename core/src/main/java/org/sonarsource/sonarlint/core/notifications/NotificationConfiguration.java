@@ -17,11 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.notifications;
 
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
-import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 

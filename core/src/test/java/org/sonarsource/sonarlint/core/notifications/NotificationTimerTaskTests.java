@@ -25,10 +25,6 @@ import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
-import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
-import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.mockito.ArgumentMatchers.anyMap;

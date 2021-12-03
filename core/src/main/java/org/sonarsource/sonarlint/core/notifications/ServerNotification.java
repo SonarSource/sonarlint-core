@@ -17,30 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.notifications;
 
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
+import java.time.ZonedDateTime;
 
-public class RWLock {
-  private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+public interface ServerNotification {
+  String category();
 
-  public <T> T read(Supplier<T> supplier) {
-    readWriteLock.readLock().lock();
-    try {
-      return supplier.get();
-    } finally {
-      readWriteLock.readLock().unlock();
-    }
-  }
+  String message();
 
-  public void write(Runnable runnable) {
-    readWriteLock.writeLock().lock();
-    try {
-      runnable.run();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
-  }
+  String link();
+
+  String projectKey();
+  
+  ZonedDateTime time();
 }

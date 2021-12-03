@@ -17,7 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.client.api.notifications;
+package org.sonarsource.sonarlint.core.serverapi.util;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.Parser;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ProtobufUtil {
+  private ProtobufUtil() {
+    // only static stuff
+  }
+
+  public static <T extends Message> List<T> readMessages(InputStream input, Parser<T> parser) {
+    List<T> list = new ArrayList<>();
+    while (true) {
+      T message;
+      try {
+        message = parser.parseDelimitedFrom(input);
+      } catch (InvalidProtocolBufferException e) {
+        throw new IllegalStateException("failed to parse protobuf message", e);
+      }
+      if (message == null) {
+        break;
+      }
+      list.add(message);
+    }
+    return list;
+  }
+}

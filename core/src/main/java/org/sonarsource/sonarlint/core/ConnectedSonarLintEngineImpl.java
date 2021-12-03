@@ -29,10 +29,9 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -52,11 +51,11 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedExce
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
 import org.sonarsource.sonarlint.core.container.storage.GlobalUpdateStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
+import org.sonarsource.sonarlint.core.plugin.common.log.LogOutput;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -116,11 +115,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
     }
     return storageContainer;
-  }
-
-  @Override
-  protected ModuleRegistry getModuleRegistry() {
-    return getGlobalContainer().getModuleRegistry();
   }
 
   public void start() {

@@ -17,25 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.storage.connected;
 
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class QualityProfileStore {
-  public static final String QUALITY_PROFILES_PB = "quality_profiles.pb";
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private final StorageFolder storageFolder;
-  private final RWLock rwLock = new RWLock();
+class IssueStoreFactoryTests {
 
-  public QualityProfileStore(StorageFolder storageFolder) {
-    this.storageFolder = storageFolder;
-  }
+  @Test
+  void testFactory(@TempDir Path root) {
+    IssueStoreFactory factory = new IssueStoreFactory();
+    IssueStore store = factory.apply(root);
 
-  public void store(Sonarlint.QProfiles qualityProfiles) {
-    rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(qualityProfiles, dest.resolve(QUALITY_PROFILES_PB))));
-  }
-
-  public Sonarlint.QProfiles getAll() {
-    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(QUALITY_PROFILES_PB), Sonarlint.QProfiles.parser())));
+    assertThat(store).isInstanceOf(IssueStore.class);
   }
 }

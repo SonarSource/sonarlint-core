@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 class NotificationTimerTask extends TimerTask {

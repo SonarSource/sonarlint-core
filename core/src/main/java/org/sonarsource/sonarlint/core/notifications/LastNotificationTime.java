@@ -17,18 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.notifications;
+package org.sonarsource.sonarlint.core.notifications;
 
 import java.time.ZonedDateTime;
 
-public interface ServerNotification {
-  String category();
+public interface LastNotificationTime {
+  /**
+   * Get the time the last notification was received.
+   * This is the time that will be sent to the next request.
+   * It should be persisted for each project.
+   */
+  ZonedDateTime get();
 
-  String message();
-
-  String link();
-
-  String projectKey();
-  
-  ZonedDateTime time();
+  /**
+   * The date received in notifications will be set here.
+   */
+  void set(ZonedDateTime dateTime);
 }
