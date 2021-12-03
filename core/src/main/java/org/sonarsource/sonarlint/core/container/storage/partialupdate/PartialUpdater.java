@@ -60,7 +60,7 @@ public class PartialUpdater {
     }
     List<ServerIssue> issues;
     try {
-      issues = downloader.download(fileKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+      issues = downloader.download(fileKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);

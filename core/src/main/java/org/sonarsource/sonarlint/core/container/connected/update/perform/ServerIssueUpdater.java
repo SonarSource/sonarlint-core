@@ -49,7 +49,7 @@ public class ServerIssueUpdater {
   }
 
   public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 

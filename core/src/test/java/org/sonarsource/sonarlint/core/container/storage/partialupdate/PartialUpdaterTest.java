@@ -76,7 +76,7 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
     when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(downloader.download("module:file", projectConfiguration, false, PROGRESS)).thenReturn(issues);
+    when(downloader.download("module:file", projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 
     updater.updateFileIssues(projectBinding, projectConfiguration, "file", false, PROGRESS);
 
@@ -94,7 +94,7 @@ public class PartialUpdaterTest {
   @Test
   public void error_downloading_issues() {
     when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
-    when(downloader.download("module:file", projectConfiguration, false, PROGRESS)).thenThrow(IllegalArgumentException.class);
+    when(downloader.download("module:file", projectConfiguration, false, null, PROGRESS)).thenThrow(IllegalArgumentException.class);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
 
     assertThrows(DownloadException.class, () -> updater.updateFileIssues(projectBinding, projectConfiguration, "file", false, PROGRESS));
@@ -106,7 +106,7 @@ public class PartialUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     when(projectStoragePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(temp.newFolder().toPath());
-    when(downloader.download(projectBinding.projectKey(), projectConfiguration, false, PROGRESS)).thenReturn(issues);
+    when(downloader.download(projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 
     updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration, false, PROGRESS);
 
