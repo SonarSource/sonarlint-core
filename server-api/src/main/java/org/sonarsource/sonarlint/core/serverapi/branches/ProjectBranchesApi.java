@@ -28,8 +28,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerBranch;
-import org.sonarsource.sonarlint.core.container.model.DefaultServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ProjectBranchesApi {
@@ -61,7 +59,7 @@ public class ProjectBranchesApi {
         if (name == null || isMain == null) {
           throw new IllegalStateException("Failed to parse response. Missing field 'name'.");
         }
-        parsedBranchNames.add(new DefaultServerBranch(name.getAsString(), isMain.getAsBoolean()));
+        parsedBranchNames.add(new ServerBranch(name.getAsString(), isMain.getAsBoolean()));
       }
 
     } catch (Exception e) {

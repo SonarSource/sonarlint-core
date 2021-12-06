@@ -21,10 +21,11 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Collection;
 
-import org.sonarsource.sonarlint.core.client.api.connected.ServerBranch;
+
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 
 public class ProjectBranchesDownloader {
 

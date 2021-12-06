@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Server API
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
-
-import org.sonarsource.sonarlint.core.client.api.connected.ServerBranch;
+package org.sonarsource.sonarlint.core.serverapi.branches;
 
 import java.util.Objects;
 
-public class DefaultServerBranch implements ServerBranch {
+public class ServerBranch {
+
   private final String name;
   private final boolean isMain;
 
-  public DefaultServerBranch(String name, boolean isMain) {
+  public ServerBranch(String name, boolean isMain) {
     this.name = name;
     this.isMain = isMain;
   }
 
-  @Override
   public String getName() {
     return name;
   }
 
-  @Override
   public boolean isMain() {
     return isMain;
   }
@@ -46,7 +43,7 @@ public class DefaultServerBranch implements ServerBranch {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    DefaultServerBranch that = (DefaultServerBranch) o;
+    ServerBranch that = (ServerBranch) o;
     return isMain == that.isMain && Objects.equals(name, that.name);
   }
 

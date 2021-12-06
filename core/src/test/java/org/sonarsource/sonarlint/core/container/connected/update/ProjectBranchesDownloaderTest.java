@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
-import org.sonarsource.sonarlint.core.container.model.DefaultServerBranch;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -72,8 +72,8 @@ class ProjectBranchesDownloaderTest {
     var branches = underTest.getBranches(PROJECT_KEY);
 
     assertThat(branches).hasSize(2)
-      .contains(new DefaultServerBranch("master", true))
-      .contains(new DefaultServerBranch("feature/foo", false));
+      .contains(new ServerBranch("master", true))
+      .contains(new ServerBranch("feature/foo", false));
   }
 
   @Test
@@ -98,8 +98,23 @@ class ProjectBranchesDownloaderTest {
       "{\n" +
         "  \"branches\": [\n" +
         " {\n" +
-        "      \"isMain\": false,\n" +
+        "      \"name\": \"master\",\n" +
         "    }\n" +
+        "  ]\n" +
+        "}");
+
+    var branches = underTest.getBranches(PROJECT_KEY);
+
+    assertThat(branches).isEmpty();
+  }
+
+
+  @Test
+  void returnEmptyListOnMalformedResponseNoFields() {
+    mockServer.addStringResponse("/api/project_branches/list?project=project1",
+      "{\n" +
+        "  \"branches\": [\n" +
+        " { }\n" +
         "  ]\n" +
         "}");
 
