@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.fail;
@@ -127,7 +128,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void dontDownloadPluginIfNotEnabledLanguage() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+    assertThat(logs).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
     // TypeScript plugin has been merged in SonarJS in SQ 8.5
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 5)) {
       assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
@@ -142,6 +144,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void dontFailIfMissingDependentPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(logs).contains("Plugin 'Java Custom Rules Plugin' dependency on 'java' is unsatisfied. Skip loading it.");
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
       .contains(tuple(CUSTOM_JAVA_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("java"))));
@@ -151,6 +154,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void dontLoadExcludedPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
     engine.stop(false);
 
@@ -168,6 +172,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   public void analysisJavascriptWithoutTypescript() throws Exception {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
 
@@ -201,6 +206,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
       .setExtraProperties(extraProperties)
       .addEnabledLanguages(Language.JS, Language.PHP));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
 

@@ -73,7 +73,7 @@ public class RulesApi {
       page++;
       Rules.SearchResponse response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
       var rules = response.getRulesList();
-      for (var entry : response.getActives().getActives().entrySet()) {
+      for (var entry : response.getActives().getActivesMap().entrySet()) {
         var ruleKey = entry.getKey();
         for (Rules.Active ar : entry.getValue().getActiveListList()) {
           var rule = rules.stream().filter(r -> ruleKey.equals(r.getKey())).findFirst().orElseThrow();

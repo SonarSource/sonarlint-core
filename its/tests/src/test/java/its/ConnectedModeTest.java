@@ -72,6 +72,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 
 import static its.tools.ItUtils.SONAR_VERSION;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -285,6 +286,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(engine.getRuleDetails(javaRuleKey("S106")).getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();

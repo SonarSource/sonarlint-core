@@ -34,22 +34,26 @@ public class LocalStorageSynchronizer {
   private static final Logger LOG = Loggers.get(LocalStorageSynchronizer.class);
 
   private final Set<String> enabledLanguageKeys;
+  private final PluginsSynchronizer pluginsSynchronizer;
   private final ProjectStorage projectStorage;
 
-  public LocalStorageSynchronizer(Set<Language> enabledLanguages, ProjectStorage projectStorage) {
+  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, PluginsStorage pluginsStorage, ProjectStorage projectStorage) {
     this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.toSet());
     this.projectStorage = projectStorage;
+    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsStorage, embeddedPluginKeys);
   }
 
-  public void synchronize(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor progressMonitor) {
+  public SynchronizationResult synchronize(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor progressMonitor) {
     var serverStatus = serverApi.system().getStatusSync();
     if (!serverStatus.isUp()) {
-      LOG.info("[SYNC] Cannot synchronize with server as it is not UP");
-      return;
+      LOG.info("[SYNC] Cannot synchronize with server as it is not UP ({})", serverStatus.getStatus());
+      return new SynchronizationResult(false);
     }
+    var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()
       .collect(Collectors.toMap(Function.identity(), projectKey -> synchronize(serverApi, projectKey, progressMonitor)))
       .forEach(projectStorage::store);
+    return new SynchronizationResult(anyPluginUpdated);
   }
 
   private AnalyzerConfiguration synchronize(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {

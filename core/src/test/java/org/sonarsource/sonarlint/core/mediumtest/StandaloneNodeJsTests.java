@@ -36,8 +36,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -94,7 +94,7 @@ class StandaloneNodeJsTests {
   void wrong_node_path() throws Exception {
     List<String> logs = new ArrayList<>();
     StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
@@ -120,7 +120,7 @@ class StandaloneNodeJsTests {
   void unsatisfied_node_version() throws Exception {
     List<String> logs = new ArrayList<>();
     StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))

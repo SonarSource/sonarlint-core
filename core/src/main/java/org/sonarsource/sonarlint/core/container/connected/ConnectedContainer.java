@@ -19,19 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
@@ -42,8 +38,6 @@ import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -73,7 +67,6 @@ public class ConnectedContainer extends ComponentContainer {
       endpoint,
       globalStores,
       globalStores.getGlobalStorage(),
-      globalStores.getPluginReferenceStore(),
       ServerVersionAndStatusChecker.class,
       PluginsMinVersions.class,
       new ServerApiHelper(endpoint, client),
@@ -83,23 +76,19 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectFileListDownloader.class,
       ServerIssueUpdater.class,
       IssueStorePaths.class,
-      PluginReferencesDownloader.class,
       ProjectListDownloader.class,
-      PluginListDownloader.class,
       ModuleHierarchyDownloader.class,
       IssueDownloader.class,
       IssueApi.class,
       SourceApi.class,
       IssueStoreFactory.class,
-      new PluginCacheProvider(),
-      PluginHashes.class,
       ProjectStoragePaths.class,
       StorageReader.class,
       ProjectStorageStatusReader.class);
   }
 
-  public List<SonarAnalyzer> update(ProgressMonitor progress) {
-    return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
+  public void update(ProgressMonitor progress) {
+    getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
   public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable GlobalStorageStatus globalStorageStatus, ProgressMonitor progress) {

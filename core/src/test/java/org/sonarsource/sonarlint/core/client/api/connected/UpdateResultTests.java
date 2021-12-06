@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.Collection;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,9 +28,7 @@ class UpdateResultTests {
   @Test
   void testRoundTrip() {
     GlobalStorageStatus status = mock(GlobalStorageStatus.class);
-    Collection<SonarAnalyzer> analyzers = mock(Collection.class);
-    UpdateResult result = new UpdateResult(status, analyzers);
-    assertThat(result.analyzers()).isEqualTo(analyzers);
+    UpdateResult result = new UpdateResult(status);
     assertThat(result.status()).isEqualTo(status);
   }
 }

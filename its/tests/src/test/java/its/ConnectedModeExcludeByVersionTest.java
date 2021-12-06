@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 
 import static its.tools.ItUtils.SONAR_VERSION;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
@@ -108,10 +109,11 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNull();
 
     UpdateResult update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
-    assertThat(logs).contains("Code analyzer 'python' version '1.13.0.2922' is not supported (minimal version is '1.14.0.3086'). Skip downloading it.");
+    assertThat(logs).contains("[SYNC] Code analyzer 'python' version '1.13.0.2922' is not supported (minimal version is '1.14.0.3086'). Skip downloading it.");
   }
 
   @Test

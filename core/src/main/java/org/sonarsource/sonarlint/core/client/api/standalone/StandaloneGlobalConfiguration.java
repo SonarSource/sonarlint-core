@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import java.net.URL;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
@@ -32,34 +32,34 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfigurat
 @Immutable
 public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
 
-  private final List<URL> pluginUrls;
+  private final Set<Path> pluginPaths;
 
   private StandaloneGlobalConfiguration(Builder builder) {
     super(builder);
-    this.pluginUrls = builder.pluginUrls;
+    this.pluginPaths = builder.pluginPaths;
   }
 
   public static Builder builder() {
     return new Builder();
   }
 
-  public List<URL> getPluginUrls() {
-    return Collections.unmodifiableList(pluginUrls);
+  public Set<Path> getPluginPaths() {
+    return Collections.unmodifiableSet(pluginPaths);
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
-    private final List<URL> pluginUrls = new ArrayList<>();
+    private final Set<Path> pluginPaths = new HashSet<>();
 
     private Builder() {
     }
 
-    public Builder addPlugins(URL... pluginUrls) {
-      Collections.addAll(this.pluginUrls, pluginUrls);
+    public Builder addPlugins(Path... pluginPaths) {
+      Collections.addAll(this.pluginPaths, pluginPaths);
       return this;
     }
 
-    public Builder addPlugin(URL pluginUrl) {
-      this.pluginUrls.add(pluginUrl);
+    public Builder addPlugin(Path pluginPath) {
+      this.pluginPaths.add(pluginPath);
       return this;
     }
 

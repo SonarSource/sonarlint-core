@@ -17,7 +17,35 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.plugin.cache;
+package org.sonarsource.sonarlint.core.storage;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import java.nio.file.Path;
+import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+
+public class StoredPlugin {
+  private final String key;
+  private final String hash;
+  private final Path jarPath;
+
+  public StoredPlugin(String key, String hash, Path jarPath) {
+    this.key = key;
+    this.hash = hash;
+    this.jarPath = jarPath;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public String getHash() {
+    return hash;
+  }
+
+  public Path getJarPath() {
+    return jarPath;
+  }
+
+  public boolean hasSameHash(ServerPlugin serverPlugin) {
+    return getHash().equals(serverPlugin.getHash());
+  }
+}

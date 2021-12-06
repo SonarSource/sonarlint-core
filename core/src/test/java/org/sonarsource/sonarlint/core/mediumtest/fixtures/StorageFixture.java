@@ -19,7 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest.fixtures;
 
-import java.net.URL;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,18 +28,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
-import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.util.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR;
 import static org.sonarsource.sonarlint.core.util.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH;
@@ -90,15 +88,15 @@ public class StorageFixture {
     }
 
     public StorageBuilder withJSPlugin() {
-      return withPlugin(PluginLocator.getJavaScriptPluginUrl(), SONAR_JAVASCRIPT_PLUGIN_JAR, SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, "javascript");
+      return withPlugin(PluginLocator.getJavaScriptPluginPath(), SONAR_JAVASCRIPT_PLUGIN_JAR, SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, "javascript");
     }
 
     public StorageBuilder withJavaPlugin() {
-      return withPlugin(PluginLocator.getJavaPluginUrl(), SONAR_JAVA_PLUGIN_JAR, SONAR_JAVA_PLUGIN_JAR_HASH, "java");
+      return withPlugin(PluginLocator.getJavaPluginPath(), SONAR_JAVA_PLUGIN_JAR, SONAR_JAVA_PLUGIN_JAR_HASH, "java");
     }
 
-    private StorageBuilder withPlugin(URL url, String jarName, String hash, String key) {
-      plugins.add(new Plugin(url, jarName, hash, key));
+    private StorageBuilder withPlugin(Path path, String jarName, String hash, String key) {
+      plugins.add(new Plugin(path, jarName, hash, key));
       return this;
     }
 
@@ -115,15 +113,16 @@ public class StorageFixture {
     }
 
     public Storage create(Path rootPath) {
-      var pluginsFolderPath = rootPath.resolve("plugins");
       Path storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
       var globalFolderPath = connectionStorage.resolve("global");
+      var pluginsFolderPath = connectionStorage.resolve("plugins");
       var projectsFolderPath = connectionStorage.resolve("projects");
       org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(globalFolderPath);
+      org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(pluginsFolderPath);
 
       var pluginPaths = createPlugins(pluginsFolderPath);
-      createPluginReferences(globalFolderPath);
+      createPluginReferences(pluginsFolderPath);
       createUpdateStatus(globalFolderPath, isStale ? "0" : ProjectStoragePaths.STORAGE_VERSION);
       createServerInfo(globalFolderPath);
       createProjectList(globalFolderPath);
@@ -134,24 +133,27 @@ public class StorageFixture {
     }
 
     private List<Path> createPlugins(Path pluginsFolderPath) {
-      PluginCache cache = PluginCache.create(pluginsFolderPath);
       List<Path> pluginPaths = new ArrayList<>();
       plugins.forEach(plugin -> {
-        var pluginPath = cache.get(plugin.jarName, plugin.hash,
-          (filename, toFile) -> FileUtils.copyURLToFile(plugin.url, toFile.toFile()));
+        var pluginPath = pluginsFolderPath.resolve(plugin.jarName);
+        try {
+          Files.copy(plugin.path, pluginPath);
+        } catch (IOException e) {
+          fail("Cannot copy plugin " + plugin.jarName, e);
+        }
         pluginPaths.add(pluginPath);
       });
       return pluginPaths;
     }
 
-    private void createPluginReferences(Path globalFolderPath) {
+    private void createPluginReferences(Path pluginsFolderPath) {
       Sonarlint.PluginReferences.Builder builder = Sonarlint.PluginReferences.newBuilder();
-      plugins.forEach(plugin -> builder.addReference(Sonarlint.PluginReferences.PluginReference.newBuilder()
+      plugins.forEach(plugin -> builder.putPluginsByKey(plugin.key, Sonarlint.PluginReferences.PluginReference.newBuilder()
         .setFilename(plugin.jarName)
         .setHash(plugin.hash)
         .setKey(plugin.key)
         .build()));
-      new PluginReferenceStore(new StorageFolder.Default(globalFolderPath)).store(builder.build());
+      ProtobufUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
     }
 
     private static void createUpdateStatus(Path storage, String version) {
@@ -179,13 +181,13 @@ public class StorageFixture {
     }
 
     private static class Plugin {
-      private final URL url;
+      private final Path path;
       private final String jarName;
       private final String hash;
       private final String key;
 
-      private Plugin(URL url, String jarName, String hash, String key) {
-        this.url = url;
+      private Plugin(Path path, String jarName, String hash, String key) {
+        this.path = path;
         this.jarName = jarName;
         this.hash = hash;
         this.key = key;

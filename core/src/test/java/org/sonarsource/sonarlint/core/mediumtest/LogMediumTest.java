@@ -58,7 +58,7 @@ public class LogMediumTest {
   public void prepare() throws IOException {
     logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .setLogOutput(createLogOutput(logs))
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();

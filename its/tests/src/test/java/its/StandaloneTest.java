@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,7 +69,7 @@ public class StandaloneTest {
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
-      .addPlugin(new File("../plugins/global-extension-plugin/target/global-extension-plugin.jar").toURI().toURL())
+      .addPlugin(Paths.get("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
       // The global-extension-plugin reuses the cobol plugin key to be whitelisted
       .addEnabledLanguage(Language.COBOL)
       .setSonarLintUserHome(sonarlintUserHome)

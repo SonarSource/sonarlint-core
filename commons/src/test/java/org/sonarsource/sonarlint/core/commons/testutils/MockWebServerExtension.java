@@ -78,6 +78,10 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     responsesByPath.put(path, new MockResponse().setBody(body));
   }
 
+  public void removeResponse(String path) {
+    responsesByPath.remove(path);
+  }
+
   public void addResponse(String path, MockResponse response) {
     responsesByPath.put(path, response);
   }

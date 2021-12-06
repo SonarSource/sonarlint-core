@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -37,7 +36,7 @@ class StandaloneGlobalConfigurationTests {
   void testDefaults() {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .build();
-    assertThat(config.getPluginUrls()).isEmpty();
+    assertThat(config.getPluginPaths()).isEmpty();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
@@ -46,7 +45,7 @@ class StandaloneGlobalConfigurationTests {
   }
 
   @Test
-  void extraProps() throws Exception {
+  void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
@@ -68,19 +67,19 @@ class StandaloneGlobalConfigurationTests {
   }
 
   @Test
-  void configurePlugins() throws Exception {
-    URL plugin1 = new URL("file://plugin1.jar");
-    URL plugin2 = new URL("file://plugin2.jar");
-    URL plugin3 = new URL("file://plugin3.jar");
+  void configurePlugins() {
+    Path plugin1 = Paths.get("plugin1.jar");
+    Path plugin2 = Paths.get("plugin2.jar");
+    Path plugin3 = Paths.get("plugin3.jar");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
-    assertThat(config.getPluginUrls()).containsExactly(plugin1, plugin2, plugin3);
+    assertThat(config.getPluginPaths()).containsExactlyInAnyOrder(plugin1, plugin2, plugin3);
   }
 
   @Test
-  void configureLanguages() throws Exception {
+  void configureLanguages() {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)

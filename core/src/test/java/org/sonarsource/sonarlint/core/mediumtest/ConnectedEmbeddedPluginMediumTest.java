@@ -65,7 +65,7 @@ public class ConnectedEmbeddedPluginMediumTest {
       .setLogOutput((m, l) -> System.out.println(m))
       .addEnabledLanguages(Language.JAVA, Language.JS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .useEmbeddedPlugin("java", PluginLocator.getJavaPluginUrl())
+      .useEmbeddedPlugin("java", PluginLocator.getJavaPluginPath())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
   }

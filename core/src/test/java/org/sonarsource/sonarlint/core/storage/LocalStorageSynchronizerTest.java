@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.storage;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,12 +37,18 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LocalStorageSynchronizerTest {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
+
+  @BeforeEach
+  void prepare() {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": []}");
+  }
 
   @Test
   void should_synchronize_a_project_with_a_single_active_rule(@TempDir Path tmpDir) {
@@ -73,7 +80,7 @@ class LocalStorageSynchronizerTest {
             .build())
           .build())
         .build());
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), new ProjectStorage(tmpDir));
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
 
@@ -117,7 +124,7 @@ class LocalStorageSynchronizerTest {
         .setUserUpdatedAt("2020-10-27T23:08:58+0000")
         .build())
       .build());
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), new ProjectStorage(tmpDir));
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
 
@@ -129,7 +136,7 @@ class LocalStorageSynchronizerTest {
   @Test
   void should_not_synchronize_when_server_is_down(@TempDir Path tmpDir) {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"DOWN\", \"version\": \"1\"}");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), new ProjectStorage(tmpDir));
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
 

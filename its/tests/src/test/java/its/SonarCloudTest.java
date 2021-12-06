@@ -233,6 +233,19 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
+    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(
+      projectKey(PROJECT_KEY_JAVA),
+      projectKey(PROJECT_KEY_JAVA_PACKAGE),
+      projectKey(PROJECT_KEY_JAVA_HOTSPOT),
+      projectKey(PROJECT_KEY_JAVA_EMPTY),
+      projectKey(PROJECT_KEY_PHP),
+      projectKey(PROJECT_KEY_JAVASCRIPT),
+      projectKey(PROJECT_KEY_PYTHON),
+      projectKey(PROJECT_KEY_WEB),
+      projectKey(PROJECT_KEY_KOTLIN),
+      projectKey(PROJECT_KEY_RUBY),
+      projectKey(PROJECT_KEY_SCALA),
+      projectKey(PROJECT_KEY_XML)), null);
 
     // This profile is altered in a test
     restoreProfile("java-sonarlint.xml");
@@ -297,7 +310,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
-    assertThat(engine.getRuleDetails("java:S106").getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNull();
   }
@@ -309,6 +321,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
     assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNotNull();
+    assertThat(engine.getRuleDetails("java:S106").getHtmlDescription()).contains("When logging a message there are");
   }
 
   @Ignore("Extended description is no supported ATM")

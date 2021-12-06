@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,15 +38,15 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final String connectionId;
   private final Path storageRoot;
-  private final Map<String, URL> overriddenPluginsUrlsByKey;
-  private final Map<String, URL> extraPluginsUrlsByKey;
+  private final Map<String, Path> overriddenPluginsPathsByKey;
+  private final Map<String, Path> extraPluginsPathsByKey;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
     this.connectionId = builder.connectionId;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
-    this.overriddenPluginsUrlsByKey = new HashMap<>(builder.overriddenPluginsUrlsByKey);
-    this.extraPluginsUrlsByKey = new HashMap<>(builder.extraPluginsUrlsByKey);
+    this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
+    this.extraPluginsPathsByKey = new HashMap<>(builder.extraPluginsPathsByKey);
   }
 
   public static Builder builder() {
@@ -62,19 +61,19 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return connectionId;
   }
 
-  public Map<String, URL> getEmbeddedPluginUrlsByKey() {
-    return overriddenPluginsUrlsByKey;
+  public Map<String, Path> getEmbeddedPluginPathsByKey() {
+    return overriddenPluginsPathsByKey;
   }
 
-  public Map<String, URL> getExtraPluginsUrlsByKey() {
-    return extraPluginsUrlsByKey;
+  public Map<String, Path> getExtraPluginsPathsByKey() {
+    return extraPluginsPathsByKey;
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
     private String connectionId;
     private Path storageRoot;
-    private final Map<String, URL> overriddenPluginsUrlsByKey = new HashMap<>();
-    private final Map<String, URL> extraPluginsUrlsByKey = new HashMap<>();
+    private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
+    private final Map<String, Path> extraPluginsPathsByKey = new HashMap<>();
 
     private Builder() {
     }
@@ -105,16 +104,16 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     /**
      * Register extra embedded plugin to be used in connected mode
      */
-    public Builder addExtraPlugin(String pluginKey, URL pluginUrl) {
-      extraPluginsUrlsByKey.put(pluginKey, pluginUrl);
+    public Builder addExtraPlugin(String pluginKey, Path pluginPath) {
+      extraPluginsPathsByKey.put(pluginKey, pluginPath);
       return this;
     }
 
     /**
      * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
      */
-    public Builder useEmbeddedPlugin(String pluginKey, URL pluginUrl) {
-      overriddenPluginsUrlsByKey.put(pluginKey, pluginUrl);
+    public Builder useEmbeddedPlugin(String pluginKey, Path pluginPath) {
+      overriddenPluginsPathsByKey.put(pluginKey, pluginPath);
       return this;
     }
 

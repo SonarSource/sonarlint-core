@@ -39,7 +39,7 @@ message ServerInfos {
 }
 
 message PluginReferences {
-  repeated PluginReference reference = 1;
+    map<string, PluginReference> plugins_by_key = 1;
   
   message PluginReference {
     string key = 1;
