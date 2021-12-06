@@ -19,13 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LoggerLevel;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -38,18 +37,18 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ProjectStorageUpdateCheckerTest {
+class ProjectStorageUpdateCheckerTests {
 
-  @Rule
-  public LogTester logTester = new LogTester();
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String MODULE_KEY = "foo";
   private ProjectStorageUpdateChecker checker;
   private StorageReader storageReader;
   private ProjectConfigurationDownloader projectConfigurationDownloader;
 
-  @Before
-  public void prepare() {
+  @BeforeEach
+  void prepare() {
     storageReader = mock(StorageReader.class);
     projectConfigurationDownloader = mock(ProjectConfigurationDownloader.class);
 
@@ -60,14 +59,8 @@ public class ProjectStorageUpdateCheckerTest {
     checker = new ProjectStorageUpdateChecker(storageReader, projectConfigurationDownloader);
   }
 
-  @AfterClass
-  public static void after() {
-    // to avoid conflicts with SonarLintLogging
-    new LogTester().setLevel(LoggerLevel.TRACE);
-  }
-
   @Test
-  public void testNoChanges() {
+  void testNoChanges() {
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isFalse();
@@ -75,7 +68,7 @@ public class ProjectStorageUpdateCheckerTest {
   }
 
   @Test
-  public void addedProp() {
+  void addedProp() {
     when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.issue.enforce.allFiles", "value").build());
 
@@ -83,22 +76,22 @@ public class ProjectStorageUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.issue.enforce.allFiles' added with value 'value'");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("Property 'sonar.issue.enforce.allFiles' added with value 'value'");
   }
 
   @Test
-  public void removedProp() {
+  void removedProp() {
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(Sonarlint.ProjectConfiguration.newBuilder().putProperties("sonar.cobol.license.secured", "value").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Property 'sonar.cobol.license.secured' removed");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("Property 'sonar.cobol.license.secured' removed");
   }
 
   @Test
-  public void changedProp() {
+  void changedProp() {
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.inclusions", "old").build());
     when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putProperties("sonar.inclusions", "new").build());
@@ -107,11 +100,11 @@ public class ProjectStorageUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Value of property 'sonar.inclusions' changed from 'old' to 'new'");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("Value of property 'sonar.inclusions' changed from 'old' to 'new'");
   }
 
   @Test
-  public void addedProfile() {
+  void addedProfile() {
     when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
@@ -119,21 +112,21 @@ public class ProjectStorageUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Quality profiles configuration changed");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' added with value 'sonar-way-123'");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("Quality profile for language 'java' added with value 'sonar-way-123'");
   }
 
   @Test
-  public void ignoreRemovedProfile() {
+  void ignoreRemovedProfile() {
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(Sonarlint.ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
 
     StorageUpdateCheckResult result = checker.checkForUpdates(MODULE_KEY, new ProgressWrapper(null));
 
     assertThat(result.needUpdate()).isFalse();
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' removed");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("Quality profile for language 'java' removed");
   }
 
   @Test
-  public void changedQualityProfile() {
+  void changedQualityProfile() {
     when(projectConfigurationDownloader.fetch(eq(MODULE_KEY), any(ProgressWrapper.class)))
       .thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-456").build());
     when(storageReader.readProjectConfig(MODULE_KEY)).thenReturn(ProjectConfiguration.newBuilder().putQprofilePerLanguage("java", "sonar-way-123").build());
@@ -142,7 +135,7 @@ public class ProjectStorageUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Quality profiles configuration changed");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("Quality profile for language 'java' changed from 'sonar-way-123' to 'sonar-way-456'");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("Quality profile for language 'java' changed from 'sonar-way-123' to 'sonar-way-456'");
   }
 
 }

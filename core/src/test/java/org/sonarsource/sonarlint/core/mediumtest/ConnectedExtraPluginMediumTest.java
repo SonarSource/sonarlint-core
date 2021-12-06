@@ -47,9 +47,9 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
@@ -57,7 +57,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.mock;
@@ -119,7 +118,7 @@ public class ConnectedExtraPluginMediumTest {
       .addExtraPlugin(Language.JAVA.getPluginKey(), PluginLocator.getJavaPluginUrl())
       .addExtraPlugin(Language.PHP.getPluginKey(), PluginLocator.getPhpPluginUrl())
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
@@ -165,7 +164,6 @@ public class ConnectedExtraPluginMediumTest {
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
     assertThat(sonarlint.getActiveRuleDetails("php:S3334", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
   }
-
 
   @Test
   public void analyzeFileWithExtraPlugin() throws Exception {

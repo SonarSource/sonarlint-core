@@ -33,12 +33,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Issues.Component;
 import org.sonarqube.ws.Issues.Issue;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -47,7 +46,7 @@ import static org.sonarsource.sonarlint.core.util.StringUtils.urlEncode;
 
 public class IssueApi {
 
-  private static final Logger LOG = Loggers.get(IssueApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final Set<String> TAINT_REPOS = new HashSet<>(
     Arrays.asList("roslyn.sonaranalyzer.security.cs", "javasecurity", "jssecurity", "tssecurity", "phpsecurity", "pythonsecurity"));

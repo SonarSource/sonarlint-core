@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor.noop;
 
 import java.io.Serializable;
-
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.measure.NewMeasure;

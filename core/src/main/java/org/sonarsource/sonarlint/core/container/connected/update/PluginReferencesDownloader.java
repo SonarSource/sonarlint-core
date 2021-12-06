@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -39,7 +38,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PluginReferencesDownloader {
 
-  private static final Logger LOG = Loggers.get(PluginReferencesDownloader.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final PluginCache pluginCache;
   private final PluginsApi pluginsApi;
@@ -115,11 +114,7 @@ public class PluginReferencesDownloader {
 
     @Override
     public void copy(String filename, Path toFile) throws IOException {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Download plugin '{}' to '{}'...", filename, toFile);
-      } else {
-        LOG.info("Download '{}'...", filename);
-      }
+      LOG.debug("Download plugin '{}' to '{}'...", filename, toFile);
       pluginsApi.getPlugin(key, pluginInputStream -> FileUtils.copyInputStreamToFile(pluginInputStream, toFile.toFile()));
     }
   }

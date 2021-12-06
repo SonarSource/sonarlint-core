@@ -26,11 +26,10 @@ import org.sonar.api.Plugin;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -39,7 +38,7 @@ import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {
 
-  private static final Logger LOG = Loggers.get(ExtensionInstaller.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRuntime sonarRuntime;
   private final PluginRepository pluginRepository;

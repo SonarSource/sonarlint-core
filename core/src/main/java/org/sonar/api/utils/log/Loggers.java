@@ -19,21 +19,17 @@
  */
 package org.sonar.api.utils.log;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.log.LogOutputDelegator;
-import org.sonarsource.sonarlint.core.log.SonarLintLoggerFactory;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Overrides the behavior of loggers in the sonar API.
- * Basically the factory always returns {@link SonarLintLogger}, which uses {@link LogOutputDelegator} to delegate
- * the logging to an {@link LogOutput}.
- * The LogOutput can be set dynamically at any time, for the executing thread. 
+ * Basically the factory always returns {@link SonarApiLogger}, which uses {@link SonarLintLogger} to delegate
+ * the logging to an {@link ClientLogOutput}.
+ * The LogOutput can be set dynamically at any time, for the executing thread.
  */
-public abstract class Loggers {
-  private static final LogOutputDelegator logOutputDelegator = new LogOutputDelegator();
-  private static final SonarLintLogger logger = new SonarLintLogger(logOutputDelegator);
-  private static final SonarLintLoggerFactory factory = new SonarLintLoggerFactory(logger);
+public class Loggers {
+  private static final SonarApiLogger logger = new SonarApiLogger();
 
   public static Logger get(Class<?> name) {
     return logger;
@@ -43,17 +39,8 @@ public abstract class Loggers {
     return logger;
   }
 
-  static Loggers getFactory() {
-    return factory;
+  private Loggers() {
+    // Only use get()
   }
 
-  protected abstract Logger newInstance(String name);
-
-  protected abstract LoggerLevel getLevel();
-
-  protected abstract void setLevel(LoggerLevel level);
-
-  public static void setTarget(@Nullable LogOutput output) {
-    logOutputDelegator.setTarget(output);
-  }
 }

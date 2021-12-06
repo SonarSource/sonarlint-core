@@ -19,12 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.Collection;
+import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-
-import java.util.Collection;
-
-import org.junit.jupiter.api.Test;
 
 class UpdateResultTests {
   @Test

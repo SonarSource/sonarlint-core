@@ -23,8 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 class PicoComponentKeys {
 
@@ -32,10 +31,10 @@ class PicoComponentKeys {
   private final Set<Class> objectsWithoutToString = new HashSet<>();
 
   Object of(Object component) {
-    return of(component, Loggers.get(PicoComponentKeys.class));
+    return of(component, SonarLintLogger.get());
   }
 
-  Object of(Object component, Logger log) {
+  Object of(Object component, SonarLintLogger log) {
     if (component instanceof Class) {
       return component;
     }

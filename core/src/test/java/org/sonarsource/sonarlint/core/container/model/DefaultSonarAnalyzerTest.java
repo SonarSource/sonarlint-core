@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultSonarAnalyzerTest {
   @Test

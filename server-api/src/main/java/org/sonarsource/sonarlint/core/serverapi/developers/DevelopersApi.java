@@ -29,16 +29,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.DateUtils;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class DevelopersApi {
-  private static final Logger LOG = Loggers.get(DevelopersApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String API_PATH = "api/developers/search_events";
-  private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DateUtils.DATETIME_FORMAT);
+  public static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+  private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
 
   private final ServerApiHelper helper;
 

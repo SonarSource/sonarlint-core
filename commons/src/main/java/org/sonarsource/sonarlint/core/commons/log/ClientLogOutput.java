@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,32 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.log;
+package org.sonarsource.sonarlint.core.commons.log;
 
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.LoggerLevel;
-import org.sonar.api.utils.log.Loggers;
-import org.sonar.api.utils.log.SonarLintLogger;
+/**
+ * Allow to redirect SonarLint logs to a custom output on client side
+ */
+public interface ClientLogOutput {
 
-public class SonarLintLoggerFactory extends Loggers {
-  private final SonarLintLogger logger;
+  void log(String formattedMessage, Level level);
 
-  public SonarLintLoggerFactory(SonarLintLogger logger) {
-    this.logger = logger;
-  }
-
-  @Override
-  protected Logger newInstance(String name) {
-    return logger;
-  }
-
-  @Override
-  protected LoggerLevel getLevel() {
-    return LoggerLevel.DEBUG;
-  }
-
-  @Override
-  protected void setLevel(LoggerLevel level) {
-    // no op
+  enum Level {
+    ERROR, WARN, INFO, DEBUG, TRACE;
   }
 }

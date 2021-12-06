@@ -23,15 +23,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Components;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ComponentApi {
-  private static final Logger LOG = Loggers.get(ComponentApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ServerApiHelper helper;
 

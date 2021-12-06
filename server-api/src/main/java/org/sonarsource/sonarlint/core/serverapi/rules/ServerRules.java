@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import org.sonar.api.rule.RuleKey;
 
 public class ServerRules {
   private final List<Rule> allRules;
@@ -43,8 +42,7 @@ public class ServerRules {
 
   public static class Rule {
 
-    private final String repository;
-    private final String rule;
+    private final String ruleKey;
     private final String name;
     private final String severity;
     private final String lang;
@@ -54,12 +52,10 @@ public class ServerRules {
     private final boolean isTemplate;
     private final String templateKey;
     private final String type;
-    private final String ruleKey;
 
-    public Rule(String repository, String rule, String name, String severity, String lang, String internalKey, String htmlDesc, String htmlNote, boolean isTemplate,
+    public Rule(String ruleKey, String name, String severity, String lang, String internalKey, String htmlDesc, String htmlNote, boolean isTemplate,
       String templateKey, @Nullable String type) {
-      this.repository = repository;
-      this.rule = rule;
+      this.ruleKey = ruleKey;
       this.name = name;
       this.severity = severity;
       this.lang = lang;
@@ -69,15 +65,10 @@ public class ServerRules {
       this.isTemplate = isTemplate;
       this.templateKey = templateKey;
       this.type = type == null ? "" : type;
-      this.ruleKey = repository + ":" + rule;
     }
 
-    public String getRepository() {
-      return repository;
-    }
-
-    public String getRule() {
-      return rule;
+    public String getRuleKey() {
+      return ruleKey;
     }
 
     public String getName() {
@@ -116,27 +107,16 @@ public class ServerRules {
       return type;
     }
 
-    public String getRuleKey() {
-      return ruleKey;
-    }
   }
   public static class ActiveRule {
-    private final RuleKey ruleKey;
+    private final String ruleKey;
     private final String severity;
     private final List<Param> params;
 
-    public ActiveRule(RuleKey ruleKey, String severity, List<Param> params) {
+    public ActiveRule(String ruleKey, String severity, List<Param> params) {
       this.ruleKey = ruleKey;
       this.severity = severity;
       this.params = params;
-    }
-
-    public String getRepository() {
-      return ruleKey.repository();
-    }
-
-    public String getRule() {
-      return ruleKey.rule();
     }
 
     public String getSeverity() {
@@ -148,7 +128,7 @@ public class ServerRules {
     }
 
     public String getRuleKey() {
-      return ruleKey.toString();
+      return ruleKey;
     }
 
     public static class Param {

@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import org.sonarqube.ws.Organizations.Organization;
 import org.sonarsource.sonarlint.core.serverapi.organization.DefaultRemoteOrganization;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultRemoteOrganizationTest {
   @Test

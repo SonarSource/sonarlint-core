@@ -25,14 +25,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.CharHandler;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader.DoubleRegexpMatcher;
 
 public class IssueExclusionsRegexpScanner extends CharHandler {
-  private static final Logger LOG = Loggers.get(IssueExclusionsRegexpScanner.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final StringBuilder sb = new StringBuilder();
   private final List<Pattern> allFilePatterns;

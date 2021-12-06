@@ -24,15 +24,14 @@ import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.PathUtils;
 import org.sonar.api.utils.WildcardPattern;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Path relative to module basedir
  */
 public class SonarLintPathPattern {
 
-  private static final Logger LOG = Loggers.get(SonarLintPathPattern.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   final WildcardPattern pattern;
 

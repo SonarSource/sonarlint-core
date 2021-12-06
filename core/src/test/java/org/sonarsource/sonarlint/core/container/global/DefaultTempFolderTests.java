@@ -21,29 +21,22 @@ package org.sonarsource.sonarlint.core.container.global;
 
 import java.io.File;
 import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LoggerLevel;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DefaultTempFolderTest {
+class DefaultTempFolderTests {
 
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
-  @Rule
-  public LogTester logTester = new LogTester();
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  public void createTempFolderAndFile() throws Exception {
-    File rootTempFolder = temp.newFolder();
+  void createTempFolderAndFile(@TempDir File rootTempFolder) throws Exception {
     DefaultTempFolder underTest = new DefaultTempFolder(rootTempFolder);
     File dir = underTest.newDir();
     assertThat(dir).exists().isDirectory();
@@ -55,8 +48,7 @@ public class DefaultTempFolderTest {
   }
 
   @Test
-  public void createTempFolderWithName() throws Exception {
-    File rootTempFolder = temp.newFolder();
+  void createTempFolderWithName(@TempDir File rootTempFolder) throws Exception {
     DefaultTempFolder underTest = new DefaultTempFolder(rootTempFolder);
     File dir = underTest.newDir("sample");
     assertThat(dir).exists().isDirectory();
@@ -67,38 +59,31 @@ public class DefaultTempFolderTest {
   }
 
   @Test
-  public void newDir_throws_ISE_if_name_is_not_valid() throws Exception {
-    File rootTempFolder = temp.newFolder();
+  void newDir_throws_ISE_if_name_is_not_valid(@TempDir File rootTempFolder) throws Exception {
     DefaultTempFolder underTest = new DefaultTempFolder(rootTempFolder);
-    String tooLong = "tooooolong";
+    StringBuilder tooLong = new StringBuilder("tooooolong");
     for (int i = 0; i < 50; i++) {
-      tooLong += "tooooolong";
+      tooLong.append("tooooolong");
     }
 
-    expectedException.expect(IllegalStateException.class);
-    expectedException.expectMessage("Failed to create temp directory");
-
-    underTest.newDir(tooLong);
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.newDir(tooLong.toString()));
+    assertThat(thrown).hasMessageStartingWith("Failed to create temp directory");
   }
 
   @Test
-  public void newFile_throws_ISE_if_name_is_not_valid() throws Exception {
-    File rootTempFolder = temp.newFolder();
+  void newFile_throws_ISE_if_name_is_not_valid(@TempDir File rootTempFolder) throws Exception {
     DefaultTempFolder underTest = new DefaultTempFolder(rootTempFolder);
-    String tooLong = "tooooolong";
+    StringBuilder tooLong = new StringBuilder("tooooolong");
     for (int i = 0; i < 50; i++) {
-      tooLong += "tooooolong";
+      tooLong.append("tooooolong");
     }
 
-    expectedException.expect(IllegalStateException.class);
-    expectedException.expectMessage("Failed to create temp file");
-
-    underTest.newFile(tooLong, ".txt");
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.newFile(tooLong.toString(), ".txt"));
+    assertThat(thrown).hasMessage("Failed to create temp file");
   }
 
   @Test
-  public void clean_deletes_non_empty_directory() throws Exception {
-    File dir = temp.newFolder();
+  void clean_deletes_non_empty_directory(@TempDir File dir) throws Exception {
     FileUtils.touch(new File(dir, "foo.txt"));
 
     DefaultTempFolder underTest = new DefaultTempFolder(dir);
@@ -108,9 +93,7 @@ public class DefaultTempFolderTest {
   }
 
   @Test
-  public void clean_does_not_fail_if_directory_has_already_been_deleted() throws Exception {
-    File dir = temp.newFolder();
-
+  void clean_does_not_fail_if_directory_has_already_been_deleted(@TempDir File dir) throws Exception {
     DefaultTempFolder underTest = new DefaultTempFolder(dir);
     underTest.clean();
     assertThat(dir).doesNotExist();
@@ -118,6 +101,6 @@ public class DefaultTempFolderTest {
     // second call does not fail, nor log ERROR logs
     underTest.clean();
 
-    assertThat(logTester.logs(LoggerLevel.ERROR)).isEmpty();
+    assertThat(logTester.logs(Level.ERROR)).isEmpty();
   }
 }

@@ -24,6 +24,8 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,10 +38,8 @@ import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.System2;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common.Paging;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.util.StringUtils;
  */
 public class ServerApiHelper {
 
-  private static final Logger LOG = Loggers.get(ServerApiHelper.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final int PAGE_SIZE = 500;
   public static final int MAX_PAGES = 20;
@@ -84,25 +84,23 @@ public class ServerApiHelper {
    * Execute GET and don't check response
    */
   public HttpClient.Response rawGet(String relativePath) {
-    long startTime = System2.INSTANCE.now();
+    Instant startTime = Instant.now();
     String url = buildEndpointUrl(relativePath);
 
     var response = client.get(url);
-    long duration = System2.INSTANCE.now() - startTime;
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
-    }
+    Duration duration = Duration.between(startTime, Instant.now());
+    LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
     return response;
   }
 
   public CompletableFuture<HttpClient.Response> rawGetAsync(String relativePath) {
-    long startTime = System2.INSTANCE.now();
+    Instant startTime = Instant.now();
     String url = buildEndpointUrl(relativePath);
 
     return client.getAsync(url)
       .whenComplete((response, error) -> {
-        long duration = System2.INSTANCE.now() - startTime;
-        LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration);
+        Duration duration = Duration.between(startTime, Instant.now());
+        LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
       });
   }
 
@@ -211,24 +209,24 @@ public class ServerApiHelper {
 
   public static <G> G processTimed(Supplier<HttpClient.Response> responseSupplier, IOFunction<HttpClient.Response, G> responseProcessor,
     LongConsumer durationConsumer) {
-    long startTime = System2.INSTANCE.now();
+    Instant startTime = Instant.now();
     G result;
     try (var response = responseSupplier.get()) {
       result = responseProcessor.apply(response);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);
     }
-    durationConsumer.accept(System2.INSTANCE.now() - startTime);
+    durationConsumer.accept(Duration.between(startTime, Instant.now()).toMillis());
     return result;
   }
 
   public static <G> CompletableFuture<G> processTimed(CompletableFuture<HttpClient.Response> futureResponse, IOFunction<HttpClient.Response, G> responseProcessor,
     LongConsumer durationConsumer) {
-    long startTime = System2.INSTANCE.now();
+    Instant startTime = Instant.now();
     return futureResponse.thenApply(response -> {
       try {
         G processed = responseProcessor.apply(response);
-        durationConsumer.accept(System2.INSTANCE.now() - startTime);
+        durationConsumer.accept(Duration.between(startTime, Instant.now()).toMillis());
         return processed;
       } catch (IOException e) {
         throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);

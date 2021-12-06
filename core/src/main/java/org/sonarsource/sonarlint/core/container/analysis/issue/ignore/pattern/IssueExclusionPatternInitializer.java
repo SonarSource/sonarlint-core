@@ -23,14 +23,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueExclusionPatternInitializer extends AbstractPatternInitializer {
 
-  private static final Logger LOG = Loggers.get(IssueExclusionPatternInitializer.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final String EXCLUSION_KEY_PREFIX = "sonar.issue.ignore";
   public static final String BLOCK_SUFFIX = ".block";

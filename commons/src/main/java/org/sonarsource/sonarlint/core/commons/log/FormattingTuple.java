@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.log;
+package org.sonarsource.sonarlint.core.commons.log;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+class FormattingTuple {
+
+  private final String message;
+  private final Throwable throwable;
+
+  public FormattingTuple(@Nullable String message) {
+    this(message, null);
+  }
+
+  public FormattingTuple(@Nullable String message, @Nullable Throwable throwable) {
+    this.message = message;
+    this.throwable = throwable;
+  }
+
+  @CheckForNull
+  public String getMessage() {
+    return message;
+  }
+
+  @CheckForNull
+  public Throwable getThrowable() {
+    return throwable;
+  }
+
+}

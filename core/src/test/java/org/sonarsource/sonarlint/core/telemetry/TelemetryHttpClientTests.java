@@ -22,15 +22,13 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.util.Optional;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
@@ -47,7 +45,7 @@ class TelemetryHttpClientTests {
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   @RegisterExtension
-  public LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final TelemetryClientAttributesProvider attributes = mock(TelemetryClientAttributesProvider.class);
 
@@ -55,12 +53,6 @@ class TelemetryHttpClientTests {
   public void setUp() {
     when(attributes.nodeVersion()).thenReturn(Optional.empty());
     underTest = new TelemetryHttpClient("product", "version", "ideversion", MockWebServerExtension.httpClient(), mockServer.url("/"));
-  }
-
-  @AfterAll
-  public static void after() {
-    // to avoid conflicts with SonarLintLogging
-    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
@@ -119,14 +111,14 @@ class TelemetryHttpClientTests {
   void failed_upload_should_log_if_debug(EnvironmentVariables env) {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     underTest.upload(new TelemetryLocalStorage(), attributes);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*code=404.*"));
+    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*code=404.*"));
   }
 
   @Test
   void failed_optout_should_log_if_debug(EnvironmentVariables env) {
     env.set("SONARLINT_INTERNAL_DEBUG", "true");
     underTest.optOut(new TelemetryLocalStorage(), attributes);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*code=404.*"));
+    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*code=404.*"));
   }
 
   @Test
@@ -136,7 +128,7 @@ class TelemetryHttpClientTests {
 
     underTest.upload(new TelemetryLocalStorage(), attributes);
 
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry data");
+    assertThat(logTester.logs(Level.ERROR)).contains("Failed to upload telemetry data");
   }
 
   @Test
@@ -146,6 +138,6 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), attributes);
 
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to upload telemetry opt-out");
+    assertThat(logTester.logs(Level.ERROR)).contains("Failed to upload telemetry opt-out");
   }
 }

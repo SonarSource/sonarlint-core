@@ -32,8 +32,7 @@ import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -44,7 +43,7 @@ import static java.util.Arrays.asList;
  */
 public class SensorsExecutor {
 
-  private static final Logger LOG = Loggers.get(SensorsExecutor.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SensorOptimizer sensorOptimizer;
   private final ProgressWrapper progress;
@@ -74,9 +73,7 @@ public class SensorsExecutor {
   }
 
   private static void executeSensor(SensorContext context, Sensor sensor, DefaultSensorDescriptor descriptor) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Execute Sensor: {}", descriptor.name() != null ? descriptor.name() : StringUtils.describe(sensor));
-    }
+    LOG.debug("Execute Sensor: {}", descriptor.name() != null ? descriptor.name() : StringUtils.describe(sensor));
     sensor.execute(context);
   }
 

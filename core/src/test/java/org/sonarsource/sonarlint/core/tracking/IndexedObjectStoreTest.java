@@ -24,34 +24,31 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LoggerLevel;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 // note: most methods of the subject are already tested by higher level uses
-public class IndexedObjectStoreTest {
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+class IndexedObjectStoreTest {
 
-  @Rule
-  public LogTester logTester = new LogTester();
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  public void should_log_failures_to_delete_invalid_files() throws IOException {
+  void should_log_failures_to_delete_invalid_files(@TempDir Path nonEmptyDir) throws IOException {
     StoreIndex<String> index = mock(StoreIndex.class);
     when(index.keys()).thenReturn(Collections.singleton("dummy key"));
 
     // attempt to delete this with Files.deleteIfExists will fail
-    Path nonEmptyDir = temporaryFolder.newFolder().toPath();
     Files.createFile(nonEmptyDir.resolve("dummy"));
     PathMapper<String> mapper = key -> nonEmptyDir;
 
@@ -62,10 +59,10 @@ public class IndexedObjectStoreTest {
     IndexedObjectStore<String, String> store = new IndexedObjectStore<>(index, mapper, reader, writer, validator);
     store.deleteInvalid();
 
-    List<String> errors = logTester.logs(LoggerLevel.ERROR);
-    assertThat(errors).hasSize(1);
+    List<String> errors = logTester.logs(Level.ERROR);
+    assertThat(errors).hasSize(2);
     assertThat(errors.get(0)).startsWith("failed to delete file");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).containsOnly("1 entries removed from the store");
+    assertThat(logTester.logs(Level.DEBUG)).containsOnly("1 entries removed from the store");
   }
 
 }

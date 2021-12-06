@@ -23,12 +23,11 @@ import org.apache.commons.lang.ArrayUtils;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.scan.filesystem.FileExclusions;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class ExclusionFilters {
 
-  private static final Logger LOG = Loggers.get(ExclusionFilters.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final FileExclusions exclusionSettings;
 

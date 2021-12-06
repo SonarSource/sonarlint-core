@@ -38,7 +38,7 @@ public class StorageRuleAdapter implements SonarLintRule {
 
   @Override
   public RuleKey key() {
-    return RuleKey.of(rule.getRepository(), rule.getRule());
+    return RuleKey.parse(rule.getRuleKey());
   }
 
   @Override

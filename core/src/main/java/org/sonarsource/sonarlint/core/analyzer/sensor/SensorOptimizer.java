@@ -23,14 +23,13 @@ import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 @SonarLintSide
 public class SensorOptimizer {
 
-  private static final Logger LOG = Loggers.get(SensorOptimizer.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final FileSystem fs;
   private final ActiveRules activeRules;

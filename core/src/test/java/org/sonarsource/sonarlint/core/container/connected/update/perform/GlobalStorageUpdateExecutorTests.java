@@ -35,14 +35,14 @@ import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
@@ -75,11 +75,21 @@ class GlobalStorageUpdateExecutorTests {
     mockServer.addProtobufResponse("/api/settings/values.protobuf", Settings.ValuesWsResponse.newBuilder().build());
     mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", Components.SearchWsResponse.newBuilder().build());
     mockServer.addProtobufResponse("/api/qualityprofiles/search.protobuf", Qualityprofiles.SearchWsResponse.newBuilder().build());
-    mockServer.addProtobufResponse("/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=INFO&languages=&p=1&ps=500", Rules.SearchResponse.newBuilder().build());
-    mockServer.addProtobufResponse("/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=MINOR&languages=&p=1&ps=500", Rules.SearchResponse.newBuilder().build());
-    mockServer.addProtobufResponse("/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=MAJOR&languages=&p=1&ps=500", Rules.SearchResponse.newBuilder().build());
-    mockServer.addProtobufResponse("/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=CRITICAL&languages=&p=1&ps=500", Rules.SearchResponse.newBuilder().build());
-    mockServer.addProtobufResponse("/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=BLOCKER&languages=&p=1&ps=500", Rules.SearchResponse.newBuilder().build());
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=INFO&languages=&p=1&ps=500",
+      Rules.SearchResponse.newBuilder().build());
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=MINOR&languages=&p=1&ps=500",
+      Rules.SearchResponse.newBuilder().build());
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=MAJOR&languages=&p=1&ps=500",
+      Rules.SearchResponse.newBuilder().build());
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=CRITICAL&languages=&p=1&ps=500",
+      Rules.SearchResponse.newBuilder().build());
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=BLOCKER&languages=&p=1&ps=500",
+      Rules.SearchResponse.newBuilder().build());
 
     tempDir = temp.resolve("tmp").toFile();
     tempDir.mkdir();

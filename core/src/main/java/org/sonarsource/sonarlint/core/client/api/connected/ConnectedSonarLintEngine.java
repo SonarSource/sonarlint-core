@@ -26,7 +26,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -35,10 +34,11 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 
 /**
  * Entry point for SonarLint.
@@ -75,7 +75,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Trigger an analysis
    */
-  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
+  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ProgressMonitor monitor);
 
   /**
    * Gets locally stored server issues for a given file.

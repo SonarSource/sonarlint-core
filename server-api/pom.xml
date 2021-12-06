@@ -17,9 +17,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
-      <artifactId>sonar-plugin-api</artifactId>
-      <version>${sonarqube.version}</version>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-commons</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>

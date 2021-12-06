@@ -29,16 +29,15 @@ import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonar.api.utils.WildcardPattern;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFilterableIssue;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class IgnoreIssuesFilter implements IssueFilter {
 
-  private Map<InputComponent, List<WildcardPattern>> rulePatternByComponent = new HashMap<>();
+  private final Map<InputComponent, List<WildcardPattern>> rulePatternByComponent = new HashMap<>();
 
-  private static final Logger LOG = Loggers.get(IgnoreIssuesFilter.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   @Override
   public boolean accept(FilterableIssue issue, IssueFilterChain chain) {

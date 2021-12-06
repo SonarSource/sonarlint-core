@@ -21,12 +21,11 @@ package org.sonarsource.sonarlint.core.serverapi.system;
 
 import com.google.gson.Gson;
 import java.util.concurrent.CompletableFuture;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class SystemApi {
-  private static final Logger LOG = Loggers.get(SystemApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ServerApiHelper helper;
 

@@ -19,9 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import javax.annotation.CheckForNull;
-
 import java.util.Date;
+import javax.annotation.CheckForNull;
 
 public interface GlobalStorageStatus {
   @CheckForNull

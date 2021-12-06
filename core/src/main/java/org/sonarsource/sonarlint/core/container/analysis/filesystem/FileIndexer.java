@@ -26,11 +26,10 @@ import java.util.concurrent.TimeUnit;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFileFilter;
 import org.sonar.api.utils.MessageException;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.util.ProgressReport;
@@ -41,7 +40,7 @@ import org.sonarsource.sonarlint.core.util.ProgressReport;
 @SonarLintSide
 public class FileIndexer {
 
-  private static final Logger LOG = Loggers.get(FileIndexer.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final InputFileBuilder inputFileBuilder;
   private final AbstractAnalysisConfiguration analysisConfiguration;

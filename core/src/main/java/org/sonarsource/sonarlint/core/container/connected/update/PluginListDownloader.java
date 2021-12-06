@@ -38,6 +38,7 @@ public class PluginListDownloader {
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private final PluginsApi pluginsApi;
+
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 

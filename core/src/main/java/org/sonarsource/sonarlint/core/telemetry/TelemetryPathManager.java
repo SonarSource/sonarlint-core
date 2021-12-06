@@ -22,14 +22,13 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class TelemetryPathManager {
 
-  private static final Logger LOG = Loggers.get(TelemetryPathManager.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private TelemetryPathManager() {
     // utility class, forbidden constructor

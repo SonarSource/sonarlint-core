@@ -29,15 +29,14 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
 
 import static java.util.stream.Collectors.toList;
 
 public class StandaloneActiveRules {
-  private static final Logger LOG = Loggers.get(StandaloneActiveRules.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private Map<String, StandaloneRule> rulesByKey;
 

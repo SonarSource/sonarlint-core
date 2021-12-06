@@ -28,12 +28,11 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues.Issue;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
@@ -50,7 +49,7 @@ public class IssueDownloader {
 
   private static final Set<String> NON_CLOSED_STATUSES = new HashSet<>(Arrays.asList("OPEN", "CONFIRMED", "REOPENED"));
 
-  private static final Logger LOG = Loggers.get(IssueDownloader.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final IssueStorePaths issueStorePaths;
   private final IssueApi issueApi;

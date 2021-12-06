@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
@@ -31,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
@@ -72,7 +71,7 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
 
-  private static final Logger LOG = Loggers.get(ConnectedContainer.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final GlobalStores globalStores;
   private final EndpointParams endpoint;

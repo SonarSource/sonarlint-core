@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,17 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.commons.log;
 
-/**
- * Allow to redirect batch logs to a custom output. By defaults logs are written to System.out
- */
-@FunctionalInterface
-public interface LogOutput {
-
-  void log(String formattedMessage, Level level);
-
-  enum Level {
-    ERROR, WARN, INFO, DEBUG, TRACE;
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;
