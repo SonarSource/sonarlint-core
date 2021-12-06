@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
@@ -185,6 +186,16 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @since 2.9
    */
   void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+
+
+  /**
+   * Downloads and returns server issues for a given project.
+   *
+   * @param endpoint from which to download issues
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @return Set of branches analyzed for this project.
+   */
+  Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

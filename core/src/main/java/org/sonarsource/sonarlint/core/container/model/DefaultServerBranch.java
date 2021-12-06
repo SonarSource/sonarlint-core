@@ -17,25 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
-
-import java.util.Collection;
+package org.sonarsource.sonarlint.core.container.model;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ServerBranch;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
 
-public class ProjectBranchesDownloader {
+public class DefaultServerBranch implements ServerBranch {
+  private final String name;
+  private final boolean isMain;
 
-  private final ProjectBranchesApi branchesApi;
-
-  public ProjectBranchesDownloader(ServerApiHelper serverApiHelper) {
-    this.branchesApi = new ServerApi(serverApiHelper).branches();
+  public DefaultServerBranch(String name, boolean isMain) {
+    this.name = name;
+    this.isMain = isMain;
   }
 
-  public Collection<ServerBranch> getBranches(String projectKey) {
-    return branchesApi.getAllBranches(projectKey);
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public boolean isMain() {
+    return isMain;
   }
 
 }
