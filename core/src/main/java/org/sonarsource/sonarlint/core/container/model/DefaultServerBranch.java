@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import org.sonarsource.sonarlint.core.client.api.connected.ServerBranch;
 
+import java.util.Objects;
+
 public class DefaultServerBranch implements ServerBranch {
   private final String name;
   private final boolean isMain;
@@ -40,4 +42,16 @@ public class DefaultServerBranch implements ServerBranch {
     return isMain;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DefaultServerBranch that = (DefaultServerBranch) o;
+    return isMain == that.isMain && Objects.equals(name, that.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, isMain);
+  }
 }
