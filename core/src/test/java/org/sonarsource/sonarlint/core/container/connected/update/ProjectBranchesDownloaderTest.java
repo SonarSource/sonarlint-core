@@ -69,7 +69,7 @@ class ProjectBranchesDownloaderTest {
         "  ]\n" +
         "}");
 
-    Collection<String> branches = underTest.getBranches(PROJECT_KEY);
+    var branches = underTest.getBranches(PROJECT_KEY);
 
     assertThat(branches).hasSize(2);
   }
@@ -83,7 +83,7 @@ class ProjectBranchesDownloaderTest {
         "  ]\n" +
         "}");
 
-    Collection<String> branches = underTest.getBranches(PROJECT_KEY);
+    var branches = underTest.getBranches(PROJECT_KEY);
 
     assertThat(branches).isEmpty();
   }

@@ -21,10 +21,13 @@ package org.sonarsource.sonarlint.core.serverapi.branches;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.client.api.connected.ServerBranch;
+import org.sonarsource.sonarlint.core.container.model.DefaultServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ProjectBranchesApi {
@@ -37,31 +40,31 @@ public class ProjectBranchesApi {
     this.helper = helper;
   }
 
-  public Collection<String> getAllBranchNames(String projectKey) {
+  public Set<ServerBranch> getAllBranches(String projectKey) {
     var response = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + projectKey);
     var bodyAsString = response.bodyAsString();
     return getBranchNamesFromResponse(bodyAsString);
   }
 
-  private static Collection<String> getBranchNamesFromResponse(String bodyAsString) {
-    Collection<String> parsedBranchNames = new ArrayList<>();
+  private static Set<ServerBranch> getBranchNamesFromResponse(String bodyAsString) {
+    Set<ServerBranch> parsedBranchNames = new HashSet<>();
     try {
       var root = JsonParser.parseString(bodyAsString).getAsJsonObject();
       var branches = root.get("branches").getAsJsonArray();
 
       for (JsonElement el : branches) {
         var branch = el.getAsJsonObject();
-        var element = branch.get("name");
-        if (element == null) {
+        var name = branch.get("name");
+        var isMain = branch.get("isMain");
+        if (name == null || isMain == null) {
           throw new IllegalStateException("Failed to parse response. Missing field 'name'.");
         }
-        var name = element.getAsString();
-        parsedBranchNames.add(name);
+        parsedBranchNames.add(new DefaultServerBranch(name.getAsString(), isMain.getAsBoolean()));
       }
 
     } catch (Exception e) {
       LOG.error("Failed to parse SonarQube branches list response", e);
-      return Collections.emptyList();
+      return Collections.emptySet();
     }
     return parsedBranchNames;
   }
