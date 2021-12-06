@@ -1,7 +1,7 @@
 # Minimum supported analyzer versions: the first versions supported by SonarQube 7.9,
 # as defined in https://github.com/SonarSource/sonar-update-center-properties
 abap=3.8.0.2034
-cobol=4.4.0.3403
+cobol=4.5.0.4434
 cpp=6.3.0.11371
 java=5.13.1.18282
 javascript=5.2.1.7778

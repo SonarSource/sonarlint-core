@@ -24,9 +24,6 @@ import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpFileLinesContextFactory;
-import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestPlanBuilder;
-import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
-import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
@@ -78,10 +75,6 @@ public class AnalysisContainer extends ComponentContainer {
       // file system
       PathResolver.class,
 
-      // tests
-      NoOpTestPlanBuilder.class,
-      NoOpTestableBuilder.class,
-
       // lang
       Languages.class,
 
@@ -114,10 +107,7 @@ public class AnalysisContainer extends ComponentContainer {
       CheckFactory.class,
 
       // issues
-      SonarLintNoSonarFilter.class,
-
-      // Perspectives
-      BatchPerspectives.class);
+      SonarLintNoSonarFilter.class);
   }
 
   private void addPluginExtensions() {

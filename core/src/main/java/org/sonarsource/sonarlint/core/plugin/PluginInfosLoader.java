@@ -43,7 +43,7 @@ public class PluginInfosLoader {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  private static final String IMPLEMENTED_SQ_API = "8.9";
+  private static final String IMPLEMENTED_SQ_API = "9.2";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

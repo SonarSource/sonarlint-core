@@ -28,10 +28,8 @@ public class NoOpNewSymbolTableTest {
     new NoOpNewSymbolTable()
       .onFile(null)
       .newReference(null)
-      .newReference(0, 0)
       .newReference(0, 0, 0, 0)
       .newSymbol(null)
-      .newSymbol(0, 0)
       .newSymbol(0, 0, 0, 0)
       .save();
   }

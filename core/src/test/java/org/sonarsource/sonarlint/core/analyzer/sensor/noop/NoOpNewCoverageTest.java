@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor.noop;
 
 import org.junit.Test;
-import org.sonar.api.batch.sensor.coverage.CoverageType;
 
 public class NoOpNewCoverageTest {
 
@@ -30,7 +29,6 @@ public class NoOpNewCoverageTest {
       .onFile(null)
       .conditions(0, 0, 0)
       .lineHits(0, 0)
-      .ofType(CoverageType.OVERALL)
       .save();
   }
 }

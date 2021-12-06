@@ -27,7 +27,6 @@ public class NoOpNewHighlightingTest {
   public void improve_coverage() {
     new NoOpNewHighlighting().onFile(null)
       .highlight(null, null)
-      .highlight(0, 0, null)
       .highlight(0, 0, 0, 0, null)
       .save();
   }

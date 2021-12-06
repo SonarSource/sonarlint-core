@@ -44,7 +44,6 @@ public class DefaultServerTest {
     assertThat(metadata.getId()).isEqualTo("123");
     assertThat(metadata.getVersion()).isEqualTo("2.2");
     assertThat(metadata.getStartedAt()).isNotNull();
-    assertThat(metadata.getURL()).isNull();
     assertThat(metadata.getPermanentServerId()).isEqualTo("123");
   }
 
@@ -54,10 +53,8 @@ public class DefaultServerTest {
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
     DefaultServer metadata = new DefaultServer(new MapSettings(), runtime);
     assertThat(metadata.getStartedAt()).isNull();
-    assertThat(metadata.getRootDir()).isNull();
     assertThat(metadata.getContextPath()).isNull();
     assertThat(metadata.isSecured()).isFalse();
-    assertThat(metadata.isDev()).isFalse();
     assertThat(metadata.getPublicRootUrl()).isNull();
 
   }

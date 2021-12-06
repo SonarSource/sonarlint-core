@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,8 +30,8 @@ import org.sonar.api.utils.log.Loggers;
 
 public class DefaultServer extends Server {
 
-  private Settings settings;
-  private SonarRuntime runtime;
+  private final Settings settings;
+  private final SonarRuntime runtime;
 
   public DefaultServer(Settings settings, SonarRuntime runtime) {
     this.settings = settings;
@@ -64,27 +63,12 @@ public class DefaultServer extends Server {
   }
 
   @Override
-  public File getRootDir() {
-    return null;
-  }
-
-  @Override
   public String getContextPath() {
     return null;
   }
 
   @Override
-  public String getURL() {
-    return null;
-  }
-
-  @Override
   public boolean isSecured() {
-    return false;
-  }
-
-  @Override
-  public boolean isDev() {
     return false;
   }
 
