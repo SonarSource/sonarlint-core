@@ -41,8 +41,8 @@
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>3.14.9</okhttp.version>
     <junit.version>4.13.1</junit.version>
-    <junit.jupiter.version>5.7.0</junit.jupiter.version>
-    <junit.vintage.version>5.7.0</junit.vintage.version>
+    <junit.jupiter.version>5.8.2</junit.jupiter.version>
+    <junit.vintage.version>5.8.2</junit.vintage.version>
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
