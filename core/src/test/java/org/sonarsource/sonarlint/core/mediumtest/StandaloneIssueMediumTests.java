@@ -246,7 +246,6 @@ class StandaloneIssueMediumTests {
   void fileEncoding() throws IOException {
     ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
       + "  var xoo1, xoo2;\n"
-      + "  var xoo; //NOSONAR\n"
       + "}", false, StandardCharsets.UTF_16, null);
 
     final List<Issue> issues = new ArrayList<>();
@@ -274,6 +273,7 @@ class StandaloneIssueMediumTests {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
+        .putExtraProperty("sonar.nosonarsensor.activate", "true")
         .build(),
       issues::add, null, null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(

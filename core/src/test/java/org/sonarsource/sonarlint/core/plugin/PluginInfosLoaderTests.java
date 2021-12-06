@@ -140,7 +140,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, SkipReason.IncompatiblePluginApi.INSTANCE));
-    assertThat(logs()).contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to 8.9. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to 9.2. Skip loading it.");
   }
 
   @Test

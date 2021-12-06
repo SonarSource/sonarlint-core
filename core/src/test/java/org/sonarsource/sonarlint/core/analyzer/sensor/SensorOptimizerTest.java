@@ -53,7 +53,7 @@ public class SensorOptimizerTest {
   private FileSystem fs;
   private SensorOptimizer optimizer;
   private MapSettings settings;
-  private InputFileCache inputFileCache = new InputFileCache();
+  private final InputFileCache inputFileCache = new InputFileCache();
 
   @Before
   public void prepare() throws Exception {
@@ -132,8 +132,7 @@ public class SensorOptimizerTest {
 
   @Test
   public void should_optimize_on_settings() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor()
-      .requireProperty("sonar.foo.reportPath");
+    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor().onlyWhenConfiguration(c -> c.hasKey("sonar.foo.reportPath"));
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
     settings.setProperty("sonar.foo.reportPath", "foo");

@@ -50,7 +50,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.8.0</version>
+      <version>2.11.0</version>
     </dependency>
     <dependency>
       <groupId>org.picocontainer</groupId>
@@ -84,12 +84,6 @@
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonarqube.version}</version>
     </dependency>
-    <!-- For RulesDefinitionXmlLoader, can be removed after upgrading sonar-plugin-api to 9.0 (SONAR-14882) -->
-    <dependency>
-      <groupId>com.fasterxml.staxmate</groupId>
-      <artifactId>staxmate</artifactId>
-      <version>2.4.0</version>
-    </dependency>
 
     <!-- unit tests -->
     <dependency>
@@ -113,11 +107,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -341,20 +330,6 @@
                 <filter>
                   <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
                   <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-                <filter>
-                  <!-- Shade staxmate (but avoids minimization) as it is used by plugins -->
-                  <artifact>com.fasterxml.staxmate:staxmate</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-                <filter>
-                  <!-- Shade stax2-api (but avoids minimization) as it is used by plugins -->
-                  <artifact>org.codehaus.woodstox:stax2-api</artifact>
                   <includes>
                     <include>**</include>
                   </includes>

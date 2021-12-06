@@ -20,19 +20,12 @@
 package org.sonarsource.sonarlint.core.analyzer.sensor.noop;
 
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.sensor.coverage.CoverageType;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
 
 public class NoOpNewCoverage implements NewCoverage {
 
   @Override
   public NewCoverage onFile(InputFile inputFile) {
-    // no op
-    return this;
-  }
-
-  @Override
-  public NewCoverage ofType(CoverageType type) {
     // no op
     return this;
   }

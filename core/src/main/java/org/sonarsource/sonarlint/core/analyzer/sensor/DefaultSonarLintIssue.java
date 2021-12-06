@@ -71,11 +71,13 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     return new DefaultSonarLintIssueLocation();
   }
 
+  @Override
   public DefaultSonarLintIssue forRule(RuleKey ruleKey) {
     this.ruleKey = ruleKey;
     return this;
   }
 
+  @Override
   public RuleKey ruleKey() {
     return this.ruleKey;
   }
@@ -185,5 +187,16 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public List<QuickFix> quickFixes() {
     return Collections.unmodifiableList(quickFixes);
+  }
+
+  @Override
+  public NewIssue setQuickFixAvailable(boolean qfAvailable) {
+    // not relevant in SonarLint
+    return this;
+  }
+
+  @Override
+  public boolean isQuickFixAvailable() {
+    return !quickFixes.isEmpty();
   }
 }
