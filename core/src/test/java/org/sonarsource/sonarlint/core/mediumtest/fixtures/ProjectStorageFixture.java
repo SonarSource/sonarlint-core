@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -93,7 +92,6 @@ public class ProjectStorageFixture {
       ruleSets.forEach(ruleSet -> {
         var ruleSetBuilder = Sonarlint.RuleSet.newBuilder();
         ruleSet.activeRules.forEach(activeRule -> {
-          var ruleKey = RuleKey.parse(activeRule.ruleKey);
           ruleSetBuilder.addRules(Sonarlint.RuleSet.ActiveRule.newBuilder()
             .setRuleKey(activeRule.ruleKey)
             .setSeverity(activeRule.severity)

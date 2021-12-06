@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,7 +49,6 @@ import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -97,15 +95,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   }
 
   private PluginInstancesRepository createPluginInstancesRepository() {
-    Path cacheDir = globalConfig.getSonarLintUserHome().resolve("plugins");
-    var fileCache = PluginCache.create(cacheDir);
-
-    var plugins = globalConfig.getPluginUrls().stream()
-      .map(fileCache::getFromCacheOrCopy)
-      .map(r -> fileCache.get(r.getFilename(), r.getHash()))
-      .collect(Collectors.toSet());
-
-    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
+    var config = new Configuration(globalConfig.getPluginPaths(), globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
     return new PluginInstancesRepository(config);
   }
 

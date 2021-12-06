@@ -31,14 +31,11 @@ import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Rules;
 import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
@@ -89,8 +86,7 @@ class GlobalStorageUpdateExecutorTests {
 
     destDir = temp.resolve("storage/6964/global");
 
-    globalUpdate = new GlobalStorageUpdateExecutor(new ServerStorage(destDir), mockServer.serverApiHelper(), new ServerVersionAndStatusChecker(mockServer.serverApiHelper()),
-      mock(PluginCache.class), mock(PluginListDownloader.class), mock(ConnectedGlobalConfiguration.class));
+    globalUpdate = new GlobalStorageUpdateExecutor(new ServerStorage(destDir), mockServer.serverApiHelper(), new ServerVersionAndStatusChecker(mockServer.serverApiHelper()));
   }
 
   @Test

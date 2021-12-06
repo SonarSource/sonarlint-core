@@ -19,23 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.Collection;
-
 public class UpdateResult {
-  private GlobalStorageStatus status;
-  private Collection<SonarAnalyzer> analyzers;
+  private final GlobalStorageStatus status;
 
-  public UpdateResult(GlobalStorageStatus status, Collection<SonarAnalyzer> analyzers) {
+  public UpdateResult(GlobalStorageStatus status) {
     this.status = status;
-    this.analyzers = analyzers;
-
   }
 
   public GlobalStorageStatus status() {
     return status;
-  }
-
-  public Collection<SonarAnalyzer> analyzers() {
-    return analyzers;
   }
 }

@@ -27,7 +27,6 @@ import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePat
 
 public class GlobalStores {
   private final ServerProjectsStore serverProjectsStore;
-  private final PluginReferenceStore pluginReferenceStore;
   private final ServerInfoStore serverInfoStore;
   private final StorageStatusStore storageStatusStore;
   private final Path storageRoot;
@@ -38,7 +37,6 @@ public class GlobalStores {
     Path globalStorageRoot = storageRoot.resolve("global");
     globalStorage = new ServerStorage(globalStorageRoot);
     this.serverProjectsStore = new ServerProjectsStore(globalStorage);
-    this.pluginReferenceStore = new PluginReferenceStore(globalStorage);
     this.serverInfoStore = new ServerInfoStore(globalStorage);
     this.storageStatusStore = new StorageStatusStore(globalStorage);
   }
@@ -49,10 +47,6 @@ public class GlobalStores {
 
   public ServerProjectsStore getServerProjectsStore() {
     return serverProjectsStore;
-  }
-
-  public PluginReferenceStore getPluginReferenceStore() {
-    return pluginReferenceStore;
   }
 
   public ServerInfoStore getServerInfoStore() {

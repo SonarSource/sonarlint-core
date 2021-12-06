@@ -17,22 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.cache;
+package org.sonarsource.sonarlint.core.storage;
 
-public class PluginReference {
-  private final String hash;
-  private final String filename;
+public class SynchronizationResult {
+  private final boolean analyzerUpdated;
 
-  public PluginReference(String hash, String filename) {
-    this.hash = hash;
-    this.filename = filename;
+  public SynchronizationResult(boolean analyzerUpdated) {
+    this.analyzerUpdated = analyzerUpdated;
   }
 
-  public String getHash() {
-    return hash;
-  }
-
-  public String getFilename() {
-    return filename;
+  public boolean hasAnalyzerBeenUpdated() {
+    return analyzerUpdated;
   }
 }

@@ -36,7 +36,7 @@ public class PluginsApi {
     this.helper = helper;
   }
 
-  public List<InstalledPlugin> getInstalled() {
+  public List<ServerPlugin> getInstalled() {
     return ServerApiHelper.processTimed(
       () -> helper.get("/api/plugins/installed"),
       response -> {
@@ -46,8 +46,8 @@ public class PluginsApi {
       duration -> LOG.info("Downloaded plugin list in {}ms", duration));
   }
 
-  private static InstalledPlugin toInstalledPlugin(InstalledPluginPayload payload) {
-    return new InstalledPlugin(payload.key, payload.hash, payload.filename, payload.sonarLintSupported);
+  private static ServerPlugin toInstalledPlugin(InstalledPluginPayload payload) {
+    return new ServerPlugin(payload.key, payload.hash, payload.filename, payload.sonarLintSupported);
   }
 
   public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer) {

@@ -100,10 +100,6 @@ public enum Language {
     return fileSuffixesPropKey;
   }
 
-  public static Optional<String> getPluginKeyByLanguageKey(String languageKey) {
-    return Stream.of(values()).filter(l -> l.getLanguageKey().equals(languageKey)).map(Language::getPluginKey).findFirst();
-  }
-
   public static Set<Language> getLanguagesByPluginKey(String pluginKey) {
     return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).collect(Collectors.toCollection(LinkedHashSet::new));
   }

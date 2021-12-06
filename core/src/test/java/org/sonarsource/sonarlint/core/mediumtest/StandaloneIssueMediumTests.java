@@ -113,17 +113,17 @@ class StandaloneIssueMediumTests {
     nodeJsHelper.detect(null);
 
     StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginUrl())
-      .addPlugin(PluginLocator.getJavaPluginUrl())
-      .addPlugin(PluginLocator.getPhpPluginUrl())
-      .addPlugin(PluginLocator.getPythonPluginUrl())
+      .addPlugin(PluginLocator.getJavaScriptPluginPath())
+      .addPlugin(PluginLocator.getJavaPluginPath())
+      .addPlugin(PluginLocator.getPhpPluginPath())
+      .addPlugin(PluginLocator.getPythonPluginPath())
       .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
 
     if (COMMERCIAL_ENABLED) {
-      configBuilder.addPlugin(PluginLocator.getCppPluginUrl());
+      configBuilder.addPlugin(PluginLocator.getCppPluginPath());
     }
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
   }

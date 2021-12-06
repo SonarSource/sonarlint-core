@@ -80,8 +80,8 @@ public class ConnectedExtraPluginMediumTest {
       .setStorageRoot(storage.getPath())
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP)
-      .addExtraPlugin(Language.JAVA.getPluginKey(), PluginLocator.getJavaPluginUrl())
-      .addExtraPlugin(Language.PHP.getPluginKey(), PluginLocator.getPhpPluginUrl())
+      .addExtraPlugin(Language.JAVA.getPluginKey(), PluginLocator.getJavaPluginPath())
+      .addExtraPlugin(Language.PHP.getPluginKey(), PluginLocator.getPhpPluginPath())
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();

@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
-public class InstalledPlugin {
+public class ServerPlugin {
   private final String key;
   private final String hash;
   private final String filename;
   private final boolean sonarLintSupported;
 
-  public InstalledPlugin(String key, String hash, String filename, boolean sonarLintSupported) {
+  public ServerPlugin(String key, String hash, String filename, boolean sonarLintSupported) {
     this.key = key;
     this.hash = hash;
     this.filename = filename;
@@ -38,10 +38,6 @@ public class InstalledPlugin {
 
   public String getHash() {
     return hash;
-  }
-
-  public boolean hasSameHash(InstalledPlugin installedPlugin) {
-    return getHash().equals(installedPlugin.getHash());
   }
 
   public String getFilename() {
