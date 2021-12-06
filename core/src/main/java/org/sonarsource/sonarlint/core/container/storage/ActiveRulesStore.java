@@ -26,9 +26,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
@@ -36,7 +35,7 @@ import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePat
 
 public class ActiveRulesStore {
   public static final String ACTIVE_RULES_FOLDER = "active_rules";
-  private static final Logger LOG = Loggers.get(ActiveRulesStore.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final StorageFolder storageFolder;
   private final RWLock rwLock = new RWLock();
@@ -59,12 +58,15 @@ public class ActiveRulesStore {
     return Sonarlint.ActiveRules.newBuilder()
       .putAllActiveRulesByKey(rules.stream().collect(Collectors.toMap(
         ServerRules.ActiveRule::getRuleKey,
-        r -> Sonarlint.ActiveRules.ActiveRule.newBuilder()
-          .setRepo(r.getRepository())
-          .setKey(r.getRule())
-          .setSeverity(r.getSeverity())
-          .putAllParams(r.getParams().stream().collect(Collectors.toMap(ServerRules.ActiveRule.Param::getKey, ServerRules.ActiveRule.Param::getValue)))
-          .build())))
+        r -> {
+          var ruleKey = RuleKey.parse(r.getRuleKey());
+          return Sonarlint.ActiveRules.ActiveRule.newBuilder()
+            .setRepo(ruleKey.repository())
+            .setKey(ruleKey.rule())
+            .setSeverity(r.getSeverity())
+            .putAllParams(r.getParams().stream().collect(Collectors.toMap(ServerRules.ActiveRule.Param::getKey, ServerRules.ActiveRule.Param::getValue)))
+            .build();
+        })))
       .build();
   }
 
@@ -88,7 +90,7 @@ public class ActiveRulesStore {
 
   private static List<ServerRules.ActiveRule> adaptProto(Sonarlint.ActiveRules rules) {
     return rules.getActiveRulesByKeyMap().values().stream().map(r -> new ServerRules.ActiveRule(
-      RuleKey.of(r.getRepo(), r.getKey()), r.getSeverity(),
+      RuleKey.of(r.getRepo(), r.getKey()).toString(), r.getSeverity(),
       r.getParamsMap().entrySet().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()))).collect(Collectors.toList());
   }
 

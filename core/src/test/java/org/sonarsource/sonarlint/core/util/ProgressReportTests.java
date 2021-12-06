@@ -20,65 +20,53 @@
 package org.sonarsource.sonarlint.core.util;
 
 import java.util.Set;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LoggerLevel;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-public class ProgressReportTest {
+class ProgressReportTests {
   private static final String THREAD_NAME = "progress";
-  private ProgressReport progressReport;
 
-  @Rule
-  public LogTester logTester = new LogTester();
-
-  @Before
-  public void setUp() {
-    progressReport = new ProgressReport(THREAD_NAME, 100);
-  }
-
-  @AfterClass
-  public static void after() {
-    // to avoid conflicts with SonarLintLogging
-    new LogTester().setLevel(LoggerLevel.TRACE);
-
-  }
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  public void die_on_stop() {
-    progressReport.start("start");
+  void die_on_stop() {
+    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    underTest.start("start");
     assertThat(isThreadAlive(THREAD_NAME)).isTrue();
-    progressReport.stop("stop");
+    underTest.stop("stop");
     assertThat(isThreadAlive(THREAD_NAME)).isFalse();
   }
 
   @Test
-  public void accept_no_stop_msg() {
-    progressReport.start("start");
+  void accept_no_stop_msg() {
+    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    underTest.start("start");
     assertThat(isThreadAlive(THREAD_NAME)).isTrue();
-    progressReport.stop(null);
+    underTest.stop(null);
     assertThat(isThreadAlive(THREAD_NAME)).isFalse();
   }
 
   @Test
-  public void do_not_block_app() {
-    progressReport.start("start");
+  void do_not_block_app() {
+    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    underTest.start("start");
     assertThat(isDaemon(THREAD_NAME)).isTrue();
-    progressReport.stop("stop");
+    underTest.stop("stop");
   }
 
   @Test
-  public void do_log() {
-    progressReport.start("start");
-    progressReport.message(() -> "Some message");
+  void do_log() {
+    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    underTest.start("start");
+    underTest.message(() -> "Some message");
     await().atMost(5, SECONDS).untilAsserted(() -> assertThat(logTester.logs()).contains("start", "Some message"));
-    progressReport.stop("stop");
+    underTest.stop("stop");
     assertThat(logTester.logs()).contains("start", "Some message", "stop");
   }
 

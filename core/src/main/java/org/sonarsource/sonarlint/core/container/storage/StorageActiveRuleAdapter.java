@@ -39,7 +39,7 @@ public class StorageActiveRuleAdapter implements ActiveRule {
 
   @Override
   public RuleKey ruleKey() {
-    return RuleKey.of(activeRule.getRepository(), activeRule.getRule());
+    return RuleKey.parse(activeRule.getRuleKey());
   }
 
   @Override

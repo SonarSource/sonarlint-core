@@ -22,17 +22,15 @@ package org.sonarsource.sonarlint.core.container.storage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
 public class ProtobufUtil {
   private ProtobufUtil() {

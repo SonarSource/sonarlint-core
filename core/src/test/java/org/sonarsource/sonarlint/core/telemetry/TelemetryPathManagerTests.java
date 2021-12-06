@@ -23,16 +23,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintPathManager;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
@@ -42,14 +40,14 @@ import static org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager.getP
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager.migrate;
 
 @ExtendWith(SystemStubsExtension.class)
-class TelemetryPathManagerTest {
+class TelemetryPathManagerTests {
   private static final String PRODUCT_KEY = "the-product";
 
   @SystemStub
   private EnvironmentVariables environment;
 
   @RegisterExtension
-  public LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private Path oldPath;
   private Path newPath;
@@ -61,12 +59,6 @@ class TelemetryPathManagerTest {
 
     environment.set(SonarLintPathManager.SONARLINT_USER_HOME_ENV, tempDir.resolve("new").toString());
     newPath = getPath(PRODUCT_KEY);
-  }
-
-  @AfterAll
-  public static void after() {
-    // to avoid conflicts with SonarLintLogging
-    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
@@ -110,7 +102,7 @@ class TelemetryPathManagerTest {
     environment.set("SONARLINT_INTERNAL_DEBUG", "true");
     Files.createDirectories(newPath);
     doMigrate();
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to migrate telemetry storage");
+    assertThat(logTester.logs(Level.ERROR)).contains("Failed to migrate telemetry storage");
   }
 
   private void doMigrate() {

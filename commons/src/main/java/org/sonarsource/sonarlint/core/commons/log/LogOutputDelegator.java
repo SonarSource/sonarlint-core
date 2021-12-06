@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,37 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.log;
+package org.sonarsource.sonarlint.core.commons.log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
-public class LogOutputDelegator {
-  private InheritableThreadLocal<LogOutput> target = new InheritableThreadLocal<>();
+class LogOutputDelegator {
+  private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
-  public void log(String formattedMessage, Level level) {
-    LogOutput output = target.get();
+  void log(String formattedMessage, Level level) {
+    ClientLogOutput output = target.get();
     if (output != null) {
       output.log(formattedMessage, level);
     }
   }
 
-  public void log(String formattedMessage, Level level, Throwable t) {
-    log(formattedMessage, level);
+  void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
+    if (formattedMessage != null) {
+      log(formattedMessage, level);
+    }
 
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    t.printStackTrace(pw);
-    log(sw.toString(), level);
+    if (t != null) {
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      t.printStackTrace(pw);
+      log(sw.toString(), level);
+    }
   }
 
-  public void setTarget(@Nullable LogOutput target) {
+  void setTarget(@Nullable ClientLogOutput target) {
     this.target.set(target);
   }
 }

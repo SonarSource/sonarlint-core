@@ -22,14 +22,13 @@ package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 import java.util.ArrayList;
 import java.util.List;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public abstract class AbstractPatternInitializer {
 
-  private static final Logger LOG = Loggers.get(AbstractPatternInitializer.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private Configuration serverConfig;
 

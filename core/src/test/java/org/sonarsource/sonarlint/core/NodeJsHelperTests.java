@@ -41,9 +41,9 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
-import org.sonar.api.utils.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -57,7 +57,7 @@ class NodeJsHelperTests {
   private static final Path FAKE_NODE_PATH = Paths.get("foo/node");
 
   @RegisterExtension
-  LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final System2 system2 = mock(System2.class);
 
@@ -354,7 +354,7 @@ class NodeJsHelperTests {
     NodeJsHelper underTest = new NodeJsHelper();
     underTest.detect(Paths.get("not_node"));
 
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).anyMatch(s -> s.startsWith("Unable to execute the command"));
+    assertThat(logTester.logs(Level.DEBUG)).anyMatch(s -> s.startsWith("Unable to execute the command"));
     assertThat(underTest.getNodeJsVersion()).isNull();
   }
 

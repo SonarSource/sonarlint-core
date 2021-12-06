@@ -34,15 +34,14 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.function.Consumer;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Serialize and deserialize telemetry data to persistent storage.
  */
 class TelemetryLocalStorageManager {
-  private static final Logger LOG = Loggers.get(TelemetryLocalStorageManager.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Path path;
 
   TelemetryLocalStorageManager(Path path) {

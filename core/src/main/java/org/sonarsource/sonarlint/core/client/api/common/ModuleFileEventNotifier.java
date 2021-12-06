@@ -21,14 +21,13 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Arrays;
 import java.util.List;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.module.ModuleInputFileBuilder;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
 public class ModuleFileEventNotifier {
-  private static final Logger LOG = Loggers.get(ModuleFileEventNotifier.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final List<ModuleFileListener> listeners;
   private final ModuleInputFileBuilder inputFileBuilder;

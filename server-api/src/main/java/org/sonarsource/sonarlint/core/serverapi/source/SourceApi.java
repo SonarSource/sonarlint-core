@@ -20,15 +20,14 @@
 package org.sonarsource.sonarlint.core.serverapi.source;
 
 import java.util.Optional;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient.Response;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class SourceApi {
 
-  private static final Logger LOG = Loggers.get(SourceApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ServerApiHelper serverApiHelper;
 

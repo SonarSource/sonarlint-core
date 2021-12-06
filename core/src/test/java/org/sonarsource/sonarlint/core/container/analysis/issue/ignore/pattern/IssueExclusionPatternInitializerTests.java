@@ -22,27 +22,27 @@ package org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Rule;
-import org.junit.Test;
-import org.sonar.api.utils.log.LogTester;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.container.analysis.ServerConfigurationProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IssueExclusionPatternInitializerTest {
+class IssueExclusionPatternInitializerTests {
 
-  @Rule
-  public LogTester logTester = new LogTester();
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  public void testNoConfiguration() {
+  void testNoConfiguration() {
     IssueExclusionPatternInitializer patternsInitializer = new IssueExclusionPatternInitializer(new ServerConfigurationProvider(Collections.emptyMap()));
     assertThat(patternsInitializer.hasConfiguredPatterns()).isFalse();
-    assertThat(patternsInitializer.getMulticriteriaPatterns().size()).isEqualTo(0);
+    assertThat(patternsInitializer.getMulticriteriaPatterns()).isEmpty();
   }
 
   @Test
-  public void shouldLogInvalidResourceKey() {
+  void shouldLogInvalidResourceKey() {
     Map<String, String> settings = new HashMap<>();
     settings.put("sonar.issue.ignore" + ".multicriteria", "1");
     settings.put("sonar.issue.ignore" + ".multicriteria" + ".1." + "resourceKey", "");
@@ -53,7 +53,7 @@ public class IssueExclusionPatternInitializerTest {
   }
 
   @Test
-  public void shouldLogInvalidRuleKey() {
+  void shouldLogInvalidRuleKey() {
     Map<String, String> settings = new HashMap<>();
     settings.put("sonar.issue.ignore" + ".multicriteria", "1");
     settings.put("sonar.issue.ignore" + ".multicriteria" + ".1." + "resourceKey", "*");
@@ -64,7 +64,7 @@ public class IssueExclusionPatternInitializerTest {
   }
 
   @Test
-  public void shouldReturnBlockPattern() {
+  void shouldReturnBlockPattern() {
     Map<String, String> settings = new HashMap<>();
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY, "1,2,3");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY + ".1." + IssueExclusionPatternInitializer.BEGIN_BLOCK_REGEXP, "// SONAR-OFF");
@@ -78,13 +78,13 @@ public class IssueExclusionPatternInitializerTest {
     assertThat(patternsInitializer.hasConfiguredPatterns()).isTrue();
     assertThat(patternsInitializer.hasFileContentPattern()).isTrue();
     assertThat(patternsInitializer.hasMulticriteriaPatterns()).isFalse();
-    assertThat(patternsInitializer.getMulticriteriaPatterns().size()).isEqualTo(0);
+    assertThat(patternsInitializer.getMulticriteriaPatterns()).isEmpty();
     assertThat(patternsInitializer.getBlockPatterns().size()).isEqualTo(3);
-    assertThat(patternsInitializer.getAllFilePatterns().size()).isEqualTo(0);
+    assertThat(patternsInitializer.getAllFilePatterns()).isEmpty();
   }
 
   @Test
-  public void shouldLogInvalidStartBlockPattern() {
+  void shouldLogInvalidStartBlockPattern() {
     Map<String, String> settings = new HashMap<>();
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY, "1");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY + ".1." + IssueExclusionPatternInitializer.BEGIN_BLOCK_REGEXP, "");
@@ -95,7 +95,7 @@ public class IssueExclusionPatternInitializerTest {
   }
 
   @Test
-  public void shouldReturnAllFilePattern() {
+  void shouldReturnAllFilePattern() {
     Map<String, String> settings = new HashMap<>();
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY, "1,2");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY + ".1." + IssueExclusionPatternInitializer.FILE_REGEXP, "@SONAR-IGNORE-ALL");
@@ -105,13 +105,13 @@ public class IssueExclusionPatternInitializerTest {
     assertThat(patternsInitializer.hasConfiguredPatterns()).isTrue();
     assertThat(patternsInitializer.hasFileContentPattern()).isTrue();
     assertThat(patternsInitializer.hasMulticriteriaPatterns()).isFalse();
-    assertThat(patternsInitializer.getMulticriteriaPatterns().size()).isEqualTo(0);
-    assertThat(patternsInitializer.getBlockPatterns().size()).isEqualTo(0);
+    assertThat(patternsInitializer.getMulticriteriaPatterns()).isEmpty();
+    assertThat(patternsInitializer.getBlockPatterns()).isEmpty();
     assertThat(patternsInitializer.getAllFilePatterns().size()).isEqualTo(2);
   }
 
   @Test
-  public void shouldLogInvalidAllFilePattern() {
+  void shouldLogInvalidAllFilePattern() {
     Map<String, String> settings = new HashMap<>();
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY, "1");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY + ".1." + IssueExclusionPatternInitializer.FILE_REGEXP, "");

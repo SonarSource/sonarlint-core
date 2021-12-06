@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
-
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;

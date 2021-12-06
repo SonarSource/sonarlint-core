@@ -22,28 +22,26 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 import java.nio.file.Path;
 import java.util.Collections;
 import org.apache.commons.lang.StringUtils;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.api.utils.log.LogTester;
-import org.sonar.api.utils.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class GlobalSettingsUpdateCheckerTest {
+class GlobalSettingsUpdateCheckerTests {
 
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   @RegisterExtension
-  public LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
   @TempDir
   Path tempDir;
 
@@ -58,12 +56,6 @@ class GlobalSettingsUpdateCheckerTest {
     mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
 
     checker = new GlobalSettingsUpdateChecker(mockServer.serverApiHelper());
-  }
-
-  @AfterAll
-  static void after() {
-    // to avoid conflicts with SonarLintLogging
-    new LogTester().setLevel(LoggerLevel.TRACE);
   }
 
   @Test
@@ -95,7 +87,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Property 'sonar.test.inclusions' added with value 'value'");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Property 'sonar.test.inclusions' added with value 'value'");
   }
 
   @Test
@@ -107,7 +99,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Property 'sonar.java.license.secured' added with value '******'");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Property 'sonar.java.license.secured' added with value '******'");
   }
 
   @Test
@@ -119,7 +111,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Property 'sonar.issue.enforce.allFiles' added with value '" + StringUtils.repeat("abcde", 3) + "ab...'");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Property 'sonar.issue.enforce.allFiles' added with value '" + StringUtils.repeat("abcde", 3) + "ab...'");
   }
 
   @Test
@@ -131,7 +123,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Property 'sonar.issue.ignore.allFiles' removed");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Property 'sonar.issue.ignore.allFiles' removed");
   }
 
   @Test
@@ -144,7 +136,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Value of property 'sonar.exclusions' changed from 'old' to 'new'");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Value of property 'sonar.exclusions' changed from 'old' to 'new'");
   }
 
   @Test
@@ -157,7 +149,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Value of property 'sonar.exclusions' changed from 'one,two,three,fou...' to 'four,five,six,sev...'");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Value of property 'sonar.exclusions' changed from 'one,two,three,fou...' to 'four,five,six,sev...'");
   }
 
   @Test
@@ -170,7 +162,7 @@ class GlobalSettingsUpdateCheckerTest {
 
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated");
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Value of property 'sonar.exclusions' changed from '...two,three,four...' to '...four,five,six,...'");
+    assertThat(logTester.logs(Level.DEBUG)).contains("Value of property 'sonar.exclusions' changed from '...two,three,four...' to '...four,five,six,...'");
   }
 
   private void mockServerProperty(String propertyKey, String propertyValue) {

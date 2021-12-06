@@ -23,14 +23,14 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class RulesStore {
 
-  private static final Logger LOG = Loggers.get(RulesStore.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String RULES_PB = "rules.pb";
 
   private final StorageFolder storageFolder;
@@ -43,19 +43,22 @@ public class RulesStore {
   public void store(List<ServerRules.Rule> rules) {
     var protoRules = Sonarlint.Rules.newBuilder()
       .putAllRulesByKey(
-        rules.stream().collect(Collectors.toMap(ServerRules.Rule::getRuleKey, r -> Sonarlint.Rules.Rule.newBuilder()
-          .setRepo(r.getRepository())
-          .setKey(r.getRule())
-          .setName(r.getName())
-          .setSeverity(r.getSeverity())
-          .setLang(r.getLang())
-          .setInternalKey(r.getInternalKey())
-          .setHtmlDesc(r.getHtmlDesc())
-          .setHtmlNote(r.getHtmlNote())
-          .setIsTemplate(r.isTemplate())
-          .setTemplateKey(r.getTemplateKey())
-          .setType(r.getType())
-          .build(), (r1, r2) -> r1)))
+        rules.stream().collect(Collectors.toMap(ServerRules.Rule::getRuleKey, r -> {
+          var ruleKey = RuleKey.parse(r.getRuleKey());
+          return Sonarlint.Rules.Rule.newBuilder()
+            .setRepo(ruleKey.repository())
+            .setKey(ruleKey.rule())
+            .setName(r.getName())
+            .setSeverity(r.getSeverity())
+            .setLang(r.getLang())
+            .setInternalKey(r.getInternalKey())
+            .setHtmlDesc(r.getHtmlDesc())
+            .setHtmlNote(r.getHtmlNote())
+            .setIsTemplate(r.isTemplate())
+            .setTemplateKey(r.getTemplateKey())
+            .setType(r.getType())
+            .build();
+        }, (r1, r2) -> r1)))
       .build();
     rwLock.write(() -> storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(protoRules, dest.resolve(RULES_PB))));
   }
@@ -63,8 +66,7 @@ public class RulesStore {
   public List<ServerRules.Rule> getAll() {
     return getProtoRules().getRulesByKeyMap().values()
       .stream().map(r -> new ServerRules.Rule(
-        r.getRepo(),
-        r.getKey(),
+        RuleKey.of(r.getRepo(), r.getKey()).toString(),
         r.getName(),
         r.getSeverity(),
         r.getLang(),
@@ -73,8 +75,8 @@ public class RulesStore {
         r.getHtmlNote(),
         r.getIsTemplate(),
         r.getTemplateKey(),
-        r.getType()
-      )).collect(Collectors.toList());
+        r.getType()))
+      .collect(Collectors.toList());
   }
 
   public Optional<Sonarlint.Rules.Rule> getRuleWithKey(String ruleKey) {

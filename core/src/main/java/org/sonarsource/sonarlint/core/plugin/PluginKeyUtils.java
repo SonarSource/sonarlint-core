@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import javax.annotation.Nullable;
-
 import org.apache.commons.lang.StringUtils;
 
 /**

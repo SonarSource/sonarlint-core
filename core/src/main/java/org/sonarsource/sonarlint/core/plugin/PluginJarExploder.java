@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
+
 import static org.apache.commons.io.FileUtils.listFiles;
 
 public abstract class PluginJarExploder {

@@ -29,12 +29,12 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.Version;
-import org.sonar.api.utils.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 class ExtensionInstallerTests {
 
   @RegisterExtension
-  LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final Configuration CONFIG = new MapSettings().asConfig();
   private static final Version PLUGIN_API_VERSION = Version.create(5, 4, 0);
@@ -209,7 +209,7 @@ class ExtensionInstallerTests {
 
     verify(container, never()).addExtension(pluginInfo, TypeScriptSensor.class);
 
-    assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("TypeScript sensor excluded");
+    assertThat(logTester.logs(Level.DEBUG)).contains("TypeScript sensor excluded");
   }
 
   @Test

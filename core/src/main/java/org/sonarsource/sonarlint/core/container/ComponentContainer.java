@@ -36,8 +36,6 @@ import org.picocontainer.lifecycle.ReflectionLifecycleStrategy;
 import org.picocontainer.monitors.NullComponentMonitor;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
-import org.sonar.api.utils.log.Loggers;
-import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
 public class ComponentContainer implements ContainerPopulator.Container {
@@ -267,10 +265,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
     ReflectionLifecycleStrategy lifecycleStrategy = new ReflectionLifecycleStrategy(new NullComponentMonitor(), "start", "stop", "close") {
       @Override
       public void start(Object component) {
-        Profiler profiler = Profiler.createIfTrace(Loggers.get(ComponentContainer.class));
-        profiler.start();
         super.start(component);
-        profiler.stopTrace(component.getClass().getCanonicalName() + " started");
       }
     };
     return new ExtendedDefaultPicoContainer(new OptInCaching(), lifecycleStrategy, null);

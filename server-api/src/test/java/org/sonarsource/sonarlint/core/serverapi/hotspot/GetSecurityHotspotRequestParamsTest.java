@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

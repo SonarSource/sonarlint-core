@@ -23,15 +23,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import org.sonar.api.batch.fs.InputFile.Type;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class ModuleInputFileBuilder {
-  private static final Logger LOG = Loggers.get(ModuleInputFileBuilder.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final LanguageDetection langDetection;
   private final FileMetadata fileMetadata;
 

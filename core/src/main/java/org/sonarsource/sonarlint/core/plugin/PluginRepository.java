@@ -25,9 +25,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 
 import static java.util.Objects.requireNonNull;
@@ -36,7 +35,7 @@ import static java.util.Objects.requireNonNull;
  * Orchestrates the installation and loading of plugins
  */
 public class PluginRepository implements Startable {
-  private static final Logger LOG = Loggers.get(PluginRepository.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final PluginInfosLoader pluginInfosLoader;
   private final PluginInstancesLoader pluginInstancesLoader;

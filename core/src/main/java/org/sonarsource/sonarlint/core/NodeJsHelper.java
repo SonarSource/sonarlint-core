@@ -32,13 +32,12 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class NodeJsHelper {
 
-  private static final Logger LOG = Loggers.get(NodeJsHelper.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(-.*)?)");
   private final System2 system2;
   private final Path pathHelperLocationOnMac;

@@ -21,9 +21,8 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.util.SonarLintUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayload;
@@ -36,7 +35,7 @@ public class TelemetryHttpClient {
 
   public static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com/sonarlint";
 
-  private static final Logger LOG = Loggers.get(TelemetryHttpClient.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final String product;
   private final String version;

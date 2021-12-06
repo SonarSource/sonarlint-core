@@ -27,14 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Settings;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class SettingsApi {
-  private static final Logger LOG = Loggers.get(SettingsApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
 
   private final ServerApiHelper helper;

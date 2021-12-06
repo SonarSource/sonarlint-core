@@ -29,13 +29,12 @@ import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -63,7 +62,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainer extends ComponentContainer {
-  private static final Logger LOG = Loggers.get(StorageContainer.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat();
   private final ConnectedGlobalConfiguration globalConfig;
   private final GlobalStores globalStores;

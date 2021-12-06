@@ -28,8 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.CoreProperties;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
@@ -41,7 +40,7 @@ public class GlobalSettingsUpdateChecker {
 
   private static final int MAX_VALUE_LENGTH = 20;
 
-  private static final Logger LOG = Loggers.get(GlobalSettingsUpdateChecker.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final Set<String> WHITELIST = ImmutableSet.of(
     CoreProperties.PROJECT_INCLUSIONS_PROPERTY,

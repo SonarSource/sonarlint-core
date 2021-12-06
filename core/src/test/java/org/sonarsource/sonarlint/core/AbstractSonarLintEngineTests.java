@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core;
 import java.util.Collection;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 
@@ -78,7 +78,7 @@ class AbstractSonarLintEngineTests {
   private AbstractSonarLintEngine prepareFakeEngine(ModuleContainer mockedModuleContainerThatFailsOnStop) {
     ModuleRegistry mockModuleRegistry = mock(ModuleRegistry.class);
 
-    AbstractSonarLintEngine underTest = new AbstractSonarLintEngine(mock(LogOutput.class)) {
+    AbstractSonarLintEngine underTest = new AbstractSonarLintEngine(mock(ClientLogOutput.class)) {
 
       @Override
       public Collection<PluginDetails> getPluginDetails() {

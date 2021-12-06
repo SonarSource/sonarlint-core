@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 
 public class DefaultSonarAnalyzer implements SonarAnalyzer {

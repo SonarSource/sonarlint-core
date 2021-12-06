@@ -32,8 +32,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
@@ -53,7 +53,7 @@ import static org.apache.commons.lang.StringUtils.isNotEmpty;
  */
 public class PluginInstancesLoader {
 
-  private static final Logger LOG = Loggers.get(PluginInstancesLoader.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
   private static final String SLF4J_ADAPTER_JAR_NAME = "sonarlint-slf4j-sonar-log";

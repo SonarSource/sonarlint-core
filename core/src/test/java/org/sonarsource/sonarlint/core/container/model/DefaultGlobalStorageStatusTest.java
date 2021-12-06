@@ -19,11 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Date;
-
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultGlobalStorageStatusTest {
   @Test

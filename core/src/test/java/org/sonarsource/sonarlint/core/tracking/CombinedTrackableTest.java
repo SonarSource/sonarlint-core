@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 
 public class CombinedTrackableTest {
   @Test

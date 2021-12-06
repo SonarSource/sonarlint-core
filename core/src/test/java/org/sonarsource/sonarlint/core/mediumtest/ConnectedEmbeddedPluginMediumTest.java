@@ -37,9 +37,9 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
 public class ConnectedEmbeddedPluginMediumTest {
@@ -109,7 +108,7 @@ public class ConnectedEmbeddedPluginMediumTest {
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
-      .setLogOutput(createNoOpLogOutput())
+      .setLogOutput((m, l) -> System.out.println(m))
       .addEnabledLanguages(Language.JAVA, Language.JS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .useEmbeddedPlugin("java", PluginLocator.getJavaPluginUrl())

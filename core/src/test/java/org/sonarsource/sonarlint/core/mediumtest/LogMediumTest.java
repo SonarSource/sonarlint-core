@@ -24,6 +24,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -33,15 +34,14 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
@@ -52,7 +52,7 @@ public class LogMediumTest {
   public TemporaryFolder temp = new TemporaryFolder();
   private StandaloneSonarLintEngine sonarlint;
   private File baseDir;
-  private Multimap<LogOutput.Level, String> logs;
+  private Multimap<ClientLogOutput.Level, String> logs;
 
   @Before
   public void prepare() throws IOException {
@@ -60,7 +60,7 @@ public class LogMediumTest {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .setLogOutput(createLogOutput(logs))
-      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
@@ -72,8 +72,8 @@ public class LogMediumTest {
     sonarlint.stop();
   }
 
-  private LogOutput createLogOutput(final Multimap<LogOutput.Level, String> logs) {
-    return new LogOutput() {
+  private ClientLogOutput createLogOutput(final Multimap<ClientLogOutput.Level, String> logs) {
+    return new ClientLogOutput() {
       @Override
       public void log(String formattedMessage, Level level) {
         logs.put(level, formattedMessage);
@@ -90,21 +90,21 @@ public class LogMediumTest {
 
   /**
    * If this test starts to fail randomly, check if any other test class in the core module is using {@link org.sonar.api.utils.log.LogTester} without
-   * setting the root level back to debug in @AfterClass! 
+   * setting the root level back to debug in @AfterClass!
    */
   @Test
   public void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
-    assertThat(logs.get(LogOutput.Level.DEBUG)).isNotEmpty();
+    assertThat(logs.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
-    final Multimap<LogOutput.Level, String> logs2 = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
+    final Multimap<ClientLogOutput.Level, String> logs2 = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
 
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2), null);
-    assertThat(logs.get(LogOutput.Level.DEBUG)).isEmpty();
-    assertThat(logs2.get(LogOutput.Level.DEBUG)).isNotEmpty();
+    assertThat(logs.get(ClientLogOutput.Level.DEBUG)).isEmpty();
+    assertThat(logs2.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

@@ -19,21 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.CheckForNull;
-import org.junit.*;
+import org.junit.Test;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ActiveRulesWithExclusionsTest {
 

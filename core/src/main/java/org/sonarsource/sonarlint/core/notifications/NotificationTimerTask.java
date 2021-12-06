@@ -30,16 +30,15 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 class NotificationTimerTask extends TimerTask {
   // merge with most recent time
   private static final BinaryOperator<ZonedDateTime> MERGE_TIMES = (t1, t2) -> t1.toInstant().compareTo(t2.toInstant()) > 0 ? t1 : t2;
-  private static final Logger LOG = Loggers.get(NotificationTimerTask.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private Collection<NotificationConfiguration> configuredProjects = Collections.emptyList();
   private final Function<ServerApiHelper, NotificationChecker> notificationCheckerFactory;
 

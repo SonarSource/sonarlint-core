@@ -22,17 +22,16 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 import java.io.InputStream;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Hotspots;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class HotspotApi {
-  private static final Logger LOG = Loggers.get(HotspotApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String HOTSPOTS_API_URL = "/api/hotspots/show.protobuf";
 

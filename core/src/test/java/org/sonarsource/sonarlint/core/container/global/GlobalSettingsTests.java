@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
-import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,9 +35,9 @@ import static org.mockito.Mockito.when;
 class GlobalSettingsTests {
 
   @RegisterExtension
-  LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private AbstractGlobalConfiguration globalConfiguration = mock(AbstractGlobalConfiguration.class);
+  private final AbstractGlobalConfiguration globalConfiguration = mock(AbstractGlobalConfiguration.class);
 
   @Test
   void setNodePathPropertyForSonarJS() {

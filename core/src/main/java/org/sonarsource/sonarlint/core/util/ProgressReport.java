@@ -21,12 +21,11 @@ package org.sonarsource.sonarlint.core.util;
 
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class ProgressReport implements Runnable {
 
-  private static final Logger LOG = Loggers.get(ProgressReport.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final long period;
   private Supplier<String> messageSupplier = () -> "";
   private final Thread thread;

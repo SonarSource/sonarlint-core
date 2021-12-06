@@ -34,10 +34,8 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
-import org.sonar.api.CoreProperties;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Computes hash of files. Ends of Lines are ignored, so files with
@@ -46,7 +44,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 @SonarLintSide
 public class FileMetadata {
 
-  private static final Logger LOG = Loggers.get(FileMetadata.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final char LINE_FEED = '\n';
   private static final char CARRIAGE_RETURN = '\r';
@@ -80,9 +78,9 @@ public class FileMetadata {
     @Override
     protected void handleAll(char c) {
       if (!alreadyLoggedInvalidCharacter && c == '\ufffd') {
-        LOG.warn("Invalid character encountered in file '{}' at line {} for encoding {}. Please fix file content or configure the encoding to be used using property '{}'.",
+        LOG.warn("Invalid character encountered in file '{}' at line {} for encoding {}. Please fix file content or configure the encoding.",
           fileUri,
-          lines, encoding, CoreProperties.ENCODING_PROPERTY);
+          lines, encoding);
         alreadyLoggedInvalidCharacter = true;
       }
     }
@@ -100,7 +98,7 @@ public class FileMetadata {
 
   private static class LineOffsetCounter extends CharHandler {
     private int currentOriginalOffset = 0;
-    private List<Integer> originalLineOffsets = new ArrayList<>();
+    private final List<Integer> originalLineOffsets = new ArrayList<>();
     private int lastValidOffset = 0;
 
     public LineOffsetCounter() {

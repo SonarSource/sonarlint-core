@@ -27,15 +27,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.utils.System2;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo.RequiredPlugin;
@@ -47,7 +45,7 @@ public class PluginInfosLoader {
 
   private static final String IMPLEMENTED_SQ_API = "8.9";
 
-  private static final Logger LOG = Loggers.get(PluginInfosLoader.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final PluginCache pluginCache;
   private final PluginIndex pluginIndex;
@@ -70,9 +68,6 @@ public class PluginInfosLoader {
 
   private Map<String, PluginInfo> loadPlugins(List<PluginReference> pluginReferences) {
     Map<String, PluginInfo> infosByKey = new HashMap<>();
-
-    Profiler profiler = Profiler.create(LOG).startDebug("Load plugins");
-
     for (PluginReference ref : pluginReferences) {
       Path jarFilePath = getFromCache(ref);
       PluginInfo info = PluginInfo.create(jarFilePath, ref.isEmbedded());
@@ -89,8 +84,6 @@ public class PluginInfosLoader {
         checkUnsatisfiedPluginDependency(info, infosByKey);
       }
     }
-
-    profiler.stopDebug();
     return infosByKey;
   }
 

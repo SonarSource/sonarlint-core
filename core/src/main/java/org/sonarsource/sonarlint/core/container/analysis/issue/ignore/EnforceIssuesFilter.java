@@ -26,16 +26,15 @@ import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFilterableIssue;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssuePattern;
 
 public class EnforceIssuesFilter implements IssueFilter {
 
-  private static final Logger LOG = Loggers.get(EnforceIssuesFilter.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final List<IssuePattern> multicriteriaPatterns;
 

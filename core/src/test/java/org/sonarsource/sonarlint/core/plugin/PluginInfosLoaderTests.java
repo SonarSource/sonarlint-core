@@ -39,13 +39,13 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.ZipUtils;
-import org.sonar.api.utils.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -69,7 +69,7 @@ class PluginInfosLoaderTests {
   private static final String FAKE_PLUGIN_KEY = "pluginkey";
 
   @RegisterExtension
-  public LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private PluginInfosLoader underTest;
   private PluginIndex pluginIndex;
@@ -98,8 +98,7 @@ class PluginInfosLoaderTests {
   void load_no_plugins() {
     underTest.load();
 
-    assertThat(logTester.logs()).contains("Load plugins");
-    assertThat(logsWithoutStartStop()).isEmpty();
+    assertThat(logs()).isEmpty();
   }
 
   @Test
@@ -141,7 +140,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, SkipReason.IncompatiblePluginApi.INSTANCE));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to 8.9. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to 8.9. Skip loading it.");
   }
 
   @Test
@@ -152,7 +151,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.IncompatiblePluginVersion("2.0")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' version '1.0' is not supported (minimal version is '2.0'). Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' version '1.0' is not supported (minimal version is '2.0'). Skip loading it.");
   }
 
   @Test
@@ -161,7 +160,7 @@ class PluginInfosLoaderTests {
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load()).hasSize(0);
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' is not compatible with SonarLint. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' is not compatible with SonarLint. Skip loading it.");
   }
 
   @Test
@@ -170,7 +169,7 @@ class PluginInfosLoaderTests {
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
     assertThat(underTest.load()).hasSize(0);
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' is not compatible with SonarLint. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' is not compatible with SonarLint. Skip loading it.");
   }
 
   @Test
@@ -182,7 +181,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.PHP)))));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'php' is excluded because language 'PHP' is not enabled. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'php' is excluded because language 'PHP' is not enabled. Skip loading it.");
   }
 
   @Test
@@ -195,7 +194,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.C, Language.CPP, Language.OBJC)))));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,C++,Objective-C' are enabled. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'cpp' is excluded because none of languages 'C,C++,Objective-C' are enabled. Skip loading it.");
   }
 
   @Test
@@ -218,7 +217,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' dependency on 'javascript' is unsatisfied. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' dependency on 'javascript' is unsatisfied. Skip loading it.");
   }
 
   @Test
@@ -237,7 +236,7 @@ class PluginInfosLoaderTests {
       .containsOnly(
         tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")),
         tuple("javascript", true, new SkipReason.IncompatiblePluginVersion("2.0")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' dependency on 'javascript' is unsatisfied. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' dependency on 'javascript' is unsatisfied. Skip loading it.");
   }
 
   @Test
@@ -266,7 +265,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' dependency on 'required2' is unsatisfied. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' dependency on 'required2' is unsatisfied. Skip loading it.");
   }
 
   @Test
@@ -277,7 +276,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", false, null));
-    assertThat(logsWithoutStartStop()).isEmpty();
+    assertThat(logs()).isEmpty();
   }
 
   @Test
@@ -293,7 +292,7 @@ class PluginInfosLoaderTests {
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")),
         tuple("required2", true, new SkipReason.IncompatiblePluginVersion("2.0")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' dependency on 'required2' is unsatisfied. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' dependency on 'required2' is unsatisfied. Skip loading it.");
   }
 
   // SLCORE-259
@@ -305,7 +304,7 @@ class PluginInfosLoaderTests {
     doReturn(true).when(pluginVersionChecker).isVersionSupported(eq(Language.JS.getPluginKey()), eq(Version.create(V1_0)));
     enabledLanguages.add(Language.JS);
 
-    assertThat(underTest.load().values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
+    assertThat(underTest.load().values()).as(logs().collect(Collectors.joining("\n")))
       .extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple(Language.JS.getPluginKey(), false, null));
   }
@@ -316,7 +315,7 @@ class PluginInfosLoaderTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSonarLintSupported(true), withSqApiVersion("7.9")));
     when(pluginIndex.references()).thenReturn(singletonList(fakePlugin));
 
-    assertThat(underTest.load().values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
+    assertThat(underTest.load().values()).as(logs().collect(Collectors.joining("\n")))
       .extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple(FAKE_PLUGIN_KEY, false, null));
   }
@@ -330,7 +329,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.8", "11")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires JRE 11 while current is 1.8. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' requires JRE 11 while current is 1.8. Skip loading it.");
   }
 
   @Test
@@ -367,7 +366,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, "10.1.1", "10.1.2")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires Node.js 10.1.2 while current is 10.1.1. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' requires Node.js 10.1.2 while current is 10.1.1. Skip loading it.");
   }
 
   @Test
@@ -380,7 +379,7 @@ class PluginInfosLoaderTests {
 
     assertThat(underTest.load().values()).extracting(PluginInfo::getName, PluginInfo::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, "10.1.2")));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires Node.js 10.1.2. Skip loading it.");
+    assertThat(logs()).contains("Plugin 'pluginkey' requires Node.js 10.1.2. Skip loading it.");
   }
 
   @Test
@@ -445,10 +444,8 @@ class PluginInfosLoaderTests {
     return new PluginIndex.PluginReference(hash, filename, false);
   }
 
-  private Stream<String> logsWithoutStartStop() {
-    return logTester.logs().stream()
-      .filter(s -> !s.equals("Load plugins"))
-      .filter(s -> !s.matches("Load plugins \\(done\\) \\| time=(.*)ms"));
+  private Stream<String> logs() {
+    return logTester.logs().stream();
   }
 
 }

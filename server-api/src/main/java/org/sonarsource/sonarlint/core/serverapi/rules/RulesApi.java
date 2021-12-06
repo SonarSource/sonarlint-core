@@ -31,19 +31,25 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.rule.Severity;
-import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class RulesApi {
-  private static final Logger LOG = Loggers.get(RulesApi.class);
+
+  enum Severity {
+    INFO,
+    MINOR,
+    MAJOR,
+    CRITICAL,
+    BLOCKER
+  }
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
@@ -66,7 +72,7 @@ public class RulesApi {
   }
 
   public ServerRules getAll(Set<String> enabledLanguageKeys, Progress progress) {
-    Map<RuleKey, ServerRules.Rule> rulesByKey = new HashMap<>();
+    Map<String, ServerRules.Rule> rulesByKey = new HashMap<>();
     Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey = new HashMap<>();
 
     for (var i = 0; i < Severity.values().length; i++) {
@@ -89,10 +95,9 @@ public class RulesApi {
       page++;
       Rules.SearchResponse response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
       for (var entry : response.getActives().getActives().entrySet()) {
-        var ruleKey = RuleKey.parse(entry.getKey());
         for (Rules.Active ar : entry.getValue().getActiveListList()) {
           activeRules.add(new ServerRules.ActiveRule(
-            ruleKey,
+            entry.getKey(),
             ar.getSeverity(),
             ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList())));
         }
@@ -107,7 +112,7 @@ public class RulesApi {
     return activeRules;
   }
 
-  private void fetchRulesAndActiveRules(Map<RuleKey, ServerRules.Rule> rulesByKey, String severity, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey,
+  private void fetchRulesAndActiveRules(Map<String, ServerRules.Rule> rulesByKey, String severity, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey,
     Set<String> enabledLanguageKeys, Progress progress) {
     var page = 0;
     var pageSize = 500;
@@ -160,16 +165,15 @@ public class RulesApi {
     }
   }
 
-  private static void readPage(Map<RuleKey, ServerRules.Rule> rulesByKey, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey, Rules.SearchResponse response) {
+  private static void readPage(Map<String, ServerRules.Rule> rulesByKey, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey, Rules.SearchResponse response) {
     for (var r : response.getRulesList()) {
-      var ruleKey = RuleKey.parse(r.getKey());
+      var ruleKey = r.getKey();
       if (rulesByKey.containsKey(ruleKey)) {
         // XXX do we really need to check this ? is it normal that some rule keys are duplicated in test data ?
         continue;
       }
       rulesByKey.put(ruleKey, new ServerRules.Rule(
-        ruleKey.repository(),
-        ruleKey.rule(),
+        ruleKey,
         r.getName(),
         r.getSeverity(),
         r.getLang(),
@@ -181,7 +185,7 @@ public class RulesApi {
         typeToString(r.getType())));
     }
     for (var entry : response.getActives().getActives().entrySet()) {
-      var ruleKey = RuleKey.parse(entry.getKey());
+      var ruleKey = entry.getKey();
       for (Rules.Active ar : entry.getValue().getActiveListList()) {
         String qProfileKey = ar.getQProfile();
         var activeRule = new ServerRules.ActiveRule(

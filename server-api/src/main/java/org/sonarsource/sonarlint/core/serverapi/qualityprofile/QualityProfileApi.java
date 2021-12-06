@@ -22,16 +22,15 @@ package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Qualityprofiles;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfileApi {
-  private static final Logger LOG = Loggers.get(QualityProfileApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
 
   private final ServerApiHelper helper;

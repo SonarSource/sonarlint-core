@@ -29,9 +29,8 @@ import java.nio.file.StandardCopyOption;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 
 /**
@@ -41,7 +40,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
  */
 public class PluginCache {
 
-  private static final Logger LOG = Loggers.get(PluginCache.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Path cacheDir;
   private final Path tmpDirInCacheDir;
@@ -180,11 +179,7 @@ public class PluginCache {
 
     @Override
     public void copy(String filename, Path toFile) throws IOException {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Copy plugin {} to {}", url, toFile);
-      } else {
-        LOG.info("Copy {}", StringUtils.substringAfterLast(url.getFile(), "/"));
-      }
+      LOG.debug("Copy plugin {} to {}", url, toFile);
 
       FileUtils.copyURLToFile(url, toFile.toFile());
     }

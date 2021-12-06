@@ -22,12 +22,12 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 import java.util.Collection;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 
 /**
  * Entry point for SonarLint in standalone mode.
@@ -53,6 +53,6 @@ public interface StandaloneSonarLintEngine extends SonarLintEngine {
   /**
    * Trigger an analysis
    */
-  AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
+  AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ProgressMonitor monitor);
 
 }

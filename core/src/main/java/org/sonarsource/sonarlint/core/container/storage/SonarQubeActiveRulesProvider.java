@@ -27,12 +27,11 @@ import java.util.stream.Collectors;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.resources.Languages;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRuleAdapter;
@@ -42,7 +41,7 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
-  private static final Logger LOG = Loggers.get(SonarQubeActiveRulesProvider.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private ActiveRules activeRules;
 

@@ -19,11 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
-
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class DownloadExceptionTests {
   @Test

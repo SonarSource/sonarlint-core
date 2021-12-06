@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 
 /**
  * To use SonarLint in connected mode please provide a server id that will identify the storage.
@@ -40,7 +41,7 @@ public abstract class AbstractGlobalConfiguration {
 
   public static final String DEFAULT_WORK_DIR = "work";
 
-  private final LogOutput logOutput;
+  private final ClientLogOutput logOutput;
   private final Path sonarLintUserHome;
   private final Path workDir;
   private final EnumSet<Language> enabledLanguages;
@@ -83,7 +84,7 @@ public abstract class AbstractGlobalConfiguration {
   }
 
   @CheckForNull
-  public LogOutput getLogOutput() {
+  public ClientLogOutput getLogOutput() {
     return logOutput;
   }
 
@@ -102,7 +103,7 @@ public abstract class AbstractGlobalConfiguration {
   }
 
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
-    private LogOutput logOutput;
+    private ClientLogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
     private final EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
@@ -112,7 +113,7 @@ public abstract class AbstractGlobalConfiguration {
     private ModulesProvider modulesProvider;
     private long clientPid;
 
-    public G setLogOutput(@Nullable LogOutput logOutput) {
+    public G setLogOutput(@Nullable ClientLogOutput logOutput) {
       this.logOutput = logOutput;
       return (G) this;
     }

@@ -26,12 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * An ObjectStore without internal cache that derives the filesystem path to storage using a provided PathMapper.
@@ -40,7 +39,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
  * @param <V> type of the value to store
  */
 class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
-  private static final Logger LOGGER = Loggers.get(IndexedObjectStore.class);
+  private static final SonarLintLogger LOGGER = SonarLintLogger.get();
 
   private final StoreIndex<K> index;
   private final PathMapper<K> pathMapper;

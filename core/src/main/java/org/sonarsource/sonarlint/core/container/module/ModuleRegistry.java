@@ -22,15 +22,14 @@ package org.sonarsource.sonarlint.core.container.module;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.ModulesProvider;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 
 public class ModuleRegistry {
-  private static final Logger LOG = Loggers.get(ModuleRegistry.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Map<Object, ModuleContainer> modules = new HashMap<>();
   private final ComponentContainer parent;

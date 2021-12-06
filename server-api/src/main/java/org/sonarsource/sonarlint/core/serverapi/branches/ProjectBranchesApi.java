@@ -24,12 +24,11 @@ import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ProjectBranchesApi {
-  private static final Logger LOG = Loggers.get(ProjectBranchesApi.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String LIST_ALL_PROJECT_BRANCHES_URL = "/api/project_branches/list";
   private final ServerApiHelper helper;

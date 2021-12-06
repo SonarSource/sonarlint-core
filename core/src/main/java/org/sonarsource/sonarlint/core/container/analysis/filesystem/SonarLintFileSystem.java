@@ -30,13 +30,12 @@ import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class SonarLintFileSystem implements FileSystem {
 
-  private static final Logger LOG = Loggers.get(SonarLintFileSystem.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final DefaultFilePredicates filePredicates;
   private final Path baseDir;

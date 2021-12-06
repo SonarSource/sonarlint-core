@@ -22,10 +22,10 @@ package org.sonarsource.sonarlint.core;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 
 public class TestUtils {
 
@@ -39,7 +39,7 @@ public class TestUtils {
     return new NoOpIssueListener();
   }
 
-  public static class NoOpLogOutput implements LogOutput {
+  public static class NoOpLogOutput implements ClientLogOutput {
     @Override
     public void log(String formattedMessage, Level level) {
       // Don't pollute logs
