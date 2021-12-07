@@ -28,7 +28,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Components.Component;
 import org.sonarqube.ws.Components.TreeWsResponse;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +41,7 @@ class ModuleHierarchyDownloaderTests {
   private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private ModuleHierarchyDownloader underTest;
 

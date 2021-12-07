@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProjectListDownloaderTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
   void update_modules(@TempDir Path tempDir) {

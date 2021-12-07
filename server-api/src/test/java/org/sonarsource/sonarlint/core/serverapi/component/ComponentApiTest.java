@@ -23,7 +23,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.util.Progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 
 class ComponentApiTest {
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private final static String PROJECT_KEY = "project1";
 

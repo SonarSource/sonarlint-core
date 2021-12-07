@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckRes
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -52,7 +53,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalS
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
@@ -63,10 +63,10 @@ import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {

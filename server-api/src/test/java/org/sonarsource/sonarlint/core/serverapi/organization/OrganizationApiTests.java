@@ -29,7 +29,7 @@ import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Organizations;
 import org.sonarqube.ws.Organizations.Organization;
 import org.sonarqube.ws.Organizations.SearchWsResponse;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.Progress;
 
@@ -42,11 +42,11 @@ import static org.mockito.Mockito.when;
 class OrganizationApiTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
   void testListUserOrganizationWithMoreThan20Pages() throws IOException {
-    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
+    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
 

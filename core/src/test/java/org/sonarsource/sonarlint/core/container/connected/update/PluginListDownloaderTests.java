@@ -26,7 +26,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 class PluginListDownloaderTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   public static final String RESPONSE_67 = "{\"plugins\": [\n" +
     "    {\n" +

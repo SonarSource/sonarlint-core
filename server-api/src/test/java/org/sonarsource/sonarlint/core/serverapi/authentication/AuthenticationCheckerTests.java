@@ -23,7 +23,7 @@ import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthenticationCheckerTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private AuthenticationChecker underTest;
 
   @BeforeEach

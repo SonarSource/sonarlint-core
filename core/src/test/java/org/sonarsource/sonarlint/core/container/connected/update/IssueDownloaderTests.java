@@ -30,7 +30,7 @@ import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
@@ -50,7 +50,7 @@ class IssueDownloaderTests {
   private static final String DUMMY_KEY = "dummyKey";
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
 

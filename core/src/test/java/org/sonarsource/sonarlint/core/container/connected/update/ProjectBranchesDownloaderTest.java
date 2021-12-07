@@ -23,14 +23,14 @@ import java.util.Collection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ProjectBranchesDownloaderTest {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private final static String PROJECT_KEY = "project1";
 

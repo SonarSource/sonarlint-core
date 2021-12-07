@@ -24,7 +24,7 @@ import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
 
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 class ServerNotificationsRegistryTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private NotificationTimerTask timerTask;
   private NotificationConfiguration config;
@@ -78,7 +78,7 @@ class ServerNotificationsRegistryTests {
   void testIsSupported() {
     mockServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse());
 
-    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), MockWebServerExtension.httpClient())).isTrue();
+    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient())).isTrue();
   }
 
 }

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -51,7 +51,7 @@ import static org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.RULES_SEAR
 class RulesDownloaderTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private final ProgressMonitor monitor = mock(ProgressMonitor.class);
   private final ProgressWrapper progressWrapper = new ProgressWrapper(monitor);

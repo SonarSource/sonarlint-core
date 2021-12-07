@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 class ServerVersionAndStatusCheckerTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private ServerVersionAndStatusChecker underTest;
 
   @BeforeEach

@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -51,7 +51,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_download_issues_from_engine() {
-    HttpClient client = MockWebServerExtension.httpClient();
+    HttpClient client = MockWebServerExtensionWithProtobuf.httpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), true);
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, true, null);
     verifyNoMoreInteractions(engine);
@@ -59,7 +59,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
-    HttpClient client = MockWebServerExtension.httpClient();
+    HttpClient client = MockWebServerExtensionWithProtobuf.httpClient();
     when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, false, null)).thenThrow(new DownloadException());
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), false);
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, false, null);
