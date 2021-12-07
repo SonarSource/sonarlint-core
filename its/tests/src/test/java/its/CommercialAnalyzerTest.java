@@ -22,9 +22,6 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
-import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -62,14 +59,11 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .setEdition(Edition.ENTERPRISE)
+    .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
-    .addPlugin(MavenLocation.of("com.sonarsource.cpp", "sonar-cfamily-plugin", ItUtils.cppVersion))
-    .addPlugin(MavenLocation.of("com.sonarsource.cobol", "sonar-cobol-plugin", ItUtils.cobolVersion))
-    .addPlugin(MavenLocation.of("com.sonarsource.tsql", "sonar-tsql-plugin", ItUtils.tsqlVersion))
-    .addPlugin(MavenLocation.of("com.sonarsource.slang", "sonar-apex-plugin", ItUtils.apexVersion))
     .build();
 
   @ClassRule
@@ -157,7 +151,8 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisC_new_prop() throws Exception {
-    assumeTrue(ItUtils.cppVersion.equals(ItUtils.LATEST_RELEASE) || Version.create(ItUtils.cppVersion).isGreaterThanOrEquals(6, 18));
+    // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 8));
 
     updateGlobal();
     updateProject(PROJECT_KEY_C);

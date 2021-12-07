@@ -25,9 +25,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.http.HttpResponse;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
-import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -113,24 +111,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_XML = "sample-xml";
 
   private static String javaRuleKey(String key) {
-    return ItUtils.javaVersion.equals("LATEST_RELEASE") ? ("java:" + key) : ("squid:" + key);
+    // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
+    return ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2) ? ("java:" + key) : ("squid:" + key);
   }
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
-    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", ItUtils.pythonVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
-    // With recent version of SonarJS, SonarTS is required
-    .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-kotlin-plugin", ItUtils.kotlinVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-ruby-plugin", ItUtils.rubyVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.slang", "sonar-scala-plugin", ItUtils.scalaVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.html", "sonar-html-plugin", ItUtils.webVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.xml", "sonar-xml-plugin", ItUtils.xmlVersion))
+    .keepBundledPlugins()
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
