@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,28 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import org.junit.Before;
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IssueTrackerTest {
+class IssueTrackerTests {
 
   private final IssueTrackerCache cache = new InMemoryIssueTrackerCache();
 
-  private final CachingIssueTracker tracker = new CachingIssueTrackerImpl(cache);
+  private final CachingIssueTracker tracker = new CachingIssueTracker(cache);
 
   private final String file1 = "dummyFile1";
 
@@ -152,27 +148,20 @@ public class IssueTrackerTest {
     return new MockTrackableBuilder();
   }
 
-  private Issue mockIssue() {
-    Issue issue = mock(Issue.class);
-    when(issue.getRuleKey()).thenReturn("dummy ruleKey");
-    when(issue.getMessage()).thenReturn("dummy message");
-    return issue;
-  }
-
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     cache.clear();
   }
 
   @Test
-  public void should_track_first_trackables_exactly() {
+  void should_track_first_trackables_exactly() {
     Collection<Trackable> trackables = Arrays.asList(mock(Trackable.class), mock(Trackable.class));
     tracker.matchAndTrackAsNew(file1, trackables);
     assertThat(cache.getCurrentTrackables(file1)).isEqualTo(trackables);
   }
 
   @Test
-  public void should_preserve_known_standalone_trackables_with_null_date() {
+  void should_preserve_known_standalone_trackables_with_null_date() {
     Collection<Trackable> trackables = Arrays.asList(trackable1, trackable2);
     tracker.matchAndTrackAsNew(file1, trackables);
     tracker.matchAndTrackAsNew(file1, trackables);
@@ -183,7 +172,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_add_creation_date_for_leaked_trackables() {
+  void should_add_creation_date_for_leaked_trackables() {
     long start = System.currentTimeMillis();
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable1));
@@ -200,7 +189,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_drop_disappeared_issues() {
+  void should_drop_disappeared_issues() {
     tracker.matchAndTrackAsNew(file1, Arrays.asList(trackable1, trackable2));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable1));
 
@@ -209,7 +198,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_not_match_trackables_with_different_rule_key() {
+  void should_not_match_trackables_with_different_rule_key() {
     String ruleKey = "dummy ruleKey";
     MockTrackableBuilder base = builder()
       .line(7)
@@ -226,7 +215,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_treat_new_issues_as_leak_when_old_issues_disappeared() {
+  void should_treat_new_issues_as_leak_when_old_issues_disappeared() {
     long start = System.currentTimeMillis();
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable1));
@@ -240,7 +229,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_by_line_and_text_range_hash() {
+  void should_match_by_line_and_text_range_hash() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey");
     int line = 7;
     int textRangeHash = 11;
@@ -265,7 +254,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_by_line_and_line_hash() {
+  void should_match_by_line_and_line_hash() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey");
     int line = 7;
     int lineHash = 11;
@@ -290,7 +279,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_by_line_and_message() {
+  void should_match_by_line_and_message() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey");
     int line = 7;
     String message = "should make this condition not always false";
@@ -315,7 +304,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_by_text_range_hash() {
+  void should_match_by_text_range_hash() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey").textRangeHash(11);
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
@@ -330,7 +319,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_by_line_hash() {
+  void should_match_by_line_hash() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey").lineHash(11);
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
@@ -345,19 +334,13 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_local_issues_by_line_hash() {
+  void should_match_local_issues_by_line_hash() {
     String lineContent = "dummy content";
     int newLine = 7;
 
-    Issue issue = mockIssue();
-    when(issue.getStartLine()).thenReturn(newLine + 3);
-
-    Issue movedIssue = mockIssue();
-    when(movedIssue.getStartLine()).thenReturn(newLine);
-
-    Trackable trackable = new IssueTrackable(issue, mock(TextRange.class), null, lineContent);
-    Trackable movedTrackable = new IssueTrackable(movedIssue, mock(TextRange.class), null, lineContent);
-    Trackable nonMatchingTrackable = new IssueTrackable(mockIssue(), mock(TextRange.class), null, lineContent + "x");
+    Trackable trackable = builder().line(newLine + 3).lineHash(lineContent.hashCode()).build();
+    Trackable movedTrackable = builder().line(newLine).lineHash(lineContent.hashCode()).build();
+    Trackable nonMatchingTrackable = builder().lineHash((lineContent + "x").hashCode()).build();
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable));
     tracker.matchAndTrackAsNew(file1, Arrays.asList(movedTrackable, nonMatchingTrackable));
@@ -379,32 +362,15 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_server_issues_by_line_hash() {
+  void should_match_server_issues_by_line_hash() {
     String ruleKey = "dummy ruleKey";
     String message = "dummy message";
     String lineContent = "dummy content";
     int newLine = 7;
-    String serverIssueKey = "dummy serverIssueKey";
 
-    Issue issue = mock(Issue.class);
-    when(issue.getRuleKey()).thenReturn(ruleKey);
-    when(issue.getMessage()).thenReturn(message);
-    when(issue.getStartLine()).thenReturn(newLine);
-    Trackable trackable = new IssueTrackable(issue, mock(TextRange.class), null, lineContent);
-
-    ServerIssue serverIssue = mock(ServerIssue.class);
-    when(serverIssue.ruleKey()).thenReturn(ruleKey);
-    when(serverIssue.getMessage()).thenReturn(message);
-    when(serverIssue.lineHash()).thenReturn(DigestUtils.digest(lineContent));
-    TextRange serverTextRange = mock(TextRange.class);
-    when(serverTextRange.getStartLine()).thenReturn(newLine + 3);
-    when(serverIssue.getTextRange()).thenReturn(serverTextRange);
-    when(serverIssue.creationDate()).thenReturn(Instant.now());
-    when(serverIssue.key()).thenReturn(serverIssueKey);
-    when(serverIssue.resolution()).thenReturn("fixed");
-    Trackable movedTrackable = new ServerIssueTrackable(serverIssue);
-
-    Trackable nonMatchingTrackable = new IssueTrackable(mockIssue(), mock(TextRange.class), null, lineContent + "x");
+    Trackable trackable = builder().ruleKey(ruleKey).message(message).line(newLine).lineHash(lineContent.hashCode()).build();
+    Trackable movedTrackable = builder().line(newLine).lineHash(lineContent.hashCode()).build();
+    Trackable nonMatchingTrackable = builder().lineHash((lineContent + "x").hashCode()).build();
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable));
     tracker.matchAndTrackAsBase(file1, Arrays.asList(movedTrackable, nonMatchingTrackable));
@@ -418,7 +384,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_match_by_server_issue_key() {
+  void should_match_by_server_issue_key() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey").serverIssueKey("dummy server issue key");
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
@@ -433,7 +399,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_preserve_creation_date() {
+  void should_preserve_creation_date() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
@@ -448,7 +414,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_preserve_creation_date_of_leaked_issues_in_connected_mode() {
+  void should_preserve_creation_date_of_leaked_issues_in_connected_mode() {
     Long leakCreationDate = 1L;
     Trackable leak = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11).creationDate(leakCreationDate).build();
 
@@ -462,7 +428,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_preserve_server_issue_details() {
+  void should_preserve_server_issue_details() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
@@ -478,7 +444,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_drop_server_issue_reference_if_gone() {
+  void should_drop_server_issue_reference_if_gone() {
     MockTrackableBuilder base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
     // note: (ab)using the assignee field to uniquely identify the trackable
     String id = "dummy id";
@@ -494,7 +460,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_update_server_issue_details() {
+  void should_update_server_issue_details() {
     String serverIssueKey = "dummy serverIssueKey";
     boolean resolved = true;
     String assignee = "dummy assignee";
@@ -509,7 +475,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_clear_server_issue_details_if_disappeared() {
+  void should_clear_server_issue_details_if_disappeared() {
     boolean resolved = true;
     Trackable serverIssueTrackable = builder().ruleKey("dummy ruleKey")
       .serverIssueKey("dummy serverIssueKey").resolved(resolved).assignee("dummy assignee").creationDate(1L).build();
@@ -527,7 +493,7 @@ public class IssueTrackerTest {
   }
 
   @Test
-  public void should_ignore_server_issues_when_there_are_no_local() {
+  void should_ignore_server_issues_when_there_are_no_local() {
     String serverIssueKey = "dummy serverIssueKey";
     boolean resolved = true;
     String assignee = "dummy assignee";

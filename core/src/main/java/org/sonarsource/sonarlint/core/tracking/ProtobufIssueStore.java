@@ -31,14 +31,16 @@ import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMappe
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.issuetracking.TrackableIssueStore;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class IssueStore {
+public class ProtobufIssueStore implements TrackableIssueStore {
 
   private Path basePath;
   private IndexedObjectStore<String, Sonarlint.Issues> store;
 
-  public IssueStore(Path storeBasePath, Path projectBasePath) {
+  public ProtobufIssueStore(Path storeBasePath, Path projectBasePath) {
     this.basePath = storeBasePath;
     FileUtils.mkdirs(storeBasePath);
     StoreIndex<String> index = new StringStoreIndex(storeBasePath);
@@ -62,24 +64,28 @@ public class IssueStore {
     store.deleteInvalid();
   }
 
+  @Override
   public boolean contains(String key) {
     return store.contains(key);
   }
 
+  @Override
   public void save(String key, Collection<Trackable> issues) throws IOException {
     store.write(key, transform(issues));
   }
 
+  @Override
   @CheckForNull
   public Collection<Trackable> read(String key) throws IOException {
     Optional<Sonarlint.Issues> issues = store.read(key);
-    return issues.map(IssueStore::transform).orElse(null);
+    return issues.map(ProtobufIssueStore::transform).orElse(null);
   }
 
   public void clean() {
     store.deleteInvalid();
   }
 
+  @Override
   public void clear() {
     FileUtils.deleteRecursively(basePath);
     FileUtils.mkdirs(basePath);
@@ -87,7 +93,7 @@ public class IssueStore {
 
   private static Collection<Trackable> transform(Sonarlint.Issues protoIssues) {
     return protoIssues.getIssueList().stream()
-      .map(IssueStore::transform)
+      .map(ProtobufIssueStore::transform)
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
   }
@@ -95,7 +101,7 @@ public class IssueStore {
   private static Sonarlint.Issues transform(Collection<Trackable> localIssues) {
     Sonarlint.Issues.Builder builder = Sonarlint.Issues.newBuilder();
     localIssues.stream()
-      .map(IssueStore::transform)
+      .map(ProtobufIssueStore::transform)
       .filter(Objects::nonNull)
       .forEach(builder::addIssue);
 

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,47 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
-import java.util.Collection;
+import javax.annotation.CheckForNull;
 
-public interface CachingIssueTracker extends IssueTracker {
+public interface Trackable {
+
+  String getRuleKey();
+
+  String getRuleName();
+
+  String getSeverity();
+
+  String getMessage();
+
+  @CheckForNull
+  String getType();
+
   /**
-   * Match a new set of trackables to current state.
-   *
-   * @param file the file analyzed
-   * @param trackables the trackables in the file
+   * The line index, starting with 1. Null means that
+   * issue does not relate to a line (file issue for example).
    */
-  Collection<Trackable> matchAndTrackAsNew(String file, Collection<Trackable> trackables);
+  @CheckForNull
+  Integer getLine();
 
-  /**
-   * "Rebase" current trackables against given trackables.
-   *
-   * @param file the file analyzed
-   * @param trackables the trackables in the file
-   */
-  Collection<Trackable> matchAndTrackAsBase(String file, Collection<Trackable> trackables);
+  @CheckForNull
+  Integer getLineHash();
+
+  @CheckForNull
+  TextRange getTextRange();
+
+  @CheckForNull
+  Integer getTextRangeHash();
+
+  @CheckForNull
+  Long getCreationDate();
+
+  @CheckForNull
+  String getServerIssueKey();
+
+  boolean isResolved();
+
+  // empty if none
+  String getAssignee();
 }

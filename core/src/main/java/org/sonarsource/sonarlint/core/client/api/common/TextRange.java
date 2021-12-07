@@ -59,4 +59,8 @@ public class TextRange {
   public Integer getEndLineOffset() {
     return endLineOffset;
   }
+
+  public org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange() {
+    return new org.sonarsource.sonarlint.core.issuetracking.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+  }
 }

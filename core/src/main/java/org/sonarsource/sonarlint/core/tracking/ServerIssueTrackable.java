@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 public class ServerIssueTrackable implements Trackable {
 
@@ -29,11 +29,6 @@ public class ServerIssueTrackable implements Trackable {
 
   public ServerIssueTrackable(ServerIssue serverIssue) {
     this.serverIssue = serverIssue;
-  }
-
-  @Override
-  public Issue getIssue() {
-    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -72,8 +67,9 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
-  public TextRange getTextRange() {
-    return serverIssue.getTextRange();
+  public org.sonarsource.sonarlint.core.issuetracking.TextRange getTextRange() {
+    TextRange textRange = serverIssue.getTextRange();
+    return textRange != null ? textRange.convertToTrackingTextRange() : null;
   }
 
   @Override

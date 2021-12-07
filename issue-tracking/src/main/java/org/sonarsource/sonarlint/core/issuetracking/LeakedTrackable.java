@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
-import java.util.Collection;
-import java.util.function.Supplier;
-
-@FunctionalInterface
-public interface TrackableSupplier<T extends Trackable> extends Supplier<Collection<T>> {
+/**
+ * A new leak
+ */
+public class LeakedTrackable extends AbstractTrackable {
+  public LeakedTrackable(Trackable trackable) {
+    super(trackable);
+    this.creationDate = System.currentTimeMillis();
+  }
 }

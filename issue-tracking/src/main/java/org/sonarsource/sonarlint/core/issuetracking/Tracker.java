@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Match and track a collection of issues.
@@ -35,7 +36,7 @@ import java.util.function.Function;
  */
 public class Tracker<R extends Trackable, B extends Trackable> {
 
-  public Tracking<R, B> track(TrackableSupplier<R> rawTrackableSupplier, TrackableSupplier<B> baseTrackableSupplier) {
+  public Tracking<R, B> track(Supplier<Collection<R>> rawTrackableSupplier, Supplier<Collection<B>> baseTrackableSupplier) {
     Tracking<R, B> tracking = new Tracking<>(rawTrackableSupplier, baseTrackableSupplier);
 
     // 1. match issues with same server issue key

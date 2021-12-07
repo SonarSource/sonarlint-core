@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,14 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
-/**
- * A new leak
- */
-public class LeakedTrackable extends AbstractTrackable {
-  public LeakedTrackable(Trackable trackable) {
-    super(trackable);
-    this.creationDate = System.currentTimeMillis();
+import org.junit.jupiter.api.Test;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+class CachingIssueTrackerTests {
+
+  private final IssueTrackerCache cache = mock(IssueTrackerCache.class);
+  private final CachingIssueTracker tracker = new CachingIssueTracker(cache);
+
+  @Test
+  void clear_should_clear_the_embedded_issue_cache_too() {
+    tracker.clear();
+    verify(cache).clear();
+  }
+
+  @Test
+  void shutdown_should_shutdown_the_embedded_issue_cache_too() {
+    tracker.shutdown();
+    verify(cache).shutdown();
   }
 }

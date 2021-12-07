@@ -23,18 +23,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class ServerIssueTracker {
 
-  private static final Logger LOGGER = Loggers.get(ServerIssueTracker.class);
+  private static final SonarLintLogger LOGGER = SonarLintLogger.get();
 
   private final CachingIssueTracker issueTracker;
 
@@ -59,8 +60,7 @@ public class ServerIssueTracker {
         issueTracker.matchAndTrackAsBase(fileKey, serverIssuesTrackable);
       }
     } catch (Exception e) {
-      String message = "error while fetching and matching server issues";
-      LOGGER.error(message, e);
+      LOGGER.error("error while fetching and matching server issues", e);
     }
   }
 
