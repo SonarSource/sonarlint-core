@@ -14,20 +14,6 @@
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonarqube.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jfree</groupId>
-          <artifactId>jcommon</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jfree</groupId>
-          <artifactId>jfreechart</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.codehaus.woodstox</groupId>
-          <artifactId>woodstox-core-lgpl</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
   </dependencies>
 </project>

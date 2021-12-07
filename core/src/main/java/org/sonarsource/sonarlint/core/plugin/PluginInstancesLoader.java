@@ -21,17 +21,13 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.base.Strings;
 import java.io.Closeable;
-import java.io.File;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
-import org.sonar.api.utils.TempFolder;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -56,22 +52,20 @@ public class PluginInstancesLoader {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
-  private static final String SLF4J_ADAPTER_JAR_NAME = "sonarlint-slf4j-sonar-log";
 
   private final PluginJarExploder jarExploder;
   private final PluginClassloaderFactory classloaderFactory;
-  private final TempFolder tempFolder;
+  private final ClassLoader baseClassLoader;
 
-  public PluginInstancesLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory, TempFolder tempFolder) {
+  public PluginInstancesLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory) {
     this.jarExploder = jarExploder;
     this.classloaderFactory = classloaderFactory;
-    this.tempFolder = tempFolder;
+    this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
   }
 
   public Map<String, Plugin> load(Map<String, PluginInfo> infoByKeys) {
-    File slf4jAdapter = extractSlf4jAdapterJar();
-    Collection<PluginClassLoaderDef> defs = defineClassloaders(infoByKeys, slf4jAdapter);
-    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(defs);
+    Collection<PluginClassLoaderDef> defs = defineClassloaders(infoByKeys);
+    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader, defs);
     return instantiatePluginClasses(classloaders);
   }
 
@@ -79,7 +73,7 @@ public class PluginInstancesLoader {
    * Defines the different classloaders to be created. Number of classloaders can be
    * different than number of plugins.
    */
-  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> infoByKeys, File slf4jAdapter) {
+  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> infoByKeys) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
     for (PluginInfo info : infoByKeys.values()) {
@@ -93,7 +87,6 @@ public class PluginInstancesLoader {
         classloadersByBasePlugin.put(baseKey, def);
       }
       ExplodedPlugin explodedPlugin = jarExploder.explode(info);
-      def.addFiles(Collections.singletonList(slf4jAdapter));
       def.addFiles(Collections.singletonList(explodedPlugin.getMain()));
       def.addFiles(explodedPlugin.getLibs());
       def.addMainClass(info.getKey(), info.getMainClass());
@@ -109,17 +102,6 @@ public class PluginInstancesLoader {
       }
     }
     return classloadersByBasePlugin.values();
-  }
-
-  private File extractSlf4jAdapterJar() {
-    InputStream jarInputStream = PluginInstancesLoader.class.getResourceAsStream("/" + SLF4J_ADAPTER_JAR_NAME + ".jar");
-    try {
-      File extractedJar = tempFolder.newFile(SLF4J_ADAPTER_JAR_NAME, ".jar");
-      FileUtils.copyInputStreamToFile(jarInputStream, extractedJar);
-      return extractedJar;
-    } catch (Exception e) {
-      throw new IllegalStateException("Failed to extract the jar '" + SLF4J_ADAPTER_JAR_NAME + ".jar'");
-    }
   }
 
   /**
@@ -156,7 +138,7 @@ public class PluginInstancesLoader {
   public void unload(Collection<Plugin> plugins) {
     for (Plugin plugin : plugins) {
       ClassLoader classLoader = plugin.getClass().getClassLoader();
-      if (classLoader instanceof Closeable && classLoader != classloaderFactory.baseClassLoader()) {
+      if (classLoader instanceof Closeable && classLoader != baseClassLoader) {
         try {
           ((Closeable) classLoader).close();
         } catch (Exception e) {
