@@ -21,8 +21,6 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.locator.MavenLocation;
-import its.tools.ItUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,11 +64,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION)
     .defaultForceAuthentication()
-    .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion))
-    .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
-    // With recent version of SonarJS, SonarTS is required
-    .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
+    .keepBundledPlugins()
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/typescript-sonarlint.xml"))
@@ -154,7 +148,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.stop(false);
 
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-    String javaDescription = ItUtils.javaVersion.compareTo("6.3") < 0 ? "SonarJava" : "Java Code Quality and Security";
+    // The description of SonarJava changed in 6.3, embedded in SQ 8.3
+    String javaDescription = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 3) ? "Java Code Quality and Security" : "SonarJava";
     String expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
     assertThat(logs).contains(expectedLog);
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
