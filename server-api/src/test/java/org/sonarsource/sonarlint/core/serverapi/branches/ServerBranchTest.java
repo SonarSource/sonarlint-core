@@ -19,14 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.branches;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class ServerBranchTest {
+class ServerBranchTest {
 
   @Test
-  public void  serverBranchTest() {
+  void  serverBranchTest() {
     ServerBranch branch = new ServerBranch("foo", true);
 
     assertThat(branch.getName()).isEqualTo("foo");
@@ -34,7 +34,7 @@ public class ServerBranchTest {
   }
 
   @Test
-  public void serverBranchEqualsTest() {
+  void serverBranchEqualsTest() {
     ServerBranch a = new ServerBranch("foo", true);
     ServerBranch b = new ServerBranch("foo", true);
     ServerBranch c = new ServerBranch("bar", true);
@@ -50,7 +50,7 @@ public class ServerBranchTest {
   }
 
   @Test
-  public void serverBranchHashcodeTest() {
+  void serverBranchHashcodeTest() {
     ServerBranch a = new ServerBranch("foo", true);
     ServerBranch b = new ServerBranch("foo", true);
     ServerBranch c = new ServerBranch("bar", true);
