@@ -51,4 +51,5 @@ public class ServerBranch {
   public int hashCode() {
     return Objects.hash(name, isMain);
   }
+
 }
