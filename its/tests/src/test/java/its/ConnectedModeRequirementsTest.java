@@ -127,8 +127,14 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
-      .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JAVA_PLUGIN_KEY);
+    // TypeScript plugin has been merged in SonarJS in SQ 8.5
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 5)) {
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
+        .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), CUSTOM_JAVA_PLUGIN_KEY);
+    } else {
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
+        .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JAVA_PLUGIN_KEY);
+    }
   }
 
   @Test
