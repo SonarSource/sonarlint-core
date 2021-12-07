@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.settings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Settings;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.entry;
 class SettingsApiTest {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
   void testFetchProjectSettings() {

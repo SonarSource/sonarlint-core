@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -37,13 +37,13 @@ import static org.mockito.Mockito.when;
 class ConnectionValidatorTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private final ServerVersionAndStatusChecker serverChecker = mock(ServerVersionAndStatusChecker.class);
 
   @Test
   void testConnection_ok() throws ExecutionException, InterruptedException {
-    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
@@ -58,7 +58,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testConnectionOrganizationNotFound() throws Exception {
-    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
@@ -73,7 +73,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testConnection_ok_with_org() throws Exception {
-    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), MockWebServerExtension.httpClient()));
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
@@ -88,7 +88,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testUnsupportedServer() throws ExecutionException, InterruptedException {
-    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
@@ -103,7 +103,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testClientError() throws ExecutionException, InterruptedException {
-    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
 
     MockResponse mockResponse = new MockResponse();
     mockResponse.setResponseCode(400);
@@ -118,7 +118,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testResponseError() throws ExecutionException, InterruptedException {
-    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": }");
 

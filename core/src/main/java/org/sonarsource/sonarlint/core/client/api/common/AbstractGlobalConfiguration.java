@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 
 /**
@@ -52,7 +53,7 @@ public abstract class AbstractGlobalConfiguration {
   private final long clientPid;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
-    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
+    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintUserHome.get();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
     this.enabledLanguages = builder.enabledLanguages;
     this.logOutput = builder.logOutput;

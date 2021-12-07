@@ -28,7 +28,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -38,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class HotspotApiTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private HotspotApi underTest;
 
   @BeforeEach
   public void setUp() {
-    underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtension.httpClient()).hotspot();
+    underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()).hotspot();
   }
 
   @Test

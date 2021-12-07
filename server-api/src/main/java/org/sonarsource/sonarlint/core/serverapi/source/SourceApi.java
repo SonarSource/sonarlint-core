@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.serverapi.source;
 
 import java.util.Optional;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient.Response;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient.Response;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 

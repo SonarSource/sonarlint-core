@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.client.api.common;
 import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.client.api.notifications.LastNotificationTime;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 public class NotificationConfiguration {
   private final ServerNotificationListener listener;

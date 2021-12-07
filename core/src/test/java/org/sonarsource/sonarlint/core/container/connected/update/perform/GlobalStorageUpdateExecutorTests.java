@@ -32,7 +32,7 @@ import org.sonarqube.ws.Components;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Rules;
 import org.sonarqube.ws.Settings;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
@@ -60,7 +60,7 @@ class GlobalStorageUpdateExecutorTests {
   private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private GlobalStorageUpdateExecutor globalUpdate;
 

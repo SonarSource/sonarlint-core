@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class QualityProfileApiTest {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
   void not_found() {

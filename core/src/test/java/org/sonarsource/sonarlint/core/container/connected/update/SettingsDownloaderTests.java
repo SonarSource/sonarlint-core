@@ -26,7 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.Values;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class SettingsDownloaderTests {
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
   void testFetchGlobalSettings(@TempDir Path tempDir) {
