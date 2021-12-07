@@ -37,10 +37,13 @@
       <version>${project.version}</version>
     </dependency>
 
+    <!-- Declare a dependency to force Maven build order -->
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-slf4j-sonar-log</artifactId>
       <version>${project.version}</version>
+      <!-- Use test dependency just to force build order -->
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -102,7 +105,6 @@
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver</artifactId>
       <scope>test</scope>
-      <version>${okhttp.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -198,27 +200,35 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>copy-slf4j-sonar-log</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.outputDirectory}/</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <stripVersion>true</stripVersion>
-            </configuration>
+            <phase>generate-resources</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+             <configuration>
+               <artifactItems>
+                 <artifactItem>
+                   <groupId>${project.groupId}</groupId>
+                   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+                   <version>${project.version}</version>
+                   <type>jar</type>
+                   <overWrite>false</overWrite>
+                   <outputDirectory>${project.build.outputDirectory}/slf4j-sonar-log</outputDirectory>
+                   <includes>**/*.class</includes>
+                   <fileMappers>
+                     <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                       <pattern>\Q.class\E$</pattern>
+                       <replacement>.clazz</replacement>
+                     </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                   </fileMappers>
+                 </artifactItem>
+               </artifactItems>
+               <overWriteReleases>false</overWriteReleases>
+               <overWriteSnapshots>true</overWriteSnapshots>
+             </configuration>
           </execution>
           <execution>
             <id>copy-sonar-plugins</id>
@@ -309,13 +319,6 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>${project.groupId}:sonarlint-slf4j-sonar-log</artifact>
-                  <excludes>
-                    <!-- Don't shade anything, but still remove the dependency from the pom -->
-                    <exclude>**</exclude>
-                  </excludes>
-                </filter>
-                <filter>
                   <artifact>org.sonarsource.sonarqube:sonar-plugin-api</artifact>
                   <includes>
                     <include>**</include>
@@ -368,7 +371,7 @@
             </Export-Package>
             <Include-Resource>
               {maven-resources},
-              ${project.build.outputDirectory}/sonarlint-slf4j-sonar-log.jar
+              slf4j-sonar-log=${project.build.outputDirectory}/slf4j-sonar-log
             </Include-Resource>
             <_failok>true</_failok>
             <_nouses>true</_nouses>

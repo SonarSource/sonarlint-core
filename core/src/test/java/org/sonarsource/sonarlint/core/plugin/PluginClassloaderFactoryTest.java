@@ -36,12 +36,12 @@ public class PluginClassloaderFactoryTest {
   private static final String BASE_PLUGIN_KEY = "base";
   private static final String DEPENDENT_PLUGIN_KEY = "dependent";
 
-  private PluginClassloaderFactory factory = new PluginClassloaderFactory();
+  private final PluginClassloaderFactory factory = new PluginClassloaderFactory();
 
   @Test
   public void create_isolated_classloader() {
     PluginClassLoaderDef def = basePluginDef();
-    Map<PluginClassLoaderDef, ClassLoader> map = factory.create(asList(def));
+    Map<PluginClassLoaderDef, ClassLoader> map = factory.create(getClass().getClassLoader(), asList(def));
 
     assertThat(map).containsOnlyKeys(def);
     ClassLoader classLoader = map.get(def);
@@ -63,7 +63,7 @@ public class PluginClassloaderFactoryTest {
   public void classloader_exports_resources_to_other_classloaders() {
     PluginClassLoaderDef baseDef = basePluginDef();
     PluginClassLoaderDef dependentDef = dependentPluginDef();
-    Map<PluginClassLoaderDef, ClassLoader> map = factory.create(asList(baseDef, dependentDef));
+    Map<PluginClassLoaderDef, ClassLoader> map = factory.create(getClass().getClassLoader(), asList(baseDef, dependentDef));
     ClassLoader baseClassloader = map.get(baseDef);
     ClassLoader dependentClassloader = map.get(dependentDef);
 

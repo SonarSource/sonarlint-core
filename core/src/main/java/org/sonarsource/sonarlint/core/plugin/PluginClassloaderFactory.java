@@ -51,9 +51,7 @@ public class PluginClassloaderFactory {
   /**
    * Creates as many classloaders as requested by the input parameter.
    */
-  public Map<PluginClassLoaderDef, ClassLoader> create(Collection<PluginClassLoaderDef> defs) {
-    ClassLoader baseClassLoader = baseClassLoader();
-
+  public Map<PluginClassLoaderDef, ClassLoader> create(ClassLoader baseClassLoader, Collection<PluginClassLoaderDef> defs) {
     ClassloaderBuilder builder = new ClassloaderBuilder();
     builder.newClassloader(API_CLASSLOADER_KEY, baseClassLoader);
     builder.setMask(API_CLASSLOADER_KEY, apiMask());
@@ -100,10 +98,6 @@ public class PluginClassloaderFactory {
     return result;
   }
 
-  ClassLoader baseClassLoader() {
-    return getClass().getClassLoader();
-  }
-
   private static URL fileToUrl(File file) {
     try {
       return file.toURI().toURL();
@@ -126,6 +120,7 @@ public class PluginClassloaderFactory {
       .addInclusion("net/sourceforge/pmd/")
       .addInclusion("com/sonarsource/plugins/license/api/")
       .addInclusion("org/sonarsource/sonarlint/plugin/api/")
+      .addInclusion("org/slf4j/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");
