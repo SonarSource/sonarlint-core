@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
-/**
- * {@inheritDoc}
- */
-public class IssueTrackerImpl implements IssueTracker {
+public class IssueTracker {
 
   /**
    * Local issue tracking: baseIssues are existing issue, nextIssues are raw issues coming from the analysis.
    * Server issue tracking: baseIssues are server issues, nextIssues are the existing issue, coming from local issue tracking.
    */
-  @Override
   public Collection<Trackable> apply(Collection<Trackable> baseIssues, Collection<Trackable> nextIssues, boolean inheritSeverity) {
     Collection<Trackable> trackedIssues = new ArrayList<>();
     Tracking<Trackable, Trackable> tracking = new Tracker<>().track(() -> nextIssues, () -> baseIssues);

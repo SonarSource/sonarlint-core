@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,17 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
+import java.io.IOException;
 import java.util.Collection;
+import javax.annotation.CheckForNull;
 
-/**
- * Match the next set of issues to the previous set,
- * and carry over content from the previous set.
- *
- * Return the current collection of issues, with content carried over from matched issues
- */
-@FunctionalInterface
-public interface IssueTracker {
-  Collection<Trackable> apply(Collection<Trackable> baseIssues, Collection<Trackable> nextIssues, boolean inheritSeverity);
+public interface TrackableIssueStore {
+
+  boolean contains(String key);
+
+  void save(String key, Collection<Trackable> issues) throws IOException;
+
+  @CheckForNull
+  Collection<Trackable> read(String key) throws IOException;
+
+  void clear();
+
 }

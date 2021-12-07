@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -30,19 +32,15 @@ import static org.mockito.Mockito.when;
 public class ServerIssueTrackableTest {
 
   private final ServerIssue serverIssue = mock(ServerIssue.class);
-  private final Trackable trackable = new ServerIssueTrackable(serverIssue);
+  private Trackable trackable;
 
-  public ServerIssueTrackableTest() {
+  @Before
+  public void prepare() {
     when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolution()).thenReturn("non-empty");
-    TextRange serverTextRange = mock(TextRange.class);
-    when(serverTextRange.getStartLine()).thenReturn(22);
+    TextRange serverTextRange = new TextRange(22);
     when(serverIssue.getTextRange()).thenReturn(serverTextRange);
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void should_not_have_issue() {
-    trackable.getIssue();
+    trackable = new ServerIssueTrackable(serverIssue);
   }
 
   @Test(expected = UnsupportedOperationException.class)
@@ -51,7 +49,7 @@ public class ServerIssueTrackableTest {
   }
 
   @Test
-  public void should_delegate_fields_to_protobuf_issue() {
+  public void should_delegate_fields_to_server_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
     assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());

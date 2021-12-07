@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,51 +17,46 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import javax.annotation.Nullable;
 
-public interface Trackable {
+public class TextRange {
 
-  Issue getIssue();
+  private final Integer startLine;
+  private final Integer startLineOffset;
+  private final Integer endLine;
+  private final Integer endLineOffset;
 
-  String getRuleKey();
+  public TextRange(Integer line) {
+    this(line, null, null, null);
+  }
 
-  String getRuleName();
-
-  String getSeverity();
-
-  String getMessage();
-
-  @CheckForNull
-  String getType();
-
-  /**
-   * The line index, starting with 1. Null means that
-   * issue does not relate to a line (file issue for example).
-   */
-  @CheckForNull
-  Integer getLine();
+  public TextRange(Integer startLine, @Nullable Integer startLineOffset, @Nullable Integer endLine, @Nullable Integer endLineOffset) {
+    this.startLine = startLine;
+    this.startLineOffset = startLineOffset;
+    this.endLine = endLine;
+    this.endLineOffset = endLineOffset;
+  }
 
   @CheckForNull
-  Integer getLineHash();
+  public Integer getStartLine() {
+    return startLine;
+  }
 
   @CheckForNull
-  TextRange getTextRange();
+  public Integer getStartLineOffset() {
+    return startLineOffset;
+  }
 
   @CheckForNull
-  Integer getTextRangeHash();
+  public Integer getEndLine() {
+    return endLine;
+  }
 
   @CheckForNull
-  Long getCreationDate();
-
-  @CheckForNull
-  String getServerIssueKey();
-
-  boolean isResolved();
-
-  // empty if none
-  String getAssignee();
+  public Integer getEndLineOffset() {
+    return endLineOffset;
+  }
 }

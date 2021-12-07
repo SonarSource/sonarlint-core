@@ -31,12 +31,13 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IssueStoreTest {
+public class ProtobufIssueStoreTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -46,7 +47,7 @@ public class IssueStoreTest {
 
   @Test
   public void contains_should_find_issues_after_added() throws IOException {
-    IssueStore issueStore = newIssueStore();
+    ProtobufIssueStore issueStore = newIssueStore();
 
     assertThat(issueStore.contains(key)).isFalse();
 
@@ -57,7 +58,7 @@ public class IssueStoreTest {
 
   @Test
   public void contains_should_find_issues_even_if_empty_list() throws IOException {
-    IssueStore issueStore = newIssueStore();
+    ProtobufIssueStore issueStore = newIssueStore();
 
     assertThat(issueStore.contains(key)).isFalse();
 
@@ -67,11 +68,11 @@ public class IssueStoreTest {
 
   @Test
   public void save_should_update() throws IOException {
-    IssueStore issueStore = newIssueStore();
+    ProtobufIssueStore issueStore = newIssueStore();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
     issueStore.save(key, issues);
-    assertThat(issueStore.read(key).size()).isEqualTo(issues.size());
+    assertThat(issueStore.read(key)).hasSameSizeAs(issues);
 
     issueStore.save(key, Collections.emptyList());
     assertThat(issueStore.read(key)).isEmpty();
@@ -79,7 +80,7 @@ public class IssueStoreTest {
 
   @Test
   public void read_should_return_issues_with_matching_rule_keys() throws IOException {
-    IssueStore issueStore = newIssueStore();
+    ProtobufIssueStore issueStore = newIssueStore();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
     issueStore.save(key, issues);
@@ -90,13 +91,13 @@ public class IssueStoreTest {
 
   @Test
   public void read_should_return_null_when_no_issues() throws IOException {
-    IssueStore issueStore = newIssueStore();
+    ProtobufIssueStore issueStore = newIssueStore();
     assertThat(issueStore.read("nonexistent")).isNull();
   }
 
   @Test
   public void clear_should_empty_the_store() throws IOException {
-    IssueStore issueStore = newIssueStore();
+    ProtobufIssueStore issueStore = newIssueStore();
 
     issueStore.save(key, Collections.emptyList());
     assertThat(issueStore.contains(key)).isTrue();
@@ -109,7 +110,7 @@ public class IssueStoreTest {
   public void clean_should_remove_entries_without_valid_files() throws IOException {
     Path base = temporaryFolder.newFolder().toPath();
     Path projectPath = base.resolve("project");
-    IssueStore issueStore = new IssueStore(base.resolve("store"), projectPath);
+    ProtobufIssueStore issueStore = new ProtobufIssueStore(base.resolve("store"), projectPath);
 
     String nonexistentFileKey = "nonexistent";
     String validFileKey = "some/relative/path";
@@ -135,14 +136,14 @@ public class IssueStoreTest {
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
 
-    new IssueStore(storePath, base.resolve("project"));
+    new ProtobufIssueStore(storePath, base.resolve("project"));
   }
 
   @Test(expected = IllegalStateException.class)
   public void should_fail_to_save_issues_if_cannot_write_to_filesystem() throws IOException {
     Path base = temporaryFolder.newFolder().toPath();
     Path storePath = base.resolve("store");
-    IssueStore issueStore = new IssueStore(storePath, base.resolve("project"));
+    ProtobufIssueStore issueStore = new ProtobufIssueStore(storePath, base.resolve("project"));
 
     Files.delete(storePath);
     // the presence of a file will effectively prevent writing to the store
@@ -162,11 +163,11 @@ public class IssueStoreTest {
     return trackable;
   }
 
-  private IssueStore newIssueStore() throws IOException {
+  private ProtobufIssueStore newIssueStore() throws IOException {
     Path base = temporaryFolder.newFolder().toPath();
     Path storePath = base.resolve("store");
     Path projectPath = base.resolve("project");
-    return new IssueStore(storePath, projectPath);
+    return new ProtobufIssueStore(storePath, projectPath);
   }
 
 }

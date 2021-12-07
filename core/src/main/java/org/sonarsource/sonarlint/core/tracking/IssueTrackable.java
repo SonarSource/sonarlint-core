@@ -22,13 +22,14 @@ package org.sonarsource.sonarlint.core.tracking;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
 public class IssueTrackable implements Trackable {
 
   private final Issue issue;
-  private final TextRange textRange;
+  private final org.sonarsource.sonarlint.core.issuetracking.TextRange textRange;
   private final Integer textRangeHash;
   private final Integer lineHash;
 
@@ -38,7 +39,7 @@ public class IssueTrackable implements Trackable {
 
   public IssueTrackable(Issue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
     this.issue = issue;
-    this.textRange = textRange;
+    this.textRange = textRange != null ? textRange.convertToTrackingTextRange() : null;
     this.textRangeHash = hashOrNull(textRangeContent);
     this.lineHash = hashOrNull(lineContent);
   }
@@ -47,7 +48,6 @@ public class IssueTrackable implements Trackable {
     return content != null ? digest(content).hashCode() : null;
   }
 
-  @Override
   public Issue getIssue() {
     return issue;
   }
@@ -66,7 +66,7 @@ public class IssueTrackable implements Trackable {
   public String getSeverity() {
     return issue.getSeverity();
   }
-  
+
   @Override
   public String getType() {
     return issue.getType();
@@ -88,7 +88,7 @@ public class IssueTrackable implements Trackable {
   }
 
   @Override
-  public TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.issuetracking.TextRange getTextRange() {
     return textRange;
   }
 

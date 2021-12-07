@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,26 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class PersistentIssueTrackerCache implements IssueTrackerCache {
 
-  private static final Logger LOGGER = Loggers.get(PersistentIssueTrackerCache.class);
+  private static final SonarLintLogger LOGGER = SonarLintLogger.get();
 
   static final int MAX_ENTRIES = 100;
 
-  private final IssueStore store;
+  private final TrackableIssueStore store;
   private final Map<String, Collection<Trackable>> cache;
 
-  public PersistentIssueTrackerCache(IssueStore store) {
+  public PersistentIssueTrackerCache(TrackableIssueStore store) {
     this.store = store;
     this.cache = new LimitedSizeLinkedHashMap();
   }

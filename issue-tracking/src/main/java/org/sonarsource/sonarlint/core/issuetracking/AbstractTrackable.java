@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,13 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
-
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+package org.sonarsource.sonarlint.core.issuetracking;
 
 public class AbstractTrackable implements Trackable {
-  protected Issue issue;
   protected String ruleKey;
   protected String ruleName;
   protected String severity;
@@ -40,7 +36,6 @@ public class AbstractTrackable implements Trackable {
 
   protected AbstractTrackable(Trackable trackable) {
     // copy fieds instead of using given trackable to avoid always increase level of proxying
-    this.issue = trackable.getIssue();
     this.ruleKey = trackable.getRuleKey();
     this.ruleName = trackable.getRuleName();
     this.severity = trackable.getSeverity();
@@ -54,11 +49,6 @@ public class AbstractTrackable implements Trackable {
     this.serverIssueKey = trackable.getServerIssueKey();
     this.resolved = trackable.isResolved();
     this.assignee = trackable.getAssignee();
-  }
-
-  @Override
-  public Issue getIssue() {
-    return issue;
   }
 
   @Override

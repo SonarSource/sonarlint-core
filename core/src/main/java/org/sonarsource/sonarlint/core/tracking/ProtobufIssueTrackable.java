@@ -19,7 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.issuetracking.TextRange;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Issues.Issue;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -29,11 +30,6 @@ public class ProtobufIssueTrackable implements Trackable {
 
   public ProtobufIssueTrackable(Issue issue) {
     this.issue = issue;
-  }
-
-  @Override
-  public org.sonarsource.sonarlint.core.client.api.common.analysis.Issue getIssue() {
-    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -90,7 +86,7 @@ public class ProtobufIssueTrackable implements Trackable {
   public String getSeverity() {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
   public String getType() {
     throw new UnsupportedOperationException();

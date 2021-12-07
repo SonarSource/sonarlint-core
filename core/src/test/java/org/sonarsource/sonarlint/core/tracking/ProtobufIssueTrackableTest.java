@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,11 +57,6 @@ public class ProtobufIssueTrackableTest {
   @Test
   public void should_have_null_textRangeHash() {
     assertThat(completeTrackable.getTextRangeHash()).isNull();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void should_not_have_issue() {
-    completeTrackable.getIssue();
   }
 
   @Test(expected = UnsupportedOperationException.class)

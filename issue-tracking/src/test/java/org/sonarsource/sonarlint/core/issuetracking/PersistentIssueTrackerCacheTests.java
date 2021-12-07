@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.issuetracking;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -25,12 +25,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -38,20 +37,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PersistentIssueTrackerCacheTest {
-
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+class PersistentIssueTrackerCacheTests {
 
   private PersistentIssueTrackerCache cache;
   private StubIssueStore stubIssueStore;
 
-  class StubIssueStore extends IssueStore {
+  class StubIssueStore implements TrackableIssueStore {
     private final Map<String, Collection<Trackable>> cache = new HashMap<>();
-
-    StubIssueStore() throws IOException {
-      super(temporaryFolder.newFolder().toPath(), temporaryFolder.newFolder().toPath());
-    }
 
     @Override
     public void save(String key, Collection<Trackable> issues) throws IOException {
@@ -78,14 +70,14 @@ public class PersistentIssueTrackerCacheTest {
     }
   }
 
-  @Before
-  public void setUp() throws IOException {
+  @BeforeEach
+  void setUp() throws IOException {
     stubIssueStore = new StubIssueStore();
     cache = new PersistentIssueTrackerCache(stubIssueStore);
   }
 
   @Test
-  public void should_persist_issues_when_inmemory_limit_reached() {
+  void should_persist_issues_when_inmemory_limit_reached() {
     int i = 0;
     for (; i < PersistentIssueTrackerCache.MAX_ENTRIES; i++) {
       cache.put("file" + i, Collections.emptyList());
@@ -100,7 +92,7 @@ public class PersistentIssueTrackerCacheTest {
   }
 
   @Test
-  public void should_persist_issues_on_shutdown() {
+  void should_persist_issues_on_shutdown() {
     int count = PersistentIssueTrackerCache.MAX_ENTRIES / 2;
     for (int i = 0; i < count; i++) {
       cache.put("file" + i, Collections.emptyList());
@@ -112,14 +104,14 @@ public class PersistentIssueTrackerCacheTest {
   }
 
   @Test
-  public void should_return_empty_for_file_never_analyzed() {
+  void should_return_empty_for_file_never_analyzed() {
     String file = "nonexistent";
     assertThat(cache.isFirstAnalysis(file)).isTrue();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
   }
 
   @Test
-  public void should_return_empty_for_file_with_no_issues_as_cached() {
+  void should_return_empty_for_file_with_no_issues_as_cached() {
     String file = "dummy file";
     cache.put(file, Collections.emptyList());
     assertThat(cache.isFirstAnalysis(file)).isFalse();
@@ -127,7 +119,7 @@ public class PersistentIssueTrackerCacheTest {
   }
 
   @Test
-  public void should_return_empty_for_file_with_no_issues_as_persisted() throws IOException {
+  void should_return_empty_for_file_with_no_issues_as_persisted() throws IOException {
     String file = "dummy file";
     stubIssueStore.save(file, Collections.emptyList());
     assertThat(cache.isFirstAnalysis(file)).isFalse();
@@ -135,7 +127,7 @@ public class PersistentIssueTrackerCacheTest {
   }
 
   @Test
-  public void should_clear_cache_and_storage_too() throws IOException {
+  void should_clear_cache_and_storage_too() throws IOException {
     String file = "dummy file";
     cache.put(file, Collections.singletonList(mock(Trackable.class)));
     cache.flushAll();
@@ -145,16 +137,16 @@ public class PersistentIssueTrackerCacheTest {
 
     cache.clear();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
-    assertThat(stubIssueStore.size()).isEqualTo(0);
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void getLiveOrFail_should_fail_if_no_live_issues() {
-    cache.getLiveOrFail("nonexistent");
+    assertThat(stubIssueStore.size()).isZero();
   }
 
   @Test
-  public void getLiveOrFail_should_return_live_issues_when_present() {
+  void getLiveOrFail_should_fail_if_no_live_issues() {
+    assertThrows(IllegalStateException.class, () -> cache.getLiveOrFail("nonexistent"));
+  }
+
+  @Test
+  void getLiveOrFail_should_return_live_issues_when_present() {
     String file = "dummy file";
     List<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
     cache.put(file, trackables);
@@ -162,36 +154,36 @@ public class PersistentIssueTrackerCacheTest {
   }
 
   @Test
-  public void getCurrentTrackables_should_gracefully_return_empty_list_if_io_failures_during_store_read() throws IOException {
+  void getCurrentTrackables_should_gracefully_return_empty_list_if_io_failures_during_store_read() throws IOException {
     String file = "nonexistent";
-    IssueStore store = mock(IssueStore.class);
+    TrackableIssueStore store = mock(TrackableIssueStore.class);
     when(store.read(file)).thenThrow(new IOException("failed to read from store"));
     IssueTrackerCache cache = new PersistentIssueTrackerCache(store);
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
     verify(store).read(file);
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void flushAll_should_crash_on_io_failures_during_store_write() throws IOException {
+  @Test
+  void flushAll_should_crash_on_io_failures_during_store_write() throws IOException {
     String file = "dummy file";
     Collection<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
 
-    IssueStore store = mock(IssueStore.class);
+    TrackableIssueStore store = mock(TrackableIssueStore.class);
     doThrow(new IOException("failed to write to store")).when(store).save(file, trackables);
 
     PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store);
     cache.put(file, trackables);
-    cache.flushAll();
-    verify(store).save(file, trackables);
+    assertThrows(IllegalStateException.class, () -> cache.flushAll());
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void put_should_crash_on_io_failures_during_store_write() throws IOException {
-    IssueStore store = mock(IssueStore.class);
+  @Test
+  void put_should_crash_on_io_failures_during_store_write() throws IOException {
+    TrackableIssueStore store = mock(TrackableIssueStore.class);
     doThrow(new IOException("failed to write to store")).when(store).save(anyString(), any());
     PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store);
-    for (int i = 0; i < PersistentIssueTrackerCache.MAX_ENTRIES + 1; i++) {
+    for (int i = 0; i < PersistentIssueTrackerCache.MAX_ENTRIES; i++) {
       cache.put("dummy" + i, Collections.emptyList());
     }
+    assertThrows(IllegalStateException.class, () -> cache.put("too much", Collections.emptyList()));
   }
 }

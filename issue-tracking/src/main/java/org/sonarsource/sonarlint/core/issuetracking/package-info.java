@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,28 +17,4 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
-
-import java.util.Collection;
-
-public interface IssueTrackerCache {
-
-  boolean isFirstAnalysis(String file);
-
-  Collection<Trackable> getCurrentTrackables(String file);
-
-  Collection<Trackable> getLiveOrFail(String file);
-
-  void put(String file, Collection<Trackable> trackables);
-
-  /**
-   * Empty the cache, delete everything.
-   */
-  void clear();
-
-  /**
-   * Shutdown the cache. This is the time for persistent implementations to flush everything to storage.
-   */
-  void shutdown();
-
-}
+package org.sonarsource.sonarlint.core.issuetracking;
