@@ -26,6 +26,7 @@ import com.google.common.collect.Ordering;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
@@ -74,24 +75,20 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   private boolean embedded;
 
+  private List<String> dependencies = List.of();
+
   public PluginInfo(String key) {
     requireNonNull(key, "Plugin key is missing from manifest");
     this.key = key;
     this.name = key;
   }
 
-  public PluginInfo setJarFile(@Nullable File f) {
+  public PluginInfo setJarFile(File f) {
     this.jarFile = f;
     return this;
   }
 
-  @CheckForNull
   public File getJarFile() {
-    return jarFile;
-  }
-
-  public File getNonNullJarFile() {
-    requireNonNull(jarFile);
     return jarFile;
   }
 
@@ -143,6 +140,10 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   public boolean isSkipped() {
     return skipReason != null;
+  }
+
+  public List<String> getDependencies() {
+    return dependencies;
   }
 
   public PluginInfo setName(@Nullable String name) {
@@ -202,6 +203,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     this.embedded = embedded;
   }
 
+  public PluginInfo setDependencies(List<String> dependencies) {
+    this.dependencies = dependencies;
+    return this;
+  }
+
   public boolean isEmbedded() {
     return embedded;
   }
@@ -218,8 +224,8 @@ public class PluginInfo implements Comparable<PluginInfo> {
     }
 
     // Ignore patch and build numbers since this should not change API compatibility
-    Version requestedApi = Version.create(minimalSqVersion.getMajor() + "." + minimalSqVersion.getMinor());
-    Version implementedApiVersion = Version.create(implementedApi);
+    var requestedApi = Version.create(minimalSqVersion.getMajor() + "." + minimalSqVersion.getMinor());
+    var implementedApiVersion = Version.create(implementedApi);
     return implementedApiVersion.compareToIgnoreQualifier(requestedApi) >= 0;
   }
 
@@ -260,7 +266,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
   }
 
   public static PluginInfo create(Path jarFile, boolean isEmbedded) {
-    SonarPluginManifest manifest = SonarPluginManifest.fromJar(jarFile);
+    var manifest = SonarPluginManifest.fromJar(jarFile);
     return create(jarFile, manifest, isEmbedded);
   }
 
@@ -268,7 +274,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     if (StringUtils.isBlank(manifest.getKey())) {
       throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
-    PluginInfo info = new PluginInfo(manifest.getKey());
+    var info = new PluginInfo(manifest.getKey());
 
     info.setJarFile(jarPath.toFile());
     info.setName(manifest.getName());
@@ -280,6 +286,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     manifest.getRequiredPlugins().forEach(info::addRequiredPlugin);
     info.setMinimalJreVersion(manifest.getJreMinVersion().orElse(null));
     info.setMinimalNodeJsVersion(manifest.getNodeJsMinVersion().orElse(null));
+    info.setDependencies(manifest.getDependencies());
     info.setEmbedded(isEmbedded);
     return info;
   }

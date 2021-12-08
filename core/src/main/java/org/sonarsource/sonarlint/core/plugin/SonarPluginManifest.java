@@ -54,7 +54,7 @@ public class SonarPluginManifest {
   private final String mainClass;
   private final String version;
   private final Optional<Version> sonarMinVersion;
-  private final String[] dependencies;
+  private final List<String> dependencies;
   private final String basePluginKey;
   private final List<RequiredPlugin> requiredPlugins;
   private final Optional<Version> jreMinVersion;
@@ -116,7 +116,7 @@ public class SonarPluginManifest {
     this.basePluginKey = attributes.getValue(BASE_PLUGIN);
 
     String deps = attributes.getValue(DEPENDENCIES_ATTRIBUTE);
-    this.dependencies = StringUtils.split(StringUtils.defaultString(deps), ' ');
+    this.dependencies = List.of(StringUtils.split(StringUtils.defaultString(deps), ' '));
 
     String requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
     this.requiredPlugins = Stream.of(StringUtils.split(StringUtils.defaultString(requires), ',')).map(RequiredPlugin::parse).collect(toList());
@@ -150,8 +150,8 @@ public class SonarPluginManifest {
     return mainClass;
   }
 
-  public String[] getDependencies() {
-    return dependencies != null ? dependencies.clone() : null;
+  public List<String> getDependencies() {
+    return dependencies;
   }
 
   @CheckForNull

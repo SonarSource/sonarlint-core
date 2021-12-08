@@ -21,10 +21,14 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.assertj.core.data.MapEntry;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +39,7 @@ import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
@@ -44,7 +49,7 @@ public class PluginInstancesLoaderTest {
   public TemporaryFolder temp = new TemporaryFolder();
 
   PluginClassloaderFactory classloaderFactory = mock(PluginClassloaderFactory.class);
-  PluginInstancesLoader loader = new PluginInstancesLoader(new FakePluginExploder(), classloaderFactory);
+  PluginInstancesLoader loader = new PluginInstancesLoader(classloaderFactory);
 
   @Test
   public void instantiate_plugin_entry_point() {
@@ -86,6 +91,33 @@ public class PluginInstancesLoaderTest {
     assertThat(def.getFiles()).containsExactly(jarFile);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(MapEntry.entry("foo", "org.foo.FooPlugin"));
     // TODO test mask - require change in sonar-classloader
+  }
+
+  @Test
+  public void extract_dependencies() throws Exception {
+    File jarFile = getFile("sonar-checkstyle-plugin-2.8.jar");
+    PluginInfo info = new PluginInfo("checkstyle")
+      .setJarFile(jarFile)
+      .setMainClass("org.foo.FooPlugin")
+      .setDependencies(List.of("META-INF/lib/commons-cli-1.0.jar", "META-INF/lib/checkstyle-5.1.jar", "META-INF/lib/antlr-2.7.6.jar"));
+
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("checkstyle", info));
+
+    assertThat(defs).hasSize(1);
+    PluginClassLoaderDef def = defs.iterator().next();
+    assertThat(def.getBasePluginKey()).isEqualTo("checkstyle");
+    assertThat(def.getFiles()).hasSize(4);
+    assertThat(def.getFiles()).extracting(f -> f.getName(), f -> {
+      try {
+        return DigestUtils.md5Hex(Files.readAllBytes(f.toPath()));
+      } catch (IOException e) {
+        return e.getMessage();
+      }
+    }).containsExactlyInAnyOrder(
+      tuple("sonar-checkstyle-plugin-2.8.jar", "e7e5e17e5e297ac88d08122c56d72eb7"),
+      tuple("commons-cli-1.0.jar", "d784fa8b6d98d27699781bd9a7cf19f0"),
+      tuple("checkstyle-5.1.jar", "d784fa8b6d98d27699781bd9a7cf19f0"),
+      tuple("antlr-2.7.6.jar", "d784fa8b6d98d27699781bd9a7cf19f0"));
   }
 
   /**
@@ -149,16 +181,6 @@ public class PluginInstancesLoaderTest {
       entry("fooExtension1", "org.foo.Extension1Plugin"));
   }
 
-  /**
-   * Does not unzip jar file. It directly returns the JAR file defined on PluginDetails.
-   */
-  private static class FakePluginExploder extends PluginJarExploder {
-    @Override
-    public ExplodedPlugin explode(PluginInfo info) {
-      return new ExplodedPlugin(info.getKey(), info.getNonNullJarFile(), Collections.<File>emptyList());
-    }
-  }
-
   public static class FakePlugin extends SonarPlugin {
     @Override
     public List getExtensions() {
@@ -177,5 +199,9 @@ public class PluginInstancesLoaderTest {
     public List getExtensions() {
       return Collections.emptyList();
     }
+  }
+
+  private File getFile(String filename) {
+    return FileUtils.toFile(getClass().getResource("/" + filename));
   }
 }

@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
@@ -109,7 +108,6 @@ public class StorageContainer extends ComponentContainer {
       PluginVersionChecker.class,
       PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
-      DefaultPluginJarExploder.class,
       StoragePluginIndexProvider.class,
       new PluginCacheProvider(),
 
