@@ -24,12 +24,10 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
@@ -37,63 +35,13 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.plugin.SonarPluginManifest.RequiredPlugin;
 
 import static java.util.Objects.requireNonNull;
 
 public class PluginInfo implements Comparable<PluginInfo> {
 
   private static final Joiner SLASH_JOINER = Joiner.on(" / ").skipNulls();
-
-  public static class RequiredPlugin {
-
-    private static final Pattern PARSER = Pattern.compile("\\w+:.+");
-
-    private final String key;
-    private final Version minimalVersion;
-
-    public RequiredPlugin(String key, Version minimalVersion) {
-      this.key = key;
-      this.minimalVersion = minimalVersion;
-    }
-
-    public String getKey() {
-      return key;
-    }
-
-    public Version getMinimalVersion() {
-      return minimalVersion;
-    }
-
-    public static RequiredPlugin parse(String s) {
-      if (!PARSER.matcher(s).matches()) {
-        throw new IllegalArgumentException("Manifest field does not have correct format: " + s);
-      }
-      String[] fields = StringUtils.split(s, ':');
-      return new RequiredPlugin(fields[0], Version.create(fields[1]).removeQualifier());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      RequiredPlugin that = (RequiredPlugin) o;
-      return key.equals(that.key);
-    }
-
-    @Override
-    public int hashCode() {
-      return key.hashCode();
-    }
-
-    @Override
-    public String toString() {
-      return new StringBuilder().append(key).append(':').append(minimalVersion.getName()).toString();
-    }
-  }
 
   private final String key;
   private String name;
@@ -110,15 +58,8 @@ public class PluginInfo implements Comparable<PluginInfo> {
   @CheckForNull
   private Version minimalSqVersion;
 
-  private boolean useChildFirstClassLoader;
-
   @CheckForNull
   private String basePlugin;
-
-  @CheckForNull
-  private String implementationBuild;
-
-  private Boolean sonarLintSupported;
 
   private final Set<RequiredPlugin> requiredPlugins = new HashSet<>();
 
@@ -177,23 +118,9 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return mainClass;
   }
 
-  public boolean isUseChildFirstClassLoader() {
-    return useChildFirstClassLoader;
-  }
-
   @CheckForNull
   public String getBasePlugin() {
     return basePlugin;
-  }
-
-  @CheckForNull
-  public String getImplementationBuild() {
-    return implementationBuild;
-  }
-
-  @CheckForNull
-  public Boolean isSonarLintSupported() {
-    return sonarLintSupported;
   }
 
   public Set<RequiredPlugin> getRequiredPlugins() {
@@ -241,11 +168,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return this;
   }
 
-  public PluginInfo setUseChildFirstClassLoader(boolean b) {
-    this.useChildFirstClassLoader = b;
-    return this;
-  }
-
   public PluginInfo setBasePlugin(@Nullable String s) {
     if ("l10nen".equals(s)) {
       Loggers.get(PluginInfo.class).info("Plugin [{}] defines 'l10nen' as base plugin. " +
@@ -254,16 +176,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
     } else {
       basePlugin = s;
     }
-    return this;
-  }
-
-  public PluginInfo setImplementationBuild(@Nullable String implementationBuild) {
-    this.implementationBuild = implementationBuild;
-    return this;
-  }
-
-  public PluginInfo setSonarLintSupported(@Nullable Boolean sonarLintSupported) {
-    this.sonarLintSupported = sonarLintSupported;
     return this;
   }
 
@@ -313,7 +225,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   @Override
   public String toString() {
-    return String.format("[%s]", SLASH_JOINER.join(key, version, implementationBuild));
+    return String.format("[%s]", SLASH_JOINER.join(key, version));
   }
 
   @Override
@@ -348,16 +260,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
   }
 
   public static PluginInfo create(Path jarFile, boolean isEmbedded) {
-    try {
-      PluginManifest manifest = new PluginManifest(jarFile);
-      return create(jarFile, manifest, isEmbedded);
-
-    } catch (IOException e) {
-      throw new IllegalStateException("Fail to extract plugin metadata from file: " + jarFile, e);
-    }
+    SonarPluginManifest manifest = SonarPluginManifest.fromJar(jarFile);
+    return create(jarFile, manifest, isEmbedded);
   }
 
-  static PluginInfo create(Path jarPath, PluginManifest manifest, boolean isEmbedded) {
+  static PluginInfo create(Path jarPath, SonarPluginManifest manifest, boolean isEmbedded) {
     if (StringUtils.isBlank(manifest.getKey())) {
       throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
@@ -368,28 +275,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     info.setMainClass(manifest.getMainClass());
     info.setVersion(Version.create(manifest.getVersion()));
 
-    String minSqVersion = manifest.getSonarVersion();
-    if (minSqVersion != null) {
-      info.setMinimalSqVersion(Version.create(minSqVersion));
-    }
-    info.setUseChildFirstClassLoader(manifest.isUseChildFirstClassLoader());
-    info.setBasePlugin(manifest.getBasePlugin());
-    info.setImplementationBuild(manifest.getImplementationBuild());
-    info.setSonarLintSupported(manifest.isSonarLintSupported());
-    String[] requiredPlugins = manifest.getRequirePlugins();
-    if (requiredPlugins != null) {
-      for (String s : requiredPlugins) {
-        info.addRequiredPlugin(RequiredPlugin.parse(s));
-      }
-    }
-    String jreMinVersion = manifest.getJreMinVersion();
-    if (jreMinVersion != null) {
-      info.setMinimalJreVersion(Version.create(jreMinVersion));
-    }
-    String nodejsMinVersion = manifest.getNodeJsMinVersion();
-    if (nodejsMinVersion != null) {
-      info.setMinimalNodeJsVersion(Version.create(nodejsMinVersion));
-    }
+    info.setMinimalSqVersion(manifest.getSonarMinVersion().orElse(null));
+    info.setBasePlugin(manifest.getBasePluginKey());
+    manifest.getRequiredPlugins().forEach(info::addRequiredPlugin);
+    info.setMinimalJreVersion(manifest.getJreMinVersion().orElse(null));
+    info.setMinimalNodeJsVersion(manifest.getNodeJsMinVersion().orElse(null));
     info.setEmbedded(isEmbedded);
     return info;
   }

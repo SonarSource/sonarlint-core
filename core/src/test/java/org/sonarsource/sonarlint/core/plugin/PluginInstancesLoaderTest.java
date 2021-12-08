@@ -98,23 +98,17 @@ public class PluginInstancesLoaderTest {
     File extensionJar2 = temp.newFile();
     PluginInfo base = new PluginInfo("foo")
       .setJarFile(baseJarFile)
-      .setMainClass("org.foo.FooPlugin")
-      .setUseChildFirstClassLoader(false);
+      .setMainClass("org.foo.FooPlugin");
 
     PluginInfo extension1 = new PluginInfo("fooExtension1")
       .setJarFile(extensionJar1)
       .setMainClass("org.foo.Extension1Plugin")
       .setBasePlugin("foo");
 
-    // This extension tries to change the classloader-ordering strategy of base plugin
-    // (see setUseChildFirstClassLoader(true)).
-    // That is not allowed and should be ignored -> strategy is still the one
-    // defined on base plugin (parent-first in this example)
     PluginInfo extension2 = new PluginInfo("fooExtension2")
       .setJarFile(extensionJar2)
       .setMainClass("org.foo.Extension2Plugin")
-      .setBasePlugin("foo")
-      .setUseChildFirstClassLoader(true);
+      .setBasePlugin("foo");
 
     Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of(
       base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2));
