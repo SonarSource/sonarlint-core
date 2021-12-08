@@ -55,7 +55,6 @@ import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
@@ -90,7 +89,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       PluginInfosLoader.class,
       PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
-      DefaultPluginJarExploder.class,
       GlobalSettings.class,
       NodeJsHelper.class,
       new GlobalConfigurationProvider(),

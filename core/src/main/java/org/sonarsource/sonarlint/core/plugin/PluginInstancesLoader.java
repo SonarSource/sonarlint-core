@@ -20,11 +20,21 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.CheckForNull;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Loggers;
@@ -52,12 +62,10 @@ public class PluginInstancesLoader {
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
 
-  private final PluginJarExploder jarExploder;
   private final PluginClassloaderFactory classloaderFactory;
   private final ClassLoader baseClassLoader;
 
-  public PluginInstancesLoader(PluginJarExploder jarExploder, PluginClassloaderFactory classloaderFactory) {
-    this.jarExploder = jarExploder;
+  public PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
     this.classloaderFactory = classloaderFactory;
     this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
   }
@@ -80,14 +88,16 @@ public class PluginInstancesLoader {
       if (baseKey == null) {
         continue;
       }
-      PluginClassLoaderDef def = classloadersByBasePlugin.get(baseKey);
-      if (def == null) {
-        def = new PluginClassLoaderDef(baseKey);
-        classloadersByBasePlugin.put(baseKey, def);
+      PluginClassLoaderDef def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
+      def.addFiles(List.of(info.getJarFile()));
+      if (!info.getDependencies().isEmpty()) {
+        LOG.warn("Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.", info.getKey());
+        Path tmpFolderForDeps = createTmpFolderForPluginDeps(info);
+        for (String dependency : info.getDependencies()) {
+          Path tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
+          def.addFiles(List.of(tmpDepFile.toFile()));
+        }
       }
-      ExplodedPlugin explodedPlugin = jarExploder.explode(info);
-      def.addFiles(Collections.singletonList(explodedPlugin.getMain()));
-      def.addFiles(explodedPlugin.getLibs());
       def.addMainClass(info.getKey(), info.getMainClass());
 
       for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
@@ -95,6 +105,60 @@ public class PluginInstancesLoader {
       }
     }
     return classloadersByBasePlugin.values();
+  }
+
+  private static Path createTmpFolderForPluginDeps(PluginInfo info) {
+    Path tmpFolderForDeps;
+    try {
+      var prefix = "sonarlint_" + info.getKey();
+      if (SystemUtils.IS_OS_UNIX) {
+        FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+        tmpFolderForDeps = Files.createTempDirectory(prefix, attr);
+      } else {
+        var f = Files.createTempDirectory(prefix).toFile();
+        boolean readPermission = f.setReadable(true, true);
+        boolean writePermission = f.setWritable(true, true);
+        boolean execPermission = f.setExecutable(true, true);
+        if (!readPermission || !writePermission || !execPermission) {
+          LOG.warn("Unable to set secure permissions on file {}", f);
+        }
+        tmpFolderForDeps = f.toPath();
+      }
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to create temporary directory", e);
+    }
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        try {
+          FileUtils.deleteDirectory(tmpFolderForDeps.toFile());
+        } catch (IOException ex) {
+          ex.printStackTrace(System.err);
+        }
+      }
+    });
+    return tmpFolderForDeps;
+  }
+
+  private static Path extractDependencyInTempFolder(PluginInfo info, String dependency, Path tempFolder) {
+    try {
+      Path tmpDepFile = tempFolder.resolve(dependency);
+      if (!tmpDepFile.startsWith(tempFolder + File.separator)) {
+        throw new IOException("Entry is outside of the target dir: " + dependency);
+      }
+      Files.createDirectories(tmpDepFile.getParent());
+      extractFile(info.getJarFile().toPath(), dependency, tmpDepFile);
+      return tmpDepFile;
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to extract plugin dependency: " + dependency, e);
+    }
+  }
+
+  private static void extractFile(Path zipFile, String fileName, Path outputFile) throws IOException {
+    try (var fileSystem = FileSystems.newFileSystem(zipFile, null)) {
+      var fileToExtract = fileSystem.getPath(fileName);
+      Files.copy(fileToExtract, outputFile);
+    }
   }
 
   /**
@@ -115,7 +179,7 @@ public class PluginInstancesLoader {
         String pluginKey = mainClassEntry.getKey();
         String mainClass = mainClassEntry.getValue();
         try {
-          instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).newInstance());
+          instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance());
         } catch (UnsupportedClassVersionError e) {
           throw new IllegalStateException(String.format("The plugin [%s] does not support Java %s",
             pluginKey, SystemUtils.JAVA_VERSION_TRIMMED), e);
