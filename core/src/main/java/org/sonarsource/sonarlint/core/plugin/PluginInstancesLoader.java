@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import com.google.common.base.Strings;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,12 +92,6 @@ public class PluginInstancesLoader {
 
       for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
         def.getExportMask().addInclusion(String.format("%s/%s/api/", defaultSharedResource, info.getKey()));
-      }
-
-      // The plugins that extend other plugins can only add some files to classloader.
-      // They can't change metadata like ordering strategy or compatibility mode.
-      if (Strings.isNullOrEmpty(info.getBasePlugin())) {
-        def.setSelfFirstStrategy(info.isUseChildFirstClassLoader());
       }
     }
     return classloadersByBasePlugin.values();
