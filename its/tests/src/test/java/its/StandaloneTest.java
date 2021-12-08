@@ -69,7 +69,8 @@ public class StandaloneTest {
     globalProps.put("sonar.global.label", "It works");
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(new File("../plugins/global-extension-plugin/target/global-extension-plugin.jar").toURI().toURL())
-      .addEnabledLanguage(Language.XOO)
+      // The global-extension-plugin reuses the cobol plugin key to be whitelisted
+      .addEnabledLanguage(Language.COBOL)
       .setSonarLintUserHome(sonarlintUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))
       .setExtraProperties(globalProps).build();
@@ -123,7 +124,7 @@ public class StandaloneTest {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .putExtraProperty("sonar.xoo.file.suffixes", "glob")
+        .putExtraProperty("sonar.cobol.file.suffixes", "glob")
         .build(),
       issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
@@ -145,7 +146,7 @@ public class StandaloneTest {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .putExtraProperty("sonar.xoo.file.suffixes", "glob")
+        .putExtraProperty("sonar.cobol.file.suffixes", "glob")
         .addRuleParameter(RuleKey.parse("global:inc"), "stringParam", "polop")
         .addRuleParameter(RuleKey.parse("global:inc"), "textParam", "")
         .addRuleParameter(RuleKey.parse("global:inc"), "multipleIntegersParam", "80,160")

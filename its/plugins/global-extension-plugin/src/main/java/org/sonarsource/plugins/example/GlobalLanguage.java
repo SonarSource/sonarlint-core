@@ -24,7 +24,7 @@ import org.sonar.api.resources.AbstractLanguage;
 public class GlobalLanguage extends AbstractLanguage {
 
   // Need to use a key that is available in the Language enum
-  static final String LANGUAGE_KEY = "xoo";
+  static final String LANGUAGE_KEY = "cobol";
 
   public GlobalLanguage() {
     super(LANGUAGE_KEY, "Global");
