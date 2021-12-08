@@ -192,7 +192,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
-    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "xoo", "SonarLint IT Global Extension");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "cobol", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean compile"));
@@ -254,7 +254,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .addEnabledLanguage(Language.SCALA)
       .addEnabledLanguage(Language.XML)
       // Needed to have the global extension plugin loaded
-      .addEnabledLanguage(Language.XOO)
+      .addEnabledLanguage(Language.COBOL)
       .setLogOutput((msg, level) -> {
         logs.add(msg);
       })
@@ -534,7 +534,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
       "src/foo.glob",
-      "sonar.xoo.file.suffixes", "glob"),
+      "sonar.cobol.file.suffixes", "glob"),
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -543,7 +543,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
       "src/foo.glob",
-      "sonar.xoo.file.suffixes", "glob"),
+      "sonar.cobol.file.suffixes", "glob"),
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(

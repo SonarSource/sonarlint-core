@@ -117,8 +117,7 @@ class StandaloneIssueMediumTests {
       .addPlugin(PluginLocator.getJavaPluginUrl())
       .addPlugin(PluginLocator.getPhpPluginUrl())
       .addPlugin(PluginLocator.getPythonPluginUrl())
-      .addPlugin(PluginLocator.getXooPluginUrl())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.XOO)
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
@@ -243,46 +242,6 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void fileEncoding() throws IOException {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
-      + "  var xoo1, xoo2;\n"
-      + "}", false, StandardCharsets.UTF_16, null);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
-  }
-
-  @Test
-  void simpleXoo() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function xoo() {\n"
-      + "  var xoo1, xoo2;\n"
-      + "  var xoo; //NOSONAR\n"
-      + "}", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .putExtraProperty("sonar.nosonarsensor.activate", "true")
-        .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 1, 9, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"),
-      tuple("xoo:HasTag", 2, 12, "foo.xoo"));
-  }
-
-  @Test
   void simpleC() throws Exception {
     assumeTrue(COMMERCIAL_ENABLED);
     // prepareInputFile("foo.h", "", false, StandardCharsets.UTF_8, Language.C);
@@ -322,45 +281,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void analysisErrors() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
-      + "  var xoo;\n"
-      + "  var y; //NOSONAR\n"
-      + "}", false);
-    prepareInputFile("foo.xoo.error", "1,2,error analysing\n2,3,error analysing", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    AnalysisResults results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null, null);
-    assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("xoo:HasTag", 2, 6, "foo.xoo"));
-  }
-
-  @Test
-  void returnLanguagePerFile() throws IOException {
-    ClientInputFile inputFile = prepareInputFile("foo.xoo", "function foo() {\n"
-      + "  var xoo;\n"
-      + "  var y; //NOSONAR\n"
-      + "}", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    AnalysisResults results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null, null);
-    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.XOO));
-  }
-
-  @Test
   void simplePhp() throws Exception {
-
     ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
       + "function writeMsg($fname) {\n"
       + "    $i = 0; // NOSONAR\n"
@@ -376,6 +297,62 @@ class StandaloneIssueMediumTests {
       null, null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("php:S1172", 2, "foo.php"));
+  }
+
+  @Test
+  void fileEncoding() throws IOException {
+    ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
+      + "function writeMsg($fname) {\n"
+      + "    echo \"Hello world!\";\n"
+      + "}\n"
+      + "?>", false, StandardCharsets.UTF_16, null);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issues::add, null, null);
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("php:S1172", 2, "foo.php"));
+  }
+
+  @Test
+  void returnLanguagePerFile() throws IOException {
+    ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
+      + "function writeMsg($fname) {\n"
+      + "    echo \"Hello world!\";\n"
+      + "}\n"
+      + "?>", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    AnalysisResults results = sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issues::add, null, null);
+    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.PHP));
+  }
+
+  @Test
+  void analysisErrors() throws Exception {
+    ClientInputFile inputFile = prepareInputFile("foo.php", "<?php\n"
+      + "function writeMsg($fname) {\n"
+      + "    echo \"Hello world!;\n"
+      + "}\n"
+      + "?>", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    AnalysisResults results = sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issues::add, null, null);
+    assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
+    assertThat(issues).isEmpty();
   }
 
   @Test
@@ -459,8 +436,7 @@ class StandaloneIssueMediumTests {
       Language.JS,
       Language.PHP,
       Language.PYTHON,
-      Language.TS,
-      Language.XOO);
+      Language.TS);
 
     if (COMMERCIAL_ENABLED) {
       enabledLanguages.add(Language.C);
