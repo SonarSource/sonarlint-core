@@ -40,10 +40,12 @@ class ServerBranchTest {
     ServerBranch c = new ServerBranch("bar", true);
     ServerBranch d = new ServerBranch("foo", false);
     ServerBranch e = new ServerBranch("bar", false);
+    String string = "string";
 
     assertThat(a).isEqualTo(a);
     assertThat(a.equals(null)).isFalse();
     assertThat(a).isEqualTo(b);
+    assertThat(a).isNotEqualTo(string);
     assertThat(a).isNotEqualTo(c);
     assertThat(a).isNotEqualTo(d);
     assertThat(a).isNotEqualTo(e);
