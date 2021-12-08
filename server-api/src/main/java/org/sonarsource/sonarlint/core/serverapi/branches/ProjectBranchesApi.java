@@ -46,7 +46,7 @@ public class ProjectBranchesApi {
     return getBranchNamesFromResponse(bodyAsString);
   }
 
-  private static Set<ServerBranch> getBranchNamesFromResponse(String bodyAsString) {
+  static Set<ServerBranch> getBranchNamesFromResponse(String bodyAsString) {
     Set<ServerBranch> parsedBranchNames = new HashSet<>();
     try {
       var root = JsonParser.parseString(bodyAsString).getAsJsonObject();
