@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
-import org.sonarsource.sonarlint.core.plugin.PluginInfo.RequiredPlugin;
+import org.sonarsource.sonarlint.core.plugin.SonarPluginManifest.RequiredPlugin;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginInfosLoader {
@@ -71,11 +71,6 @@ public class PluginInfosLoader {
     for (PluginReference ref : pluginReferences) {
       Path jarFilePath = getFromCache(ref);
       PluginInfo info = PluginInfo.create(jarFilePath, ref.isEmbedded());
-      Boolean sonarLintSupported = info.isSonarLintSupported();
-      if (sonarLintSupported == null || !sonarLintSupported.booleanValue()) {
-        LOG.debug("Plugin '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
-        continue;
-      }
       checkIfSkippedAndPopulateReason(info);
       infosByKey.put(info.getKey(), info);
     }

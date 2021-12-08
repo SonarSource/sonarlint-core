@@ -75,21 +75,10 @@ public class ExtensionInstaller {
   }
 
   private void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context, ContainerLifespan lifespan) {
-    Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
-    boolean isExplicitlySonarLintCompatible = isSlPluginOrNull != null && isSlPluginOrNull;
-    if (lifespan.equals(ContainerLifespan.INSTANCE) && !isExplicitlySonarLintCompatible) {
-      // Don't support global extensions for old plugins
-      return;
-    }
     for (Object extension : context.getExtensions()) {
-      if (isExplicitlySonarLintCompatible) {
-        // When plugin itself claim to be compatible with SonarLint, only load @SonarLintSide extensions
-        // filter out non officially supported Sensors
-        if (lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginInfo, extension)) {
-          container.addExtension(pluginInfo, extension);
-        }
-      } else {
-        LOG.debug("Extension {} was blacklisted as it is not used by SonarLint", className(extension));
+      // only load @SonarLintSide extensions, filter out non officially supported Sensors
+      if (lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginInfo, extension)) {
+        container.addExtension(pluginInfo, extension);
       }
     }
   }
