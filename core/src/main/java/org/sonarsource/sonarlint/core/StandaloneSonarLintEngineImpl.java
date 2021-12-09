@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
@@ -32,9 +31,10 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.util.Objects.requireNonNull;
 
@@ -82,14 +82,14 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   }
 
   @Override
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
     setLogging(logOutput);
     rwl.readLock().lock();
     return withModule(configuration, moduleContainer -> {
       try {
-        return globalContainer.analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
+        return globalContainer.analyze(moduleContainer, configuration, issueListener, new ProgressMonitor(monitor));
       } catch (RuntimeException e) {
         throw SonarLintWrappedException.wrap(e);
       } finally {

@@ -72,14 +72,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -110,7 +109,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
-  private final ProgressWrapperAdapter progress = new ProgressWrapperAdapter(new ProgressWrapper(null));
+  private final ProgressMonitor progress = new ProgressMonitor(null);
 
   @Rule
   public ExpectedException exception = ExpectedException.none();

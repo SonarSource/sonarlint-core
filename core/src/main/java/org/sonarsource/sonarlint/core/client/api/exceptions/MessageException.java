@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
+
 /**
  * This exception will never be returned as a cause for another exception.
  * The SonarLint engines extract it as return it by itself if it finds it in the causal chain of an exception. 

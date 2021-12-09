@@ -41,8 +41,8 @@ import javax.annotation.Nullable;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
-import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 /**
@@ -157,7 +157,7 @@ public class ServerApiHelper {
   }
 
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, Progress progress) {
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressMonitor progress) {
     var page = new AtomicInteger(0);
     var stop = new AtomicBoolean(false);
     var loaded = new AtomicInteger(0);
@@ -175,7 +175,7 @@ public class ServerApiHelper {
   }
 
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Paging> getPaging, Function<G, List<F>> itemExtractor,
-    Consumer<F> itemConsumer, boolean limitToTwentyPages, Progress progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
+    Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressMonitor progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
     HttpClient.Response response)
     throws IOException {
     if (!response.isSuccessful()) {

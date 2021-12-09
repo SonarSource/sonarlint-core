@@ -29,7 +29,7 @@ import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Components.Component;
 import org.sonarqube.ws.Components.TreeWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -38,7 +38,7 @@ import static org.sonarsource.sonarlint.core.container.connected.update.ModuleHi
 
 class ModuleHierarchyDownloaderTests {
 
-  private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
+  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();

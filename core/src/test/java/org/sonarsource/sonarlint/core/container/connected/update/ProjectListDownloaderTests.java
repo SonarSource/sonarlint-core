@@ -24,11 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +43,7 @@ class ProjectListDownloaderTests {
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", "/update/searchmodulesp1.pb");
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper(), serverProjectsStore);
 
-    moduleListUpdate.fetch(new ProgressWrapper(null));
+    moduleListUpdate.fetch(new ProgressMonitor(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
@@ -55,7 +55,7 @@ class ProjectListDownloaderTests {
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
     ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper("myOrg"), serverProjectsStore);
 
-    moduleListUpdate.fetch(new ProgressWrapper(null));
+    moduleListUpdate.fetch(new ProgressMonitor(null));
 
     ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);

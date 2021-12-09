@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.util;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.annotation.Nullable;
@@ -30,11 +29,7 @@ public class StringUtils {
   }
 
   public static String urlEncode(String toEncode) {
-    try {
-      return URLEncoder.encode(toEncode, StandardCharsets.UTF_8.name());
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("Should never happen", e);
-    }
+    return URLEncoder.encode(toEncode, StandardCharsets.UTF_8);
   }
 
   public static boolean isBlank(@Nullable String str) {

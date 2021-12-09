@@ -26,9 +26,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.Severity;
-import org.sonarsource.sonarlint.core.util.Progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -45,7 +45,7 @@ class RulesApiTest {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
-  private final Progress progress = mock(Progress.class);
+  private final ProgressMonitor progress = mock(ProgressMonitor.class);
   private final Set<String> enabledLanguageKeys = Collections.singleton("js");
 
   @Test

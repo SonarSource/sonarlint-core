@@ -33,7 +33,7 @@ import org.sonarqube.ws.Common.Flow;
 import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi.DownloadIssuesResult;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
@@ -70,7 +69,7 @@ public class IssueDownloader {
    * @return Iterator of issues. It can be empty but never null.
    */
   public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration,
-    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     Sonarlint.ServerIssue.Builder issueBuilder = Sonarlint.ServerIssue.newBuilder();
     Location.Builder locationBuilder = Location.newBuilder();
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder = Sonarlint.ServerIssue.TextRange.newBuilder();
@@ -94,7 +93,7 @@ public class IssueDownloader {
     if (fetchTaintVulnerabilities && !taintRuleKeys.isEmpty()) {
       Map<String, String> sourceCodeByKey = new HashMap<>();
       try {
-        DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, new ProgressWrapperAdapter(progress));
+        DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
         downloadVulnerabilitiesForRules.getIssues()
           .forEach(i -> result.add(
             convertTaintIssue(projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i, downloadVulnerabilitiesForRules.getComponentPathsByKey(),

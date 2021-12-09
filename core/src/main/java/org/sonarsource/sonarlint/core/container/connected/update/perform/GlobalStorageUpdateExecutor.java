@@ -25,6 +25,7 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
@@ -47,7 +48,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class GlobalStorageUpdateExecutor {
@@ -72,7 +72,7 @@ public class GlobalStorageUpdateExecutor {
     this.tempFolder = tempFolder;
   }
 
-  public List<SonarAnalyzer> update(ProgressWrapper progress) {
+  public List<SonarAnalyzer> update(ProgressMonitor progress) {
     var temp = tempFolder.newDir().toPath();
     StorageFolder storageFolder = new StorageFolder.Default(temp);
     var serverInfoStore = new ServerInfoStore(storageFolder);

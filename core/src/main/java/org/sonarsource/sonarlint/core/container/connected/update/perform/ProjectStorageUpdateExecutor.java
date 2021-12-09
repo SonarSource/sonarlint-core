@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
@@ -37,7 +38,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ProjectStorageUpdateExecutor {
@@ -58,7 +58,7 @@ public class ProjectStorageUpdateExecutor {
     this.qualityProfileStore = qualityProfileStore;
   }
 
-  public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, qualityProfileStore, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
@@ -67,7 +67,7 @@ public class ProjectStorageUpdateExecutor {
     }, projectStoragePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
   }
 
-  private ProjectConfiguration updateConfiguration(String projectKey, QualityProfileStore qualityProfileStore, Path temp, ProgressWrapper progress) {
+  private ProjectConfiguration updateConfiguration(String projectKey, QualityProfileStore qualityProfileStore, Path temp, ProgressMonitor progress) {
     ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, progress);
     final Set<String> qProfileKeys = qualityProfileStore.getAll().stream().map(QualityProfile::getKey).collect(Collectors.toSet());
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
@@ -81,7 +81,7 @@ public class ProjectStorageUpdateExecutor {
     return projectConfiguration;
   }
 
-  void updateComponents(String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
+  void updateComponents(String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressMonitor progress) {
     List<String> sqFiles = projectFileListDownloader.get(projectKey, progress);
     Sonarlint.ProjectComponents.Builder componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
@@ -99,7 +99,7 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
     Path basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
     serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
   }
