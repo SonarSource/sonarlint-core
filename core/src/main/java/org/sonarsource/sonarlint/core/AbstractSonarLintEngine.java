@@ -37,8 +37,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   protected final ReadWriteLock rwl = new ReentrantReadWriteLock();

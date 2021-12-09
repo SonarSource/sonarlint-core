@@ -30,11 +30,11 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {
@@ -79,7 +79,7 @@ public class ExtensionInstaller {
     for (Object extension : context.getExtensions()) {
       // only load @SonarLintSide extensions, filter out non officially supported Sensors
       if (lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginInfo, extension)) {
-        container.addExtension(pluginInfo, extension);
+        container.addExtension(pluginInfo.getKey(), extension);
       }
     }
   }
