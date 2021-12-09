@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -19,32 +19,16 @@
  */
 package com.sonarsource.plugins.license.api;
 
-public class LicensedPluginRegistration {
+import org.junit.jupiter.api.Test;
 
-  private final String pluginKey;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private LicensedPluginRegistration(Builder builder) {
-    this.pluginKey = builder.pluginKey;
+class LicensedPluginRegistrationTests {
+
+  @Test
+  void testBuilder() {
+    LicensedPluginRegistration underTest = LicensedPluginRegistration.forPlugin("xoo");
+    assertThat(underTest.getPluginKey()).isEqualTo("xoo");
   }
 
-  public String getPluginKey() {
-    return pluginKey;
-  }
-
-  public static LicensedPluginRegistration forPlugin(String pluginKey) {
-    return new Builder().setPluginKey(pluginKey).build();
-  }
-
-  public static final class Builder {
-    private String pluginKey;
-
-    public Builder setPluginKey(String s) {
-      this.pluginKey = s;
-      return this;
-    }
-
-    public LicensedPluginRegistration build() {
-      return new LicensedPluginRegistration(this);
-    }
-  }
 }
