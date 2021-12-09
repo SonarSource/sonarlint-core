@@ -19,11 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.nio.file.Path;
-import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -45,18 +42,13 @@ class StorageAnalyzerTest {
   private ProjectStorageStatusReader moduleReader;
   @Mock
   private ConnectedAnalysisConfiguration config;
-  @TempDir
-  Path tempDir;
 
-  private GlobalSettingsStore globalSettingsStore;
   private StorageAnalyzer analyzer;
 
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     when(config.projectKey()).thenReturn("module1");
-    globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
-    globalSettingsStore.store(Collections.emptyMap());
     analyzer = new StorageAnalyzer(globalReader, moduleReader);
   }
 
@@ -64,7 +56,7 @@ class StorageAnalyzerTest {
   void testNoGlobalStorage() {
     when(globalReader.read()).thenReturn(null);
 
-    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressMonitor(null)));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressMonitor(null)));
 
     assertThat(exception)
       .isInstanceOf(StorageException.class)
@@ -76,7 +68,7 @@ class StorageAnalyzerTest {
     when(globalReader.read()).thenReturn(mock(GlobalStorageStatus.class));
     when(moduleReader.apply("module1")).thenReturn(null);
 
-    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressMonitor(null)));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), new ProgressMonitor(null)));
 
     assertThat(exception)
       .isInstanceOf(StorageException.class)
@@ -90,7 +82,7 @@ class StorageAnalyzerTest {
     when(moduleStatus.isStale()).thenReturn(true);
     when(moduleReader.apply("module1")).thenReturn(moduleStatus);
 
-    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressMonitor(null)));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class),  new ProgressMonitor(null)));
 
     assertThat(exception)
       .isInstanceOf(StorageException.class)

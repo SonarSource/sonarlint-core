@@ -94,12 +94,16 @@ public class RulesApi {
     while (true) {
       page++;
       Rules.SearchResponse response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
+      var rules = response.getRulesList();
       for (var entry : response.getActives().getActives().entrySet()) {
+        var ruleKey = entry.getKey();
         for (Rules.Active ar : entry.getValue().getActiveListList()) {
+          var rule = rules.stream().filter(r -> ruleKey.equals(r.getKey())).findFirst().orElseThrow();
           activeRules.add(new ServerRules.ActiveRule(
             entry.getKey(),
             ar.getSeverity(),
-            ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList())));
+            ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()),
+            rule.getTemplateKey()));
         }
       }
       loaded += response.getPs();
@@ -169,7 +173,7 @@ public class RulesApi {
     for (var r : response.getRulesList()) {
       var ruleKey = r.getKey();
       if (rulesByKey.containsKey(ruleKey)) {
-        // XXX do we really need to check this ? is it normal that some rule keys are duplicated in test data ?
+        // could happen when an already received active rule has drifted to a later page
         continue;
       }
       rulesByKey.put(ruleKey, new ServerRules.Rule(
@@ -186,12 +190,14 @@ public class RulesApi {
     }
     for (var entry : response.getActives().getActives().entrySet()) {
       var ruleKey = entry.getKey();
+      var rule = rulesByKey.get(ruleKey);
       for (Rules.Active ar : entry.getValue().getActiveListList()) {
         String qProfileKey = ar.getQProfile();
         var activeRule = new ServerRules.ActiveRule(
           ruleKey,
           ar.getSeverity(),
-          ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()));
+          ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()),
+          rule.getTemplateKey());
         activeRulesByQProfileKey.computeIfAbsent(qProfileKey, k -> new ArrayList<>()).add(activeRule);
       }
     }

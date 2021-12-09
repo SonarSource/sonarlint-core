@@ -21,11 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update.check;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
-import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 
@@ -41,13 +37,12 @@ public class GlobalStorageUpdateCheckerTest {
   public void prepare() {
     ServerVersionAndStatusChecker statusChecker = mock(ServerVersionAndStatusChecker.class);
     when(statusChecker.checkVersionAndStatus()).thenReturn(new ServerInfo("", "", ""));
-    checker = new GlobalStorageUpdateChecker(statusChecker, mock(PluginsUpdateChecker.class),
-      mock(PluginListDownloader.class), mock(GlobalSettingsUpdateChecker.class), mock(QualityProfilesUpdateChecker.class));
+    checker = new GlobalStorageUpdateChecker(statusChecker);
   }
 
   @Test
   public void testNoChanges() {
-    StorageUpdateCheckResult result = checker.checkForUpdate(mock(GlobalSettingsStore.class), mock(QualityProfileStore.class), mock(ProgressMonitor.class));
+    var result = checker.checkForUpdate(mock(ProgressMonitor.class));
 
     assertThat(result.needUpdate()).isFalse();
     assertThat(result.changelog()).isEmpty();

@@ -33,7 +33,7 @@ public class SystemApi {
     this.helper = helper;
   }
 
-  CompletableFuture<ServerInfo> getStatus() {
+  public CompletableFuture<ServerInfo> getStatus() {
     return ServerApiHelper.processTimed(
       helper.getAsync("api/system/status"),
       response -> {
@@ -46,6 +46,14 @@ public class SystemApi {
         }
       },
       duration -> LOG.debug("Downloaded server infos in {}ms", duration));
+  }
+
+  public ServerInfo getStatusSync() {
+    try {
+      return getStatus().get();
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to get server status", e);
+    }
   }
 
   private static class SystemStatus {

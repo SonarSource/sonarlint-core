@@ -41,4 +41,8 @@ public class ServerInfo {
   public String getVersion() {
     return version;
   }
+
+  public boolean isUp() {
+    return "UP".equals(status);
+  }
 }

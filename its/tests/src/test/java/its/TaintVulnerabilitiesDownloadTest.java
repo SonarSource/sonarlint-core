@@ -55,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -72,7 +71,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue.Flow;
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeFalse;
 
 public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "sample-java-taint";

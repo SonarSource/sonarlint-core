@@ -17,23 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.storage;
 
-import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
+import java.util.List;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
-public class QualityProfilesDownloader {
-  private final QualityProfileApi qualityProfileApi;
-  private final QualityProfileStore qualityProfileStore;
+public class RuleSet {
+  private final List<ServerRules.ActiveRule> rules;
+  private final String profileKey;
+  private final String lastModified;
 
-  public QualityProfilesDownloader(ServerApiHelper serverApiHelper, QualityProfileStore qualityProfileStore) {
-    this.qualityProfileApi = new ServerApi(serverApiHelper).qualityProfile();
-    this.qualityProfileStore = qualityProfileStore;
+  public RuleSet(String profileKey, List<ServerRules.ActiveRule> rules, String lastModified) {
+    this.rules = rules;
+    this.profileKey = profileKey;
+    this.lastModified = lastModified;
   }
 
-  public void fetchQualityProfiles() {
-    qualityProfileStore.store(qualityProfileApi.getQualityProfiles());
+  public List<ServerRules.ActiveRule> getRules() {
+    return rules;
+  }
+
+  public String getProfileKey() {
+    return profileKey;
+  }
+
+  public String getLastModified() {
+    return lastModified;
   }
 }

@@ -17,27 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.storage;
 
 import java.util.Map;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class GlobalSettingsStore {
-  public static final String PROPERTIES_PB = "properties.pb";
+public class Settings {
+  private final Map<String, String> settings;
 
-  private final StorageFolder storageFolder;
-  private final RWLock rwLock = new RWLock();
-
-  public GlobalSettingsStore(StorageFolder storageFolder) {
-    this.storageFolder = storageFolder;
-  }
-
-  public void store(Map<String, String> globalProperties) {
-    rwLock.write(() -> storageFolder
-      .writeAction(dest -> ProtobufUtil.writeToFile(Sonarlint.GlobalProperties.newBuilder().putAllProperties(globalProperties).build(), dest.resolve(PROPERTIES_PB))));
+  public Settings(Map<String, String> settings) {
+    this.settings = settings;
   }
 
   public Map<String, String> getAll() {
-    return rwLock.read(() -> storageFolder.readAction(source -> ProtobufUtil.readFile(source.resolve(PROPERTIES_PB), Sonarlint.GlobalProperties.parser()))).getPropertiesMap();
+    return settings;
   }
 }

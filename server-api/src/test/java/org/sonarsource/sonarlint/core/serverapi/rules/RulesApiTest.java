@@ -143,6 +143,7 @@ class RulesApiTest {
       Rules.SearchResponse.newBuilder()
         .setTotal(1)
         .setPs(1)
+        .addRules(Rules.Rule.newBuilder().setKey("repo:key").setTemplateKey("template").build())
         .setActives(
           Rules.Actives.newBuilder()
             .putActives("repo:key", Rules.ActiveList.newBuilder().addActiveList(
@@ -159,8 +160,8 @@ class RulesApiTest {
     var activeRules = rulesApi.getAllActiveRules("QPKEY", progress);
 
     assertThat(activeRules)
-      .extracting("ruleKey", "severity")
-      .containsOnly(tuple("repo:key", "MAJOR"));
+      .extracting("ruleKey", "severity", "templateKey")
+      .containsOnly(tuple("repo:key", "MAJOR", "template"));
     assertThat(activeRules)
       .flatExtracting("params")
       .extracting("key", "value")

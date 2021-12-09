@@ -23,12 +23,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -40,24 +38,15 @@ import org.sonarsource.sonarlint.core.container.connected.update.PluginReference
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalSettingsUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalStorageUpdateChecker;
-import org.sonarsource.sonarlint.core.container.connected.update.check.PluginsUpdateChecker;
-import org.sonarsource.sonarlint.core.container.connected.update.check.ProjectStorageUpdateChecker;
-import org.sonarsource.sonarlint.core.container.connected.update.check.QualityProfilesUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
-import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
@@ -93,30 +82,22 @@ public class ConnectedContainer extends ComponentContainer {
       globalStores,
       globalStores.getGlobalStorage(),
       globalStores.getPluginReferenceStore(),
-      globalStores.getQualityProfileStore(),
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginsMinVersions.class,
       new ServerApiHelper(endpoint, client),
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,
-      ProjectStorageUpdateChecker.class,
-      PluginsUpdateChecker.class,
-      GlobalSettingsUpdateChecker.class,
       ProjectConfigurationDownloader.class,
-      QualityProfilesUpdateChecker.class,
       ProjectStorageUpdateExecutor.class,
       ProjectFileListDownloader.class,
       ServerIssueUpdater.class,
       IssueStorePaths.class,
       PluginReferencesDownloader.class,
-      SettingsDownloader.class,
-      ProjectQualityProfilesDownloader.class,
       ProjectListDownloader.class,
       PluginListDownloader.class,
       ModuleHierarchyDownloader.class,
       RulesDownloader.class,
-      QualityProfilesDownloader.class,
       IssueDownloader.class,
       IssueApi.class,
       SourceApi.class,
@@ -139,30 +120,14 @@ public class ConnectedContainer extends ComponentContainer {
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }
 
-  public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressMonitor progress) {
+  public StorageUpdateCheckResult checkForUpdate(ProgressMonitor progress) {
     try {
-      return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(globalSettingsStore, qualityProfileStore, progress);
+      return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(progress);
     } catch (Exception e) {
-      String msg = "Error when checking for global configuration update";
+      var msg = "Error when checking for global configuration update";
       LOG.debug(msg, e);
       // null as cause so that it doesn't get wrapped
       throw new DownloadException(msg + ": " + e.getMessage(), e);
     }
   }
-
-  public StorageUpdateCheckResult checkForUpdate(String projectKey, ProgressMonitor progress) {
-    ProjectStorageStatus moduleUpdateStatus = getComponentByType(ProjectStorageStatusReader.class).apply(projectKey);
-    if (moduleUpdateStatus == null || moduleUpdateStatus.isStale()) {
-      throw new StorageException(String.format("No data stored for project '%s' or invalid format. Please update the binding.", projectKey), false);
-    }
-    try {
-      return getComponentByType(ProjectStorageUpdateChecker.class).checkForUpdates(projectKey, progress);
-    } catch (Exception e) {
-      String msg = "Error when checking for configuration update of project '" + projectKey + "'";
-      LOG.debug(msg, e);
-      // null as cause so that it doesn't get wrapped
-      throw new DownloadException(msg + ": " + e.getMessage(), null);
-    }
-  }
-
 }

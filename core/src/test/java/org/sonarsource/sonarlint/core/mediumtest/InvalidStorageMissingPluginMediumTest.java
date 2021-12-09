@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -41,18 +42,11 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
-import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
-import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
-import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 
 public class InvalidStorageMissingPluginMediumTest {
 
@@ -65,39 +59,19 @@ public class InvalidStorageMissingPluginMediumTest {
   @BeforeClass
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
-    Path pluginCache = slHome.resolve("plugins");
+    var storage = newStorage(SERVER_ID)
+      .withJSPlugin()
+      .withJavaPlugin()
+      .create(slHome);
+    // remove JS plugin jar
+    Files.delete(storage.getPluginPaths().get(0));
 
     /*
      * This storage contains one server id "local" with references to java and javascript plugins but javascript is not in cache
      */
-    Path storage = Paths.get(InvalidStorageMissingPluginMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = slHome.resolve("storage");
-    FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-    PluginCache cache = PluginCache.create(pluginCache);
-
-    PluginReferences.Builder builder = PluginReferences.newBuilder();
-    builder.addReference(PluginReference.newBuilder()
-      .setFilename(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR)
-      .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
-      .setKey("javascript")
-      .build());
-
-    builder.addReference(PluginReference.newBuilder()
-      .setFilename(PluginLocator.SONAR_JAVA_PLUGIN_JAR)
-      .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
-      .setKey("java")
-      .build());
-    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Copier() {
-
-      @Override
-      public void copy(String filename, Path toFile) throws IOException {
-        FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile());
-      }
-    });
-
-    Path globalFolderPath = tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global");
-    org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(globalFolderPath);
-    new PluginReferenceStore(new StorageFolder.Default(globalFolderPath)).store(builder.build());
+    Path sampleStorage = Paths.get(InvalidStorageMissingPluginMediumTest.class.getResource("/sample-storage").toURI());
+    Path tmpStorage = storage.getPath();
+    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)

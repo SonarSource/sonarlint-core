@@ -24,15 +24,14 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 
 public class StorageActiveRuleAdapter implements ActiveRule {
 
   private final ServerRules.ActiveRule activeRule;
-  private final Rule storageRule;
+  private final ServerRules.Rule storageRule;
 
-  public StorageActiveRuleAdapter(ServerRules.ActiveRule activeRule, Rule storageRule) {
+  public StorageActiveRuleAdapter(ServerRules.ActiveRule activeRule, ServerRules.Rule storageRule) {
     this.activeRule = activeRule;
     this.storageRule = storageRule;
   }
@@ -69,11 +68,8 @@ public class StorageActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String templateRuleKey() {
-    if (!StringUtils.isEmpty(storageRule.getTemplateKey())) {
-      RuleKey templateRuleKey = RuleKey.parse(storageRule.getTemplateKey());
-      return templateRuleKey.rule();
-    }
-    return null;
+    var templateKey = activeRule.getTemplateKey();
+    return StringUtils.isEmpty(templateKey) ? null : RuleKey.parse(templateKey).rule();
   }
 
   @Override

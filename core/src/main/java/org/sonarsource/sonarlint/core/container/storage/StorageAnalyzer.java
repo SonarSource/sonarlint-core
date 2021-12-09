@@ -58,7 +58,7 @@ public class StorageAnalyzer {
     }
   }
 
-  public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, GlobalSettingsStore globalSettingsStore,
+  public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
     ProgressMonitor progress) {
     checkStatus(configuration.projectKey());
 
@@ -66,7 +66,6 @@ public class StorageAnalyzer {
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
 
     analysisContainer.add(
-      globalSettingsStore,
       configuration,
       issueListener,
       new SonarQubeActiveRulesProvider(),

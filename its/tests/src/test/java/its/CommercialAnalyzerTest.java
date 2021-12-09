@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -214,6 +215,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   private void updateProject(String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
   }
 
   private void updateGlobal() {

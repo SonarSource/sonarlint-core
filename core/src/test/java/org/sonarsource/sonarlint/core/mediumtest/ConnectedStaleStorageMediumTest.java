@@ -20,10 +20,7 @@
 package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -35,28 +32,26 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 
 public class ConnectedStaleStorageMediumTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private static File baseDir;
   private static ConnectedGlobalConfiguration config;
-  private static Path storage;
 
   @BeforeClass
   public static void prepare() throws Exception {
-    String storageId = "localhost";
     Path slHome = temp.newFolder().toPath();
-    storage = slHome.resolve("storage").resolve(encodeForFs(storageId));
+    String storageId = "localhost";
+    newStorage(storageId)
+      .stale()
+      .create(slHome);
 
     config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(storageId)
@@ -66,20 +61,8 @@ public class ConnectedStaleStorageMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeUpdateStatus(Path storage, String version) throws IOException {
-    StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(version)
-      .setSonarlintCoreVersion("1.0")
-      .setUpdateTimestamp(new Date().getTime())
-      .build();
-    Path global = storage.resolve("global");
-    Files.createDirectories(global);
-    ProtobufUtil.writeToFile(storageStatus, global.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
-  }
-
   @Test
-  public void test_stale_global() throws Exception {
-    writeUpdateStatus(storage, "0");
+  public void test_stale_global() {
     ConnectedSonarLintEngine sonarlint = new ConnectedSonarLintEngineImpl(config);
 
     assertThat(sonarlint.getState()).isEqualTo(State.NEED_UPDATE);

@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
 import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -42,31 +41,18 @@ public class SettingsApi {
     this.helper = helper;
   }
 
-  public Map<String, String> getGlobalSettings() {
-    return getSettings(null);
-  }
-
   public Map<String, String> getProjectSettings(String projectKey) {
-    return getSettings(projectKey);
-  }
-
-  private Map<String, String> getSettings(@Nullable String projectKey) {
     Map<String, String> settings = new HashMap<>();
     var url = new StringBuilder();
     url.append(API_SETTINGS_PATH);
-    if (projectKey != null) {
-      url.append("?component=").append(StringUtils.urlEncode(projectKey));
-    }
+    url.append("?component=").append(StringUtils.urlEncode(projectKey));
     ServerApiHelper.consumeTimed(
       () -> helper.get(url.toString()),
       response -> {
         try (InputStream is = response.bodyAsStream()) {
           Settings.ValuesWsResponse values = Settings.ValuesWsResponse.parseFrom(is);
           for (Settings.Setting s : values.getSettingsList()) {
-            // Storage optimisation: don't store settings having same value than global settings
-            if (!s.getInherited()) {
-              processSetting(settings::put, s);
-            }
+            processSetting(settings::put, s);
           }
         } catch (IOException e) {
           throw new IllegalStateException("Unable to parse properties from: " + response.bodyAsString(), e);

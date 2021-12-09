@@ -112,11 +112,13 @@ public class ServerRules {
     private final String ruleKey;
     private final String severity;
     private final List<Param> params;
+    private final String templateKey;
 
-    public ActiveRule(String ruleKey, String severity, List<Param> params) {
+    public ActiveRule(String ruleKey, String severity, List<Param> params, String templateKey) {
       this.ruleKey = ruleKey;
       this.severity = severity;
       this.params = params;
+      this.templateKey = templateKey;
     }
 
     public String getSeverity() {
@@ -129,6 +131,10 @@ public class ServerRules {
 
     public String getRuleKey() {
       return ruleKey;
+    }
+
+    public String getTemplateKey() {
+      return templateKey;
     }
 
     public static class Param {

@@ -29,14 +29,9 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.QualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloader;
-import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
@@ -76,11 +71,8 @@ public class GlobalStorageUpdateExecutor {
     var temp = tempFolder.newDir().toPath();
     StorageFolder storageFolder = new StorageFolder.Default(temp);
     var serverInfoStore = new ServerInfoStore(storageFolder);
-    var globalSettingsStore = new GlobalSettingsStore(storageFolder);
     var pluginReferenceStore = new PluginReferenceStore(storageFolder);
     var rulesStore = new RulesStore(storageFolder);
-    var activeRulesStore = new ActiveRulesStore(storageFolder);
-    var qualityProfileStore = new QualityProfileStore(storageFolder);
     var serverProjectsStore = new ServerProjectsStore(storageFolder);
     var storageStatusStore = new StorageStatusStore(storageFolder);
 
@@ -92,22 +84,14 @@ public class GlobalStorageUpdateExecutor {
       List<SonarAnalyzer> analyzers = pluginListDownloader.downloadPluginList();
       serverInfoStore.store(serverStatus);
 
-      progress.setProgressAndCheckCancel("Fetching global properties", 0.15f);
-      var globalSettingsDownloader = new SettingsDownloader(serverApiHelper, globalSettingsStore);
-      globalSettingsDownloader.fetchGlobalSettings();
-
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
       var pluginReferenceDownloader = new PluginReferencesDownloader(serverApiHelper, pluginCache, connectedGlobalConfiguration,
         pluginReferenceStore);
       pluginReferenceDownloader.fetchPlugins(analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
 
       progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      var rulesDownloader = new RulesDownloader(serverApiHelper, connectedGlobalConfiguration, rulesStore, activeRulesStore);
+      var rulesDownloader = new RulesDownloader(serverApiHelper, connectedGlobalConfiguration, rulesStore);
       rulesDownloader.fetchRules(progress.subProgress(0.4f, 0.6f, "Fetching rules"));
-
-      progress.setProgressAndCheckCancel("Fetching quality profiles", 0.6f);
-      var qualityProfilesDownloader = new QualityProfilesDownloader(serverApiHelper, qualityProfileStore);
-      qualityProfilesDownloader.fetchQualityProfiles();
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
       var projectListDownloader = new ProjectListDownloader(serverApiHelper, serverProjectsStore);

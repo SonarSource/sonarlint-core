@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,10 +61,14 @@ import org.sonarsource.sonarlint.core.container.storage.GlobalUpdateStatusReader
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
+import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
 public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
@@ -74,6 +80,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private final List<StateListener> stateListeners = new CopyOnWriteArrayList<>();
   private volatile State state = State.UNKNOWN;
   private final GlobalStores globalStores;
+  private final ProjectStorage projectStorage;
+  private final LocalStorageSynchronizer storageSynchronizer;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
@@ -81,6 +89,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     this.globalStores = new GlobalStores(globalConfig);
     this.globalStatusReader = new GlobalUpdateStatusReader(globalStores.getServerInfoStore(), globalStores.getStorageStatusStore());
 
+    Path storageRoot = globalConfig.getStorageRoot().resolve(encodeForFs(globalConfig.getConnectionId()));
+    Path projectsStorageRoot = storageRoot.resolve("projects");
+    projectStorage = new ProjectStorage(projectsStorageRoot);
+    storageSynchronizer = new LocalStorageSynchronizer(globalConfig.getEnabledLanguages(), projectStorage);
     start();
   }
 
@@ -125,10 +137,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
-    storageContainer = new StorageContainer(globalConfig, this.globalStores, globalStatusReader);
+    storageContainer = new StorageContainer(globalConfig, this.globalStores, projectStorage, globalStatusReader);
     try {
       storageContainer.startComponents();
-      GlobalStorageStatus globalStorageStatus = globalStatusReader.read();
+      var globalStorageStatus = globalStatusReader.read();
       if (globalStorageStatus == null) {
         changeState(State.NEVER_UPDATED);
       } else if (globalStorageStatus.isStale()) {
@@ -171,6 +183,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
+  public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    storageSynchronizer.synchronize(serverApi, projectKeys, new ProgressMonitor(monitor));
+  }
+
   public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     setLogging(null);
@@ -206,15 +223,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     return checkUpToDateThen(() -> runInConnectedContainer(endpoint, client,
-      container -> container.checkForUpdate(globalStores.getGlobalSettingsStore(), globalStores.getQualityProfileStore(), new ProgressMonitor(monitor))));
-  }
-
-  @Override
-  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey,
-    @Nullable ClientProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    requireNonNull(projectKey);
-    return withReadLock(() -> runInConnectedContainer(endpoint, client, container -> container.checkForUpdate(projectKey, new ProgressMonitor(monitor))));
+      container -> container.checkForUpdate(new ProgressMonitor(monitor))));
   }
 
   @Override
@@ -279,7 +288,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     setLogging(null);
     rwl.writeLock().lock();
     checkUpdateStatus();
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
+    var connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
@@ -325,7 +334,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private <U> U runInConnectedContainer(EndpointParams endpoint, HttpClient client, Function<ConnectedContainer, U> func) {
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
+    var connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
     try {
       connectedContainer.startComponents();
       return func.apply(connectedContainer);

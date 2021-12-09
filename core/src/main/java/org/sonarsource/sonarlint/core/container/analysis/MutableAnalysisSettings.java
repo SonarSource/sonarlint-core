@@ -24,9 +24,7 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfigur
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.MapSettings;
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 
 public class MutableAnalysisSettings extends MapSettings {
 
@@ -41,15 +39,13 @@ public class MutableAnalysisSettings extends MapSettings {
   /**
    * Connected mode
    */
-  public MutableAnalysisSettings(StorageReader storage, GlobalSettingsStore globalSettingsStore, GlobalSettings globalSettings, AbstractAnalysisConfiguration analysisConfig,
+  public MutableAnalysisSettings(ProjectStorage projectStorage, GlobalSettings globalSettings, AbstractAnalysisConfiguration analysisConfig,
     PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
-    addProperties(globalSettingsStore.getAll());
     if (analysisConfig instanceof ConnectedAnalysisConfiguration) {
       String projectKey = ((ConnectedAnalysisConfiguration) analysisConfig).projectKey();
       if (projectKey != null) {
-        ProjectConfiguration projectConfig = storage.readProjectConfig(projectKey);
-        addProperties(projectConfig.getPropertiesMap());
+        addProperties(projectStorage.getAnalyzerConfiguration(projectKey).getSettings().getAll());
       }
     }
     addPropertiesInOrder(globalSettings, analysisConfig);
