@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.validate;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -25,12 +25,12 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 
-public class PluginVersionChecker {
+public class PluginsMinVersions {
   public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
 
   private final Properties minimalPluginVersions;
 
-  public PluginVersionChecker() {
+  public PluginsMinVersions() {
     this.minimalPluginVersions = new Properties();
     try {
       minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));

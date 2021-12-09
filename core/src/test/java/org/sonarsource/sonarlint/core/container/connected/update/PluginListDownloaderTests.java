@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -75,7 +75,7 @@ class PluginListDownloaderTests {
     "      \"version\": \"4.0 (build 1234)\"\n" +
     "    } ]}";
 
-  private final PluginVersionChecker pluginVersionChecker = mock(PluginVersionChecker.class);
+  private final PluginsMinVersions pluginVersionChecker = mock(PluginsMinVersions.class);
   private final ConnectedGlobalConfiguration globalConfig = mock(ConnectedGlobalConfiguration.class);
 
   @BeforeEach

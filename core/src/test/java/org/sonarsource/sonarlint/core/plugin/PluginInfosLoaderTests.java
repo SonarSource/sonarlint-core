@@ -45,9 +45,9 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -73,7 +73,7 @@ class PluginInfosLoaderTests {
   private PluginInfosLoader underTest;
   private PluginIndex pluginIndex;
   private PluginCache pluginCache;
-  private PluginVersionChecker pluginVersionChecker;
+  private PluginsMinVersions pluginVersionChecker;
   private Set<Language> enabledLanguages;
   private System2 system2;
   private AbstractGlobalConfiguration globalConfig;
@@ -83,7 +83,7 @@ class PluginInfosLoaderTests {
     pluginIndex = mock(PluginIndex.class);
     pluginCache = mock(PluginCache.class);
     system2 = mock(System2.class);
-    pluginVersionChecker = spy(new PluginVersionChecker());
+    pluginVersionChecker = spy(new PluginsMinVersions());
     globalConfig = mock(AbstractGlobalConfiguration.class);
     enabledLanguages = new HashSet<>();
     when(globalConfig.getEnabledLanguages()).thenReturn(enabledLanguages);
