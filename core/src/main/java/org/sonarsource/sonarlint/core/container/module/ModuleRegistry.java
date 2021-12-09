@@ -26,7 +26,7 @@ import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.ModulesProvider;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 public class ModuleRegistry {
   private static final SonarLintLogger LOG = SonarLintLogger.get();

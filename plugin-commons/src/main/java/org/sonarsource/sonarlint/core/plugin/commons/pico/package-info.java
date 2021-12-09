@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,31 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.plugin.commons.pico;
 
-import com.google.common.base.Throwables;
-import org.picocontainer.PicoLifecycleException;
-
-class PicoUtils {
-
-  private PicoUtils() {
-    // only static methods
-  }
-
-  static Throwable sanitize(Throwable t) {
-    Throwable result = t;
-    Throwable cause = t.getCause();
-    if (t instanceof PicoLifecycleException && cause != null) {
-      if ("wrapper".equals(cause.getMessage()) && cause.getCause() != null) {
-        result = cause.getCause();
-      } else {
-        result = cause;
-      }
-    }
-    return result;
-  }
-
-  static RuntimeException propagate(Throwable t) {
-    throw Throwables.propagate(sanitize(t));
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

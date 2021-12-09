@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 /**
  * Used to load plugin global extensions

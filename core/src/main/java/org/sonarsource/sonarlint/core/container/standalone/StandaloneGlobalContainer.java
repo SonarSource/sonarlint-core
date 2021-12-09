@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvider;
@@ -62,6 +61,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 public class StandaloneGlobalContainer extends ComponentContainer {
 
@@ -132,7 +132,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      addExtension(pluginInfo, instance);
+      addExtension(pluginInfo.getKey(), instance);
     }
   }
 
