@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
@@ -31,7 +32,6 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
@@ -131,6 +131,8 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
+  void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor);
+
   /**
    * Update current server.
    *
@@ -155,15 +157,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @since 2.6
    */
   StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Check server to see if project storage need updates.
-   *
-   * @throws StorageException  if project storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
-   * @throws DownloadException if it fails to download
-   * @since 2.6
-   */
-  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file.

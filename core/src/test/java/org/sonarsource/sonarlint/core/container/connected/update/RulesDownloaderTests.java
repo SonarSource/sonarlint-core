@@ -35,12 +35,9 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,39 +66,31 @@ class RulesDownloaderTests {
   void rules_update_protobuf(@TempDir Path tempDir) {
     StorageFolder.Default storageFolder = new StorageFolder.Default(tempDir);
     RulesStore rulesStore = new RulesStore(storageFolder);
-    ActiveRulesStore activeRulesStore = new ActiveRulesStore(storageFolder);
     emptyMockForAllSeverities();
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=java,js&p=1&ps=500", "/update/rulesp1.pb");
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&severities=MAJOR&languages=java,js&p=2&ps=500", "/update/rulesp2.pb");
     when(globalConfig.getEnabledLanguages()).thenReturn(new LinkedHashSet<>(Arrays.asList(Language.JS, Language.JAVA)));
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig, rulesStore, activeRulesStore);
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper(), globalConfig, rulesStore);
     rulesUpdate.fetchRules(progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(RulesStore.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.resolve(ActiveRulesStore.ACTIVE_RULES_FOLDER).resolve(ProjectStoragePaths.encodeForFs("js-sonar-way-62960") + ".pb"),
-      ActiveRules.parser());
-    assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
   }
 
   @Test
   void rules_update_protobuf_with_org(@TempDir Path tempDir) {
     StorageFolder.Default storageFolder = new StorageFolder.Default(tempDir);
     RulesStore rulesStore = new RulesStore(storageFolder);
-    ActiveRulesStore activeRulesStore = new ActiveRulesStore(storageFolder);
     emptyMockForAllSeverities(RULES_SEARCH_URL + "&organization=myOrg", "js");
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&languages=js&p=1&ps=500", "/update/rulesp1.pb");
     mockServer.addResponseFromResource(RULES_SEARCH_URL + "&organization=myOrg&severities=MAJOR&languages=js&p=2&ps=500", "/update/rulesp2.pb");
 
-    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper("myOrg"), globalConfig, rulesStore, activeRulesStore);
+    RulesDownloader rulesUpdate = new RulesDownloader(mockServer.serverApiHelper("myOrg"), globalConfig, rulesStore);
     rulesUpdate.fetchRules(progressWrapper);
 
     Rules rules = ProtobufUtil.readFile(tempDir.resolve(RulesStore.RULES_PB), Rules.parser());
     assertThat(rules.getRulesByKeyMap()).hasSize(939);
-    ActiveRules jsActiveRules = ProtobufUtil.readFile(tempDir.resolve(ActiveRulesStore.ACTIVE_RULES_FOLDER).resolve(ProjectStoragePaths.encodeForFs("js-sonar-way-62960") + ".pb"),
-      ActiveRules.parser());
-    assertThat(jsActiveRules.getActiveRulesByKeyMap()).hasSize(85);
   }
 
   private void emptyMockForAllSeverities() {

@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
+import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainer extends ComponentContainer {
@@ -65,11 +67,13 @@ public class StorageContainer extends ComponentContainer {
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat();
   private final ConnectedGlobalConfiguration globalConfig;
   private final GlobalStores globalStores;
+  private final ProjectStorage projectStorage;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
 
-  public StorageContainer(ConnectedGlobalConfiguration globalConfig, GlobalStores globalStores, GlobalUpdateStatusReader globalUpdateStatusReader) {
+  public StorageContainer(ConnectedGlobalConfiguration globalConfig, GlobalStores globalStores, ProjectStorage projectStorage, GlobalUpdateStatusReader globalUpdateStatusReader) {
     this.globalConfig = globalConfig;
     this.globalStores = globalStores;
+    this.projectStorage = projectStorage;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
   }
 
@@ -85,14 +89,12 @@ public class StorageContainer extends ComponentContainer {
       globalConfig,
       globalStores,
       globalStores.getGlobalStorage(),
-      globalStores.getActiveRulesStore(),
       globalStores.getRulesStore(),
-      globalStores.getGlobalSettingsStore(),
       globalStores.getStorageStatusStore(),
       globalStores.getPluginReferenceStore(),
       globalStores.getServerInfoStore(),
       globalStores.getServerProjectsStore(),
-      globalStores.getQualityProfileStore(),
+      projectStorage,
       StorageContainerHandler.class,
       PartialUpdaterFactory.class,
 
@@ -127,7 +129,6 @@ public class StorageContainer extends ComponentContainer {
       NodeJsHelper.class,
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
-      new StorageQProfilesProvider(),
       new SonarLintRulesProvider(),
       new SonarQubeVersion(sonarPluginApiVersion),
       new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
@@ -236,12 +237,10 @@ public class StorageContainer extends ComponentContainer {
   }
 
   public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
-    var readActiveRuleFromStorage = getHandler().readActiveRuleFromStorage(ruleKeyStr, projectKey);
-    // for extra plugins there will no be rule in the storage
-    String severity = null;
-    if (readActiveRuleFromStorage != null) {
-      severity = readActiveRuleFromStorage.getSeverity();
-    }
+    var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
+      // for extra plugins there will be no rule in the storage
+    String severity = analyzerConfiguration.getRuleSetByLanguageKey().values().stream().flatMap(s -> s.getRules().stream())
+        .filter(r -> r.getRuleKey().equals(ruleKeyStr)).findFirst().map(ServerRules.ActiveRule::getSeverity).orElse(null);
     return getRuleDetailsWithSeverity(ruleKeyStr, severity);
   }
 

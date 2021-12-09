@@ -29,9 +29,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfiguration;
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 
 /**
  * Can't put {@link ConnectionConfiguration} directly in pico since it would conflict with {@link MutableAnalysisSettings}.
@@ -44,9 +43,9 @@ public class ServerConfigurationProvider {
   /**
    * Connected mode
    */
-  public ServerConfigurationProvider(StorageReader storage, GlobalSettingsStore globalSettingsStore, ConnectedAnalysisConfiguration config,
+  public ServerConfigurationProvider(StorageReader storage, ProjectStorage projectStorage, ConnectedAnalysisConfiguration config,
     PropertyDefinitions propertyDefinitions) {
-    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, globalSettingsStore, config, propertyDefinitions));
+    this.serverConfig = new ConfigurationBridge(new ServerConfiguration(storage, projectStorage, config, propertyDefinitions));
   }
 
   /**
@@ -69,14 +68,13 @@ public class ServerConfigurationProvider {
       addProperties(properties);
     }
 
-    private ServerConfiguration(@Nullable StorageReader storage, GlobalSettingsStore globalSettingsStore, AbstractAnalysisConfiguration config,
+    private ServerConfiguration(@Nullable StorageReader storage, ProjectStorage projectStorage, AbstractAnalysisConfiguration config,
       PropertyDefinitions propertyDefinitions) {
       super(propertyDefinitions);
-      if (storage != null) {
-        addProperties(globalSettingsStore.getAll());
-        if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).projectKey() != null) {
-          Sonarlint.ProjectConfiguration projectConfig = storage.readProjectConfig(((ConnectedAnalysisConfiguration) config).projectKey());
-          addProperties(projectConfig.getPropertiesMap());
+      if (storage != null && config instanceof ConnectedAnalysisConfiguration) {
+        var projectKey = ((ConnectedAnalysisConfiguration) config).projectKey();
+        if (projectKey != null) {
+          addProperties(projectStorage.getAnalyzerConfiguration(projectKey).getSettings().getAll());
         }
       }
     }

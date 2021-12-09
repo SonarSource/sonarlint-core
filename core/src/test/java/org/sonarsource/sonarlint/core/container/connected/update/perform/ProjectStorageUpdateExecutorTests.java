@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,24 +46,19 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectQualityProfilesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -91,7 +84,6 @@ class ProjectStorageUpdateExecutorTests {
   private final ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
   private ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
-  private QualityProfileStore qualityProfileStore;
 
   public void setUp(@Nullable String organizationKey, Path tempDir) throws IOException {
     Files.createDirectory(tempDir);
@@ -126,32 +118,9 @@ class ProjectStorageUpdateExecutorTests {
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
 
-    ServerApiHelper serverApiHelper = mockServer.serverApiHelper(organizationKey);
-    projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy, new ProjectQualityProfilesDownloader(serverApiHelper), serverApiHelper);
+    projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy);
 
-    qualityProfileStore = new QualityProfileStore(new StorageFolder.Default(tempDir));
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater,
-      qualityProfileStore);
-  }
-
-  @ParameterizedTest(name = "organizationKey=[{0}]")
-  @NullSource
-  @ValueSource(strings = {ORGA_KEY})
-  void exception_ws_load_qps(@Nullable String organizationKey, @TempDir Path tempDir) throws IOException {
-    setUp(organizationKey, tempDir.resolve("tmp"));
-
-    // return trash from WS
-    mockServer.addStringResponse(getQualityProfileUrl(organizationKey), "foo");
-
-    Path storageDir = tempDir.resolve("destDir");
-
-    qualityProfileStore.store(List.of(aQualityProfile("java-empty-74333")));
-    when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
-
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
-    assertThat(thrown)
-      .hasMessage("Unable to parse WS response: Protocol message tag had invalid wire type.")
-      .hasCauseInstanceOf(InvalidProtocolBufferException.class);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -164,44 +133,15 @@ class ProjectStorageUpdateExecutorTests {
     Path globalStoragePath = storageDir.resolve("global");
     FileUtils.mkdirs(globalStoragePath);
 
-    qualityProfileStore.store(List.of(
-      aQualityProfile("cs-sonar-way-58886"),
-      aQualityProfile("java-empty-74333"),
-      aQualityProfile("js-sonar-way-60746"),
-      aQualityProfile("xoo2-basic-34035")));
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
     underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
     ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
-    assertThat(projectConfiguration.getQprofilePerLanguageMap()).containsOnly(
-      entry("cs", "cs-sonar-way-58886"),
-      entry("java", "java-empty-74333"),
-      entry("js", "js-sonar-way-60746"));
 
     assertThat(projectConfiguration.getModulePathByKeyMap()).containsOnly(
       entry(MODULE_KEY_WITH_BRANCH, ""),
       entry(MODULE_KEY_WITH_BRANCH + "child1", "child 1"));
-  }
-
-  @ParameterizedTest(name = "organizationKey=[{0}]")
-  @NullSource
-  @ValueSource(strings = {ORGA_KEY})
-  void test_error_if_qp_doesnt_exist(@Nullable String organizationKey, @TempDir Path tempDir) throws IOException {
-    setUp(organizationKey, tempDir.resolve("tmp"));
-
-    Path storageDir = tempDir.resolve("destDir");
-    Path globalStoragePath = storageDir.resolve("global");
-    FileUtils.mkdirs(globalStoragePath);
-
-    qualityProfileStore.store(List.of(
-      aQualityProfile("cs-sonar-way-58886"),
-      aQualityProfile("java-empty-74333"),
-      aQualityProfile("xoo2-basic-34035")));
-    when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
-
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
-    assertThat(thrown).hasMessageContaining("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -215,8 +155,6 @@ class ProjectStorageUpdateExecutorTests {
     FileUtils.mkdirs(globalStoragePath);
 
     mockServer.addStringResponse(getQualityProfileUrl(organizationKey), "");
-
-    qualityProfileStore.store(Collections.emptyList());
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
@@ -237,7 +175,7 @@ class ProjectStorageUpdateExecutorTests {
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
-      projectFileListDownloader, serverIssueUpdater, qualityProfileStore);
+      projectFileListDownloader, serverIssueUpdater);
     underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
     verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressMonitor.class));
@@ -251,7 +189,7 @@ class ProjectStorageUpdateExecutorTests {
 
     Path temp = tempFolder.newDir().toPath();
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
-      projectFileListDownloader, serverIssueUpdater, qualityProfileStore);
+      projectFileListDownloader, serverIssueUpdater);
     ProjectConfiguration.Builder projectConfigurationBuilder = ProjectConfiguration.newBuilder();
     projectConfigurationBuilder.putModulePathByKey("rootModule", "");
     projectConfigurationBuilder.putModulePathByKey("moduleA", "A");
@@ -279,8 +217,5 @@ class ProjectStorageUpdateExecutorTests {
     return url;
   }
 
-  private static QualityProfile aQualityProfile(String name) {
-    return new QualityProfile(false, name, "", "", "", 0, "", "");
-  }
 
 }

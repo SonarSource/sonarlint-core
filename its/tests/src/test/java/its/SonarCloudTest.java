@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 import okhttp3.Credentials;
@@ -50,17 +51,13 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.MediaTypes;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.qualityprofiles.ActivateRuleRequest;
 import org.sonarqube.ws.client.qualityprofiles.AddProjectRequest;
-import org.sonarqube.ws.client.qualityprofiles.DeactivateRuleRequest;
-import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
@@ -214,7 +211,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Before
-  public void start() throws IOException {
+  public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -473,35 +470,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
     assertThat(result.needUpdate()).isFalse();
-
-    // Toggle a rule to ensure quality profile date is changed
-    SearchWsResponse response = adminWsClient.qualityprofiles().search(new SearchRequest().setOrganization(SONARCLOUD_ORGANIZATION).setLanguage("java"));
-    String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    adminWsClient.qualityprofiles().deactivateRule(new DeactivateRuleRequest()
-      .setKey(profileKey)
-      .setRule("java:S1228"));
-    adminWsClient.qualityprofiles().activateRule(new ActivateRuleRequest()
-      .setKey(profileKey)
-      .setRule("java:S1228"));
-
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
-    assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).contains("Quality profile 'SonarLint IT Java' for language 'Java' updated");
-
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey(PROJECT_KEY_JAVA), null);
-    assertThat(result.needUpdate()).isFalse();
-
-    // Change a project setting that is not in the whitelist
-    setSettings(projectKey(PROJECT_KEY_JAVA), "sonar.foo", "biz");
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey(PROJECT_KEY_JAVA), null);
-    assertThat(result.needUpdate()).isFalse();
-
-    // Change a project setting that *is* in the whitelist
-    setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), "sonar.exclusions", "**/*.foo");
-
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey(PROJECT_KEY_JAVA), null);
-    assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Project settings updated");
   }
 
   @Test
@@ -586,15 +554,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setComponent(moduleKey));
   }
 
-  private void setSettings(@Nullable String moduleKey, String key, String value) {
-    adminWsClient.settings().set(new SetRequest()
-      .setKey(key)
-      .setValue(value)
-      .setComponent(moduleKey));
-  }
-
   private void updateProject(String projectKey) {
     engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey, false, null);
+    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(projectKey), null);
   }
 
   private void updateGlobal() {

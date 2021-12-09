@@ -21,23 +21,25 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.resources.Languages;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
-import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
+import org.sonarsource.sonarlint.core.storage.ProjectStorage;
+import org.sonarsource.sonarlint.core.storage.RuleSet;
 
 public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
@@ -45,33 +47,30 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
 
   private ActiveRules activeRules;
 
-  public ActiveRules provide(RulesStore rulesStore, List<QualityProfile> qProfiles, StorageReader storageReader, SonarLintRules rules,
-    ConnectedAnalysisConfiguration analysisConfiguration, Languages languages, ConnectedGlobalConfiguration globalConfiguration, ActiveRulesStore activeRulesStore) {
+  public ActiveRules provide(SonarLintRules rules, RulesStore rulesStore, ConnectedAnalysisConfiguration analysisConfiguration,
+    Languages languages, ConnectedGlobalConfiguration globalConfiguration, ProjectStorage projectStorage) {
+
     if (activeRules == null) {
-
-      Map<String, String> qProfilesByLanguage = loadQualityProfilesFromStorage(qProfiles, storageReader, analysisConfiguration);
-
       Collection<org.sonar.api.batch.rule.ActiveRule> activeRulesList = new ArrayList<>();
-      for (Map.Entry<String, String> entry : qProfilesByLanguage.entrySet()) {
-        String language = entry.getKey();
-        if (languages.get(language) == null) {
+      // could be empty before the first sync
+      var projectKey = analysisConfiguration.projectKey();
+      if (projectKey == null) {
+        // this should be forbidden by client side
+        LOG.debug("No project key provided, no rules will be used for analysis");
+        return new DefaultActiveRules(Collections.emptyList());
+      }
+
+      var rulesByKey = rulesStore.getAll().stream().collect(Collectors.toMap(ServerRules.Rule::getRuleKey, Function.identity()));
+      for (Map.Entry<String, RuleSet> entry : projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()) {
+        String languageKey = entry.getKey();
+        var ruleSet = entry.getValue();
+        if (languages.get(languageKey) == null) {
           continue;
         }
 
-        String qProfileKey = entry.getValue();
-        QualityProfile qProfile = qProfiles.stream().filter(qp -> qp.getKey().equals(qProfileKey)).findFirst().orElseThrow();
-
-        if (qProfile.getActiveRuleCount() == 0) {
-          LOG.debug("  * {}: '{}' (0 rules)", language, qProfile.getName());
-          continue;
-        }
-
-        List<ServerRules.ActiveRule> activeRulesFromStorage = activeRulesStore.getActiveRules(qProfileKey);
-
-        LOG.debug("  * {}: '{}' ({} rules)", language, qProfile.getName(), activeRulesFromStorage.size());
-
-        for (ServerRules.ActiveRule activeRule : activeRulesFromStorage) {
-          activeRulesList.add(createNewActiveRule(activeRule, rulesStore));
+        LOG.debug("  * {}: '{}' ({} active rules)", languageKey, ruleSet.getProfileKey(), ruleSet.getRules().size());
+        for (ServerRules.ActiveRule activeRule : ruleSet.getRules()) {
+          activeRulesList.add(createNewActiveRule(activeRule, rulesByKey.get(activeRule.getRuleKey())));
         }
       }
 
@@ -92,25 +91,8 @@ public class SonarQubeActiveRulesProvider extends ProviderAdapter {
       .stream().anyMatch(extraPluginKey -> ruleLanguage.getLanguageKey().equals(extraPluginKey));
   }
 
-  private static org.sonar.api.batch.rule.ActiveRule createNewActiveRule(ServerRules.ActiveRule activeRule, RulesStore rulesStore) {
-    var storageRule = rulesStore.getRuleWithKey(activeRule.getRuleKey())
-      .orElseThrow(() -> new StorageException("Unknown active rule in the quality profile of the project. Please update the SonarQube server binding."));
-
-    return new StorageActiveRuleAdapter(activeRule, storageRule);
-  }
-
-  private static Map<String, String> loadQualityProfilesFromStorage(List<QualityProfile> qProfiles, StorageReader storageReader,
-    ConnectedAnalysisConfiguration analysisConfiguration) {
-    Map<String, String> qProfilesByLanguage;
-    if (analysisConfiguration.projectKey() == null) {
-      LOG.debug("Use default quality profiles:");
-      qProfilesByLanguage = qProfiles.stream().filter(QualityProfile::isDefault)
-        .collect(Collectors.toMap(QualityProfile::getLanguage, QualityProfile::getKey, (qp1, qp2) -> qp1));
-    } else {
-      LOG.debug("Quality profiles:");
-      qProfilesByLanguage = storageReader.readProjectConfig(analysisConfiguration.projectKey()).getQprofilePerLanguageMap();
-    }
-    return qProfilesByLanguage;
+  private static org.sonar.api.batch.rule.ActiveRule createNewActiveRule(ServerRules.ActiveRule activeRule, ServerRules.Rule rule) {
+    return new StorageActiveRuleAdapter(activeRule, rule);
   }
 
 }

@@ -65,7 +65,7 @@ public class ConnectedEmptyStorageMediumTest {
   }
 
   @Test
-  public void test_no_storage() throws Exception {
+  public void test_no_storage() {
 
     assertThat(sonarlint.getState()).isEqualTo(State.NEVER_UPDATED);
     assertThat(sonarlint.getGlobalStorageStatus()).isNull();

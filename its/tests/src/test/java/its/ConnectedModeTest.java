@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -63,7 +64,6 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.qualityprofiles.ActivateRuleRequest;
 import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
@@ -501,8 +501,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
@@ -677,37 +677,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.restartServer();
     result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
-
-    // Change a global setting that is not in the whitelist
-    setSettings(null, "sonar.foo", "bar");
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
-    assertThat(result.needUpdate()).isFalse();
-
-    // Change a global setting that *is* in the whitelist
-    setSettingsMultiValue(null, "sonar.inclusions", "**/*");
-    // Activate a new rule
-    SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityprofiles().search(new SearchRequest().setLanguage("java"));
-    String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    adminWsClient.qualityprofiles().activateRule(new ActivateRuleRequest().setKey(profileKey).setRule(javaRuleKey("S1228")));
-
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
-    assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
-
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
-    assertThat(result.needUpdate()).isFalse();
-
-    // Change a project setting that is not in the whitelist
-    setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
-    assertThat(result.needUpdate()).isFalse();
-
-    // Change a project setting that *is* in the whitelist
-    setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
-
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
-    assertThat(result.needUpdate()).isTrue();
-    assertThat(result.changelog()).containsOnly("Project settings updated");
   }
 
   @Test
@@ -773,6 +742,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private void updateProject(String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null);
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
   }
 
   private void updateGlobal() {

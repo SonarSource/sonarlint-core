@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -34,18 +33,15 @@ public class RulesDownloader {
   private final RulesApi rulesApi;
   private final Set<Language> enabledLanguages;
   private final RulesStore rulesStore;
-  private final ActiveRulesStore activeRulesStore;
 
-  public RulesDownloader(ServerApiHelper serverApiHelper, ConnectedGlobalConfiguration globalConfiguration, RulesStore rulesStore, ActiveRulesStore activeRulesStore) {
+  public RulesDownloader(ServerApiHelper serverApiHelper, ConnectedGlobalConfiguration globalConfiguration, RulesStore rulesStore) {
     this.rulesApi = new ServerApi(serverApiHelper).rules();
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();
     this.rulesStore = rulesStore;
-    this.activeRulesStore = activeRulesStore;
   }
 
   public void fetchRules(ProgressMonitor progress) {
     var serverRules = rulesApi.getAll(enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.toSet()), progress);
-    activeRulesStore.store(serverRules.getActiveRulesByQualityProfileKey());
     rulesStore.store(serverRules.getAll());
   }
 }

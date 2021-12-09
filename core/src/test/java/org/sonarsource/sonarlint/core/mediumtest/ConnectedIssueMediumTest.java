@@ -22,17 +22,16 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.api.sonarlint.SonarLintSide;
@@ -53,17 +52,9 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;
-import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
-import org.sonarsource.sonarlint.core.util.PluginLocator;
-import org.sonarsource.sonarlint.core.util.VersionUtils;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
@@ -77,6 +68,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 
 public class ConnectedIssueMediumTest {
 
@@ -90,44 +82,26 @@ public class ConnectedIssueMediumTest {
   @BeforeClass
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
-    Path pluginCache = slHome.resolve("plugins");
+    var storage = newStorage(SERVER_ID)
+      .withJSPlugin()
+      .withJavaPlugin()
+      .withProject("test-project")
+      .withProject(JAVA_MODULE_KEY, project -> project
+        .withRuleSet("java", ruleSet -> ruleSet
+          .withActiveRule("java:S106", "MAJOR")
+          .withActiveRule("java:S1220", "MINOR")
+          .withActiveRule("java:S1481", "BLOCKER")))
+      .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
+      .create(slHome);
 
     /*
      * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
      * QP)
      */
-    Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = slHome.resolve("storage");
-    FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-    Files.move(tmpStorage.resolve(encodeForFs("local")), tmpStorage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)));
-    PluginCache cache = PluginCache.create(pluginCache);
-
-    PluginReferences.Builder builder = PluginReferences.newBuilder();
-    builder.addReference(PluginReference.newBuilder()
-      .setFilename(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR)
-      .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
-      .setKey("javascript")
-      .build());
-    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH,
-      (filename, toFile) -> FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile()));
-
-    builder.addReference(PluginReference.newBuilder()
-      .setFilename(PluginLocator.SONAR_JAVA_PLUGIN_JAR)
-      .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
-      .setKey("java")
-      .build());
-    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH,
-      (filename, toFile) -> FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile()));
-
-    Path globalFolderPath = tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global");
-    org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(globalFolderPath);
-    new PluginReferenceStore(new StorageFolder.Default(globalFolderPath)).store(builder.build());
-
-    // update versions in test storage and create an empty stale project storage
-    writeProjectStatus(tmpStorage, "test-project", ProjectStoragePaths.STORAGE_VERSION);
-    writeProjectStatus(tmpStorage, JAVA_MODULE_KEY, ProjectStoragePaths.STORAGE_VERSION);
-    writeProjectStatus(tmpStorage, "stale_module", "0");
-    writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
+    Path sampleStorage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
+    Path tmpStorage = storage.getPath();
+    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
+    FileUtils.copyDirectory(tmpStorage.resolve(encodeForFs("local")).toFile(), tmpStorage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).toFile());
 
     NodeJsHelper nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
@@ -146,30 +120,6 @@ public class ConnectedIssueMediumTest {
     baseDir = temp.newFolder();
   }
 
-  private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path project = storage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(ProjectStoragePaths.encodeForFs(name));
-
-    StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(version)
-      .setSonarlintCoreVersion("1.0")
-      .setUpdateTimestamp(new Date().getTime())
-      .build();
-    Files.createDirectories(project);
-    ProtobufUtil.writeToFile(storageStatus, project.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
-  }
-
-  private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).resolve("global");
-
-    StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
-      .setSonarlintCoreVersion(version)
-      .setUpdateTimestamp(new Date().getTime())
-      .build();
-    Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
-  }
-
   @AfterClass
   public static void stop() {
     if (sonarlint != null) {
@@ -181,7 +131,7 @@ public class ConnectedIssueMediumTest {
   @Test
   public void testContainerInfo() {
     assertThat(sonarlint.getPluginDetails()).extracting("key").containsOnly("java", "javascript");
-    assertThat(sonarlint.allProjectsByKey().keySet()).containsOnly("test-project", "test-project-2");
+    assertThat(sonarlint.allProjectsByKey()).containsKeys("test-project", "test-project-2");
   }
 
   @Test
@@ -203,15 +153,16 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void unknowRuleKey() {
+  public void unknownRuleKey() {
     assertThrows(SonarLintException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
     assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
     assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
   }
 
   @Test
+  @Ignore("We don't support this use case anymore")
   public void simpleJavaScriptUnbinded() throws Exception {
-
+    // TODO remove test ?
     String ruleKey = "javascript:S1135";
     ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
@@ -237,7 +188,9 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  @Ignore("We don't support this use case anymore")
   public void simpleJavaUnbinded() throws Exception {
+    // TODO remove ?
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
@@ -255,7 +208,9 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
+  @Ignore("We don't support this use case anymore")
   public void simpleJavaTestUnbinded() throws Exception {
+    // TODO remove ?
     ClientInputFile inputFile = prepareJavaTestInputFile();
 
     final List<Issue> issues = new ArrayList<>();

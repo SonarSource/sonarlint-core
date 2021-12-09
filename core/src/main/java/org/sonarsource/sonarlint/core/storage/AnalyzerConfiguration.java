@@ -17,20 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.storage;
+package org.sonarsource.sonarlint.core.storage;
 
-import java.util.List;
-import org.picocontainer.injectors.ProviderAdapter;
-import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
+import java.util.Map;
 
-public class StorageQProfilesProvider extends ProviderAdapter {
+public class AnalyzerConfiguration {
+  private final Settings settings;
+  private final Map<String, RuleSet> ruleSetByLanguageKey;
 
-  private List<QualityProfile> qProfilesFromStorage;
+  public AnalyzerConfiguration(Settings settings, Map<String, RuleSet> ruleSetByLanguageKey) {
+    this.settings = settings;
+    this.ruleSetByLanguageKey = ruleSetByLanguageKey;
+  }
 
-  public List<QualityProfile> provide(QualityProfileStore qualityProfileStore) {
-    if (qProfilesFromStorage == null) {
-      qProfilesFromStorage = qualityProfileStore.getAll();
-    }
-    return qProfilesFromStorage;
+  public Settings getSettings() {
+    return settings;
+  }
+
+  public Map<String, RuleSet> getRuleSetByLanguageKey() {
+    return ruleSetByLanguageKey;
   }
 }

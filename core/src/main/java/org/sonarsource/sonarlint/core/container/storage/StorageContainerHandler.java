@@ -23,12 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
@@ -44,56 +41,34 @@ import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
-import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
+import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
+  private final ProjectStorage projectStorage;
   private final PluginRepository pluginRepository;
   private final ProjectStorageStatusReader projectStorageStatusReader;
   private final StorageReader storageReader;
   private final StorageFileExclusions storageExclusions;
   private final IssueStoreReader issueStoreReader;
   private final PartialUpdaterFactory partialUpdaterFactory;
-  private final ActiveRulesStore activeRulesStore;
-  private final GlobalSettingsStore globalSettingsStore;
-  private final QualityProfileStore qualityProfileStore;
 
-  public StorageContainerHandler(StorageAnalyzer storageAnalyzer,
-    PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader, GlobalStores globalStores,
+  public StorageContainerHandler(StorageAnalyzer storageAnalyzer, ProjectStorage projectStorage,
+    PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader,
     StorageReader storageReader, StorageFileExclusions storageExclusions, IssueStoreReader issueStoreReader, PartialUpdaterFactory partialUpdaterFactory) {
     this.storageAnalyzer = storageAnalyzer;
+    this.projectStorage = projectStorage;
     this.pluginRepository = pluginRepository;
     this.projectStorageStatusReader = projectStorageStatusReader;
     this.storageReader = storageReader;
     this.storageExclusions = storageExclusions;
     this.issueStoreReader = issueStoreReader;
     this.partialUpdaterFactory = partialUpdaterFactory;
-    this.activeRulesStore = globalStores.getActiveRulesStore();
-    this.globalSettingsStore = globalStores.getGlobalSettingsStore();
-    this.qualityProfileStore = globalStores.getQualityProfileStore();
   }
 
   public AnalysisResults analyze(ComponentContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
     ProgressMonitor progress) {
-    return storageAnalyzer.analyze(container, configuration, issueListener, globalSettingsStore, progress);
-  }
-
-  @CheckForNull
-  public ServerRules.ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
-    Map<String, String> qProfilesByLanguage;
-    if (projectKey == null) {
-      qProfilesByLanguage = qualityProfileStore.getAll().stream().filter(QualityProfile::isDefault).collect(Collectors.toMap(QualityProfile::getKey, QualityProfile::getLanguage));
-    } else {
-      qProfilesByLanguage = storageReader.readProjectConfig(projectKey).getQprofilePerLanguageMap();
-    }
-    for (String qProfileKey : qProfilesByLanguage.values()) {
-      var activeRule = activeRulesStore.getActiveRule(qProfileKey, ruleKeyStr);
-      if (activeRule != null) {
-        return activeRule;
-      }
-    }
-    return null;
+    return storageAnalyzer.analyze(container, configuration, issueListener, progress);
   }
 
   public Collection<PluginDetails> getPluginDetails() {
@@ -109,7 +84,7 @@ public class StorageContainerHandler {
   }
 
   public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
-    return storageExclusions.getExcludedFiles(globalSettingsStore, projectBinding, files, ideFilePathExtractor, testFilePredicate);
+    return storageExclusions.getExcludedFiles(projectStorage, projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,

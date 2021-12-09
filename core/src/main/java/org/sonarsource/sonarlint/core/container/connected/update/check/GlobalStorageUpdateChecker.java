@@ -19,48 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.check;
 
-import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
-import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 
 public class GlobalStorageUpdateChecker {
 
-  private final PluginsUpdateChecker pluginsUpdateChecker;
-  private final GlobalSettingsUpdateChecker globalSettingsUpdateChecker;
   private final ServerVersionAndStatusChecker statusChecker;
-  private final QualityProfilesUpdateChecker qualityProfilesUpdateChecker;
-  private final PluginListDownloader pluginListDownloader;
 
-  public GlobalStorageUpdateChecker(ServerVersionAndStatusChecker statusChecker, PluginsUpdateChecker pluginsUpdateChecker, PluginListDownloader pluginListDownloader,
-    GlobalSettingsUpdateChecker globalSettingsUpdateChecker, QualityProfilesUpdateChecker qualityProfilesUpdateChecker) {
+  public GlobalStorageUpdateChecker(ServerVersionAndStatusChecker statusChecker) {
     this.statusChecker = statusChecker;
-    this.pluginsUpdateChecker = pluginsUpdateChecker;
-    this.pluginListDownloader = pluginListDownloader;
-    this.globalSettingsUpdateChecker = globalSettingsUpdateChecker;
-    this.qualityProfilesUpdateChecker = qualityProfilesUpdateChecker;
   }
 
-  public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressMonitor progress) {
-    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+  public StorageUpdateCheckResult checkForUpdate(ProgressMonitor progress) {
+    var result = new DefaultStorageUpdateCheckResult();
 
-    progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
+    progress.setProgressAndCheckCancel("Checking server version and status", 0.5f);
     statusChecker.checkVersionAndStatus();
-    // Currently with don't check server version change since it is unlikely to have impact on SL
-
-    progress.setProgressAndCheckCancel("Checking global properties", 0.3f);
-    globalSettingsUpdateChecker.checkForUpdates(globalSettingsStore, result);
-
-    progress.setProgressAndCheckCancel("Checking plugins", 0.5f);
-    List<SonarAnalyzer> pluginList = pluginListDownloader.downloadPluginList();
-    pluginsUpdateChecker.checkForUpdates(result, pluginList);
-
-    progress.setProgressAndCheckCancel("Checking quality profiles", 0.7f);
-    qualityProfilesUpdateChecker.checkForUpdates(qualityProfileStore, result);
+    // Currently we don't check server version change since it is unlikely to have impact on SL
 
     progress.setProgressAndCheckCancel("Done", 1.0f);
 

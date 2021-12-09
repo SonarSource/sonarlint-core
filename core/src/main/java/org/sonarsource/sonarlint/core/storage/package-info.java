@@ -17,23 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.storage;
 
-import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
-
-public class SettingsDownloader {
-  private final SettingsApi settingsApi;
-  private final GlobalSettingsStore globalSettingsStore;
-
-  public SettingsDownloader(ServerApiHelper serverApiHelper, GlobalSettingsStore globalSettingsStore) {
-    this.settingsApi = new ServerApi(serverApiHelper).settings();
-    this.globalSettingsStore = globalSettingsStore;
-  }
-
-  public void fetchGlobalSettings() {
-    globalSettingsStore.store(settingsApi.getGlobalSettings());
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

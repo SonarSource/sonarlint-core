@@ -48,10 +48,6 @@ message PluginReferences {
   }
 }
 
-message GlobalProperties {
-  map<string, string> properties = 1;
-}
-
 message Rules {
   map<string,Rule> rules_by_key = 1;
     
@@ -67,32 +63,6 @@ message Rules {
     string template_key = 9;
     string html_note = 10;
     string type = 11;
-  }
-}
-
-message QProfiles {
-  map<string,QProfile> qprofilesByKey = 1;
-  map<string, string> defaultQProfilesByLanguage = 2;
-
-  message QProfile {
-    string key = 1;
-    string name = 2;
-    string language = 3;
-    string language_name = 4;
-    int64 active_rule_count = 5;
-    string rules_updated_at = 6;
-    string user_updated_at = 7;
-  }
-}
-
-message ActiveRules {
-  map<string,ActiveRule> active_rules_by_key = 1;
-  
-  message ActiveRule {
-    string repo = 1;
-    string key = 2;
-    string severity = 3;
-    map<string,string> params = 4;
   }
 }
 
@@ -139,8 +109,6 @@ message ProjectList {
 }
 
 message ProjectConfiguration {
-  map<string, string> qprofile_per_language = 1;
-  map<string, string> properties = 2;
   map<string, string> module_path_by_key = 3;
 }
 
@@ -168,4 +136,22 @@ message Issues {
 
 message StorageIndex {
   map<string, string> mapped_path_by_key = 1;
+}
+
+message AnalyzerConfiguration {
+    map<string, string> settings = 1;
+    map<string, RuleSet> ruleSetsByLanguageKey = 2;
+}
+
+message RuleSet {
+    repeated ActiveRule rules = 1;
+    string profileKey = 2;
+    string lastModified = 3;
+
+    message ActiveRule {
+        string ruleKey = 1;
+        string severity = 2;
+        string templateKey = 3;
+        map<string,string> params = 4;
+    }
 }

@@ -22,30 +22,17 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
-import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 
 public class ProjectConfigurationDownloader {
 
   private final ModuleHierarchyDownloader moduleHierarchyDownloader;
-  private final ProjectQualityProfilesDownloader projectQualityProfilesDownloader;
-  private final SettingsApi settingsApi;
 
-  public ProjectConfigurationDownloader(ModuleHierarchyDownloader moduleHierarchyDownloader,
-    ProjectQualityProfilesDownloader projectQualityProfilesDownloader, ServerApiHelper serverApiHelper) {
+  public ProjectConfigurationDownloader(ModuleHierarchyDownloader moduleHierarchyDownloader) {
     this.moduleHierarchyDownloader = moduleHierarchyDownloader;
-    this.projectQualityProfilesDownloader = projectQualityProfilesDownloader;
-    this.settingsApi = new ServerApi(serverApiHelper).settings();
   }
 
   public Sonarlint.ProjectConfiguration fetch(String projectKey, ProgressMonitor progress) {
     var builder = Sonarlint.ProjectConfiguration.newBuilder();
-    fetchQualityProfiles(projectKey, builder);
-    progress.setProgressAndCheckCancel("Fetching project settings", 0.1f);
-    builder.putAllProperties(settingsApi.getProjectSettings(projectKey));
     progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
     fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
 
@@ -55,11 +42,5 @@ public class ProjectConfigurationDownloader {
   private void fetchHierarchy(String projectKey, Sonarlint.ProjectConfiguration.Builder builder, ProgressMonitor progress) {
     Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(projectKey, progress);
     builder.putAllModulePathByKey(moduleHierarchy);
-  }
-
-  private void fetchQualityProfiles(String projectKey, ProjectConfiguration.Builder builder) {
-    for (QualityProfile qp : projectQualityProfilesDownloader.fetchModuleQualityProfiles(projectKey)) {
-      builder.putQprofilePerLanguage(qp.getLanguage(), qp.getKey());
-    }
   }
 }

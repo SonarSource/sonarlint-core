@@ -22,11 +22,9 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -41,20 +39,11 @@ import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
-import org.sonarsource.sonarlint.core.util.VersionUtils;
+import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 
 public class ConnectedFileExclusionsMediumTest {
 
@@ -64,26 +53,22 @@ public class ConnectedFileExclusionsMediumTest {
   public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
   private static File baseDir;
+  private static ProjectStorageFixture.ProjectStorage projectStorage;
 
   @BeforeClass
   public static void prepare() throws Exception {
     Path slHome = temp.newFolder().toPath();
+    var storage = newStorage(SERVER_ID)
+      .withProject(PROJECT_KEY)
+      .create(slHome);
+    projectStorage = storage.getProjectStorages().get(0);
     /*
      * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
      * QP)
      */
-    Path storage = Paths.get(ConnectedFileExclusionsMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = slHome.resolve("storage");
-    FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-
-    PluginReferences.Builder builder = PluginReferences.newBuilder();
-
-    Path globalFolderPath = tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global");
-    org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(globalFolderPath);
-    new PluginReferenceStore(new StorageFolder.Default(globalFolderPath)).store(builder.build());
-
-    writeProjectStatus(tmpStorage, PROJECT_KEY, VersionUtils.getLibraryVersion());
-    writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
+    Path sampleStorage = Paths.get(ConnectedFileExclusionsMediumTest.class.getResource("/sample-storage").toURI());
+    Path tmpStorage = storage.getPath();
+    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
@@ -94,30 +79,6 @@ public class ConnectedFileExclusionsMediumTest {
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
     baseDir = temp.newFolder();
-  }
-
-  private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("projects").resolve(name);
-
-    StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
-      .setSonarlintCoreVersion(version)
-      .setUpdateTimestamp(new Date().getTime())
-      .build();
-    Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
-  }
-
-  private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve(encodeForFs(SERVER_ID)).resolve("global");
-
-    StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
-      .setSonarlintCoreVersion(version)
-      .setUpdateTimestamp(new Date().getTime())
-      .build();
-    Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
   @AfterClass
@@ -135,42 +96,36 @@ public class ConnectedFileExclusionsMediumTest {
     ClientInputFile testFile1 = prepareInputFile("fooTest.xoo", "function xoo() {}", true);
     ClientInputFile testFile2 = prepareInputFile("test/foo2Test.xoo", "function xoo() {}", true);
 
-    ProjectStoragePaths projectStoragePaths = sonarlint.getGlobalContainer().getComponentByType(ProjectStoragePaths.class);
-    StorageReader storageReader = sonarlint.getGlobalContainer().getComponentByType(StorageReader.class);
-    Sonarlint.ProjectConfiguration originalProjectConfig = storageReader.readProjectConfig(PROJECT_KEY);
-
     int result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(4);
 
-    updateProjectConfig(projectStoragePaths, originalProjectConfig, ImmutableMap.of("sonar.inclusions", "src/**"));
+    storeProjectSettings(ImmutableMap.of("sonar.inclusions", "src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateProjectConfig(projectStoragePaths, originalProjectConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
+    storeProjectSettings(ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateProjectConfig(projectStoragePaths, originalProjectConfig, ImmutableMap.of("sonar.exclusions", "src/**"));
+    storeProjectSettings(ImmutableMap.of("sonar.exclusions", "src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateProjectConfig(projectStoragePaths, originalProjectConfig, ImmutableMap.of("sonar.test.inclusions", "test/**"));
+    storeProjectSettings(ImmutableMap.of("sonar.test.inclusions", "test/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateProjectConfig(projectStoragePaths, originalProjectConfig, ImmutableMap.of("sonar.test.exclusions", "test/**"));
+    storeProjectSettings(ImmutableMap.of("sonar.test.exclusions", "test/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    updateProjectConfig(projectStoragePaths, originalProjectConfig, ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
+    storeProjectSettings(ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(1);
   }
 
-  private void updateProjectConfig(ProjectStoragePaths projectStoragePaths, Sonarlint.ProjectConfiguration originalProjectConfig, Map<String, String> props) {
-    Builder newBuilder = Sonarlint.ProjectConfiguration.newBuilder(originalProjectConfig);
-    newBuilder.putAllProperties(props);
-    ProtobufUtil.writeToFile(newBuilder.build(), projectStoragePaths.getProjectConfigurationPath(PROJECT_KEY));
+  private void storeProjectSettings(Map<String, String> settings) {
+    projectStorage.setSettings(settings);
   }
 
   private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) {

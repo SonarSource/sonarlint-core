@@ -28,9 +28,6 @@ import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePat
 public class GlobalStores {
   private final ServerProjectsStore serverProjectsStore;
   private final RulesStore rulesStore;
-  private final ActiveRulesStore activeRulesStore;
-  private final GlobalSettingsStore globalSettingsStore;
-  private final QualityProfileStore qualityProfileStore;
   private final PluginReferenceStore pluginReferenceStore;
   private final ServerInfoStore serverInfoStore;
   private final StorageStatusStore storageStatusStore;
@@ -43,9 +40,6 @@ public class GlobalStores {
     globalStorage = new ServerStorage(globalStorageRoot);
     this.serverProjectsStore = new ServerProjectsStore(globalStorage);
     this.rulesStore = new RulesStore(globalStorage);
-    this.activeRulesStore = new ActiveRulesStore(globalStorage);
-    this.globalSettingsStore = new GlobalSettingsStore(globalStorage);
-    this.qualityProfileStore = new QualityProfileStore(globalStorage);
     this.pluginReferenceStore = new PluginReferenceStore(globalStorage);
     this.serverInfoStore = new ServerInfoStore(globalStorage);
     this.storageStatusStore = new StorageStatusStore(globalStorage);
@@ -61,18 +55,6 @@ public class GlobalStores {
 
   public RulesStore getRulesStore() {
     return rulesStore;
-  }
-
-  public ActiveRulesStore getActiveRulesStore() {
-    return activeRulesStore;
-  }
-
-  public GlobalSettingsStore getGlobalSettingsStore() {
-    return globalSettingsStore;
-  }
-
-  public QualityProfileStore getQualityProfileStore() {
-    return qualityProfileStore;
   }
 
   public PluginReferenceStore getPluginReferenceStore() {

@@ -40,6 +40,10 @@ public class InstalledPlugin {
     return hash;
   }
 
+  public boolean hasSameHash(InstalledPlugin installedPlugin) {
+    return getHash().equals(installedPlugin.getHash());
+  }
+
   public String getFilename() {
     return filename;
   }
