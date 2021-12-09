@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import org.sonar.api.utils.Version;
 
-public class MetadataLoader {
+public class ApiVersions {
 
   static final String SONAR_PLUGIN_API_VERSION_FILE_PATH = "/sonar-api-version.txt";
   private static final String SONARLINT_PLUGIN_API_VERSION_FILE_PATH = "/sonarlint-api-version.txt";
 
-  private MetadataLoader() {
+  private ApiVersions() {
     // only static methods
   }
 
@@ -42,7 +42,7 @@ public class MetadataLoader {
   }
 
   private static Version loadVersion(String versionFilePath) {
-    return loadVersion(MetadataLoader.class.getResource(versionFilePath), versionFilePath);
+    return loadVersion(ApiVersions.class.getResource(versionFilePath), versionFilePath);
   }
 
   static Version loadVersion(URL versionFileURL, String versionFilePath) {
