@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvid
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
-import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
@@ -62,6 +61,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 
 public class StandaloneGlobalContainer extends ComponentContainer {
 
@@ -77,8 +77,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
-    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
+    Version sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
+    Version sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
 
     add(
       globalConfig,
