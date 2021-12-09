@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {

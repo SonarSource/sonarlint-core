@@ -34,10 +34,10 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.SonarPluginManifest.RequiredPlugin;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 
 public class PluginInfosLoader {
 
@@ -49,11 +49,11 @@ public class PluginInfosLoader {
 
   private final PluginCache pluginCache;
   private final PluginIndex pluginIndex;
-  private final PluginVersionChecker pluginVersionChecker;
+  private final PluginsMinVersions pluginVersionChecker;
   private final System2 system2;
   private final AbstractGlobalConfiguration globalConfiguration;
 
-  public PluginInfosLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration,
+  public PluginInfosLoader(PluginsMinVersions pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration,
     System2 system2) {
     this.pluginVersionChecker = pluginVersionChecker;
     this.pluginCache = pluginCache;

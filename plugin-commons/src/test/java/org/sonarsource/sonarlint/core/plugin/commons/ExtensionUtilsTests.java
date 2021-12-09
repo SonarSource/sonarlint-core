@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,9 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonar.api.BatchComponent;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
@@ -29,24 +29,24 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ExtensionUtilsTest {
+class ExtensionUtilsTests {
 
   @Test
-  public void shouldBeBatchInstantiationStrategy() {
+  void shouldBeBatchInstantiationStrategy() {
     assertThat(ExtensionUtils.isInstantiationStrategy(DefaultScannerService.class, InstantiationStrategy.PER_BATCH)).isFalse();
     assertThat(ExtensionUtils.isInstantiationStrategy(new DefaultScannerService(), InstantiationStrategy.PER_BATCH)).isFalse();
 
   }
 
   @Test
-  public void shouldBeProjectInstantiationStrategy() {
+  void shouldBeProjectInstantiationStrategy() {
     assertThat(ExtensionUtils.isInstantiationStrategy(DefaultScannerService.class, InstantiationStrategy.PER_PROJECT)).isTrue();
     assertThat(ExtensionUtils.isInstantiationStrategy(new DefaultScannerService(), InstantiationStrategy.PER_PROJECT)).isTrue();
 
   }
 
   @Test
-  public void testIsSonarLintSide() {
+  void testIsSonarLintSide() {
     assertThat(ExtensionUtils.isSonarLintSide(ScannerService.class)).isFalse();
     assertThat(ExtensionUtils.isSonarLintSide(DeprecatedBatchService.class)).isFalse();
 

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.validate;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class PluginVersionCheckerTests {
-  private PluginVersionChecker underTest;
+class PluginsMinVersionsTests {
+  private PluginsMinVersions underTest;
 
   @BeforeEach
   public void setUp() {
-    underTest = new PluginVersionChecker();
+    underTest = new PluginsMinVersions();
   }
 
   @Test
