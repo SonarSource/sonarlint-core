@@ -47,15 +47,12 @@
       <artifactId>sonarlint-issue-tracking</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- Declare a dependency to force Maven build order -->
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-slf4j-sonar-log</artifactId>
+      <artifactId>sonarlint-plugin-commons</artifactId>
       <version>${project.version}</version>
-      <!-- Use test dependency just to force build order -->
-      <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -210,36 +207,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.2.0</version>
         <executions>
-          <execution>
-            <id>copy-slf4j-sonar-log</id>
-            <phase>generate-resources</phase>
-             <goals>
-               <goal>unpack</goal>
-             </goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                   <groupId>${project.groupId}</groupId>
-                   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-                   <version>${project.version}</version>
-                   <type>jar</type>
-                   <overWrite>false</overWrite>
-                   <outputDirectory>${project.build.outputDirectory}/slf4j-sonar-log</outputDirectory>
-                   <includes>**/*.class</includes>
-                   <fileMappers>
-                     <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                       <pattern>\Q.class\E$</pattern>
-                       <replacement>.clazz</replacement>
-                     </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                   </fileMappers>
-                 </artifactItem>
-               </artifactItems>
-               <overWriteReleases>false</overWriteReleases>
-               <overWriteSnapshots>true</overWriteSnapshots>
-             </configuration>
-          </execution>
           <execution>
             <id>copy-sonar-plugins</id>
             <phase>generate-test-resources</phase>
@@ -337,6 +305,13 @@
                 <filter>
                   <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
                   <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- Shade the SonarLint Plugin Commons (avoids minimization) as it contains classes used at Runtime (like ProfileDefinition) -->
+                  <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-commons</artifact>
                   <includes>
                     <include>**</include>
                   </includes>

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package com.sonarsource.plugins.license.api;
+package org.sonar.api.utils.log;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+/**
+ * Overrides the behavior of loggers in the sonar API.
+ * Basically the factory always returns {@link SonarApiLogger}, which uses {@link SonarLintLogger} to delegate
+ * the logging to an {@link ClientLogOutput}.
+ * The LogOutput can be set dynamically at any time, for the executing thread.
+ */
+public class Loggers {
+  private static final SonarApiLogger logger = new SonarApiLogger();
+
+  public static Logger get(Class<?> name) {
+    return logger;
+  }
+
+  public static Logger get(String name) {
+    return logger;
+  }
+
+  private Loggers() {
+    // Only use get()
+  }
+
+}

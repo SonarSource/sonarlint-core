@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,17 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.api.profiles;
+package com.sonarsource.plugins.license.api;
 
-import org.sonar.api.utils.ValidationMessages;
+public class LicensedPluginRegistration {
 
-/**
- * This class was removed from the plugin API but still used in Cobol analyzer 4.4
- *
- */
-@Deprecated
-public abstract class ProfileDefinition {
+  private final String pluginKey;
 
-  public abstract RulesProfile createProfile(ValidationMessages validation);
+  private LicensedPluginRegistration(Builder builder) {
+    this.pluginKey = builder.pluginKey;
+  }
 
+  public String getPluginKey() {
+    return pluginKey;
+  }
+
+  public static LicensedPluginRegistration forPlugin(String pluginKey) {
+    return new Builder().setPluginKey(pluginKey).build();
+  }
+
+  public static final class Builder {
+    private String pluginKey;
+
+    public Builder setPluginKey(String s) {
+      this.pluginKey = s;
+      return this;
+    }
+
+    public LicensedPluginRegistration build() {
+      return new LicensedPluginRegistration(this);
+    }
+  }
 }
