@@ -24,7 +24,7 @@ import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 
 public class StandaloneSonarLintRulesProvider extends ProviderAdapter {

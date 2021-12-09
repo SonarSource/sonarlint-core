@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.ClientModuleFileEvent;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -51,6 +50,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;

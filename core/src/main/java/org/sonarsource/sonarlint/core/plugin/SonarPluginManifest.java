@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang.StringUtils;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.Version;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;

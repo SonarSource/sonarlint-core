@@ -24,7 +24,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.Plugin;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

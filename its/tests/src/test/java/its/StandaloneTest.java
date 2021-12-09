@@ -40,7 +40,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -49,6 +48,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;

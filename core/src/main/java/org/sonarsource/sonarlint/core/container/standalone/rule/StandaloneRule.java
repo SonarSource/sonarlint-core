@@ -32,9 +32,9 @@ import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 
 import static java.util.stream.Collectors.toList;

@@ -28,9 +28,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;

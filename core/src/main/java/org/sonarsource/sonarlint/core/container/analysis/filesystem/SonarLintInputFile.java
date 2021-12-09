@@ -37,8 +37,8 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.utils.PathUtils;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata.Metadata;
 
 public class SonarLintInputFile implements InputFile {

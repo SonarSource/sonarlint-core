@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.system;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;

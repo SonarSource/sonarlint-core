@@ -28,7 +28,7 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;

@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;

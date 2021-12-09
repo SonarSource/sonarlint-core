@@ -38,16 +38,16 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
+import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static java.util.Collections.singletonList;

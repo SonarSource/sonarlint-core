@@ -32,7 +32,7 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class NodeJsHelper {

@@ -39,10 +39,10 @@ import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
