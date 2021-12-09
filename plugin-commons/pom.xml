@@ -20,6 +20,11 @@
 			<artifactId>sonarlint-commons</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-plugin-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 		<dependency>
 			<groupId>org.sonarsource.sonarqube</groupId>
 			<artifactId>sonar-plugin-api</artifactId>

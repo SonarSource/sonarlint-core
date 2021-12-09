@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
 import java.net.URL;
 import org.junit.jupiter.api.Test;
@@ -26,10 +26,10 @@ import org.sonar.api.utils.Version;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-class MetadataLoaderTest {
+class ApiVersionsTests {
   @Test
   void can_load_sonar_plugin_api_version_from_embedded_resource() {
-    Version version = MetadataLoader.loadSonarPluginApiVersion();
+    Version version = ApiVersions.loadSonarPluginApiVersion();
 
     assertThat(version).isNotNull();
     assertThat(version.isGreaterThanOrEqual(Version.create(8, 5))).isTrue();
@@ -37,7 +37,7 @@ class MetadataLoaderTest {
 
   @Test
   void can_load_sonarlint_plugin_api_version_from_embedded_resource() {
-    Version version = MetadataLoader.loadSonarLintPluginApiVersion();
+    Version version = ApiVersions.loadSonarLintPluginApiVersion();
 
     assertThat(version).isNotNull();
     assertThat(version.isGreaterThanOrEqual(Version.create(5, 4))).isTrue();
@@ -45,14 +45,14 @@ class MetadataLoaderTest {
 
   @Test
   void should_throw_an_exception_if_resource_does_not_exist() {
-    Throwable throwable = catchThrowable(() -> MetadataLoader.loadVersion(null, "wrongPath"));
+    Throwable throwable = catchThrowable(() -> ApiVersions.loadVersion(null, "wrongPath"));
 
     assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
   }
 
   @Test
   void should_throw_an_exception_if_resource_can_not_be_loaded() {
-    Throwable throwable = catchThrowable(() -> MetadataLoader.loadVersion(new URL("file://wrong"), "wrongPath"));
+    Throwable throwable = catchThrowable(() -> ApiVersions.loadVersion(new URL("file://wrong"), "wrongPath"));
 
     assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
   }
