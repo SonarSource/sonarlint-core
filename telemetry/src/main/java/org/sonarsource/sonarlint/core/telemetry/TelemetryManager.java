@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.nio.file.Path;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
@@ -85,12 +86,12 @@ public class TelemetryManager {
     });
   }
 
-  public void analysisDoneOnSingleLanguage(@Nullable String languageKey, int analysisTimeMs) {
+  public void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
     storage.tryUpdateAtomically(data -> {
-      if (languageKey == null) {
+      if (language == null) {
         data.setUsedAnalysis("others", analysisTimeMs);
       } else {
-        data.setUsedAnalysis(languageKey, analysisTimeMs);
+        data.setUsedAnalysis(language.getLanguageKey(), analysisTimeMs);
       }
     });
   }

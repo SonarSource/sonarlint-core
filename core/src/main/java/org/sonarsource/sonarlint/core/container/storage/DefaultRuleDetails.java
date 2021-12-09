@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 @Immutable
 public class DefaultRuleDetails implements ConnectedRuleDetails {
