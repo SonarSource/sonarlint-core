@@ -30,6 +30,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.JUnitTempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -37,7 +38,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class PartialUpdaterTest {
-  private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
+  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   @Rule

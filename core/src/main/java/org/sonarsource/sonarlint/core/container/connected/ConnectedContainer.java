@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateR
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
@@ -67,7 +68,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
 
@@ -128,18 +128,18 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectStorageStatusReader.class);
   }
 
-  public List<SonarAnalyzer> update(ProgressWrapper progress) {
+  public List<SonarAnalyzer> update(ProgressMonitor progress) {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable GlobalStorageStatus globalStorageStatus, ProgressWrapper progress) {
+  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable GlobalStorageStatus globalStorageStatus, ProgressMonitor progress) {
     if (globalStorageStatus == null) {
       throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }
 
-  public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressMonitor progress) {
     try {
       return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(globalSettingsStore, qualityProfileStore, progress);
     } catch (Exception e) {
@@ -150,7 +150,7 @@ public class ConnectedContainer extends ComponentContainer {
     }
   }
 
-  public StorageUpdateCheckResult checkForUpdate(String projectKey, ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdate(String projectKey, ProgressMonitor progress) {
     ProjectStorageStatus moduleUpdateStatus = getComponentByType(ProjectStorageStatusReader.class).apply(projectKey);
     if (moduleUpdateStatus == null || moduleUpdateStatus.isStale()) {
       throw new StorageException(String.format("No data stored for project '%s' or invalid format. Please update the binding.", projectKey), false);

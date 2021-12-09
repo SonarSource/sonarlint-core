@@ -20,11 +20,10 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ProjectFileListDownloader {
   private final ComponentApi componentApi;
@@ -33,7 +32,7 @@ public class ProjectFileListDownloader {
     this.componentApi = new ServerApi(serverApiHelper).component();
   }
 
-  public List<String> get(String projectKey, ProgressWrapper progress) {
-    return componentApi.getAllFileKeys(projectKey, new ProgressWrapperAdapter(progress));
+  public List<String> get(String projectKey, ProgressMonitor progress) {
+    return componentApi.getAllFileKeys(projectKey, progress);
   }
 }

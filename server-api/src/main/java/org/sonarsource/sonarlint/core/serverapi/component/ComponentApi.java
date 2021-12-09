@@ -25,8 +25,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ComponentApi {
@@ -38,7 +38,7 @@ public class ComponentApi {
     this.helper = helper;
   }
 
-  public List<ComponentPath> getSubProjects(String componentKey, Progress progress) {
+  public List<ComponentPath> getSubProjects(String componentKey, ProgressMonitor progress) {
     List<ComponentPath> modules = new ArrayList<>();
 
     helper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(componentKey),
@@ -51,7 +51,7 @@ public class ComponentApi {
     return modules;
   }
 
-  public List<String> getAllFileKeys(String projectKey, Progress progress) {
+  public List<String> getAllFileKeys(String projectKey, ProgressMonitor progress) {
     String path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();
 
@@ -75,7 +75,7 @@ public class ComponentApi {
     return fetchComponent(projectKey).map(component -> new DefaultRemoteProject(component.getKey(), component.getName()));
   }
 
-  public List<ServerProject> getAllProjects(Progress progress) {
+  public List<ServerProject> getAllProjects(ProgressMonitor progress) {
     List<ServerProject> serverProjects = new ArrayList<>();
     helper.getPaginated(getAllProjectsUrl(),
       Components.SearchWsResponse::parseFrom,

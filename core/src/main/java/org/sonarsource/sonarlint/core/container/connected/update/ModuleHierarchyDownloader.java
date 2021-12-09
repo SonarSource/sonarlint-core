@@ -25,12 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.component.ComponentPath;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentPath;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
@@ -49,8 +48,8 @@ public class ModuleHierarchyDownloader {
    * @param projectKey project for which the hierarchy will be returned.
    * @return Mapping of moduleKey -&gt; relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
-    List<ComponentPath> modules = componentApi.getSubProjects(projectKey, new ProgressWrapperAdapter(progress));
+  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressMonitor progress) {
+    List<ComponentPath> modules = componentApi.getSubProjects(projectKey, progress);
 
     // doesn't include root
     Map<String, ComponentPath> modulesByKey = modules.stream().collect(Collectors.toMap(ComponentPath::getKey, Function.identity()));

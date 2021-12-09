@@ -35,8 +35,8 @@ import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class RulesApi {
@@ -71,7 +71,7 @@ public class RulesApi {
     }
   }
 
-  public ServerRules getAll(Set<String> enabledLanguageKeys, Progress progress) {
+  public ServerRules getAll(Set<String> enabledLanguageKeys, ProgressMonitor progress) {
     Map<String, ServerRules.Rule> rulesByKey = new HashMap<>();
     Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey = new HashMap<>();
 
@@ -86,7 +86,7 @@ public class RulesApi {
     return new ServerRules(new ArrayList<>(rulesByKey.values()), activeRulesByQProfileKey);
   }
 
-  public List<ServerRules.ActiveRule> getAllActiveRules(String qualityProfileKey, Progress progress) {
+  public List<ServerRules.ActiveRule> getAllActiveRules(String qualityProfileKey, ProgressMonitor progress) {
     List<ServerRules.ActiveRule> activeRules = new ArrayList<>();
     var page = 0;
     var loaded = 0;
@@ -113,7 +113,7 @@ public class RulesApi {
   }
 
   private void fetchRulesAndActiveRules(Map<String, ServerRules.Rule> rulesByKey, String severity, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey,
-    Set<String> enabledLanguageKeys, Progress progress) {
+    Set<String> enabledLanguageKeys, ProgressMonitor progress) {
     var page = 0;
     var pageSize = 500;
     var loaded = 0;

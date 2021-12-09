@@ -23,14 +23,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.storage.ActiveRulesStore;
 import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
-import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class RulesDownloader {
   private final RulesApi rulesApi;
@@ -45,8 +43,8 @@ public class RulesDownloader {
     this.activeRulesStore = activeRulesStore;
   }
 
-  public void fetchRules(ProgressWrapper progress) {
-    var serverRules = rulesApi.getAll(enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.toSet()), new ProgressWrapperAdapter(progress));
+  public void fetchRules(ProgressMonitor progress) {
+    var serverRules = rulesApi.getAll(enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.toSet()), progress);
     activeRulesStore.store(serverRules.getActiveRulesByQualityProfileKey());
     rulesStore.store(serverRules.getAll());
   }

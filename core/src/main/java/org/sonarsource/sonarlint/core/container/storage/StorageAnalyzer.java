@@ -27,11 +27,11 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.container.connected.DefaultServer;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageAnalyzer {
   private final ProjectStorageStatusReader moduleUpdateStatusReader;
@@ -59,7 +59,7 @@ public class StorageAnalyzer {
   }
 
   public AnalysisResults analyze(ComponentContainer parent, ConnectedAnalysisConfiguration configuration, IssueListener issueListener, GlobalSettingsStore globalSettingsStore,
-    ProgressWrapper progress) {
+    ProgressMonitor progress) {
     checkStatus(configuration.projectKey());
 
     AnalysisContainer analysisContainer = new AnalysisContainer(parent, progress);

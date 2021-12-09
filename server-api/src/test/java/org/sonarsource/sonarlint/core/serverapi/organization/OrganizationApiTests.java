@@ -29,9 +29,9 @@ import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Organizations;
 import org.sonarqube.ws.Organizations.Organization;
 import org.sonarqube.ws.Organizations.SearchWsResponse;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.Progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyFloat;
@@ -54,7 +54,7 @@ class OrganizationApiTests {
       mockOrganizationsPage(i + 1, 10500);
     }
 
-    Progress progress = mock(Progress.class);
+    ProgressMonitor progress = mock(ProgressMonitor.class);
     when(progress.subProgress(anyFloat(), anyFloat(), anyString())).thenReturn(progress);
     List<ServerOrganization> orgs = underTest.listUserOrganizations(progress);
 

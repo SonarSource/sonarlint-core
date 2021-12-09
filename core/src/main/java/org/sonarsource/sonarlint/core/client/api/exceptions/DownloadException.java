@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 
 public class DownloadException extends SonarLintException {
   public DownloadException() {

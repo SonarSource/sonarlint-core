@@ -23,8 +23,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
-import org.sonarsource.sonarlint.core.util.Progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,7 +35,7 @@ class ComponentApiTest {
 
   private final static String PROJECT_KEY = "project1";
 
-  private final Progress progress = mock(Progress.class);
+  private final ProgressMonitor progress = mock(ProgressMonitor.class);
 
   private ComponentApi underTest;
 

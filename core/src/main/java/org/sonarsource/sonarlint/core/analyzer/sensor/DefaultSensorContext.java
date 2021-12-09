@@ -47,8 +47,8 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputProject;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class DefaultSensorContext implements SensorContext {
 
@@ -64,11 +64,11 @@ public class DefaultSensorContext implements SensorContext {
   private final SensorStorage sensorStorage;
   private final SonarLintInputProject project;
   private final SonarRuntime sqRuntime;
-  private final ProgressWrapper progress;
+  private final ProgressMonitor progress;
   private final Configuration config;
 
   public DefaultSensorContext(SonarLintInputProject project, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarRuntime sqRuntime, ProgressWrapper progress) {
+    SonarRuntime sqRuntime, ProgressMonitor progress) {
     this.project = project;
     this.settings = settings;
     this.config = config;

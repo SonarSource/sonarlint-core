@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,31 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.util;
+package org.sonarsource.sonarlint.core.commons.progress;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.AdditionalMatchers;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class ProgressWrapperTest {
-  private ProgressWrapper progress;
-  private ProgressMonitor monitor;
+class ProgressMonitorTests {
+  private ProgressMonitor progress;
+  private ClientProgressMonitor monitor;
 
-  @Before
-  public void setUp() {
-    monitor = mock(ProgressMonitor.class);
-    progress = new ProgressWrapper(monitor);
+  @BeforeEach
+  void setUp() {
+    monitor = mock(ClientProgressMonitor.class);
+    progress = new ProgressMonitor(monitor);
   }
 
   @Test
-  public void testMsg() {
+  void testMsg() {
     progress.setProgressAndCheckCancel("msg", 0.5f);
 
     verify(monitor).setMessage("msg");
@@ -52,21 +51,21 @@ public class ProgressWrapperTest {
   }
 
   @Test
-  public void testCancelSection() {
+  void testCancelSection() {
     Runnable r = mock(Runnable.class);
     progress.executeNonCancelableSection(r);
 
     verify(monitor).executeNonCancelableSection(r);
   }
 
-  @Test(expected = CanceledException.class)
-  public void testCancel() {
+  @Test
+  void testCancel() {
     when(monitor.isCanceled()).thenReturn(true);
-    progress.checkCancel();
+    assertThrows(CanceledException.class, () -> progress.checkCancel());
   }
 
   @Test
-  public void testProgress() {
+  void testProgress() {
     when(monitor.isCanceled()).thenReturn(false);
     progress.setProgress("msg", 0.5f);
     verify(monitor).setMessage("msg");
@@ -74,9 +73,9 @@ public class ProgressWrapperTest {
   }
 
   @Test
-  public void testProgressSubMonitor() {
+  void testProgressSubMonitor() {
     when(monitor.isCanceled()).thenReturn(false);
-    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
+    ProgressMonitor subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
     subProgress.setProgress("msg", 0.0f);
     verify(monitor).setMessage("prefix - msg");
     verify(monitor).setFraction(0.2f);
@@ -89,10 +88,10 @@ public class ProgressWrapperTest {
   }
 
   @Test
-  public void testProgressSubSubMonitor() {
+  void testProgressSubSubMonitor() {
     when(monitor.isCanceled()).thenReturn(false);
-    ProgressWrapper subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
-    ProgressWrapper subSubProgress = subProgress.subProgress(0.5f, 1.0f, "subprefix");
+    ProgressMonitor subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
+    ProgressMonitor subSubProgress = subProgress.subProgress(0.5f, 1.0f, "subprefix");
     subSubProgress.setProgress("msg", 0.0f);
     verify(monitor).setMessage("prefix - subprefix - msg");
     verify(monitor).setFraction(0.3f);
@@ -105,8 +104,8 @@ public class ProgressWrapperTest {
   }
 
   @Test
-  public void testNoMonitor() {
-    progress = new ProgressWrapper(null);
+  void testNoMonitor() {
+    progress = new ProgressMonitor(null);
     progress.checkCancel();
     progress.setProgressAndCheckCancel("msg", 0.5f);
   }

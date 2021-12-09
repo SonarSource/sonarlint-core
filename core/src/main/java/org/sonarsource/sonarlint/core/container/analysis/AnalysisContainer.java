@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
@@ -45,14 +46,13 @@ import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.Is
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class AnalysisContainer extends ComponentContainer {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ProgressWrapper progress;
+  private final ProgressMonitor progress;
 
-  public AnalysisContainer(ComponentContainer globalContainer, ProgressWrapper progress) {
+  public AnalysisContainer(ComponentContainer globalContainer, ProgressMonitor progress) {
     super(globalContainer);
     this.progress = progress;
   }

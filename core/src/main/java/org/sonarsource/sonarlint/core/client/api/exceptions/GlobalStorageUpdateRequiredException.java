@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
+
 public class GlobalStorageUpdateRequiredException extends SonarLintException {
 
   private final String serverId;
