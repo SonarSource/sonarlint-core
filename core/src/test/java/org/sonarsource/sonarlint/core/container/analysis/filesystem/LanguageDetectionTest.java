@@ -54,14 +54,14 @@ public class LanguageDetectionTest {
   public void search_by_file_extension() throws Exception {
     LanguageDetection detection = new LanguageDetection(new MapSettings().asConfig());
 
-    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
-    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
+    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
 
-    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.ABAP);
-    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(org.sonarsource.sonarlint.core.client.api.common.Language.ABAP);
+    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.ABAP);
+    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.ABAP);
 
     assertThat(detection.language(newInputFile("abc.truc"))).isNull();
     assertThat(detection.language(newInputFile("abap"))).isNull();
@@ -76,8 +76,8 @@ public class LanguageDetectionTest {
   @Test
   public void fail_if_conflicting_language_suffix() throws Exception {
     MapSettings settings = new MapSettings();
-    settings.setProperty(org.sonarsource.sonarlint.core.client.api.common.Language.XML.getFileSuffixesPropKey(), "xhtml");
-    settings.setProperty(org.sonarsource.sonarlint.core.client.api.common.Language.HTML.getFileSuffixesPropKey(), "xhtml");
+    settings.setProperty(org.sonarsource.sonarlint.core.commons.Language.XML.getFileSuffixesPropKey(), "xhtml");
+    settings.setProperty(org.sonarsource.sonarlint.core.commons.Language.HTML.getFileSuffixesPropKey(), "xhtml");
     LanguageDetection detection = new LanguageDetection(settings.asConfig());
     MessageException e = assertThrows(MessageException.class, () -> detection.language(newInputFile("abc.xhtml")));
     assertThat(e.getMessage())

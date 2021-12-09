@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Properties;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.Version;
 
 public class PluginVersionChecker {
   public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";

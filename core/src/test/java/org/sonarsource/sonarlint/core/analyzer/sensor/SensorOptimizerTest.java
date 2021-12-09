@@ -31,7 +31,7 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.TestInputFileBuilder;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.global.DefaultActiveRules;

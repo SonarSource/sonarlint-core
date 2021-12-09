@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -272,7 +273,7 @@ class TelemetryManagerTests {
     TelemetryLocalStorage data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleLanguage("java", 1000);
+    manager.analysisDoneOnSingleLanguage(Language.JAVA, 1000);
 
     TelemetryLocalStorage reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isEqualTo(data.enabled());
@@ -355,7 +356,7 @@ class TelemetryManagerTests {
     createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleLanguage("java", 10);
+    manager.analysisDoneOnSingleLanguage(Language.JAVA, 10);
     manager.showHotspotRequestReceived();
     manager.devNotificationsClicked(FOO_EVENT);
     manager.taintVulnerabilitiesInvestigatedLocally();

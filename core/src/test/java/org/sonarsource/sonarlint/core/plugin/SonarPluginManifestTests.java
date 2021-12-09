@@ -25,7 +25,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.SonarPluginManifest.RequiredPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;

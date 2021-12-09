@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 import org.sonar.api.batch.rule.ActiveRules;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.client.api.common.SkipReason.LanguagesNotE
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedDependency;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
