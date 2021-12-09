@@ -24,6 +24,7 @@ import java.util.List;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -32,7 +33,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerI
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PartialUpdater {
   private final IssueStoreFactory issueStoreFactory;
@@ -51,7 +51,7 @@ public class PartialUpdater {
   }
 
   public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
-    ProgressWrapper progress) {
+    ProgressMonitor progress) {
     Path serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
@@ -68,7 +68,7 @@ public class PartialUpdater {
     issueStore.save(issues);
   }
 
-  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
     new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
   }
 }

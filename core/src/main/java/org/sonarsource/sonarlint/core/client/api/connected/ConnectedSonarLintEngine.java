@@ -26,16 +26,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
@@ -75,12 +75,12 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Trigger an analysis
    */
-  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ProgressMonitor monitor);
+  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Gets locally stored server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
@@ -129,7 +129,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
-  Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor);
+  Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Update current server.
@@ -138,14 +138,14 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws CanceledException          if the update task was cancelled
    * @since 2.0
    */
-  UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor);
+  UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Update given project.
    *
    * @since 2.0
    */
-  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -154,7 +154,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException             if it fails to download
    * @since 2.6
    */
-  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Check server to see if project storage need updates.
@@ -163,28 +163,28 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @throws DownloadException if it fails to download
    * @since 2.6
    */
-  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
+  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
   List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+    boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Downloads and stores server issues for a given project.
    *
    * @param endpoint from which to download issues
-   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

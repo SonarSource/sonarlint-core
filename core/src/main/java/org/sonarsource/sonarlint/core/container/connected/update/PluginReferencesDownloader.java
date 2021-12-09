@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -34,7 +35,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginRef
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PluginReferencesDownloader {
 
@@ -90,7 +90,7 @@ public class PluginReferencesDownloader {
     return true;
   }
 
-  public void fetchPlugins(List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
+  public void fetchPlugins(List<SonarAnalyzer> analyzers, ProgressMonitor progress) {
     PluginReferences refs = toReferences(analyzers);
     int i = 0;
     float refCount = refs.getReferenceList().size();

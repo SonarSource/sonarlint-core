@@ -34,6 +34,7 @@ import org.sonarqube.ws.Rules;
 import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -43,7 +44,6 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 
 class GlobalStorageUpdateExecutorTests {
 
-  private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
+  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
@@ -117,7 +117,7 @@ class GlobalStorageUpdateExecutorTests {
   void dontCopyOnError() throws IOException {
     Files.createDirectories(destDir);
     Files.createFile(destDir.resolve("test"));
-    ProgressWrapper mockProgress = mock(ProgressWrapper.class);
+    ProgressMonitor mockProgress = mock(ProgressMonitor.class);
     when(mockProgress.subProgress(anyFloat(), anyFloat(), anyString())).thenReturn(mockProgress);
     doThrow(new IllegalStateException("Boom")).when(mockProgress).executeNonCancelableSection(any());
     Throwable throwable = catchThrowable(() -> globalUpdate.update(mockProgress));

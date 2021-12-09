@@ -40,6 +40,7 @@ import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.InMemoryIssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -60,7 +61,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +74,7 @@ import static org.mockito.Mockito.when;
 
 class ProjectStorageUpdateExecutorTests {
 
-  private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
+  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
   private static final String ORGA_KEY = "myOrga";
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
   private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH);
@@ -121,7 +121,7 @@ class ProjectStorageUpdateExecutorTests {
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
-    when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressWrapper.class)))
+    when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressMonitor.class)))
       .thenReturn(modulesPath);
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
@@ -233,14 +233,14 @@ class ProjectStorageUpdateExecutorTests {
       .build();
 
     IssueDownloader issueDownloader = mock(IssueDownloader.class);
-    when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), eq(null), any(ProgressWrapper.class)))
+    when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), eq(null), any(ProgressMonitor.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater, qualityProfileStore);
     underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
-    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressWrapper.class));
+    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressMonitor.class));
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -263,8 +263,8 @@ class ProjectStorageUpdateExecutorTests {
     fileList.add("moduleA:a.java");
     fileList.add("moduleB:b.java");
 
-    when(projectFileListDownloader.get(eq("rootModule"), any(ProgressWrapper.class))).thenReturn(fileList);
-    underTest.updateComponents("rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressWrapper.class));
+    when(projectFileListDownloader.get(eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
+    underTest.updateComponents("rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressMonitor.class));
 
     Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(

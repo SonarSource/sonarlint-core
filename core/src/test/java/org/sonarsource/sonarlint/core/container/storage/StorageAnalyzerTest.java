@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -64,7 +64,7 @@ class StorageAnalyzerTest {
   void testNoGlobalStorage() {
     when(globalReader.read()).thenReturn(null);
 
-    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressWrapper(null)));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressMonitor(null)));
 
     assertThat(exception)
       .isInstanceOf(StorageException.class)
@@ -76,7 +76,7 @@ class StorageAnalyzerTest {
     when(globalReader.read()).thenReturn(mock(GlobalStorageStatus.class));
     when(moduleReader.apply("module1")).thenReturn(null);
 
-    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressWrapper(null)));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressMonitor(null)));
 
     assertThat(exception)
       .isInstanceOf(StorageException.class)
@@ -90,7 +90,7 @@ class StorageAnalyzerTest {
     when(moduleStatus.isStale()).thenReturn(true);
     when(moduleReader.apply("module1")).thenReturn(moduleStatus);
 
-    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressWrapper(null)));
+    Throwable exception = catchThrowable(() -> analyzer.analyze(mock(StorageContainer.class), config, mock(IssueListener.class), globalSettingsStore, new ProgressMonitor(null)));
 
     assertThat(exception)
       .isInstanceOf(StorageException.class)

@@ -23,9 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.sonarqube.ws.Organizations;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.util.Progress;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class OrganizationApi {
@@ -35,45 +35,45 @@ public class OrganizationApi {
     this.helper = helper;
   }
 
-  public List<ServerOrganization> listUserOrganizations(Progress progress) {
+  public List<ServerOrganization> listUserOrganizations(ProgressMonitor progress) {
     var serverChecker = new ServerVersionAndStatusChecker(helper);
     return listUserOrganizations(serverChecker, progress);
   }
 
-  public Optional<ServerOrganization> getOrganization(String organizationKey, Progress progress) {
+  public Optional<ServerOrganization> getOrganization(String organizationKey, ProgressMonitor progress) {
     var serverChecker = new ServerVersionAndStatusChecker(helper);
     return getOrganization(serverChecker, organizationKey, progress);
   }
 
-  private Optional<ServerOrganization> getOrganization(ServerVersionAndStatusChecker serverChecker, String organizationKey, Progress progress) {
+  private Optional<ServerOrganization> getOrganization(ServerVersionAndStatusChecker serverChecker, String organizationKey, ProgressMonitor progress) {
     checkServer(serverChecker, progress);
     return fetchOrganization(organizationKey, progress.subProgress(0.2f, 1.0f, "Fetch organization"));
   }
 
-  private List<ServerOrganization> listUserOrganizations(ServerVersionAndStatusChecker serverChecker, Progress progress) {
+  private List<ServerOrganization> listUserOrganizations(ServerVersionAndStatusChecker serverChecker, ProgressMonitor progress) {
     checkServer(serverChecker, progress);
     return fetchUserOrganizations(progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
   }
 
-  private static void checkServer(ServerVersionAndStatusChecker serverChecker, Progress progress) {
+  private static void checkServer(ServerVersionAndStatusChecker serverChecker, ProgressMonitor progress) {
     progress.setProgressAndCheckCancel("Check server version", 0.1f);
     serverChecker.checkVersionAndStatus();
     progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
   }
 
-  public Optional<ServerOrganization> fetchOrganization(String organizationKey, Progress progress) {
+  public Optional<ServerOrganization> fetchOrganization(String organizationKey, ProgressMonitor progress) {
     String url = "api/organizations/search.protobuf?organizations=" + StringUtils.urlEncode(organizationKey);
     return getPaginatedOrganizations(url, progress)
       .stream()
       .findFirst();
   }
 
-  private List<ServerOrganization> fetchUserOrganizations(Progress progress) {
+  private List<ServerOrganization> fetchUserOrganizations(ProgressMonitor progress) {
     var url = "api/organizations/search.protobuf?member=true";
     return getPaginatedOrganizations(url, progress);
   }
 
-  private List<ServerOrganization> getPaginatedOrganizations(String url, Progress progress) {
+  private List<ServerOrganization> getPaginatedOrganizations(String url, ProgressMonitor progress) {
     List<ServerOrganization> result = new ArrayList<>();
 
     helper.getPaginated(url,

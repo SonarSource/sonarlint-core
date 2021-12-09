@@ -25,10 +25,10 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ProjectStorageUpdateChecker {
 
@@ -42,7 +42,7 @@ public class ProjectStorageUpdateChecker {
     this.projectConfigurationDownloader = projectConfigurationDownloader;
   }
 
-  public StorageUpdateCheckResult checkForUpdates(String projectKey, ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdates(String projectKey, ProgressMonitor progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
 
     ProjectConfiguration serverProjectConfiguration = projectConfigurationDownloader

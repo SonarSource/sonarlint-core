@@ -31,11 +31,11 @@ import org.sonarqube.ws.Common.Paging;
 import org.sonarqube.ws.Common.TextRange;
 import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ class IssueDownloaderTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
-  private static final ProgressWrapper PROGRESS = new ProgressWrapper(null);
+  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   private final Sonarlint.ProjectConfiguration projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder().build();
   private final IssueStorePaths issueStorePaths = new IssueStorePaths();

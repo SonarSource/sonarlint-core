@@ -33,7 +33,7 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.Arrays.asList;
@@ -46,15 +46,15 @@ public class SensorsExecutor {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SensorOptimizer sensorOptimizer;
-  private final ProgressWrapper progress;
+  private final ProgressMonitor progress;
   private final Sensor[] sensors;
   private final DefaultSensorContext context;
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressWrapper progress) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress) {
     this(context, sensorOptimizer, progress, new Sensor[0]);
   }
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressWrapper progress, Sensor[] sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Sensor[] sensors) {
     this.context = context;
     this.sensors = sensors;
     this.sensorOptimizer = sensorOptimizer;

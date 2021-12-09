@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.exceptions;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.commons.progress;
 
-import javax.annotation.Nullable;
-
-public class SonarLintException extends RuntimeException {
-
-  public SonarLintException() {
-    super();
-  }
-
-  public SonarLintException(String msg) {
-    super(msg);
-  }
-
-  public SonarLintException(String msg, @Nullable Throwable cause) {
-    super(msg, cause);
-  }
-
-  public SonarLintException(String msg, @Nullable Throwable cause, boolean withStackTrace) {
-    super(msg, cause, !withStackTrace, withStackTrace);
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

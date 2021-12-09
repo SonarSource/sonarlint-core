@@ -21,13 +21,12 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.List;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ProjectListDownloader {
   private final ComponentApi componentApi;
@@ -38,8 +37,8 @@ public class ProjectListDownloader {
     this.store = store;
   }
 
-  public Map<String, ServerProject> fetch(ProgressWrapper progress) {
-    List<ServerProject> allProjects = componentApi.getAllProjects(new ProgressWrapperAdapter(progress));
+  public Map<String, ServerProject> fetch(ProgressMonitor progress) {
+    List<ServerProject> allProjects = componentApi.getAllProjects(progress);
     store.store(allProjects);
     return store.getAll();
   }

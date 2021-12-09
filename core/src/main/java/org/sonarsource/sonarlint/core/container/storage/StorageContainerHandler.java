@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
@@ -45,7 +46,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
@@ -75,7 +75,7 @@ public class StorageContainerHandler {
   }
 
   public AnalysisResults analyze(ComponentContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
-    ProgressWrapper progress) {
+    ProgressMonitor progress) {
     return storageAnalyzer.analyze(container, configuration, issueListener, globalSettingsStore, progress);
   }
 
@@ -113,14 +113,14 @@ public class StorageContainerHandler {
   }
 
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
     var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
     updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
     var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
     updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, progress);

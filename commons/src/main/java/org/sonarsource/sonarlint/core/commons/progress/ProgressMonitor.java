@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,51 +17,49 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.util;
+package org.sonarsource.sonarlint.core.commons.progress;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 
-public class ProgressWrapper {
+public class ProgressMonitor {
 
-  private final ProgressMonitor handler;
+  private final ClientProgressMonitor clientMonitor;
   private final float offset;
   private final float factor;
   private final String msgPrefix;
 
-  private ProgressWrapper(float offset, float factor, @Nullable String msgPrefix, @Nullable ProgressMonitor handler) {
+  private ProgressMonitor(float offset, float factor, @Nullable String msgPrefix, @Nullable ClientProgressMonitor clientMonitor) {
     this.offset = offset;
     this.factor = factor;
     this.msgPrefix = msgPrefix;
-    if (handler == null) {
-      this.handler = new NoOpProgressMonitor();
+    if (clientMonitor == null) {
+      this.clientMonitor = new NoOpProgressMonitor();
     } else {
-      this.handler = handler;
+      this.clientMonitor = clientMonitor;
     }
   }
 
-  public ProgressWrapper(@Nullable ProgressMonitor handler) {
-    this(0.0f, 1.0f, null, handler);
+  public ProgressMonitor(@Nullable ClientProgressMonitor clientMonitor) {
+    this(0.0f, 1.0f, null, clientMonitor);
   }
 
-  public ProgressWrapper subProgress(float fromFraction, float toFraction, String msgPrefix) {
-    return new ProgressWrapper(offset + fromFraction * factor, (toFraction - fromFraction) * factor, prependPrefix(msgPrefix), handler);
+  public ProgressMonitor subProgress(float fromFraction, float toFraction, String msgPrefix) {
+    return new ProgressMonitor(offset + fromFraction * factor, (toFraction - fromFraction) * factor, prependPrefix(msgPrefix), clientMonitor);
   }
 
   public void checkCancel() {
-    if (handler.isCanceled()) {
-      handler.setMessage("Cancelling");
+    if (clientMonitor.isCanceled()) {
+      clientMonitor.setMessage("Cancelling");
       throw new CanceledException();
     }
   }
 
   public boolean isCanceled() {
-    return handler.isCanceled();
+    return clientMonitor.isCanceled();
   }
 
   public void setProgress(String msg, float fraction) {
-    handler.setMessage(prependPrefix(msg));
+    clientMonitor.setMessage(prependPrefix(msg));
     setFraction(fraction);
   }
 
@@ -75,14 +73,29 @@ public class ProgressWrapper {
   }
 
   private void setFraction(float fraction) {
-    handler.setFraction(offset + fraction * factor);
+    clientMonitor.setFraction(offset + fraction * factor);
   }
 
   public void executeNonCancelableSection(Runnable r) {
-    handler.executeNonCancelableSection(r);
+    clientMonitor.executeNonCancelableSection(r);
   }
 
-  private static class NoOpProgressMonitor extends ProgressMonitor {
+  private static class NoOpProgressMonitor implements ClientProgressMonitor {
+
+    @Override
+    public void setMessage(String msg) {
+      // no-op
+    }
+
+    @Override
+    public void setFraction(float fraction) {
+      // no-op
+    }
+
+    @Override
+    public void setIndeterminate(boolean indeterminate) {
+      // no-op
+    }
 
   }
 }

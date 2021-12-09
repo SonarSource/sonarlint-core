@@ -21,15 +21,14 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.container.connected.ProgressWrapperAdapter;
-import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationChecker;
-import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
+import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectionValidator {
   private final ServerApiHelper helper;
@@ -47,7 +46,7 @@ public class ConnectionValidator {
         Optional<String> organizationKey = helper.getOrganizationKey();
         if (validateCredentials.success() && organizationKey.isPresent()) {
           Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(),
-            new ProgressWrapperAdapter(new ProgressWrapper(null)));
+            new ProgressMonitor(null));
           if (organization.isEmpty()) {
             return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
           }
