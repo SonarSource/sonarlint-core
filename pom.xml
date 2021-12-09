@@ -30,6 +30,7 @@
     <module>slf4j-sonar-log</module>
     <module>server-api</module>
     <module>telemetry</module>
+    <module>plugin-commons</module>
   </modules>
 
   <properties>

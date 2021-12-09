@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.sonarsource.plugins.license.api;
+package org.sonar.api.profiles;
 
-import org.junit.Test;
+import org.sonar.api.utils.ValidationMessages;
 
-import static org.assertj.core.api.Assertions.assertThat;
+/**
+ * This class was removed from the plugin API but still used in Cobol analyzer 4.4
+ *
+ */
+@Deprecated
+public abstract class ProfileDefinition {
 
-public class LicensedPluginRegistrationTest {
-
-  @Test
-  public void testBuilder() {
-    LicensedPluginRegistration underTest = LicensedPluginRegistration.forPlugin("xoo");
-    assertThat(underTest.getPluginKey()).isEqualTo("xoo");
-  }
+  public abstract RulesProfile createProfile(ValidationMessages validation);
 
 }
