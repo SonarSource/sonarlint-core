@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 import static java.util.stream.Collectors.toList;
 

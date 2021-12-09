@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,9 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+package org.sonarsource.sonarlint.core.plugin.commons.pico;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,22 +28,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-public class PicoComponentKeysTest {
+class PicoComponentKeysTests {
 
   PicoComponentKeys keys = new PicoComponentKeys();
 
   @Test
-  public void generate_key_of_class() {
+  void generate_key_of_class() {
     assertThat(keys.of(FakeComponent.class)).isEqualTo(FakeComponent.class);
   }
 
   @Test
-  public void generate_key_of_object() {
-    assertThat(keys.of(new FakeComponent())).isEqualTo("org.sonarsource.sonarlint.core.container.PicoComponentKeysTest.FakeComponent-fake");
+  void generate_key_of_object() {
+    assertThat(keys.of(new FakeComponent())).isEqualTo("org.sonarsource.sonarlint.core.plugin.commons.pico.PicoComponentKeysTests.FakeComponent-fake");
   }
 
   @Test
-  public void should_log_warning_if_toString_is_not_overridden() {
+  void should_log_warning_if_toString_is_not_overridden() {
     SonarLintLogger log = mock(SonarLintLogger.class);
     keys.of(new Object(), log);
     verifyNoInteractions(log);
@@ -54,7 +54,7 @@ public class PicoComponentKeysTest {
   }
 
   @Test
-  public void should_generate_unique_key_when_toString_is_not_overridden() {
+  void should_generate_unique_key_when_toString_is_not_overridden() {
     Object key = keys.of(new WrongToStringImpl());
     assertThat(key).isNotEqualTo(WrongToStringImpl.KEY);
 

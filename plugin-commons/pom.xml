@@ -30,6 +30,11 @@
 			<artifactId>sonar-plugin-api</artifactId>
 			<version>${sonarqube.version}</version>
 		</dependency>
+    <dependency>
+      <groupId>org.picocontainer</groupId>
+      <artifactId>picocontainer</artifactId>
+      <version>2.15</version>
+    </dependency>
 
 		<!-- Declare a dependency to force Maven build order -->
 		<dependency>

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,9 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+package org.sonarsource.sonarlint.core.plugin.commons.pico;
 
-import com.google.common.collect.Iterables;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -31,14 +30,14 @@ import org.picocontainer.DefaultPicoContainer;
 import org.picocontainer.LifecycleStrategy;
 import org.picocontainer.MutablePicoContainer;
 import org.picocontainer.PicoContainer;
+import org.picocontainer.PicoLifecycleException;
 import org.picocontainer.behaviors.OptInCaching;
 import org.picocontainer.lifecycle.ReflectionLifecycleStrategy;
 import org.picocontainer.monitors.NullComponentMonitor;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
-import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
-public class ComponentContainer implements ContainerPopulator.Container {
+public class ComponentContainer {
 
   private static final class ExtendedDefaultPicoContainer extends DefaultPicoContainer {
     private ExtendedDefaultPicoContainer(ComponentFactory componentFactory, LifecycleStrategy lifecycleStrategy, PicoContainer parent) {
@@ -123,8 +122,30 @@ public class ComponentContainer implements ContainerPopulator.Container {
       pico.start();
       doAfterStart();
       return this;
-    } catch (Exception e) {
-      throw PicoUtils.propagate(e);
+    } catch (RuntimeException e) {
+      throw unwrapPicoException(e);
+    }
+  }
+
+  static RuntimeException unwrapPicoException(RuntimeException e) {
+    if (e instanceof PicoLifecycleException) {
+      Throwable cause = e.getCause();
+      if (cause != null) {
+        if ("wrapper".equals(cause.getMessage()) && cause.getCause() != null) {
+          return unchecked(cause.getCause());
+        } else {
+          return unchecked(cause);
+        }
+      }
+    }
+    return e;
+  }
+
+  private static RuntimeException unchecked(Throwable t) {
+    if (t instanceof RuntimeException) {
+      return (RuntimeException) t;
+    } else {
+      return new RuntimeException(t);
     }
   }
 
@@ -157,7 +178,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
 
     } catch (RuntimeException e) {
       if (!swallowException) {
-        throw PicoUtils.propagate(e);
+        throw unwrapPicoException(e);
       }
     } finally {
       if (parent != null) {
@@ -174,13 +195,12 @@ public class ComponentContainer implements ContainerPopulator.Container {
   /**
    * @since 3.5
    */
-  @Override
   public ComponentContainer add(Object... objects) {
     for (Object object : objects) {
       if (object instanceof ComponentAdapter) {
         addPicoAdapter((ComponentAdapter) object);
       } else if (object instanceof Iterable) {
-        add(Iterables.toArray((Iterable) object, Object.class));
+        ((Iterable) object).forEach(this::add);
       } else {
         addSingleton(object);
       }
@@ -194,7 +214,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     }
   }
 
-  @Override
   public ComponentContainer addSingletons(Iterable<?> components) {
     for (Object component : components) {
       addSingleton(component);
@@ -212,19 +231,19 @@ public class ComponentContainer implements ContainerPopulator.Container {
       } catch (Throwable t) {
         throw new IllegalStateException("Unable to register component " + getName(component), t);
       }
-      declareExtension(null, component);
+      declareProperties(component);
     }
     return this;
   }
 
-  public ComponentContainer addExtension(@Nullable PluginInfo pluginInfo, Object extension) {
+  public ComponentContainer addExtension(@Nullable String pluginKey, Object extension) {
     Object key = componentKeys.of(extension);
     try {
       pico.as(Characteristics.CACHE).addComponent(key, extension);
     } catch (Throwable t) {
-      throw new IllegalStateException("Unable to register extension " + getName(extension), t);
+      throw new IllegalStateException("Unable to register extension " + getName(extension) + (pluginKey != null ? (" from plugin '" + pluginKey + "'") : ""), t);
     }
-    declareExtension(pluginInfo, extension);
+    declareProperties(extension);
     return this;
   }
 
@@ -235,8 +254,8 @@ public class ComponentContainer implements ContainerPopulator.Container {
     return getName(extension.getClass());
   }
 
-  public void declareExtension(@Nullable PluginInfo pluginInfo, Object extension) {
-    propertyDefinitions.addComponent(extension, pluginInfo != null ? pluginInfo.getName() : "");
+  protected void declareProperties(Object extension) {
+    propertyDefinitions.addComponent(extension, "");
   }
 
   public ComponentContainer addPicoAdapter(ComponentAdapter<?> adapter) {
@@ -244,7 +263,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
     return this;
   }
 
-  @Override
   public <T> T getComponentByType(Class<T> type) {
     return pico.getComponent(type);
   }

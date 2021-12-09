@@ -61,8 +61,8 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;
+import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static java.util.Collections.singleton;
