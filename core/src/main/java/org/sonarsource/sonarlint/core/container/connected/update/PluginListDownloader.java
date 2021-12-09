@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.plugins.InstalledPlugin;
@@ -39,10 +39,10 @@ public class PluginListDownloader {
 
   private final PluginsApi pluginsApi;
 
-  private final PluginVersionChecker pluginVersionChecker;
+  private final PluginsMinVersions pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, ServerApiHelper serverApiHelper, PluginVersionChecker pluginVersionChecker) {
+  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, ServerApiHelper serverApiHelper, PluginsMinVersions pluginVersionChecker) {
     this.pluginsApi = new ServerApi(serverApiHelper).plugins();
     this.pluginVersionChecker = pluginVersionChecker;
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();

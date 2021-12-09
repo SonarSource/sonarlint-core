@@ -53,7 +53,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.check.QualityPr
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
@@ -63,6 +62,7 @@ import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
@@ -96,7 +96,7 @@ public class ConnectedContainer extends ComponentContainer {
       globalStores.getQualityProfileStore(),
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
-      PluginVersionChecker.class,
+      PluginsMinVersions.class,
       new ServerApiHelper(endpoint, client),
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,

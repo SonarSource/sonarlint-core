@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvider;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
@@ -57,6 +56,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -105,7 +105,7 @@ public class StorageContainer extends ComponentContainer {
       // plugins
       PluginRepository.class,
       PluginInfosLoader.class,
-      PluginVersionChecker.class,
+      PluginsMinVersions.class,
       PluginInstancesLoader.class,
       PluginClassloaderFactory.class,
       StoragePluginIndexProvider.class,
