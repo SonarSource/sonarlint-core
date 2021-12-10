@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.model;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
 public class DefaultLoadedAnalyzer implements PluginDetails {
   private final String key;

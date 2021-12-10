@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Optional;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
 public interface PluginDetails {
   String key();
