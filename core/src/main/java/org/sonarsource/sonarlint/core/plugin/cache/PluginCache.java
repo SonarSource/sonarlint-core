@@ -31,7 +31,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 
 /**
  * This class is responsible for managing Sonar batch file cache. You can put file into cache and
@@ -162,7 +161,7 @@ public class PluginCache {
       String hash = org.sonarsource.sonarlint.core.util.StringUtils.md5(is);
       String filename = StringUtils.substringAfterLast(pluginUrl.getFile(), "/");
       get(filename, hash, new FileCopier(pluginUrl));
-      return new PluginReference(hash, filename, true);
+      return new PluginReference(hash, filename);
     } catch (StorageException e) {
       throw e;
     } catch (Exception e) {

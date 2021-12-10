@@ -19,19 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
@@ -49,17 +50,15 @@ import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
-import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
@@ -77,18 +76,24 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
-    Version sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+    var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
+    var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+
+    Path cacheDir = globalConfig.getSonarLintUserHome().resolve("plugins");
+    var fileCache = PluginCache.create(cacheDir);
+
+    var plugins = globalConfig.getPluginUrls().stream()
+      .map(fileCache::getFromCacheOrCopy)
+      .map(r -> fileCache.get(r.getFilename(), r.getHash()))
+      .map(p -> new PluginLocation(p, true))
+      .collect(Collectors.toList());
+
+    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
+    var pluginInstancesRepository = new PluginInstancesRepository(config);
 
     add(
       globalConfig,
-      new StandalonePluginUrls(globalConfig.getPluginUrls()),
-      StandalonePluginIndex.class,
-      PluginRepository.class,
-      PluginsMinVersions.class,
-      PluginInfosLoader.class,
-      PluginInstancesLoader.class,
-      PluginClassloaderFactory.class,
+      pluginInstancesRepository,
       GlobalSettings.class,
       NodeJsHelper.class,
       new GlobalConfigurationProvider(),
@@ -98,14 +103,13 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
       new GlobalTempFolderProvider(),
       UriReader.class,
-      new PluginCacheProvider(),
       Clock.systemDefaultZone(),
       System2.INSTANCE);
   }
 
   @Override
   protected void doAfterStart() {
-    installPlugins();
+    declarePluginProperties();
     loadRulesAndActiveRulesFromPlugins();
     globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
@@ -128,12 +132,9 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return this;
   }
 
-  private void installPlugins() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
-      Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      addExtension(pluginInfo.getKey(), instance);
-    }
+  private void declarePluginProperties() {
+    PluginInstancesRepository pluginRepository = getComponentByType(PluginInstancesRepository.class);
+    pluginRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 
   private void loadRulesAndActiveRulesFromPlugins() {
@@ -164,8 +165,9 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   public Collection<PluginDetails> getPluginDetails() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
-    return pluginRepository.getPluginDetails();
+    PluginInstancesRepository pluginRepository = getComponentByType(PluginInstancesRepository.class);
+    return pluginRepository.getPluginCheckResultByKeys().values().stream().map(p -> new DefaultLoadedAnalyzer(p.getPlugin().getKey(), p.getPlugin().getName(),
+      Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
   }
 
   @CheckForNull

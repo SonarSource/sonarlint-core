@@ -28,9 +28,9 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
@@ -40,9 +40,9 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
   private final Set<Language> enabledLanguages;
 
-  private final PluginRepository pluginRepository;
+  private final PluginInstancesRepository pluginRepository;
 
-  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration,
+  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, PluginInstancesRepository pluginRepository, Configuration bootConfiguration,
     AbstractGlobalConfiguration globalConfig) {
     super(sonarRuntime, bootConfiguration);
     this.pluginRepository = pluginRepository;
@@ -51,7 +51,8 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
   public void installEmbeddedOnly(ComponentContainer container, ContainerLifespan lifespan) {
     super.install(container, pluginRepository.getPluginInstancesByKeys(), (pluginKey, extension) -> {
-      return pluginRepository.getPluginInfo(pluginKey).isEmbedded() && lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension);
+      return pluginRepository.getPluginCheckResultByKeys().get(pluginKey).getPlugin().isEmbedded() && lifespan.equals(getSonarLintSideLifespan(extension))
+        && onlySonarSourceSensor(pluginKey, extension);
     });
   }
 

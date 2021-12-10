@@ -83,6 +83,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private final ProjectStorage projectStorage;
   private final LocalStorageSynchronizer storageSynchronizer;
 
+  private boolean containerStarted;
+
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
@@ -140,6 +142,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     storageContainer = new StorageContainer(globalConfig, this.globalStores, projectStorage, globalStatusReader);
     try {
       storageContainer.startComponents();
+      containerStarted = true;
       var globalStorageStatus = globalStatusReader.read();
       if (globalStorageStatus == null) {
         changeState(State.NEVER_UPDATED);
@@ -188,6 +191,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     storageSynchronizer.synchronize(serverApi, projectKeys, new ProgressMonitor(monitor));
   }
 
+  @Override
   public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     setLogging(null);
@@ -317,13 +321,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     setLogging(null);
     rwl.writeLock().lock();
     try {
-      if (storageContainer == null) {
-        return;
-      }
       if (deleteStorage) {
         globalStores.deleteAll();
       }
-      storageContainer.stopComponents(false);
+      if (storageContainer != null && containerStarted) {
+        storageContainer.stopComponents(false);
+      }
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {

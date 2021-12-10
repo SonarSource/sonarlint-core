@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import java.net.URL;
-import java.util.List;
+import java.nio.file.Path;
 
-public class StandalonePluginUrls {
-  private final List<URL> pluginUrls;
+public class PluginLocation {
 
-  public StandalonePluginUrls(List<URL> pluginUrls) {
-    this.pluginUrls = pluginUrls;
+  private final Path jarPath;
+  private final boolean isEmbedded;
+
+  public PluginLocation(Path jarPath, boolean isEmbedded) {
+    this.jarPath = jarPath;
+    this.isEmbedded = isEmbedded;
   }
-  
-  public List<URL> urls() {
-    return pluginUrls;
+
+  public Path getJarPath() {
+    return jarPath;
   }
+
+  public boolean isEmbedded() {
+    return isEmbedded;
+  }
+
 }

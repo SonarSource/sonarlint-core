@@ -17,31 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone;
+package org.sonarsource.sonarlint.core.plugin.cache;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.plugin.PluginIndex;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+public class PluginReference {
+  private final String hash;
+  private final String filename;
 
-/**
- * Provides the list of plugins provided by the client.
- * The plugins are cached before being used.
- */
-public class StandalonePluginIndex implements PluginIndex {
-  private final StandalonePluginUrls pluginUrls;
-  private final PluginCache fileCache;
-
-  public StandalonePluginIndex(StandalonePluginUrls pluginUrls, PluginCache fileCache) {
-    this.pluginUrls = pluginUrls;
-    this.fileCache = fileCache;
+  public PluginReference(String hash, String filename) {
+    this.hash = hash;
+    this.filename = filename;
   }
 
-  @Override
-  public List<PluginReference> references() {
-    return pluginUrls.urls().stream()
-      .map(fileCache::getFromCacheOrCopy)
-      .collect(Collectors.toList());
+  public String getHash() {
+    return hash;
   }
 
+  public String getFilename() {
+    return filename;
+  }
 }
