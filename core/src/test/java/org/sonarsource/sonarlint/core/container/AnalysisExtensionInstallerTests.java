@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.container.global.MapSettings;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
@@ -61,12 +61,12 @@ class AnalysisExtensionInstallerTests {
   private static final long FAKE_PID = 123L;
   private static final SonarLintRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0), PLUGIN_API_VERSION, FAKE_PID);
   private AnalysisExtensionInstaller underTest;
-  private PluginRepository pluginRepository;
+  private PluginInstancesRepository pluginRepository;
   private ComponentContainer container;
 
   @BeforeEach
   public void prepare() {
-    pluginRepository = mock(PluginRepository.class);
+    pluginRepository = mock(PluginInstancesRepository.class);
     container = mock(ComponentContainer.class);
     underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder().build());
   }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,35 +17,35 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import java.util.List;
+import java.util.Optional;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
-public interface PluginIndex {
+public class PluginRequirementsCheckResult {
 
-  List<PluginReference> references();
+  private final PluginInfo plugin;
 
-  class PluginReference {
-    private final String hash;
-    private final String filename;
-    private final boolean embedded;
+  @CheckForNull
+  private final SkipReason skipReason;
 
-    public PluginReference(String hash, String filename, boolean embedded) {
-      this.hash = hash;
-      this.filename = filename;
-      this.embedded = embedded;
-    }
-
-    public String getHash() {
-      return hash;
-    }
-
-    public String getFilename() {
-      return filename;
-    }
-
-    public boolean isEmbedded() {
-      return embedded;
-    }
+  public PluginRequirementsCheckResult(PluginInfo plugin, @Nullable SkipReason skipReason) {
+    this.plugin = plugin;
+    this.skipReason = skipReason;
   }
+
+  public PluginInfo getPlugin() {
+    return plugin;
+  }
+
+  public Optional<SkipReason> getSkipReason() {
+    return Optional.ofNullable(skipReason);
+  }
+
+  public boolean isSkipped() {
+    return skipReason != null;
+  }
+
 }

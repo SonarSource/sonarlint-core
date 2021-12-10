@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -64,13 +65,17 @@ public class PluginInstancesLoader {
   private final PluginClassloaderFactory classloaderFactory;
   private final ClassLoader baseClassLoader;
 
-  public PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
+  public PluginInstancesLoader() {
+    this(new PluginClassloaderFactory());
+  }
+
+  PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
     this.classloaderFactory = classloaderFactory;
     this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
   }
 
-  public Map<String, Plugin> load(Map<String, PluginInfo> infoByKeys) {
-    Collection<PluginClassLoaderDef> defs = defineClassloaders(infoByKeys);
+  public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
+    Collection<PluginClassLoaderDef> defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
     Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader, defs);
     return instantiatePluginClasses(classloaders);
   }
@@ -79,11 +84,11 @@ public class PluginInstancesLoader {
    * Defines the different classloaders to be created. Number of classloaders can be
    * different than number of plugins.
    */
-  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> infoByKeys) {
+  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
-    for (PluginInfo info : infoByKeys.values()) {
-      String baseKey = basePluginKey(info, infoByKeys);
+    for (PluginInfo info : pluginsByKey.values()) {
+      String baseKey = basePluginKey(info, pluginsByKey);
       if (baseKey == null) {
         continue;
       }

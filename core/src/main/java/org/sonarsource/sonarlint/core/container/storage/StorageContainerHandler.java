@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -34,10 +35,12 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -46,7 +49,7 @@ import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
   private final ProjectStorage projectStorage;
-  private final PluginRepository pluginRepository;
+  private final PluginInstancesRepository pluginRepository;
   private final ProjectStorageStatusReader projectStorageStatusReader;
   private final StorageReader storageReader;
   private final StorageFileExclusions storageExclusions;
@@ -54,7 +57,7 @@ public class StorageContainerHandler {
   private final PartialUpdaterFactory partialUpdaterFactory;
 
   public StorageContainerHandler(StorageAnalyzer storageAnalyzer, ProjectStorage projectStorage,
-    PluginRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader,
+    PluginInstancesRepository pluginRepository, ProjectStorageStatusReader projectStorageStatusReader,
     StorageReader storageReader, StorageFileExclusions storageExclusions, IssueStoreReader issueStoreReader, PartialUpdaterFactory partialUpdaterFactory) {
     this.storageAnalyzer = storageAnalyzer;
     this.projectStorage = projectStorage;
@@ -72,7 +75,8 @@ public class StorageContainerHandler {
   }
 
   public Collection<PluginDetails> getPluginDetails() {
-    return pluginRepository.getPluginDetails();
+    return pluginRepository.getPluginCheckResultByKeys().values().stream().map(p -> new DefaultLoadedAnalyzer(p.getPlugin().getKey(), p.getPlugin().getName(),
+      Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
   }
 
   public ProjectStorageStatus getProjectStorageStatus(String projectKey) {

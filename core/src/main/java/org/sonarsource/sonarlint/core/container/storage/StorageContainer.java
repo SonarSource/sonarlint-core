@@ -19,9 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import java.net.URL;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.picocontainer.injectors.ProviderAdapter;
@@ -33,6 +39,7 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
@@ -47,14 +54,11 @@ import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
-import org.sonarsource.sonarlint.core.plugin.PluginInfosLoader;
-import org.sonarsource.sonarlint.core.plugin.PluginRepository;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -85,7 +89,45 @@ public class StorageContainer extends ComponentContainer {
   protected void doBeforeStart() {
     var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
     var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+
+    Path cacheDir = globalConfig.getSonarLintUserHome().resolve("plugins");
+    var fileCache = PluginCache.create(cacheDir);
+
+    var pluginReferenceStore = globalStores.getPluginReferenceStore();
+    List<PluginLocation> plugins = new ArrayList<>();
+    Map<String, URL> extraPluginsUrlsByKey = globalConfig.getExtraPluginsUrlsByKey();
+    Map<String, URL> embeddedPluginsUrlsByKey = globalConfig.getEmbeddedPluginUrlsByKey();
+
+    Sonarlint.PluginReferences protoReferences;
+    try {
+      protoReferences = pluginReferenceStore.getAll();
+    } catch (StorageException e) {
+      LOG.debug("Unable to read plugins references from storage", e);
+      protoReferences = Sonarlint.PluginReferences.newBuilder().build();
+    }
+    protoReferences.getReferenceList().forEach(r -> {
+      if (embeddedPluginsUrlsByKey.containsKey(r.getKey())) {
+        var ref = fileCache.getFromCacheOrCopy(embeddedPluginsUrlsByKey.get(r.getKey()));
+        var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), r.getHash()), "Error reading plugin from cache");
+        plugins.add(new PluginLocation(jarPath, true));
+      } else {
+        var jarPath = fileCache.get(r.getFilename(), r.getHash());
+        if (jarPath == null) {
+          throw new StorageException("The plugin " + r.getFilename() + " was not found in the local storage.");
+        }
+        plugins.add(new PluginLocation(jarPath, false));
+      }
+    });
+    extraPluginsUrlsByKey.values().stream().map(fileCache::getFromCacheOrCopy).forEach(r -> {
+      var jarPath = fileCache.get(r.getFilename(), r.getHash());
+      plugins.add(new PluginLocation(jarPath, true));
+    });
+
+    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
+    var pluginInstancesRepository = new PluginInstancesRepository(config);
+
     add(
+      pluginInstancesRepository,
       globalConfig,
       globalStores,
       globalStores.getGlobalStorage(),
@@ -103,15 +145,6 @@ public class StorageContainer extends ComponentContainer {
       StorageReader.class,
       IssueStorePaths.class,
       new GlobalTempFolderProvider(),
-
-      // plugins
-      PluginRepository.class,
-      PluginInfosLoader.class,
-      PluginsMinVersions.class,
-      PluginInstancesLoader.class,
-      PluginClassloaderFactory.class,
-      StoragePluginIndexProvider.class,
-      new PluginCacheProvider(),
 
       // storage readers
       IssueStoreReader.class,
@@ -138,22 +171,21 @@ public class StorageContainer extends ComponentContainer {
 
   @Override
   protected void doAfterStart() {
-    ConnectedGlobalConfiguration config = getComponentByType(ConnectedGlobalConfiguration.class);
     GlobalStorageStatus updateStatus = globalUpdateStatusReader.read();
 
     SonarLintRules rulesFromStorage = null;
     if (updateStatus != null) {
       rulesFromStorage = getComponentByType(SonarLintRules.class);
-      LOG.info("Using storage for connection '{}' (last update {})", config.getConnectionId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
-      installPlugins();
+      LOG.info("Using storage for connection '{}' (last update {})", globalConfig.getConnectionId(), DATE_FORMAT.format(updateStatus.getLastUpdateDate()));
+      declarePluginProperties();
       loadRulesFromPlugins();
     } else {
-      LOG.warn("No storage for connection '{}'. Please update.", config.getConnectionId());
+      LOG.warn("No storage for connection '{}'. Please update.", globalConfig.getConnectionId());
     }
 
     this.globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, config.getModulesProvider());
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfig.getModulesProvider());
     if (rulesFromStorage != null) {
       SonarLintRules mergedRules = merge(rulesFromPlugins, rulesFromStorage);
       this.globalExtensionContainer.add(new MergedSonarLintRulesProvider(mergedRules));
@@ -188,12 +220,9 @@ public class StorageContainer extends ComponentContainer {
     return this;
   }
 
-  protected void installPlugins() {
-    var pluginRepository = getComponentByType(PluginRepository.class);
-    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
-      var instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      addExtension(pluginInfo.getKey(), instance);
-    }
+  private void declarePluginProperties() {
+    var pluginInstancesRepository = getComponentByType(PluginInstancesRepository.class);
+    pluginInstancesRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 
   public GlobalExtensionContainer getGlobalExtensionContainer() {

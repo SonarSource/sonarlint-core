@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest.RequiredPlugin;
 
 import static java.util.Objects.requireNonNull;
@@ -62,9 +61,6 @@ public class PluginInfo {
 
   @CheckForNull
   private Version nodeJsMinVersion;
-
-  @CheckForNull
-  private SkipReason skipReason;
 
   private boolean embedded;
 
@@ -127,14 +123,6 @@ public class PluginInfo {
     return nodeJsMinVersion;
   }
 
-  public Optional<SkipReason> getSkipReason() {
-    return Optional.ofNullable(skipReason);
-  }
-
-  public boolean isSkipped() {
-    return skipReason != null;
-  }
-
   public List<String> getDependencies() {
     return dependencies;
   }
@@ -180,10 +168,6 @@ public class PluginInfo {
   private PluginInfo setMinimalNodeJsVersion(@Nullable Version nodeJsMinVersion) {
     this.nodeJsMinVersion = nodeJsMinVersion;
     return this;
-  }
-
-  public void setSkipReason(@Nullable SkipReason skipReason) {
-    this.skipReason = skipReason;
   }
 
   public void setEmbedded(boolean embedded) {
