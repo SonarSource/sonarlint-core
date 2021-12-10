@@ -27,6 +27,7 @@ import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 
 import static java.util.Objects.requireNonNull;
 
