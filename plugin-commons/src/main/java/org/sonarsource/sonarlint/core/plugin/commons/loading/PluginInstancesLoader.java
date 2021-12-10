@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.Closeable;
 import java.io.File;
@@ -35,14 +35,11 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.sonar.api.Plugin;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.Slf4jBridgeClassLoader;
 
-import static org.apache.commons.lang.StringUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 /**
  * Loads the plugin JAR files by creating the appropriate classloaders and by instantiating
@@ -184,7 +181,7 @@ public class PluginInstancesLoader {
           instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance());
         } catch (UnsupportedClassVersionError e) {
           throw new IllegalStateException(String.format("The plugin [%s] does not support Java %s",
-            pluginKey, SystemUtils.JAVA_VERSION_TRIMMED), e);
+            pluginKey, SystemUtils.JAVA_RUNTIME_VERSION), e);
         } catch (Throwable e) {
           throw new IllegalStateException(String.format(
             "Fail to instantiate class [%s] of plugin [%s]", mainClass, pluginKey), e);
@@ -201,7 +198,7 @@ public class PluginInstancesLoader {
         try {
           ((Closeable) classLoader).close();
         } catch (Exception e) {
-          Loggers.get(getClass()).error("Fail to close classloader " + classLoader.toString(), e);
+          LOG.error("Fail to close classloader " + classLoader.toString(), e);
         }
       }
     }

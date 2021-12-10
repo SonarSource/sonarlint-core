@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,12 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
-import org.apache.commons.lang.StringUtils;
-import org.junit.Test;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
@@ -39,7 +42,7 @@ public class PluginClassloaderFactoryTest {
   private final PluginClassloaderFactory factory = new PluginClassloaderFactory();
 
   @Test
-  public void create_isolated_classloader() {
+  void create_isolated_classloader() {
     PluginClassLoaderDef def = basePluginDef();
     Map<PluginClassLoaderDef, ClassLoader> map = factory.create(getClass().getClassLoader(), asList(def));
 
@@ -60,7 +63,7 @@ public class PluginClassloaderFactoryTest {
   }
 
   @Test
-  public void classloader_exports_resources_to_other_classloaders() {
+  void classloader_exports_resources_to_other_classloaders() {
     PluginClassLoaderDef baseDef = basePluginDef();
     PluginClassLoaderDef dependentDef = dependentPluginDef();
     Map<PluginClassLoaderDef, ClassLoader> map = factory.create(getClass().getClassLoader(), asList(baseDef, dependentDef));
@@ -95,15 +98,15 @@ public class PluginClassloaderFactoryTest {
 
   private static File fakePluginJar(String path) {
     // Maven way
-    File file = new File("src/test/projects/" + path);
-    if (!file.exists()) {
+    Path file = Paths.get("src/test/projects/" + path);
+    if (!Files.exists(file)) {
       // Intellij way
-      file = new File("sonar-core/src/test/projects/" + path);
-      if (!file.exists()) {
+      file = Paths.get("sonar-core/src/test/projects/" + path);
+      if (!Files.exists(file)) {
         throw new IllegalArgumentException("Fake projects are not built: " + path);
       }
     }
-    return file;
+    return file.toFile();
   }
 
   private static boolean canLoadClass(ClassLoader classloader, String classname) {
