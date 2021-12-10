@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import org.junit.Test;
-import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
