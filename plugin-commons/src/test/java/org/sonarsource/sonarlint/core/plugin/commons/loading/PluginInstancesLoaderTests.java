@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,12 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -30,60 +30,52 @@ import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.data.MapEntry;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class PluginInstancesLoaderTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class PluginInstancesLoaderTests {
 
   PluginClassloaderFactory classloaderFactory = mock(PluginClassloaderFactory.class);
   PluginInstancesLoader loader = new PluginInstancesLoader(classloaderFactory);
 
   @Test
-  public void instantiate_plugin_entry_point() {
+  void instantiate_plugin_entry_point() {
     PluginClassLoaderDef def = new PluginClassLoaderDef("fake");
     def.addMainClass("fake", FakePlugin.class.getName());
 
-    Map<String, Plugin> instances = loader.instantiatePluginClasses(ImmutableMap.of(def, getClass().getClassLoader()));
+    Map<String, Plugin> instances = loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader()));
     assertThat(instances).containsOnlyKeys("fake");
     assertThat(instances.get("fake")).isInstanceOf(FakePlugin.class);
   }
 
   @Test
-  public void plugin_entry_point_must_be_no_arg_public() {
+  void plugin_entry_point_must_be_no_arg_public() {
     PluginClassLoaderDef def = new PluginClassLoaderDef("fake");
     def.addMainClass("fake", IncorrectPlugin.class.getName());
 
-    try {
-      loader.instantiatePluginClasses(ImmutableMap.of(def, getClass().getClassLoader()));
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e).hasMessage("Fail to instantiate class [org.sonarsource.sonarlint.core.plugin.PluginInstancesLoaderTest$IncorrectPlugin] of plugin [fake]");
-    }
+    IllegalStateException expected = assertThrows(IllegalStateException.class, () -> loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader())));
+    assertThat(expected)
+      .hasMessage("Fail to instantiate class [org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoaderTests$IncorrectPlugin] of plugin [fake]");
   }
 
   @Test
-  public void define_classloader() throws Exception {
-    File jarFile = temp.newFile();
+  void define_classloader(@TempDir Path tmp) throws Exception {
+    File jarFile = tmp.resolve("fakePlugin.jar").toFile();
     PluginInfo info = new PluginInfo("foo")
       .setJarFile(jarFile)
       .setMainClass("org.foo.FooPlugin")
       .setMinimalSqVersion(Version.create("5.2"));
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("foo", info));
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of("foo", info));
 
     assertThat(defs).hasSize(1);
     PluginClassLoaderDef def = defs.iterator().next();
@@ -95,14 +87,14 @@ public class PluginInstancesLoaderTest {
   }
 
   @Test
-  public void extract_dependencies() throws Exception {
+  void extract_dependencies() throws Exception {
     File jarFile = getFile("sonar-checkstyle-plugin-2.8.jar");
     PluginInfo info = new PluginInfo("checkstyle")
       .setJarFile(jarFile)
       .setMainClass("org.foo.FooPlugin")
       .setDependencies(List.of("META-INF/lib/commons-cli-1.0.jar", "META-INF/lib/checkstyle-5.1.jar", "META-INF/lib/antlr-2.7.6.jar"));
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of("checkstyle", info));
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of("checkstyle", info));
 
     assertThat(defs).hasSize(1);
     PluginClassLoaderDef def = defs.iterator().next();
@@ -125,10 +117,10 @@ public class PluginInstancesLoaderTest {
    * A plugin (the "base" plugin) can be extended by other plugins. In this case they share the same classloader.
    */
   @Test
-  public void test_plugins_sharing_the_same_classloader() throws Exception {
-    File baseJarFile = temp.newFile();
-    File extensionJar1 = temp.newFile();
-    File extensionJar2 = temp.newFile();
+  void test_plugins_sharing_the_same_classloader(@TempDir Path tmp) throws Exception {
+    File baseJarFile = tmp.resolve("fakeBasePlugin.jar").toFile();
+    File extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
+    File extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
     PluginInfo base = new PluginInfo("foo")
       .setJarFile(baseJarFile)
       .setMainClass("org.foo.FooPlugin");
@@ -143,7 +135,7 @@ public class PluginInstancesLoaderTest {
       .setMainClass("org.foo.Extension2Plugin")
       .setBasePlugin("foo");
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of(
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of(
       base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2));
 
     assertThat(defs).hasSize(1);
@@ -160,9 +152,9 @@ public class PluginInstancesLoaderTest {
 
   // SLCORE-222
   @Test
-  public void skip_plugins_when_base_plugin_missing() throws Exception {
-    File extensionJar1 = temp.newFile();
-    File extensionJar2 = temp.newFile();
+  void skip_plugins_when_base_plugin_missing(@TempDir Path tmp) throws Exception {
+    File extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
+    File extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
 
     PluginInfo extension1 = new PluginInfo("fooExtension1")
       .setJarFile(extensionJar1)
@@ -172,7 +164,7 @@ public class PluginInstancesLoaderTest {
       .setMainClass("org.foo.Extension2Plugin")
       .setBasePlugin("foo");
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(ImmutableMap.of(
+    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of(
       extension1.getKey(), extension1, extension2.getKey(), extension2));
 
     assertThat(defs).hasSize(1);

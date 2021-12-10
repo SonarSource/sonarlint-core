@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PluginClassLoaderDefTest {
+class PluginClassLoaderDefTests {
 
   @Test
-  public void test_equals_and_hashCode() {
+  void test_equals_and_hashCode() {
     PluginClassLoaderDef one = new PluginClassLoaderDef("one");
     PluginClassLoaderDef oneBis = new PluginClassLoaderDef("one");
     PluginClassLoaderDef two = new PluginClassLoaderDef("two");
 
     assertThat(one.equals(one)).isTrue();
     assertThat(one.equals(oneBis)).isTrue();
-    assertThat(one.hashCode()).isEqualTo(one.hashCode());
-    assertThat(one.hashCode()).isEqualTo(oneBis.hashCode());
+    assertThat(one)
+      .hasSameHashCodeAs(one)
+      .hasSameHashCodeAs(oneBis);
 
     assertThat(one.equals(two)).isFalse();
     assertThat(one.equals("one")).isFalse();

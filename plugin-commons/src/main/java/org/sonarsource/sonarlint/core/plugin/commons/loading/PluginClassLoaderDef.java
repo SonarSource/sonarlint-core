@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,9 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import com.google.common.base.Preconditions;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,7 +28,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonar.classloader.Mask;
 
-import static org.apache.commons.lang.StringUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 /**
  * Temporary information about the classLoader to be created for a plugin (or a group of plugins).
@@ -43,7 +42,6 @@ class PluginClassLoaderDef {
   private boolean selfFirstStrategy = false;
 
   PluginClassLoaderDef(String basePluginKey) {
-    Preconditions.checkArgument(isNotEmpty(basePluginKey));
     this.basePluginKey = basePluginKey;
   }
 
