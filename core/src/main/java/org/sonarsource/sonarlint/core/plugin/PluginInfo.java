@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -36,11 +34,12 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.plugin.SonarPluginManifest.RequiredPlugin;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest.RequiredPlugin;
 
 import static java.util.Objects.requireNonNull;
 
-public class PluginInfo implements Comparable<PluginInfo> {
+public class PluginInfo {
 
   private static final Joiner SLASH_JOINER = Joiner.on(" / ").skipNulls();
 
@@ -255,14 +254,6 @@ public class PluginInfo implements Comparable<PluginInfo> {
     int result = key.hashCode();
     result = 31 * result + (version != null ? version.hashCode() : 0);
     return result;
-  }
-
-  @Override
-  public int compareTo(PluginInfo that) {
-    return ComparisonChain.start()
-      .compare(this.name, that.name)
-      .compare(this.version, that.version, Ordering.natural().nullsFirst())
-      .result();
   }
 
   public static PluginInfo create(Path jarFile, boolean isEmbedded) {

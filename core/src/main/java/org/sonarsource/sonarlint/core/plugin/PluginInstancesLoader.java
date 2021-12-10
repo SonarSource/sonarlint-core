@@ -39,6 +39,7 @@ import org.apache.commons.lang.SystemUtils;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.Slf4jBridgeClassLoader;
 
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
