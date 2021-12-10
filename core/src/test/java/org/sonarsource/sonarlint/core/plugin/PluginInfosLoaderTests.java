@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest;
 
 import static java.util.Arrays.asList;

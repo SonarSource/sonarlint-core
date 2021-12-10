@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,10 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -29,19 +27,15 @@ import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.utils.MessageException;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest.RequiredPlugin;
 
 import static java.util.Objects.requireNonNull;
 
 public class PluginInfo {
-
-  private static final Joiner SLASH_JOINER = Joiner.on(" / ").skipNulls();
 
   private final String key;
   private String name;
@@ -146,7 +140,7 @@ public class PluginInfo {
   }
 
   public PluginInfo setName(@Nullable String name) {
-    this.name = MoreObjects.firstNonNull(name, this.key);
+    this.name = Optional.ofNullable(name).orElse(this.key);
     return this;
   }
 
@@ -169,13 +163,7 @@ public class PluginInfo {
   }
 
   public PluginInfo setBasePlugin(@Nullable String s) {
-    if ("l10nen".equals(s)) {
-      Loggers.get(PluginInfo.class).info("Plugin [{}] defines 'l10nen' as base plugin. " +
-        "This metadata can be removed from manifest of l10n plugins since version 5.2.", key);
-      basePlugin = null;
-    } else {
-      basePlugin = s;
-    }
+    this.basePlugin = s;
     return this;
   }
 
@@ -230,7 +218,7 @@ public class PluginInfo {
 
   @Override
   public String toString() {
-    return String.format("[%s]", SLASH_JOINER.join(key, version));
+    return "[" + key + " / " + version + "]";
   }
 
   @Override
