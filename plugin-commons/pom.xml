@@ -35,6 +35,10 @@
       <artifactId>picocontainer</artifactId>
       <version>2.15</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
 
 		<!-- Declare a dependency to force Maven build order -->
 		<dependency>
