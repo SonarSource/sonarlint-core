@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,8 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.plugin.commons.sonarapi;
 
+import java.util.Objects;
 import org.sonar.api.Plugin;
 import org.sonar.api.config.Configuration;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
@@ -29,7 +30,7 @@ public class PluginContextImpl extends Plugin.Context {
 
   private PluginContextImpl(Builder builder) {
     super(builder.sonarRuntime);
-    this.bootConfiguration = builder.bootConfiguration != null ? builder.bootConfiguration : new MapSettings().asConfig();
+    this.bootConfiguration = builder.bootConfiguration;
   }
 
   @Override
@@ -57,7 +58,7 @@ public class PluginContextImpl extends Plugin.Context {
     }
 
     /**
-     * If not set, then an empty configuration is used.
+     * Required.
      * @return this
      */
     public Builder setBootConfiguration(Configuration c) {
@@ -66,6 +67,7 @@ public class PluginContextImpl extends Plugin.Context {
     }
 
     public Plugin.Context build() {
+      Objects.requireNonNull(bootConfiguration, "bootConfiguration is mandatory");
       return new PluginContextImpl(this);
     }
   }
