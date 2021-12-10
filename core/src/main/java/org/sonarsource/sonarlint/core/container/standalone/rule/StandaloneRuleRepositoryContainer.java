@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import org.sonar.api.server.rule.RulesDefinition.Context;
+import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
-import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 import static java.util.stream.Collectors.toList;
@@ -49,7 +49,7 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).installEmbeddedOnly(this, ContainerLifespan.ANALYSIS);
+    getComponentByType(AnalysisExtensionInstaller.class).installEmbeddedOnly(this, ContainerLifespan.ANALYSIS);
   }
 
   @Override

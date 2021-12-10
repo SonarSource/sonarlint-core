@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.container.module;
 
 import org.sonarsource.sonarlint.core.client.api.common.ModuleFileEventNotifier;
+import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
-import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 public class ModuleContainer extends ComponentContainer {
@@ -40,8 +40,7 @@ public class ModuleContainer extends ComponentContainer {
       FileMetadata.class,
       LanguageDetection.class,
 
-      ModuleFileEventNotifier.class
-    );
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
+      ModuleFileEventNotifier.class);
+    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
   }
 }

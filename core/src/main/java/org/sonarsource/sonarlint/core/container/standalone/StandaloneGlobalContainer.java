@@ -42,8 +42,8 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
-import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalConfigurationProvider;
 import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
@@ -92,7 +92,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       GlobalSettings.class,
       NodeJsHelper.class,
       new GlobalConfigurationProvider(),
-      ExtensionInstaller.class,
+      AnalysisExtensionInstaller.class,
       new SonarQubeVersion(sonarPluginApiVersion),
       new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, globalConfig.getClientPid()),
 

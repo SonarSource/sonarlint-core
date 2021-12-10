@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.picocontainer.Startable;
@@ -50,10 +49,10 @@ public class PluginRepository implements Startable {
 
   @Override
   public void start() {
-    infosByKeys = new HashMap<>(pluginInfosLoader.load());
+    infosByKeys = Map.copyOf(pluginInfosLoader.load());
     Map<String, PluginInfo> nonSkippedPlugins = infosByKeys.entrySet().stream().filter(e -> !e.getValue().isSkipped())
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    pluginInstancesByKeys = new HashMap<>(pluginInstancesLoader.load(nonSkippedPlugins));
+    pluginInstancesByKeys = Map.copyOf(pluginInstancesLoader.load(nonSkippedPlugins));
 
     logPlugins(nonSkippedPlugins);
   }
@@ -74,8 +73,8 @@ public class PluginRepository implements Startable {
     // close plugin classloaders
     pluginInstancesLoader.unload(pluginInstancesByKeys.values());
 
-    pluginInstancesByKeys.clear();
-    infosByKeys.clear();
+    pluginInstancesByKeys = Map.of();
+    infosByKeys = Map.of();
   }
 
   public Collection<PluginDetails> getPluginDetails() {
@@ -100,12 +99,16 @@ public class PluginRepository implements Startable {
   }
 
   public Plugin getPluginInstance(String key) {
-    Plugin instance = pluginInstancesByKeys.get(key);
+    var instance = pluginInstancesByKeys.get(key);
     requireNonNull(instance, () -> "Plugin [" + key + "] does not exist");
     return instance;
   }
 
   public boolean hasPlugin(String key) {
     return infosByKeys.containsKey(key);
+  }
+
+  public Map<String, Plugin> getPluginInstancesByKeys() {
+    return pluginInstancesByKeys;
   }
 }
