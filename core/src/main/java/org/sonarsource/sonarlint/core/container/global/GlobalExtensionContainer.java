@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
-import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
-import org.sonarsource.sonarlint.core.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 /**

@@ -31,12 +31,14 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
@@ -85,7 +87,16 @@ public class StorageContainer extends ComponentContainer {
     var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
     var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
 
+    AnalysisEngineConfiguration analysisGlobalConfig = AnalysisEngineConfiguration.builder()
+      .addEnabledLanguages(globalConfig.getEnabledLanguages())
+      .setClientPid(globalConfig.getClientPid())
+      .setExtraProperties(globalConfig.extraProperties())
+      .setNodeJs(globalConfig.getNodeJsPath(), Optional.ofNullable(globalConfig.getNodeJsVersion()).map(v -> Version.create(v.toString())).orElse(null))
+      .setWorkDir(globalConfig.getWorkDir())
+      .build();
+
     add(
+      analysisGlobalConfig,
       pluginInstancesRepository,
       globalConfig,
       globalStores,

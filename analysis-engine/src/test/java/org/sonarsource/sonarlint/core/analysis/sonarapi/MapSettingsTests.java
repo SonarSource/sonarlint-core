@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Analysis Engine
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.global;
+package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.util.Random;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Offset;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.sonar.api.Properties;
 import org.sonar.api.Property;
 import org.sonar.api.PropertyType;
@@ -35,12 +34,11 @@ import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class MapSettingsTest {
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+class MapSettingsTests {
 
   private PropertyDefinitions definitions;
 
@@ -61,36 +59,30 @@ public class MapSettingsTest {
   private static class Init {
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
-
-  @Before
+  @BeforeEach
   public void init_definitions() {
     definitions = new PropertyDefinitions(System2.INSTANCE);
     definitions.addComponent(Init.class);
   }
 
   @Test
-  public void set_throws_NPE_if_key_is_null() {
+  void set_throws_NPE_if_key_is_null() {
     MapSettings underTest = new MapSettings();
 
-    expectKeyNullNPE();
+    expectKeyNullNPE(() -> underTest.set(null, randomAlphanumeric(3)));
 
-    underTest.set(null, randomAlphanumeric(3));
   }
 
   @Test
-  public void set_throws_NPE_if_value_is_null() {
+  void set_throws_NPE_if_value_is_null() {
     MapSettings underTest = new MapSettings();
 
-    expectedException.expect(NullPointerException.class);
-    expectedException.expectMessage("value can't be null");
-
-    underTest.set(randomAlphanumeric(3), null);
+    NullPointerException thrown = assertThrows(NullPointerException.class, () -> underTest.set(randomAlphanumeric(3), null));
+    assertThat(thrown).hasMessage("value can't be null");
   }
 
   @Test
-  public void set_accepts_empty_value_and_trims_it() {
+  void set_accepts_empty_value_and_trims_it() {
     MapSettings underTest = new MapSettings();
     Random random = new Random();
     String key = randomAlphanumeric(3);
@@ -101,29 +93,27 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void default_values_should_be_loaded_from_definitions() {
+  void default_values_should_be_loaded_from_definitions() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getDefaultValue("hello")).isEqualTo("world");
   }
 
   @Test
-  public void set_property_string_throws_NPE_if_key_is_null() {
+  void set_property_string_throws_NPE_if_key_is_null() {
     String key = randomAlphanumeric(3);
 
     MapSettings underTest = new MapSettings(new PropertyDefinitions(System2.INSTANCE, singletonList(PropertyDefinition.builder(key).multiValues(true).build())));
 
-    expectKeyNullNPE();
-
-    underTest.setProperty(null, "1,2");
+    expectKeyNullNPE(() -> underTest.setProperty(null, "1,2"));
   }
 
-  private void expectKeyNullNPE() {
-    expectedException.expect(NullPointerException.class);
-    expectedException.expectMessage("key can't be null");
+  private void expectKeyNullNPE(Executable exec) {
+    NullPointerException thrown = assertThrows(NullPointerException.class, exec);
+    assertThat(thrown).hasMessage("key can't be null");
   }
 
   @Test
-  public void set_property_string_array_trims_key() {
+  void set_property_string_array_trims_key() {
     String key = randomAlphanumeric(3);
 
     MapSettings underTest = new MapSettings(new PropertyDefinitions(System2.INSTANCE, singletonList(PropertyDefinition.builder(key).multiValues(true).build())));
@@ -144,7 +134,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void setProperty_methods_trims_value() {
+  void setProperty_methods_trims_value() {
     MapSettings underTest = new MapSettings();
 
     Random random = new Random();
@@ -159,7 +149,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void set_property_int() {
+  void set_property_int() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "123");
     assertThat(settings.getInt("foo")).isEqualTo(123);
@@ -168,43 +158,42 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void default_number_values_are_zero() {
+  void default_number_values_are_zero() {
     MapSettings settings = new MapSettings();
     assertThat(settings.getInt("foo")).isEqualTo(0);
     assertThat(settings.getLong("foo")).isEqualTo(0L);
   }
 
   @Test
-  public void getInt_value_must_be_valid() {
-    thrown.expect(NumberFormatException.class);
-
+  void getInt_value_must_be_valid() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "not a number");
-    settings.getInt("foo");
+
+    assertThrows(NumberFormatException.class, () -> settings.getInt("foo"));
   }
 
   @Test
-  public void all_values_should_be_trimmed_set_property() {
+  void all_values_should_be_trimmed_set_property() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "   FOO ");
     assertThat(settings.getString("foo")).isEqualTo("FOO");
   }
 
   @Test
-  public void test_get_default_value() {
+  void test_get_default_value() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getDefaultValue("unknown")).isNull();
   }
 
   @Test
-  public void test_get_string() {
+  void test_get_string() {
     MapSettings settings = new MapSettings(definitions);
     settings.setProperty("hello", "Russia");
     assertThat(settings.getString("hello")).isEqualTo("Russia");
   }
 
   @Test
-  public void test_get_date() {
+  void test_get_date() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getDate("unknown")).isNull();
     assertThat(settings.getDate("date").getDate()).isEqualTo(18);
@@ -212,13 +201,13 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void test_get_date_not_found() {
+  void test_get_date_not_found() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getDate("unknown")).isNull();
   }
 
   @Test
-  public void test_get_datetime() {
+  void test_get_datetime() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getDateTime("unknown")).isNull();
     assertThat(settings.getDateTime("datetime").getDate()).isEqualTo(18);
@@ -227,7 +216,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void test_get_double() {
+  void test_get_double() {
     MapSettings settings = new MapSettings();
     settings.setProperty("from_string", "3.14159");
     assertThat(settings.getDouble("from_string")).isEqualTo(3.14159, Offset.offset(0.00001));
@@ -235,7 +224,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void test_get_float() {
+  void test_get_float() {
     MapSettings settings = new MapSettings();
     settings.setProperty("from_string", "3.14159");
     assertThat(settings.getDouble("from_string")).isEqualTo(3.14159f, Offset.offset(0.00001));
@@ -243,41 +232,39 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void test_get_bad_float() {
+  void test_get_bad_float() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "bar");
 
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("The property 'foo' is not a float value");
-    settings.getFloat("foo");
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> settings.getFloat("foo"));
+    assertThat(thrown).hasMessage("The property 'foo' is not a float value");
   }
 
   @Test
-  public void test_get_bad_double() {
+  void test_get_bad_double() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "bar");
 
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("The property 'foo' is not a double value");
-    settings.getDouble("foo");
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> settings.getDouble("foo"));
+    assertThat(thrown).hasMessage("The property 'foo' is not a double value");
   }
 
   @Test
-  public void getStringArray() {
+  void getStringArray() {
     MapSettings settings = new MapSettings(definitions);
     String[] array = settings.getStringArray("array");
     assertThat(array).isEqualTo(new String[] {"one", "two", "three"});
   }
 
   @Test
-  public void getStringArray_no_value() {
+  void getStringArray_no_value() {
     MapSettings settings = new MapSettings();
     String[] array = settings.getStringArray("array");
     assertThat(array).isEmpty();
   }
 
   @Test
-  public void shouldTrimArray() {
+  void shouldTrimArray() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "  one,  two, three  ");
     String[] array = settings.getStringArray("foo");
@@ -285,7 +272,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void shouldKeepEmptyValuesWhenSplitting() {
+  void shouldKeepEmptyValuesWhenSplitting() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "  one,  , two");
     String[] array = settings.getStringArray("foo");
@@ -293,13 +280,13 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void testDefaultValueOfGetString() {
+  void testDefaultValueOfGetString() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getString("hello")).isEqualTo("world");
   }
 
   @Test
-  public void set_property_boolean() {
+  void set_property_boolean() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "true");
     settings.setProperty("bar", "false");
@@ -310,7 +297,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void ignore_case_of_boolean_values() {
+  void ignore_case_of_boolean_values() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "true");
     settings.setProperty("bar", "TRUE");
@@ -323,7 +310,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void get_boolean() {
+  void get_boolean() {
     MapSettings settings = new MapSettings(definitions);
     assertThat(settings.getBoolean("boolean")).isTrue();
     assertThat(settings.getBoolean("falseboolean")).isFalse();
@@ -332,7 +319,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void shouldCreateByIntrospectingComponent() {
+  void shouldCreateByIntrospectingComponent() {
     MapSettings settings = new MapSettings();
     settings.getDefinitions().addComponent(MyComponent.class);
 
@@ -346,19 +333,19 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void getStringLines_no_value() {
+  void getStringLines_no_value() {
     Assertions.assertThat(new MapSettings().getStringLines("foo")).hasSize(0);
   }
 
   @Test
-  public void getStringLines_single_line() {
+  void getStringLines_single_line() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "the line");
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"the line"});
   }
 
   @Test
-  public void getStringLines_linux() {
+  void getStringLines_linux() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "one\ntwo");
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"one", "two"});
@@ -368,7 +355,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void getStringLines_windows() {
+  void getStringLines_windows() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "one\r\ntwo");
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"one", "two"});
@@ -378,14 +365,14 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void getStringLines_mix() {
+  void getStringLines_mix() {
     MapSettings settings = new MapSettings();
     settings.setProperty("foo", "one\r\ntwo\nthree");
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"one", "two", "three"});
   }
 
   @Test
-  public void getKeysStartingWith() {
+  void getKeysStartingWith() {
     MapSettings settings = new MapSettings();
     settings.setProperty("sonar.jdbc.url", "foo");
     settings.setProperty("sonar.jdbc.username", "bar");
@@ -397,7 +384,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void should_fallback_deprecated_key_to_default_value_of_new_key() {
+  void should_fallback_deprecated_key_to_default_value_of_new_key() {
     MapSettings settings = new MapSettings(definitions);
 
     assertThat(settings.getString("newKeyWithDefaultValue")).isEqualTo("default_value");
@@ -405,7 +392,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void should_fallback_deprecated_key_to_new_key() {
+  void should_fallback_deprecated_key_to_new_key() {
     MapSettings settings = new MapSettings(definitions);
     settings.setProperty("newKey", "value of newKey");
 
@@ -414,7 +401,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void should_load_value_of_deprecated_key() {
+  void should_load_value_of_deprecated_key() {
     // it's used for example when deprecated settings are set through command-line
     MapSettings settings = new MapSettings(definitions);
     settings.setProperty("oldKey", "value of oldKey");
@@ -424,7 +411,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void should_load_values_of_deprecated_key() {
+  void should_load_values_of_deprecated_key() {
     MapSettings settings = new MapSettings(definitions);
     settings.setProperty("oldKey", "a,b");
 
@@ -433,7 +420,7 @@ public class MapSettingsTest {
   }
 
   @Test
-  public void should_support_deprecated_props_with_multi_values() {
+  void should_support_deprecated_props_with_multi_values() {
     MapSettings settings = new MapSettings(definitions);
     settings.setProperty("new_multi_values", " A , B ");
     assertThat(settings.getStringArray("new_multi_values")).isEqualTo(new String[] {"A", "B"});
