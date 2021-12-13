@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 
 public interface IssueRangeAndMessage {
 

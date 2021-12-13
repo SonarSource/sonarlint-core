@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
+
 public class ModuleInfo {
   private final Object key;
   private final ClientFileSystem clientFileSystem;

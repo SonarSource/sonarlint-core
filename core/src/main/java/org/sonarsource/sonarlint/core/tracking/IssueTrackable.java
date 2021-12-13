@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
@@ -39,9 +39,14 @@ public class IssueTrackable implements Trackable {
 
   public IssueTrackable(Issue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
     this.issue = issue;
-    this.textRange = textRange != null ? textRange.convertToTrackingTextRange() : null;
+    this.textRange = textRange != null ? convertToTrackingTextRange(textRange) : null;
     this.textRangeHash = hashOrNull(textRangeContent);
     this.lineHash = hashOrNull(lineContent);
+  }
+
+  static org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange(org.sonarsource.sonarlint.core.analysis.api.TextRange fromAnalysis) {
+    return new org.sonarsource.sonarlint.core.issuetracking.TextRange(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
+      fromAnalysis.getEndLineOffset());
   }
 
   private static Integer hashOrNull(@Nullable String content) {

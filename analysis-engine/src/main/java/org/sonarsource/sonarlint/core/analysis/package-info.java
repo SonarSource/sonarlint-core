@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Analysis Engine
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,13 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.analysis;
 
-import java.util.stream.Stream;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
-
-public interface ClientFileSystem {
-  Stream<ClientInputFile> files(String suffix, InputFile.Type type);
-  Stream<ClientInputFile> files();
-}
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -87,7 +87,7 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public TextRange textRange() {
-    org.sonarsource.sonarlint.core.client.api.common.TextRange textRange = rawIssue.getTextRange();
+    org.sonarsource.sonarlint.core.analysis.api.TextRange textRange = rawIssue.getTextRange();
     if (textRange == null) {
       return null;
     }

@@ -37,7 +37,7 @@ public class DefaultServerIssueTest {
     assertThat(issue.setAssigneeLogin("login1").assigneeLogin()).isEqualTo("login1");
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").key()).isEqualTo("key1");
-    issue.setTextRange(new org.sonarsource.sonarlint.core.client.api.common.TextRange(1,
+    issue.setTextRange(new org.sonarsource.sonarlint.core.analysis.api.TextRange(1,
       2,
       3,
       4));

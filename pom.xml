@@ -33,6 +33,7 @@
     <module>issue-tracking</module>
     <module>plugin-commons</module>
     <module>rule-extractor</module>
+    <module>analysis-engine</module>
   </modules>
 
   <properties>

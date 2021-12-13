@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.module;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.ModulesProvider;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
