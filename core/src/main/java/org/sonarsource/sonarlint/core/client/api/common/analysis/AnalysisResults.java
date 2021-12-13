@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.Collection;
 import java.util.Map;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 public interface AnalysisResults {

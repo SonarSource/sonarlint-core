@@ -34,7 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile.Status;
 import org.sonarsource.sonarlint.core.InMemoryTestClientInputFile;
 import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

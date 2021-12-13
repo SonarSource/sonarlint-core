@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
-import org.sonarsource.sonarlint.core.client.api.common.TextEdit;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit;
 
 public class DefaultTextEdit implements TextEdit, NewTextEdit {

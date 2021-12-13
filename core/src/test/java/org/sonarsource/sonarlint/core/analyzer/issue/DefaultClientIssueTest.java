@@ -28,7 +28,7 @@ import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
 

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.List;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 
 public interface QuickFix {
 

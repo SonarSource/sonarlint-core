@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
@@ -69,7 +69,7 @@ public class ServerIssueTrackable implements Trackable {
   @Override
   public org.sonarsource.sonarlint.core.issuetracking.TextRange getTextRange() {
     TextRange textRange = serverIssue.getTextRange();
-    return textRange != null ? textRange.convertToTrackingTextRange() : null;
+    return textRange != null ? IssueTrackable.convertToTrackingTextRange(textRange) : null;
   }
 
   @Override
