@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ConfigurationBridge;
 
 public class AnalysisConfigurationProvider extends ProviderAdapter {
 

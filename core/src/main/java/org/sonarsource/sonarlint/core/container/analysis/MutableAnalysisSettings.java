@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.container.analysis;
 
 import org.sonar.api.config.PropertyDefinitions;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 
 public class MutableAnalysisSettings extends MapSettings {
