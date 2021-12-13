@@ -28,8 +28,8 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfigur
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.global.MapSettings;
-import org.sonarsource.sonarlint.core.container.standalone.rule.EmptyConfiguration;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
+import org.sonarsource.sonarlint.core.rule.extractor.EmptyConfiguration;
 import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 
 /**

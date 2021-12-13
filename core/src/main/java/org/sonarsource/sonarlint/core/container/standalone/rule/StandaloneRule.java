@@ -29,15 +29,15 @@ import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.RuleStatus;
 import org.sonar.api.rules.RuleType;
-import org.sonar.api.server.rule.RulesDefinition;
-import org.sonar.api.server.rule.RulesDefinition.Param;
-import org.sonar.markdown.Markdown;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @Immutable
 public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
@@ -54,20 +54,21 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   private final String[] tags;
   private final Set<RuleKey> deprecatedKeys;
 
-  public StandaloneRule(RulesDefinition.Rule rule) {
-    this.key = RuleKey.of(rule.repository().key(), rule.key());
-    this.name = rule.name();
-    this.severity = rule.severity();
-    this.type = rule.type();
-    this.description = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
-    this.internalKey = rule.internalKey();
-    this.isActiveByDefault = rule.activatedByDefault();
-    this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
-    this.tags = rule.tags().toArray(new String[0]);
-    this.deprecatedKeys = rule.deprecatedRuleKeys();
+  public StandaloneRule(SonarLintRuleDefinition ruleFromDefinition) {
+    var sonarApiRuleKey = RuleKey.parse(ruleFromDefinition.getKey());
+    this.key = sonarApiRuleKey;
+    this.name = ruleFromDefinition.getName();
+    this.severity = ruleFromDefinition.getSeverity();
+    this.type = RuleType.valueOf(ruleFromDefinition.getType());
+    this.description = ruleFromDefinition.getHtmlDescription();
+    this.internalKey = ruleFromDefinition.getInternalKey();
+    this.isActiveByDefault = ruleFromDefinition.isActiveByDefault();
+    this.language = ruleFromDefinition.getLanguage();
+    this.tags = ruleFromDefinition.getTags();
+    this.deprecatedKeys = ruleFromDefinition.getDeprecatedKeys().stream().map(RuleKey::parse).collect(toSet());
 
     Map<String, DefaultStandaloneRuleParam> builder = new HashMap<>();
-    for (Param param : rule.params()) {
+    for (SonarLintRuleParamDefinition param : ruleFromDefinition.getParams().values()) {
       builder.put(param.key(), new DefaultStandaloneRuleParam(param));
     }
     params = Collections.unmodifiableMap(builder);
