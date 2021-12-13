@@ -26,7 +26,7 @@ import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 
 public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;

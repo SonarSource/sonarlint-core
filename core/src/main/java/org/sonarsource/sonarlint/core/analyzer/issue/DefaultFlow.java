@@ -26,7 +26,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintInputFile;
 
 public class DefaultFlow implements Flow {
-  private List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations;
+  private List<org.sonarsource.sonarlint.core.analysis.api.IssueLocation> locations;
 
   public DefaultFlow(List<IssueLocation> issueLocations) {
     this.locations = issueLocations.stream()
@@ -38,7 +38,7 @@ public class DefaultFlow implements Flow {
   }
 
   @Override
-  public List<org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation> locations() {
+  public List<org.sonarsource.sonarlint.core.analysis.api.IssueLocation> locations() {
     return locations;
   }
 }
