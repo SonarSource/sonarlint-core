@@ -19,19 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.analysis.api.TextRange;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class ClientModuleFileEvent {
+  private final ClientInputFile target;
 
-class TextRangeTest {
-  @Test
-  void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
-    int line = 7;
-    TextRange lineOnlyTextRange = new TextRange(line);
-    assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
-    assertThat(lineOnlyTextRange.getStartLineOffset()).isNull();
-    assertThat(lineOnlyTextRange.getEndLine()).isNull();
-    assertThat(lineOnlyTextRange.getEndLineOffset()).isNull();
+  private final ModuleFileEvent.Type type;
+
+  private ClientModuleFileEvent(ClientInputFile target, ModuleFileEvent.Type type) {
+    this.target = target;
+    this.type = type;
+  }
+
+  public static ClientModuleFileEvent of(ClientInputFile target, ModuleFileEvent.Type type) {
+    return new ClientModuleFileEvent(target, type);
+  }
+
+  public ClientInputFile target() {
+    return target;
+  }
+
+  public ModuleFileEvent.Type type() {
+    return type;
   }
 }

@@ -20,7 +20,8 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import org.sonarsource.sonarlint.core.analysis.api.IssueLocation;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 
 public interface Issue extends IssueLocation {
 
