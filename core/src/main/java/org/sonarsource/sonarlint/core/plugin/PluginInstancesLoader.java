@@ -127,16 +127,13 @@ public class PluginInstancesLoader {
     } catch (IOException e) {
       throw new IllegalStateException("Unable to create temporary directory", e);
     }
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        try {
-          FileUtils.deleteDirectory(tmpFolderForDeps.toFile());
-        } catch (IOException ex) {
-          ex.printStackTrace(System.err);
-        }
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      try {
+        FileUtils.deleteDirectory(tmpFolderForDeps.toFile());
+      } catch (IOException ex) {
+        ex.printStackTrace(System.err);
       }
-    });
+    }));
     return tmpFolderForDeps;
   }
 
