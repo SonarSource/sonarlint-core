@@ -115,6 +115,7 @@ public class PluginInstancesLoader {
     } catch (IOException e) {
       throw new IllegalStateException("Unable to create temporary directory", e);
     }
+    // FIXME We should instead delete the folder when the plugin is unloaded
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
