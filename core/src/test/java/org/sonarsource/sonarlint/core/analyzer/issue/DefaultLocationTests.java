@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
 

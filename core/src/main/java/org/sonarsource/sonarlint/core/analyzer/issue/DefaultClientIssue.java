@@ -25,8 +25,8 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.Rule;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.client.api.common.analysis.Issue {
   private final String severity;
@@ -37,7 +37,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
   private final Rule rule;
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
-  private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
+  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
   public DefaultClientIssue(String severity, String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes) {
@@ -96,7 +96,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
 
   @CheckForNull
   @Override
-  public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
     return textRange;
   }
 

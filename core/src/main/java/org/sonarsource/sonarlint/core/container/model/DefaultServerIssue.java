@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 public class DefaultServerIssue implements ServerIssue {

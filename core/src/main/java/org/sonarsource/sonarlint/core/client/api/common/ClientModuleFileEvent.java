@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 
 public class ClientModuleFileEvent {

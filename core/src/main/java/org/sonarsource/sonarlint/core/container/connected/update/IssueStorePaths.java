@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.time.Instant;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerFlow;

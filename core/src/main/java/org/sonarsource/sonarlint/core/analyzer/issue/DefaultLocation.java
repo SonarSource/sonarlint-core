@@ -22,13 +22,13 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 
 public class DefaultLocation implements IssueLocation {
   private final String message;
   private final ClientInputFile inputFile;
-  private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
+  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
   public DefaultLocation(@Nullable ClientInputFile inputFile, @Nullable TextRange textRange, @Nullable String message) {
     this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
@@ -48,7 +48,7 @@ public class DefaultLocation implements IssueLocation {
 
   @CheckForNull
   @Override
-  public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
     return textRange;
   }
 }

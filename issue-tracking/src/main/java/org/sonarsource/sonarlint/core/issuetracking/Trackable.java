@@ -60,4 +60,5 @@ public interface Trackable {
 
   // empty if none
   String getAssignee();
+
 }

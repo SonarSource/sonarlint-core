@@ -29,7 +29,7 @@ public class DefaultServerLocation implements ServerIssueLocation {
   private final String message;
   private final String filePath;
   private final String codeSnippet;
-  private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
+  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
   public DefaultServerLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String codeSnippet) {
     this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
@@ -55,7 +55,7 @@ public class DefaultServerLocation implements ServerIssueLocation {
 
   @CheckForNull
   @Override
-  public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
     return textRange;
   }
 }

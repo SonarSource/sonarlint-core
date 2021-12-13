@@ -24,16 +24,16 @@ public class TextRangeUtils {
   private TextRangeUtils() {
   }
 
-  public static org.sonarsource.sonarlint.core.client.api.common.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
-    return new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+  public static org.sonarsource.sonarlint.core.analysis.api.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
+    return new org.sonarsource.sonarlint.core.analysis.api.TextRange(
       analyzerTextRange.start().line(),
       analyzerTextRange.start().lineOffset(),
       analyzerTextRange.end().line(),
       analyzerTextRange.end().lineOffset());
   }
 
-  public static org.sonarsource.sonarlint.core.client.api.common.TextRange convert(org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange serverStorageTextRange) {
-    return new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+  public static org.sonarsource.sonarlint.core.analysis.api.TextRange convert(org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange serverStorageTextRange) {
+    return new org.sonarsource.sonarlint.core.analysis.api.TextRange(
       serverStorageTextRange.getStartLine(),
       serverStorageTextRange.getStartLineOffset(),
       serverStorageTextRange.getEndLine(),

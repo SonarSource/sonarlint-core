@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.container.module;
 
 import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileSystem;
 
 public class SonarLintModuleFileSystem implements ModuleFileSystem {
