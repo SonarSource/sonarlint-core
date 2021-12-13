@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Analysis Engine
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.analysis.api;
 
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 
-public class ClientModuleFileEvent {
-  private final ClientInputFile target;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private final ModuleFileEvent.Type type;
-
-  private ClientModuleFileEvent(ClientInputFile target, ModuleFileEvent.Type type) {
-    this.target = target;
-    this.type = type;
-  }
-
-  public static ClientModuleFileEvent of(ClientInputFile target, ModuleFileEvent.Type type) {
-    return new ClientModuleFileEvent(target, type);
-  }
-
-  public ClientInputFile target() {
-    return target;
-  }
-
-  public ModuleFileEvent.Type type() {
-    return type;
+class TextRangeTests {
+  @Test
+  void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
+    int line = 7;
+    TextRange lineOnlyTextRange = new TextRange(line);
+    assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
+    assertThat(lineOnlyTextRange.getStartLineOffset()).isNull();
+    assertThat(lineOnlyTextRange.getEndLine()).isNull();
+    assertThat(lineOnlyTextRange.getEndLineOffset()).isNull();
   }
 }

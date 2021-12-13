@@ -20,9 +20,12 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
+import org.sonarsource.sonarlint.core.analysis.api.WithTextRange;
 
-public interface ServerIssueLocation extends IssueRangeAndMessage {
+public interface ServerIssueLocation extends WithTextRange {
+
+  @CheckForNull
+  String getMessage();
 
   /**
    * @return null for global issues

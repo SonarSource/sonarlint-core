@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 import java.util.ArrayList;
 import java.util.List;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit;
 import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
 

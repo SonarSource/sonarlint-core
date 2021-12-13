@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Arrays;
 import java.util.List;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.module.ModuleInputFileBuilder;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
