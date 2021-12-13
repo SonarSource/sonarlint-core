@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.global;
 
 import java.nio.file.Path;
 import org.sonar.api.config.PropertyDefinitions;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 public class GlobalSettings extends MapSettings {

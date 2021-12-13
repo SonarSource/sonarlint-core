@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Analysis Engine
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import java.util.Set;
 import org.sonar.api.batch.sensor.Sensor;
@@ -26,7 +26,8 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
@@ -43,10 +44,10 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
   private final PluginInstancesRepository pluginRepository;
 
   public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, PluginInstancesRepository pluginRepository, Configuration bootConfiguration,
-    AbstractGlobalConfiguration globalConfig) {
+    AnalysisEngineConfiguration analysisEngineConfig) {
     super(sonarRuntime, bootConfiguration);
     this.pluginRepository = pluginRepository;
-    enabledLanguages = globalConfig.getEnabledLanguages();
+    enabledLanguages = analysisEngineConfig.getEnabledLanguages();
   }
 
   public void installEmbeddedOnly(ComponentContainer container, ContainerLifespan lifespan) {

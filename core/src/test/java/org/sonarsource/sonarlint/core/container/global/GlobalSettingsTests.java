@@ -42,13 +42,13 @@ class GlobalSettingsTests {
   @Test
   void setNodePathPropertyForSonarJS() {
     GlobalSettings underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE));
-    assertThat(underTest.get("sonar.nodejs.executable")).isEmpty();
+    assertThat(underTest.getString("sonar.nodejs.executable")).isNull();
 
     Path providedNodePath = Paths.get("foo/bar/node");
     when(globalConfiguration.getNodeJsPath()).thenReturn(providedNodePath);
 
     underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE));
-    assertThat(underTest.get("sonar.nodejs.executable")).contains(providedNodePath.toString());
+    assertThat(underTest.getString("sonar.nodejs.executable")).isEqualTo(providedNodePath.toString());
   }
 
 }

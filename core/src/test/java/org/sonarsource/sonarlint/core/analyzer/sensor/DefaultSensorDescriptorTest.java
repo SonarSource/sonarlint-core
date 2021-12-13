@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.analyzer.sensor;
 
 import org.junit.Test;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

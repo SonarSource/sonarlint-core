@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Analysis Engine
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container;
+package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,11 +30,12 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.Version;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
@@ -68,7 +69,7 @@ class AnalysisExtensionInstallerTests {
   public void prepare() {
     pluginRepository = mock(PluginInstancesRepository.class);
     container = mock(ComponentContainer.class);
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder().build());
   }
 
   @Test
@@ -156,7 +157,7 @@ class AnalysisExtensionInstallerTests {
   void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -168,7 +169,7 @@ class AnalysisExtensionInstallerTests {
   void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.JS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -182,7 +183,7 @@ class AnalysisExtensionInstallerTests {
   void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -195,7 +196,7 @@ class AnalysisExtensionInstallerTests {
     PluginStoringSonarLintPluginApiVersion pluginInstance = new PluginStoringSonarLintPluginApiVersion();
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, StandaloneGlobalConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, CONFIG, AnalysisEngineConfiguration.builder().build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 

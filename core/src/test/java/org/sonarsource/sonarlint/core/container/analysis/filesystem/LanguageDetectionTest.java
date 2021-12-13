@@ -29,7 +29,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.resources.Language;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.TestInputFileBuilder;
-import org.sonarsource.sonarlint.core.container.global.MapSettings;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
