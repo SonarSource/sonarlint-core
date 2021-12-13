@@ -20,12 +20,14 @@
 package org.sonarsource.sonarlint.core.rule.extractor;
 
 import org.sonar.api.SonarQubeVersion;
+import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.Version;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
+import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
@@ -51,6 +53,10 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
 
     ExtensionInstaller extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
     extensionInstaller.install(this, pluginInstancesRepository.getPluginInstancesByKeys(), (key, ext) -> {
+      if (ExtensionUtils.isType(ext, Sensor.class)) {
+        // Optimization, and allows to run with the Xoo plugin
+        return false;
+      }
       SonarLintSide annotation = AnnotationUtils.getAnnotation(ext, SonarLintSide.class);
       if (annotation != null) {
         String lifespan = annotation.lifespan();
