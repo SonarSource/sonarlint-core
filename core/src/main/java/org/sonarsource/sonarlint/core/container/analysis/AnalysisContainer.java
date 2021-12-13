@@ -24,6 +24,7 @@ import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
+import org.sonarsource.sonarlint.core.analysis.container.global.analysis.AnalysisTempFolderProvider;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.analyzer.noop.NoOpFileLinesContextFactory;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
