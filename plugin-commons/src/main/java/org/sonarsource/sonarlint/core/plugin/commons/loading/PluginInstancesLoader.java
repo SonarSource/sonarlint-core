@@ -25,14 +25,10 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
@@ -115,19 +111,7 @@ public class PluginInstancesLoader {
     Path tmpFolderForDeps;
     try {
       var prefix = "sonarlint_" + info.getKey();
-      if (SystemUtils.IS_OS_UNIX) {
-        FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-        tmpFolderForDeps = Files.createTempDirectory(prefix, attr);
-      } else {
-        var f = Files.createTempDirectory(prefix).toFile();
-        boolean readPermission = f.setReadable(true, true);
-        boolean writePermission = f.setWritable(true, true);
-        boolean execPermission = f.setExecutable(true, true);
-        if (!readPermission || !writePermission || !execPermission) {
-          LOG.warn("Unable to set secure permissions on file {}", f);
-        }
-        tmpFolderForDeps = f.toPath();
-      }
+      tmpFolderForDeps = Files.createTempDirectory(prefix);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to create temporary directory", e);
     }
