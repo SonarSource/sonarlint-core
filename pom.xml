@@ -32,6 +32,7 @@
     <module>telemetry</module>
     <module>issue-tracking</module>
     <module>plugin-commons</module>
+    <module>rule-extractor</module>
   </modules>
 
   <properties>

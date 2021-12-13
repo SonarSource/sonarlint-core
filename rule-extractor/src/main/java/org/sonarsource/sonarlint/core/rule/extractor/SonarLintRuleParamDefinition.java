@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Rule Extractor
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.rule.extractor;
 
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.rule.RuleParam;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
+import org.sonar.api.server.rule.RuleParamType;
+import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
-import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
 
-public class DefaultStandaloneRuleParam implements RuleParam, StandaloneRuleParam {
+public class SonarLintRuleParamDefinition {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -36,62 +34,55 @@ public class DefaultStandaloneRuleParam implements RuleParam, StandaloneRulePara
   private final String name;
   private final String description;
   private final String defaultValue;
-  private final StandaloneRuleParamType type;
+  private final SonarLintRuleParamType type;
   private final boolean multiple;
   private final List<String> possibleValues;
 
-  public DefaultStandaloneRuleParam(SonarLintRuleParamDefinition param) {
+  public SonarLintRuleParamDefinition(Param param) {
     this.key = param.key();
     this.name = param.name();
     this.description = param.description();
     this.defaultValue = param.defaultValue();
-    SonarLintRuleParamType apiType = param.type();
+    RuleParamType apiType = param.type();
     this.type = from(apiType);
-    this.multiple = param.multiple();
-    this.possibleValues = List.copyOf(param.possibleValues());
+    this.multiple = apiType.multiple();
+    this.possibleValues = Collections.unmodifiableList(apiType.values());
   }
 
-  private static StandaloneRuleParamType from(SonarLintRuleParamType apiType) {
+  private static SonarLintRuleParamType from(RuleParamType apiType) {
     try {
-      return StandaloneRuleParamType.valueOf(apiType.name());
+      return SonarLintRuleParamType.valueOf(apiType.type());
     } catch (IllegalArgumentException unknownType) {
-      LOG.warn("Unknown parameter type: " + apiType.name());
-      return StandaloneRuleParamType.STRING;
+      LOG.warn("Unknown parameter type: " + apiType.type());
+      return SonarLintRuleParamType.STRING;
     }
   }
 
-  @Override
   public String key() {
     return key;
   }
 
-  @Override
   public String name() {
     return name;
   }
 
-  @Override
   public String description() {
     return description;
   }
 
-  @Override
   @CheckForNull
   public String defaultValue() {
     return defaultValue;
   }
 
-  @Override
-  public StandaloneRuleParamType type() {
+  public SonarLintRuleParamType type() {
     return type;
   }
 
-  @Override
   public boolean multiple() {
     return multiple;
   }
 
-  @Override
   public List<String> possibleValues() {
     return possibleValues;
   }

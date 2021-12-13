@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Rule Extractor
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,42 +17,50 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.rule.extractor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import org.picocontainer.injectors.ProviderAdapter;
+import java.util.Set;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
+import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 
-public class StandaloneSonarLintRulesProvider extends ProviderAdapter {
-  private SonarLintRules singleton = null;
+public class RulesDefinitionExtractor {
 
-  public SonarLintRules provide(StandaloneRuleDefinitionsLoader pluginRulesLoader, AbstractGlobalConfiguration config) {
-    if (singleton == null) {
-      singleton = createRules(pluginRulesLoader, config);
+  public List<SonarLintRuleDefinition> extractRules(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages) {
+    Context context;
+    try {
+      RulesDefinitionExtractorContainer container = new RulesDefinitionExtractorContainer(pluginInstancesRepository);
+      container.execute();
+      context = container.getContext();
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to extract rules metadata", e);
     }
-    return singleton;
-  }
 
-  private static SonarLintRules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader, AbstractGlobalConfiguration config) {
-    SonarLintRules rules = new SonarLintRules();
+    List<SonarLintRuleDefinition> rules = new ArrayList<>();
 
-    for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
+    for (RulesDefinition.Repository repoDef : context.repositories()) {
+      if (repoDef.isExternal()) {
+        continue;
+      }
       Optional<Language> repoLanguage = Language.forKey(repoDef.language());
-      if (!repoLanguage.isPresent() || !config.getEnabledLanguages().contains(repoLanguage.get())) {
+      if (!repoLanguage.isPresent() || !enabledLanguages.contains(repoLanguage.get())) {
         continue;
       }
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
         if (ruleDef.type() == RuleType.SECURITY_HOTSPOT || ruleDef.template()) {
           continue;
         }
-        rules.add(new StandaloneRule(ruleDef));
+        rules.add(new SonarLintRuleDefinition(ruleDef));
       }
     }
 
     return rules;
+
   }
+
 }

@@ -19,10 +19,14 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
@@ -60,6 +64,11 @@ import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
 import org.sonarsource.sonarlint.core.container.storage.GlobalUpdateStatusReader;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
+import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -139,8 +148,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
-    storageContainer = new StorageContainer(globalConfig, this.globalStores, projectStorage, globalStatusReader);
+
     try {
+      var pluginInstancesRepository = createPluginInstanceRepository();
+      storageContainer = new StorageContainer(globalConfig, this.globalStores, projectStorage, globalStatusReader, pluginInstancesRepository);
       storageContainer.startComponents();
       containerStarted = true;
       var globalStorageStatus = globalStatusReader.read();
@@ -160,6 +171,44 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     } finally {
       rwl.writeLock().unlock();
     }
+  }
+
+  private PluginInstancesRepository createPluginInstanceRepository() {
+    Path cacheDir = globalConfig.getSonarLintUserHome().resolve("plugins");
+    var fileCache = PluginCache.create(cacheDir);
+
+    var pluginReferenceStore = globalStores.getPluginReferenceStore();
+    List<PluginLocation> plugins = new ArrayList<>();
+    Map<String, URL> extraPluginsUrlsByKey = globalConfig.getExtraPluginsUrlsByKey();
+    Map<String, URL> embeddedPluginsUrlsByKey = globalConfig.getEmbeddedPluginUrlsByKey();
+
+    Sonarlint.PluginReferences protoReferences;
+    try {
+      protoReferences = pluginReferenceStore.getAll();
+    } catch (StorageException e) {
+      LOG.debug("Unable to read plugins references from storage", e);
+      protoReferences = Sonarlint.PluginReferences.newBuilder().build();
+    }
+    protoReferences.getReferenceList().forEach(r -> {
+      if (embeddedPluginsUrlsByKey.containsKey(r.getKey())) {
+        var ref = fileCache.getFromCacheOrCopy(embeddedPluginsUrlsByKey.get(r.getKey()));
+        var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), r.getHash()), "Error reading plugin from cache");
+        plugins.add(new PluginLocation(jarPath, true));
+      } else {
+        var jarPath = fileCache.get(r.getFilename(), r.getHash());
+        if (jarPath == null) {
+          throw new StorageException("The plugin " + r.getFilename() + " was not found in the local storage.");
+        }
+        plugins.add(new PluginLocation(jarPath, false));
+      }
+    });
+    extraPluginsUrlsByKey.values().stream().map(fileCache::getFromCacheOrCopy).forEach(r -> {
+      var jarPath = fileCache.get(r.getFilename(), r.getHash());
+      plugins.add(new PluginLocation(jarPath, true));
+    });
+
+    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
+    return new PluginInstancesRepository(config);
   }
 
   @Override
