@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Rule Extractor
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,26 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.rule.extractor;
 
-import java.util.Optional;
-import org.sonar.api.config.Configuration;
+import org.sonar.api.server.rule.RulesDefinition;
 
-public class EmptyConfiguration implements Configuration {
+/**
+ * Load rules directly from plugins {@link RulesDefinition}
+ */
+public class RuleDefinitionsLoader {
+  private final RulesDefinition.Context context;
 
-  @Override
-  public Optional<String> get(String key) {
-    return Optional.empty();
+  public RuleDefinitionsLoader() {
+    // No plugin installed
+    context = new RulesDefinition.Context();
   }
 
-  @Override
-  public boolean hasKey(String key) {
-    return false;
+  public RuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
+
+    context = new RulesDefinition.Context();
+    for (RulesDefinition pluginDefinition : pluginDefs) {
+      pluginDefinition.define(context);
+    }
   }
 
-  @Override
-  public String[] getStringArray(String key) {
-    return new String[0];
+  public RulesDefinition.Context getContext() {
+    return context;
   }
 
 }

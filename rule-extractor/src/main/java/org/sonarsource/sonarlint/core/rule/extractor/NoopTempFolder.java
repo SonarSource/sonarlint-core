@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Rule Extractor
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,31 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.standalone.rule;
+package org.sonarsource.sonarlint.core.rule.extractor;
 
-import org.sonar.api.server.rule.RulesDefinition;
+import java.io.File;
+import org.sonar.api.utils.TempFolder;
 
-/**
- * Load rules directly from plugins {@link RulesDefinition}
- */
-public class StandaloneRuleDefinitionsLoader {
-  private final RulesDefinition.Context context;
+public class NoopTempFolder implements TempFolder {
 
-  public StandaloneRuleDefinitionsLoader() {
-    // No plugin installed
-    context = new RulesDefinition.Context();
+  @Override
+  public File newDir() {
+    throw new UnsupportedOperationException("newDir");
   }
 
-  public StandaloneRuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
-
-    context = new RulesDefinition.Context();
-    for (RulesDefinition pluginDefinition : pluginDefs) {
-      pluginDefinition.define(context);
-    }
+  @Override
+  public File newDir(String name) {
+    throw new UnsupportedOperationException("newDir");
   }
 
-  public RulesDefinition.Context getContext() {
-    return context;
+  @Override
+  public File newFile() {
+    throw new UnsupportedOperationException("newFile");
+  }
+
+  @Override
+  public File newFile(String prefix, String suffix) {
+    throw new UnsupportedOperationException("newFile");
   }
 
 }

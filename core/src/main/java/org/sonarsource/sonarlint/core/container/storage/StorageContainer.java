@@ -19,15 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.net.URL;
-import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.picocontainer.injectors.ProviderAdapter;
@@ -39,7 +34,6 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.container.AnalysisExtensionInstaller;
@@ -52,16 +46,14 @@ import org.sonarsource.sonarlint.core.container.global.GlobalSettings;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
-import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.util.StringUtils;
@@ -73,12 +65,15 @@ public class StorageContainer extends ComponentContainer {
   private final GlobalStores globalStores;
   private final ProjectStorage projectStorage;
   private final GlobalUpdateStatusReader globalUpdateStatusReader;
+  private final PluginInstancesRepository pluginInstancesRepository;
 
-  public StorageContainer(ConnectedGlobalConfiguration globalConfig, GlobalStores globalStores, ProjectStorage projectStorage, GlobalUpdateStatusReader globalUpdateStatusReader) {
+  public StorageContainer(ConnectedGlobalConfiguration globalConfig, GlobalStores globalStores, ProjectStorage projectStorage, GlobalUpdateStatusReader globalUpdateStatusReader,
+    PluginInstancesRepository pluginInstancesRepository) {
     this.globalConfig = globalConfig;
     this.globalStores = globalStores;
     this.projectStorage = projectStorage;
     this.globalUpdateStatusReader = globalUpdateStatusReader;
+    this.pluginInstancesRepository = pluginInstancesRepository;
   }
 
   private GlobalExtensionContainer globalExtensionContainer;
@@ -89,42 +84,6 @@ public class StorageContainer extends ComponentContainer {
   protected void doBeforeStart() {
     var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
     var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
-
-    Path cacheDir = globalConfig.getSonarLintUserHome().resolve("plugins");
-    var fileCache = PluginCache.create(cacheDir);
-
-    var pluginReferenceStore = globalStores.getPluginReferenceStore();
-    List<PluginLocation> plugins = new ArrayList<>();
-    Map<String, URL> extraPluginsUrlsByKey = globalConfig.getExtraPluginsUrlsByKey();
-    Map<String, URL> embeddedPluginsUrlsByKey = globalConfig.getEmbeddedPluginUrlsByKey();
-
-    Sonarlint.PluginReferences protoReferences;
-    try {
-      protoReferences = pluginReferenceStore.getAll();
-    } catch (StorageException e) {
-      LOG.debug("Unable to read plugins references from storage", e);
-      protoReferences = Sonarlint.PluginReferences.newBuilder().build();
-    }
-    protoReferences.getReferenceList().forEach(r -> {
-      if (embeddedPluginsUrlsByKey.containsKey(r.getKey())) {
-        var ref = fileCache.getFromCacheOrCopy(embeddedPluginsUrlsByKey.get(r.getKey()));
-        var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), r.getHash()), "Error reading plugin from cache");
-        plugins.add(new PluginLocation(jarPath, true));
-      } else {
-        var jarPath = fileCache.get(r.getFilename(), r.getHash());
-        if (jarPath == null) {
-          throw new StorageException("The plugin " + r.getFilename() + " was not found in the local storage.");
-        }
-        plugins.add(new PluginLocation(jarPath, false));
-      }
-    });
-    extraPluginsUrlsByKey.values().stream().map(fileCache::getFromCacheOrCopy).forEach(r -> {
-      var jarPath = fileCache.get(r.getFilename(), r.getHash());
-      plugins.add(new PluginLocation(jarPath, true));
-    });
-
-    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
-    var pluginInstancesRepository = new PluginInstancesRepository(config);
 
     add(
       pluginInstancesRepository,
@@ -200,9 +159,10 @@ public class StorageContainer extends ComponentContainer {
   }
 
   private void loadRulesFromPlugins() {
-    var container = new StandaloneRuleRepositoryContainer(this);
-    container.execute();
-    rulesFromPlugins = container.getRules();
+    var ruleExtractor = new RulesDefinitionExtractor();
+    List<SonarLintRuleDefinition> extractedRules = ruleExtractor.extractRules(pluginInstancesRepository, globalConfig.getEnabledLanguages());
+    rulesFromPlugins = new SonarLintRules();
+    extractedRules.forEach(extracted -> rulesFromPlugins.add(new StandaloneRule(extracted)));
   }
 
   @Override
