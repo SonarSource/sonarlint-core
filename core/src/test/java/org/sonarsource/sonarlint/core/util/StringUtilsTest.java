@@ -27,32 +27,9 @@ import static org.sonarsource.sonarlint.core.util.StringUtils.isEmpty;
 
 public class StringUtilsTest {
 
-  private class MyClass {
-    @Override
-    public String toString() {
-      return null;
-    }
-  }
-
   @Test
   public void testUrlEncode() {
     assertThat(StringUtils.urlEncode("my/string%to encode*")).isEqualTo("my%2Fstring%25to+encode*");
-  }
-
-  @Test
-  public void testDescribe() {
-    Object withToString = new Object() {
-      @Override
-      public String toString() {
-        return "desc";
-      }
-    };
-
-    Object withoutToString = new Object();
-
-    assertThat(StringUtils.describe(withToString)).isEqualTo(("desc"));
-    assertThat(StringUtils.describe(withoutToString)).isEqualTo("java.lang.Object");
-    assertThat(StringUtils.describe(new MyClass())).endsWith("MyClass");
   }
 
   @Test

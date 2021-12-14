@@ -21,13 +21,11 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.config.Configuration;
@@ -37,21 +35,25 @@ import org.sonar.api.config.Settings;
 import org.sonar.api.utils.DateUtils;
 import org.sonar.api.utils.System2;
 
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.apache.commons.lang3.StringUtils.trim;
 
 public class MapSettings extends Settings {
 
-  private final Map<String, String> props = new HashMap<>();
+  private final Map<String, String> props;
   private final ConfigurationBridge configurationBridge;
   private final PropertyDefinitions definitions;
 
-  public MapSettings() {
-    this(new PropertyDefinitions(System2.INSTANCE));
+  // For testing
+  public MapSettings(Map<String, String> props) {
+    this(new PropertyDefinitions(System2.INSTANCE), props);
   }
 
-  public MapSettings(PropertyDefinitions definitions) {
+  public MapSettings(PropertyDefinitions definitions, Map<String, String> props) {
+    this.props = props.entrySet().stream()
+      .collect(
+        toUnmodifiableMap(e -> definitions.validKey(e.getKey()), e -> trim(e.getValue())));
     this.definitions = definitions;
     configurationBridge = new ConfigurationBridge(this);
   }
@@ -60,26 +62,8 @@ public class MapSettings extends Settings {
     return Optional.ofNullable(props.get(key));
   }
 
-  protected void set(String key, String value) {
-    props.put(
-      requireNonNull(key, "key can't be null"),
-      requireNonNull(value, "value can't be null").trim());
-  }
-
-  protected void remove(String key) {
-    props.remove(key);
-  }
-
   public Map<String, String> getProperties() {
-    return unmodifiableMap(props);
-  }
-
-  /**
-   * Delete all properties
-   */
-  public MapSettings clear() {
-    props.clear();
-    return this;
+    return props;
   }
 
   /**
@@ -322,48 +306,6 @@ public class MapSettings extends Settings {
       return result;
     }
     return ArrayUtils.EMPTY_STRING_ARRAY;
-  }
-
-  /**
-   * Change a property value in a restricted scope only, depending on execution context. New value
-   * is <b>never</b> persisted. New value is ephemeral and kept in memory only:
-   * <ul>
-   * <li>during current analysis in the case of scanner stack</li>
-   * <li>during processing of current HTTP request in the case of web server stack</li>
-   * <li>during execution of current task in the case of Compute Engine stack</li>
-   * </ul>
-   * Property is temporarily removed if the parameter {@code value} is {@code null}
-   */
-  public Settings setProperty(String key, @Nullable String value) {
-    String validKey = definitions.validKey(key);
-    if (value == null) {
-      removeProperty(validKey);
-    } else {
-      set(validKey, trim(value));
-    }
-    return this;
-  }
-
-  public Settings addProperties(Map<String, String> props) {
-    for (Map.Entry<String, String> entry : props.entrySet()) {
-      setProperty(entry.getKey(), entry.getValue());
-    }
-    return this;
-  }
-
-  /**
-   * @see #setProperty(String, String)
-   */
-  private Settings setProperty(String key, @Nullable Date date, boolean includeTime) {
-    if (date == null) {
-      return removeProperty(key);
-    }
-    return setProperty(key, includeTime ? DateUtils.formatDateTime(date) : DateUtils.formatDate(date));
-  }
-
-  private Settings removeProperty(String key) {
-    remove(key);
-    return this;
   }
 
   @Override

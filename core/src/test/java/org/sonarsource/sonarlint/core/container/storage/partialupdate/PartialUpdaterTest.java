@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.JUnitTempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -51,8 +50,6 @@ public class PartialUpdaterTest {
   private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  @Rule
-  public JUnitTempFolder tempFolder = new JUnitTempFolder();
 
   private final IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
   private final IssueDownloader downloader = mock(IssueDownloader.class);
@@ -66,7 +63,7 @@ public class PartialUpdaterTest {
 
   @Before
   public void setUp() {
-    updater = new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths, tempFolder);
+    updater = new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths);
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
   }
 

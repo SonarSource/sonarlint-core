@@ -25,14 +25,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.concurrent.Immutable;
-import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.rule.RuleStatus;
 import org.sonar.api.rules.RuleType;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 
@@ -40,14 +37,13 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Immutable
-public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
+public class StandaloneRule implements StandaloneRuleDetails {
 
   private final RuleKey key;
   private final String name;
   private final String severity;
   private final RuleType type;
   private final String description;
-  private final String internalKey;
   private final Map<String, DefaultStandaloneRuleParam> params;
   private final boolean isActiveByDefault;
   private final Language language;
@@ -61,7 +57,6 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
     this.severity = ruleFromDefinition.getSeverity();
     this.type = RuleType.valueOf(ruleFromDefinition.getType());
     this.description = ruleFromDefinition.getHtmlDescription();
-    this.internalKey = ruleFromDefinition.getInternalKey();
     this.isActiveByDefault = ruleFromDefinition.isActiveByDefault();
     this.language = ruleFromDefinition.getLanguage();
     this.tags = ruleFromDefinition.getTags();
@@ -75,53 +70,8 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   }
 
   @Override
-  public RuleKey key() {
-    return key;
-  }
-
-  @Override
-  public String name() {
-    return name;
-  }
-
-  @Override
-  public String severity() {
-    return severity;
-  }
-
-  @Override
-  public RuleType type() {
-    return type;
-  }
-
-  @Override
-  public String description() {
-    return description;
-  }
-
-  @Override
-  public String internalKey() {
-    return internalKey;
-  }
-
-  @Override
-  public RuleStatus status() {
-    throw new UnsupportedOperationException("status");
-  }
-
-  @Override
-  public DefaultStandaloneRuleParam param(String paramKey) {
-    return params.get(paramKey);
-  }
-
-  @Override
-  public Collection<RuleParam> params() {
-    return params.values().stream().map(p -> (RuleParam) p).collect(toList());
-  }
-
-  @Override
   public Collection<StandaloneRuleParam> paramDetails() {
-    return params.values().stream().map(p -> (StandaloneRuleParam) p).collect(toList());
+    return params.values().stream().map(StandaloneRuleParam.class::cast).collect(toList());
   }
 
   @Override

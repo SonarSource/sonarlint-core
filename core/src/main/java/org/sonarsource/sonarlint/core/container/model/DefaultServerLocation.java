@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analyzer.issue.TextRangeUtils;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 
@@ -32,10 +31,18 @@ public class DefaultServerLocation implements ServerIssueLocation {
   private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
   public DefaultServerLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String codeSnippet) {
-    this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
+    this.textRange = textRange != null ? convert(textRange) : null;
     this.filePath = filePath;
     this.message = message;
     this.codeSnippet = codeSnippet;
+  }
+
+  public static org.sonarsource.sonarlint.core.analysis.api.TextRange convert(TextRange serverStorageTextRange) {
+    return new org.sonarsource.sonarlint.core.analysis.api.TextRange(
+      serverStorageTextRange.getStartLine(),
+      serverStorageTextRange.getStartLineOffset(),
+      serverStorageTextRange.getEndLine(),
+      serverStorageTextRange.getEndLineOffset());
   }
 
   @Override

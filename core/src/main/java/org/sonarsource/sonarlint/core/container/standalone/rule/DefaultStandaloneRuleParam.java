@@ -21,14 +21,13 @@ package org.sonarsource.sonarlint.core.container.standalone.rule;
 
 import java.util.List;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.rule.RuleParam;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParamType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
 
-public class DefaultStandaloneRuleParam implements RuleParam, StandaloneRuleParam {
+public class DefaultStandaloneRuleParam implements StandaloneRuleParam {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

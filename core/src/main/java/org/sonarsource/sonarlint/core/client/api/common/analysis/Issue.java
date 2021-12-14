@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
+import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.IssueLocation;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 
@@ -36,9 +37,5 @@ public interface Issue extends IssueLocation {
   List<Flow> flows();
 
   List<QuickFix> quickFixes();
-
-  interface Flow {
-    List<IssueLocation> locations();
-  }
 
 }

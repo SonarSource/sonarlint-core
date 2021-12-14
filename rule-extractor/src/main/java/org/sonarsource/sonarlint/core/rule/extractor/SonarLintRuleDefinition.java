@@ -39,7 +39,6 @@ public class SonarLintRuleDefinition {
   private final String severity;
   private final String type;
   private final String description;
-  private final String internalKey;
   private final Map<String, SonarLintRuleParamDefinition> params;
   private final boolean isActiveByDefault;
   private final Language language;
@@ -52,7 +51,6 @@ public class SonarLintRuleDefinition {
     this.severity = rule.severity();
     this.type = rule.type().toString();
     this.description = requireNonNull(rule.htmlDescription(), "HTML description is mandatory in SonarLint");
-    this.internalKey = rule.internalKey();
     this.isActiveByDefault = rule.activatedByDefault();
     this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
@@ -79,10 +77,6 @@ public class SonarLintRuleDefinition {
 
   public String getType() {
     return type;
-  }
-
-  public String getInternalKey() {
-    return internalKey;
   }
 
   public Map<String, SonarLintRuleParamDefinition> getParams() {

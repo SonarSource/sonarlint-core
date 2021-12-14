@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
@@ -44,7 +43,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Orchestrates the loading and instantiation of plugins
  */
-public class PluginInstancesRepository implements AutoCloseable, Startable {
+public class PluginInstancesRepository implements AutoCloseable {
   private static final Logger LOG = Loggers.get(PluginInstancesRepository.class);
 
   private final SonarPluginRequirementsChecker pluginRequirementChecker;
@@ -76,10 +75,10 @@ public class PluginInstancesRepository implements AutoCloseable, Startable {
     this.pluginRequirementChecker = pluginRequirementChecker;
     this.pluginInstancesLoader = pluginInstancesLoader;
     this.system2 = system2;
+    init();
   }
 
-  @Override
-  public void start() {
+  public void init() {
     String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     pluginCheckResultByKeys = pluginRequirementChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
       configuration.nodeCurrentVersion);
@@ -123,12 +122,4 @@ public class PluginInstancesRepository implements AutoCloseable, Startable {
     return Map.copyOf(pluginInstancesByKeys);
   }
 
-  @Override
-  public void stop() {
-    try {
-      close();
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to properly close plugin repository", e);
-    }
-  }
 }

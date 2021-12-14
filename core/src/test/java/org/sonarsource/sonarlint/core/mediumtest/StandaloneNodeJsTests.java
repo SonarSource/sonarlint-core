@@ -35,11 +35,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
@@ -49,6 +48,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
+import testutils.OnDiskTestClientInputFile;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,7 +98,7 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
-      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
@@ -124,7 +124,7 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))
-      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
