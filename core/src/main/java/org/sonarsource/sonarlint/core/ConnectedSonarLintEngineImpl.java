@@ -244,7 +244,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     protoReferences.getReferenceList().forEach(r -> {
       if (embeddedPluginsUrlsByKey.containsKey(r.getKey())) {
         var ref = fileCache.getFromCacheOrCopy(embeddedPluginsUrlsByKey.get(r.getKey()));
-        var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), r.getHash()), "Error reading plugin from cache");
+        var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), ref.getHash()), "Error reading plugin from cache");
         plugins.add(new PluginLocation(jarPath, true));
       } else {
         var jarPath = fileCache.get(r.getFilename(), r.getHash());

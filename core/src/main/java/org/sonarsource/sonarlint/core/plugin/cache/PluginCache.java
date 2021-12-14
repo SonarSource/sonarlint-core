@@ -72,7 +72,7 @@ public class PluginCache {
     if (Files.exists(cachedFile)) {
       return cachedFile;
     }
-    LOG.debug("No file found in the cache with name {} and hash {}", filename, hash);
+    LOG.debug("No files found in the cache with name '{}' and hash '{}'", filename, hash);
     return null;
   }
 
