@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
- class DefaultClientIssueTests {
+class DefaultClientIssueTests {
   @Mock
   private ActiveRule activeRule;
   @Mock
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
   }
 
   @Test
-   void transformIssue() {
+  void transformIssue() {
     InputComponent currentFile = mock(InputComponent.class);
     String currentFileKey = "currentFileKey";
     when(currentFile.key()).thenReturn(currentFileKey);
@@ -77,6 +77,7 @@ import static org.mockito.Mockito.when;
     assertThat(underTest.getType()).isEqualTo("BUG");
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
 
+    assertThat(underTest.getRuleName()).isEqualTo("name");
     assertThat(underTest.getRuleName()).isEqualTo("name");
   }
 
