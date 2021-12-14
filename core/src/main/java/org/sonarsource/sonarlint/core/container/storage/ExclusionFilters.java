@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.scan.filesystem.FileExclusions;
@@ -114,7 +114,7 @@ public class ExclusionFilters {
   }
 
   SonarLintPathPattern[] prepareMainExclusions() {
-    String[] patterns = (String[]) ArrayUtils.addAll(
+    String[] patterns = ArrayUtils.addAll(
       exclusionSettings.sourceExclusions(), computeTestInclusions());
     return SonarLintPathPattern.create(patterns);
   }

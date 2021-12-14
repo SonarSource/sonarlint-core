@@ -33,7 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
@@ -77,7 +76,6 @@ class ProjectStorageUpdateExecutorTests {
 
   private ProjectStorageUpdateExecutor underTest;
   private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
-  private final TempFolder tempFolder = mock(TempFolder.class);
   private final ModuleHierarchyDownloader moduleHierarchy = mock(ModuleHierarchyDownloader.class);
   private final IssueStore issueStore = new InMemoryIssueStore();
   private final IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
@@ -106,7 +104,6 @@ class ProjectStorageUpdateExecutorTests {
 
     mockServer.addProtobufResponse("/api/settings/values.protobufcomponent=" + MODULE_KEY_WITH_BRANCH_URLENCODED, response);
 
-    when(tempFolder.newDir()).thenReturn(tempDir.toFile());
     ServerInfoStore serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
     serverInfoStore.store(new ServerInfo("", "", ""));
 
@@ -120,7 +117,7 @@ class ProjectStorageUpdateExecutorTests {
 
     projectConfigurationDownloader = new ProjectConfigurationDownloader(moduleHierarchy);
 
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectConfigurationDownloader, projectFileListDownloader, serverIssueUpdater);
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -174,7 +171,7 @@ class ProjectStorageUpdateExecutorTests {
     when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), eq(null), any(ProgressMonitor.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
     underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
@@ -187,8 +184,9 @@ class ProjectStorageUpdateExecutorTests {
   void test_update_components(@Nullable String organizationKey, @TempDir Path tempDir) throws IOException {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
-    Path temp = tempFolder.newDir().toPath();
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
+    Path temp = tempDir.resolve("tmp2");
+    Files.createDirectories(temp);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
     ProjectConfiguration.Builder projectConfigurationBuilder = ProjectConfiguration.newBuilder();
     projectConfigurationBuilder.putModulePathByKey("rootModule", "");
@@ -216,6 +214,5 @@ class ProjectStorageUpdateExecutorTests {
     }
     return url;
   }
-
 
 }

@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analysis.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
@@ -81,7 +80,6 @@ public class ConnectedContainer extends ComponentContainer {
       globalStores,
       globalStores.getGlobalStorage(),
       globalStores.getPluginReferenceStore(),
-      new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginsMinVersions.class,
       new ServerApiHelper(endpoint, client),
