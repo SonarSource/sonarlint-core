@@ -21,32 +21,23 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
-import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public abstract class AbstractSonarLintEngine implements SonarLintEngine {
-  protected final ReadWriteLock rwl = new ReentrantReadWriteLock();
 
-  protected abstract ModuleRegistry getModuleRegistry();
+  // Visible for medium tests
+  public abstract GlobalAnalysisContainer getAnalysisContainer();
 
   private final ClientLogOutput logOutput;
   protected Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
@@ -57,71 +48,23 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
 
   @Override
   public void declareModule(ClientModuleInfo module) {
-    withRwLock(() -> getModuleRegistry().registerModule(module));
+    getAnalysisContainer().registerModule(module);
   }
 
   @Override
   public void stopModule(Object moduleKey) {
-    withRwLock(() -> {
-      getModuleRegistry().unregisterModule(moduleKey);
-      return null;
-    });
+    getAnalysisContainer().unregisterModule(moduleKey);
   }
 
   @Override
   public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    withRwLock(() -> {
-      ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
-      if (moduleContainer != null) {
-        moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
-      }
-      return null;
-    });
+    getAnalysisContainer().fireModuleFileEvent(moduleKey, event);
   }
 
   protected void loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages, boolean includeTemplateRules) {
     var ruleExtractor = new RulesDefinitionExtractor();
     allRulesDefinitionsByKey = ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages, includeTemplateRules).stream()
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
-  }
-
-  protected <T> T withModule(AbstractAnalysisConfiguration configuration, Function<ModuleContainer, T> consumer) {
-    Object moduleKey = configuration.moduleKey();
-    var moduleContainer = moduleKey != null ? getModuleRegistry().getContainerFor(moduleKey) : null;
-    if (moduleContainer == null) {
-      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = getModuleRegistry().createTranscientContainer(configuration.inputFiles());
-    }
-    Throwable originalException = null;
-    try {
-      return consumer.apply(moduleContainer);
-    } catch (Throwable e) {
-      originalException = e;
-      throw e;
-    } finally {
-      try {
-        if (moduleContainer.isTranscient()) {
-          moduleContainer.stopComponents();
-        }
-      } catch (Exception e) {
-        if (originalException != null) {
-          e.addSuppressed(originalException);
-        }
-        throw e;
-      }
-    }
-  }
-
-  protected <T> T withRwLock(Supplier<T> callable) {
-    setLogging(null);
-    rwl.writeLock().lock();
-    try {
-      return callable.get();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.writeLock().unlock();
-    }
   }
 
   protected void setLogging(@Nullable ClientLogOutput logOutput) {

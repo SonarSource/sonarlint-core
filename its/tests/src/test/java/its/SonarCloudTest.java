@@ -64,7 +64,6 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -234,7 +233,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
-    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
     // This profile is altered in a test
     restoreProfile("java-sonarlint.xml");
@@ -297,7 +295,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
   public void globalUpdate() {
     updateGlobal();
 
-    assertThat(engine.getState()).isEqualTo(State.UPDATED);
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getRuleDetails("java:S106").getHtmlDescription()).contains("When logging a message there are");

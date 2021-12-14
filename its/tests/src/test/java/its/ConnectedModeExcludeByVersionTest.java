@@ -39,12 +39,11 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
-import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,10 +106,10 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   public void dontDownloadPluginWithUnsupportedVersion() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
     assertThat(engine.getGlobalStorageStatus()).isNull();
-    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
     UpdateResult update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
+    assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
     assertThat(logs).contains("Code analyzer 'python' version '1.13.0.2922' is not supported (minimal version is '1.14.0.3086'). Skip downloading it.");
   }

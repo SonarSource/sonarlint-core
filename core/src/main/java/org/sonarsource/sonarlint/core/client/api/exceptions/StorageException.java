@@ -30,9 +30,5 @@ public class StorageException extends SonarLintException {
   public StorageException(String msg, Throwable cause) {
     super(msg, cause);
   }
-  
-  public StorageException(String msg, boolean withStackTrace) {
-    super(msg, null, withStackTrace);
-  }
 
 }

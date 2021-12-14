@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
@@ -65,27 +64,13 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final StandaloneGlobalConfiguration globalConfig;
-  private GlobalAnalysisContainer globalContainer;
-  private PluginInstancesRepository pluginInstancesRepository;
+  private final PluginInstancesRepository pluginInstancesRepository;
+  private final GlobalAnalysisContainer globalContainer;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-    start();
-  }
-
-  public GlobalAnalysisContainer getGlobalContainer() {
-    return globalContainer;
-  }
-
-  @Override
-  protected ModuleRegistry getModuleRegistry() {
-    return getGlobalContainer().getModuleRegistry();
-  }
-
-  public void start() {
     setLogging(null);
-    rwl.writeLock().lock();
 
     pluginInstancesRepository = createPluginInstancesRepository();
 
@@ -104,9 +89,12 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       globalContainer.startComponents();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.writeLock().unlock();
     }
+  }
+
+  @Override
+  public GlobalAnalysisContainer getAnalysisContainer() {
+    return globalContainer;
   }
 
   private PluginInstancesRepository createPluginInstancesRepository() {
@@ -174,17 +162,12 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .addActiveRules(activeRules)
       .setBaseDir(configuration.baseDir())
       .build();
-    rwl.readLock().lock();
-    return withModule(configuration, moduleContainer -> {
-      try {
-        return globalContainer.analyze(moduleContainer, analysisConfig, i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
-          new ProgressMonitor(monitor));
-      } catch (RuntimeException e) {
-        throw SonarLintWrappedException.wrap(e);
-      } finally {
-        rwl.readLock().unlock();
-      }
-    });
+    try {
+      return globalContainer.analyze(configuration.moduleKey(), analysisConfig, i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
+        new ProgressMonitor(monitor));
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    }
   }
 
   private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
@@ -220,20 +203,12 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   @Override
   public void stop() {
     setLogging(null);
-    rwl.writeLock().lock();
     try {
-      if (globalContainer == null) {
-        return;
-      }
+      allRulesDefinitionsByKey.clear();
       globalContainer.stopComponents(false);
-      if (pluginInstancesRepository != null) {
-        pluginInstancesRepository.close();
-      }
+      pluginInstancesRepository.close();
     } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      this.globalContainer = null;
-      rwl.writeLock().unlock();
     }
   }
 

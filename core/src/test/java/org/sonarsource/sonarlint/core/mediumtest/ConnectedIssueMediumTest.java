@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.api.sonarlint.SonarLintSide;
@@ -46,10 +45,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
@@ -143,75 +140,9 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void unknownRuleKey() {
-    assertThrows(SonarLintException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
-    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
-    assertThrows(SonarLintException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
-  }
-
-  @Test
-  @Ignore("We don't support this use case anymore")
-  public void simpleJavaScriptUnbinded() throws Exception {
-    // TODO remove test ?
-    String ruleKey = "javascript:S1135";
-    ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
-    assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
-    assertThat(ruleDetails.getName()).isEqualTo("\"TODO\" tags should be handled");
-    assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
-    assertThat(ruleDetails.getSeverity()).isEqualTo("INFO");
-    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "<code>TODO</code> tags are commonly used");
-    assertThat(ruleDetails.getExtendedDescription()).isEmpty();
-
-    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
-      + "  var x; //TODO\n"
-      + "}", false);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setBaseDir(baseDir.toPath())
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
-      tuple(ruleKey, 2, inputFile.getPath()));
-  }
-
-  @Test
-  @Ignore("We don't support this use case anymore")
-  public void simpleJavaUnbinded() throws Exception {
-    // TODO remove ?
-    ClientInputFile inputFile = prepareJavaInputFile();
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setBaseDir(baseDir.toPath())
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null);
-
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
-  }
-
-  @Test
-  @Ignore("We don't support this use case anymore")
-  public void simpleJavaTestUnbinded() throws Exception {
-    // TODO remove ?
-    ClientInputFile inputFile = prepareJavaTestInputFile();
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setBaseDir(baseDir.toPath())
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null);
-
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S2187", 1, inputFile.getPath(), "MAJOR"));
+    assertThrows(IllegalStateException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
+    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
+    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
   }
 
   @Test
@@ -283,7 +214,7 @@ public class ConnectedIssueMediumTest {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
-    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
     assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
@@ -293,7 +224,7 @@ public class ConnectedIssueMediumTest {
   public void stop_module_should_stop_the_module_container() {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
-    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
 
@@ -304,7 +235,7 @@ public class ConnectedIssueMediumTest {
   public void should_forward_module_file_event_to_listener() {
     // should not be located in global container in real life but easier for testing
     FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
-    sonarlint.getGlobalContainer().add(moduleFileListener);
+    sonarlint.getAnalysisContainer().add(moduleFileListener);
     OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
     sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
 

@@ -21,19 +21,18 @@ package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import java.time.Clock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisContainer;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
@@ -100,17 +99,48 @@ public class GlobalAnalysisContainer extends ComponentContainer {
     pluginRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 
-  public AnalysisResults analyze(ModuleContainer moduleContainer, AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
-    analysisContainer.add(configuration);
-    analysisContainer.add(new IssueListenerHolder(issueListener));
-    analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).collect(Collectors.toList())));
-    AnalysisResults defaultAnalysisResult = new AnalysisResults();
-    analysisContainer.add(defaultAnalysisResult);
-    analysisContainer.execute();
-    return defaultAnalysisResult;
+  public AnalysisResults analyze(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
+    var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
+    if (moduleContainer == null) {
+      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
+      moduleContainer = moduleRegistry.createTranscientContainer(configuration.inputFiles());
+    }
+    Throwable originalException = null;
+    try {
+      return moduleContainer.analyze(configuration, issueListener, progress);
+    } catch (Throwable e) {
+      originalException = e;
+      throw e;
+    } finally {
+      try {
+        if (moduleContainer.isTranscient()) {
+          moduleContainer.stopComponents();
+        }
+      } catch (Exception e) {
+        if (originalException != null) {
+          e.addSuppressed(originalException);
+        }
+        throw e;
+      }
+    }
   }
 
+  public void registerModule(ClientModuleInfo module) {
+    moduleRegistry.registerModule(module);
+  }
+
+  public void unregisterModule(Object moduleKey) {
+    moduleRegistry.unregisterModule(moduleKey);
+  }
+
+  public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+    ModuleContainer moduleContainer = moduleRegistry.getContainerFor(moduleKey);
+    if (moduleContainer != null) {
+      moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
+    }
+  }
+
+  // Visible for medium tests
   public ModuleRegistry getModuleRegistry() {
     return moduleRegistry;
   }

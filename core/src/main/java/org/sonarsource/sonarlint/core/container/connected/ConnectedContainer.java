@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
@@ -103,8 +103,8 @@ public class ConnectedContainer extends ComponentContainer {
   }
 
   public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable GlobalStorageStatus globalStorageStatus, ProgressMonitor progress) {
-    if (globalStorageStatus == null) {
-      throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
+    if (globalStorageStatus == null || globalStorageStatus.isStale()) {
+      throw new StorageException("Missing or outdated storage for connection '" + globalConfig.getConnectionId() + "'");
     }
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }

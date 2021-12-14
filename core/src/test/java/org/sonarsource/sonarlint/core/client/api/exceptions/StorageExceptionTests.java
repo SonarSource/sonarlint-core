@@ -34,11 +34,4 @@ class StorageExceptionTests {
     assertThat(ex.getStackTrace()).isNotEmpty();
   }
 
-  @Test
-  void withNoStack() {
-    StorageException ex = new StorageException("msg", false);
-    assertThat(ex.getCause()).isNull();
-    assertThat(ex.getMessage()).isEqualTo("msg");
-    assertThat(ex.getStackTrace()).isEmpty();
-  }
 }
