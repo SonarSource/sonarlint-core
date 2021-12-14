@@ -44,6 +44,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RuleExtractorMediumTests {
 
+  private static final int COMMERCIAL_RULE_TEMPLATES_COUNT = 11;
+  private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 16;
+  private static final int ALL_RULES_COUNT_WITHOUT_COMMERCIAL = 1199;
+  private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 2863;
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
@@ -68,17 +72,38 @@ class RuleExtractorMediumTests {
     PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
-      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages);
+      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
       if (COMMERCIAL_ENABLED) {
         assertThat(allJars).hasSize(19);
-        assertThat(allRules).hasSize(2863);
+        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
         assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
           "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
           "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
           "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
       } else {
         assertThat(allJars).hasSize(10);
-        assertThat(allRules).hasSize(1199);
+        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL);
+      }
+    }
+  }
+
+  @Test
+  void extractAllRules_include_rule_templates() throws Exception {
+    Set<Language> enabledLanguages = Set.of(Language.values());
+    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
+    try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
+
+      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, true);
+      if (COMMERCIAL_ENABLED) {
+        assertThat(allJars).hasSize(19);
+        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
+        assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+          "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+          "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+          "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
+      } else {
+        assertThat(allJars).hasSize(10);
+        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT);
       }
     }
   }
@@ -99,7 +124,7 @@ class RuleExtractorMediumTests {
     PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
-      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages);
+      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
 
       assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
     }

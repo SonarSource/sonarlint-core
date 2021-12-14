@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 
 public class RulesDefinitionExtractor {
 
-  public List<SonarLintRuleDefinition> extractRules(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages) {
+  public List<SonarLintRuleDefinition> extractRules(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages, boolean includeTemplateRules) {
     Context context;
     try {
       RulesDefinitionExtractorContainer container = new RulesDefinitionExtractorContainer(pluginInstancesRepository);
@@ -52,7 +52,7 @@ public class RulesDefinitionExtractor {
         continue;
       }
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
-        if (ruleDef.type() == RuleType.SECURITY_HOTSPOT || ruleDef.template()) {
+        if (ruleDef.type() == RuleType.SECURITY_HOTSPOT || (ruleDef.template() && !includeTemplateRules)) {
           continue;
         }
         rules.add(new SonarLintRuleDefinition(ruleDef));

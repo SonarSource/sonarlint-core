@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.analysis.api;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class ActiveRule {
 
@@ -51,11 +53,12 @@ public class ActiveRule {
     this.params = Map.copyOf(params);
   }
 
+  @CheckForNull
   public String getTemplateRuleKey() {
     return templateRuleKey;
   }
 
-  public void setTemplateRuleKey(String templateRuleKey) {
+  public void setTemplateRuleKey(@Nullable String templateRuleKey) {
     this.templateRuleKey = templateRuleKey;
   }
 

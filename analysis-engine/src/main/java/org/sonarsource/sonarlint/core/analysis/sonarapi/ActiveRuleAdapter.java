@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
 
@@ -68,7 +69,13 @@ public class ActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String templateRuleKey() {
-    return activeRule.getTemplateRuleKey();
+    String templateRuleKey = activeRule.getTemplateRuleKey();
+    if (!StringUtils.isEmpty(templateRuleKey)) {
+      // The SQ plugin API expect template rule key to be only the "rule" part of the key (without the repository key)
+      RuleKey ruleKey = RuleKey.parse(templateRuleKey);
+      return ruleKey.rule();
+    }
+    return null;
   }
 
   @Override
