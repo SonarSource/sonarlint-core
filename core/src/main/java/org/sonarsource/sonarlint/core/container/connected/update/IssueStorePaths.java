@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.container.model.DefaultServerFlow;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-import static org.apache.commons.lang.StringUtils.trimToNull;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class IssueStorePaths {
 

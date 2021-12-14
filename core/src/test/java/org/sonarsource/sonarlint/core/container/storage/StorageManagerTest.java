@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

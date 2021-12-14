@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import com.google.common.base.Objects;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -270,7 +270,7 @@ public class IssueStoreReaderTest {
   }
 
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
-    if (Objects.equal(o1.getFilePath(), o2.getFilePath())) {
+    if (Objects.equals(o1.getFilePath(), o2.getFilePath())) {
       return 0;
     }
     return 1;

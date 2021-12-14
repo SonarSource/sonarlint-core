@@ -19,12 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
-import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
@@ -48,32 +49,34 @@ public class GlobalStorageUpdateExecutor {
   private final ServerStorage serverStorage;
   private final PluginCache pluginCache;
   private final ConnectedGlobalConfiguration connectedGlobalConfiguration;
-  private final TempFolder tempFolder;
   private final ServerApiHelper serverApiHelper;
   private final ServerVersionAndStatusChecker statusChecker;
   private final PluginListDownloader pluginListDownloader;
 
   public GlobalStorageUpdateExecutor(ServerStorage serverStorage, ServerApiHelper serverApiHelper, ServerVersionAndStatusChecker statusChecker,
-    PluginCache pluginCache, PluginListDownloader pluginListDownloader, ConnectedGlobalConfiguration connectedGlobalConfiguration,
-    TempFolder tempFolder) {
+    PluginCache pluginCache, PluginListDownloader pluginListDownloader, ConnectedGlobalConfiguration connectedGlobalConfiguration) {
     this.serverStorage = serverStorage;
     this.serverApiHelper = serverApiHelper;
     this.statusChecker = statusChecker;
     this.pluginCache = pluginCache;
     this.pluginListDownloader = pluginListDownloader;
     this.connectedGlobalConfiguration = connectedGlobalConfiguration;
-    this.tempFolder = tempFolder;
   }
 
   public List<SonarAnalyzer> update(ProgressMonitor progress) {
-    var temp = tempFolder.newDir().toPath();
-    StorageFolder storageFolder = new StorageFolder.Default(temp);
-    var serverInfoStore = new ServerInfoStore(storageFolder);
-    var pluginReferenceStore = new PluginReferenceStore(storageFolder);
-    var serverProjectsStore = new ServerProjectsStore(storageFolder);
-    var storageStatusStore = new StorageStatusStore(storageFolder);
-
+    Path temp;
     try {
+      temp = Files.createTempDirectory("sonarlint-global-storage");
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to create temp directory", e);
+    }
+    try {
+      StorageFolder storageFolder = new StorageFolder.Default(temp);
+      var serverInfoStore = new ServerInfoStore(storageFolder);
+      var pluginReferenceStore = new PluginReferenceStore(storageFolder);
+      var serverProjectsStore = new ServerProjectsStore(storageFolder);
+      var storageStatusStore = new StorageStatusStore(storageFolder);
+
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
       ServerInfo serverStatus = statusChecker.checkVersionAndStatus();
 
@@ -103,13 +106,8 @@ public class GlobalStorageUpdateExecutor {
         serverStorage.replaceStorageWith(temp);
       });
       return analyzers;
-    } catch (RuntimeException e) {
-      try {
-        FileUtils.deleteRecursively(temp);
-      } catch (RuntimeException ignore) {
-        // ignore because we want to throw original exception
-      }
-      throw e;
+    } finally {
+      org.apache.commons.io.FileUtils.deleteQuietly(temp.toFile());
     }
   }
 }
