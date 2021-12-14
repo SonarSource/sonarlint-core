@@ -27,7 +27,6 @@ import org.sonar.api.utils.log.Loggers;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ProjectBranchesApi {
