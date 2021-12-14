@@ -48,24 +48,6 @@ message PluginReferences {
   }
 }
 
-message Rules {
-  map<string,Rule> rules_by_key = 1;
-    
-  message Rule {
-    string repo = 1;
-    string key = 2;
-    string name = 3;
-    string severity = 4;
-    string lang = 5;
-    string internal_key = 6;
-    string html_desc = 7;
-    bool is_template = 8;
-    string template_key = 9;
-    string html_note = 10;
-    string type = 11;
-  }
-}
-
 message ServerIssue {
   string rule_repository = 3;
   string rule_key = 4;

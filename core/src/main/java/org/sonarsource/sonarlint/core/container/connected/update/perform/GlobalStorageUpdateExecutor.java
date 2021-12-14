@@ -29,10 +29,8 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
@@ -72,7 +70,6 @@ public class GlobalStorageUpdateExecutor {
     StorageFolder storageFolder = new StorageFolder.Default(temp);
     var serverInfoStore = new ServerInfoStore(storageFolder);
     var pluginReferenceStore = new PluginReferenceStore(storageFolder);
-    var rulesStore = new RulesStore(storageFolder);
     var serverProjectsStore = new ServerProjectsStore(storageFolder);
     var storageStatusStore = new StorageStatusStore(storageFolder);
 
@@ -87,11 +84,7 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Fetching analyzers", 0.25f);
       var pluginReferenceDownloader = new PluginReferencesDownloader(serverApiHelper, pluginCache, connectedGlobalConfiguration,
         pluginReferenceStore);
-      pluginReferenceDownloader.fetchPlugins(analyzers, progress.subProgress(0.25f, 0.4f, "Fetching code analyzers"));
-
-      progress.setProgressAndCheckCancel("Fetching rules", 0.4f);
-      var rulesDownloader = new RulesDownloader(serverApiHelper, connectedGlobalConfiguration, rulesStore);
-      rulesDownloader.fetchRules(progress.subProgress(0.4f, 0.6f, "Fetching rules"));
+      pluginReferenceDownloader.fetchPlugins(analyzers, progress.subProgress(0.25f, 0.8f, "Fetching code analyzers"));
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
       var projectListDownloader = new ProjectListDownloader(serverApiHelper, serverProjectsStore);

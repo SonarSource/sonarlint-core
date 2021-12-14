@@ -22,13 +22,8 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarqube.ws.Common;
@@ -51,8 +46,6 @@ public class RulesApi {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
-    + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
   public static final String RULE_SHOW_URL = "/api/rules/show.protobuf?key=";
 
   private final ServerApiHelper helper;
@@ -69,21 +62,6 @@ public class RulesApi {
       LOG.error("Error when fetching rule", e);
       return Optional.empty();
     }
-  }
-
-  public ServerRules getAll(Set<String> enabledLanguageKeys, ProgressMonitor progress) {
-    Map<String, ServerRules.Rule> rulesByKey = new HashMap<>();
-    Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey = new HashMap<>();
-
-    for (var i = 0; i < Severity.values().length; i++) {
-      var severity = Severity.values()[i];
-      progress.setProgressAndCheckCancel("Loading severity '" + severity.name().toLowerCase(Locale.US) + "'",
-        i / (float) Severity.values().length);
-      var severityProgress = progress.subProgress(i / (float) Severity.values().length,
-        (i + 1) / (float) Severity.values().length, severity.name().toLowerCase(Locale.US));
-      fetchRulesAndActiveRules(rulesByKey, severity.name(), activeRulesByQProfileKey, enabledLanguageKeys, severityProgress);
-    }
-    return new ServerRules(new ArrayList<>(rulesByKey.values()), activeRulesByQProfileKey);
   }
 
   public List<ServerRules.ActiveRule> getAllActiveRules(String qualityProfileKey, ProgressMonitor progress) {
@@ -116,29 +94,6 @@ public class RulesApi {
     return activeRules;
   }
 
-  private void fetchRulesAndActiveRules(Map<String, ServerRules.Rule> rulesByKey, String severity, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey,
-    Set<String> enabledLanguageKeys, ProgressMonitor progress) {
-    var page = 0;
-    var pageSize = 500;
-    var loaded = 0;
-
-    while (true) {
-      page++;
-      Rules.SearchResponse response = loadFromStream(helper.get(getSearchBySeverityUrl(severity, enabledLanguageKeys, page, pageSize)));
-      if (response.getTotal() > 10_000) {
-        throw new IllegalStateException(
-          String.format("Found more than 10000 rules for severity '%s' in the SonarQube server, which is not supported by SonarLint.", severity));
-      }
-      readPage(rulesByKey, activeRulesByQProfileKey, response);
-      loaded += response.getPs();
-
-      if (response.getTotal() <= loaded) {
-        break;
-      }
-      progress.setProgressAndCheckCancel("Loading page " + page, loaded / (float) response.getTotal());
-    }
-  }
-
   private String getSearchByQualityProfileUrl(String qualityProfileKey, int page) {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?qprofile=");
@@ -149,63 +104,11 @@ public class RulesApi {
     return builder.toString();
   }
 
-  private String getSearchBySeverityUrl(String severity, Set<String> enabledLanguageKeys, int page, int pageSize) {
-    var builder = new StringBuilder(1024);
-    builder.append(RULES_SEARCH_URL);
-    helper.getOrganizationKey()
-      .ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
-    builder.append("&severities=").append(severity);
-    builder.append("&languages=").append(String.join(",", enabledLanguageKeys));
-    builder.append("&p=").append(page);
-    builder.append("&ps=").append(pageSize);
-    return builder.toString();
-  }
-
   private static Rules.SearchResponse loadFromStream(HttpClient.Response response) {
     try (var toBeClosed = response; InputStream is = toBeClosed.bodyAsStream()) {
       return Rules.SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);
-    }
-  }
-
-  private static void readPage(Map<String, ServerRules.Rule> rulesByKey, Map<String, List<ServerRules.ActiveRule>> activeRulesByQProfileKey, Rules.SearchResponse response) {
-    for (var r : response.getRulesList()) {
-      var ruleKey = r.getKey();
-      if (rulesByKey.containsKey(ruleKey)) {
-        // could happen when an already received active rule has drifted to a later page
-        continue;
-      }
-      rulesByKey.put(ruleKey, new ServerRules.Rule(
-        ruleKey,
-        r.getName(),
-        r.getSeverity(),
-        r.getLang(),
-        r.getInternalKey(),
-        r.getHtmlDesc(),
-        r.getHtmlNote(),
-        r.getIsTemplate(),
-        r.getTemplateKey(),
-        typeToString(r.getType())));
-    }
-    for (var entry : response.getActives().getActives().entrySet()) {
-      var ruleKey = entry.getKey();
-      var rule = rulesByKey.get(ruleKey);
-      for (Rules.Active ar : entry.getValue().getActiveListList()) {
-        String qProfileKey = ar.getQProfile();
-        var activeRule = new ServerRules.ActiveRule(
-          ruleKey,
-          ar.getSeverity(),
-          ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()),
-          rule.getTemplateKey());
-        activeRulesByQProfileKey.computeIfAbsent(qProfileKey, k -> new ArrayList<>()).add(activeRule);
-      }
-    }
-
-    for (var entry : response.getQProfiles().getQProfiles().entrySet()) {
-      if (!activeRulesByQProfileKey.containsKey(entry.getValue().getName())) {
-        activeRulesByQProfileKey.put(entry.getValue().getName(), Collections.emptyList());
-      }
     }
   }
 
