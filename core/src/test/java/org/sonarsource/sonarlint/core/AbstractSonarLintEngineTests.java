@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
-import org.sonarsource.sonarlint.core.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,6 +42,7 @@ class AbstractSonarLintEngineTests {
     ModuleContainer mockedModuleContainerThatFailsOnStop = mock(ModuleContainer.class);
     IllegalStateException onStopException = new IllegalStateException("Exception during container stop");
     when(mockedModuleContainerThatFailsOnStop.stopComponents()).thenThrow(onStopException);
+    when(mockedModuleContainerThatFailsOnStop.isTranscient()).thenReturn(true);
 
     AbstractSonarLintEngine underTest = prepareFakeEngine(mockedModuleContainerThatFailsOnStop);
 
@@ -59,6 +60,7 @@ class AbstractSonarLintEngineTests {
     ModuleContainer mockedModuleContainerThatFailsOnStop = mock(ModuleContainer.class);
     IllegalStateException onStopException = new IllegalStateException("Exception during container stop");
     when(mockedModuleContainerThatFailsOnStop.stopComponents()).thenThrow(onStopException);
+    when(mockedModuleContainerThatFailsOnStop.isTranscient()).thenReturn(true);
 
     AbstractSonarLintEngine underTest = prepareFakeEngine(mockedModuleContainerThatFailsOnStop);
 
@@ -91,7 +93,7 @@ class AbstractSonarLintEngineTests {
       }
     };
     when(mockModuleRegistry.getContainerFor(MODULE_KEY)).thenReturn(null);
-    when(mockModuleRegistry.createContainer(any())).thenReturn(mockedModuleContainerThatFailsOnStop);
+    when(mockModuleRegistry.createTranscientContainer(any())).thenReturn(mockedModuleContainerThatFailsOnStop);
     return underTest;
   }
 

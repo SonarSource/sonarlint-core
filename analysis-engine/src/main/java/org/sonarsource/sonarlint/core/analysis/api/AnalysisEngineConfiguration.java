@@ -46,6 +46,7 @@ public class AnalysisEngineConfiguration {
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
   private final long clientPid;
+  private final ClientModulesProvider modulesProvider;
 
   private AnalysisEngineConfiguration(Builder builder) {
     this.workDir = builder.workDir;
@@ -54,6 +55,7 @@ public class AnalysisEngineConfiguration {
     this.nodeJsPath = builder.nodeJsPath;
     this.nodeJsVersion = builder.nodeJsVersion;
     this.clientPid = builder.clientPid;
+    this.modulesProvider = builder.modulesProvider;
   }
 
   public static Builder builder() {
@@ -86,6 +88,10 @@ public class AnalysisEngineConfiguration {
     return clientPid;
   }
 
+  public ClientModulesProvider getModulesProvider() {
+    return modulesProvider;
+  }
+
   public Map<String, String> getEffectiveConfig() {
     Map<String, String> props = new HashMap<>();
     if (nodeJsPath != null) {
@@ -102,7 +108,7 @@ public class AnalysisEngineConfiguration {
     private Path nodeJsPath;
     private Version nodeJsVersion;
     private long clientPid;
-    private ClientFileSystem clientFileSystem;
+    private ClientModulesProvider modulesProvider;
 
     private Builder() {
 
@@ -159,6 +165,11 @@ public class AnalysisEngineConfiguration {
 
     public Builder setClientPid(long clientPid) {
       this.clientPid = clientPid;
+      return this;
+    }
+
+    public Builder setModulesProvider(ClientModulesProvider modulesProvider) {
+      this.modulesProvider = modulesProvider;
       return this;
     }
 

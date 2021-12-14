@@ -32,19 +32,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.TestUtils;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
+import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
+import static testutils.TestUtils.createNoOpIssueListener;
 
 public class LogMediumTest {
 
@@ -60,7 +60,7 @@ public class LogMediumTest {
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginUrl())
       .setLogOutput(createLogOutput(logs))
-      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 

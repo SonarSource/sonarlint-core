@@ -36,8 +36,8 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
+import static testutils.TestUtils.createNoOpLogOutput;
 
 public class ConnectedStaleStorageMediumTest {
   @ClassRule

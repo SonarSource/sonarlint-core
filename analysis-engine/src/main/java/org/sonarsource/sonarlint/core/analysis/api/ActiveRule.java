@@ -28,7 +28,6 @@ public class ActiveRule {
   private final String ruleKey;
   private final String languageKey;
   private Map<String, String> params = Collections.emptyMap();
-  private String internalKey = null;
   private String templateRuleKey = null;
 
   public ActiveRule(String ruleKey, String languageKey) {
@@ -50,14 +49,6 @@ public class ActiveRule {
 
   public void setParams(Map<String, String> params) {
     this.params = Map.copyOf(params);
-  }
-
-  public String getInternalKey() {
-    return internalKey;
-  }
-
-  public void setInternalKey(String internalKey) {
-    this.internalKey = internalKey;
   }
 
   public String getTemplateRuleKey() {

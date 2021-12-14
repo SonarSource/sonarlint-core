@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModulesProvider;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -51,7 +52,7 @@ public abstract class AbstractGlobalConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
-  private final ModulesProvider modulesProvider;
+  private final ClientModulesProvider modulesProvider;
   private final long clientPid;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
@@ -70,7 +71,7 @@ public abstract class AbstractGlobalConfiguration {
     return Collections.unmodifiableMap(extraProperties);
   }
 
-  public ModulesProvider getModulesProvider() {
+  public ClientModulesProvider getModulesProvider() {
     return modulesProvider;
   }
 
@@ -113,7 +114,7 @@ public abstract class AbstractGlobalConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private Version nodeJsVersion;
-    private ModulesProvider modulesProvider;
+    private ClientModulesProvider modulesProvider;
     private long clientPid;
 
     public G setLogOutput(@Nullable ClientLogOutput logOutput) {
@@ -170,7 +171,7 @@ public abstract class AbstractGlobalConfiguration {
       return (G) this;
     }
 
-    public G setModulesProvider(ModulesProvider modulesProvider) {
+    public G setModulesProvider(ClientModulesProvider modulesProvider) {
       this.modulesProvider = modulesProvider;
       return (G) this;
     }

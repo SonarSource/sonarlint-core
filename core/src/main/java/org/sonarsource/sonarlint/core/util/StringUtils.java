@@ -42,21 +42,6 @@ public class StringUtils {
     }
   }
 
-  public static String describe(Object o) {
-    try {
-      if (o.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
-        var str = o.toString();
-        if (str != null) {
-          return str;
-        }
-      }
-    } catch (Exception e) {
-      // fallback
-    }
-
-    return o.getClass().getName();
-  }
-
   public static boolean isEmpty(@Nullable String str) {
     return str == null || str.isEmpty();
   }

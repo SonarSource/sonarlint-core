@@ -52,4 +52,12 @@ public interface WithTextRange {
     TextRange textRange = getTextRange();
     return textRange != null ? textRange.getEndLineOffset() : null;
   }
+
+  static org.sonarsource.sonarlint.core.analysis.api.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
+    return new org.sonarsource.sonarlint.core.analysis.api.TextRange(
+      analyzerTextRange.start().line(),
+      analyzerTextRange.start().lineOffset(),
+      analyzerTextRange.end().line(),
+      analyzerTextRange.end().lineOffset());
+  }
 }

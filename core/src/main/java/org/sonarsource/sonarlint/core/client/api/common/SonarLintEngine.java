@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Collection;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 
 /**
  * Entry point for SonarLint.
@@ -33,7 +34,7 @@ public interface SonarLintEngine {
    */
   Collection<PluginDetails> getPluginDetails();
 
-  void declareModule(ModuleInfo module);
+  void declareModule(ClientModuleInfo module);
 
   void stopModule(Object moduleKey);
 

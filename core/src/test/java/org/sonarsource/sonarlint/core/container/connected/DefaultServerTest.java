@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
+import java.util.Map;
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.SonarRuntime;
@@ -35,9 +36,7 @@ public class DefaultServerTest {
   public void shouldLoadServerProperties() {
     SonarRuntime runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    MapSettings settings = new MapSettings();
-    settings.setProperty(CoreProperties.SERVER_ID, "123");
-    settings.setProperty(CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000");
+    MapSettings settings = new MapSettings(Map.of(CoreProperties.SERVER_ID, "123", CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000"));
 
     DefaultServer metadata = new DefaultServer(settings, runtime);
 
@@ -51,7 +50,7 @@ public class DefaultServerTest {
   public void coverageUnusedMethods() {
     SonarRuntime runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    DefaultServer metadata = new DefaultServer(new MapSettings(), runtime);
+    DefaultServer metadata = new DefaultServer(new MapSettings(Map.of()), runtime);
     assertThat(metadata.getStartedAt()).isNull();
     assertThat(metadata.getContextPath()).isNull();
     assertThat(metadata.isSecured()).isFalse();

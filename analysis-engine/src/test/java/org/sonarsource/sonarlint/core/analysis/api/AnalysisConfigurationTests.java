@@ -64,7 +64,6 @@ class AnalysisConfigurationTests {
     assertThat(config).hasToString("[\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar, sonar.foo=bar}\n" +
-      "  moduleKey: null\n" +
       "  activeRules: [java:S123, java:S456, php:S123{param1=value1}, python:S123, python:S456]\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +

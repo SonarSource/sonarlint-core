@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,12 +30,10 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 
 public class ConnectedEmbeddedPluginMediumTest {
@@ -59,22 +55,13 @@ public class ConnectedEmbeddedPluginMediumTest {
       .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
-    /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
-     * QP)
-     */
-    Path sampleStorage = Paths.get(ConnectedEmbeddedPluginMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = storage.getPath();
-    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
-    FileUtils.copyDirectory(tmpStorage.resolve(encodeForFs("local")).toFile(), tmpStorage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).toFile());
-
     NodeJsHelper nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(tmpStorage)
+      .setStorageRoot(storage.getPath())
       .setLogOutput((m, l) -> System.out.println(m))
       .addEnabledLanguages(Language.JAVA, Language.JS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())

@@ -19,26 +19,29 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.collect.Streams;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleFileEventNotifier;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   protected final ReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -46,13 +49,14 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   protected abstract ModuleRegistry getModuleRegistry();
 
   private final ClientLogOutput logOutput;
+  protected Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
 
   protected AbstractSonarLintEngine(@Nullable ClientLogOutput logOutput) {
     this.logOutput = logOutput;
   }
 
   @Override
-  public void declareModule(ModuleInfo module) {
+  public void declareModule(ClientModuleInfo module) {
     withRwLock(() -> getModuleRegistry().registerModule(module));
   }
 
@@ -75,14 +79,18 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
     });
   }
 
-  protected <T> T withModule(AbstractAnalysisConfiguration configuration, Function<ComponentContainer, T> consumer) {
-    boolean deleteModuleAfterAnalysis = false;
+  protected void loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages) {
+    var ruleExtractor = new RulesDefinitionExtractor();
+    allRulesDefinitionsByKey = ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages).stream()
+      .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
+  }
+
+  protected <T> T withModule(AbstractAnalysisConfiguration configuration, Function<ModuleContainer, T> consumer) {
     Object moduleKey = configuration.moduleKey();
-    ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
+    var moduleContainer = moduleKey != null ? getModuleRegistry().getContainerFor(moduleKey) : null;
     if (moduleContainer == null) {
       // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = getModuleRegistry().createContainer(new ModuleInfo(moduleKey, new AnalysisScopeFileSystem(configuration.inputFiles())));
-      deleteModuleAfterAnalysis = true;
+      moduleContainer = getModuleRegistry().createTranscientContainer(configuration.inputFiles());
     }
     Throwable originalException = null;
     try {
@@ -92,7 +100,7 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
       throw e;
     } finally {
       try {
-        if (deleteModuleAfterAnalysis) {
+        if (moduleContainer.isTranscient()) {
           moduleContainer.stopComponents();
         }
       } catch (Exception e) {
@@ -124,24 +132,4 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
     }
   }
 
-  private static class AnalysisScopeFileSystem implements ClientFileSystem {
-
-    private final Iterable<ClientInputFile> filesToAnalyze;
-
-    private AnalysisScopeFileSystem(Iterable<ClientInputFile> filesToAnalyze) {
-      this.filesToAnalyze = filesToAnalyze;
-    }
-
-    @Override
-    public Stream<ClientInputFile> files(String suffix, InputFile.Type type) {
-      return files()
-        .filter(file -> file.relativePath().endsWith(suffix))
-        .filter(file -> file.isTest() == (type == InputFile.Type.TEST));
-    }
-
-    @Override
-    public Stream<ClientInputFile> files() {
-      return Streams.stream(filesToAnalyze);
-    }
-  }
 }

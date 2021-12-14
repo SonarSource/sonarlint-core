@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analysis.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
@@ -43,7 +44,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalSto
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
-import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;

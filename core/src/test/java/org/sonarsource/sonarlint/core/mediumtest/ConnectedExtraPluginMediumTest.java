@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.mediumtest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
@@ -34,26 +33,24 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.TestUtils;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
+import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
+import static testutils.TestUtils.createNoOpLogOutput;
 
 public class ConnectedExtraPluginMediumTest {
 
@@ -74,28 +71,19 @@ public class ConnectedExtraPluginMediumTest {
       .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
-    /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
-     * QP)
-     */
-    Path sampleStorage = Paths.get(ConnectedExtraPluginMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = storage.getPath();
-    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
-    FileUtils.copyDirectory(tmpStorage.resolve(encodeForFs("local")).toFile(), tmpStorage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).toFile());
-
     NodeJsHelper nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(tmpStorage)
+      .setStorageRoot(storage.getPath())
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP)
       .addExtraPlugin(Language.JAVA.getPluginKey(), PluginLocator.getJavaPluginUrl())
       .addExtraPlugin(Language.PHP.getPluginKey(), PluginLocator.getPhpPluginUrl())
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
