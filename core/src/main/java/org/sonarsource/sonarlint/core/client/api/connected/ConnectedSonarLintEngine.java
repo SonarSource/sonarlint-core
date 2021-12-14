@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
@@ -148,15 +147,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @since 2.0
    */
   void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Check server to see if global storage need updates.
-   *
-   * @throws GlobalStorageUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
-   * @throws DownloadException             if it fails to download
-   * @since 2.6
-   */
-  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file.

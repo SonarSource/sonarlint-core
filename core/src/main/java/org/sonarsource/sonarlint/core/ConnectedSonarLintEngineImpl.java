@@ -58,7 +58,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
@@ -456,13 +455,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public Collection<PluginDetails> getPluginDetails() {
     return pluginInstancesRepository.getPluginCheckResultByKeys().values().stream().map(p -> new DefaultLoadedAnalyzer(p.getPlugin().getKey(), p.getPlugin().getName(),
       Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
-  }
-
-  @Override
-  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    return checkUpToDateThen(() -> runInConnectedContainer(endpoint, client,
-      container -> container.checkForUpdate(new ProgressMonitor(monitor))));
   }
 
   @Override
