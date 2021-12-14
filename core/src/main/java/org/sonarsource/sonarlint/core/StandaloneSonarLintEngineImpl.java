@@ -89,7 +89,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
 
     pluginInstancesRepository = createPluginInstancesRepository();
 
-    loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages());
+    loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), false);
 
     AnalysisEngineConfiguration analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(globalConfig.getEnabledLanguages())

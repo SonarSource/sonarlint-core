@@ -79,9 +79,9 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
     });
   }
 
-  protected void loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages) {
+  protected void loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages, boolean includeTemplateRules) {
     var ruleExtractor = new RulesDefinitionExtractor();
-    allRulesDefinitionsByKey = ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages).stream()
+    allRulesDefinitionsByKey = ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages, includeTemplateRules).stream()
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 
