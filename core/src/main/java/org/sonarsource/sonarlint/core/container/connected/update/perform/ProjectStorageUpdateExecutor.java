@@ -19,12 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang.StringUtils;
-import org.sonar.api.utils.TempFolder;
+import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
@@ -37,28 +38,36 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ProjectStorageUpdateExecutor {
-  private final TempFolder tempFolder;
   private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader;
   private final ServerIssueUpdater serverIssueUpdater;
   private final ProjectStoragePaths projectStoragePaths;
 
-  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, TempFolder tempFolder, ProjectConfigurationDownloader projectConfigurationDownloader,
+  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectConfigurationDownloader projectConfigurationDownloader,
     ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
     this.projectStoragePaths = projectStoragePaths;
-    this.tempFolder = tempFolder;
     this.projectConfigurationDownloader = projectConfigurationDownloader;
     this.projectFileListDownloader = projectFileListDownloader;
     this.serverIssueUpdater = serverIssueUpdater;
   }
 
   public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    FileUtils.replaceDir(temp -> {
-      var projectConfiguration = updateConfiguration(projectKey, temp, progress);
-      updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
-      updateComponents(projectKey, temp, projectConfiguration, progress);
-      updateStatus(temp);
-    }, projectStoragePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
+    Path temp;
+    try {
+      temp = Files.createTempDirectory("sonarlint-global-storage");
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to create temp directory", e);
+    }
+    try {
+      FileUtils.replaceDir(dir -> {
+        var projectConfiguration = updateConfiguration(projectKey, dir, progress);
+        updateServerIssues(projectKey, dir, projectConfiguration, fetchTaintVulnerabilities, progress);
+        updateComponents(projectKey, dir, projectConfiguration, progress);
+        updateStatus(dir);
+      }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
+    } finally {
+      org.apache.commons.io.FileUtils.deleteQuietly(temp.toFile());
+    }
   }
 
   private ProjectConfiguration updateConfiguration(String projectKey, Path temp, ProgressMonitor progress) {

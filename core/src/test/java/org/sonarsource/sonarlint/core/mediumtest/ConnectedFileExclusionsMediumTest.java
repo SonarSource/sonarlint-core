@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.mediumtest;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -91,27 +90,27 @@ public class ConnectedFileExclusionsMediumTest {
     int result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(4);
 
-    storeProjectSettings(ImmutableMap.of("sonar.inclusions", "src/**"));
+    storeProjectSettings(Map.of("sonar.inclusions", "src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    storeProjectSettings(ImmutableMap.of("sonar.inclusions", "file:**/src/**"));
+    storeProjectSettings(Map.of("sonar.inclusions", "file:**/src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    storeProjectSettings(ImmutableMap.of("sonar.exclusions", "src/**"));
+    storeProjectSettings(Map.of("sonar.exclusions", "src/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    storeProjectSettings(ImmutableMap.of("sonar.test.inclusions", "test/**"));
+    storeProjectSettings(Map.of("sonar.test.inclusions", "test/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    storeProjectSettings(ImmutableMap.of("sonar.test.exclusions", "test/**"));
+    storeProjectSettings(Map.of("sonar.test.exclusions", "test/**"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(3);
 
-    storeProjectSettings(ImmutableMap.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
+    storeProjectSettings(Map.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
     result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(1);
   }

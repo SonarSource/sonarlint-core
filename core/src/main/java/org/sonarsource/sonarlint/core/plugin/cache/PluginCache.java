@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 

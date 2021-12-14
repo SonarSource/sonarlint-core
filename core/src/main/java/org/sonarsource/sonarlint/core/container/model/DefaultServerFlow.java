@@ -25,7 +25,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssueLocation;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 
-import static org.apache.commons.lang.StringUtils.trimToNull;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class DefaultServerFlow implements ServerIssue.Flow {
   private final List<ServerIssueLocation> locations;

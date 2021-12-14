@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.api.utils.TempFolder;
 import org.sonarqube.ws.Components;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Rules;
@@ -65,11 +63,9 @@ class GlobalStorageUpdateExecutorTests {
   private GlobalStorageUpdateExecutor globalUpdate;
 
   private Path destDir;
-  private File tempDir;
 
   @BeforeEach
   public void setUp(@TempDir Path temp) throws IOException {
-    TempFolder tempFolder = mock(TempFolder.class);
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addProtobufResponse("/api/settings/values.protobuf", Settings.ValuesWsResponse.newBuilder().build());
@@ -91,13 +87,10 @@ class GlobalStorageUpdateExecutorTests {
       "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY&severities=BLOCKER&languages=&p=1&ps=500",
       Rules.SearchResponse.newBuilder().build());
 
-    tempDir = temp.resolve("tmp").toFile();
-    tempDir.mkdir();
     destDir = temp.resolve("storage/6964/global");
 
-    when(tempFolder.newDir()).thenReturn(tempDir);
     globalUpdate = new GlobalStorageUpdateExecutor(new ServerStorage(destDir), mockServer.serverApiHelper(), new ServerVersionAndStatusChecker(mockServer.serverApiHelper()),
-      mock(PluginCache.class), mock(PluginListDownloader.class), mock(ConnectedGlobalConfiguration.class), tempFolder);
+      mock(PluginCache.class), mock(PluginListDownloader.class), mock(ConnectedGlobalConfiguration.class));
   }
 
   @Test
@@ -125,8 +118,5 @@ class GlobalStorageUpdateExecutorTests {
     assertThat(throwable).isInstanceOf(IllegalStateException.class);
     // dest left untouched
     assertThat(Files.exists(destDir.resolve("test"))).isTrue();
-    // tmp cleaned
-    assertThat(Files.exists(tempDir.toPath())).isFalse();
-
   }
 }
