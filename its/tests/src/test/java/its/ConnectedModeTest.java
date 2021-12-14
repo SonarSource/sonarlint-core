@@ -25,10 +25,8 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.http.HttpResponse;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.util.NetworkUtils;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,21 +40,12 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.MovedContextHandler;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
@@ -76,9 +65,7 @@ import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
@@ -144,17 +131,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
-
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
   private List<String> logs;
-
-  private static Server server;
-  private static int redirectPort;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -197,39 +178,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean compile"));
-
-    prepareRedirectServer();
-  }
-
-  private static void prepareRedirectServer() throws Exception {
-    redirectPort = NetworkUtils.getNextAvailablePort(InetAddress.getLoopbackAddress());
-    QueuedThreadPool threadPool = new QueuedThreadPool();
-    threadPool.setMaxThreads(500);
-
-    server = new Server(threadPool);
-    // HTTP Configuration
-    HttpConfiguration httpConfig = new HttpConfiguration();
-    httpConfig.setSendServerVersion(true);
-    httpConfig.setSendDateHeader(false);
-
-    // Moved handler
-    MovedContextHandler movedContextHandler = new MovedContextHandler();
-    movedContextHandler.setPermanent(true);
-    movedContextHandler.setNewContextURL(ORCHESTRATOR.getServer().getUrl());
-    server.setHandler(movedContextHandler);
-
-    // http connector
-    ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
-    http.setPort(redirectPort);
-    server.addConnector(http);
-    server.start();
-  }
-
-  @AfterClass
-  public static void after() throws Exception {
-    if (server != null) {
-      server.stop();
-    }
   }
 
   @Before
@@ -663,22 +611,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(2);
 
-  }
-
-  @Test
-  public void checkForUpdate() {
-    updateGlobal();
-    updateProject(PROJECT_KEY_JAVA);
-
-    EndpointParams serverConfig = endpointParamsNoOrg("http://localhost:" + redirectPort);
-
-    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
-    assertThat(result.needUpdate()).isFalse();
-
-    // restarting server should not lead to notify an update
-    ORCHESTRATOR.restartServer();
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
-    assertThat(result.needUpdate()).isFalse();
   }
 
   @Test

@@ -66,7 +66,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -456,17 +455,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
     assertThat(issueListener.getIssues()).isEmpty();
-  }
-
-  @Test
-  public void checkForUpdate() {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
-    EndpointParams serverConfig = sonarcloudEndpointITOrg();
-
-    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
-    assertThat(result.needUpdate()).isFalse();
   }
 
   @Test

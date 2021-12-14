@@ -24,11 +24,8 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
@@ -38,7 +35,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.PluginReference
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalStorageUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
@@ -57,8 +53,6 @@ import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 
 public class ConnectedContainer extends ComponentContainer {
-
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final GlobalStores globalStores;
   private final EndpointParams endpoint;
@@ -84,7 +78,6 @@ public class ConnectedContainer extends ComponentContainer {
       PluginsMinVersions.class,
       new ServerApiHelper(endpoint, client),
       GlobalStorageUpdateExecutor.class,
-      GlobalStorageUpdateChecker.class,
       ProjectConfigurationDownloader.class,
       ProjectStorageUpdateExecutor.class,
       ProjectFileListDownloader.class,
@@ -116,14 +109,4 @@ public class ConnectedContainer extends ComponentContainer {
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }
 
-  public StorageUpdateCheckResult checkForUpdate(ProgressMonitor progress) {
-    try {
-      return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(progress);
-    } catch (Exception e) {
-      var msg = "Error when checking for global configuration update";
-      LOG.debug(msg, e);
-      // null as cause so that it doesn't get wrapped
-      throw new DownloadException(msg + ": " + e.getMessage(), e);
-    }
-  }
 }
