@@ -32,7 +32,7 @@ public class ProjectStoragePaths {
   /**
    * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
    */
-  public static final String STORAGE_VERSION = "3";
+  public static final String STORAGE_VERSION = "4";
 
   public static final String PROJECT_CONFIGURATION_PB = "configuration.pb";
   public static final String STORAGE_STATUS_PB = "storage_status.pb";
