@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
 public class ClientFileSystemFixtures {
-  public static ClientFileSystem aClientFileSystemWith(ClientInputFile... clientInputFile) {
-    return new ClientFileSystem() {
+  public static ClientModuleFileSystem aClientFileSystemWith(ClientInputFile... clientInputFile) {
+    return new ClientModuleFileSystem() {
       @Override
       public Stream<ClientInputFile> files(String language, InputFile.Type type) {
         return files();
@@ -39,8 +39,8 @@ public class ClientFileSystemFixtures {
     };
   }
 
-  public static ClientFileSystem anEmptyClientFileSystem() {
-    return new ClientFileSystem() {
+  public static ClientModuleFileSystem anEmptyClientFileSystem() {
+    return new ClientModuleFileSystem() {
       @Override
       public Stream<ClientInputFile> files(String language, InputFile.Type type) {
         return files();

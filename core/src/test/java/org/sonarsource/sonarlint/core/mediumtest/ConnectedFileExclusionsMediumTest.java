@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +34,15 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
+import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
+import static testutils.TestUtils.createNoOpLogOutput;
 
 public class ConnectedFileExclusionsMediumTest {
 
@@ -62,18 +61,11 @@ public class ConnectedFileExclusionsMediumTest {
       .withProject(PROJECT_KEY)
       .create(slHome);
     projectStorage = storage.getProjectStorages().get(0);
-    /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
-     * QP)
-     */
-    Path sampleStorage = Paths.get(ConnectedFileExclusionsMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = storage.getPath();
-    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(tmpStorage)
+      .setStorageRoot(storage.getPath())
       .setLogOutput(createNoOpLogOutput())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);

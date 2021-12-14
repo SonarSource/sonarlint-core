@@ -36,7 +36,6 @@ public class AnalysisConfiguration {
   private final Iterable<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path baseDir;
-  private final String moduleId;
   private final Collection<ActiveRule> activeRules;
   private final String toString;
 
@@ -44,7 +43,6 @@ public class AnalysisConfiguration {
     this.baseDir = builder.baseDir;
     this.inputFiles = builder.inputFiles;
     this.extraProperties = builder.extraProperties;
-    this.moduleId = builder.moduleId;
     this.activeRules = builder.activeRules;
     this.toString = generateToString();
   }
@@ -59,10 +57,6 @@ public class AnalysisConfiguration {
 
   public Path baseDir() {
     return baseDir;
-  }
-
-  public String moduleId() {
-    return moduleId;
   }
 
   public Iterable<ClientInputFile> inputFiles() {
@@ -91,7 +85,6 @@ public class AnalysisConfiguration {
   protected void generateToStringCommon(StringBuilder sb) {
     sb.append("  baseDir: ").append(baseDir()).append("\n");
     sb.append("  extraProperties: ").append(extraProperties()).append("\n");
-    sb.append("  moduleKey: ").append(moduleId()).append("\n");
   }
 
   protected void generateToStringInputFiles(StringBuilder sb) {
@@ -120,7 +113,6 @@ public class AnalysisConfiguration {
     private final List<ClientInputFile> inputFiles = new ArrayList<>();
     private final Map<String, String> extraProperties = new HashMap<>();
     private Path baseDir;
-    private String moduleId;
     private final Collection<ActiveRule> activeRules = new ArrayList<>();
 
     private Builder() {
@@ -153,11 +145,6 @@ public class AnalysisConfiguration {
 
     public Builder setBaseDir(Path baseDir) {
       this.baseDir = baseDir;
-      return this;
-    }
-
-    public Builder setModuleId(String moduleId) {
-      this.moduleId = moduleId;
       return this;
     }
 

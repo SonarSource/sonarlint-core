@@ -19,9 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -33,19 +34,25 @@ public class ServerIssueUpdater {
   private final ProjectStoragePaths projectStoragePaths;
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
-  private final TempFolder tempFolder;
 
-  public ServerIssueUpdater(ProjectStoragePaths projectStoragePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder) {
+  public ServerIssueUpdater(ProjectStoragePaths projectStoragePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory) {
     this.projectStoragePaths = projectStoragePaths;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
-    this.tempFolder = tempFolder;
   }
 
   public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    Path work = tempFolder.newDir().toPath();
-    Path target = projectStoragePaths.getServerIssuesPath(projectKey);
+    var target = projectStoragePaths.getServerIssuesPath(projectKey);
+    Path work = createTempDir(target);
     FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
+  }
+
+  private static Path createTempDir(Path target) {
+    try {
+      return Files.createTempDirectory(target.getParent(), "sonarlint-issue-updater");
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to create temp directory in " + target);
+    }
   }
 
   public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {

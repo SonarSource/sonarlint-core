@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
@@ -33,7 +32,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.TestUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -41,11 +39,12 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
+import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
+import static testutils.TestUtils.createNoOpLogOutput;
 
 public class BrokenStorageBrokenPluginMediumTest {
 
@@ -63,20 +62,13 @@ public class BrokenStorageBrokenPluginMediumTest {
       .withJavaPlugin()
       .create(slHome);
 
-    /*
-     * This storage contains one server id "local" with references to java and javascript plugins but javascript JAR is corrupted
-     */
-    Path sampleStorage = Paths.get(BrokenStorageBrokenPluginMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = storage.getPath();
-    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
-
     Path cachedJSPlugin = storage.getPluginPaths().get(0);
     FileUtils.write(cachedJSPlugin.toFile(), "corrupted jar", StandardCharsets.UTF_8);
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(tmpStorage)
+      .setStorageRoot(storage.getPath())
       .setLogOutput(createNoOpLogOutput())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
@@ -131,7 +123,7 @@ public class BrokenStorageBrokenPluginMediumTest {
   }
 
   static class StoreIssueListener implements IssueListener {
-    private List<Issue> issues;
+    private final List<Issue> issues;
 
     StoreIssueListener(List<Issue> issues) {
       this.issues = issues;

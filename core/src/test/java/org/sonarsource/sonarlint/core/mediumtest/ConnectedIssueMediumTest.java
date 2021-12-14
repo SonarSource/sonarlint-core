@@ -37,12 +37,11 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
-import org.sonarsource.sonarlint.core.TestUtils;
-import org.sonarsource.sonarlint.core.analysis.api.ClientFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
-import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -51,24 +50,23 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
-import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
+import testutils.OnDiskTestClientInputFile;
+import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
-import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
+import static testutils.TestUtils.createNoOpIssueListener;
+import static testutils.TestUtils.createNoOpLogOutput;
 
 public class ConnectedIssueMediumTest {
 
@@ -94,26 +92,17 @@ public class ConnectedIssueMediumTest {
       .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
-    /*
-     * This storage contains one server id "local" and two projects: "test-project" (with an empty QP) and "test-project-2" (with default
-     * QP)
-     */
-    Path sampleStorage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
-    Path tmpStorage = storage.getPath();
-    FileUtils.copyDirectory(sampleStorage.toFile(), tmpStorage.toFile());
-    FileUtils.copyDirectory(tmpStorage.resolve(encodeForFs("local")).toFile(), tmpStorage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).toFile());
-
     NodeJsHelper nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(tmpStorage)
+      .setStorageRoot(storage.getPath())
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setModulesProvider(() -> List.of(new ModuleInfo("key", mock(ClientFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
@@ -230,7 +219,7 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
-    assertThat(sonarlint.getRuleDetails("java:S1481").getSeverity()).isEqualTo("MAJOR");
+    assertThat(sonarlint.getRuleDetails("java:S1481").getSeverity()).isEqualTo("MINOR");
     assertThat(sonarlint.getActiveRuleDetails("java:S1481", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
@@ -248,24 +237,29 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void rule_description_come_from_storage() {
-    assertThat(sonarlint.getRuleDetails("java:S106").getHtmlDescription()).isEqualTo("<p>When logging a message there are two important requirements which must be fulfilled:</p>\n"
-      + "<ul>\n"
-      + "  <li> The user must be able to easily retrieve the logs</li>\n"
-      + "  <li> The format of all logged message must be uniform to allow the user to easily read the log</li>\n"
-      + "</ul>\n"
-      + "\n"
-      + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That's why defining and using a dedicated logger is highly recommended.</p>\n"
-      + "\n"
-      + "<h2>Noncompliant Code Example</h2>\n"
-      + "<pre>\n"
-      + "System.out.println(\"My Message\");  // Noncompliant\n"
-      + "</pre>\n"
-      + "\n"
-      + "<h2>Compliant Solution</h2>\n"
-      + "<pre>\n"
-      + "logger.log(\"My Message\");\n"
-      + "</pre>");
+  public void rule_description_come_from_plugin() {
+    assertThat(sonarlint.getRuleDetails("java:S106").getHtmlDescription())
+      .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
+        + "<ul>\n"
+        + "  <li> The user must be able to easily retrieve the logs </li>\n"
+        + "  <li> The format of all logged message must be uniform to allow the user to easily read the log </li>\n"
+        + "  <li> Logged data must actually be recorded </li>\n"
+        + "  <li> Sensitive data must only be logged securely </li>\n"
+        + "</ul>\n"
+        + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That's why defining and using a\n"
+        + "dedicated logger is highly recommended.</p>\n"
+        + "<h2>Noncompliant Code Example</h2>\n"
+        + "<pre>\n"
+        + "System.out.println(\"My Message\");  // Noncompliant\n"
+        + "</pre>\n"
+        + "<h2>Compliant Solution</h2>\n"
+        + "<pre>\n"
+        + "logger.log(\"My Message\");\n"
+        + "</pre>\n"
+        + "<h2>See</h2>\n"
+        + "<ul>\n"
+        + "  <li> <a href=\"https://www.securecoding.cert.org/confluence/x/RoElAQ\">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>\n"
+        + "</ul>");
   }
 
   @Test
@@ -286,7 +280,8 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void declare_module_should_create_a_module_container_with_loaded_extensions() {
-    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    sonarlint
+      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
     ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
@@ -296,7 +291,8 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void stop_module_should_stop_the_module_container() {
-    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    sonarlint
+      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
     ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
@@ -310,7 +306,7 @@ public class ConnectedIssueMediumTest {
     FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
     sonarlint.getGlobalContainer().add(moduleFileListener);
     OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
-    sonarlint.declareModule(new ModuleInfo("moduleKey", anEmptyClientFileSystem()));
+    sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
 
     sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
 

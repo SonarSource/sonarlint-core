@@ -67,7 +67,6 @@ class RuleExtractorMediumTests {
     Set<Language> enabledLanguages = Set.of(Language.values());
     PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
-      pluginInstancesRepository.start();
 
       List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages);
       if (COMMERCIAL_ENABLED) {
@@ -99,7 +98,6 @@ class RuleExtractorMediumTests {
     }
     PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
-      pluginInstancesRepository.start();
 
       List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages);
 

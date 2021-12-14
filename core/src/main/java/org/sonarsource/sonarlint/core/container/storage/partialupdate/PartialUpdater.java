@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.List;
-import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -38,16 +37,14 @@ public class PartialUpdater {
   private final IssueStoreFactory issueStoreFactory;
   private final IssueDownloader downloader;
   private final IssueStorePaths issueStorePaths;
-  private final TempFolder tempFolder;
   private final ProjectStoragePaths projectStoragePaths;
 
   public PartialUpdater(IssueStoreFactory issueStoreFactory, IssueDownloader downloader,
-    ProjectStoragePaths projectStoragePaths, IssueStorePaths issueStorePaths, TempFolder tempFolder) {
+    ProjectStoragePaths projectStoragePaths, IssueStorePaths issueStorePaths) {
     this.issueStoreFactory = issueStoreFactory;
     this.downloader = downloader;
     this.projectStoragePaths = projectStoragePaths;
     this.issueStorePaths = issueStorePaths;
-    this.tempFolder = tempFolder;
   }
 
   public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
@@ -69,6 +66,6 @@ public class PartialUpdater {
   }
 
   public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
   }
 }
