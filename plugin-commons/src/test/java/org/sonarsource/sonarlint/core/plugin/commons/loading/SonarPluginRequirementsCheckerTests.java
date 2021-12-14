@@ -44,6 +44,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.ZipUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
@@ -53,7 +54,6 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -92,21 +92,21 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_fail_if_missing_jar() {
     List<PluginLocation> jars = List.of(new PluginLocation(Paths.get("doesntexists.jar"), false));
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.checkRequirements(jars, NONE, null, null),
-      "Expected exception");
+    Map<String, PluginRequirementsCheckResult> checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
 
-    // Exception is either FileNotFoundException or NoSuchFileException depending on the JRE version
-    assertThat(thrown).hasRootCauseInstanceOf(IOException.class);
+    assertThat(checkRequirements).isEmpty();
+    assertThat(logTester.logs(Level.ERROR)).contains("Unable to load plugin doesntexists.jar");
   }
 
   @Test
-  void load_plugin_fail_if_corrupted_jar(@TempDir Path storage) throws IOException {
+  void load_plugin_skip_corrupted_jar(@TempDir Path storage) throws IOException {
     PluginLocation fakePlugin = fakePlugin(storage, "sonarjs.jar");
     List<PluginLocation> jars = List.of(fakePlugin);
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.checkRequirements(jars, NONE, null, null), "Expected exception");
+    Map<String, PluginRequirementsCheckResult> checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
 
-    assertThat(thrown).hasMessageMatching("Error while reading plugin manifest from jar: (.*)sonarjs.jar");
+    assertThat(checkRequirements).isEmpty();
+    assertThat(logTester.logs(Level.ERROR)).contains("Unable to load plugin " + fakePlugin.getJarPath());
   }
 
   @Test

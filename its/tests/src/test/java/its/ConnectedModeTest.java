@@ -64,7 +64,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
@@ -211,7 +210,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
-    assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
     // This profile is altered in a test
     ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -284,7 +282,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void globalUpdate() {
     updateGlobal();
 
-    assertThat(engine.getState()).isEqualTo(State.UPDATED);
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));

@@ -832,7 +832,7 @@ class StandaloneIssueMediumTests {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
-    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
     assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
@@ -842,7 +842,7 @@ class StandaloneIssueMediumTests {
   void stop_module_should_stop_the_module_container() {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
-    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
 

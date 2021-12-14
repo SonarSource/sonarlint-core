@@ -19,11 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.module;
 
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisContainer;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 public class ModuleContainer extends ComponentContainer {
@@ -49,5 +59,16 @@ public class ModuleContainer extends ComponentContainer {
 
   public boolean isTranscient() {
     return isTranscient;
+  }
+
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
+    AnalysisContainer analysisContainer = new AnalysisContainer(this, progress);
+    analysisContainer.add(configuration);
+    analysisContainer.add(new IssueListenerHolder(issueListener));
+    analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).collect(Collectors.toList())));
+    AnalysisResults defaultAnalysisResult = new AnalysisResults();
+    analysisContainer.add(defaultAnalysisResult);
+    analysisContainer.execute();
+    return defaultAnalysisResult;
   }
 }

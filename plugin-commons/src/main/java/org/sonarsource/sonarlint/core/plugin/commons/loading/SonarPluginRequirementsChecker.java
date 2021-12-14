@@ -60,7 +60,14 @@ public class SonarPluginRequirementsChecker {
     Map<String, PluginRequirementsCheckResult> resultsByKey = new HashMap<>();
 
     for (PluginLocation jarLocation : pluginJarLocations) {
-      PluginInfo plugin = PluginInfo.create(jarLocation.getJarPath(), jarLocation.isEmbedded());
+      PluginInfo plugin;
+
+      try {
+        plugin = PluginInfo.create(jarLocation.getJarPath(), jarLocation.isEmbedded());
+      } catch (Exception e) {
+        LOG.error("Unable to load plugin " + jarLocation.getJarPath(), e);
+        continue;
+      }
       if (resultsByKey.containsKey(plugin.getKey())) {
         throw new IllegalStateException(
           "Duplicate plugin key '" + plugin.getKey() + "' from '" + plugin.getJarFile() + "' and '" + resultsByKey.get(plugin.getKey()).getPlugin().getJarFile() + "'");

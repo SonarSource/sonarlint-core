@@ -44,21 +44,7 @@ import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerExcep
  */
 public interface ConnectedSonarLintEngine extends SonarLintEngine {
 
-  enum State {
-    UNKNOWN,
-    UPDATING,
-    NEVER_UPDATED,
-    NEED_UPDATE,
-    UPDATED
-  }
-
-  State getState();
-
   void stop(boolean deleteStorage);
-
-  void addStateListener(StateListener listener);
-
-  void removeStateListener(StateListener listener);
 
   /**
    * Return global rule details (not specific to any quality profile).
