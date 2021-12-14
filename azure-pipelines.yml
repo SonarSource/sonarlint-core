@@ -1,5 +1,8 @@
 trigger:
-- master
+  branches:
+    include:
+      - master
+      - branch-*
 
 schedules:
 - cron: "0 0 * * *"
