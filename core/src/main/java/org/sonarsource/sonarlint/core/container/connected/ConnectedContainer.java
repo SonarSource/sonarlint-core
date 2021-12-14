@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.PluginReference
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.RulesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.check.GlobalStorageUpdateChecker;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
@@ -97,7 +96,6 @@ public class ConnectedContainer extends ComponentContainer {
       ProjectListDownloader.class,
       PluginListDownloader.class,
       ModuleHierarchyDownloader.class,
-      RulesDownloader.class,
       IssueDownloader.class,
       IssueApi.class,
       SourceApi.class,
