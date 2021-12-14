@@ -45,10 +45,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.HttpConnector;
@@ -107,9 +106,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
   private final ProgressMonitor progress = new ProgressMonitor(null);
-
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
 
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
@@ -319,6 +315,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNotNull();
   }
 
+  @Ignore("Extended description is no supported ATM")
   @Test
   public void verifyExtendedDescription() {
     String ruleKey = "java:S106";
