@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons;
 
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginRequirementsChecker;
 
@@ -55,11 +54,11 @@ public class PluginInstancesRepository implements AutoCloseable {
   private Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
   public static class Configuration {
-    private final List<PluginLocation> pluginJarLocations;
+    private final Set<Path> pluginJarLocations;
     private final Set<Language> enabledLanguages;
     private final Optional<Version> nodeCurrentVersion;
 
-    public Configuration(List<PluginLocation> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion) {
+    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = nodeCurrentVersion;

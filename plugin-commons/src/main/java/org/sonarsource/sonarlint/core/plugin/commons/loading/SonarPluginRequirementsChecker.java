@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
+import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -55,17 +55,17 @@ public class SonarPluginRequirementsChecker {
   /**
    * Attempt to read JAR manifests, load metadata, and check all requirements to ensure the plugin can be instantiated.
    */
-  public Map<String, PluginRequirementsCheckResult> checkRequirements(List<PluginLocation> pluginJarLocations, Set<Language> enabledLanguages, Version jreCurrentVersion,
+  public Map<String, PluginRequirementsCheckResult> checkRequirements(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Version jreCurrentVersion,
     Optional<Version> nodeCurrentVersion) {
     Map<String, PluginRequirementsCheckResult> resultsByKey = new HashMap<>();
 
-    for (PluginLocation jarLocation : pluginJarLocations) {
+    for (Path jarLocation : pluginJarLocations) {
       PluginInfo plugin;
 
       try {
-        plugin = PluginInfo.create(jarLocation.getJarPath());
+        plugin = PluginInfo.create(jarLocation);
       } catch (Exception e) {
-        LOG.error("Unable to load plugin " + jarLocation.getJarPath(), e);
+        LOG.error("Unable to load plugin " + jarLocation, e);
         continue;
       }
       if (resultsByKey.containsKey(plugin.getKey())) {
