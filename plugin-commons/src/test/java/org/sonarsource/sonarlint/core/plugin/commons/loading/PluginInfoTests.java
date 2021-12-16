@@ -104,7 +104,7 @@ class PluginInfoTests {
     when(manifest.getMainClass()).thenReturn("org.foo.FooPlugin");
 
     Path jarFile = temp.resolve("myPlugin.jar");
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest, false);
+    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getKey()).isEqualTo("java");
     assertThat(pluginInfo.getName()).isEqualTo("Java");
@@ -132,7 +132,7 @@ class PluginInfoTests {
     when(manifest.getNodeJsMinVersion()).thenReturn(Optional.of(Version.create("12.18.3")));
 
     Path jarFile = temp.resolve("myPlugin.jar");
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest, false);
+    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getBasePlugin()).isEqualTo("findbugs");
     assertThat(pluginInfo.getMinimalSqVersion().getName()).isEqualTo("4.5.1");
@@ -144,22 +144,10 @@ class PluginInfoTests {
   @Test
   void create_from_file() throws URISyntaxException {
     Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
-    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar, false);
+    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar);
 
     assertThat(checkstyleInfo.getName()).isEqualTo("Checkstyle");
     assertThat(checkstyleInfo.getMinimalSqVersion()).isEqualTo(Version.create("2.8"));
-  }
-
-  @Test
-  void is_embedded() throws URISyntaxException {
-    Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
-    PluginInfo checkstyleInfoEmbedded = PluginInfo.create(checkstyleJar, true);
-
-    assertThat(checkstyleInfoEmbedded.isEmbedded()).isTrue();
-
-    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar, false);
-
-    assertThat(checkstyleInfo.isEmbedded()).isFalse();
   }
 
   @Test
@@ -176,7 +164,7 @@ class PluginInfoTests {
     Path jar = temp.resolve("myPlugin.jar");
     ZipUtils.zipDir(jarRootDir, jar.toFile());
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> PluginInfo.create(jar, false));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> PluginInfo.create(jar));
     assertThat(thrown).hasMessage("Error while reading plugin manifest from jar: " + jar.toAbsolutePath());
   }
 

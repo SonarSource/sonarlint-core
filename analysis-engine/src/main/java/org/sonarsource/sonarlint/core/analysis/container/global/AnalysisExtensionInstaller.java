@@ -50,17 +50,9 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
     enabledLanguages = analysisEngineConfig.getEnabledLanguages();
   }
 
-  public void installEmbeddedOnly(ComponentContainer container, ContainerLifespan lifespan) {
-    super.install(container, pluginRepository.getPluginInstancesByKeys(), (pluginKey, extension) -> {
-      return pluginRepository.getPluginCheckResultByKeys().get(pluginKey).getPlugin().isEmbedded() && lifespan.equals(getSonarLintSideLifespan(extension))
-        && onlySonarSourceSensor(pluginKey, extension);
-    });
-  }
-
   public AnalysisExtensionInstaller install(ComponentContainer container, ContainerLifespan lifespan) {
-    super.install(container, pluginRepository.getPluginInstancesByKeys(), (pluginKey, extension) -> {
-      return lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension);
-    });
+    super.install(container, pluginRepository.getPluginInstancesByKeys(),
+      (pluginKey, extension) -> lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension));
     return this;
   }
 

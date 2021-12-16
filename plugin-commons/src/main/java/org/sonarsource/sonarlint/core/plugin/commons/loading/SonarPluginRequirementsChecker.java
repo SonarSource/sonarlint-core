@@ -63,7 +63,7 @@ public class SonarPluginRequirementsChecker {
       PluginInfo plugin;
 
       try {
-        plugin = PluginInfo.create(jarLocation.getJarPath(), jarLocation.isEmbedded());
+        plugin = PluginInfo.create(jarLocation.getJarPath());
       } catch (Exception e) {
         LOG.error("Unable to load plugin " + jarLocation.getJarPath(), e);
         continue;

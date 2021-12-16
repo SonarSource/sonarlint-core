@@ -24,19 +24,13 @@ import java.nio.file.Path;
 public class PluginLocation {
 
   private final Path jarPath;
-  private final boolean isEmbedded;
 
-  public PluginLocation(Path jarPath, boolean isEmbedded) {
+  public PluginLocation(Path jarPath) {
     this.jarPath = jarPath;
-    this.isEmbedded = isEmbedded;
   }
 
   public Path getJarPath() {
     return jarPath;
-  }
-
-  public boolean isEmbedded() {
-    return isEmbedded;
   }
 
 }

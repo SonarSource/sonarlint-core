@@ -62,8 +62,6 @@ public class PluginInfo {
   @CheckForNull
   private Version nodeJsMinVersion;
 
-  private boolean embedded;
-
   private List<String> dependencies = List.of();
 
   public PluginInfo(String key) {
@@ -170,17 +168,9 @@ public class PluginInfo {
     return this;
   }
 
-  public void setEmbedded(boolean embedded) {
-    this.embedded = embedded;
-  }
-
   public PluginInfo setDependencies(List<String> dependencies) {
     this.dependencies = dependencies;
     return this;
-  }
-
-  public boolean isEmbedded() {
-    return embedded;
   }
 
   /**
@@ -228,12 +218,12 @@ public class PluginInfo {
     return result;
   }
 
-  public static PluginInfo create(Path jarFile, boolean isEmbedded) {
+  public static PluginInfo create(Path jarFile) {
     var manifest = SonarPluginManifest.fromJar(jarFile);
-    return create(jarFile, manifest, isEmbedded);
+    return create(jarFile, manifest);
   }
 
-  static PluginInfo create(Path jarPath, SonarPluginManifest manifest, boolean isEmbedded) {
+  static PluginInfo create(Path jarPath, SonarPluginManifest manifest) {
     if (StringUtils.isBlank(manifest.getKey())) {
       throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
@@ -250,7 +240,6 @@ public class PluginInfo {
     info.setMinimalJreVersion(manifest.getJreMinVersion().orElse(null));
     info.setMinimalNodeJsVersion(manifest.getNodeJsMinVersion().orElse(null));
     info.setDependencies(manifest.getDependencies());
-    info.setEmbedded(isEmbedded);
     return info;
   }
 

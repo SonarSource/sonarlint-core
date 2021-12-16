@@ -198,18 +198,18 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       if (embeddedPluginsUrlsByKey.containsKey(r.getKey())) {
         var ref = fileCache.getFromCacheOrCopy(embeddedPluginsUrlsByKey.get(r.getKey()));
         var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), ref.getHash()), "Error reading plugin from cache");
-        plugins.add(new PluginLocation(jarPath, true));
+        plugins.add(new PluginLocation(jarPath));
       } else {
         var jarPath = fileCache.get(r.getFilename(), r.getHash());
         if (jarPath == null) {
           throw new StorageException("The plugin " + r.getFilename() + " was not found in the local storage.");
         }
-        plugins.add(new PluginLocation(jarPath, false));
+        plugins.add(new PluginLocation(jarPath));
       }
     });
     extraPluginsUrlsByKey.values().stream().map(fileCache::getFromCacheOrCopy).forEach(r -> {
       var jarPath = fileCache.get(r.getFilename(), r.getHash());
-      plugins.add(new PluginLocation(jarPath, true));
+      plugins.add(new PluginLocation(jarPath));
     });
 
     var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
