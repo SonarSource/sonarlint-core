@@ -103,7 +103,7 @@ public class GlobalAnalysisContainer extends ComponentContainer {
     var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
     if (moduleContainer == null) {
       // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleRegistry.createTranscientContainer(configuration.inputFiles());
+      moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
     }
     Throwable originalException = null;
     try {
@@ -113,7 +113,7 @@ public class GlobalAnalysisContainer extends ComponentContainer {
       throw e;
     } finally {
       try {
-        if (moduleContainer.isTranscient()) {
+        if (moduleContainer.isTransient()) {
           moduleContainer.stopComponents();
         }
       } catch (Exception e) {

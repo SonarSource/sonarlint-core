@@ -38,11 +38,11 @@ import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 
 public class ModuleContainer extends ComponentContainer {
 
-  private final boolean isTranscient;
+  private final boolean isTransient;
 
-  public ModuleContainer(ComponentContainer parent, boolean isTranscient) {
+  public ModuleContainer(ComponentContainer parent, boolean isTransient) {
     super(parent);
-    this.isTranscient = isTranscient;
+    this.isTransient = isTransient;
   }
 
   @Override
@@ -57,8 +57,8 @@ public class ModuleContainer extends ComponentContainer {
     getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
   }
 
-  public boolean isTranscient() {
-    return isTranscient;
+  public boolean isTransient() {
+    return isTransient;
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {

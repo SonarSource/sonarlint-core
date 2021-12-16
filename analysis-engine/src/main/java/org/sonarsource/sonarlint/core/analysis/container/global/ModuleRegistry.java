@@ -57,8 +57,8 @@ public class ModuleRegistry {
     return moduleContainer;
   }
 
-  public ModuleContainer createTranscientContainer(Iterable<ClientInputFile> filesToAnalyze) {
-    LOG.debug("Creating transcient module container");
+  public ModuleContainer createTransientContainer(Iterable<ClientInputFile> filesToAnalyze) {
+    LOG.debug("Creating transient module container");
     ModuleContainer moduleContainer = new ModuleContainer(parent, true);
     moduleContainer.add(new TransientModuleFileSystem(filesToAnalyze));
     moduleContainer.startComponents();
