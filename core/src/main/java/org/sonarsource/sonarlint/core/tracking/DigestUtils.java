@@ -19,46 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class DigestUtils {
-
-  private static final char[] DIGITS = "0123456789abcdef".toCharArray();
-
-  private static final MessageDigest MD5_DIGEST = DigestUtils.getMd5Digest();
 
   private DigestUtils() {
     // utility class, forbidden constructor
   }
 
   public static String digest(String content) {
-    return encodeHexString(MD5_DIGEST.digest(content.replaceAll("[\\s]", "").getBytes(UTF_8)));
+    return org.apache.commons.codec.digest.DigestUtils.md5Hex(content.replaceAll("[\\s]", ""));
   }
 
-  private static MessageDigest getMd5Digest() {
-    return getDigest("MD5");
-  }
-
-  private static MessageDigest getDigest(String algorithm) {
-    try {
-      return MessageDigest.getInstance(algorithm);
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
-
-  public static String encodeHexString(byte[] data) {
-    int length = data.length;
-    char[] out = new char[length << 1];
-
-    for (int i = 0, j = 0; i < length; ++i, j += 2) {
-      out[j] = DIGITS[(240 & data[i]) >>> 4];
-      out[j + 1] = DIGITS[15 & data[i]];
-    }
-
-    return new String(out);
-  }
 }

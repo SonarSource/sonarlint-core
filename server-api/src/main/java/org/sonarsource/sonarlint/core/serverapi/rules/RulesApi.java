@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class RulesApi {
 
@@ -98,7 +98,7 @@ public class RulesApi {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?qprofile=");
     builder.append(qualityProfileKey);
-    helper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
+    helper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&ps=500&p=");
     builder.append(page);
     return builder.toString();

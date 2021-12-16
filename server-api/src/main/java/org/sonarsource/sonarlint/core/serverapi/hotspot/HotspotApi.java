@@ -26,9 +26,9 @@ import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -84,8 +84,8 @@ public class HotspotApi {
 
   private static String getUrl(String hotspotKey, String projectKey) {
     return HOTSPOTS_API_URL
-      + "?projectKey=" + StringUtils.urlEncode(projectKey)
-      + "&hotspot=" + StringUtils.urlEncode(hotspotKey);
+      + "?projectKey=" + UrlUtils.urlEncode(projectKey)
+      + "&hotspot=" + UrlUtils.urlEncode(hotspotKey);
 
   }
 

@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +38,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -158,7 +159,7 @@ class IssueDownloaderTests {
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       response);
-    mockServer.addStringResponse("/api/sources/raw?key=" + StringUtils.urlEncode(FILE_1_KEY), "Even\nBefore My\n\tCode\n  Snippet And\n After");
+    mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
     List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
@@ -330,7 +331,8 @@ class IssueDownloaderTests {
       .setStatus("OPEN")
       .build();
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", taint1);
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
+    mockServer.addProtobufResponse(
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
     List<ServerIssue> issues = underTest.download(DUMMY_KEY, projectConfiguration, true, "branchName", PROGRESS);
 

@@ -30,7 +30,7 @@ import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,7 +81,7 @@ class HotspotApiTests {
         .setFixRecommendations("fix")
         .build())
       .build());
-    mockServer.addStringResponse("/api/sources/raw?key=" + StringUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
+    mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
     Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 

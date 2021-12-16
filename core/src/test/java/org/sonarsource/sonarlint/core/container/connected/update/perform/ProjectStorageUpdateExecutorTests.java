@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -54,7 +56,6 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -69,7 +70,7 @@ class ProjectStorageUpdateExecutorTests {
   private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
   private static final String ORGA_KEY = "myOrga";
   private static final String MODULE_KEY_WITH_BRANCH = "module:key/with_branch";
-  private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH);
+  private static final String MODULE_KEY_WITH_BRANCH_URLENCODED = URLEncoder.encode(MODULE_KEY_WITH_BRANCH, StandardCharsets.UTF_8);
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
@@ -87,7 +88,8 @@ class ProjectStorageUpdateExecutorTests {
     Files.createDirectory(tempDir);
 
     mockServer.addResponseFromResource(getQualityProfileUrl(organizationKey), "/update/qualityprofiles_project.pb");
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?component=" + StringUtils.urlEncode(MODULE_KEY_WITH_BRANCH), ValuesWsResponse.newBuilder().build());
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?component=" + URLEncoder.encode(MODULE_KEY_WITH_BRANCH, StandardCharsets.UTF_8),
+      ValuesWsResponse.newBuilder().build());
 
     ValuesWsResponse response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()

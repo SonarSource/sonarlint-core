@@ -27,7 +27,7 @@ import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class ComponentApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -41,7 +41,7 @@ public class ComponentApi {
   public List<ComponentPath> getSubProjects(String componentKey, ProgressMonitor progress) {
     List<ComponentPath> modules = new ArrayList<>();
 
-    helper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(componentKey),
+    helper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + UrlUtils.urlEncode(componentKey),
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,
@@ -66,8 +66,8 @@ public class ComponentApi {
   private String buildAllFileKeysPath(String projectKey) {
     var url = new StringBuilder();
     url.append("api/components/tree.protobuf?qualifiers=FIL,UTS&");
-    url.append("component=").append(StringUtils.urlEncode(projectKey));
-    helper.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    url.append("component=").append(UrlUtils.urlEncode(projectKey));
+    helper.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(UrlUtils.urlEncode(org)));
     return url.toString();
   }
 
@@ -91,7 +91,7 @@ public class ComponentApi {
     var searchUrl = new StringBuilder();
     searchUrl.append("api/components/search.protobuf?qualifiers=TRK");
     helper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+      .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     return searchUrl.toString();
   }
 
@@ -108,7 +108,7 @@ public class ComponentApi {
 
   private <T> Optional<T> fetchComponent(String componentKey, Function<Components.ShowWsResponse, T> responseConsumer) {
     return ServerApiHelper.processTimed(
-      () -> helper.rawGet("api/components/show.protobuf?component=" + StringUtils.urlEncode(componentKey)),
+      () -> helper.rawGet("api/components/show.protobuf?component=" + UrlUtils.urlEncode(componentKey)),
       response -> {
         if (response.isSuccessful()) {
           var wsResponse = Components.ShowWsResponse.parseFrom(response.bodyAsStream());

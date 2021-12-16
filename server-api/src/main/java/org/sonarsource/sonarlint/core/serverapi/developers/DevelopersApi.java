@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class DevelopersApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -102,13 +102,13 @@ public class DevelopersApi {
     builder.append(API_PATH);
     builder.append("?projects=");
     builder.append(projectTimestamps.keySet().stream()
-      .map(StringUtils::urlEncode)
+      .map(UrlUtils::urlEncode)
       .collect(Collectors.joining(",")));
 
     builder.append("&from=");
     builder.append(projectTimestamps.values().stream()
       .map(timestamp -> timestamp.format(TIME_FORMATTER))
-      .map(StringUtils::urlEncode)
+      .map(UrlUtils::urlEncode)
       .collect(Collectors.joining(",")));
 
     return builder.toString();

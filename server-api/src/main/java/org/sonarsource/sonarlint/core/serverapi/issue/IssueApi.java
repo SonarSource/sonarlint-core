@@ -40,9 +40,9 @@ import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
-import static org.sonarsource.sonarlint.core.util.StringUtils.urlEncode;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class IssueApi {
 
@@ -68,7 +68,7 @@ public class IssueApi {
     searchUrl.append(getVulnerabilitiesUrl(key, ruleKeys));
     searchUrl.append(getVulnerabilitiesUrlBranchParameter(branchName));
     serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
+      .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     List<Issue> result = new ArrayList<>();
     Map<String, String> componentsByKey = new HashMap<>();
     serverApiHelper.getPaginated(searchUrl.toString(),
@@ -137,7 +137,7 @@ public class IssueApi {
   }
 
   private static String getBatchIssuesUrl(String key) {
-    return "/batch/issues?key=" + StringUtils.urlEncode(key);
+    return "/batch/issues?key=" + UrlUtils.urlEncode(key);
   }
 
   private static <T extends Message> List<T> readMessages(InputStream input, Parser<T> parser) {

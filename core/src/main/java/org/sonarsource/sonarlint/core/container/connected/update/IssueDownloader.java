@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Common.Flow;
@@ -42,7 +43,6 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi.DownloadIssuesResult;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class IssueDownloader {
 
