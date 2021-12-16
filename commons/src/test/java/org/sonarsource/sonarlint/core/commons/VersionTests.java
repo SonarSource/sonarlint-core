@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
