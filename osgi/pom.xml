@@ -1,0 +1,117 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonarsource.sonarlint.core</groupId>
+    <artifactId>sonarlint-core-parent</artifactId>
+    <version>7.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>sonarlint-core-osgi</artifactId>
+  <name>SonarLint Core - OSGi bundle</name>
+  <packaging>bundle</packaging>
+  <description>Common SonarLint features bundled for OSGi</description>
+
+  <properties>
+    <jarsigner.skip>true</jarsigner.skip>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-core</artifactId>
+      <version>${project.version}</version>
+      <classifier>sources</classifier>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>parse-version</id>
+            <goals>
+              <!-- Populate variables parsedVersion.osgiVersion -->
+              <goal>parse-version</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <niceManifest>true</niceManifest>
+          <instructions>
+            <Embed-Dependency>*;scope=compile|runtime;inline=true;classifier=</Embed-Dependency>
+            <Import-Package>
+              !*
+            </Import-Package>
+            <Export-Package>
+              org.sonarsource.sonarlint.core.*;version="${project.version}",
+              com.google.protobuf,
+            </Export-Package>
+            <_failok>true</_failok>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-source-bundle</id>
+            <goals>
+              <goal>bundle</goal>
+            </goals>
+            <configuration>
+              <classifier>sources</classifier>
+              <instructions>
+                <Embed-Dependency>*;classifier=sources;inline=true</Embed-Dependency>
+                <Bundle-Name>${project.name} Source</Bundle-Name>
+                <Bundle-SymbolicName>${project.groupId}.${project.artifactId}.source</Bundle-SymbolicName>
+                <!-- Variables parsedVersion.osgiVersion is provided by build-helper-plugin::parse-version -->
+                <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                <Eclipse-SourceBundle>${project.groupId}.${project.artifactId};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
+                <Export-Package>!*</Export-Package>
+                <Import-Package>!*</Import-Package>
+              </instructions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jarsigner-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <alias>sonarsource-codesign-2021-2023</alias>
+          <keystore>${sonarsource.keystore.path}</keystore>
+          <storepass>${sonarsource.keystore.password}</storepass>
+          <tsa>http://timestamp.digicert.com</tsa>
+          <!-- Force resign of shaded dependencies -->
+          <removeExistingSignatures>true</removeExistingSignatures>
+        </configuration>
+        <executions>
+          <execution>
+            <id>sign</id>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
