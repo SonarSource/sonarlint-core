@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,7 +33,6 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
@@ -55,7 +53,6 @@ class RuleExtractorMediumTests {
 
   @RegisterExtension
   public SonarLintLogTester logTester = new SonarLintLogTester();
-  private static List<PluginLocation> pluginJarLocations;
 
   @BeforeAll
   public static void prepare() throws IOException {
@@ -63,13 +60,12 @@ class RuleExtractorMediumTests {
     allJars = Files.list(dir)
       .filter(x -> x.getFileName().toString().endsWith(".jar"))
       .collect(toSet());
-    pluginJarLocations = allJars.stream().map(p -> new PluginLocation(p)).collect(Collectors.toList());
   }
 
   @Test
   void extractAllRules() throws Exception {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
+    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
       List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
@@ -90,7 +86,7 @@ class RuleExtractorMediumTests {
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
+    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
       List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, true);
@@ -121,7 +117,7 @@ class RuleExtractorMediumTests {
       // Enable C but not C++
       enabledLanguages.add(Language.C);
     }
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(pluginJarLocations, enabledLanguages, empty());
+    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
     try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
       List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);

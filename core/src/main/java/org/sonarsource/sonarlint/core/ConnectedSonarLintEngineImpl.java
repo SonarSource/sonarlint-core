@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -86,7 +87,6 @@ import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpd
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -183,7 +183,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     var fileCache = PluginCache.create(cacheDir);
 
     var pluginReferenceStore = globalStores.getPluginReferenceStore();
-    List<PluginLocation> plugins = new ArrayList<>();
+    Set<Path> plugins = new HashSet<>();
     Map<String, URL> extraPluginsUrlsByKey = globalConfig.getExtraPluginsUrlsByKey();
     Map<String, URL> embeddedPluginsUrlsByKey = globalConfig.getEmbeddedPluginUrlsByKey();
 
@@ -198,18 +198,18 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       if (embeddedPluginsUrlsByKey.containsKey(r.getKey())) {
         var ref = fileCache.getFromCacheOrCopy(embeddedPluginsUrlsByKey.get(r.getKey()));
         var jarPath = Objects.requireNonNull(fileCache.get(ref.getFilename(), ref.getHash()), "Error reading plugin from cache");
-        plugins.add(new PluginLocation(jarPath));
+        plugins.add(jarPath);
       } else {
         var jarPath = fileCache.get(r.getFilename(), r.getHash());
         if (jarPath == null) {
           throw new StorageException("The plugin " + r.getFilename() + " was not found in the local storage.");
         }
-        plugins.add(new PluginLocation(jarPath));
+        plugins.add(jarPath);
       }
     });
     extraPluginsUrlsByKey.values().stream().map(fileCache::getFromCacheOrCopy).forEach(r -> {
       var jarPath = fileCache.get(r.getFilename(), r.getHash());
-      plugins.add(new PluginLocation(jarPath));
+      plugins.add(jarPath);
     });
 
     var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));

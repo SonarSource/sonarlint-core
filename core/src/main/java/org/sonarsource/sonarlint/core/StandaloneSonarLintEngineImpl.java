@@ -53,7 +53,6 @@ import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
-import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginLocation;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static java.util.Objects.requireNonNull;
@@ -104,8 +103,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     var plugins = globalConfig.getPluginUrls().stream()
       .map(fileCache::getFromCacheOrCopy)
       .map(r -> fileCache.get(r.getFilename(), r.getHash()))
-      .map(p -> new PluginLocation(p))
-      .collect(Collectors.toList());
+      .collect(Collectors.toSet());
 
     var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
     return new PluginInstancesRepository(config);
