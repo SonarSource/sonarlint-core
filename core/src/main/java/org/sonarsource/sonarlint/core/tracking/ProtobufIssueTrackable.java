@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.issuetracking.TextRange;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Issues.Issue;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProtobufIssueTrackable implements Trackable {
 

@@ -17,32 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.util;
+package org.sonarsource.sonarlint.core.serverapi;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import javax.annotation.Nullable;
 
-public class StringUtils {
+public class UrlUtils {
 
-  private StringUtils() {
+  private UrlUtils() {
   }
 
   public static String urlEncode(String toEncode) {
     return URLEncoder.encode(toEncode, StandardCharsets.UTF_8);
-  }
-
-  public static boolean isBlank(@Nullable String str) {
-    int strLen;
-    if (str == null || (strLen = str.length()) == 0) {
-      return true;
-    }
-    for (var i = 0; i < strLen; i++) {
-      if (!Character.isWhitespace(str.charAt(i))) {
-        return false;
-      }
-    }
-    return true;
   }
 
 }

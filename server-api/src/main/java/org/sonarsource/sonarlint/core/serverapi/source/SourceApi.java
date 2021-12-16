@@ -23,7 +23,7 @@ import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient.Response;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class SourceApi {
 
@@ -42,7 +42,7 @@ public class SourceApi {
    * @param key project key, or file key.
    */
   public Optional<String> getRawSourceCode(String fileKey) {
-    try (Response r = serverApiHelper.get("/api/sources/raw?key=" + StringUtils.urlEncode(fileKey))) {
+    try (Response r = serverApiHelper.get("/api/sources/raw?key=" + UrlUtils.urlEncode(fileKey))) {
       return Optional.of(r.bodyAsString());
     } catch (Exception e) {
       LOG.debug("Unable to fetch source code of '" + fileKey + "'", e);

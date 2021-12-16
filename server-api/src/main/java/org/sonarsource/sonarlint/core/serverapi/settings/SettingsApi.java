@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class SettingsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -45,7 +45,7 @@ public class SettingsApi {
     Map<String, String> settings = new HashMap<>();
     var url = new StringBuilder();
     url.append(API_SETTINGS_PATH);
-    url.append("?component=").append(StringUtils.urlEncode(projectKey));
+    url.append("?component=").append(UrlUtils.urlEncode(projectKey));
     ServerApiHelper.consumeTimed(
       () -> helper.get(url.toString()),
       response -> {

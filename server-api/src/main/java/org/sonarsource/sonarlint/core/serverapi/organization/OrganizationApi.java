@@ -25,8 +25,8 @@ import java.util.Optional;
 import org.sonarqube.ws.Organizations;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class OrganizationApi {
   private final ServerApiHelper helper;
@@ -62,7 +62,7 @@ public class OrganizationApi {
   }
 
   public Optional<ServerOrganization> fetchOrganization(String organizationKey, ProgressMonitor progress) {
-    String url = "api/organizations/search.protobuf?organizations=" + StringUtils.urlEncode(organizationKey);
+    String url = "api/organizations/search.protobuf?organizations=" + UrlUtils.urlEncode(organizationKey);
     return getPaginatedOrganizations(url, progress)
       .stream()
       .findFirst();

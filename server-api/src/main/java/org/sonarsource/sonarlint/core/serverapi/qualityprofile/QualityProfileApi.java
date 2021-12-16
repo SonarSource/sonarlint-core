@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfileApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -45,7 +45,7 @@ public class QualityProfileApi {
     var searchUrl = new StringBuilder();
     searchUrl.append(DEFAULT_QP_SEARCH_URL);
     helper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("?organization=").append(StringUtils.urlEncode(org)));
+      .ifPresent(org -> searchUrl.append("?organization=").append(UrlUtils.urlEncode(org)));
     ServerApiHelper.consumeTimed(
       () -> helper.get(searchUrl.toString()),
       response -> {
@@ -61,9 +61,9 @@ public class QualityProfileApi {
     Qualityprofiles.SearchWsResponse qpResponse;
     var url = new StringBuilder();
     url.append(DEFAULT_QP_SEARCH_URL + "?project=");
-    url.append(StringUtils.urlEncode(projectKey));
+    url.append(UrlUtils.urlEncode(projectKey));
     helper.getOrganizationKey()
-      .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+      .ifPresent(org -> url.append("&organization=").append(UrlUtils.urlEncode(org)));
     try {
       qpResponse = ServerApiHelper.processTimed(
         () -> helper.get(url.toString()),

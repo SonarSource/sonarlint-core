@@ -21,9 +21,8 @@ package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.apache.commons.codec.binary.Hex;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.tracking.DigestUtils;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectStoragePaths {
 
@@ -56,10 +55,10 @@ public class ProjectStoragePaths {
    * See SLCORE-148 and SLCORE-228.
    */
   public static String encodeForFs(String name) {
-    String encoded = DigestUtils.encodeHexString(name.getBytes(StandardCharsets.UTF_8));
+    var encoded = Hex.encodeHexString(name.getBytes(StandardCharsets.UTF_8));
     if (encoded.length() > MAX_FOLDER_NAME_SIZE) {
       // Most FS will not support a folder name greater than 255
-      String md5 = StringUtils.md5(name);
+      String md5 = org.apache.commons.codec.digest.DigestUtils.md5Hex(name);
       return encoded.substring(0, MAX_FOLDER_NAME_SIZE - md5.length()) + md5;
     }
     return encoded;
