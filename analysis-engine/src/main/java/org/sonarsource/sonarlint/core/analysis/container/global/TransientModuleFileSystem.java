@@ -25,11 +25,11 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 
-class TranscientModuleFileSystem implements ClientModuleFileSystem {
+class TransientModuleFileSystem implements ClientModuleFileSystem {
 
   private final Iterable<ClientInputFile> filesToAnalyze;
 
-  TranscientModuleFileSystem(Iterable<ClientInputFile> filesToAnalyze) {
+  TransientModuleFileSystem(Iterable<ClientInputFile> filesToAnalyze) {
     this.filesToAnalyze = filesToAnalyze;
   }
 

@@ -104,7 +104,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     var plugins = globalConfig.getPluginUrls().stream()
       .map(fileCache::getFromCacheOrCopy)
       .map(r -> fileCache.get(r.getFilename(), r.getHash()))
-      .map(p -> new PluginLocation(p, true))
+      .map(p -> new PluginLocation(p))
       .collect(Collectors.toList());
 
     var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));

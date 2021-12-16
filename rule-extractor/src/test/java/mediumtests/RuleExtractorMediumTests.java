@@ -63,7 +63,7 @@ class RuleExtractorMediumTests {
     allJars = Files.list(dir)
       .filter(x -> x.getFileName().toString().endsWith(".jar"))
       .collect(toSet());
-    pluginJarLocations = allJars.stream().map(p -> new PluginLocation(p, true)).collect(Collectors.toList());
+    pluginJarLocations = allJars.stream().map(p -> new PluginLocation(p)).collect(Collectors.toList());
   }
 
   @Test

@@ -91,7 +91,7 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_fail_if_missing_jar() {
-    List<PluginLocation> jars = List.of(new PluginLocation(Paths.get("doesntexists.jar"), false));
+    List<PluginLocation> jars = List.of(new PluginLocation(Paths.get("doesntexists.jar")));
     Map<String, PluginRequirementsCheckResult> checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(checkRequirements).isEmpty();
@@ -461,7 +461,7 @@ class SonarPluginRequirementsCheckerTests {
     Path pluginTmpDir = Files.createTempDirectory(storage, "plugin");
     Stream.of(populators).forEach(p -> p.accept(pluginTmpDir));
     ZipUtils.zipDir(pluginTmpDir.toFile(), pluginJar.toFile());
-    return new PluginLocation(pluginJar, false);
+    return new PluginLocation(pluginJar);
   }
 
   private Stream<String> logsWithoutStartStop() {
