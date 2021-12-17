@@ -60,11 +60,6 @@ public class ProtobufIssueTrackableTest {
   }
 
   @Test(expected = UnsupportedOperationException.class)
-  public void should_not_have_ruleName() {
-    completeTrackable.getRuleName();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
   public void should_not_have_severity() {
     completeTrackable.getSeverity();
   }

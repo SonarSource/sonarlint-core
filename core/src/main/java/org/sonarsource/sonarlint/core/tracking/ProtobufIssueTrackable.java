@@ -58,11 +58,6 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public String getRuleName() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public String getServerIssueKey() {
     return !StringUtils.isEmpty(issue.getServerIssueKey()) ? issue.getServerIssueKey() : null;
   }

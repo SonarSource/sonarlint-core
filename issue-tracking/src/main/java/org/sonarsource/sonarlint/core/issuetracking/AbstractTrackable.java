@@ -37,7 +37,6 @@ public class AbstractTrackable implements Trackable {
   protected AbstractTrackable(Trackable trackable) {
     // copy fieds instead of using given trackable to avoid always increase level of proxying
     this.ruleKey = trackable.getRuleKey();
-    this.ruleName = trackable.getRuleName();
     this.severity = trackable.getSeverity();
     this.type = trackable.getType();
     this.message = trackable.getMessage();
@@ -54,11 +53,6 @@ public class AbstractTrackable implements Trackable {
   @Override
   public String getRuleKey() {
     return ruleKey;
-  }
-
-  @Override
-  public String getRuleName() {
-    return ruleName;
   }
 
   @Override
