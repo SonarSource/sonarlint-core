@@ -23,14 +23,14 @@ import java.io.IOException;
 import java.util.Collection;
 import javax.annotation.CheckForNull;
 
-public interface TrackableIssueStore {
+public interface TrackableIssueStore<T> {
 
   boolean contains(String key);
 
-  void save(String key, Collection<Trackable> issues) throws IOException;
+  void save(String key, Collection<Trackable<T>> issues) throws IOException;
 
   @CheckForNull
-  Collection<Trackable> read(String key) throws IOException;
+  Collection<Trackable<T>> read(String key) throws IOException;
 
   void clear();
 

@@ -19,7 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.issuetracking;
 
-public class AbstractTrackable implements Trackable {
+public class AbstractTrackable<G> implements Trackable<G> {
+  private final G clientObject;
   protected String ruleKey;
   protected String ruleName;
   protected String severity;
@@ -34,7 +35,8 @@ public class AbstractTrackable implements Trackable {
   protected boolean resolved;
   protected String assignee;
 
-  protected AbstractTrackable(Trackable trackable) {
+  protected AbstractTrackable(Trackable<G> trackable) {
+    this.clientObject = trackable.getClientObject();
     // copy fieds instead of using given trackable to avoid always increase level of proxying
     this.ruleKey = trackable.getRuleKey();
     this.severity = trackable.getSeverity();
@@ -48,6 +50,11 @@ public class AbstractTrackable implements Trackable {
     this.serverIssueKey = trackable.getServerIssueKey();
     this.resolved = trackable.isResolved();
     this.assignee = trackable.getAssignee();
+  }
+
+  @Override
+  public G getClientObject() {
+    return clientObject;
   }
 
   @Override

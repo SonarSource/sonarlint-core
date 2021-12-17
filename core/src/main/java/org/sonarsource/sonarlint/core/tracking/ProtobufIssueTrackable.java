@@ -33,6 +33,11 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
+  public Object getClientObject() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Integer getLine() {
     return issue.getLine() != 0 ? issue.getLine() : null;
   }

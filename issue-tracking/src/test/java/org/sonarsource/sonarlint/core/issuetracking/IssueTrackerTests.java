@@ -424,7 +424,7 @@ class IssueTrackerTests {
     // fake server issue tracking
     tracker.matchAndTrackAsBase(file1, Collections.emptyList());
 
-    assertThat(cache.getCurrentTrackables(file1).iterator().next().getCreationDate()).isEqualTo(leakCreationDate);
+    assertThat(cache.getCurrentTrackables(file1)).extracting("creationDate").containsOnly(leakCreationDate);
   }
 
   @Test
