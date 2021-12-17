@@ -24,9 +24,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InMemoryIssueTrackerCache implements IssueTrackerCache {
+public class InMemoryIssueTrackerCache<T> implements IssueTrackerCache<T> {
 
-  private final Map<String, Collection<Trackable>> cache = new ConcurrentHashMap<>();
+  private final Map<String, Collection<Trackable<T>>> cache = new ConcurrentHashMap<>();
 
   @Override
   public boolean isFirstAnalysis(String file) {
@@ -34,13 +34,13 @@ public class InMemoryIssueTrackerCache implements IssueTrackerCache {
   }
 
   @Override
-  public Collection<Trackable> getCurrentTrackables(String file) {
+  public Collection<Trackable<T>> getCurrentTrackables(String file) {
     return cache.getOrDefault(file, Collections.emptyList());
   }
 
   @Override
-  public Collection<Trackable> getLiveOrFail(String file) {
-    Collection<Trackable> trackables = cache.get(file);
+  public Collection<Trackable<T>> getLiveOrFail(String file) {
+    Collection<Trackable<T>> trackables = cache.get(file);
     if (trackables == null) {
       throw new IllegalStateException("file should have been already analyzed: " + file);
     }
@@ -48,7 +48,7 @@ public class InMemoryIssueTrackerCache implements IssueTrackerCache {
   }
 
   @Override
-  public void put(String file, Collection<Trackable> trackables) {
+  public void put(String file, Collection<Trackable<T>> trackables) {
     cache.put(file, trackables);
   }
 

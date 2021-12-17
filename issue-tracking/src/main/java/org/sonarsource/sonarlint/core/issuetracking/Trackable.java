@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core.issuetracking;
 
 import javax.annotation.CheckForNull;
 
-public interface Trackable {
+public interface Trackable<G> {
+
+  G getClientObject();
 
   String getRuleKey();
 

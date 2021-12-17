@@ -21,15 +21,15 @@ package org.sonarsource.sonarlint.core.issuetracking;
 
 import java.util.Collection;
 
-public interface IssueTrackerCache {
+public interface IssueTrackerCache<T> {
 
   boolean isFirstAnalysis(String file);
 
-  Collection<Trackable> getCurrentTrackables(String file);
+  Collection<Trackable<T>> getCurrentTrackables(String file);
 
-  Collection<Trackable> getLiveOrFail(String file);
+  Collection<Trackable<T>> getLiveOrFail(String file);
 
-  void put(String file, Collection<Trackable> trackables);
+  void put(String file, Collection<Trackable<T>> trackables);
 
   /**
    * Empty the cache, delete everything.

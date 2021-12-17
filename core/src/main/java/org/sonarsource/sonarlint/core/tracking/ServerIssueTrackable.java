@@ -31,6 +31,11 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
+  public Object getClientObject() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public String getRuleKey() {
     return serverIssue.ruleKey();
   }

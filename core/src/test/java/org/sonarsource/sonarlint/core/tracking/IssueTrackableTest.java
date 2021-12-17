@@ -66,7 +66,7 @@ public class IssueTrackableTest {
     when(issue.getSeverity()).thenReturn(severity);
 
     IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
-    assertThat(trackable.getIssue()).isEqualTo(issue);
+    assertThat(trackable.getClientObject()).isEqualTo(issue);
     assertThat(trackable.getSeverity()).isEqualTo(severity);
   }
 }

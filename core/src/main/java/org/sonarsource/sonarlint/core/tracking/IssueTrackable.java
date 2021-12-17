@@ -26,7 +26,7 @@ import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
-public class IssueTrackable implements Trackable {
+public class IssueTrackable implements Trackable<Issue> {
 
   private final Issue issue;
   private final org.sonarsource.sonarlint.core.issuetracking.TextRange textRange;
@@ -53,7 +53,8 @@ public class IssueTrackable implements Trackable {
     return content != null ? digest(content).hashCode() : null;
   }
 
-  public Issue getIssue() {
+  @Override
+  public Issue getClientObject() {
     return issue;
   }
 

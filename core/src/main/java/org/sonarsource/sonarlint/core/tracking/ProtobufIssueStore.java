@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.issuetracking.TrackableIssueStore;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
-public class ProtobufIssueStore implements TrackableIssueStore {
+public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
 
   private Path basePath;
   private IndexedObjectStore<String, Sonarlint.Issues> store;
@@ -70,15 +70,15 @@ public class ProtobufIssueStore implements TrackableIssueStore {
   }
 
   @Override
-  public void save(String key, Collection<Trackable> issues) throws IOException {
+  public void save(String key, Collection<Trackable<T>> issues) throws IOException {
     store.write(key, transform(issues));
   }
 
   @Override
   @CheckForNull
-  public Collection<Trackable> read(String key) throws IOException {
+  public Collection<Trackable<T>> read(String key) throws IOException {
     Optional<Sonarlint.Issues> issues = store.read(key);
-    return issues.map(ProtobufIssueStore::transform).orElse(null);
+    return issues.map(this::transform).orElse(null);
   }
 
   public void clean() {
@@ -91,30 +91,30 @@ public class ProtobufIssueStore implements TrackableIssueStore {
     FileUtils.mkdirs(basePath);
   }
 
-  private static Collection<Trackable> transform(Sonarlint.Issues protoIssues) {
+  private Collection<Trackable<T>> transform(Sonarlint.Issues protoIssues) {
     return protoIssues.getIssueList().stream()
-      .map(ProtobufIssueStore::transform)
+      .map(this::transform)
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
   }
 
-  private static Sonarlint.Issues transform(Collection<Trackable> localIssues) {
-    Sonarlint.Issues.Builder builder = Sonarlint.Issues.newBuilder();
+  private Sonarlint.Issues transform(Collection<Trackable<T>> localIssues) {
+    var builder = Sonarlint.Issues.newBuilder();
     localIssues.stream()
-      .map(ProtobufIssueStore::transform)
+      .map(this::transform)
       .filter(Objects::nonNull)
       .forEach(builder::addIssue);
 
     return builder.build();
   }
 
-  private static Trackable transform(Sonarlint.Issues.Issue issue) {
+  private Trackable<T> transform(Sonarlint.Issues.Issue issue) {
     return new ProtobufIssueTrackable(issue);
   }
 
   @CheckForNull
-  private static Sonarlint.Issues.Issue transform(Trackable localIssue) {
-    Sonarlint.Issues.Issue.Builder builder = Sonarlint.Issues.Issue.newBuilder()
+  private Sonarlint.Issues.Issue transform(Trackable<T> localIssue) {
+    var builder = Sonarlint.Issues.Issue.newBuilder()
       .setRuleKey(localIssue.getRuleKey())
       .setMessage(localIssue.getMessage())
       .setResolved(localIssue.isResolved());

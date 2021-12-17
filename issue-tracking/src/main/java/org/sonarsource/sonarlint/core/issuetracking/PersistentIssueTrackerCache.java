@@ -26,14 +26,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class PersistentIssueTrackerCache implements IssueTrackerCache {
+public class PersistentIssueTrackerCache<T> implements IssueTrackerCache<T> {
 
   private static final SonarLintLogger LOGGER = SonarLintLogger.get();
 
   static final int MAX_ENTRIES = 100;
 
   private final TrackableIssueStore store;
-  private final Map<String, Collection<Trackable>> cache;
+  private final Map<String, Collection<Trackable<T>>> cache;
 
   public PersistentIssueTrackerCache(TrackableIssueStore store) {
     this.store = store;
@@ -44,13 +44,13 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
    * Keeps a maximum number of entries in the map. On insertion, if the limit is passed, the entry accessed the longest time ago
    * is flushed into cache and removed from the map.
    */
-  private class LimitedSizeLinkedHashMap extends LinkedHashMap<String, Collection<Trackable>> {
+  private class LimitedSizeLinkedHashMap extends LinkedHashMap<String, Collection<Trackable<T>>> {
     LimitedSizeLinkedHashMap() {
       super(MAX_ENTRIES, 0.75f, true);
     }
 
     @Override
-    protected boolean removeEldestEntry(Map.Entry<String, Collection<Trackable>> eldest) {
+    protected boolean removeEldestEntry(Map.Entry<String, Collection<Trackable<T>>> eldest) {
       if (size() <= MAX_ENTRIES) {
         return false;
       }
@@ -72,8 +72,8 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
   }
 
   @Override
-  public synchronized Collection<Trackable> getLiveOrFail(String file) {
-    Collection<Trackable> liveTrackables = cache.get(file);
+  public synchronized Collection<Trackable<T>> getLiveOrFail(String file) {
+    Collection<Trackable<T>> liveTrackables = cache.get(file);
     if (liveTrackables != null) {
       return liveTrackables;
     }
@@ -85,14 +85,14 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
    * Read issues from a file that is cached. On cache miss, it won't fallback to the persistent store.
    */
   @Override
-  public synchronized Collection<Trackable> getCurrentTrackables(String file) {
-    Collection<Trackable> liveTrackables = cache.get(file);
+  public synchronized Collection<Trackable<T>> getCurrentTrackables(String file) {
+    Collection<Trackable<T>> liveTrackables = cache.get(file);
     if (liveTrackables != null) {
       return liveTrackables;
     }
 
     try {
-      Collection<Trackable> storedTrackables = store.read(file);
+      Collection<Trackable<T>> storedTrackables = store.read(file);
       if (storedTrackables != null) {
         return Collections.unmodifiableCollection(storedTrackables);
       }
@@ -103,7 +103,7 @@ public class PersistentIssueTrackerCache implements IssueTrackerCache {
   }
 
   @Override
-  public synchronized void put(String file, Collection<Trackable> trackables) {
+  public synchronized void put(String file, Collection<Trackable<T>> trackables) {
     cache.put(file, trackables);
   }
 

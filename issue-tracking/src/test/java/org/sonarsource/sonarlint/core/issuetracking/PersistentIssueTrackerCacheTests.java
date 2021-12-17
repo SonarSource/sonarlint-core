@@ -42,16 +42,16 @@ class PersistentIssueTrackerCacheTests {
   private PersistentIssueTrackerCache cache;
   private StubIssueStore stubIssueStore;
 
-  class StubIssueStore implements TrackableIssueStore {
-    private final Map<String, Collection<Trackable>> cache = new HashMap<>();
+  class StubIssueStore implements TrackableIssueStore<Object> {
+    private final Map<String, Collection<Trackable<Object>>> cache = new HashMap<>();
 
     @Override
-    public void save(String key, Collection<Trackable> issues) throws IOException {
+    public void save(String key, Collection<Trackable<Object>> issues) throws IOException {
       cache.put(key, issues);
     }
 
     @Override
-    public Collection<Trackable> read(String key) throws IOException {
+    public Collection<Trackable<Object>> read(String key) throws IOException {
       return cache.get(key);
     }
 
@@ -71,7 +71,7 @@ class PersistentIssueTrackerCacheTests {
   }
 
   @BeforeEach
-  void setUp() throws IOException {
+  void setUp() {
     stubIssueStore = new StubIssueStore();
     cache = new PersistentIssueTrackerCache(stubIssueStore);
   }
