@@ -226,14 +226,31 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <configuration>
-          <!-- Source JAR will be produced by the shade plugin -->
-          <skipSource>true</skipSource>
-        </configuration>
+        <executions>
+          <execution>
+            <id>generate-sources</id>
+            <!-- Ensure source jar is produced before the shade plugin execution -->
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <configuration>
+              <!-- Disable source jar configured in the parent-oss, to not override the one produced by the shade plugin -->
+              <skipSource>true</skipSource>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
         <executions>
           <execution>
             <id>shade</id>
@@ -245,7 +262,6 @@
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <minimizeJar>true</minimizeJar>
               <createSourcesJar>true</createSourcesJar>
-              <shadeSourcesContent>true</shadeSourcesContent>
               <relocations>
                 <relocation>
                   <pattern></pattern>
