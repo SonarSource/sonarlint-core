@@ -43,11 +43,6 @@ public class ServerIssueTrackableTest {
     trackable = new ServerIssueTrackable(serverIssue);
   }
 
-  @Test(expected = UnsupportedOperationException.class)
-  public void should_not_have_ruleName() {
-    trackable.getRuleName();
-  }
-
   @Test
   public void should_delegate_fields_to_server_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());

@@ -32,8 +32,6 @@ public interface Issue extends IssueLocation {
 
   String getRuleKey();
 
-  String getRuleName();
-
   List<Flow> flows();
 
   List<QuickFix> quickFixes();

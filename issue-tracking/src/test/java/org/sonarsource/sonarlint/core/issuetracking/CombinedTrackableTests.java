@@ -44,7 +44,6 @@ class CombinedTrackableTests {
     assertThat(combined.getMessage()).isEqualTo("nextMessage");
     assertThat(combined.getLineHash()).isEqualTo(1);
     assertThat(combined.getRuleKey()).isEqualTo("nextRuleKey");
-    assertThat(combined.getRuleName()).isEqualTo("nextRuleName");
     assertThat(combined.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(combined.getTextRangeHash()).isEqualTo(1);
   }
@@ -57,7 +56,6 @@ class CombinedTrackableTests {
     when(t.getLineHash()).thenReturn(number);
     when(t.getMessage()).thenReturn(name + "Message");
     when(t.getRuleKey()).thenReturn(name + "RuleKey");
-    when(t.getRuleName()).thenReturn(name + "RuleName");
     when(t.getServerIssueKey()).thenReturn(name + "ServerIssueKey");
     when(t.getSeverity()).thenReturn(name + "Severity");
     when(t.getTextRangeHash()).thenReturn(number);

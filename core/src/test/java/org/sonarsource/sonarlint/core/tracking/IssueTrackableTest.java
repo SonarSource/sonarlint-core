@@ -62,15 +62,11 @@ public class IssueTrackableTest {
 
   @Test
   public void should_delegate_fields_to_issue() {
-    String ruleName = "dummy rule";
-    when(issue.getRuleName()).thenReturn(ruleName);
-
     String severity = "dummy severity";
     when(issue.getSeverity()).thenReturn(severity);
 
     IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
     assertThat(trackable.getIssue()).isEqualTo(issue);
-    assertThat(trackable.getRuleName()).isEqualTo(ruleName);
     assertThat(trackable.getSeverity()).isEqualTo(severity);
   }
 }

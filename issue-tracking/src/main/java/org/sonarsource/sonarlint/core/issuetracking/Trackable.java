@@ -25,8 +25,6 @@ public interface Trackable {
 
   String getRuleKey();
 
-  String getRuleName();
-
   String getSeverity();
 
   String getMessage();

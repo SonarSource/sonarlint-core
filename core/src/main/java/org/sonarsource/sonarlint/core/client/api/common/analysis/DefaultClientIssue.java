@@ -33,7 +33,6 @@ public final class DefaultClientIssue implements Issue {
   private final String ruleKey;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
-  private final String ruleName;
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
   private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
@@ -47,7 +46,6 @@ public final class DefaultClientIssue implements Issue {
     this.severity = sonarLintRuleDefinition.getSeverity();
     this.type = sonarLintRuleDefinition.getType();
     this.ruleKey = sonarLintRuleDefinition.getKey();
-    this.ruleName = sonarLintRuleDefinition.getName();
   }
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, ConnectedRuleDetails activeRuleDetails) {
@@ -59,7 +57,6 @@ public final class DefaultClientIssue implements Issue {
     this.severity = activeRuleDetails.getSeverity();
     this.type = activeRuleDetails.getType();
     this.ruleKey = activeRuleDetails.getKey();
-    this.ruleName = activeRuleDetails.getName();
   }
 
   @Override
@@ -70,11 +67,6 @@ public final class DefaultClientIssue implements Issue {
   @Override
   public String getType() {
     return type;
-  }
-
-  @Override
-  public String getRuleName() {
-    return ruleName;
   }
 
   @Override

@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.rule.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
@@ -35,8 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class DefaultClientIssueTests {
-  @Mock
-  private ActiveRule activeRule;
   @Mock
   private SonarLintRuleDefinition rule;
   @Mock
@@ -76,9 +73,6 @@ class DefaultClientIssueTests {
     assertThat(underTest.getSeverity()).isEqualTo("MAJOR");
     assertThat(underTest.getType()).isEqualTo("BUG");
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
-
-    assertThat(underTest.getRuleName()).isEqualTo("name");
-    assertThat(underTest.getRuleName()).isEqualTo("name");
   }
 
 }
