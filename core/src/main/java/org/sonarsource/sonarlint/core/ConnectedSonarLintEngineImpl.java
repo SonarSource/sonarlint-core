@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +43,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
@@ -94,7 +94,6 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.storage.ProjectStorage;
-import org.sonarsource.sonarlint.core.storage.RuleSet;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
@@ -189,6 +188,42 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     return new PluginInstancesRepository(config);
   }
 
+  private static class ActiveRulesContext {
+    private final List<ActiveRule> activeRules = new ArrayList<>();
+    private final Map<String, ActiveRuleMetadata> activeRulesMetadata = new HashMap<>();
+
+    public void includeRule(SonarLintRuleDefinition ruleDefinition, ServerRules.ActiveRule activeRule) {
+      var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleDefinition.getLanguage().getLanguageKey());
+      activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRule.getTemplateKey()));
+      Map<String, String> effectiveParams = new HashMap<>(ruleDefinition.getDefaultParams());
+      effectiveParams.putAll(activeRule.getParams());
+      activeRuleForAnalysis.setParams(effectiveParams);
+      activeRules.add(activeRuleForAnalysis);
+      activeRulesMetadata.put(activeRule.getRuleKey(), new ActiveRuleMetadata(activeRule.getSeverity(), ruleDefinition.getType()));
+    }
+
+    public void includeRule(SonarLintRuleDefinition rule) {
+      var activeRuleForAnalysis = new ActiveRule(rule.getKey(), rule.getLanguage().getLanguageKey());
+      activeRuleForAnalysis.setParams(rule.getDefaultParams());
+      activeRules.add(activeRuleForAnalysis);
+      activeRulesMetadata.put(activeRuleForAnalysis.getRuleKey(), new ActiveRuleMetadata(rule.getSeverity(), rule.getType()));
+    }
+
+    private ActiveRuleMetadata getRuleMetadata(String ruleKey) {
+      return activeRulesMetadata.get(ruleKey);
+    }
+
+    private static class ActiveRuleMetadata {
+      private final String severity;
+      private final String type;
+
+      private ActiveRuleMetadata(String severity, String type) {
+        this.severity = severity;
+        this.type = type;
+      }
+    }
+  }
+
   @Override
   public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput,
     @Nullable ClientProgressMonitor monitor) {
@@ -205,8 +240,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       analysisConfigBuilder.putAllExtraProperties(projectStorage.getAnalyzerConfiguration(projectKey).getSettings().getAll());
       analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
     }
+    var activeRulesContext = buildActiveRulesContext(configuration);
     analysisConfigBuilder.putAllExtraProperties(configuration.extraProperties())
-      .addActiveRules(buildActiveRules(configuration))
+      .addActiveRules(activeRulesContext.activeRules)
       .setBaseDir(configuration.baseDir())
       .build();
 
@@ -215,7 +251,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     try {
       analysisEngineRestartLock.readLock().lock();
       return getAnalysisContainer().analyze(configuration.moduleKey(), analysisConfiguration,
-        i -> issueListener.handle(new DefaultClientIssue(i, getRuleDetails(i.getRuleKey(), projectKey))), new ProgressMonitor(monitor));
+        issue -> streamIssue(issueListener, issue, activeRulesContext), new ProgressMonitor(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -223,63 +259,44 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     }
   }
 
-  public List<ActiveRule> buildActiveRules(ConnectedAnalysisConfiguration configuration) {
-    List<ActiveRule> activeRulesList = new ArrayList<>();
+  private static void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
+    var ruleMetadata = activeRulesContext.getRuleMetadata(newIssue.getRuleKey());
+    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type));
+  }
+
+  private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {
+    var analysisRulesContext = new ActiveRulesContext();
     // could be empty before the first sync
     var projectKey = configuration.projectKey();
     if (projectKey == null) {
       // this should be forbidden by client side
       LOG.debug("No project key provided, no rules will be used for analysis");
-      return Collections.emptyList();
+      return analysisRulesContext;
     }
 
-    for (Map.Entry<String, RuleSet> entry : projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()) {
-      String languageKey = entry.getKey();
-      var ruleSet = entry.getValue();
-      Optional<Language> languageOpt = Language.forKey(languageKey);
-      if (languageOpt.isEmpty() || !globalConfig.getEnabledLanguages().contains(languageOpt.get())) {
-        continue;
-      }
+    projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
+      .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
+      .forEach(e -> {
+        String languageKey = e.getKey();
+        var ruleSet = e.getValue();
 
-      LOG.debug("  * {}: '{}' ({} active rules)", languageKey, ruleSet.getProfileKey(), ruleSet.getRules().size());
-      for (ServerRules.ActiveRule activeRuleFromStorage : ruleSet.getRules()) {
-        String ruleDefinitionKey = StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey()) ? activeRuleFromStorage.getTemplateKey() : activeRuleFromStorage.getRuleKey();
-        SonarLintRuleDefinition ruleDefinition = allRulesDefinitionsByKey.get(ruleDefinitionKey);
-        if (ruleDefinition == null) {
-          LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
-          continue;
-        }
-        var activeRuleForAnalysis = new ActiveRule(activeRuleFromStorage.getRuleKey(), languageKey);
-        activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRuleFromStorage.getTemplateKey()));
-        Map<String, String> effectiveParams = new HashMap<>();
-        ruleDefinition.getParams().forEach((paramKey, paramDef) -> {
-          String defaultValue = paramDef.defaultValue();
-          if (defaultValue != null) {
-            effectiveParams.put(paramKey, defaultValue);
+        LOG.debug("  * {}: '{}' ({} active rules)", languageKey, ruleSet.getProfileKey(), ruleSet.getRules().size());
+        for (ServerRules.ActiveRule activeRuleFromStorage : ruleSet.getRules()) {
+          String ruleDefinitionKey = StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey()) ? activeRuleFromStorage.getTemplateKey() : activeRuleFromStorage.getRuleKey();
+          SonarLintRuleDefinition ruleDefinition = allRulesDefinitionsByKey.get(ruleDefinitionKey);
+          if (ruleDefinition == null) {
+            LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
+            continue;
           }
-        });
-        activeRuleFromStorage.getParams().forEach(p -> effectiveParams.put(p.getKey(), p.getValue()));
-        activeRuleForAnalysis.setParams(effectiveParams);
-        activeRulesList.add(activeRuleForAnalysis);
-      }
-    }
+          analysisRulesContext.includeRule(ruleDefinition, activeRuleFromStorage);
+        }
+      });
 
     allRulesDefinitionsByKey.values().stream()
       .filter(ruleDefinition -> isRuleFromExtraPlugin(ruleDefinition.getLanguage(), globalConfig))
-      .map(rule -> {
-        var activeRuleForAnalysis = new ActiveRule(rule.getKey(), rule.getLanguage().getLanguageKey());
-        Map<String, String> effectiveParams = new HashMap<>();
-        rule.getParams().forEach((paramKey, paramDef) -> {
-          if (paramDef.defaultValue() != null) {
-            effectiveParams.put(paramKey, paramDef.defaultValue());
-          }
-        });
-        activeRuleForAnalysis.setParams(effectiveParams);
-        return activeRuleForAnalysis;
-      })
-      .forEach(activeRulesList::add);
+      .forEach(analysisRulesContext::includeRule);
 
-    return activeRulesList;
+    return analysisRulesContext;
 
   }
 
@@ -344,27 +361,18 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public ConnectedRuleDetails getRuleDetails(String ruleKey) {
-    return getRuleDetails(ruleKey, null);
-  }
-
-  @Override
   public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
-    return getRuleDetails(ruleKey, projectKey);
-  }
-
-  private ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
-    SonarLintRuleDefinition ruleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKeyStr)).orElse(null);
+    SonarLintRuleDefinition ruleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey)).orElse(null);
     if (ruleDefFromPlugin != null && (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null)) {
       // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
-      return new DefaultRuleDetails(ruleKeyStr, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
+      return new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
         ruleDefFromPlugin.getLanguage(), "");
     }
     if (projectKey != null) {
       var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
       Optional<ServerRules.ActiveRule> storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
         .flatMap(s -> s.getRules().stream())
-        .filter(r -> r.getRuleKey().equals(ruleKeyStr)).findFirst();
+        .filter(r -> r.getRuleKey().equals(ruleKey)).findFirst();
       if (storageActiveRule.isPresent()) {
         var activeRuleFromStorage = storageActiveRule.get();
         String serverSeverity = activeRuleFromStorage.getSeverity();
@@ -372,19 +380,19 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
           SonarLintRuleDefinition templateRuleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(activeRuleFromStorage.getTemplateKey()))
             .orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule template " + activeRuleFromStorage.getTemplateKey()));
           // FIXME Rule template name and description should come from the server
-          return new DefaultRuleDetails(ruleKeyStr, "FIXME", "FIXME", serverSeverity, templateRuleDefFromPlugin.getType(), templateRuleDefFromPlugin.getLanguage(), "");
+          return new DefaultRuleDetails(ruleKey, "FIXME", "FIXME", serverSeverity, templateRuleDefFromPlugin.getType(), templateRuleDefFromPlugin.getLanguage(), "");
         } else {
           if (ruleDefFromPlugin == null) {
-            throw new IllegalStateException("Unable to find rule definition for rule " + ruleKeyStr);
+            throw new IllegalStateException("Unable to find rule definition for rule " + ruleKey);
           }
           // FIXME deal with extended rule description
-          return new DefaultRuleDetails(ruleKeyStr, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+          return new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
             serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
             "");
         }
       }
     }
-    throw new IllegalStateException("Unable to find rule description for '" + ruleKeyStr + "'");
+    throw new IllegalStateException("Unable to find rule details for '" + ruleKey + "'");
   }
 
   @Override

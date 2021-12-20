@@ -25,19 +25,13 @@ import javax.annotation.Nullable;
 
 public class ServerRules {
   private final List<Rule> allRules;
-  private final Map<String, List<ActiveRule>> activeRulesByQualityProfileKey;
 
-  public ServerRules(List<Rule> allRules, Map<String, List<ActiveRule>> activeRulesByQualityProfileKey) {
+  public ServerRules(List<Rule> allRules) {
     this.allRules = allRules;
-    this.activeRulesByQualityProfileKey = activeRulesByQualityProfileKey;
   }
 
   public List<Rule> getAll() {
     return allRules;
-  }
-
-  public Map<String, List<ActiveRule>> getActiveRulesByQualityProfileKey() {
-    return activeRulesByQualityProfileKey;
   }
 
   public static class Rule {
@@ -111,10 +105,10 @@ public class ServerRules {
   public static class ActiveRule {
     private final String ruleKey;
     private final String severity;
-    private final List<Param> params;
+    private final Map<String, String> params;
     private final String templateKey;
 
-    public ActiveRule(String ruleKey, String severity, List<Param> params, String templateKey) {
+    public ActiveRule(String ruleKey, String severity, Map<String, String> params, String templateKey) {
       this.ruleKey = ruleKey;
       this.severity = severity;
       this.params = params;
@@ -125,7 +119,7 @@ public class ServerRules {
       return severity;
     }
 
-    public List<Param> getParams() {
+    public Map<String, String> getParams() {
       return params;
     }
 
@@ -135,25 +129,6 @@ public class ServerRules {
 
     public String getTemplateKey() {
       return templateKey;
-    }
-
-    public static class Param {
-
-      private final String key;
-      private final String value;
-
-      public Param(String key, String value) {
-        this.key = key;
-        this.value = value;
-      }
-
-      public String getKey() {
-        return key;
-      }
-
-      public String getValue() {
-        return value;
-      }
     }
   }
 }

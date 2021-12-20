@@ -24,7 +24,6 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public final class DefaultClientIssue implements Issue {
@@ -48,15 +47,15 @@ public final class DefaultClientIssue implements Issue {
     this.ruleKey = sonarLintRuleDefinition.getKey();
   }
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, ConnectedRuleDetails activeRuleDetails) {
+  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, String severity, String type) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();
     this.flows = i.flows();
     this.quickFixes = i.quickFixes();
-    this.severity = activeRuleDetails.getSeverity();
-    this.type = activeRuleDetails.getType();
-    this.ruleKey = activeRuleDetails.getKey();
+    this.severity = severity;
+    this.type = type;
+    this.ruleKey = i.getRuleKey();
   }
 
   @Override

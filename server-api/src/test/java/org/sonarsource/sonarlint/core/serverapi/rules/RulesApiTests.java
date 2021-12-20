@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Rules;
@@ -87,12 +88,8 @@ class RulesApiTests {
     var activeRules = rulesApi.getAllActiveRules("QPKEY", progress);
 
     assertThat(activeRules)
-      .extracting("ruleKey", "severity", "templateKey")
-      .containsOnly(tuple("repo:key", "MAJOR", "template"));
-    assertThat(activeRules)
-      .flatExtracting("params")
-      .extracting("key", "value")
-      .containsOnly(tuple("paramKey", "paramValue"));
+      .extracting("ruleKey", "severity", "templateKey", "params")
+      .containsOnly(tuple("repo:key", "MAJOR", "template", Map.of("paramKey", "paramValue")));
   }
 
 }

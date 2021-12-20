@@ -140,7 +140,7 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void unknownRuleKey() {
-    assertThrows(IllegalStateException.class, () -> sonarlint.getRuleDetails("not_found"), "Invalid rule key: not_found");
+    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid rule key: not_found");
     assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
     assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
   }
@@ -150,7 +150,7 @@ public class ConnectedIssueMediumTest {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
-    assertThat(sonarlint.getRuleDetails("java:S1481").getSeverity()).isEqualTo("MINOR");
+    assertThat(sonarlint.getActiveRuleDetails("java:S1481", null).getSeverity()).isEqualTo("MINOR");
     assertThat(sonarlint.getActiveRuleDetails("java:S1481", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
@@ -169,7 +169,7 @@ public class ConnectedIssueMediumTest {
 
   @Test
   public void rule_description_come_from_plugin() {
-    assertThat(sonarlint.getRuleDetails("java:S106").getHtmlDescription())
+    assertThat(sonarlint.getActiveRuleDetails("java:S106", null).getHtmlDescription())
       .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
         + "<ul>\n"
         + "  <li> The user must be able to easily retrieve the logs </li>\n"

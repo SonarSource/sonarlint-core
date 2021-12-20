@@ -321,7 +321,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
     assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNotNull();
-    assertThat(engine.getRuleDetails("java:S106").getHtmlDescription()).contains("When logging a message there are");
+    assertThat(engine.getActiveRuleDetails("java:S106", projectKey(PROJECT_KEY_JAVA)).getHtmlDescription()).contains("When logging a message there are");
   }
 
   @Ignore("Extended description is no supported ATM")
@@ -341,7 +341,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     updateGlobal();
 
-    assertThat(engine.getRuleDetails(ruleKey).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getActiveRuleDetails(ruleKey, null).getExtendedDescription()).isEqualTo(extendedDescription);
   }
 
   @Test

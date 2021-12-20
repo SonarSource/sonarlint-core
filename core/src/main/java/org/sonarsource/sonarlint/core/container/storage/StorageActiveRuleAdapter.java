@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
@@ -58,7 +57,7 @@ public class StorageActiveRuleAdapter implements ActiveRule {
 
   @Override
   public Map<String, String> params() {
-    return activeRule.getParams().stream().collect(Collectors.toMap(ServerRules.ActiveRule.Param::getKey, ServerRules.ActiveRule.Param::getValue));
+    return activeRule.getParams();
   }
 
   @Override

@@ -40,6 +40,7 @@ public class SonarLintRuleDefinition {
   private final String type;
   private final String description;
   private final Map<String, SonarLintRuleParamDefinition> params;
+  private final Map<String, String> defaultParams = new HashMap<>();
   private final boolean isActiveByDefault;
   private final Language language;
   private final String[] tags;
@@ -58,7 +59,12 @@ public class SonarLintRuleDefinition {
 
     Map<String, SonarLintRuleParamDefinition> builder = new HashMap<>();
     for (Param param : rule.params()) {
-      builder.put(param.key(), new SonarLintRuleParamDefinition(param));
+      var paramDefinition = new SonarLintRuleParamDefinition(param);
+      builder.put(param.key(), paramDefinition);
+      String defaultValue = paramDefinition.defaultValue();
+      if (defaultValue != null) {
+        defaultParams.put(param.key(), defaultValue);
+      }
     }
     params = Collections.unmodifiableMap(builder);
   }
@@ -81,6 +87,10 @@ public class SonarLintRuleDefinition {
 
   public Map<String, SonarLintRuleParamDefinition> getParams() {
     return params;
+  }
+
+  public Map<String, String> getDefaultParams() {
+    return defaultParams;
   }
 
   public boolean isActiveByDefault() {

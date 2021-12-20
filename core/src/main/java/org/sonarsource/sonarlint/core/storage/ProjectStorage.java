@@ -76,7 +76,7 @@ public class ProjectStorage {
     return new ServerRules.ActiveRule(
       rule.getRuleKey(),
       rule.getSeverity(),
-      rule.getParamsMap().entrySet().stream().map(e -> new ServerRules.ActiveRule.Param(e.getKey(), e.getValue())).collect(Collectors.toList()),
+      rule.getParamsMap(),
       rule.getTemplateKey());
   }
 
@@ -100,7 +100,7 @@ public class ProjectStorage {
       .setRuleKey(rule.getRuleKey())
       .setSeverity(rule.getSeverity())
       .setTemplateKey(rule.getTemplateKey())
-      .putAllParams(rule.getParams().stream().collect(Collectors.toMap(ServerRules.ActiveRule.Param::getKey, ServerRules.ActiveRule.Param::getValue)))
+      .putAllParams(rule.getParams())
       .build();
   }
 

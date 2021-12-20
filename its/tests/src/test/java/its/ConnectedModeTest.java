@@ -287,7 +287,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
-    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getHtmlDescription()).contains("When logging a message there are");
+    assertThat(engine.getActiveRuleDetails(javaRuleKey("S106"), null).getHtmlDescription()).contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
@@ -306,7 +306,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void verifyExtendedDescription() {
     updateGlobal();
 
-    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getExtendedDescription()).isEmpty();
+    assertThat(engine.getActiveRuleDetails(javaRuleKey("S106"), null).getExtendedDescription()).isEmpty();
 
     String extendedDescription = "my dummy extended description";
 
@@ -319,7 +319,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     updateGlobal();
 
-    assertThat(engine.getRuleDetails(javaRuleKey("S106")).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getActiveRuleDetails(javaRuleKey("S106"), null).getExtendedDescription()).isEqualTo(extendedDescription);
   }
 
   @Test
