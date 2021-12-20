@@ -115,6 +115,22 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     requireNonNull(configuration);
     requireNonNull(issueListener);
     setLogging(logOutput);
+
+    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(configuration.inputFiles())
+      .putAllExtraProperties(configuration.extraProperties())
+      .addActiveRules(identifyActiveRules(configuration))
+      .setBaseDir(configuration.baseDir())
+      .build();
+    try {
+      return globalContainer.analyze(configuration.moduleKey(), analysisConfig, i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
+        new ProgressMonitor(monitor));
+    } catch (RuntimeException e) {
+      throw SonarLintWrappedException.wrap(e);
+    }
+  }
+
+  private Collection<ActiveRule> identifyActiveRules(StandaloneAnalysisConfiguration configuration) {
     Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(toSet());
     Set<String> includedRules = configuration.includedRules().stream().map(RuleKey::toString)
       .filter(r -> !excludedRules.contains(r))
@@ -131,31 +147,13 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .filter(isIncludedByConfiguration(includedRules))
       .collect(Collectors.toList()));
 
-    Collection<ActiveRule> activeRules = filteredActiveRules.stream().map(rd -> {
+    return filteredActiveRules.stream().map(rd -> {
       var activeRule = new ActiveRule(rd.getKey(), rd.getLanguage().getLanguageKey());
-      Map<String, String> effectiveParams = new HashMap<>();
-      rd.getParams().forEach((paramKey, paramDef) -> {
-        if (paramDef.defaultValue() != null) {
-          effectiveParams.put(paramKey, paramDef.defaultValue());
-        }
-      });
+      Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
       Optional.ofNullable(configuration.ruleParameters().get(RuleKey.parse(rd.getKey()))).ifPresent(effectiveParams::putAll);
       activeRule.setParams(effectiveParams);
       return activeRule;
     }).collect(Collectors.toList());
-
-    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
-      .addInputFiles(configuration.inputFiles())
-      .putAllExtraProperties(configuration.extraProperties())
-      .addActiveRules(activeRules)
-      .setBaseDir(configuration.baseDir())
-      .build();
-    try {
-      return globalContainer.analyze(configuration.moduleKey(), analysisConfig, i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
-        new ProgressMonitor(monitor));
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
   }
 
   private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {

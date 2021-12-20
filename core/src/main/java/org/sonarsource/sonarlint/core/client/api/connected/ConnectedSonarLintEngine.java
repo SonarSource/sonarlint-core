@@ -47,11 +47,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   void stop(boolean deleteStorage);
 
   /**
-   * Return global rule details (not specific to any quality profile).
-   */
-  ConnectedRuleDetails getRuleDetails(String ruleKey);
-
-  /**
    * Return rule details in the context of a given project (severity may have been overriden in the quality profile).
    * @param projectKey if null, the default QP will be considered
    */

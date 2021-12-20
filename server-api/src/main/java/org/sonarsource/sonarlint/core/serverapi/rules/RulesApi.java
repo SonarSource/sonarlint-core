@@ -25,8 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
-import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -35,14 +33,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class RulesApi {
-
-  enum Severity {
-    INFO,
-    MINOR,
-    MAJOR,
-    CRITICAL,
-    BLOCKER
-  }
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -80,7 +70,7 @@ public class RulesApi {
           activeRules.add(new ServerRules.ActiveRule(
             entry.getKey(),
             ar.getSeverity(),
-            ar.getParamsList().stream().map(p -> new ServerRules.ActiveRule.Param(p.getKey(), p.getValue())).collect(Collectors.toList()),
+            ar.getParamsList().stream().collect(Collectors.toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
             rule.getTemplateKey()));
         }
       }
@@ -109,19 +99,6 @@ public class RulesApi {
       return Rules.SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);
-    }
-  }
-
-  @CheckForNull
-  private static String typeToString(Common.RuleType type) {
-    switch (type) {
-      case BUG:
-      case CODE_SMELL:
-      case VULNERABILITY:
-        return type.toString();
-      case UNKNOWN:
-      default:
-        return null;
     }
   }
 }

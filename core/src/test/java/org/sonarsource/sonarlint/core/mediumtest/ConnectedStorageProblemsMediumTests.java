@@ -69,8 +69,8 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(sonarlint.allProjectsByKey()).isEmpty();
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getRuleDetails("rule"));
-    assertThat(thrown).hasMessage("Unable to find rule description for 'rule'");
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("rule", null));
+    assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
@@ -101,8 +101,8 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(sonarlint.allProjectsByKey()).isEmpty();
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getRuleDetails("rule"));
-    assertThat(thrown).hasMessage("Unable to find rule description for 'rule'");
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("rule", null));
+    assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
@@ -136,7 +136,7 @@ class ConnectedStorageProblemsMediumTests {
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
-    assertThat(logs).contains("Unable to load plugin " + cachedJSPlugin.toString());
+    assertThat(logs).contains("Unable to load plugin " + cachedJSPlugin);
 
     ClientInputFile inputFile = prepareJavaInputFile(baseDir);
 
