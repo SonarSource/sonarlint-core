@@ -20,13 +20,16 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 
@@ -43,15 +46,16 @@ class RulesApiTests {
 
     RulesApi rulesApi = new RulesApi(mockServer.serverApiHelper());
 
-    var ruleDescription = rulesApi.getRuleDescription("java:S1234");
-    assertThat(ruleDescription).isEmpty();
+    var error = catchThrowable(() -> rulesApi.getRule("java:S1234").get());
+    assertThat(error).hasCauseInstanceOf(UnexpectedBodyException.class);
   }
 
   @Test
-  void should_get_rule_description() {
+  void should_get_rule() throws ExecutionException, InterruptedException {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
       Rules.ShowResponse.newBuilder().setRule(
         Rules.Rule.newBuilder()
+          .setName("name")
           .setHtmlDesc("htmlDesc")
           .setHtmlNote("htmlNote")
           .build())
@@ -59,9 +63,29 @@ class RulesApiTests {
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper());
 
-    var ruleDescription = rulesApi.getRuleDescription("java:S1234");
+    var rule = rulesApi.getRule("java:S1234").get();
 
-    assertThat(ruleDescription).contains("htmlDesc\nhtmlNote");
+    assertThat(rule).extracting("name", "htmlDesc", "htmlNote")
+      .contains("name", "htmlDesc", "htmlNote");
+  }
+
+  @Test
+  void should_get_rule_from_organization() throws ExecutionException, InterruptedException {
+    mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234&organization=orgKey",
+      Rules.ShowResponse.newBuilder().setRule(
+          Rules.Rule.newBuilder()
+            .setName("name")
+            .setHtmlDesc("htmlDesc")
+            .setHtmlNote("htmlNote")
+            .build())
+        .build());
+
+    var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));
+
+    var rule = rulesApi.getRule("java:S1234").get();
+
+    assertThat(rule).extracting("name", "htmlDesc", "htmlNote")
+      .contains("name", "htmlDesc", "htmlNote");
   }
 
   @Test

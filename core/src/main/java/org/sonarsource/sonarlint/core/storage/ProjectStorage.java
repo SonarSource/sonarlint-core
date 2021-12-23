@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.RWLock;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
@@ -72,8 +72,8 @@ public class ProjectStorage {
       ruleSet.getLastModified());
   }
 
-  private static ServerRules.ActiveRule adapt(Sonarlint.RuleSet.ActiveRule rule) {
-    return new ServerRules.ActiveRule(
+  private static ServerActiveRule adapt(Sonarlint.RuleSet.ActiveRule rule) {
+    return new ServerActiveRule(
       rule.getRuleKey(),
       rule.getSeverity(),
       rule.getParamsMap(),
@@ -95,7 +95,7 @@ public class ProjectStorage {
       .addAllRules(ruleSet.getRules().stream().map(ProjectStorage::adapt).collect(Collectors.toList())).build();
   }
 
-  private static Sonarlint.RuleSet.ActiveRule adapt(ServerRules.ActiveRule rule) {
+  private static Sonarlint.RuleSet.ActiveRule adapt(ServerActiveRule rule) {
     return Sonarlint.RuleSet.ActiveRule.newBuilder()
       .setRuleKey(rule.getRuleKey())
       .setSeverity(rule.getSeverity())

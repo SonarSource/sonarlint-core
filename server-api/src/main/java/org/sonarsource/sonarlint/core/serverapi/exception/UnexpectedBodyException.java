@@ -21,9 +21,8 @@ package org.sonarsource.sonarlint.core.serverapi.exception;
 
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 
-public class NotFoundException extends SonarLintException {
-
-  public NotFoundException(String msg) {
-    super(msg, null);
+public class UnexpectedBodyException extends SonarLintException {
+  public UnexpectedBodyException(Throwable cause) {
+    super("Unexpected body received", cause);
   }
 }

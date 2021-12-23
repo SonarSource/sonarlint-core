@@ -20,8 +20,9 @@
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 
-public class ProjectNotFoundException extends RuntimeException {
+public class ProjectNotFoundException extends SonarLintException {
 
   public ProjectNotFoundException(String moduleKey, @Nullable String organizationKey) {
     super(formatMessage(moduleKey, organizationKey), null);

@@ -45,7 +45,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
@@ -315,18 +314,19 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void updateProject() {
+  public void updateProject() throws Exception {
     updateGlobal();
 
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
     assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNotNull();
-    assertThat(engine.getActiveRuleDetails("java:S106", projectKey(PROJECT_KEY_JAVA)).getHtmlDescription()).contains("When logging a message there are");
+    assertThat(
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
+        .contains("When logging a message there are");
   }
 
-  @Ignore("Extended description is no supported ATM")
   @Test
-  public void verifyExtendedDescription() {
+  public void verifyExtendedDescription() throws Exception {
     String ruleKey = "java:S106";
 
     String extendedDescription = "my dummy extended description";
@@ -340,8 +340,11 @@ public class SonarCloudTest extends AbstractConnectedTest {
     }
 
     updateGlobal();
+    updateProject(projectKey(PROJECT_KEY_JAVA));
 
-    assertThat(engine.getActiveRuleDetails(ruleKey, null).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
+        .isEqualTo(extendedDescription);
   }
 
   @Test

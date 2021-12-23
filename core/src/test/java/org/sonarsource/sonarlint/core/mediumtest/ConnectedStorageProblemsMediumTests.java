@@ -69,7 +69,7 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(sonarlint.allProjectsByKey()).isEmpty();
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("rule", null));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
     assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
@@ -101,7 +101,7 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(sonarlint.allProjectsByKey()).isEmpty();
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("rule", null));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
     assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()

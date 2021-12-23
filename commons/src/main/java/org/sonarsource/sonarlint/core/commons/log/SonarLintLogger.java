@@ -30,7 +30,7 @@ public class SonarLintLogger {
   private static final SonarLintLogger logger = new SonarLintLogger(new LogOutputDelegator());
   private final LogOutputDelegator logOutput;
 
-  public static final SonarLintLogger get() {
+  public static SonarLintLogger get() {
     return logger;
   }
 

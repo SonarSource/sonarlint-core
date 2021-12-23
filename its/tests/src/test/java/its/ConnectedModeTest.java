@@ -44,7 +44,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.Hotspots;
@@ -280,14 +279,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void globalUpdate() {
+  public void globalUpdate() throws Exception {
     updateGlobal();
 
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
     assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
-    assertThat(engine.getActiveRuleDetails(javaRuleKey("S106"), null).getHtmlDescription()).contains("When logging a message there are");
+    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), null).get().getHtmlDescription())
+      .contains("When logging a message there are");
 
     assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();
   }
@@ -301,12 +301,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNotNull();
   }
 
-  @Ignore("Extended description is no supported ATM")
   @Test
-  public void verifyExtendedDescription() {
+  public void verifyExtendedDescription() throws Exception {
     updateGlobal();
+    updateProject(PROJECT_KEY_JAVA);
 
-    assertThat(engine.getActiveRuleDetails(javaRuleKey("S106"), null).getExtendedDescription()).isEmpty();
+    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEmpty();
 
     String extendedDescription = "my dummy extended description";
 
@@ -317,9 +317,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       assertThat(response.code()).isEqualTo(200);
     }
 
-    updateGlobal();
-
-    assertThat(engine.getActiveRuleDetails(javaRuleKey("S106"), null).getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEqualTo(extendedDescription);
   }
 
   @Test
@@ -548,7 +546,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       assertThat(issueListener.getIssues()).hasSize(3);
 
-      // FIXME assertThat(engine.getRuleDetails(javaRuleKey("myrule")).getHtmlDescription()).contains("my_rule_description");
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("myrule"), PROJECT_KEY_JAVA).get().getHtmlDescription()).contains("my_rule_description");
 
     } finally {
 

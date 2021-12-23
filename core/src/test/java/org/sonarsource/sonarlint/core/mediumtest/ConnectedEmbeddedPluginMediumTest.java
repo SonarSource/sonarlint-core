@@ -79,8 +79,8 @@ public class ConnectedEmbeddedPluginMediumTest {
   }
 
   @Test
-  public void rule_description_come_from_embedded() {
-    assertThat(sonarlint.getActiveRuleDetails("java:S106", null).getHtmlDescription())
+  public void rule_description_come_from_embedded() throws Exception {
+    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S106", null).get().getHtmlDescription())
       .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
         + "<ul>\n"
         + "  <li> The user must be able to easily retrieve the logs </li>\n"

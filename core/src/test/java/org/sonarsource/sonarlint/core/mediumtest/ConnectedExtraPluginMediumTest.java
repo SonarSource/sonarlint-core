@@ -99,11 +99,11 @@ public class ConnectedExtraPluginMediumTest {
   }
 
   @Test
-  public void readRuleDescriptionFromExtraPlugin() {
-    ConnectedRuleDetails ruleDetails = sonarlint.getActiveRuleDetails("php:S3334", null);
+  public void readRuleDescriptionFromExtraPlugin() throws Exception {
+    ConnectedRuleDetails ruleDetails = sonarlint.getActiveRuleDetails(null, null, "php:S3334", null).get();
     assertThat(ruleDetails.getSeverity()).isEqualTo("BLOCKER");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
-    assertThat(sonarlint.getActiveRuleDetails("php:S3334", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails(null, null, "php:S3334", JAVA_MODULE_KEY).get().getSeverity()).isEqualTo("BLOCKER");
   }
 
   @Test

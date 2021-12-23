@@ -20,20 +20,20 @@
 package org.sonarsource.sonarlint.core.storage;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 
 public class RuleSet {
-  private final List<ServerRules.ActiveRule> rules;
+  private final List<ServerActiveRule> rules;
   private final String profileKey;
   private final String lastModified;
 
-  public RuleSet(String profileKey, List<ServerRules.ActiveRule> rules, String lastModified) {
+  public RuleSet(String profileKey, List<ServerActiveRule> rules, String lastModified) {
     this.rules = rules;
     this.profileKey = profileKey;
     this.lastModified = lastModified;
   }
 
-  public List<ServerRules.ActiveRule> getRules() {
+  public List<ServerActiveRule> getRules() {
     return rules;
   }
 
