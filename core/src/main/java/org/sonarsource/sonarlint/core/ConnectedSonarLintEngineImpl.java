@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -90,7 +91,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
-import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.storage.ProjectStorage;
@@ -192,7 +193,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     private final List<ActiveRule> activeRules = new ArrayList<>();
     private final Map<String, ActiveRuleMetadata> activeRulesMetadata = new HashMap<>();
 
-    public void includeRule(SonarLintRuleDefinition ruleDefinition, ServerRules.ActiveRule activeRule) {
+    public void includeRule(SonarLintRuleDefinition ruleDefinition, ServerActiveRule activeRule) {
       var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleDefinition.getLanguage().getLanguageKey());
       activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRule.getTemplateKey()));
       Map<String, String> effectiveParams = new HashMap<>(ruleDefinition.getDefaultParams());
@@ -281,7 +282,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         var ruleSet = e.getValue();
 
         LOG.debug("  * {}: '{}' ({} active rules)", languageKey, ruleSet.getProfileKey(), ruleSet.getRules().size());
-        for (ServerRules.ActiveRule activeRuleFromStorage : ruleSet.getRules()) {
+        for (ServerActiveRule activeRuleFromStorage : ruleSet.getRules()) {
           String ruleDefinitionKey = StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey()) ? activeRuleFromStorage.getTemplateKey() : activeRuleFromStorage.getRuleKey();
           SonarLintRuleDefinition ruleDefinition = allRulesDefinitionsByKey.get(ruleDefinitionKey);
           if (ruleDefinition == null) {
@@ -360,17 +361,17 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     }
   }
 
-  @Override
-  public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
+  public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
     SonarLintRuleDefinition ruleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey)).orElse(null);
     if (ruleDefFromPlugin != null && (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null)) {
       // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
-      return new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
-        ruleDefFromPlugin.getLanguage(), "");
+      return CompletableFuture.completedFuture(
+        new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
+          ruleDefFromPlugin.getLanguage(), ""));
     }
     if (projectKey != null) {
       var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
-      Optional<ServerRules.ActiveRule> storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
+      Optional<ServerActiveRule> storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
         .flatMap(s -> s.getRules().stream())
         .filter(r -> r.getRuleKey().equals(ruleKey)).findFirst();
       if (storageActiveRule.isPresent()) {
@@ -379,16 +380,24 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
           SonarLintRuleDefinition templateRuleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(activeRuleFromStorage.getTemplateKey()))
             .orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule template " + activeRuleFromStorage.getTemplateKey()));
-          // FIXME Rule template name and description should come from the server
-          return new DefaultRuleDetails(ruleKey, "FIXME", "FIXME", serverSeverity, templateRuleDefFromPlugin.getType(), templateRuleDefFromPlugin.getLanguage(), "");
+          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(ruleKey)
+            .thenApply(
+              serverRule -> new DefaultRuleDetails(
+                ruleKey,
+                serverRule.getName(),
+                serverRule.getHtmlDesc(),
+                serverSeverity,
+                templateRuleDefFromPlugin.getType(),
+                templateRuleDefFromPlugin.getLanguage(),
+                serverRule.getHtmlNote()));
         } else {
           if (ruleDefFromPlugin == null) {
             throw new IllegalStateException("Unable to find rule definition for rule " + ruleKey);
           }
-          // FIXME deal with extended rule description
-          return new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
-            serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
-            "");
+          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(ruleKey)
+            .thenApply(serverRule -> new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+              serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
+              serverRule.getHtmlNote()));
         }
       }
     }

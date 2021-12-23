@@ -17,13 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.exception;
+package org.sonarsource.sonarlint.core.serverapi.rules;
 
-import org.sonarsource.sonarlint.core.commons.SonarLintException;
+public class ServerRule {
+  private final String name;
+  private final String htmlDesc;
+  private final String htmlNote;
 
-public class NotFoundException extends SonarLintException {
+  public ServerRule(String name, String htmlDesc, String htmlNote) {
+    this.name = name;
+    this.htmlDesc = htmlDesc;
+    this.htmlNote = htmlNote;
+  }
 
-  public NotFoundException(String msg) {
-    super(msg, null);
+  public String getName() {
+    return name;
+  }
+
+  public String getHtmlDesc() {
+    return htmlDesc;
+  }
+
+  public String getHtmlNote() {
+    return htmlNote;
   }
 }

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
@@ -50,7 +51,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * Return rule details in the context of a given project (severity may have been overriden in the quality profile).
    * @param projectKey if null, the default QP will be considered
    */
-  ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey);
+  CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey);
 
   /**
    * Trigger an analysis

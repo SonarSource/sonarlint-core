@@ -28,13 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarqube.ws.Rules;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
@@ -61,22 +63,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
+import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 import static testutils.TestUtils.createNoOpIssueListener;
 import static testutils.TestUtils.createNoOpLogOutput;
 
-public class ConnectedIssueMediumTest {
+class ConnectedIssueMediumTest {
+  @RegisterExtension
+  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
   private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
-  private static File baseDir;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    Path slHome = temp.newFolder().toPath();
+  @BeforeAll
+  public static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withJavaPlugin()
@@ -102,11 +103,9 @@ public class ConnectedIssueMediumTest {
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
-
-    baseDir = temp.newFolder();
   }
 
-  @AfterClass
+  @AfterAll
   public static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
@@ -115,17 +114,17 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void testContainerInfo() {
+  void testContainerInfo() {
     assertThat(sonarlint.getPluginDetails()).extracting("key").containsOnly("java", "javascript");
     assertThat(sonarlint.allProjectsByKey()).containsKeys("test-project", "test-project-2");
   }
 
   @Test
-  public void testStaleProject() {
+  void testStaleProject(@TempDir Path baseDir) {
     assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
     ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("stale_module")
-      .setBaseDir(baseDir.toPath())
+      .setBaseDir(baseDir)
       .setModuleKey("key")
       .build();
 
@@ -139,23 +138,24 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void unknownRuleKey() {
-    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid rule key: not_found");
-    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", null), "Invalid active rule key: not_found");
-    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails("not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
+  void unknownRuleKey() {
+    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "not_found", null), "Invalid rule key: not_found");
+    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "not_found", null), "Invalid active rule key: not_found");
+    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
   }
 
   @Test
-  public void simpleJavaBinded() throws Exception {
-    ClientInputFile inputFile = prepareJavaInputFile();
+  void simpleJavaBinded(@TempDir Path baseDir) throws Exception {
+    ClientInputFile inputFile = prepareJavaInputFile(baseDir);
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481", Rules.Rule.newBuilder().build());
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
-    assertThat(sonarlint.getActiveRuleDetails("java:S1481", null).getSeverity()).isEqualTo("MINOR");
-    assertThat(sonarlint.getActiveRuleDetails("java:S1481", JAVA_MODULE_KEY).getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getSeverity()).isEqualTo("MINOR");
+    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S1481", JAVA_MODULE_KEY).get().getSeverity()).isEqualTo("BLOCKER");
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setProjectKey(JAVA_MODULE_KEY)
-      .setBaseDir(baseDir.toPath())
+      .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .setModuleKey("key")
       .build(),
@@ -168,8 +168,8 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void rule_description_come_from_plugin() {
-    assertThat(sonarlint.getActiveRuleDetails("java:S106", null).getHtmlDescription())
+  void rule_description_come_from_plugin() throws Exception {
+    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S106", null).get().getHtmlDescription())
       .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
         + "<ul>\n"
         + "  <li> The user must be able to easily retrieve the logs </li>\n"
@@ -194,13 +194,13 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void emptyQPJava() throws IOException {
-    ClientInputFile inputFile = prepareJavaInputFile();
+  void emptyQPJava(@TempDir Path baseDir) throws IOException {
+    ClientInputFile inputFile = prepareJavaInputFile(baseDir);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setProjectKey("test-project")
-      .setBaseDir(baseDir.toPath())
+      .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .setModuleKey("key")
       .build(),
@@ -210,7 +210,7 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void declare_module_should_create_a_module_container_with_loaded_extensions() {
+  void declare_module_should_create_a_module_container_with_loaded_extensions() {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
@@ -221,7 +221,7 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void stop_module_should_stop_the_module_container() {
+  void stop_module_should_stop_the_module_container() {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
     ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
@@ -232,7 +232,7 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void should_forward_module_file_event_to_listener() {
+  void should_forward_module_file_event_to_listener() {
     // should not be located in global container in real life but easier for testing
     FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
     sonarlint.getAnalysisContainer().add(moduleFileListener);
@@ -254,8 +254,8 @@ public class ConnectedIssueMediumTest {
     }
   }
 
-  private ClientInputFile prepareJavaInputFile() throws IOException {
-    return prepareInputFile("Foo.java",
+  private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {
+    return prepareInputFile(baseDir, "Foo.java",
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -266,20 +266,10 @@ public class ConnectedIssueMediumTest {
       false);
   }
 
-  private ClientInputFile prepareJavaTestInputFile() throws IOException {
-    return prepareInputFile("FooTest.java",
-      "public class FooTest {\n"
-        + "  public void foo() {\n"
-        + "  }\n"
-        + "}",
-      true);
-  }
-
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir, relativePath);
+  private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
+    final File file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
-    return inputFile;
+    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 
   static class StoreIssueListener implements IssueListener {
