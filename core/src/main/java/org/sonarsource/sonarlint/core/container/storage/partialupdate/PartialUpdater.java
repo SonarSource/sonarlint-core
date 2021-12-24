@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -68,7 +69,7 @@ public class PartialUpdater {
     issueStore.save(issues);
   }
 
-  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
+    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
   }
 }

@@ -114,17 +114,17 @@ public class StorageContainerHandler {
   }
 
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
     updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, progress);
+    updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, branchName, progress);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {

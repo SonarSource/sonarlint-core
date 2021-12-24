@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
@@ -58,10 +59,10 @@ public class ProjectStorageUpdateExecutor {
     this.qualityProfileStore = qualityProfileStore;
   }
 
-  public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  public void update(String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, qualityProfileStore, temp, progress);
-      updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
+      updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, projectStoragePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
@@ -99,9 +100,9 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     Path basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
+    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, branchName, progress);
   }
 
   private void updateStatus(Path temp) {

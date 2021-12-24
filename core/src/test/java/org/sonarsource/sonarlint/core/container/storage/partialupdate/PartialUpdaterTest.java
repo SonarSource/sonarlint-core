@@ -108,7 +108,7 @@ public class PartialUpdaterTest {
     when(projectStoragePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(temp.newFolder().toPath());
     when(downloader.download(projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration, false, PROGRESS);
+    updater.updateFileIssues(projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS);
 
     verify(issueStore).save(anyList());
   }
