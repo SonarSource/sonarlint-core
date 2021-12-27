@@ -42,10 +42,6 @@ public class ActiveRuleAdapter implements ActiveRule {
     throw new UnsupportedOperationException("severity not supported in SonarLint");
   }
 
-  public String type() {
-    throw new UnsupportedOperationException("type not supported in SonarLint");
-  }
-
   @Override
   public String language() {
     return activeRule.getLanguageKey();
@@ -72,7 +68,7 @@ public class ActiveRuleAdapter implements ActiveRule {
     String templateRuleKey = activeRule.getTemplateRuleKey();
     if (!StringUtils.isEmpty(templateRuleKey)) {
       // The SQ plugin API expect template rule key to be only the "rule" part of the key (without the repository key)
-      RuleKey ruleKey = RuleKey.parse(templateRuleKey);
+      var ruleKey = RuleKey.parse(templateRuleKey);
       return ruleKey.rule();
     }
     return null;
@@ -81,10 +77,6 @@ public class ActiveRuleAdapter implements ActiveRule {
   @Override
   public String qpKey() {
     throw new UnsupportedOperationException("qpKey not supported in SonarLint");
-  }
-
-  public String getRuleName() {
-    throw new UnsupportedOperationException("getRuleName not supported in SonarLint");
   }
 
 }

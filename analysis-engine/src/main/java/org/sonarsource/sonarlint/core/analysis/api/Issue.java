@@ -33,12 +33,12 @@ public class Issue implements IssueLocation {
   private final List<QuickFix> quickFixes;
   private final TextRange textRange;
 
-  public Issue(ActiveRuleAdapter activeRule, String primaryMessage, @Nullable org.sonar.api.batch.fs.TextRange textRange,
+  public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, @Nullable org.sonar.api.batch.fs.TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes) {
     this(activeRule.ruleKey().toString(), primaryMessage, Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null), clientInputFile, flows, quickFixes);
   }
 
-  public Issue(String ruleKey, String primaryMessage, @Nullable TextRange textRange,
+  public Issue(String ruleKey, @Nullable String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes) {
     this.textRange = textRange;
     this.ruleKey = ruleKey;
@@ -46,10 +46,6 @@ public class Issue implements IssueLocation {
     this.clientInputFile = clientInputFile;
     this.flows = flows;
     this.quickFixes = quickFixes;
-  }
-
-  public Issue(Issue another) {
-    this(another.ruleKey, another.primaryMessage, another.textRange, another.clientInputFile, another.flows, another.quickFixes);
   }
 
   public String getRuleKey() {
@@ -83,7 +79,7 @@ public class Issue implements IssueLocation {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[");
     sb.append("rule=").append(ruleKey);
     if (textRange != null) {

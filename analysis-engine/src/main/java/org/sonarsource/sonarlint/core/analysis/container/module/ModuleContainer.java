@@ -62,11 +62,11 @@ public class ModuleContainer extends ComponentContainer {
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(this, progress);
+    var analysisContainer = new AnalysisContainer(this, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
     analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).collect(Collectors.toList())));
-    AnalysisResults defaultAnalysisResult = new AnalysisResults();
+    var defaultAnalysisResult = new AnalysisResults();
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
     return defaultAnalysisResult;

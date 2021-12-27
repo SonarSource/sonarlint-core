@@ -95,7 +95,7 @@ public class LogMediumTest {
   @Test
   public void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
-    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
+    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}");
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
     assertThat(logs.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
@@ -107,7 +107,7 @@ public class LogMediumTest {
     assertThat(logs2.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
   }
 
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
+  private ClientInputFile prepareInputFile(String relativePath, String content) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content);
     return TestUtils.createInputFile(file.toPath(), relativePath, false);

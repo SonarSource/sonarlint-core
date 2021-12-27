@@ -27,13 +27,11 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.Version;
 
 @Immutable
 public class AnalysisEngineConfiguration {
@@ -44,7 +42,6 @@ public class AnalysisEngineConfiguration {
   private final EnumSet<Language> enabledLanguages;
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
-  private final Version nodeJsVersion;
   private final long clientPid;
   private final ClientModulesProvider modulesProvider;
 
@@ -53,17 +50,12 @@ public class AnalysisEngineConfiguration {
     this.enabledLanguages = builder.enabledLanguages;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
-    this.nodeJsVersion = builder.nodeJsVersion;
     this.clientPid = builder.clientPid;
     this.modulesProvider = builder.modulesProvider;
   }
 
   public static Builder builder() {
     return new Builder();
-  }
-
-  public Map<String, String> extraProperties() {
-    return Collections.unmodifiableMap(extraProperties);
   }
 
   @CheckForNull
@@ -75,15 +67,6 @@ public class AnalysisEngineConfiguration {
     return enabledLanguages;
   }
 
-  @CheckForNull
-  public Path getNodeJsPath() {
-    return nodeJsPath;
-  }
-
-  public Optional<Version> getNodeJsVersion() {
-    return Optional.ofNullable(nodeJsVersion);
-  }
-
   public long getClientPid() {
     return clientPid;
   }
@@ -92,12 +75,11 @@ public class AnalysisEngineConfiguration {
     return modulesProvider;
   }
 
-  public Map<String, String> getEffectiveConfig() {
-    Map<String, String> props = new HashMap<>();
+  public Map<String, String> getEffectiveSettings() {
+    Map<String, String> props = new HashMap<>(extraProperties);
     if (nodeJsPath != null) {
       props.put(NODE_EXECUTABLE_PROPERTY, nodeJsPath.toString());
     }
-    props.putAll(extraProperties);
     return props;
   }
 
@@ -106,7 +88,6 @@ public class AnalysisEngineConfiguration {
     private final EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
-    private Version nodeJsVersion;
     private long clientPid;
     private ClientModulesProvider modulesProvider;
 
@@ -157,9 +138,8 @@ public class AnalysisEngineConfiguration {
     /**
      * Set the location of the nodejs executable used by some analyzers.
      */
-    public Builder setNodeJs(@Nullable Path nodeJsPath, @Nullable Version nodeJsVersion) {
+    public Builder setNodeJs(@Nullable Path nodeJsPath) {
       this.nodeJsPath = nodeJsPath;
-      this.nodeJsVersion = nodeJsVersion;
       return this;
     }
 

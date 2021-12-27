@@ -72,7 +72,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
-import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.storage.FileMatcher;
 import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
@@ -171,7 +170,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
-      .setNodeJs(globalConfig.getNodeJsPath(), Optional.ofNullable(globalConfig.getNodeJsVersion()).map(v -> Version.create(v.toString())).orElse(null))
+      .setNodeJs(globalConfig.getNodeJsPath())
       .setWorkDir(globalConfig.getWorkDir())
       .setModulesProvider(globalConfig.getModulesProvider())
       .build();
@@ -412,7 +411,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public Collection<PluginDetails> getPluginDetails() {
     try {
       analysisEngineRestartLock.readLock().lock();
-      return pluginInstancesRepository.getPluginCheckResultByKeys().values().stream().map(p -> new DefaultLoadedAnalyzer(p.getPlugin().getKey(), p.getPlugin().getName(),
+      return pluginInstancesRepository.getPluginCheckResultByKeys().values().stream().map(p -> new PluginDetails(p.getPlugin().getKey(), p.getPlugin().getName(),
         Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
     } finally {
       analysisEngineRestartLock.readLock().unlock();

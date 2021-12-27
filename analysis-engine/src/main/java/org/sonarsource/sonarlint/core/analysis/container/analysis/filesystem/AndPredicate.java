@@ -41,7 +41,7 @@ class AndPredicate extends AbstractFilePredicate {
     if (predicates.isEmpty()) {
       return TruePredicate.TRUE;
     }
-    AndPredicate result = new AndPredicate();
+    var result = new AndPredicate();
     for (FilePredicate filePredicate : predicates) {
       if (filePredicate == TruePredicate.TRUE) {
         continue;
@@ -87,10 +87,6 @@ class AndPredicate extends AbstractFilePredicate {
       result = predicates.get(i).filter(result);
     }
     return result;
-  }
-
-  Collection<OptimizedFilePredicate> predicates() {
-    return predicates;
   }
 
 }

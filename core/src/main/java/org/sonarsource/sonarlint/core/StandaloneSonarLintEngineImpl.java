@@ -42,12 +42,10 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
@@ -77,7 +75,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
-      .setNodeJs(globalConfig.getNodeJsPath(), Optional.ofNullable(globalConfig.getNodeJsVersion()).map(v -> Version.create(v.toString())).orElse(null))
+      .setNodeJs(globalConfig.getNodeJsPath())
       .setWorkDir(globalConfig.getWorkDir())
       .setModulesProvider(globalConfig.getModulesProvider())
       .build();
@@ -201,7 +199,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   @Override
   public Collection<PluginDetails> getPluginDetails() {
     return pluginInstancesRepository.getPluginCheckResultByKeys().values().stream()
-      .map(c -> new DefaultLoadedAnalyzer(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getVersion().toString(), c.getSkipReason().orElse(null)))
+      .map(c -> new PluginDetails(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getVersion().toString(), c.getSkipReason().orElse(null)))
       .collect(Collectors.toList());
   }
 

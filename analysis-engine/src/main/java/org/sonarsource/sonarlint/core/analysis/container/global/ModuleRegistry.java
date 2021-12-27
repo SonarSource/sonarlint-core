@@ -49,7 +49,7 @@ public class ModuleRegistry {
 
   private ModuleContainer createContainer(Object moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {
     LOG.debug("Creating container for module '" + moduleKey + "'");
-    ModuleContainer moduleContainer = new ModuleContainer(parent, false);
+    var moduleContainer = new ModuleContainer(parent, false);
     if (clientFileSystem != null) {
       moduleContainer.add(clientFileSystem);
     }
@@ -59,7 +59,7 @@ public class ModuleRegistry {
 
   public ModuleContainer createTransientContainer(Iterable<ClientInputFile> filesToAnalyze) {
     LOG.debug("Creating transient module container");
-    ModuleContainer moduleContainer = new ModuleContainer(parent, true);
+    var moduleContainer = new ModuleContainer(parent, true);
     moduleContainer.add(new TransientModuleFileSystem(filesToAnalyze));
     moduleContainer.startComponents();
     return moduleContainer;
@@ -70,7 +70,7 @@ public class ModuleRegistry {
       // can this happen ?
       return;
     }
-    ModuleContainer moduleContainer = moduleContainersByKey.remove(moduleKey);
+    var moduleContainer = moduleContainersByKey.remove(moduleKey);
     moduleContainer.stopComponents();
   }
 

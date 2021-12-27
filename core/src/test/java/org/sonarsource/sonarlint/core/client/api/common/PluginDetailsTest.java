@@ -17,7 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.container.connected.exceptions;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.junit.Test;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class PluginDetailsTest {
+  @Test
+  public void testRoundTrip() {
+    PluginDetails analyzer = new PluginDetails("key", "name", "version", SkipReason.IncompatiblePluginApi.INSTANCE);
+    assertThat(analyzer.key()).isEqualTo("key");
+    assertThat(analyzer.name()).isEqualTo("name");
+    assertThat(analyzer.version()).isEqualTo("version");
+    assertThat(analyzer.skipReason()).containsInstanceOf(SkipReason.IncompatiblePluginApi.class);
+  }
+}

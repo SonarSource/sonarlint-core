@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
@@ -134,7 +133,7 @@ public class GlobalAnalysisContainer extends ComponentContainer {
   }
 
   public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    ModuleContainer moduleContainer = moduleRegistry.getContainerFor(moduleKey);
+    var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
     if (moduleContainer != null) {
       moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
     }

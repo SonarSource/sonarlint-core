@@ -152,7 +152,7 @@ final class MessageFormatter {
   }
 
   public static FormattingTuple arrayFormat(final String messagePattern, final Object[] argArray) {
-    Throwable throwableCandidate = MessageFormatter.getThrowableCandidate(argArray);
+    var throwableCandidate = MessageFormatter.getThrowableCandidate(argArray);
     Object[] args = argArray;
     if (throwableCandidate != null) {
       args = MessageFormatter.trimmedCopy(argArray);
@@ -170,10 +170,10 @@ final class MessageFormatter {
       return new FormattingTuple(messagePattern);
     }
 
-    int i = 0;
+    var i = 0;
     int j;
     // use string builder for better multicore performance
-    StringBuilder sbuf = new StringBuilder(messagePattern.length() + 50);
+    var sbuf = new StringBuilder(messagePattern.length() + 50);
 
     int L;
     for (L = 0; L < argArray.length; L++) {
@@ -190,7 +190,7 @@ final class MessageFormatter {
           return new FormattingTuple(sbuf.toString(), throwable);
         }
       } else {
-        if (isEscapedDelimeter(messagePattern, j)) {
+        if (isEscapedDelimiter(messagePattern, j)) {
           if (!isDoubleEscaped(messagePattern, j)) {
             L--; // DELIM_START was escaped, thus should not be incremented
             sbuf.append(messagePattern, i, j - 1);
@@ -217,11 +217,11 @@ final class MessageFormatter {
     return new FormattingTuple(sbuf.toString(), throwable);
   }
 
-  static boolean isEscapedDelimeter(String messagePattern, int delimeterStartIndex) {
-    if (delimeterStartIndex == 0) {
+  static boolean isEscapedDelimiter(String messagePattern, int delimiterStartIndex) {
+    if (delimiterStartIndex == 0) {
       return false;
     }
-    char potentialEscape = messagePattern.charAt(delimeterStartIndex - 1);
+    var potentialEscape = messagePattern.charAt(delimiterStartIndex - 1);
     return potentialEscape == ESCAPE_CHAR;
   }
 
@@ -264,7 +264,7 @@ final class MessageFormatter {
 
   private static void safeObjectAppend(StringBuilder sbuf, Object o) {
     try {
-      String oAsString = o.toString();
+      var oAsString = o.toString();
       sbuf.append(oAsString);
     } catch (Throwable t) {
       sbuf.append("[FAILED toString()]");
@@ -276,7 +276,7 @@ final class MessageFormatter {
     if (!seenMap.containsKey(a)) {
       seenMap.put(a, null);
       final int len = a.length;
-      for (int i = 0; i < len; i++) {
+      for (var i = 0; i < len; i++) {
         deeplyAppendParameter(sbuf, a[i], seenMap);
         if (i != len - 1) {
           sbuf.append(", ");
@@ -293,7 +293,7 @@ final class MessageFormatter {
   private static void booleanArrayAppend(StringBuilder sbuf, boolean[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -305,7 +305,7 @@ final class MessageFormatter {
   private static void byteArrayAppend(StringBuilder sbuf, byte[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -317,7 +317,7 @@ final class MessageFormatter {
   private static void charArrayAppend(StringBuilder sbuf, char[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -329,7 +329,7 @@ final class MessageFormatter {
   private static void shortArrayAppend(StringBuilder sbuf, short[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -341,7 +341,7 @@ final class MessageFormatter {
   private static void intArrayAppend(StringBuilder sbuf, int[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -353,7 +353,7 @@ final class MessageFormatter {
   private static void longArrayAppend(StringBuilder sbuf, long[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -365,7 +365,7 @@ final class MessageFormatter {
   private static void floatArrayAppend(StringBuilder sbuf, float[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");
@@ -377,7 +377,7 @@ final class MessageFormatter {
   private static void doubleArrayAppend(StringBuilder sbuf, double[] a) {
     sbuf.append('[');
     final int len = a.length;
-    for (int i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
         sbuf.append(", ");

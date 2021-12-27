@@ -40,10 +40,10 @@ class LogOutputDelegator {
     }
 
     if (t != null) {
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw);
-      t.printStackTrace(pw);
-      log(sw.toString(), level);
+      var stringWriter = new StringWriter();
+      var printWriter = new PrintWriter(stringWriter);
+      t.printStackTrace(printWriter);
+      log(stringWriter.toString(), level);
     }
   }
 

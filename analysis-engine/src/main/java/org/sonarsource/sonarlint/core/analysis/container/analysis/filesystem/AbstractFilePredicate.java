@@ -32,7 +32,6 @@ import org.sonar.api.batch.fs.InputFile;
 public abstract class AbstractFilePredicate implements OptimizedFilePredicate {
 
   protected static final int DEFAULT_PRIORITY = 10;
-  protected static final int USE_INDEX = 20;
 
   @Override
   public Iterable<InputFile> filter(Iterable<InputFile> target) {

@@ -40,9 +40,9 @@ public class ModuleInputFileBuilder {
   }
 
   public SonarLintInputFile create(ClientInputFile inputFile) {
-    SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile, f -> {
+    var defaultInputFile = new SonarLintInputFile(inputFile, f -> {
       LOG.debug("Initializing metadata of file {}", f.uri());
-      Charset charset = f.charset();
+      var charset = f.charset();
       InputStream stream;
       try {
         stream = f.inputStream();
@@ -52,9 +52,10 @@ public class ModuleInputFileBuilder {
       return fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), f.uri(), null);
     });
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
-    if (inputFile.language() != null) {
-      LOG.debug("Language of file '{}' is set to '{}'", inputFile.uri(), inputFile.language());
-      defaultInputFile.setLanguage(inputFile.language());
+    var fileLanguage = inputFile.language();
+    if (fileLanguage != null) {
+      LOG.debug("Language of file '{}' is set to '{}'", inputFile.uri(), fileLanguage);
+      defaultInputFile.setLanguage(fileLanguage);
     } else {
       defaultInputFile.setLanguage(langDetection.language(defaultInputFile));
     }
