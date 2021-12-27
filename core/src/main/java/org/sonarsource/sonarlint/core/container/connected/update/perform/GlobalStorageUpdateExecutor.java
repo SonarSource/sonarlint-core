@@ -40,16 +40,12 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 public class GlobalStorageUpdateExecutor {
 
   private final ServerStorage serverStorage;
-  private final ServerApiHelper serverApiHelper;
-  private final ServerVersionAndStatusChecker statusChecker;
 
-  public GlobalStorageUpdateExecutor(ServerStorage serverStorage, ServerApiHelper serverApiHelper, ServerVersionAndStatusChecker statusChecker) {
+  public GlobalStorageUpdateExecutor(ServerStorage serverStorage) {
     this.serverStorage = serverStorage;
-    this.serverApiHelper = serverApiHelper;
-    this.statusChecker = statusChecker;
   }
 
-  public void update(ProgressMonitor progress) {
+  public void update(ServerApiHelper serverApiHelper, ProgressMonitor progress) {
     Path temp;
     try {
       temp = Files.createTempDirectory("sonarlint-global-storage");
@@ -64,7 +60,7 @@ public class GlobalStorageUpdateExecutor {
       var storageStatusStore = new StorageStatusStore(storageFolder);
 
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
-      ServerInfo serverStatus = statusChecker.checkVersionAndStatus();
+      ServerInfo serverStatus = new ServerVersionAndStatusChecker(serverApiHelper).checkVersionAndStatus();
       serverInfoStore.store(serverStatus);
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);

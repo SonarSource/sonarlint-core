@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.io.IOException;
 import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,7 @@ class ModuleHierarchyDownloaderTests {
 
   @BeforeEach
   public void setUp() {
-    underTest = new ModuleHierarchyDownloader(mockServer.serverApiHelper());
+    underTest = new ModuleHierarchyDownloader();
   }
 
   @Test
@@ -62,7 +61,7 @@ class ModuleHierarchyDownloaderTests {
       "/update/show_module1_module12.pb");
     mockServer.addResponseFromResource("/api/components/show.protobuf?component=testRoot%3Amodule2",
       "/update/show_module2.pb");
-    Map<String, String> fetchModuleHierarchy = underTest.fetchModuleHierarchy("testRoot", PROGRESS);
+    Map<String, String> fetchModuleHierarchy = underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS);
     assertThat(fetchModuleHierarchy).contains(
       entry("testRoot", ""),
       entry("testRoot:module1", "module1"),
@@ -72,7 +71,7 @@ class ModuleHierarchyDownloaderTests {
   }
 
   @Test
-  void testNoPaginationWhenJustUnderPageSize() throws IOException {
+  void testNoPaginationWhenJustUnderPageSize() {
     TreeWsResponse.Builder responseBuilder = TreeWsResponse.newBuilder()
       .setPaging(Paging.newBuilder().setTotal(PAGE_SIZE));
     for (int i = 0; i < PAGE_SIZE; i++) {
@@ -83,12 +82,12 @@ class ModuleHierarchyDownloaderTests {
 
     mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", responseBuilder.build());
 
-    Map<String, String> fetchModuleHierarchy = underTest.fetchModuleHierarchy("testRoot", PROGRESS);
+    Map<String, String> fetchModuleHierarchy = underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS);
     assertThat(fetchModuleHierarchy).hasSize(PAGE_SIZE + 1 /* root module */);
   }
 
   @Test
-  void testPagination() throws IOException {
+  void testPagination() {
     TreeWsResponse.Builder responseBuilder = TreeWsResponse.newBuilder()
       .setPaging(Paging.newBuilder().setPageIndex(1).setTotal(501));
     for (int i = 0; i < PAGE_SIZE; i++) {
@@ -108,21 +107,21 @@ class ModuleHierarchyDownloaderTests {
     }
     mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=2", responseBuilder.build());
 
-    Map<String, String> fetchModuleHierarchy = underTest.fetchModuleHierarchy("testRoot", PROGRESS);
+    Map<String, String> fetchModuleHierarchy = underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS);
     assertThat(fetchModuleHierarchy).hasSize(501 + 1);
   }
 
   @Test
   void testIOException() {
     mockServer.addResponse("/api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", new MockResponse().setResponseCode(503));
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchModuleHierarchy("testRoot", PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
   @Test
   void testInvalidResponseContent() {
     mockServer.addStringResponse("/api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", "invalid response stream");
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchModuleHierarchy("testRoot", PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS));
     assertThat(thrown).hasMessageContaining(" While parsing a protocol message, the input ended unexpectedly in the middle of a field.");
   }
 }

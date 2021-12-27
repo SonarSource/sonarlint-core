@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ServerIssueUpdater {
   private final ProjectStoragePaths projectStoragePaths;
@@ -41,10 +42,11 @@ public class ServerIssueUpdater {
     this.issueStoreFactory = issueStoreFactory;
   }
 
-  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
+  public void update(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
+    ProgressMonitor progress) {
     var target = projectStoragePaths.getServerIssuesPath(projectKey);
     Path work = createTempDir(target);
-    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
   }
 
   private static Path createTempDir(Path target) {
@@ -55,8 +57,9 @@ public class ServerIssueUpdater {
     }
   }
 
-  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
+  public void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path,
+    boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
+    List<Sonarlint.ServerIssue> issues = issueDownloader.download(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 

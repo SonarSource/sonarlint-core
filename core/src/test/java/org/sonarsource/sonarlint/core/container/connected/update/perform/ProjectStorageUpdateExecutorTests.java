@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,6 +84,7 @@ class ProjectStorageUpdateExecutorTests {
   private final ServerIssueUpdater serverIssueUpdater = mock(ServerIssueUpdater.class);
   private ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
+  private final ServerApiHelper serverApiHelper = mock(ServerApiHelper.class);
 
   public void setUp(@Nullable String organizationKey, Path tempDir) throws IOException {
     Files.createDirectory(tempDir);
@@ -112,7 +114,7 @@ class ProjectStorageUpdateExecutorTests {
     Map<String, String> modulesPath = new HashMap<>();
     modulesPath.put(MODULE_KEY_WITH_BRANCH, "");
     modulesPath.put(MODULE_KEY_WITH_BRANCH + "child1", "child 1");
-    when(moduleHierarchy.fetchModuleHierarchy(eq(MODULE_KEY_WITH_BRANCH), any(ProgressMonitor.class)))
+    when(moduleHierarchy.fetchModuleHierarchy(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), any(ProgressMonitor.class)))
       .thenReturn(modulesPath);
 
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
@@ -134,7 +136,7 @@ class ProjectStorageUpdateExecutorTests {
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
+    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
     ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
 
@@ -170,14 +172,16 @@ class ProjectStorageUpdateExecutorTests {
       .build();
 
     IssueDownloader issueDownloader = mock(IssueDownloader.class);
-    when(issueDownloader.download(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), eq(null), any(ProgressMonitor.class)))
+    var serverApiHelper = mock(ServerApiHelper.class);
+    when(issueDownloader.download(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), eq(null), any(ProgressMonitor.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
-    underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
+    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
-    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressMonitor.class));
+    verify(serverIssueUpdater).updateServerIssues(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false),
+      any(ProgressMonitor.class));
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -201,8 +205,9 @@ class ProjectStorageUpdateExecutorTests {
     fileList.add("moduleA:a.java");
     fileList.add("moduleB:b.java");
 
-    when(projectFileListDownloader.get(eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
-    underTest.updateComponents("rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressMonitor.class));
+    var serverApiHelper = mock(ServerApiHelper.class);
+    when(projectFileListDownloader.get(eq(serverApiHelper), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
+    underTest.updateComponents(serverApiHelper, "rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressMonitor.class));
 
     Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(

@@ -28,18 +28,12 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentPath;
 
 import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQubePath;
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
-  private final ComponentApi componentApi;
-
-  public ModuleHierarchyDownloader(ServerApiHelper serverApiHelper) {
-    this.componentApi = new ServerApi(serverApiHelper).component();
-  }
 
   /**
    * Downloads the module hierarchy information starting from a given module key.
@@ -48,7 +42,8 @@ public class ModuleHierarchyDownloader {
    * @param projectKey project for which the hierarchy will be returned.
    * @return Mapping of moduleKey -&gt; relativePath from given module
    */
-  public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressMonitor progress) {
+  public Map<String, String> fetchModuleHierarchy(ServerApiHelper serverApiHelper, String projectKey, ProgressMonitor progress) {
+    var componentApi = new ServerApi(serverApiHelper).component();
     List<ComponentPath> modules = componentApi.getSubProjects(projectKey, progress);
 
     // doesn't include root

@@ -23,16 +23,10 @@ import java.util.List;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
 public class ProjectFileListDownloader {
-  private final ComponentApi componentApi;
 
-  public ProjectFileListDownloader(ServerApiHelper serverApiHelper) {
-    this.componentApi = new ServerApi(serverApiHelper).component();
-  }
-
-  public List<String> get(String projectKey, ProgressMonitor progress) {
-    return componentApi.getAllFileKeys(projectKey, progress);
+  public List<String> get(ServerApiHelper serverApiHelper, String projectKey, ProgressMonitor progress) {
+    return new ServerApi(serverApiHelper).component().getAllFileKeys(projectKey, progress);
   }
 }
