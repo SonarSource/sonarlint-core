@@ -29,26 +29,30 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class GlobalSettingsTests {
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private final AnalysisEngineConfiguration globalConfiguration = mock(AnalysisEngineConfiguration.class);
+  @Test
+  void emptyNodePathPropertyForSonarJS() {
+    GlobalSettings underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().build(), new PropertyDefinitions(System2.INSTANCE));
+
+    var nodeJsExecutableValue = underTest.getString("sonar.nodejs.executable");
+
+    assertThat(nodeJsExecutableValue).isNull();
+  }
 
   @Test
-  void setNodePathPropertyForSonarJS() {
-    GlobalSettings underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE));
-    assertThat(underTest.getString("sonar.nodejs.executable")).isNull();
-
+  void customNodePathPropertyForSonarJS() {
     Path providedNodePath = Paths.get("foo/bar/node");
-    when(globalConfiguration.getNodeJsPath()).thenReturn(providedNodePath);
+    GlobalSettings underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().setNodeJs(providedNodePath).build(),
+      new PropertyDefinitions(System2.INSTANCE));
 
-    underTest = new GlobalSettings(globalConfiguration, new PropertyDefinitions(System2.INSTANCE));
-    assertThat(underTest.getString("sonar.nodejs.executable")).isEqualTo(providedNodePath.toString());
+    var nodeJsExecutableValue = underTest.getString("sonar.nodejs.executable");
+
+    assertThat(nodeJsExecutableValue).isEqualTo(providedNodePath.toString());
   }
 
 }

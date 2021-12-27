@@ -57,7 +57,7 @@ public class IssueExclusionPatternInitializer extends AbstractPatternInitializer
     return hasFileContentPattern() || hasMulticriteriaPatterns();
   }
 
-  private final void loadFileContentPatterns() {
+  private void loadFileContentPatterns() {
     // Patterns Block
     blockPatterns = new ArrayList<>();
     for (String id : getSettings().getStringArray(PATTERNS_BLOCK_KEY)) {
@@ -69,7 +69,7 @@ public class IssueExclusionPatternInitializer extends AbstractPatternInitializer
       }
       String endBlockRegexp = getSettings().get(propPrefix + END_BLOCK_REGEXP).orElse(null);
       // As per configuration help, missing second field means: from start regexp to EOF
-      BlockIssuePattern pattern = new BlockIssuePattern(nullToEmpty(beginBlockRegexp), nullToEmpty(endBlockRegexp));
+      var pattern = new BlockIssuePattern(nullToEmpty(beginBlockRegexp), nullToEmpty(endBlockRegexp));
       blockPatterns.add(pattern);
     }
     blockPatterns = Collections.unmodifiableList(blockPatterns);

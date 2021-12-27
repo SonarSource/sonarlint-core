@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.issuetracking;
 public class AbstractTrackable<G> implements Trackable<G> {
   private final G clientObject;
   protected String ruleKey;
-  protected String ruleName;
   protected String severity;
   protected String type;
   protected String message;

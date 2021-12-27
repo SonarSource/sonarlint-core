@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -169,15 +168,14 @@ public class StandaloneTest {
       "Param multipleIntegersParam has value 80,160");
   }
 
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable String language) throws IOException {
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
     final File file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
-    ClientInputFile inputFile = new TestClientInputFile(baseDir.toPath(), file.toPath(), isTest, encoding);
-    return inputFile;
+    return new TestClientInputFile(baseDir.toPath(), file.toPath(), isTest, encoding);
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8, null);
+    return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8);
   }
 
 }

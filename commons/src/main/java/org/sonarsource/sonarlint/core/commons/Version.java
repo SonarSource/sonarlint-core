@@ -38,10 +38,10 @@ public class Version implements Comparable<Version> {
       this.qualifier = "";
       this.nameWithoutQualifier = this.name;
     }
-    final String split[] = this.nameWithoutQualifier.split("\\.");
+    final var split = this.nameWithoutQualifier.split("\\.");
     numbers = new int[split.length];
-    for (int i = 0; i < split.length; i++) {
-      numbers[i] = Integer.valueOf(split[i]);
+    for (var i = 0; i < split.length; i++) {
+      numbers[i] = Integer.parseInt(split[i]);
     }
   }
 
@@ -94,7 +94,7 @@ public class Version implements Comparable<Version> {
 
   @Override
   public int hashCode() {
-    int result = Integer.hashCode(getMajor());
+    var result = Integer.hashCode(getMajor());
     result = 31 * result + Integer.hashCode(getMinor());
     result = 31 * result + Integer.hashCode(getPatch());
     result = 31 * result + Integer.hashCode(getBuild());
@@ -121,8 +121,8 @@ public class Version implements Comparable<Version> {
     int maxNumbers = Math.max(numbers.length, other.numbers.length);
     int[] myNumbers = Arrays.copyOf(numbers, maxNumbers);
     int[] otherNumbers = Arrays.copyOf(other.numbers, maxNumbers);
-    for (int i = 0; i < maxNumbers; i++) {
-      int compare = Integer.compare(myNumbers[i], otherNumbers[i]);
+    for (var i = 0; i < maxNumbers; i++) {
+      var compare = Integer.compare(myNumbers[i], otherNumbers[i]);
       if (compare != 0) {
         return compare;
       }
@@ -141,13 +141,6 @@ public class Version implements Comparable<Version> {
 
   public Version removeQualifier() {
     return new Version(nameWithoutQualifier, nameWithoutQualifier, numbers, "");
-  }
-
-  /**
-   * Two versions are compatible when they are identical except for qualifier.
-   */
-  public boolean isCompatibleWith(Version version) {
-    return this.removeQualifier().equals(version.removeQualifier());
   }
 
   public boolean satisfiesMinRequirement(Version minRequirement) {

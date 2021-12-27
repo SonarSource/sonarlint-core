@@ -69,7 +69,7 @@ public abstract class AbstractPatternInitializer {
         LOG.debug("Issue exclusions are misconfigured. Rule key pattern is mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
         continue;
       }
-      IssuePattern pattern = new IssuePattern(filePathPattern != null ? filePathPattern : "*", ruleKeyPattern != null ? ruleKeyPattern : "*");
+      var pattern = new IssuePattern(filePathPattern, ruleKeyPattern);
 
       multicriteriaPatterns.add(pattern);
     }

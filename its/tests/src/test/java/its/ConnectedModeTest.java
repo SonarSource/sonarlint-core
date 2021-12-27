@@ -664,13 +664,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setComponent(moduleKey));
   }
 
-  private void setSettings(@Nullable String moduleKey, String key, String value) {
-    adminWsClient.settings().set(new SetRequest()
-      .setKey(key)
-      .setValue(value)
-      .setComponent(moduleKey));
-  }
-
   private void updateProject(String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);

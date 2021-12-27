@@ -28,7 +28,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 
@@ -38,7 +37,7 @@ public class ProtobufUtil {
   }
 
   public static <T extends Message> T readFile(Path file, Parser<T> parser) {
-    try (InputStream input = Files.newInputStream(file)) {
+    try (var input = Files.newInputStream(file)) {
       return parser.parseFrom(input);
     } catch (IOException e) {
       throw new StorageException("Failed to read file: " + file, e);
@@ -46,7 +45,7 @@ public class ProtobufUtil {
   }
 
   public static void writeToFile(Message message, Path toFile) {
-    try (OutputStream out = Files.newOutputStream(toFile)) {
+    try (var out = Files.newOutputStream(toFile)) {
       message.writeTo(out);
     } catch (IOException e) {
       throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
@@ -70,19 +69,13 @@ public class ProtobufUtil {
     return list;
   }
 
-  public static <T extends Message> void writeMessages(OutputStream output, Iterator<T> messages) {
-    while (messages.hasNext()) {
-      writeMessage(output, messages.next());
-    }
-  }
-
   public static <T extends Message> void writeMessages(OutputStream output, Iterable<T> messages) {
     for (Message message : messages) {
       writeMessage(output, message);
     }
   }
 
-  public static <T extends Message> void writeMessage(OutputStream output, T message) {
+  static <T extends Message> void writeMessage(OutputStream output, T message) {
     try {
       message.writeDelimitedTo(output);
     } catch (IOException e) {

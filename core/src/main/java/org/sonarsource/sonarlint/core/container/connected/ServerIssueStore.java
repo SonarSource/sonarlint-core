@@ -39,7 +39,7 @@ public class ServerIssueStore implements IssueStore {
   private final ObjectStore<String, List<ServerIssue>> store;
 
   public ServerIssueStore(Path base) {
-    HashingPathMapper pathGenerator = new HashingPathMapper(base, 2);
+    var pathGenerator = new HashingPathMapper(base, 2);
 
     Reader<List<ServerIssue>> reader = input -> ProtobufUtil.readMessages(input, ServerIssue.parser());
 

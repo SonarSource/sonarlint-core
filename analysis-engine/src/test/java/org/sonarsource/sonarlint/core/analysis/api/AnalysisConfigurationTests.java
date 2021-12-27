@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,7 @@ class AnalysisConfigurationTests {
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .addInputFiles(inputFileWithLanguage)
-      .addInputFiles(Arrays.asList(testInputFile))
+      .addInputFiles(List.of(testInputFile))
       .putAllExtraProperties(props)
       .putExtraProperty("sonar.foo", "bar")
       .addActiveRules(List.of(new ActiveRule("java:S123", null), new ActiveRule("java:S456", null)))
@@ -74,6 +73,6 @@ class AnalysisConfigurationTests {
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, inputFileWithLanguage, testInputFile);
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"), entry("sonar.foo", "bar"));
-    assertThat(config.activeRules()).extracting(a -> a.getRuleKey().toString()).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
+    assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
   }
 }

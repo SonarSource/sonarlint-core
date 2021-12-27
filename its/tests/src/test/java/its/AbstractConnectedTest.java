@@ -42,8 +42,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
@@ -64,9 +62,6 @@ public abstract class AbstractConnectedTest {
   private static final OkHttpClient SQ_CLIENT = CLIENT_NO_AUTH.newBuilder()
     .addNetworkInterceptor(new PreemptiveAuthenticatorInterceptor(Credentials.basic(SONARLINT_USER, SONARLINT_PWD)))
     .build();
-
-  @ClassRule
-  public static TemporaryFolder t = new TemporaryFolder();
 
   protected static final class SonarLintHttpClientOkHttpImpl implements HttpClient {
     private final OkHttpClient okClient;

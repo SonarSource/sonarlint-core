@@ -21,19 +21,37 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Optional;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
-public interface PluginDetails {
-  String key();
+public class PluginDetails {
+  private final String key;
+  private final String name;
+  private final String version;
+  private final SkipReason skipReason;
 
-  String name();
+  public PluginDetails(String key, String name, @Nullable String version, @Nullable SkipReason skipReason) {
+    this.key = key;
+    this.name = name;
+    this.version = version;
+    this.skipReason = skipReason;
+  }
+
+  public String key() {
+    return key;
+  }
+
+  public String name() {
+    return name;
+  }
 
   @CheckForNull
-  String version();
+  public String version() {
+    return version;
+  }
 
-  /**
-   * Why the plugin was skipped. Empty if the plugin was loaded.
-   */
-  Optional<SkipReason> skipReason();
+  public Optional<SkipReason> skipReason() {
+    return Optional.ofNullable(skipReason);
+  }
 
 }

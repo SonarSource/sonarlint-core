@@ -36,12 +36,12 @@ public class ReversePathTree {
 
   public void index(Path path) {
     Node parent = null;
-    Node currentNode = root;
+    var currentNode = root;
     Path currentNodePath = null;
 
     for (int i = path.getNameCount() - 1; i >= 0; i--) {
-      Path childNodePath = path.getName(i);
-      Node[] result = currentNode.computeChildrenIfAbsent(parent, currentNodePath, childNodePath);
+      var childNodePath = path.getName(i);
+      var result = currentNode.computeChildrenIfAbsent(parent, currentNodePath, childNodePath);
       parent = result[0];
       currentNode = result[1];
       currentNodePath = childNodePath;
@@ -51,12 +51,12 @@ public class ReversePathTree {
   }
 
   public Match findLongestSuffixMatches(Path path) {
-    Node currentNode = root;
-    int matchLen = 0;
+    var currentNode = root;
+    var matchLen = 0;
 
     while (matchLen < path.getNameCount()) {
-      Path nextEl = path.getName(path.getNameCount() - matchLen - 1);
-      Node nextNode = currentNode.getChild(nextEl);
+      var nextEl = path.getName(path.getNameCount() - matchLen - 1);
+      var nextNode = currentNode.getChild(nextEl);
       if (nextNode == null) {
         break;
       }
@@ -81,7 +81,7 @@ public class ReversePathTree {
     }
 
     for (Map.Entry<Path, Node> child : node.childrenEntrySet()) {
-      Path childPath = child.getKey().resolve(currentPath);
+      var childPath = child.getKey().resolve(currentPath);
       collectPrefixes(child.getValue(), childPath, paths);
     }
   }
@@ -89,7 +89,7 @@ public class ReversePathTree {
   /**
    * Since it is very common that a node will have only one child, we save memory by lazily creating a children HashMap only when a second item is added.
    */
-  private static interface Node {
+  private interface Node {
     Node[] computeChildrenIfAbsent(Node parent, Path currentNodePath, Path childNodePath);
 
     Set<Map.Entry<Path, Node>> childrenEntrySet();
@@ -132,8 +132,8 @@ public class ReversePathTree {
       if (childNodePath.equals(singleChildKey)) {
         return new Node[] {this, singleChildValue};
       }
-      SingleChildNode child = new SingleChildNode();
-      MultipleChildrenNode replacement = new MultipleChildrenNode();
+      var child = new SingleChildNode();
+      var replacement = new MultipleChildrenNode();
       replacement.put(singleChildKey, singleChildValue);
       replacement.put(childNodePath, child);
       parent.put(currentNodePath, replacement);
@@ -190,8 +190,8 @@ public class ReversePathTree {
   }
 
   public static class Match {
-    private List<Path> paths;
-    private int matchLen;
+    private final List<Path> paths;
+    private final int matchLen;
 
     private Match(List<Path> paths, int matchLen) {
       this.paths = paths;

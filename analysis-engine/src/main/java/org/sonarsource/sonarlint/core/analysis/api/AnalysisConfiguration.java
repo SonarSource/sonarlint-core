@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
-import org.sonarsource.sonarlint.core.commons.Language;
 
 @Immutable
 public class AnalysisConfiguration {
@@ -73,7 +71,7 @@ public class AnalysisConfiguration {
   }
 
   private String generateToString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[\n");
     generateToStringCommon(sb);
     sb.append("  activeRules: ").append(activeRules).append("\n");
@@ -95,7 +93,7 @@ public class AnalysisConfiguration {
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
-      Language language = inputFile.language();
+      var language = inputFile.language();
       if (language != null) {
         sb.append(" [" + language.getLanguageKey() + "]");
       }
@@ -105,7 +103,7 @@ public class AnalysisConfiguration {
   }
 
   private static String getCharsetLabel(ClientInputFile inputFile) {
-    Charset charset = inputFile.getCharset();
+    var charset = inputFile.getCharset();
     return charset != null ? charset.displayName() : "default";
   }
 

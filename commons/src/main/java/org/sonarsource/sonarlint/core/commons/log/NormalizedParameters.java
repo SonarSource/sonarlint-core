@@ -70,7 +70,7 @@ class NormalizedParameters {
 
     final int trimmedLen = argArray.length - 1;
 
-    Object[] trimmed = new Object[trimmedLen];
+    var trimmed = new Object[trimmedLen];
 
     if (trimmedLen > 0) {
       System.arraycopy(argArray, 0, trimmed, 0, trimmedLen);

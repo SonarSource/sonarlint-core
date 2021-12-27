@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.util;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.IOUtils;
@@ -36,7 +35,7 @@ public class VersionUtils {
 
   public static String getLibraryVersion() {
     String version;
-    Package packageInfo = VersionUtils.class.getPackage();
+    var packageInfo = VersionUtils.class.getPackage();
     if (packageInfo != null && packageInfo.getImplementationVersion() != null) {
       version = packageInfo.getImplementationVersion();
     } else {
@@ -46,7 +45,7 @@ public class VersionUtils {
   }
 
   static String getLibraryVersionFallback() {
-    String version = "unknown";
+    var version = "unknown";
     URL resource = VersionUtils.class.getResource("/sl_core_version.txt");
     if (resource != null) {
       try {
@@ -61,7 +60,7 @@ public class VersionUtils {
 
   @CheckForNull
   public static String getJarVersion(String jarName) {
-    Matcher matcher = JAR_VERSION_PATTERN.matcher(jarName);
+    var matcher = JAR_VERSION_PATTERN.matcher(jarName);
     if (matcher.find()) {
       return matcher.group(1);
     }

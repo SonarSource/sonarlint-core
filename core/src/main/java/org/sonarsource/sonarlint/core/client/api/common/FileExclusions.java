@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -34,12 +32,8 @@ public class FileExclusions implements Predicate<String> {
   private static final String SYNTAX = "glob";
 
   private final List<PathMatcher> matchers;
-  private Set<String> directoryExclusions;
-  private Set<String> fileExclusions;
-
-  public FileExclusions(Set<String> globPatterns) {
-    this(Collections.emptySet(), Collections.emptySet(), globPatterns);
-  }
+  private final Set<String> directoryExclusions;
+  private final Set<String> fileExclusions;
 
   public FileExclusions(Set<String> fileExclusions, Set<String> directoryExclusions, Set<String> globPatterns) {
     this.fileExclusions = fileExclusions;
@@ -47,8 +41,8 @@ public class FileExclusions implements Predicate<String> {
     this.matchers = parseGlobPatterns(globPatterns);
   }
 
-  private List<PathMatcher> parseGlobPatterns(Set<String> globPatterns) {
-    FileSystem fs = FileSystems.getDefault();
+  private static List<PathMatcher> parseGlobPatterns(Set<String> globPatterns) {
+    var fs = FileSystems.getDefault();
 
     List<PathMatcher> parsedMatchers = new ArrayList<>(globPatterns.size());
     for (String pattern : globPatterns) {
@@ -74,7 +68,7 @@ public class FileExclusions implements Predicate<String> {
   }
 
   private boolean testDirectoryExclusions(Path path) {
-    Path p = path;
+    var p = path;
     while (p != null) {
       if (directoryExclusions.contains(p.toString())) {
         return true;

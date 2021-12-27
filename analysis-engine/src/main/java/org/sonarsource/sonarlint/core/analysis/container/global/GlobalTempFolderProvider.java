@@ -45,13 +45,13 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
   public GlobalTempFolder provide(AnalysisEngineConfiguration globalConfiguration) {
     if (tempFolder == null) {
 
-      Path workingPath = globalConfiguration.getWorkDir();
-      tempFolder = cleanAndcreateTempFolder(workingPath);
+      var workingPath = globalConfiguration.getWorkDir();
+      tempFolder = cleanAndCreateTempFolder(workingPath);
     }
     return tempFolder;
   }
 
-  private GlobalTempFolder cleanAndcreateTempFolder(Path workingPath) {
+  private static GlobalTempFolder cleanAndCreateTempFolder(Path workingPath) {
     try {
       cleanTempFolders(workingPath);
     } catch (IOException e) {

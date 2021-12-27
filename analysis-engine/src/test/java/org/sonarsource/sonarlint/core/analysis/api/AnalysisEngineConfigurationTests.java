@@ -38,30 +38,30 @@ class AnalysisEngineConfigurationTests {
     AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .build();
     assertThat(config.getWorkDir()).isNull();
-    assertThat(config.extraProperties()).isEmpty();
+    assertThat(config.getEffectiveSettings()).isEmpty();
     assertThat(config.getEnabledLanguages()).isEmpty();
     assertThat(config.getClientPid()).isZero();
   }
 
   @Test
-  void extraProps() throws Exception {
+  void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
     AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
-    assertThat(config.extraProperties()).containsOnly(entry("foo", "bar"));
+    assertThat(config.getEffectiveSettings()).containsOnly(entry("foo", "bar"));
   }
 
   @Test
-  void effectiveConfig_should_add_nodejs() throws Exception {
+  void effectiveConfig_should_add_nodejs() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
     AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .setExtraProperties(extraProperties)
-      .setNodeJs(Paths.get("nodejsPath"), null)
+      .setNodeJs(Paths.get("nodejsPath"))
       .build();
-    assertThat(config.getEffectiveConfig()).containsOnly(entry("foo", "bar"), entry("sonar.nodejs.executable", "nodejsPath"));
+    assertThat(config.getEffectiveSettings()).containsOnly(entry("foo", "bar"), entry("sonar.nodejs.executable", "nodejsPath"));
   }
 
   @Test
@@ -74,7 +74,7 @@ class AnalysisEngineConfigurationTests {
   }
 
   @Test
-  void configureLanguages() throws Exception {
+  void configureLanguages() {
     AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)

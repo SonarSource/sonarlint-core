@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.code.NewSignificantCode;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
@@ -37,7 +37,6 @@ import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.rule.AdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
@@ -72,7 +71,7 @@ public class SonarLintSensorStorage implements SensorStorage {
       throw new IllegalArgumentException("Trying to store a non-SonarLint issue?");
     }
     DefaultSonarLintIssue sonarLintIssue = (DefaultSonarLintIssue) issue;
-    InputComponent inputComponent = sonarLintIssue.primaryLocation().inputComponent();
+    var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
     ActiveRuleAdapter activeRule = (ActiveRuleAdapter) activeRules.find(sonarLintIssue.ruleKey());
     if (activeRule == null) {
@@ -88,7 +87,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     List<org.sonarsource.sonarlint.core.analysis.api.Flow> flows = mapFlows(sonarLintIssue.flows());
     List<QuickFix> quickFixes = sonarLintIssue.quickFixes();
 
-    org.sonarsource.sonarlint.core.analysis.api.Issue newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage,
+    var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage,
       issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes);
     if (filters.accept(inputComponent, newIssue)) {
@@ -97,7 +96,7 @@ public class SonarLintSensorStorage implements SensorStorage {
   }
 
   private static boolean noSonar(InputComponent inputComponent, Issue issue) {
-    TextRange textRange = issue.primaryLocation().textRange();
+    var textRange = issue.primaryLocation().textRange();
     return inputComponent.isFile()
       && textRange != null
       && ((SonarLintInputFile) inputComponent).hasNoSonarAt(textRange.start().line())
@@ -106,9 +105,7 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   private static List<org.sonarsource.sonarlint.core.analysis.api.Flow> mapFlows(List<Flow> flows) {
     return flows.stream()
-      .map(f -> new org.sonarsource.sonarlint.core.analysis.api.Flow(f.locations()
-        .stream()
-        .collect(toList())))
+      .map(f -> new org.sonarsource.sonarlint.core.analysis.api.Flow(new ArrayList<>(f.locations())))
       .filter(f -> !f.locations().isEmpty())
       .collect(toList());
   }
@@ -135,7 +132,7 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   @Override
   public void store(AnalysisError analysisError) {
-    ClientInputFile clientInputFile = ((SonarLintInputFile) analysisError.inputFile()).getClientInputFile();
+    var clientInputFile = ((SonarLintInputFile) analysisError.inputFile()).getClientInputFile();
     analysisResult.addFailedAnalysisFile(clientInputFile);
   }
 
