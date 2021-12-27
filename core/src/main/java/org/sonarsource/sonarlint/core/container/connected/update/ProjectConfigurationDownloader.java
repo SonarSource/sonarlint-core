@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ProjectConfigurationDownloader {
 
@@ -31,16 +32,16 @@ public class ProjectConfigurationDownloader {
     this.moduleHierarchyDownloader = moduleHierarchyDownloader;
   }
 
-  public Sonarlint.ProjectConfiguration fetch(String projectKey, ProgressMonitor progress) {
+  public Sonarlint.ProjectConfiguration fetch(ServerApiHelper serverApiHelper, String projectKey, ProgressMonitor progress) {
     var builder = Sonarlint.ProjectConfiguration.newBuilder();
     progress.setProgressAndCheckCancel("Fetching project hierarchy", 0.2f);
-    fetchHierarchy(projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
+    fetchHierarchy(serverApiHelper, projectKey, builder, progress.subProgress(0.2f, 1f, "Fetching project hierarchy"));
 
     return builder.build();
   }
 
-  private void fetchHierarchy(String projectKey, Sonarlint.ProjectConfiguration.Builder builder, ProgressMonitor progress) {
-    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(projectKey, progress);
+  private void fetchHierarchy(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration.Builder builder, ProgressMonitor progress) {
+    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(serverApiHelper, projectKey, progress);
     builder.putAllModulePathByKey(moduleHierarchy);
   }
 }

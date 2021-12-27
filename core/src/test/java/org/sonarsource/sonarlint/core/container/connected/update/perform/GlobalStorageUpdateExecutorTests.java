@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerStorage;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,12 +85,12 @@ class GlobalStorageUpdateExecutorTests {
 
     destDir = temp.resolve("storage/6964/global");
 
-    globalUpdate = new GlobalStorageUpdateExecutor(new ServerStorage(destDir), mockServer.serverApiHelper(), new ServerVersionAndStatusChecker(mockServer.serverApiHelper()));
+    globalUpdate = new GlobalStorageUpdateExecutor(new ServerStorage(destDir));
   }
 
   @Test
   void testUpdate() {
-    globalUpdate.update(PROGRESS);
+    globalUpdate.update(mockServer.serverApiHelper(), PROGRESS);
 
     StorageStatus updateStatus = ProtobufUtil.readFile(destDir.resolve(ProjectStoragePaths.STORAGE_STATUS_PB), StorageStatus.parser());
     assertThat(updateStatus.getSonarlintCoreVersion()).isEqualTo(VersionUtils.getLibraryVersion());
@@ -109,7 +108,7 @@ class GlobalStorageUpdateExecutorTests {
     ProgressMonitor mockProgress = mock(ProgressMonitor.class);
     when(mockProgress.subProgress(anyFloat(), anyFloat(), anyString())).thenReturn(mockProgress);
     doThrow(new IllegalStateException("Boom")).when(mockProgress).executeNonCancelableSection(any());
-    Throwable throwable = catchThrowable(() -> globalUpdate.update(mockProgress));
+    Throwable throwable = catchThrowable(() -> globalUpdate.update(mockServer.serverApiHelper(), mockProgress));
 
     assertThat(throwable).isInstanceOf(IllegalStateException.class);
     // dest left untouched

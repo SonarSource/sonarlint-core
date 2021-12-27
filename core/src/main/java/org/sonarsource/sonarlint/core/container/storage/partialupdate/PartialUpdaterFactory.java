@@ -19,15 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
 public class PartialUpdaterFactory {
   private final ProjectStoragePaths projectStoragePaths;
@@ -38,10 +33,7 @@ public class PartialUpdaterFactory {
     this.issueStorePaths = issueStorePaths;
   }
 
-  public PartialUpdater create(EndpointParams endpoint, HttpClient client) {
-    ServerApiHelper serverApiHelper = new ServerApiHelper(endpoint, client);
-    IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloader(new IssueApi(serverApiHelper), new SourceApi(serverApiHelper), issueStorePaths);
-    return new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths);
+  public PartialUpdater create() {
+    return new PartialUpdater(new IssueStoreFactory(), new IssueDownloader(issueStorePaths), projectStoragePaths, issueStorePaths);
   }
 }

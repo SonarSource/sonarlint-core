@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -68,10 +67,11 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
+import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 import org.sonarsource.sonarlint.core.container.storage.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.storage.FileMatcher;
@@ -117,6 +117,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private final IssueStoreReader issueStoreReader;
   private final StorageFileExclusions storageFileExclusions;
   private final PartialUpdaterFactory partialUpdaterFactory;
+  private final GlobalStorageUpdateExecutor globalStorageUpdateExecutor;
+  private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
 
   private boolean containerStarted;
 
@@ -145,6 +147,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     pluginsStorage = new PluginsStorage(storageRoot.resolve("plugins"));
     storageSynchronizer = new LocalStorageSynchronizer(globalConfig.getEnabledLanguages(), globalConfig.getEmbeddedPluginPathsByKey().keySet(), pluginsStorage, projectStorage);
+    globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
+    projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     start();
   }
 
@@ -344,7 +348,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(endpoint);
     setLogging(null);
     try {
-      runInConnectedContainer(endpoint, client, container -> container.update(new ProgressMonitor(monitor)));
+      globalStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), new ProgressMonitor(monitor));
     } finally {
       restartAnalysisEngine();
     }
@@ -475,16 +479,16 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   private List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    var updater = partialUpdaterFactory.create(endpoint, client);
+    var updater = partialUpdaterFactory.create();
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
+    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
   private void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    var updater = partialUpdaterFactory.create(endpoint, client);
+    var updater = partialUpdaterFactory.create();
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, progress);
+    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, configuration, fetchTaintVulnerabilities, progress);
   }
 
   @Override
@@ -493,7 +497,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(projectKey);
     setLogging(null);
 
-    runInConnectedContainer(endpoint, client, c -> c.updateProject(projectKey, fetchTaintVulnerabilities, globalStatusReader.read(), new ProgressMonitor(monitor)));
+    var globalStorageStatus = globalStatusReader.read();
+    if (globalStorageStatus == null || globalStorageStatus.isStale()) {
+      throw new StorageException("Missing or outdated storage for connection '" + globalConfig.getConnectionId() + "'");
+    }
+    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, new ProgressMonitor(monitor));
   }
 
   @Override
@@ -521,20 +529,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     } finally {
       this.globalAnalysisContainer = null;
       this.pluginInstancesRepository = null;
-    }
-  }
-
-  private void runInConnectedContainer(EndpointParams endpoint, HttpClient client, Consumer<ConnectedContainer> consumer) {
-    var connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
-    try {
-      connectedContainer.startComponents();
-      consumer.accept(connectedContainer);
-    } finally {
-      try {
-        connectedContainer.stopComponents(false);
-      } catch (Exception e) {
-        // Ignore
-      }
     }
   }
 
