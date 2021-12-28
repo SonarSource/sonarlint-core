@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -32,20 +31,20 @@ import org.sonarqube.ws.Organizations.SearchWsResponse;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyFloat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class OrganizationApiTests {
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
+  private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
+
   @Test
-  void testListUserOrganizationWithMoreThan20Pages() throws IOException {
+  void testListUserOrganizationWithMoreThan20Pages() {
     OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtensionWithProtobuf.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
@@ -54,14 +53,67 @@ class OrganizationApiTests {
       mockOrganizationsPage(i + 1, 10500);
     }
 
-    ProgressMonitor progress = mock(ProgressMonitor.class);
-    when(progress.subProgress(anyFloat(), anyFloat(), anyString())).thenReturn(progress);
-    List<ServerOrganization> orgs = underTest.listUserOrganizations(progress);
+    List<ServerOrganization> orgs = underTest.listUserOrganizations(progressMonitor);
 
     assertThat(orgs).hasSize(10500);
   }
 
-  private void mockOrganizationsPage(int page, int total) throws IOException {
+  @Test
+  void should_get_organization_details() {
+    mockServer.addStringResponse("/api/system/status", "{" +
+      "\"status\": \"UP\"," +
+      "\"version\": \"20.0.0\"" +
+      "}");
+    mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=1", SearchWsResponse.newBuilder()
+      .addOrganizations(Organization.newBuilder()
+        .setKey("orgKey")
+        .setName("orgName")
+        .setDescription("orgDesc")
+        .build())
+      .build());
+    mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=2", SearchWsResponse.newBuilder().build());
+    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
+
+    var organization = underTest.getOrganization("org:key", progressMonitor);
+
+    assertThat(organization).hasValueSatisfying(org -> {
+      assertThat(org.getKey()).isEqualTo("orgKey");
+      assertThat(org.getName()).isEqualTo("orgName");
+      assertThat(org.getDescription()).isEqualTo("orgDesc");
+    });
+  }
+
+  @Test
+  void should_throw_if_server_is_down() {
+    mockServer.addStringResponse("/api/system/status", "{" +
+      "\"status\": \"DOWN\"," +
+      "\"version\": \"20.0.0\"" +
+      "}");
+    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
+
+    var throwable = catchThrowable(() -> underTest.getOrganization("org:key", progressMonitor));
+
+    assertThat(throwable)
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("Server not ready (DOWN)");
+  }
+
+  @Test
+  void should_not_get_organization_if_server_is_too_old() {
+    mockServer.addStringResponse("/api/system/status", "{" +
+      "\"status\": \"UP\"," +
+      "\"version\": \"7.8.0\"" +
+      "}");
+    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
+
+    var throwable = catchThrowable(() -> underTest.getOrganization("org:key", progressMonitor));
+
+    assertThat(throwable)
+      .isInstanceOf(UnsupportedServerException.class)
+      .hasMessageContaining("SonarQube server has version 7.8.0. Version should be greater or equal to");
+  }
+
+  private void mockOrganizationsPage(int page, int total) {
     List<Organization> orgs = IntStream.rangeClosed(1, 500)
       .mapToObj(i -> Organization.newBuilder().setKey("org_page" + page + "number" + i).build())
       .collect(Collectors.toList());

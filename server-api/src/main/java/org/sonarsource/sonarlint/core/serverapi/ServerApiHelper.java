@@ -85,22 +85,22 @@ public class ServerApiHelper {
    * Execute GET and don't check response
    */
   public HttpClient.Response rawGet(String relativePath) {
-    Instant startTime = Instant.now();
-    String url = buildEndpointUrl(relativePath);
+    var startTime = Instant.now();
+    var url = buildEndpointUrl(relativePath);
 
     var response = client.get(url);
-    Duration duration = Duration.between(startTime, Instant.now());
+    var duration = Duration.between(startTime, Instant.now());
     LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
     return response;
   }
 
   public CompletableFuture<HttpClient.Response> rawGetAsync(String relativePath) {
-    Instant startTime = Instant.now();
+    var startTime = Instant.now();
     String url = buildEndpointUrl(relativePath);
 
     return client.getAsync(url)
       .whenComplete((response, error) -> {
-        Duration duration = Duration.between(startTime, Instant.now());
+        var duration = Duration.between(startTime, Instant.now());
         LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
       });
   }
@@ -210,7 +210,7 @@ public class ServerApiHelper {
 
   public static <G> G processTimed(Supplier<HttpClient.Response> responseSupplier, IOFunction<HttpClient.Response, G> responseProcessor,
     LongConsumer durationConsumer) {
-    Instant startTime = Instant.now();
+    var startTime = Instant.now();
     G result;
     try (var response = responseSupplier.get()) {
       result = responseProcessor.apply(response);
@@ -223,16 +223,14 @@ public class ServerApiHelper {
 
   public static <G> CompletableFuture<G> processTimed(CompletableFuture<HttpClient.Response> futureResponse, IOFunction<HttpClient.Response, G> responseProcessor,
     LongConsumer durationConsumer) {
-    Instant startTime = Instant.now();
+    var startTime = Instant.now();
     return futureResponse.thenApply(response -> {
-      try {
+      try (response) {
         G processed = responseProcessor.apply(response);
         durationConsumer.accept(Duration.between(startTime, Instant.now()).toMillis());
         return processed;
       } catch (IOException e) {
         throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);
-      } finally {
-        response.close();
       }
     });
   }

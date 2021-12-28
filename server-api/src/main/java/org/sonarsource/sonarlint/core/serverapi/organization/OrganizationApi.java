@@ -42,10 +42,6 @@ public class OrganizationApi {
 
   public Optional<ServerOrganization> getOrganization(String organizationKey, ProgressMonitor progress) {
     var serverChecker = new ServerVersionAndStatusChecker(helper);
-    return getOrganization(serverChecker, organizationKey, progress);
-  }
-
-  private Optional<ServerOrganization> getOrganization(ServerVersionAndStatusChecker serverChecker, String organizationKey, ProgressMonitor progress) {
     checkServer(serverChecker, progress);
     return fetchOrganization(organizationKey, progress.subProgress(0.2f, 1.0f, "Fetch organization"));
   }

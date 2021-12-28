@@ -95,7 +95,7 @@ public class ComponentApi {
     return searchUrl.toString();
   }
 
-  public Optional<Component> fetchComponent(String componentKey) {
+  private Optional<Component> fetchComponent(String componentKey) {
     return fetchComponent(componentKey, response -> {
       var wsComponent = response.getComponent();
       return new Component(wsComponent.getKey(), wsComponent.getName());
