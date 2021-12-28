@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
-import java.util.Objects;
-
 public class QualityProfile {
   private final boolean isDefault;
   private final String key;
@@ -73,23 +71,5 @@ public class QualityProfile {
 
   public String getUserUpdatedAt() {
     return userUpdatedAt;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    QualityProfile that = (QualityProfile) o;
-    return isDefault == that.isDefault && activeRuleCount == that.activeRuleCount && key.equals(that.key) && name.equals(that.name) && language.equals(that.language)
-      && languageName.equals(that.languageName) && rulesUpdatedAt.equals(that.rulesUpdatedAt) && userUpdatedAt.equals(that.userUpdatedAt);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(isDefault, key, name, language, languageName, activeRuleCount, rulesUpdatedAt, userUpdatedAt);
   }
 }

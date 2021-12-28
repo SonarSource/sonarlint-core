@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Optional;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +63,7 @@ class HotspotApiTests {
   }
 
   @Test
-  void it_should_adapt_and_return_the_hotspot() throws InvalidProtocolBufferException {
+  void it_should_adapt_and_return_the_hotspot() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setMessage("message")
       .setComponent(Hotspots.Component.newBuilder().setPath("path").setKey("myproject:path"))
@@ -104,20 +103,48 @@ class HotspotApiTests {
   }
 
   @Test
+  void it_should_extract_single_line_snippet() {
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
+      .setMessage("message")
+      .setComponent(Hotspots.Component.newBuilder().setPath("path").setKey("myproject:path"))
+      .setTextRange(Common.TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(2).setEndOffset(9).build())
+      .setAuthor("author")
+      .setStatus("REVIEWED")
+      .setResolution("SAFE")
+      .setRule(Hotspots.Rule.newBuilder().setKey("key")
+        .setName("name")
+        .setSecurityCategory("category")
+        .setVulnerabilityProbability("HIGH")
+        .setRiskDescription("risk")
+        .setVulnerabilityDescription("vulnerability")
+        .setFixRecommendations("fix")
+        .build())
+      .build());
+    mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
+
+    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+
+    assertThat(remoteHotspot).isNotEmpty();
+    ServerHotspot hotspot = remoteHotspot.get();
+    assertThat(hotspot.codeSnippet).isEqualTo("My");
+  }
+
+  @Test
   void it_should_return_empty_optional_when_ws_client_throws_an_exception() {
     Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
     assertThat(remoteHotspot).isEmpty();
   }
 
   @Test
-  void it_should_throw_when_parser_throws_an_exception() throws InvalidProtocolBufferException {
+  void it_should_throw_when_parser_throws_an_exception() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Issues.BulkChangeWsResponse.newBuilder().build());
 
-    assertThrows(IllegalArgumentException.class, () -> underTest.fetch(new GetSecurityHotspotRequestParams("h", "p")));
+    var params = new GetSecurityHotspotRequestParams("h", "p");
+    assertThrows(IllegalArgumentException.class, () -> underTest.fetch(params));
   }
 
   @Test
-  void it_should_return_no_resolution_status_when_not_available() throws InvalidProtocolBufferException {
+  void it_should_return_no_resolution_status_when_not_available() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setComponent(Hotspots.Component.newBuilder().setPath("path"))
       .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())

@@ -20,13 +20,16 @@
 package org.sonarsource.sonarlint.core.serverapi.component;
 
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 
 class ComponentApiTest {
@@ -40,7 +43,7 @@ class ComponentApiTest {
   private ComponentApi underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new ComponentApi(mockServer.serverApiHelper());
   }
 
@@ -72,5 +75,75 @@ class ComponentApiTest {
     List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files.size()).isZero();
+  }
+
+  @Test
+  void should_get_sub_projects() {
+    mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=component%3Akey&ps=500&p=1", Components.TreeWsResponse.newBuilder()
+      .addComponents(Components.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
+    mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=component%3Akey&ps=500&p=2", Components.TreeWsResponse.newBuilder().build());
+
+    List<ComponentPath> componentPaths = underTest.getSubProjects("component:key", progress);
+
+    assertThat(componentPaths)
+      .extracting("key", "path")
+      .containsOnly(tuple("componentKey", "componentPath"));
+  }
+
+  @Test
+  void should_get_all_projects() {
+    mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", Components.SearchWsResponse.newBuilder()
+      .addComponents(Components.Component.newBuilder().setKey("projectKey").setName("projectName").build()).build());
+    mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=2", Components.SearchWsResponse.newBuilder().build());
+
+    List<ServerProject> projects = underTest.getAllProjects(progress);
+
+    assertThat(projects)
+      .extracting("key", "name")
+      .containsOnly(tuple("projectKey", "projectName"));
+  }
+
+  @Test
+  void should_get_all_projects_with_organization() {
+    mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&organization=org%3Akey&ps=500&p=1", Components.SearchWsResponse.newBuilder()
+      .addComponents(Components.Component.newBuilder().setKey("projectKey").setName("projectName").build()).build());
+    mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&organization=org%3Akey&ps=500&p=2", Components.SearchWsResponse.newBuilder().build());
+    var componentApi = new ComponentApi(mockServer.serverApiHelper("org:key"));
+
+    List<ServerProject> projects = componentApi.getAllProjects(progress);
+
+    assertThat(projects)
+      .extracting("key", "name")
+      .containsOnly(tuple("projectKey", "projectName"));
+  }
+
+  @Test
+  void should_get_project_details() {
+    mockServer.addProtobufResponse("/api/components/show.protobuf?component=project%3Akey", Components.ShowWsResponse.newBuilder()
+      .setComponent(Components.Component.newBuilder().setKey("projectKey").setName("projectName").build()).build());
+
+    Optional<ServerProject> project = underTest.getProject("project:key");
+
+    assertThat(project).hasValueSatisfying(p -> {
+      assertThat(p.getKey()).isEqualTo("projectKey");
+      assertThat(p.getName()).isEqualTo("projectName");
+    });
+  }
+
+  @Test
+  void should_get_empty_project_details_if_request_fails() {
+    Optional<ServerProject> project = underTest.getProject("project:key");
+
+    assertThat(project).isEmpty();
+  }
+
+  @Test
+  void should_get_ancestor_key() {
+    mockServer.addProtobufResponse("/api/components/show.protobuf?component=project%3Akey", Components.ShowWsResponse.newBuilder()
+      .addAncestors(Components.Component.newBuilder().setKey("ancestorKey").build()).build());
+
+    Optional<String> project = underTest.fetchFirstAncestorKey("project:key");
+
+    assertThat(project).contains("ancestorKey");
   }
 }

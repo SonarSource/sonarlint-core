@@ -68,7 +68,7 @@ public class ServerVersionAndStatusChecker {
   public CompletableFuture<ServerInfo> checkVersionAndStatusAsync(String minVersion) {
     return systemApi.getStatus()
       .thenApply(serverStatus -> {
-        if (!"UP".equals(serverStatus.getStatus())) {
+        if (!serverStatus.isUp()) {
           throw new IllegalStateException(serverNotReady(serverStatus));
         }
         var serverVersion = Version.create(serverStatus.getVersion());
@@ -94,7 +94,7 @@ public class ServerVersionAndStatusChecker {
   public CompletableFuture<ValidationResult> validateStatusAndVersion(String minVersion) {
     return systemApi.getStatus()
       .thenApply(serverStatus -> {
-        if (!"UP".equals(serverStatus.getStatus())) {
+        if (!serverStatus.isUp()) {
           return new DefaultValidationResult(false, serverNotReady(serverStatus));
         }
         var serverVersion = Version.create(serverStatus.getVersion());

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.sonarqube.ws.Qualityprofiles;
@@ -37,24 +36,6 @@ public class QualityProfileApi {
 
   public QualityProfileApi(ServerApiHelper helper) {
     this.helper = helper;
-  }
-
-  public List<QualityProfile> getQualityProfiles() {
-    List<QualityProfile> qualityProfiles = new ArrayList<>();
-
-    var searchUrl = new StringBuilder();
-    searchUrl.append(DEFAULT_QP_SEARCH_URL);
-    helper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("?organization=").append(UrlUtils.urlEncode(org)));
-    ServerApiHelper.consumeTimed(
-      () -> helper.get(searchUrl.toString()),
-      response -> {
-        Qualityprofiles.SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream());
-        qualityProfiles.addAll(qpResponse.getProfilesList().stream().map(QualityProfileApi::adapt).collect(Collectors.toList()));
-      },
-      duration -> LOG.debug("Downloaded quality profiles in {}ms", duration));
-
-    return qualityProfiles;
   }
 
   public List<QualityProfile> getQualityProfiles(String projectKey) {

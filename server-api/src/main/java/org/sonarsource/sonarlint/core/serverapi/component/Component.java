@@ -35,20 +35,4 @@ public class Component {
   public String getName() {
     return name;
   }
-
-  public enum Qualifier {
-    SUB_PROJECTS("BRC"),
-    FILES("FIL"),
-    TEST_FILES("UTS");
-
-    private final String value;
-
-    Qualifier(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-  }
 }

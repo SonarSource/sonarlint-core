@@ -20,10 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.util;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
 import org.sonarqube.ws.Common.TextRange;
-
-import static java.util.stream.Collectors.joining;
 
 public class ServerApiUtils {
 
@@ -31,7 +28,7 @@ public class ServerApiUtils {
     return extractCodeSnippet(sourceCode.split("\\r?\\n"), textRange);
   }
 
-  public static String extractCodeSnippet(String[] sourceCodeLines, TextRange textRange) {
+  private static String extractCodeSnippet(String[] sourceCodeLines, TextRange textRange) {
     if (textRange.getStartLine() == textRange.getEndLine()) {
       String fullline = sourceCodeLines[textRange.getStartLine() - 1];
       return fullline.substring(textRange.getStartOffset(), textRange.getEndOffset());
@@ -39,7 +36,7 @@ public class ServerApiUtils {
       String[] linesOfTextRange = Arrays.copyOfRange(sourceCodeLines, textRange.getStartLine() - 1, textRange.getEndLine());
       linesOfTextRange[0] = linesOfTextRange[0].substring(textRange.getStartOffset());
       linesOfTextRange[linesOfTextRange.length - 1] = linesOfTextRange[linesOfTextRange.length - 1].substring(0, textRange.getEndOffset());
-      return Stream.of(linesOfTextRange).collect(joining("\n"));
+      return String.join("\n", linesOfTextRange);
     }
   }
 

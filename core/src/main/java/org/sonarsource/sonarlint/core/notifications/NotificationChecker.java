@@ -23,7 +23,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerNotification;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -41,7 +40,6 @@ class NotificationChecker {
    * Get all notification events for a set of projects after a given timestamp.
    * Returns an empty list if an error occurred making the request or parsing the response.
    */
-  @CheckForNull
   public List<ServerNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
     return developersApi.getEvents(projectTimestamps)
       .stream().map(e -> new DefaultServerNotification(

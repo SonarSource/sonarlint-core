@@ -22,10 +22,13 @@ package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class QualityProfileApiTest {
 
@@ -33,11 +36,35 @@ class QualityProfileApiTest {
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
-  void not_found() {
+  void should_throw_when_the_endpoint_is_not_found() {
     QualityProfileApi underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
-    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=key", new MockResponse().setResponseCode(404));
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
 
-    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("key"));
+    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey"));
+  }
+
+  @Test
+  void should_return_the_quality_profiles_of_a_given_project() {
+    QualityProfileApi underTest = new QualityProfileApi(mockServer.serverApiHelper());
+
+    mockServer.addProtobufResponse("/api/qualityprofiles/search.protobuf?project=projectKey", Qualityprofiles.SearchWsResponse.newBuilder()
+      .addProfiles(Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
+        .setIsDefault(true)
+        .setKey("profileKey")
+        .setName("profileName")
+        .setLanguage("lang")
+        .setLanguageName("langName")
+        .setActiveRuleCount(12)
+        .setRulesUpdatedAt("rulesUpdatedAt")
+        .setUserUpdatedAt("userUpdatedAt")
+        .build()).build());
+
+    var qualityProfiles = underTest.getQualityProfiles("projectKey");
+
+    assertThat(qualityProfiles)
+      .extracting("default", "key", "name", "language", "languageName", "activeRuleCount", "rulesUpdatedAt", "userUpdatedAt")
+      .containsOnly(tuple(true, "profileKey", "profileName", "lang", "langName", 12L, "rulesUpdatedAt", "userUpdatedAt"));
+
   }
 }
