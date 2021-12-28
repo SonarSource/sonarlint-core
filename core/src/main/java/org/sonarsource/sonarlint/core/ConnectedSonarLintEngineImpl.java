@@ -346,11 +346,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     setLogging(null);
-    try {
-      globalStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), new ProgressMonitor(monitor));
-    } finally {
-      restartAnalysisEngine();
-    }
+    globalStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), new ProgressMonitor(monitor));
     return new UpdateResult(globalStatusReader.read());
   }
 
