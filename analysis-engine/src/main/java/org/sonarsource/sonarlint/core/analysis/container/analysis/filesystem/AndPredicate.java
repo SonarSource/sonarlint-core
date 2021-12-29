@@ -83,7 +83,7 @@ class AndPredicate extends AbstractFilePredicate {
     }
     // Optimization, use get on first predicate then filter with next predicates
     Iterable<InputFile> result = predicates.get(0).get(index);
-    for (int i = 1; i < predicates.size(); i++) {
+    for (var i = 1; i < predicates.size(); i++) {
       result = predicates.get(i).filter(result);
     }
     return result;

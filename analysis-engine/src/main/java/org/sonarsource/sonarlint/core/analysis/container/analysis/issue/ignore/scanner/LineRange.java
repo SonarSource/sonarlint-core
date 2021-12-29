@@ -81,10 +81,7 @@ public class LineRange {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    if (fieldsDiffer((LineRange) obj)) {
-      return false;
-    }
-    return true;
+    return !fieldsDiffer((LineRange) obj);
   }
 
   private boolean fieldsDiffer(LineRange other) {

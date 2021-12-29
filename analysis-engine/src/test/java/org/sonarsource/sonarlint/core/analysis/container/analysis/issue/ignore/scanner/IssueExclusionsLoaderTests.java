@@ -57,8 +57,8 @@ class IssueExclusionsLoaderTests {
   }
 
   @Test
-  void testToString() throws Exception {
-    assertThat(scanner.toString()).isEqualTo("Issues Exclusions - Source Scanner");
+  void testToString() {
+    assertThat(scanner).hasToString("Issues Exclusions - Source Scanner");
   }
 
   @Test

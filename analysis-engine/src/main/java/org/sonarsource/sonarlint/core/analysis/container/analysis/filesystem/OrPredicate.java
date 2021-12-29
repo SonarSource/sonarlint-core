@@ -38,7 +38,7 @@ class OrPredicate extends AbstractFilePredicate {
     if (predicates.isEmpty()) {
       return TruePredicate.TRUE;
     }
-    OrPredicate result = new OrPredicate();
+    var result = new OrPredicate();
     for (FilePredicate filePredicate : predicates) {
       if (filePredicate == TruePredicate.TRUE) {
         return TruePredicate.TRUE;

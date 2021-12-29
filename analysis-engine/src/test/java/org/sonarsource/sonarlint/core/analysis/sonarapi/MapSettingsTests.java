@@ -26,7 +26,6 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.sonar.api.Properties;
 import org.sonar.api.Property;
 import org.sonar.api.PropertyType;
@@ -82,11 +81,6 @@ class MapSettingsTests {
     assertThat(settings.getDefaultValue("hello")).isEqualTo("world");
   }
 
-  private void expectKeyNullNPE(Executable exec) {
-    NullPointerException thrown = assertThrows(NullPointerException.class, exec);
-    assertThat(thrown).hasMessage("key can't be null");
-  }
-
   @Test
   void set_property_string_array_trims_key() {
     String key = randomAlphanumeric(3);
@@ -131,8 +125,8 @@ class MapSettingsTests {
   @Test
   void default_number_values_are_zero() {
     MapSettings settings = new MapSettings(Map.of());
-    assertThat(settings.getInt("foo")).isEqualTo(0);
-    assertThat(settings.getLong("foo")).isEqualTo(0L);
+    assertThat(settings.getInt("foo")).isZero();
+    assertThat(settings.getLong("foo")).isZero();
   }
 
   @Test
@@ -292,7 +286,7 @@ class MapSettingsTests {
 
   @Test
   void getStringLines_no_value() {
-    Assertions.assertThat(new MapSettings(Map.of()).getStringLines("foo")).hasSize(0);
+    Assertions.assertThat(new MapSettings(Map.of()).getStringLines("foo")).isEmpty();
   }
 
   @Test
@@ -331,7 +325,7 @@ class MapSettingsTests {
 
     assertThat(settings.getKeysStartingWith("sonar")).containsOnly("sonar.jdbc.url", "sonar.jdbc.username", "sonar.security");
     assertThat(settings.getKeysStartingWith("sonar.jdbc")).containsOnly("sonar.jdbc.url", "sonar.jdbc.username");
-    assertThat(settings.getKeysStartingWith("other")).hasSize(0);
+    assertThat(settings.getKeysStartingWith("other")).isEmpty();
   }
 
   @Test

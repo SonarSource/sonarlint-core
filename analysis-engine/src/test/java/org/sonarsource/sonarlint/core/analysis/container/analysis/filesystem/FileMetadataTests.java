@@ -28,9 +28,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,7 +49,7 @@ class FileMetadataTests {
     FileMetadata.Metadata metadata = underTest.readMetadata(tempFile.toFile(), StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(1);
     assertThat(metadata.originalLineOffsets()).containsOnly(0);
-    assertThat(metadata.lastValidOffset()).isEqualTo(0);
+    assertThat(metadata.lastValidOffset()).isZero();
   }
 
   @Test
@@ -188,7 +187,7 @@ class FileMetadataTests {
   }
 
   @Test
-  void should_throw_if_file_does_not_exist(@TempDir Path temp) throws Exception {
+  void should_throw_if_file_does_not_exist(@TempDir Path temp) {
     File tempFolder = temp.toFile();
     File file = new File(tempFolder, "doesNotExist.txt");
 

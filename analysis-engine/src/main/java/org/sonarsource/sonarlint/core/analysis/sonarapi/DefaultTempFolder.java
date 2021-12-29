@@ -61,7 +61,7 @@ public class DefaultTempFolder implements TempFolder {
 
   @Override
   public File newDir(String name) {
-    File dir = new File(tempDir, name);
+    var dir = new File(tempDir, name);
     try {
       FileUtils.forceMkdir(dir);
     } catch (IOException e) {

@@ -25,7 +25,6 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultAnalysisError;
 import testutils.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +46,7 @@ class DefaultAnalysisErrorTests {
   }
 
   @Test
-  public void test_analysis_error() {
+  void test_analysis_error() {
     DefaultAnalysisError analysisError = new DefaultAnalysisError(storage);
     analysisError.onFile(inputFile)
       .at(textPointer)
@@ -59,7 +58,7 @@ class DefaultAnalysisErrorTests {
   }
 
   @Test
-  public void test_save() {
+  void test_save() {
     DefaultAnalysisError analysisError = new DefaultAnalysisError(storage);
     analysisError.onFile(inputFile).save();
 
@@ -68,13 +67,13 @@ class DefaultAnalysisErrorTests {
   }
 
   @Test
-  public void test_no_storage() {
+  void test_no_storage() {
     DefaultAnalysisError analysisError = new DefaultAnalysisError();
     assertThrows(NullPointerException.class, () -> analysisError.onFile(inputFile).save());
   }
 
   @Test
-  public void test_validation() {
+  void test_validation() {
     assertThrows(IllegalArgumentException.class, () -> new DefaultAnalysisError(storage).onFile(null));
     assertThrows(IllegalStateException.class, () -> new DefaultAnalysisError(storage).onFile(inputFile).onFile(inputFile));
     assertThrows(IllegalStateException.class, () -> new DefaultAnalysisError(storage).at(textPointer).at(textPointer));

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
-import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
@@ -137,19 +136,19 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   }
 
   private DefaultSonarLintIssueLocation rewriteLocation(DefaultSonarLintIssueLocation location) {
-    InputComponent component = location.inputComponent();
+    var component = location.inputComponent();
     Optional<Path> dirOrModulePath = Optional.empty();
 
     if (component instanceof InputDir) {
-      InputDir dirComponent = (InputDir) component;
+      var dirComponent = (InputDir) component;
       dirOrModulePath = Optional.of(baseDir.relativize(dirComponent.path()));
     }
 
     if (dirOrModulePath.isPresent()) {
       String path = PathUtils.sanitize(dirOrModulePath.get().toString());
-      DefaultSonarLintIssueLocation fixedLocation = new DefaultSonarLintIssueLocation();
+      var fixedLocation = new DefaultSonarLintIssueLocation();
       fixedLocation.on(project);
-      StringBuilder fullMessage = new StringBuilder();
+      var fullMessage = new StringBuilder();
       if (!StringUtils.isEmpty(path)) {
         fullMessage.append("[").append(path).append("] ");
       }
