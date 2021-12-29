@@ -23,24 +23,28 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
+import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public abstract class AbstractSonarLintEngine implements SonarLintEngine {
+  protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
   // Visible for medium tests
-  public abstract GlobalAnalysisContainer getAnalysisContainer();
+  public abstract AnalysisEngine getAnalysisEngine();
 
-  private final ClientLogOutput logOutput;
-  protected Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
+  protected final ClientLogOutput logOutput;
 
   protected AbstractSonarLintEngine(@Nullable ClientLogOutput logOutput) {
     this.logOutput = logOutput;
@@ -48,22 +52,35 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
 
   @Override
   public void declareModule(ClientModuleInfo module) {
-    getAnalysisContainer().registerModule(module);
+    try {
+      getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null)).get();
+    } catch (Exception e) {
+      LOG.error("Error declaring module '{}'", module.key() + "'", e);
+    }
   }
 
   @Override
   public void stopModule(Object moduleKey) {
-    getAnalysisContainer().unregisterModule(moduleKey);
+    try {
+      getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null)).get();
+    } catch (Exception e) {
+      LOG.error("Error stopping module '{}'", moduleKey + "'", e);
+    }
   }
 
   @Override
   public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    getAnalysisContainer().fireModuleFileEvent(moduleKey, event);
+    try {
+      getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null)).get();
+    } catch (Exception e) {
+      LOG.error("Error notifying module '{}' of event", moduleKey, e);
+    }
   }
 
-  protected void loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages, boolean includeTemplateRules) {
+  protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages,
+    boolean includeTemplateRules) {
     var ruleExtractor = new RulesDefinitionExtractor();
-    allRulesDefinitionsByKey = ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages, includeTemplateRules).stream()
+    return ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages, includeTemplateRules).stream()
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 

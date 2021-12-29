@@ -79,7 +79,7 @@ class LogMediumTests {
     };
   }
 
-  private StandaloneAnalysisConfiguration createConfig(ClientInputFile inputFile) throws IOException {
+  private StandaloneAnalysisConfiguration createConfig(ClientInputFile inputFile) {
     return StandaloneAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
@@ -91,7 +91,7 @@ class LogMediumTests {
    * setting the root level back to debug in @AfterClass!
    */
   @Test
-  void changeLogOutputForAnalysis() throws Exception {
+  void changeLogOutputForAnalysis() throws IOException {
     logs.clear();
     var inputFile = prepareInputFile("foo.js", "function foo() {var x;}");
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);

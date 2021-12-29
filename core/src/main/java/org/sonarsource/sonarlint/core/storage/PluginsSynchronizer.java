@@ -77,7 +77,7 @@ public class PluginsSynchronizer {
       return false;
     }
     if (upToDate(serverPlugin, storedPluginsByKey)) {
-      LOG.debug("[SYNC] Code analyzer {} is up-to-date. Skip downloading it.", serverPlugin.getKey());
+      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
       return false;
     }
     if (!serverPlugin.isSonarLintSupported()) {

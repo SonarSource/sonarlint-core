@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -60,23 +59,6 @@ public class ActiveRule {
 
   public void setTemplateRuleKey(@Nullable String templateRuleKey) {
     this.templateRuleKey = templateRuleKey;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(ruleKey);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (!(obj instanceof ActiveRule)) {
-      return false;
-    }
-    var other = (ActiveRule) obj;
-    return Objects.equals(ruleKey, other.ruleKey);
   }
 
   @Override

@@ -30,27 +30,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 
 class AnalysisEngineMediumTests {
-  private GlobalAnalysisContainer globalContainer;
+  private AnalysisEngine analysisEngine;
+  private volatile boolean engineStopped;
+  private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
 
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
@@ -61,17 +75,19 @@ class AnalysisEngineMediumTests {
       .setWorkDir(workDir)
       .build();
     var pluginInstancesRepository = new PluginInstancesRepository(new PluginInstancesRepository.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
-    this.globalContainer = new GlobalAnalysisContainer(analysisGlobalConfig, pluginInstancesRepository);
-    this.globalContainer.startComponents();
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, null);
+    engineStopped = false;
   }
 
   @AfterEach
   void cleanUp() {
-    this.globalContainer.stopComponents(false);
+    if (!engineStopped) {
+      this.analysisEngine.stop();
+    }
   }
 
   @Test
-  void should_analyze_a_single_file_outside_of_any_module(@TempDir Path baseDir) throws IOException {
+  void should_analyze_a_single_file_outside_of_any_module(@TempDir Path baseDir) throws Exception {
     var content = "def foo():\n"
       + "  x = 9; # trailing comment\n";
     var inputFile = preparePythonInputFile(baseDir, content);
@@ -82,10 +98,129 @@ class AnalysisEngineMediumTests {
       .setBaseDir(baseDir)
       .build();
     List<Issue> issues = new ArrayList<>();
-    globalContainer.analyze(null, analysisConfig, issues::add, new ProgressMonitor(null));
+    analysisEngine.post(new AnalyzeCommand(null, analysisConfig, issues::add, null), progressMonitor).get();
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
       .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
+  }
+
+  @Test
+  void should_analyze_a_file_inside_a_module(@TempDir Path baseDir) throws Exception {
+    var content = "def foo():\n"
+      + "  x = 9; # trailing comment\n";
+    ClientInputFile inputFile = preparePythonInputFile(baseDir, content);
+
+    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(inputFile)
+      .addActiveRules(trailingCommentRule())
+      .setBaseDir(baseDir)
+      .build();
+    List<Issue> issues = new ArrayList<>();
+    analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor).get();
+    analysisEngine.post(new AnalyzeCommand("moduleKey", analysisConfig, issues::add, null), progressMonitor).get();
+    assertThat(issues)
+      .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
+  }
+
+  @Test
+  void should_fail_the_future_if_the_command_execution_fails() {
+    var futureResult = analysisEngine.post((moduleRegistry, progress) -> {
+      throw new RuntimeException("Kaboom");
+    }, progressMonitor);
+
+    Awaitility.await().until(futureResult::isCompletedExceptionally);
+    futureResult.exceptionally(e -> assertThat(e)
+      .isInstanceOf(RuntimeException.class)
+      .hasMessage("Kaboom"));
+  }
+
+  @Test
+  void should_execute_pending_commands_when_gracefully_finishing(@TempDir Path baseDir) throws IOException {
+    var futureRegister = analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor);
+    var futureNotify = analysisEngine.post(new NotifyModuleEventCommand("moduleKey", ClientModuleFileEvent.of(preparePythonInputFile(baseDir, ""), ModuleFileEvent.Type.CREATED)),
+      progressMonitor);
+    var futureUnregister = analysisEngine.post(new UnregisterModuleCommand("moduleKey"), progressMonitor);
+    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      return "SUCCESS";
+    }, progressMonitor);
+    analysisEngine.finishGracefully();
+    engineStopped = true;
+
+    Awaitility.await().until(futureLongCommand::isDone);
+    assertThat(futureLongCommand).isCompletedWithValue("SUCCESS");
+    assertThat(futureRegister).isCompleted();
+    assertThat(futureNotify).isCompleted();
+    assertThat(futureUnregister).isCompleted();
+  }
+
+  @Test
+  void should_cancel_progress_monitor_of_executing_command_when_stopping() throws InterruptedException {
+    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
+      int attempts = 0;
+      while (attempts < 10 && !progressMonitor.isCanceled()) {
+        try {
+          Thread.sleep(500);
+          attempts++;
+        } catch (InterruptedException e) {
+          // ignore
+        }
+      }
+      if (!progressMonitor.isCanceled()) {
+        fail("Progress monitor has not been canceled properly");
+      }
+      return "CANCELED";
+    }, progressMonitor);
+    // let the engine run the command
+    Thread.sleep(500);
+
+    analysisEngine.stop();
+    engineStopped = true;
+
+    Awaitility.await().until(futureLongCommand::isDone);
+    assertThat(futureLongCommand).isCompletedWithValue("CANCELED");
+  }
+
+  @Test
+  void should_cancel_pending_commands_when_stopping() throws InterruptedException {
+    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
+      while(!engineStopped);
+      return null;
+    }, progressMonitor);
+    var futureRegister = analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor);
+    // let the engine run the first command
+    Thread.sleep(500);
+
+    analysisEngine.stop();
+    engineStopped = true;
+
+    Awaitility.await().until(futureLongCommand::isDone);
+    assertThat(futureRegister).isCancelled();
+  }
+
+  @Test
+  void should_interrupt_executing_thread_when_stopping() throws InterruptedException {
+    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
+      try {
+        Thread.sleep(3000);
+      } catch (InterruptedException e) {
+        return "INTERRUPTED";
+      }
+      return "FINISHED";
+    }, progressMonitor);
+    // let the engine run the first command
+    Thread.sleep(500);
+
+    analysisEngine.stop();
+    engineStopped = true;
+
+    Awaitility.await().until(futureLongCommand::isDone);
+    assertThat(futureLongCommand).isCompletedWithValue("INTERRUPTED");
   }
 
   private ClientInputFile preparePythonInputFile(Path baseDir, String content) throws IOException {
@@ -106,5 +241,19 @@ class AnalysisEngineMediumTests {
     var pythonActiveRule = new ActiveRule("python:S139", "py");
     pythonActiveRule.setParams(Map.of("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"));
     return pythonActiveRule;
+  }
+
+  private static ClientModuleFileSystem aModuleFileSystem() {
+    return new ClientModuleFileSystem() {
+      @Override
+      public Stream<ClientInputFile> files(String suffix, InputFile.Type type) {
+        return Stream.of();
+      }
+
+      @Override
+      public Stream<ClientInputFile> files() {
+        return Stream.of();
+      }
+    };
   }
 }
