@@ -214,7 +214,7 @@ class ConnectedIssueMediumTests {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
 
-    ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
     assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
@@ -224,7 +224,7 @@ class ConnectedIssueMediumTests {
   void stop_module_should_stop_the_module_container() {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
-    ComponentContainer moduleContainer = sonarlint.getAnalysisContainer().getModuleRegistry().getContainerFor("key");
+    ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key");
 
@@ -235,7 +235,7 @@ class ConnectedIssueMediumTests {
   void should_forward_module_file_event_to_listener() {
     // should not be located in global container in real life but easier for testing
     var moduleFileListener = new FakeModuleFileListener();
-    sonarlint.getAnalysisContainer().add(moduleFileListener);
+    sonarlint.getAnalysisEngine().getGlobalAnalysisContainer().add(moduleFileListener);
     var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
     sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
 

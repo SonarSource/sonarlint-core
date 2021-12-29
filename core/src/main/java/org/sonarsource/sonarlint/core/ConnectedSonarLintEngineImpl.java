@@ -30,8 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -39,12 +38,13 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -64,7 +64,6 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -84,7 +83,6 @@ import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -101,13 +99,8 @@ import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePat
 
 public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
-  private final ReadWriteLock analysisEngineRestartLock = new ReentrantReadWriteLock();
-
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
   private final ConnectedGlobalConfiguration globalConfig;
   private final GlobalUpdateStatusReader globalStatusReader;
-  private GlobalAnalysisContainer globalAnalysisContainer;
   private final PluginsStorage pluginsStorage;
   private final GlobalStores globalStores;
   private final ProjectStorage projectStorage;
@@ -118,10 +111,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private final PartialUpdaterFactory partialUpdaterFactory;
   private final GlobalStorageUpdateExecutor globalStorageUpdateExecutor;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
-
-  private boolean containerStarted;
-
-  private PluginInstancesRepository pluginInstancesRepository;
+  private final AtomicReference<AnalysisContext> analysisContext = new AtomicReference<>();
 
   private final StorageReader storageReader;
 
@@ -152,19 +142,21 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public GlobalAnalysisContainer getAnalysisContainer() {
-    if (globalAnalysisContainer == null) {
-      throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
-    }
-    return globalAnalysisContainer;
+  public AnalysisEngine getAnalysisEngine() {
+    return analysisContext.get().analysisEngine;
   }
 
-  public void start() {
+  public AnalysisContext start() {
     setLogging(null);
+    return analysisContext.getAndSet(loadAnalysisContext());
+  }
 
-    pluginInstancesRepository = createPluginInstanceRepository();
+  private AnalysisContext loadAnalysisContext() {
+    var pluginInstancesRepository = createPluginInstanceRepository();
+    var pluginDetails = pluginInstancesRepository.getPluginCheckResultByKeys().values().stream().map(p -> new PluginDetails(p.getPlugin().getKey(), p.getPlugin().getName(),
+      Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
 
-    loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), true);
+    var allRulesDefinitionsByKey = loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), true);
 
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
@@ -174,10 +166,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       .setWorkDir(globalConfig.getWorkDir())
       .setModulesProvider(globalConfig.getModulesProvider())
       .build();
-    this.globalAnalysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, pluginInstancesRepository);
-
-    globalAnalysisContainer.startComponents();
-    containerStarted = true;
+    var analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, logOutput);
+    return new AnalysisContext(pluginDetails, allRulesDefinitionsByKey, analysisEngine);
   }
 
   private PluginInstancesRepository createPluginInstanceRepository() {
@@ -253,13 +243,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     var analysisConfiguration = analysisConfigBuilder.build();
 
     try {
-      analysisEngineRestartLock.readLock().lock();
-      return getAnalysisContainer().analyze(configuration.moduleKey(), analysisConfiguration,
-        issue -> streamIssue(issueListener, issue, activeRulesContext), new ProgressMonitor(monitor));
-    } catch (RuntimeException e) {
+      var analysisResults = getAnalysisEngine().post(new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration,
+        issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput), new ProgressMonitor(monitor)).get();
+      return analysisResults == null ? new AnalysisResults() : analysisResults;
+    } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      analysisEngineRestartLock.readLock().unlock();
     }
   }
 
@@ -278,6 +266,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       return analysisRulesContext;
     }
 
+    var allRulesDefinitionsByKey = analysisContext.get().allRulesDefinitionsByKey;
     projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
       .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
       .forEach(e -> {
@@ -351,17 +340,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private void restartAnalysisEngine() {
-    try {
-      analysisEngineRestartLock.writeLock().lock();
-      stop(false);
-      start();
-    } finally {
-      analysisEngineRestartLock.writeLock().unlock();
-    }
+    var oldAnalysisContext = start();
+    oldAnalysisContext.finishGracefully();
   }
 
   @Override
   public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
+    var allRulesDefinitionsByKey = analysisContext.get().allRulesDefinitionsByKey;
     var ruleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey)).orElse(null);
     if (ruleDefFromPlugin != null && (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null)) {
       // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
@@ -406,13 +391,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
-    try {
-      analysisEngineRestartLock.readLock().lock();
-      return pluginInstancesRepository.getPluginCheckResultByKeys().values().stream().map(p -> new PluginDetails(p.getPlugin().getKey(), p.getPlugin().getName(),
-        Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
-    } finally {
-      analysisEngineRestartLock.readLock().unlock();
-    }
+    return analysisContext.get().pluginDetails;
   }
 
   @Override
@@ -510,21 +489,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public void stop(boolean deleteStorage) {
     setLogging(null);
     try {
-      if (globalAnalysisContainer != null && containerStarted) {
-        globalAnalysisContainer.stopComponents(false);
-        containerStarted = false;
-      }
-      if (pluginInstancesRepository != null) {
-        pluginInstancesRepository.close();
-      }
+      analysisContext.get().destroy();
       if (deleteStorage) {
         globalStores.deleteAll();
       }
     } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      this.globalAnalysisContainer = null;
-      this.pluginInstancesRepository = null;
     }
   }
 
@@ -534,6 +504,26 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       return callable.get();
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
+    }
+  }
+
+  private static class AnalysisContext {
+    private final Collection<PluginDetails> pluginDetails;
+    private final Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
+    private final AnalysisEngine analysisEngine;
+
+    public AnalysisContext(List<PluginDetails> pluginDetails, Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey, AnalysisEngine analysisEngine) {
+      this.pluginDetails = pluginDetails;
+      this.allRulesDefinitionsByKey = allRulesDefinitionsByKey;
+      this.analysisEngine = analysisEngine;
+    }
+
+    public void destroy() {
+      analysisEngine.stop();
+    }
+
+    public void finishGracefully() {
+      analysisEngine.finishGracefully();
     }
   }
 

@@ -20,25 +20,18 @@
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import java.time.Clock;
-import java.util.function.Consumer;
-import javax.annotation.Nullable;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
 public class GlobalAnalysisContainer extends ComponentContainer {
+  protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private GlobalExtensionContainer globalExtensionContainer;
   private ModuleRegistry moduleRegistry;
@@ -87,6 +80,9 @@ public class GlobalAnalysisContainer extends ComponentContainer {
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents(swallowException);
       }
+      pluginInstancesRepository.close();
+    } catch (Exception e) {
+      LOG.error("Cannot close analysis engine", e);
     } finally {
       super.stopComponents(swallowException);
     }
@@ -96,47 +92,6 @@ public class GlobalAnalysisContainer extends ComponentContainer {
   private void declarePluginProperties() {
     var pluginRepository = getComponentByType(PluginInstancesRepository.class);
     pluginRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
-  }
-
-  public AnalysisResults analyze(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
-    var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
-    if (moduleContainer == null) {
-      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
-    }
-    Throwable originalException = null;
-    try {
-      return moduleContainer.analyze(configuration, issueListener, progress);
-    } catch (Throwable e) {
-      originalException = e;
-      throw e;
-    } finally {
-      try {
-        if (moduleContainer.isTransient()) {
-          moduleContainer.stopComponents();
-        }
-      } catch (Exception e) {
-        if (originalException != null) {
-          e.addSuppressed(originalException);
-        }
-        throw e;
-      }
-    }
-  }
-
-  public void registerModule(ClientModuleInfo module) {
-    moduleRegistry.registerModule(module);
-  }
-
-  public void unregisterModule(Object moduleKey) {
-    moduleRegistry.unregisterModule(moduleKey);
-  }
-
-  public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
-    if (moduleContainer != null) {
-      moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
-    }
   }
 
   // Visible for medium tests

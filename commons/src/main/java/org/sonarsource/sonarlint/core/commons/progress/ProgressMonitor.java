@@ -27,16 +27,13 @@ public class ProgressMonitor {
   private final float offset;
   private final float factor;
   private final String msgPrefix;
+  private volatile boolean canceled;
 
   private ProgressMonitor(float offset, float factor, @Nullable String msgPrefix, @Nullable ClientProgressMonitor clientMonitor) {
     this.offset = offset;
     this.factor = factor;
     this.msgPrefix = msgPrefix;
-    if (clientMonitor == null) {
-      this.clientMonitor = new NoOpProgressMonitor();
-    } else {
-      this.clientMonitor = clientMonitor;
-    }
+    this.clientMonitor = clientMonitor == null ? new NoOpProgressMonitor() : clientMonitor;
   }
 
   public ProgressMonitor(@Nullable ClientProgressMonitor clientMonitor) {
@@ -48,14 +45,18 @@ public class ProgressMonitor {
   }
 
   public void checkCancel() {
-    if (clientMonitor.isCanceled()) {
+    if (isCanceled()) {
       clientMonitor.setMessage("Cancelling");
       throw new CanceledException();
     }
   }
 
   public boolean isCanceled() {
-    return clientMonitor.isCanceled();
+    return canceled || clientMonitor.isCanceled();
+  }
+
+  public void cancel() {
+    canceled = true;
   }
 
   public void setProgress(String msg, float fraction) {

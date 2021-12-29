@@ -61,13 +61,13 @@ class AnalysisConfigurationTests {
       .addActiveRules(new ActiveRule("python:S123", null), new ActiveRule("python:S456", null))
       .build();
     assertThat(config).hasToString("[\n" +
-      "  baseDir: " + baseDir.toString() + "\n" +
+      "  baseDir: " + baseDir + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar, sonar.foo=bar}\n" +
       "  activeRules: [java:S123, java:S456, php:S123{param1=value1}, python:S123, python:S456]\n" +
       "  inputFiles: [\n" +
-      "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
-      "    " + srcFile2.toUri().toString() + " (UTF-8) [java]\n" +
-      "    " + srcFile3.toUri().toString() + " (default) [test] [php]\n" +
+      "    " + srcFile1.toUri() + " (UTF-8)\n" +
+      "    " + srcFile2.toUri() + " (UTF-8) [java]\n" +
+      "    " + srcFile3.toUri() + " (default) [test] [php]\n" +
       "  ]\n" +
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
