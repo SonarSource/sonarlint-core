@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,7 @@ class SensorOptimizerTests {
   }
 
   @Test
-  public void should_optimize_on_language() {
+  void should_optimize_on_language() {
     DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor()
       .onlyOnLanguages("java", "php");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
@@ -108,7 +109,7 @@ class SensorOptimizerTests {
 
     ActiveRuleAdapter ruleAnotherRepo = mock(ActiveRuleAdapter.class);
     when(ruleAnotherRepo.ruleKey()).thenReturn(RuleKey.of("repo1", "foo"));
-    ActiveRules activeRules = new ActiveRulesAdapter(asList(ruleAnotherRepo));
+    ActiveRules activeRules = new ActiveRulesAdapter(List.of(ruleAnotherRepo));
     optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
 
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();

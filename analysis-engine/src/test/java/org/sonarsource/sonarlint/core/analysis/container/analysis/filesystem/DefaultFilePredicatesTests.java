@@ -65,17 +65,17 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void all() {
+  void all() {
     assertThat(predicates.all().apply(javaFile)).isTrue();
   }
 
   @Test
-  public void none() {
+  void none() {
     assertThat(predicates.none().apply(javaFile)).isFalse();
   }
 
   @Test
-  public void matches_inclusion_pattern() {
+  void matches_inclusion_pattern() {
     assertThat(predicates.matchesPathPattern("file:**/src/main/**/Action.java").apply(javaFile)).isTrue();
     assertThat(predicates.matchesPathPattern("**/src/main/**/Action.java").apply(javaFile)).isTrue();
     assertThat(predicates.matchesPathPattern("src/main/**/Action.java").apply(javaFile)).isTrue();
@@ -83,32 +83,32 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void matches_inclusion_patterns() {
+  void matches_inclusion_patterns() {
     assertThat(predicates.matchesPathPatterns(new String[] {"src/other/**.java", "src/main/**/Action.java"}).apply(javaFile)).isTrue();
     assertThat(predicates.matchesPathPatterns(new String[] {}).apply(javaFile)).isTrue();
     assertThat(predicates.matchesPathPatterns(new String[] {"src/other/**.java", "src/**/*.php"}).apply(javaFile)).isFalse();
   }
 
   @Test
-  public void does_not_match_exclusion_pattern() {
+  void does_not_match_exclusion_pattern() {
     assertThat(predicates.doesNotMatchPathPattern("src/main/**/Action.java").apply(javaFile)).isFalse();
     assertThat(predicates.doesNotMatchPathPattern("src/**/*.php").apply(javaFile)).isTrue();
   }
 
   @Test
-  public void does_not_match_exclusion_patterns() {
+  void does_not_match_exclusion_patterns() {
     assertThat(predicates.doesNotMatchPathPatterns(new String[] {}).apply(javaFile)).isTrue();
     assertThat(predicates.doesNotMatchPathPatterns(new String[] {"src/other/**.java", "src/**/*.php"}).apply(javaFile)).isTrue();
     assertThat(predicates.doesNotMatchPathPatterns(new String[] {"src/other/**.java", "src/main/**/Action.java"}).apply(javaFile)).isFalse();
   }
 
   @Test
-  public void has_relative_path_unsupported() {
+  void has_relative_path_unsupported() {
     assertThrows(UnsupportedOperationException.class, () -> predicates.hasRelativePath("src/main/java/struts/Action.java").apply(javaFile));
   }
 
   @Test
-  public void has_uri() throws Exception {
+  void has_uri() {
     URI uri = javaFile.uri();
     assertThat(predicates.hasURI(uri).apply(javaFile)).isTrue();
 
@@ -116,7 +116,7 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void has_name() throws IOException {
+  void has_name() {
     String fileName = javaFile.filename();
     assertThat(predicates.hasFilename(fileName).apply(javaFile)).isTrue();
 
@@ -125,7 +125,7 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void has_extension() throws IOException {
+  void has_extension() {
     String extension = "java";
     assertThat(predicates.hasExtension(extension).apply(javaFile)).isTrue();
 
@@ -135,24 +135,24 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void has_path() throws Exception {
+  void has_path() {
     assertThrows(UnsupportedOperationException.class, () -> predicates.hasPath("src/main/java/struts/Action.java").apply(javaFile));
   }
 
   @Test
-  public void is_file() throws Exception {
+  void is_file() {
     assertThat(predicates.is(javaFile.file()).apply(javaFile)).isTrue();
     assertThat(predicates.is(new File("foo.php")).apply(javaFile)).isFalse();
   }
 
   @Test
-  public void has_language() {
+  void has_language() {
     assertThat(predicates.hasLanguage("java").apply(javaFile)).isTrue();
     assertThat(predicates.hasLanguage("php").apply(javaFile)).isFalse();
   }
 
   @Test
-  public void has_languages() {
+  void has_languages() {
     assertThat(predicates.hasLanguages(Arrays.asList("java", "php")).apply(javaFile)).isTrue();
     assertThat(predicates.hasLanguages("java", "php").apply(javaFile)).isTrue();
     assertThat(predicates.hasLanguages(Arrays.asList("cobol", "php")).apply(javaFile)).isFalse();
@@ -161,13 +161,13 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void has_type() {
+  void has_type() {
     assertThat(predicates.hasType(InputFile.Type.MAIN).apply(javaFile)).isTrue();
     assertThat(predicates.hasType(InputFile.Type.TEST).apply(javaFile)).isFalse();
   }
 
   @Test
-  public void has_status() {
+  void has_status() {
     assertThat(predicates.hasAnyStatus().apply(javaFile)).isTrue();
     try {
       predicates.hasStatus(InputFile.Status.SAME).apply(javaFile);
@@ -178,13 +178,13 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void not() {
+  void not() {
     assertThat(predicates.not(predicates.hasType(InputFile.Type.MAIN)).apply(javaFile)).isFalse();
     assertThat(predicates.not(predicates.hasType(InputFile.Type.TEST)).apply(javaFile)).isTrue();
   }
 
   @Test
-  public void and() {
+  void and() {
     // empty
     assertThat(predicates.and().apply(javaFile)).isTrue();
     assertThat(predicates.and(new FilePredicate[0]).apply(javaFile)).isTrue();
@@ -205,7 +205,7 @@ class DefaultFilePredicatesTests {
   }
 
   @Test
-  public void or() {
+  void or() {
     // empty
     assertThat(predicates.or().apply(javaFile)).isTrue();
     assertThat(predicates.or(new FilePredicate[0]).apply(javaFile)).isTrue();

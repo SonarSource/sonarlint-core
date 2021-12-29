@@ -82,8 +82,8 @@ public class DefaultFilePredicates implements FilePredicates {
     if (inclusionPatterns.length == 0) {
       return TruePredicate.TRUE;
     }
-    FilePredicate[] predicates = new FilePredicate[inclusionPatterns.length];
-    for (int i = 0; i < inclusionPatterns.length; i++) {
+    var predicates = new FilePredicate[inclusionPatterns.length];
+    for (var i = 0; i < inclusionPatterns.length; i++) {
       predicates[i] = new PathPatternPredicate(new SonarLintPathPattern(inclusionPatterns[i]));
     }
     return or(predicates);

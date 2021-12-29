@@ -46,9 +46,10 @@ class SonarLintInputDirTests {
     assertThat(inputDir.isFile()).isFalse();
     assertThat(inputDir.path()).isEqualTo(path);
     assertThat(inputDir.relativePath()).isEqualTo(inputDir.absolutePath());
-    assertThat(inputDir.toString()).isEqualTo("[path=" + path + "]");
-    assertThat(inputDir.equals(mock(SonarLintInputDir.class))).isFalse();
-    assertThat(inputDir.equals(inputDir)).isTrue();
+    assertThat(inputDir)
+      .hasToString("[path=" + path + "]")
+      .isNotEqualTo(mock(SonarLintInputDir.class))
+      .isEqualTo(inputDir);
   }
 
 }

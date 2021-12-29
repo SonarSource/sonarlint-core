@@ -51,7 +51,7 @@ public class LanguageDetection {
     for (Language language : Language.values()) {
       String[] extensions = config.get(language.getFileSuffixesPropKey()).isPresent() ? config.getStringArray(language.getFileSuffixesPropKey())
         : language.getDefaultFileSuffixes();
-      for (int i = 0; i < extensions.length; i++) {
+      for (var i = 0; i < extensions.length; i++) {
         String suffix = extensions[i];
         extensions[i] = sanitizeExtension(suffix);
       }

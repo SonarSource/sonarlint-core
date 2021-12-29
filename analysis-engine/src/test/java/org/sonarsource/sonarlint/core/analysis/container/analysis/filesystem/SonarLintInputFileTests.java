@@ -56,8 +56,9 @@ class SonarLintInputFileTests {
     assertThat(file.path()).isEqualTo(filePath);
     assertThat(file.getClientInputFile()).isEqualTo(inputFile);
     assertThat(file.status()).isEqualTo(Status.ADDED);
-    assertThat(file.equals(file)).isTrue();
-    assertThat(file.equals(mock(SonarLintInputFile.class))).isFalse();
+    assertThat(file)
+      .isEqualTo(file)
+      .isNotEqualTo(mock(SonarLintInputFile.class));
 
     InputStream stream = file.inputStream();
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
@@ -72,7 +73,7 @@ class SonarLintInputFileTests {
     FileMetadata.Metadata metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
     SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> metadata);
     assertThat(file.newPointer(1, 0).line()).isEqualTo(1);
-    assertThat(file.newPointer(1, 0).lineOffset()).isEqualTo(0);
+    assertThat(file.newPointer(1, 0).lineOffset()).isZero();
     // Don't fail
     file.newPointer(1, 9);
     file.newPointer(2, 0);
@@ -87,15 +88,15 @@ class SonarLintInputFileTests {
     SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> metadata);
 
     assertThat(file.selectLine(1).start().line()).isEqualTo(1);
-    assertThat(file.selectLine(1).start().lineOffset()).isEqualTo(0);
+    assertThat(file.selectLine(1).start().lineOffset()).isZero();
     assertThat(file.selectLine(1).end().line()).isEqualTo(1);
     assertThat(file.selectLine(1).end().lineOffset()).isEqualTo(9);
 
     // Don't fail when selecting empty line
     assertThat(file.selectLine(3).start().line()).isEqualTo(3);
-    assertThat(file.selectLine(3).start().lineOffset()).isEqualTo(0);
+    assertThat(file.selectLine(3).start().lineOffset()).isZero();
     assertThat(file.selectLine(3).end().line()).isEqualTo(3);
-    assertThat(file.selectLine(3).end().lineOffset()).isEqualTo(0);
+    assertThat(file.selectLine(3).end().lineOffset()).isZero();
   }
 
   @Test

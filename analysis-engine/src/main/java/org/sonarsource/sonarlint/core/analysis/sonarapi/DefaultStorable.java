@@ -32,11 +32,7 @@ abstract class DefaultStorable {
   protected final SensorStorage storage;
   private boolean saved = false;
 
-  public DefaultStorable() {
-    this.storage = null;
-  }
-
-  public DefaultStorable(@Nullable SensorStorage storage) {
+  protected DefaultStorable(@Nullable SensorStorage storage) {
     this.storage = storage;
   }
 

@@ -31,25 +31,25 @@ public interface WithTextRange {
 
   @CheckForNull
   default Integer getStartLine() {
-    TextRange textRange = getTextRange();
+    var textRange = getTextRange();
     return textRange != null ? textRange.getStartLine() : null;
   }
 
   @CheckForNull
   default Integer getStartLineOffset() {
-    TextRange textRange = getTextRange();
+    var textRange = getTextRange();
     return textRange != null ? textRange.getStartLineOffset() : null;
   }
 
   @CheckForNull
   default Integer getEndLine() {
-    TextRange textRange = getTextRange();
+    var textRange = getTextRange();
     return textRange != null ? textRange.getEndLine() : null;
   }
 
   @CheckForNull
   default Integer getEndLineOffset() {
-    TextRange textRange = getTextRange();
+    var textRange = getTextRange();
     return textRange != null ? textRange.getEndLineOffset() : null;
   }
 

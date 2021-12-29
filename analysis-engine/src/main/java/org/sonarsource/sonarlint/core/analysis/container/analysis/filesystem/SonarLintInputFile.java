@@ -157,7 +157,7 @@ public class SonarLintInputFile implements InputFile {
 
   @Override
   public Charset charset() {
-    Charset charset = clientInputFile.getCharset();
+    var charset = clientInputFile.getCharset();
     return charset != null ? charset : Charset.defaultCharset();
   }
 

@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.InputFileIndex;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,7 +37,7 @@ class InputFileCacheTests {
   }
 
   @Test
-  public void testFiles() {
+  void testFiles() {
     InputFile file1 = mock(InputFile.class);
     when(file1.filename()).thenReturn("file1.java");
     when(file1.language()).thenReturn("lang1");

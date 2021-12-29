@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -58,7 +57,6 @@ public class AnalysisEngineConfiguration {
     return new Builder();
   }
 
-  @CheckForNull
   public Path getWorkDir() {
     return workDir;
   }

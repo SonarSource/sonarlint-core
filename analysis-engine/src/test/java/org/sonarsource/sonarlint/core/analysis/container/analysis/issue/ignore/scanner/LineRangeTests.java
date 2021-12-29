@@ -51,23 +51,23 @@ class LineRangeTests {
   }
 
   @Test
-  void testToString() throws Exception {
-    assertThat(new LineRange(12, 15).toString()).isEqualTo("[12-15]");
+  void testToString() {
+    assertThat(new LineRange(12, 15)).hasToString("[12-15]");
   }
 
   @Test
-  void testEquals() throws Exception {
+  void testEquals() {
     LineRange range = new LineRange(12, 15);
-    assertThat(range).isEqualTo(range);
-    assertThat(range).isEqualTo(new LineRange(12, 15));
-    assertThat(range).isNotEqualTo(new LineRange(12, 2000));
-    assertThat(range).isNotEqualTo(new LineRange(1000, 2000));
-    assertThat(range).isNotEqualTo(null);
-    assertThat(range).isNotEqualTo(new StringBuffer());
+    assertThat(range).isEqualTo(range)
+      .isEqualTo(new LineRange(12, 15))
+      .isNotEqualTo(new LineRange(12, 2000))
+      .isNotEqualTo(new LineRange(1000, 2000))
+      .isNotEqualTo(null)
+      .isNotEqualTo(new StringBuffer());
   }
 
   @Test
-  void testHashCode() throws Exception {
-    assertThat(new LineRange(12, 15).hashCode()).isEqualTo(new LineRange(12, 15).hashCode());
+  void testHashCode() {
+    assertThat(new LineRange(12, 15)).hasSameHashCodeAs(new LineRange(12, 15).hashCode());
   }
 }
