@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 class PicoComponentKeys {
 
   private static final Pattern IDENTITY_HASH_PATTERN = Pattern.compile(".+@[a-f0-9]+");
-  private final Set<Class> objectsWithoutToString = new HashSet<>();
+  private final Set<Class<?>> objectsWithoutToString = new HashSet<>();
 
   Object of(Object component) {
     return of(component, SonarLintLogger.get());
@@ -38,13 +38,13 @@ class PicoComponentKeys {
     if (component instanceof Class) {
       return component;
     }
-    String key = component.toString();
+    var key = component.toString();
     if (IDENTITY_HASH_PATTERN.matcher(key).matches()) {
       if (!objectsWithoutToString.add(component.getClass())) {
         log.warn(String.format("Bad component key: %s. Please implement toString() method on class %s", key, component.getClass().getName()));
       }
       key += UUID.randomUUID().toString();
     }
-    return new StringBuilder().append(component.getClass().getCanonicalName()).append("-").append(key).toString();
+    return component.getClass().getCanonicalName() + "-" + key;
   }
 }

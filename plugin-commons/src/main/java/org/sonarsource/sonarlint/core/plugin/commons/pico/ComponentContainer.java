@@ -40,8 +40,8 @@ import org.sonar.api.utils.System2;
 public class ComponentContainer {
 
   private static final class ExtendedDefaultPicoContainer extends DefaultPicoContainer {
-    private ExtendedDefaultPicoContainer(ComponentFactory componentFactory, LifecycleStrategy lifecycleStrategy, PicoContainer parent) {
-      super(componentFactory, lifecycleStrategy, parent);
+    private ExtendedDefaultPicoContainer(ComponentFactory componentFactory, LifecycleStrategy lifecycleStrategy) {
+      super(componentFactory, lifecycleStrategy, null);
     }
 
     private ExtendedDefaultPicoContainer(final ComponentFactory componentFactory, final LifecycleStrategy lifecycleStrategy, final PicoContainer parent,
@@ -66,21 +66,17 @@ public class ComponentContainer {
     }
   }
 
-  ComponentContainer parent;
-  MutablePicoContainer pico;
-  PropertyDefinitions propertyDefinitions;
-  PicoComponentKeys componentKeys;
+  private final ComponentContainer parent;
+  private final MutablePicoContainer pico;
+  private final PropertyDefinitions propertyDefinitions;
+  private final PicoComponentKeys componentKeys;
 
   /**
    * Create root container
    */
   public ComponentContainer() {
-    this(createPicoContainer());
-  }
-
-  protected ComponentContainer(MutablePicoContainer picoContainer) {
     this.parent = null;
-    this.pico = picoContainer;
+    this.pico = createPicoContainer();
     this.componentKeys = new PicoComponentKeys();
     propertyDefinitions = new PropertyDefinitions(System2.INSTANCE);
     addSingleton(propertyDefinitions);
@@ -103,7 +99,7 @@ public class ComponentContainer {
   }
 
   public void execute() {
-    boolean threw = true;
+    var threw = true;
     try {
       startComponents();
       threw = false;
@@ -198,9 +194,9 @@ public class ComponentContainer {
   public ComponentContainer add(Object... objects) {
     for (Object object : objects) {
       if (object instanceof ComponentAdapter) {
-        addPicoAdapter((ComponentAdapter) object);
+        addPicoAdapter((ComponentAdapter<?>) object);
       } else if (object instanceof Iterable) {
-        ((Iterable) object).forEach(this::add);
+        ((Iterable<?>) object).forEach(this::add);
       } else {
         addSingleton(object);
       }
@@ -208,23 +204,10 @@ public class ComponentContainer {
     return this;
   }
 
-  public void addIfMissing(Object object, Class<?> objectType) {
-    if (getComponentByType(objectType) == null) {
-      add(object);
-    }
-  }
-
-  public ComponentContainer addSingletons(Iterable<?> components) {
-    for (Object component : components) {
-      addSingleton(component);
-    }
-    return this;
-  }
-
   public ComponentContainer addSingleton(Object component) {
     Object key = componentKeys.of(component);
     if (component instanceof ComponentAdapter) {
-      pico.addAdapter((ComponentAdapter) component);
+      pico.addAdapter((ComponentAdapter<?>) component);
     } else {
       try {
         pico.as(Characteristics.CACHE).addComponent(key, component);
@@ -258,9 +241,8 @@ public class ComponentContainer {
     propertyDefinitions.addComponent(extension, "");
   }
 
-  public ComponentContainer addPicoAdapter(ComponentAdapter<?> adapter) {
+  public void addPicoAdapter(ComponentAdapter<?> adapter) {
     pico.addAdapter(adapter);
-    return this;
   }
 
   public <T> T getComponentByType(Class<T> type) {
@@ -280,13 +262,8 @@ public class ComponentContainer {
   }
 
   public static MutablePicoContainer createPicoContainer() {
-    ReflectionLifecycleStrategy lifecycleStrategy = new ReflectionLifecycleStrategy(new NullComponentMonitor(), "start", "stop", "close") {
-      @Override
-      public void start(Object component) {
-        super.start(component);
-      }
-    };
-    return new ExtendedDefaultPicoContainer(new OptInCaching(), lifecycleStrategy, null);
+    var lifecycleStrategy = new ReflectionLifecycleStrategy(new NullComponentMonitor(), "start", "stop", "close");
+    return new ExtendedDefaultPicoContainer(new OptInCaching(), lifecycleStrategy);
   }
 
   public ComponentContainer getParent() {
@@ -295,9 +272,5 @@ public class ComponentContainer {
 
   public MutablePicoContainer getPicoContainer() {
     return pico;
-  }
-
-  public int size() {
-    return pico.getComponentAdapters().size();
   }
 }
