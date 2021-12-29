@@ -19,28 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
-import org.sonar.api.server.rule.RulesDefinition;
+import org.junit.jupiter.api.Test;
 
-/**
- * Load rules directly from plugins {@link RulesDefinition}
- */
-public class RuleDefinitionsLoader {
-  private final RulesDefinition.Context context;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public RuleDefinitionsLoader() {
-    // No plugin installed
-    context = new RulesDefinition.Context();
+class EmptyConfigurationTest {
+  @Test
+  void should_be_empty() {
+    var emptyConfiguration = new EmptyConfiguration();
+
+    assertThat(emptyConfiguration.hasKey("")).isFalse();
+    assertThat(emptyConfiguration.get("")).isEmpty();
+    assertThat(emptyConfiguration.getStringArray("")).isEmpty();
   }
-
-  public RuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
-    context = new RulesDefinition.Context();
-    for (var pluginDefinition : pluginDefs) {
-      pluginDefinition.define(context);
-    }
-  }
-
-  public RulesDefinition.Context getContext() {
-    return context;
-  }
-
 }

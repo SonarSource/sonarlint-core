@@ -35,10 +35,12 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
 
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 class RuleExtractorMediumTests {
 
@@ -80,6 +82,32 @@ class RuleExtractorMediumTests {
         assertThat(allJars).hasSize(10);
         assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL);
       }
+
+      var pythonRule = allRules.stream().filter(r -> r.getKey().equals("python:S139")).findFirst();
+      assertThat(pythonRule).hasValueSatisfying(rule -> {
+        assertThat(rule.getKey()).isEqualTo("python:S139");
+        assertThat(rule.getType()).isEqualTo("CODE_SMELL");
+        assertThat(rule.getSeverity()).isEqualTo("MINOR");
+        assertThat(rule.getLanguage()).isEqualTo(Language.PYTHON);
+        assertThat(rule.getName()).isEqualTo("Comments should not be located at the end of lines of code");
+        assertThat(rule.isActiveByDefault()).isFalse();
+        assertThat(rule.getParams())
+          .hasSize(1)
+          .hasEntrySatisfying("legalTrailingCommentPattern", param -> {
+            assertThat(param.defaultValue()).isEqualTo("^#\\s*+[^\\s]++$");
+            assertThat(param.description()).isNull();
+            assertThat(param.key()).isEqualTo("legalTrailingCommentPattern");
+            assertThat(param.multiple()).isFalse();
+            assertThat(param.name()).isEqualTo("legalTrailingCommentPattern");
+            assertThat(param.possibleValues()).isEmpty();
+            assertThat(param.type()).isEqualTo(SonarLintRuleParamType.STRING);
+          });
+        assertThat(rule.getDefaultParams()).containsOnly(entry("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"));
+        assertThat(rule.getDeprecatedKeys()).isEmpty();
+        assertThat(rule.getHtmlDescription()).contains("<p>This rule verifies that single-line comments are not located");
+        assertThat(rule.getTags()).containsOnly("convention");
+
+      });
     }
   }
 
@@ -123,6 +151,17 @@ class RuleExtractorMediumTests {
       List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
 
       assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
+    }
+  }
+
+  @Test
+  void loadNoRuleIfThereIsNoPlugin() throws Exception {
+    Set<Language> enabledLanguages = Set.of(Language.values());
+    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(Set.of(), enabledLanguages, empty());
+    try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
+      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
+
+      assertThat(allRules).isEmpty();
     }
   }
 
