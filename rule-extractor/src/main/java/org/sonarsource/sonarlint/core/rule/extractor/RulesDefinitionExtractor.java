@@ -34,7 +34,7 @@ public class RulesDefinitionExtractor {
   public List<SonarLintRuleDefinition> extractRules(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages, boolean includeTemplateRules) {
     Context context;
     try {
-      RulesDefinitionExtractorContainer container = new RulesDefinitionExtractorContainer(pluginInstancesRepository);
+      var container = new RulesDefinitionExtractorContainer(pluginInstancesRepository);
       container.execute();
       context = container.getContext();
     } catch (Exception e) {
@@ -48,7 +48,7 @@ public class RulesDefinitionExtractor {
         continue;
       }
       Optional<Language> repoLanguage = Language.forKey(repoDef.language());
-      if (!repoLanguage.isPresent() || !enabledLanguages.contains(repoLanguage.get())) {
+      if (repoLanguage.isEmpty() || !enabledLanguages.contains(repoLanguage.get())) {
         continue;
       }
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {

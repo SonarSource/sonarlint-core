@@ -24,6 +24,6 @@ public enum SonarLintRuleParamType {
   /**
    * Keep in sync with constants in org.sonar.api.server.rule.RuleParamType
    */
-  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
+  STRING, TEXT, BOOLEAN, INTEGER, FLOAT
 
 }

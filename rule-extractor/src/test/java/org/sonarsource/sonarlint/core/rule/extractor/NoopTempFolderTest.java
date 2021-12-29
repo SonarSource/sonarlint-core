@@ -19,28 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
-import org.sonar.api.server.rule.RulesDefinition;
+import org.junit.jupiter.api.Test;
 
-/**
- * Load rules directly from plugins {@link RulesDefinition}
- */
-public class RuleDefinitionsLoader {
-  private final RulesDefinition.Context context;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-  public RuleDefinitionsLoader() {
-    // No plugin installed
-    context = new RulesDefinition.Context();
+class NoopTempFolderTest {
+  @Test
+  void should_not_be_implemented() {
+    var noopTempFolder = new NoopTempFolder();
+
+    assertThrows(UnsupportedOperationException.class, noopTempFolder::newDir);
+    assertThrows(UnsupportedOperationException.class, noopTempFolder::newFile);
+    assertThrows(UnsupportedOperationException.class, () -> noopTempFolder.newDir("name"));
+    assertThrows(UnsupportedOperationException.class, () -> noopTempFolder.newFile("prefix", "suffix"));
   }
-
-  public RuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
-    context = new RulesDefinition.Context();
-    for (var pluginDefinition : pluginDefs) {
-      pluginDefinition.define(context);
-    }
-  }
-
-  public RulesDefinition.Context getContext() {
-    return context;
-  }
-
 }

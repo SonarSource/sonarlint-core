@@ -23,7 +23,6 @@ import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.api.utils.Version;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
@@ -31,7 +30,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
-import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class RulesDefinitionExtractorContainer extends ComponentContainer {
 
@@ -44,14 +42,14 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
-    Version sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+    var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
+    var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
 
-    SonarLintRuntime sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, -1);
+    var sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, -1);
 
-    EmptyConfiguration config = new EmptyConfiguration();
+    var config = new EmptyConfiguration();
 
-    ExtensionInstaller extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
+    var extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
     extensionInstaller.install(this, pluginInstancesRepository.getPluginInstancesByKeys(), (key, ext) -> {
       if (ExtensionUtils.isType(ext, Sensor.class)) {
         // Optimization, and allows to run with the Xoo plugin
