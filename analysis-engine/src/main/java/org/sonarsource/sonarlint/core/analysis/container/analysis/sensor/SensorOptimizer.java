@@ -47,11 +47,11 @@ public class SensorOptimizer {
    */
   public boolean shouldExecute(DefaultSensorDescriptor descriptor) {
     if (!fsCondition(descriptor)) {
-      LOG.debug("'{}' skipped because there is no related file in current project", descriptor.name());
+      LOG.debug("'{}' skipped because there is no related files in the current project", descriptor.name());
       return false;
     }
     if (!activeRulesCondition(descriptor)) {
-      LOG.debug("'{}' skipped because there is no related rule activated in the quality profile", descriptor.name());
+      LOG.debug("'{}' skipped because there is no related rules activated", descriptor.name());
       return false;
     }
     if (!settingsCondition(descriptor)) {

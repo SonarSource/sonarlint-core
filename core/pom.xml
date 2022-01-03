@@ -210,6 +210,24 @@
               <stripVersion>false</stripVersion>
             </configuration>
           </execution>
+          <execution>
+            <id>copy-lib-with-comma</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>com.google.guava</groupId>
+                  <artifactId>guava</artifactId>
+                  <version>10.0.1</version>
+                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                  <destFileName>guava,with,comma.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>

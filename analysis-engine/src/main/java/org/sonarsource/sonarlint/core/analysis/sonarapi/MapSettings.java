@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,7 @@ import org.sonar.api.utils.System2;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.apache.commons.lang3.StringUtils.trim;
+import static org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty.parseAsCsv;
 
 public class MapSettings extends Settings {
 
@@ -265,9 +265,7 @@ public class MapSettings extends Settings {
         return ArrayUtils.EMPTY_STRING_ARRAY;
       }
 
-      return Arrays.stream(value.split(",", -1)).map(String::trim)
-        .map(s -> s.replace("%2C", ","))
-        .toArray(String[]::new);
+      return parseAsCsv(effectiveKey, value);
     }
 
     return getStringArrayBySeparator(key, ",");
