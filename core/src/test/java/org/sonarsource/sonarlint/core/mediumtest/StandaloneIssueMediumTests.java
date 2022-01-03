@@ -45,6 +45,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
@@ -421,12 +422,37 @@ class StandaloneIssueMediumTests {
         tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, "INFO"));
   }
 
+  // SLCORE-350
+  @Disabled("Can be enabled when sonar-java is fixed with https://github.com/SonarSource/sonar-java/pull/3886")
+  @Test
+  void simpleJavaWithCommaInClasspath() throws Exception {
+    ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .putExtraProperty("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\"")
+      .build(), issues::add,
+      null, null);
+
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
+      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, "MINOR"),
+        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, "MINOR"));
+  }
+
   // SLCORE-251
   @Test
   void noRuleTemplates() throws Exception {
-    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("python:XPath", "xoo:xoo-template");
+    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("python:XPath");
     assertThat(sonarlint.getRuleDetails("python:XPath")).isEmpty();
-    assertThat(sonarlint.getRuleDetails("xoo:xoo-template")).isEmpty();
   }
 
   @Test
