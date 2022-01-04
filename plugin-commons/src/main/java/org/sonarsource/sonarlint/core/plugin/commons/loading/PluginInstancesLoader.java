@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -49,8 +50,6 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  * <p>
  * Plugins have their own isolated classloader, inheriting only from API classes.
  * Some plugins can extend a "base" plugin, sharing the same classloader.
- * </p>
- * This class is stateless. It does not keep pointers to classloaders and {@link org.sonar.api.Plugin}.
  */
 public class PluginInstancesLoader {
 
@@ -60,6 +59,8 @@ public class PluginInstancesLoader {
 
   private final PluginClassloaderFactory classloaderFactory;
   private final ClassLoader baseClassLoader;
+  private final Collection<ClassLoader> classloadersToClose = new ArrayList<>();
+  private final List<Path> filesToDelete = new ArrayList<>();
 
   public PluginInstancesLoader() {
     this(new PluginClassloaderFactory());
@@ -73,6 +74,7 @@ public class PluginInstancesLoader {
   public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
     Collection<PluginClassLoaderDef> defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
     Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader, defs);
+    this.classloadersToClose.addAll(classloaders.values());
     return instantiatePluginClasses(classloaders);
   }
 
@@ -96,6 +98,7 @@ public class PluginInstancesLoader {
         for (String dependency : info.getDependencies()) {
           Path tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
           def.addFiles(List.of(tmpDepFile.toFile()));
+          filesToDelete.add(tmpDepFile);
         }
       }
       def.addMainClass(info.getKey(), info.getMainClass());
@@ -108,25 +111,12 @@ public class PluginInstancesLoader {
   }
 
   private static Path createTmpFolderForPluginDeps(PluginInfo info) {
-    Path tmpFolderForDeps;
     try {
       var prefix = "sonarlint_" + info.getKey();
-      tmpFolderForDeps = Files.createTempDirectory(prefix);
+      return Files.createTempDirectory(prefix);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to create temporary directory", e);
     }
-    // FIXME We should instead delete the folder when the plugin classloader is unloaded
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        try {
-          FileUtils.deleteDirectory(tmpFolderForDeps.toFile());
-        } catch (IOException ex) {
-          ex.printStackTrace(System.err);
-        }
-      }
-    });
-    return tmpFolderForDeps;
   }
 
   private static Path extractDependencyInTempFolder(PluginInfo info, String dependency, Path tempFolder) {
@@ -181,17 +171,25 @@ public class PluginInstancesLoader {
     return instancesByPluginKey;
   }
 
-  public void unload(Collection<Plugin> plugins) {
-    for (Plugin plugin : plugins) {
-      ClassLoader classLoader = plugin.getClass().getClassLoader();
-      if (classLoader instanceof Closeable && classLoader != baseClassLoader) {
+  public void unload() {
+    for (ClassLoader classLoader : classloadersToClose) {
+      if (classLoader instanceof Closeable) {
         try {
           ((Closeable) classLoader).close();
         } catch (Exception e) {
-          LOG.error("Fail to close classloader " + classLoader.toString(), e);
+          LOG.error("Fail to close classloader", e);
         }
       }
     }
+    classloadersToClose.clear();
+    for (Path fileToDelete : filesToDelete) {
+      try {
+        FileUtils.forceDelete(fileToDelete.toFile());
+      } catch (IOException e) {
+        LOG.error("Fail to delete " + fileToDelete.toString(), e);
+      }
+    }
+    filesToDelete.clear();
   }
 
   /**

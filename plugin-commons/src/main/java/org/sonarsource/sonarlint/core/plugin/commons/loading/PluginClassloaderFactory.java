@@ -23,7 +23,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import org.sonar.classloader.ClassloaderBuilder;
 import org.sonar.classloader.Mask;
@@ -85,7 +85,7 @@ public class PluginClassloaderFactory {
    * Builds classloaders and verifies that all of them are correctly defined
    */
   private static Map<PluginClassLoaderDef, ClassLoader> build(Collection<PluginClassLoaderDef> defs, ClassloaderBuilder builder) {
-    Map<PluginClassLoaderDef, ClassLoader> result = new HashMap<>();
+    Map<PluginClassLoaderDef, ClassLoader> result = new IdentityHashMap<>(defs.size());
     Map<String, ClassLoader> classloadersByBasePluginKey = builder.build();
     for (PluginClassLoaderDef def : defs) {
       ClassLoader classloader = classloadersByBasePluginKey.get(def.getBasePluginKey());
