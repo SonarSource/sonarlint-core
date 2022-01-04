@@ -9,6 +9,11 @@
   <name>SonarLint Core - Rule Extractor</name>
   <description>Extract rules metadata from plugins</description>
 
+  <properties>
+    <!-- The library is shaded into sonarlint-core -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

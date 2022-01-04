@@ -10,6 +10,11 @@
   <name>SonarLint Server API</name>
   <description>Interaction with the server through its web API</description>
 
+  <properties>
+    <!-- The library is shaded into sonarlint-core -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

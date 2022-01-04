@@ -11,10 +11,6 @@
   <name>SonarLint Plugin API</name>
   <description>API used between SonarLint and analyzers</description>
 
-  <properties>
-    <jarsigner.skip>true</jarsigner.skip>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
