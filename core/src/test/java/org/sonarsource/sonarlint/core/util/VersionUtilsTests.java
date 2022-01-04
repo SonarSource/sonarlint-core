@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class VersionUtilsTest {
+class VersionUtilsTests {
   @Test
-  public void testJarVersions() {
+  void testJarVersions() {
     assertThat(VersionUtils.getJarVersion("sonar-governance-plugin-1.0-build251.jar")).isEqualTo("1.0");
     assertThat(VersionUtils.getJarVersion("qualinsight-sonarqube-badges-1.2.1.jar")).isEqualTo("1.2.1");
     assertThat(VersionUtils.getJarVersion("sonar-java-plugin-3.13-build4943.jar")).isEqualTo("3.13");
@@ -35,19 +35,19 @@ public class VersionUtilsTest {
   }
 
   @Test
-  public void testVersionFallback() {
+  void testVersionFallback() {
     String version = VersionUtils.getLibraryVersionFallback();
     assertThat(isVersion(version)).isTrue();
   }
 
   @Test
-  public void testVersion() {
+  void testVersion() {
     String version = VersionUtils.getLibraryVersion();
     assertThat(isVersion(version)).isTrue();
   }
 
   @Test
-  public void testVersionAssert() {
+  void testVersionAssert() {
     assertThat(isVersion("2.1")).isTrue();
     assertThat(isVersion("2.0-SNAPSHOT")).isTrue();
     assertThat(isVersion("2.0.0-SNAPSHOT")).isTrue();

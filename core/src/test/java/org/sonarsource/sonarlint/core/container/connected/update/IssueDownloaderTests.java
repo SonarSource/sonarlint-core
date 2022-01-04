@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -283,7 +283,8 @@ class IssueDownloaderTests {
   void test_fail_other_codes() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class,
+      () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 

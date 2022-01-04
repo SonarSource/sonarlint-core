@@ -22,22 +22,16 @@ package org.sonarsource.sonarlint.core.container.storage;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class StorageManagerTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class StorageManagerTests {
 
   @Test
-  public void encodeModuleKeyForFs() throws Exception {
-
-    Path sonarUserHome = temp.newFolder().toPath();
+  void encodeModuleKeyForFs(@TempDir Path sonarUserHome) throws Exception {
     ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId("server_id")
@@ -49,22 +43,19 @@ public class StorageManagerTest {
   }
 
   @Test
-  public void encodeServerIdForFs() throws Exception {
-
-    Path sonarUserHome = temp.newFolder().toPath();
+  void encodeServerIdForFs(@TempDir Path sonarUserHome) throws Exception {
     ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId("complicated.:name/with_invalid%chars")
       .build());
 
     Path storageRoot = manager.getProjectStorageRoot("projectKey");
-    assertThat(storageRoot).isEqualTo(sonarUserHome.resolve("storage").resolve("636f6d706c6963617465642e3a6e616d652f776974685f696e76616c6964256368617273").resolve("projects").resolve("70726f6a6563744b6579"));
+    assertThat(storageRoot).isEqualTo(
+      sonarUserHome.resolve("storage").resolve("636f6d706c6963617465642e3a6e616d652f776974685f696e76616c6964256368617273").resolve("projects").resolve("70726f6a6563744b6579"));
   }
 
   @Test
-  public void encodeTooLongServerId() throws Exception {
-
-    Path sonarUserHome = temp.newFolder().toPath();
+  void encodeTooLongServerId(@TempDir Path sonarUserHome) throws Exception {
     ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId(StringUtils.repeat("a", 260))
@@ -77,8 +68,7 @@ public class StorageManagerTest {
   }
 
   @Test
-  public void paths() throws IOException {
-    Path sonarUserHome = temp.newFolder().toPath();
+  void paths(@TempDir Path sonarUserHome) throws IOException {
     ProjectStoragePaths manager = new ProjectStoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setConnectionId("server")

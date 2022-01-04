@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.authentication;
 
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

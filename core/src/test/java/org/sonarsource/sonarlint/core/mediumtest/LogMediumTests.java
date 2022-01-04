@@ -24,16 +24,16 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
@@ -46,15 +46,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static testutils.TestUtils.createNoOpIssueListener;
 
-public class LogMediumTest {
+class LogMediumTests {
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
   private StandaloneSonarLintEngine sonarlint;
+
+  @TempDir
   private File baseDir;
   private Multimap<ClientLogOutput.Level, String> logs;
 
-  @Before
+  @BeforeEach
   public void prepare() throws IOException {
     logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
@@ -63,11 +63,9 @@ public class LogMediumTest {
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
-
-    baseDir = temp.newFolder();
   }
 
-  @After
+  @AfterEach
   public void stop() {
     sonarlint.stop();
   }
@@ -93,7 +91,7 @@ public class LogMediumTest {
    * setting the root level back to debug in @AfterClass!
    */
   @Test
-  public void changeLogOutputForAnalysis() throws Exception {
+  void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}");
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
@@ -109,7 +107,7 @@ public class LogMediumTest {
 
   private ClientInputFile prepareInputFile(String relativePath, String content) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, false);
   }
 }

@@ -68,7 +68,7 @@ import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.
 import static testutils.TestUtils.createNoOpIssueListener;
 import static testutils.TestUtils.createNoOpLogOutput;
 
-class ConnectedIssueMediumTest {
+class ConnectedIssueMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 

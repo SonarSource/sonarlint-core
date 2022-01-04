@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Qualityprofiles;
@@ -58,7 +58,8 @@ class QualityProfileApiTest {
         .setActiveRuleCount(12)
         .setRulesUpdatedAt("rulesUpdatedAt")
         .setUserUpdatedAt("userUpdatedAt")
-        .build()).build());
+        .build())
+      .build());
 
     var qualityProfiles = underTest.getQualityProfiles("projectKey");
 

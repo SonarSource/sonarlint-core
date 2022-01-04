@@ -17,20 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.container.model;
 
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
+import java.util.Date;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PluginDetailsTest {
+class DefaultGlobalStorageStatusTests {
   @Test
-  public void testRoundTrip() {
-    PluginDetails analyzer = new PluginDetails("key", "name", "version", SkipReason.IncompatiblePluginApi.INSTANCE);
-    assertThat(analyzer.key()).isEqualTo("key");
-    assertThat(analyzer.name()).isEqualTo("name");
-    assertThat(analyzer.version()).isEqualTo("version");
-    assertThat(analyzer.skipReason()).containsInstanceOf(SkipReason.IncompatiblePluginApi.class);
+  void testGetters() {
+    DefaultGlobalStorageStatus status = new DefaultGlobalStorageStatus("version", new Date(1000), true);
+    assertThat(status.isStale()).isTrue();
+    assertThat(status.getLastUpdateDate()).isEqualTo(new Date(1000));
+    assertThat(status.getServerVersion()).isEqualTo("version");
   }
 }

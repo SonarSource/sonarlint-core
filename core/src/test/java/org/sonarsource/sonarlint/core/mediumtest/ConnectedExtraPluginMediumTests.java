@@ -21,16 +21,16 @@ package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
@@ -52,18 +52,17 @@ import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 import static testutils.TestUtils.createNoOpLogOutput;
 
-public class ConnectedExtraPluginMediumTest {
+class ConnectedExtraPluginMediumTests {
 
   private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
+
+  @TempDir
   private static File baseDir;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    Path slHome = temp.newFolder().toPath();
+  @BeforeAll
+  public static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withProject("test-project")
@@ -86,11 +85,9 @@ public class ConnectedExtraPluginMediumTest {
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
-
-    baseDir = temp.newFolder();
   }
 
-  @AfterClass
+  @AfterAll
   public static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
@@ -99,7 +96,7 @@ public class ConnectedExtraPluginMediumTest {
   }
 
   @Test
-  public void readRuleDescriptionFromExtraPlugin() throws Exception {
+  void readRuleDescriptionFromExtraPlugin() throws Exception {
     ConnectedRuleDetails ruleDetails = sonarlint.getActiveRuleDetails(null, null, "php:S3334", null).get();
     assertThat(ruleDetails.getSeverity()).isEqualTo("BLOCKER");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
@@ -107,7 +104,7 @@ public class ConnectedExtraPluginMediumTest {
   }
 
   @Test
-  public void analyzeFileWithExtraPlugin() throws Exception {
+  void analyzeFileWithExtraPlugin() throws Exception {
     ClientInputFile inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
@@ -145,7 +142,7 @@ public class ConnectedExtraPluginMediumTest {
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }

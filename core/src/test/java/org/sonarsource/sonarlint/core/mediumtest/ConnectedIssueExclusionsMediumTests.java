@@ -27,12 +27,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -48,21 +47,21 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 import static testutils.TestUtils.createNoOpLogOutput;
 
-public class ConnectedIssueExclusionsMediumTest {
+class ConnectedIssueExclusionsMediumTests {
 
   private static final String FILE1_PATH = "Foo.java";
   private static final String FILE2_PATH = "Foo2.java";
   private static final String SERVER_ID = "local";
   private static final String JAVA_MODULE_KEY = "test-project-2";
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
+
+  @TempDir
   private static File baseDir;
+
   private static ProjectStorageFixture.ProjectStorage projectStorage;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    Path slHome = temp.newFolder().toPath();
+  @BeforeAll
+  public static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJavaPlugin()
       .withProject("test-project")
@@ -82,10 +81,9 @@ public class ConnectedIssueExclusionsMediumTest {
       .addEnabledLanguage(Language.JAVA)
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
-    baseDir = temp.newFolder();
   }
 
-  @AfterClass
+  @AfterAll
   public static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
@@ -93,13 +91,13 @@ public class ConnectedIssueExclusionsMediumTest {
     }
   }
 
-  @Before
+  @BeforeEach
   public void restoreConfig() {
     storeProjectSettings(Map.of());
   }
 
   @Test
-  public void issueExclusions() throws Exception {
+  void issueExclusions() throws Exception {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 
@@ -146,7 +144,7 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   @Test
-  public void issueExclusionsByRegexp() throws Exception {
+  void issueExclusionsByRegexp() throws Exception {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 
@@ -171,7 +169,7 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   @Test
-  public void issueExclusionsByBlock() throws Exception {
+  void issueExclusionsByBlock() throws Exception {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 
@@ -195,7 +193,7 @@ public class ConnectedIssueExclusionsMediumTest {
   }
 
   @Test
-  public void issueInclusions() throws Exception {
+  void issueInclusions() throws Exception {
     ClientInputFile inputFile1 = prepareJavaInputFile1();
     ClientInputFile inputFile2 = prepareJavaInputFile2();
 

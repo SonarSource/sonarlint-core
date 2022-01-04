@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
@@ -29,12 +29,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ServerIssueTrackableTest {
+ class ServerIssueTrackableTests {
 
   private final ServerIssue serverIssue = mock(ServerIssue.class);
   private Trackable trackable;
 
-  @Before
+  @BeforeEach
   public void prepare() {
     when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolution()).thenReturn("non-empty");
@@ -44,7 +44,7 @@ public class ServerIssueTrackableTest {
   }
 
   @Test
-  public void should_delegate_fields_to_server_issue() {
+   void should_delegate_fields_to_server_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
     assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());

@@ -27,17 +27,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FileMatcherTest {
-  private FileMatcher fileMatcher = new FileMatcher();
+class FileMatcherTests {
+  private final FileMatcher fileMatcher = new FileMatcher();
 
   @Test
-  public void simple_case_without_prefixes() {
+  void simple_case_without_prefixes() {
     List<Path> paths = Collections.singletonList(Paths.get("project1/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(paths, paths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
@@ -45,7 +44,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void simple_case_with_prefixes() {
+  void simple_case_with_prefixes() {
     List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
@@ -54,7 +53,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void no_match() {
+  void no_match() {
     List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File1.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
@@ -63,7 +62,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void empty_project_in_ide() {
+  void empty_project_in_ide() {
     List<Path> idePaths = Collections.emptyList();
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
     FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
@@ -72,7 +71,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void should_return_shortest_sq_prefix_if_there_are_ties() {
+  void should_return_shortest_sq_prefix_if_there_are_ties() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("pom.xml"));
 
@@ -103,7 +102,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void more_complex_test_with_multiple_files() throws Exception {
+  void more_complex_test_with_multiple_files() throws Exception {
     List<Path> idePaths = Arrays.asList(
       Paths.get("local/sub/index.html"),
       Paths.get("local/sub/product1/index.html"),
@@ -130,9 +129,8 @@ public class FileMatcherTest {
   }
 
   @Disabled("Only used to investigate performance issues like SLCORE-266")
-  @Ignore
   @Test
-  public void performance_test_worst_case() throws Exception {
+  void performance_test_worst_case() throws Exception {
     int depthFactor = 10;
     int sqNbPerFolder = 10;
     int sqDepth = 5;
@@ -154,9 +152,8 @@ public class FileMatcherTest {
   }
 
   @Disabled("Only used to investigate performance issues like SLCORE-266")
-  @Ignore
   @Test
-  public void performance_test_only_index_files_with_same_filename() throws Exception {
+  void performance_test_only_index_files_with_same_filename() throws Exception {
     int depthFactor = 10;
     int sqNbPerFolder = 10;
     int sqDepth = 5;
@@ -201,7 +198,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void should_return_most_common_prefixes() {
+  void should_return_most_common_prefixes() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("local1/src/main/java/A.java"),
       Paths.get("local1/src/main/java/B.java"),
@@ -219,7 +216,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void should_favor_deepest_common_path() {
+  void should_favor_deepest_common_path() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("local1/pom.xml"),
       Paths.get("local1/build.properties"),
@@ -237,7 +234,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void should_disfavor_path_having_multiple_matches() {
+  void should_disfavor_path_having_multiple_matches() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("local1/pom.xml"),
       Paths.get("local1/build.properties"),
@@ -259,7 +256,7 @@ public class FileMatcherTest {
   }
 
   @Test
-  public void verify_equals_and_hashcode_of_result() {
+  void verify_equals_and_hashcode_of_result() {
     FileMatcher.Result r1 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
     FileMatcher.Result r2 = new FileMatcher.Result(Paths.get("ide2"), Paths.get("sq1"));
     FileMatcher.Result r3 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq2"));

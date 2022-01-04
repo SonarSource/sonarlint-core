@@ -20,15 +20,15 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.util.Date;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DefaultProjectStorageStatusTest {
+class DefaultProjectStorageStatusTests {
   private DefaultProjectStorageStatus status;
 
   @Test
-  public void testGetters() {
+  void testGetters() {
     Date date = new Date(1000_000);
     status = new DefaultProjectStorageStatus(date, true);
     assertThat(status.getLastUpdateDate()).isEqualTo(date);

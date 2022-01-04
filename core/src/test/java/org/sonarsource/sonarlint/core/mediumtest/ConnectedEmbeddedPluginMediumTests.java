@@ -21,11 +21,10 @@ package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -36,17 +35,14 @@ import org.sonarsource.sonarlint.core.util.PluginLocator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 
-public class ConnectedEmbeddedPluginMediumTest {
+class ConnectedEmbeddedPluginMediumTests {
 
   private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    Path slHome = temp.newFolder().toPath();
+  @BeforeAll
+  public static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withJavaPlugin()
@@ -70,7 +66,7 @@ public class ConnectedEmbeddedPluginMediumTest {
     sonarlint = new ConnectedSonarLintEngineImpl(config);
   }
 
-  @AfterClass
+  @AfterAll
   public static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
@@ -79,7 +75,7 @@ public class ConnectedEmbeddedPluginMediumTest {
   }
 
   @Test
-  public void rule_description_come_from_embedded() throws Exception {
+  void rule_description_come_from_embedded() throws Exception {
     assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S106", null).get().getHtmlDescription())
       .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
         + "<ul>\n"

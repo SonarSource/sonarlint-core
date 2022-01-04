@@ -21,15 +21,15 @@ package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
 import java.util.Arrays;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class DefaultServerIssueTest {
+class DefaultServerIssueTests {
   @Test
-  public void testRoundTrips() {
+  void testRoundTrips() {
     DefaultServerIssue issue = new DefaultServerIssue();
     Instant i1 = Instant.ofEpochMilli(100_000_000);
     assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");

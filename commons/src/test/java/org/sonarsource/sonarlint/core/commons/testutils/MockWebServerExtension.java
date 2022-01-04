@@ -25,6 +25,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import mockwebserver3.Dispatcher;
+import mockwebserver3.MockResponse;
+import mockwebserver3.MockWebServer;
+import mockwebserver3.RecordedRequest;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -32,10 +36,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import okhttp3.mockwebserver.Dispatcher;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
 import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -49,7 +49,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   private static final OkHttpClient SHARED_CLIENT = new OkHttpClient();
 
-  private MockWebServer server;
+  private mockwebserver3.MockWebServer server;
   protected final Map<String, MockResponse> responsesByPath = new HashMap<>();
 
   @Override

@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.util.Optional;
-import okhttp3.mockwebserver.RecordedRequest;
+import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

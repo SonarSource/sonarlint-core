@@ -52,7 +52,7 @@ import testutils.OnDiskTestClientInputFile;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 class StandaloneNodeJsTests {

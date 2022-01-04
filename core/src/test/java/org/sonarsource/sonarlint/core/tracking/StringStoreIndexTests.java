@@ -17,19 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.tracking;
 
-import java.util.Date;
-import org.junit.Test;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DefaultGlobalStorageStatusTest {
+// note: most methods of the subject are already tested by higher level uses
+class StringStoreIndexTests {
+
   @Test
-  public void testGetters() {
-    DefaultGlobalStorageStatus status = new DefaultGlobalStorageStatus("version", new Date(1000), true);
-    assertThat(status.isStale()).isTrue();
-    assertThat(status.getLastUpdateDate()).isEqualTo(new Date(1000));
-    assertThat(status.getServerVersion()).isEqualTo("version");
+  void should_throw_if_cannot_read_from_index_file(@TempDir Path storeBasePath) throws IOException {
+    String indexFileName = "index.pb";
+    Path indexFilePath = storeBasePath.resolve(indexFileName);
+
+    StoreIndex<String> index = new StringStoreIndex(storeBasePath, indexFileName);
+    Files.write(indexFilePath, "garbage index data".getBytes());
+
+    assertThrows(IllegalStateException.class, () -> index.keys());
   }
 }
