@@ -9,6 +9,12 @@
   <artifactId>sonarlint-telemetry</artifactId>
   <name>SonarLint Telemetry</name>
   <description>Manage telemetry</description>
+
+  <properties>
+    <!-- The library is shaded into sonarlint-core -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

@@ -8,8 +8,13 @@
   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
   <name>SonarLint slf4j log adaptor</name>
   <description>Adapts slf4j logs to sonar logging framework</description>
-  <dependencies>
 
+  <properties>
+    <!-- The library is bundled into sonarlint-plugin-commons -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
+  <dependencies>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
