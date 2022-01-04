@@ -30,7 +30,6 @@ import org.sonar.classloader.Mask;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.PARENT_FIRST;
-import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.SELF_FIRST;
 
 /**
  * Builds the graph of classloaders to be used to instantiate plugins. It deals with:
@@ -59,7 +58,7 @@ public class PluginClassloaderFactory {
     for (PluginClassLoaderDef def : defs) {
       builder.newClassloader(def.getBasePluginKey());
       builder.setParent(def.getBasePluginKey(), API_CLASSLOADER_KEY, new Mask());
-      builder.setLoadingOrder(def.getBasePluginKey(), def.isSelfFirstStrategy() ? SELF_FIRST : PARENT_FIRST);
+      builder.setLoadingOrder(def.getBasePluginKey(), PARENT_FIRST);
       for (File jar : def.getFiles()) {
         builder.addURL(def.getBasePluginKey(), fileToUrl(jar));
       }

@@ -39,7 +39,6 @@ class PluginClassLoaderDef {
   private final Map<String, String> mainClassesByPluginKey = new HashMap<>();
   private final List<File> files = new ArrayList<>();
   private final Mask mask = new Mask();
-  private boolean selfFirstStrategy = false;
 
   PluginClassLoaderDef(String basePluginKey) {
     this.basePluginKey = basePluginKey;
@@ -61,14 +60,6 @@ class PluginClassLoaderDef {
     return mask;
   }
 
-  boolean isSelfFirstStrategy() {
-    return selfFirstStrategy;
-  }
-
-  void setSelfFirstStrategy(boolean selfFirstStrategy) {
-    this.selfFirstStrategy = selfFirstStrategy;
-  }
-
   Map<String, String> getMainClassesByPluginKey() {
     return mainClassesByPluginKey;
   }
@@ -79,20 +70,4 @@ class PluginClassLoaderDef {
     }
   }
 
-  @Override
-  public boolean equals(@Nullable Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    PluginClassLoaderDef that = (PluginClassLoaderDef) o;
-    return basePluginKey.equals(that.basePluginKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return basePluginKey.hashCode();
-  }
 }

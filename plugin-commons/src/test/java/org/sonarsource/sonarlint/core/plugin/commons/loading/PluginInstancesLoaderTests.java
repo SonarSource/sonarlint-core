@@ -80,7 +80,6 @@ class PluginInstancesLoaderTests {
     assertThat(defs).hasSize(1);
     PluginClassLoaderDef def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
-    assertThat(def.isSelfFirstStrategy()).isFalse();
     assertThat(def.getFiles()).containsExactly(jarFile);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(MapEntry.entry("foo", "org.foo.FooPlugin"));
     // TODO test mask - require change in sonar-classloader
@@ -141,7 +140,6 @@ class PluginInstancesLoaderTests {
     assertThat(defs).hasSize(1);
     PluginClassLoaderDef def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
-    assertThat(def.isSelfFirstStrategy()).isFalse();
     assertThat(def.getFiles()).containsOnly(baseJarFile, extensionJar1, extensionJar2);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(
       entry("foo", "org.foo.FooPlugin"),
