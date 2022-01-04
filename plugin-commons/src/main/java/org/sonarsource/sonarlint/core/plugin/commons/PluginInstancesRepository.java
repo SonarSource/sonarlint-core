@@ -99,7 +99,7 @@ public class PluginInstancesRepository implements AutoCloseable {
     if (pluginInstancesByKeys != null && !pluginInstancesByKeys.isEmpty()) {
       LOG.debug("Unloading plugins");
       // close plugins classloaders
-      pluginInstancesLoader.unload(pluginInstancesByKeys.values());
+      pluginInstancesLoader.unload();
 
       pluginInstancesByKeys.clear();
       pluginCheckResultByKeys.clear();
