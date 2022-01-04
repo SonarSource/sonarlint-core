@@ -203,7 +203,10 @@ stages:
           ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
         inputs:
           goals: 'verify'
-          options: -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private -Pcoverage
+          options:  >-
+            -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private
+            -Pcoverage
+            -Dsonar.coverage.jacoco.xmlReportPaths=$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
           publishJUnitResults: false
           javaHomeOption: 'JDKVersion'
           jdkVersionOption: '1.11'

@@ -35,6 +35,7 @@
     <module>rule-extractor</module>
     <module>analysis-engine</module>
     <module>osgi</module>
+    <module>report-aggregate</module>
   </modules>
 
   <properties>
