@@ -67,7 +67,7 @@ public class ServerIssueTracker {
   private static List<ServerIssue> fetchServerIssues(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine,
     ProjectBinding projectBinding, String ideFilePath, String branchName, boolean fetchTaintVulnerabilities) {
     try {
-      LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath);
+      LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath + ", branchName=" + branchName);
       return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName,null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
