@@ -21,17 +21,17 @@ package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -43,19 +43,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.newStorage;
 import static testutils.TestUtils.createNoOpLogOutput;
 
-public class ConnectedFileExclusionsMediumTest {
+class ConnectedFileExclusionsMediumTests {
 
   private static final String SERVER_ID = "local";
   private static final String PROJECT_KEY = "test-project-2";
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private static ConnectedSonarLintEngineImpl sonarlint;
+
+  @TempDir
   private static File baseDir;
   private static ProjectStorageFixture.ProjectStorage projectStorage;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    Path slHome = temp.newFolder().toPath();
+  @BeforeAll
+  static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withProject(PROJECT_KEY)
       .create(slHome);
@@ -68,12 +67,10 @@ public class ConnectedFileExclusionsMediumTest {
       .setLogOutput(createNoOpLogOutput())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
-
-    baseDir = temp.newFolder();
   }
 
-  @AfterClass
-  public static void stop() {
+  @AfterAll
+  static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
@@ -81,7 +78,7 @@ public class ConnectedFileExclusionsMediumTest {
   }
 
   @Test
-  public void fileInclusionsExclusions() throws Exception {
+  void fileInclusionsExclusions() throws Exception {
     ClientInputFile mainFile1 = prepareInputFile("foo.xoo", "function xoo() {}", false);
     ClientInputFile mainFile2 = prepareInputFile("src/foo2.xoo", "function xoo() {}", false);
     ClientInputFile testFile1 = prepareInputFile("fooTest.xoo", "function xoo() {}", true);
@@ -128,7 +125,7 @@ public class ConnectedFileExclusionsMediumTest {
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     final File file = new File(baseDir, relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }

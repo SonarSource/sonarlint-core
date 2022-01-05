@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
+import com.google.protobuf.Parser;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,34 +28,34 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtil.readMessages;
 
-public class ProtobufUtilTest {
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
+class ProtobufUtilTests {
+
+  private static final ServerIssue SOME_MESSAGE = ServerIssue.newBuilder().build();
+  private static final Parser<ServerIssue> SOME_PARSER = ServerIssue.parser();
 
   @Test
-  public void test_readMessages_empty() throws IOException {
+  void test_readMessages_empty() throws IOException {
     try (InputStream inputStream = newEmptyStream()) {
-      assertThat(readMessages(inputStream, ServerIssue.parser())).isEmpty();
+      assertThat(readMessages(inputStream, SOME_PARSER)).isEmpty();
     }
   }
 
   @Test
-  public void test_readMessages_multiple() throws IOException {
-    ServerIssue issue1 = ServerIssue.newBuilder().build();
-    ServerIssue issue2 = ServerIssue.newBuilder().build();
+  void test_readMessages_multiple() throws IOException {
+    ServerIssue issue1 = SOME_MESSAGE;
+    ServerIssue issue2 = SOME_MESSAGE;
 
     try (InputStream inputStream = new ByteArrayInputStream(toByteArray(issue1, issue2))) {
       assertThat(readMessages(inputStream, issue1.getParserForType())).containsOnly(issue1, issue2);
@@ -62,40 +63,34 @@ public class ProtobufUtilTest {
   }
 
   @Test
-  public void test_readMessages_error() throws IOException {
-    exception.expect(IllegalStateException.class);
-    exception.expectMessage("failed to parse protobuf message");
-
+  void test_readMessages_error() throws IOException {
     InputStream inputStream = new ByteArrayInputStream("trash".getBytes(StandardCharsets.UTF_8));
-    readMessages(inputStream, ServerIssue.parser());
+
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> readMessages(inputStream, SOME_PARSER));
+    assertThat(thrown).hasMessage("failed to parse protobuf message");
   }
 
   @Test
-  public void test_readFile_error() throws IOException {
-    exception.expect(StorageException.class);
-    exception.expectMessage("Failed to read file");
-
+  void test_readFile_error() throws IOException {
     Path p = Paths.get("invalid_non_existing_file");
-    ProtobufUtil.readFile(p, ServerIssue.parser());
+    StorageException thrown = assertThrows(StorageException.class, () -> ProtobufUtil.readFile(p, SOME_PARSER));
+    assertThat(thrown).hasMessageStartingWith("Failed to read file");
   }
 
   @Test
-  public void test_writeFile_error() throws IOException {
-    exception.expect(StorageException.class);
-    exception.expectMessage("Unable to write protocol buffer data to file");
-
+  void test_writeFile_error() throws IOException {
     Path p = Paths.get("invalid", "non_existing", "file");
-    ProtobufUtil.writeToFile(ServerIssue.newBuilder().build(), p);
+    StorageException thrown = assertThrows(StorageException.class, () -> ProtobufUtil.writeToFile(SOME_MESSAGE, p));
+    assertThat(thrown).hasMessageStartingWith("Unable to write protocol buffer data to file");
   }
 
   @Test
-  public void test_writeMessage_error() throws IOException {
+  void test_writeMessage_error() throws IOException {
     OutputStream out = mock(OutputStream.class);
     doThrow(IOException.class).when(out).write(any(), Mockito.anyInt(), Mockito.anyInt());
 
-    exception.expect(IllegalStateException.class);
-    exception.expectMessage("failed to write message");
-    ProtobufUtil.writeMessage(out, ServerIssue.newBuilder().build());
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> ProtobufUtil.writeMessage(out, SOME_MESSAGE));
+    assertThat(thrown).hasMessageStartingWith("failed to write message");
   }
 
   public static byte[] toByteArray(ServerIssue... issues) throws IOException {

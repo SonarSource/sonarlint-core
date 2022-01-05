@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.notifications;
 
 import java.util.Timer;
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -46,7 +46,7 @@ class ServerNotificationsRegistryTests {
   private Timer timer;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     timerTask = mock(NotificationTimerTask.class);
     config = mock(NotificationConfiguration.class);
     timer = mock(Timer.class);

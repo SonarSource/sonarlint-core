@@ -17,21 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.model;
+package org.sonarsource.sonarlint.core.container.storage;
 
-import org.junit.Test;
-import org.sonarsource.sonarlint.core.serverapi.component.DefaultRemoteProject;
-import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonar.api.internal.apachecommons.lang.StringUtils.repeat;
+import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
-public class DefaultRemoteProjectTest {
+class ProjectStoragePathsTests {
   @Test
-  public void testGetters() {
-    ServerProject project = new DefaultRemoteProject("key", "name");
-
-    assertThat(project.getKey()).isEqualTo("key");
-    assertThat(project.getName()).isEqualTo("name");
+  void encode_paths_for_fs() {
+    assertThat(encodeForFs("my/string%to encode**")).isEqualTo("6d792f737472696e6725746f20656e636f64652a2a");
+    assertThat(encodeForFs("AU-TpxcA-iU5OvuD2FLz").toLowerCase()).isNotEqualTo(encodeForFs("AU-TpxcA-iU5OvuD2FLZ"));
+    assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000))).hasSize(255);
+    assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000)))
+      .isNotEqualTo(encodeForFs("too_long_for_most_fs" + repeat("a", 1000) + "2"));
   }
 
 }

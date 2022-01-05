@@ -68,7 +68,7 @@ import static org.sonarsource.sonarlint.core.mediumtest.fixtures.StorageFixture.
 import static testutils.TestUtils.createNoOpIssueListener;
 import static testutils.TestUtils.createNoOpLogOutput;
 
-class ConnectedIssueMediumTest {
+class ConnectedIssueMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
@@ -77,7 +77,7 @@ class ConnectedIssueMediumTest {
   private static ConnectedSonarLintEngineImpl sonarlint;
 
   @BeforeAll
-  public static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withJavaPlugin()
@@ -106,7 +106,7 @@ class ConnectedIssueMediumTest {
   }
 
   @AfterAll
-  public static void stop() {
+  static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;

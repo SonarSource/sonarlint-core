@@ -28,25 +28,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ProtobufIssueStoreTest {
-
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+class ProtobufIssueStoreTests {
 
   private final AtomicInteger counter = new AtomicInteger();
   private final String key = "filePath";
 
+  @TempDir
+  private Path base;
+
   @Test
-  public void contains_should_find_issues_after_added() throws IOException {
+  void contains_should_find_issues_after_added() throws IOException {
     ProtobufIssueStore issueStore = newIssueStore();
 
     assertThat(issueStore.contains(key)).isFalse();
@@ -57,7 +57,7 @@ public class ProtobufIssueStoreTest {
   }
 
   @Test
-  public void contains_should_find_issues_even_if_empty_list() throws IOException {
+  void contains_should_find_issues_even_if_empty_list() throws IOException {
     ProtobufIssueStore issueStore = newIssueStore();
 
     assertThat(issueStore.contains(key)).isFalse();
@@ -67,7 +67,7 @@ public class ProtobufIssueStoreTest {
   }
 
   @Test
-  public void save_should_update() throws IOException {
+  void save_should_update() throws IOException {
     ProtobufIssueStore issueStore = newIssueStore();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
@@ -79,7 +79,7 @@ public class ProtobufIssueStoreTest {
   }
 
   @Test
-  public void read_should_return_issues_with_matching_rule_keys() throws IOException {
+  void read_should_return_issues_with_matching_rule_keys() throws IOException {
     ProtobufIssueStore issueStore = newIssueStore();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
@@ -90,13 +90,13 @@ public class ProtobufIssueStoreTest {
   }
 
   @Test
-  public void read_should_return_null_when_no_issues() throws IOException {
+  void read_should_return_null_when_no_issues() throws IOException {
     ProtobufIssueStore issueStore = newIssueStore();
     assertThat(issueStore.read("nonexistent")).isNull();
   }
 
   @Test
-  public void clear_should_empty_the_store() throws IOException {
+  void clear_should_empty_the_store() throws IOException {
     ProtobufIssueStore issueStore = newIssueStore();
 
     issueStore.save(key, Collections.emptyList());
@@ -107,8 +107,7 @@ public class ProtobufIssueStoreTest {
   }
 
   @Test
-  public void clean_should_remove_entries_without_valid_files() throws IOException {
-    Path base = temporaryFolder.newFolder().toPath();
+  void clean_should_remove_entries_without_valid_files(@TempDir Path base) throws IOException {
     Path projectPath = base.resolve("project");
     ProtobufIssueStore issueStore = new ProtobufIssueStore(base.resolve("store"), projectPath);
 
@@ -129,26 +128,25 @@ public class ProtobufIssueStoreTest {
     assertThat(issueStore.contains(validFileKey)).isTrue();
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void should_fail_to_create_issue_store_if_cannot_write_to_filesystem() throws IOException {
-    Path base = temporaryFolder.newFolder().toPath();
+  @Test
+  void should_fail_to_create_issue_store_if_cannot_write_to_filesystem(@TempDir Path base) throws IOException {
     Path storePath = base.resolve("store");
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
 
-    new ProtobufIssueStore(storePath, base.resolve("project"));
+    assertThrows(IllegalStateException.class, () -> new ProtobufIssueStore(storePath, base.resolve("project")));
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void should_fail_to_save_issues_if_cannot_write_to_filesystem() throws IOException {
-    Path base = temporaryFolder.newFolder().toPath();
+  @Test
+  void should_fail_to_save_issues_if_cannot_write_to_filesystem(@TempDir Path base) throws IOException {
     Path storePath = base.resolve("store");
     ProtobufIssueStore issueStore = new ProtobufIssueStore(storePath, base.resolve("project"));
 
     Files.delete(storePath);
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
-    issueStore.save(key, Collections.emptyList());
+
+    assertThrows(IllegalStateException.class, () -> issueStore.save(key, Collections.emptyList()));
   }
 
   private Trackable newMockTrackable() {
@@ -164,7 +162,6 @@ public class ProtobufIssueStoreTest {
   }
 
   private ProtobufIssueStore newIssueStore() throws IOException {
-    Path base = temporaryFolder.newFolder().toPath();
     Path storePath = base.resolve("store");
     Path projectPath = base.resolve("project");
     return new ProtobufIssueStore(storePath, projectPath);

@@ -53,7 +53,7 @@ class DefaultFilePredicatesTests {
   Path baseDir;
 
   @BeforeEach
-  public void before() throws IOException {
+  void before() throws IOException {
     predicates = new DefaultFilePredicates();
     Path filePath = baseDir.resolve("src/main/java/struts/Action.java");
     Files.createDirectories(filePath.getParent());

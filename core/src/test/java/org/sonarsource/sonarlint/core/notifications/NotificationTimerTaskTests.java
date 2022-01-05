@@ -46,7 +46,7 @@ class NotificationTimerTaskTests {
   private NotificationTimerTask timerTask;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     when(notificationTime.get()).thenReturn(time);
     timerTask = new NotificationTimerTask(c -> notificationChecker);
   }

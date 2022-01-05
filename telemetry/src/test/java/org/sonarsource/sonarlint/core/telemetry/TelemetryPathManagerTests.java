@@ -53,7 +53,7 @@ class TelemetryPathManagerTests {
   private Path newPath;
 
   @BeforeEach
-  public void setUp(@TempDir Path tempDir) throws IOException {
+  void setUp(@TempDir Path tempDir) throws IOException {
     oldPath = tempDir.resolve("old");
     Files.write(oldPath, "old content".getBytes());
 

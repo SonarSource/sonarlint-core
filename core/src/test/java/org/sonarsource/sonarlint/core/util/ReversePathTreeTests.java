@@ -20,15 +20,15 @@
 package org.sonarsource.sonarlint.core.util;
 
 import java.nio.file.Paths;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReversePathTreeTest {
-  private ReversePathTree tree = new ReversePathTree();
+class ReversePathTreeTests {
+  private final ReversePathTree tree = new ReversePathTree();
 
   @Test
-  public void should_return_matching_prefix() {
+  void should_return_matching_prefix() {
     tree.index(Paths.get("A/src/main/java/File.java"));
 
     ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("B/src/main/java/File.java"));
@@ -38,7 +38,7 @@ public class ReversePathTreeTest {
   }
 
   @Test
-  public void should_return_matching_prefixes() {
+  void should_return_matching_prefixes() {
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
@@ -50,7 +50,7 @@ public class ReversePathTreeTest {
   }
 
   @Test
-  public void should_return_empty_prefix_if_full_match() {
+  void should_return_empty_prefix_if_full_match() {
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
@@ -62,7 +62,7 @@ public class ReversePathTreeTest {
   }
 
   @Test
-  public void should_return_empty_if_no_match() {
+  void should_return_empty_if_no_match() {
     tree.index(Paths.get("project1/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
@@ -74,14 +74,13 @@ public class ReversePathTreeTest {
   }
 
   @Test
-  public void should_return_matches_that_are_part_of_other_matches() {
+  void should_return_matches_that_are_part_of_other_matches() {
     tree.index(Paths.get("project1/A/pom.xml"));
     tree.index(Paths.get("project1/pom.xml"));
     tree.index(Paths.get("pom.xml"));
     ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("pom.xml"));
     assertThat(match.matchLen()).isEqualTo(1);
     assertThat(match.matchPrefixes()).containsOnly(Paths.get(""), Paths.get("project1"), Paths.get("project1/A"));
-
   }
 
 }

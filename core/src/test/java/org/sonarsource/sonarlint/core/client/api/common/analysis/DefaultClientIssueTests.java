@@ -42,7 +42,7 @@ class DefaultClientIssueTests {
   private ClientInputFile clientInputFile;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     MockitoAnnotations.initMocks(this);
   }
 

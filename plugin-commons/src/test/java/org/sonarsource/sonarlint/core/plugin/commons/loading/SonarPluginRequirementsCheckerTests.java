@@ -74,7 +74,7 @@ class SonarPluginRequirementsCheckerTests {
   private PluginsMinVersions pluginMinVersions;
 
   @BeforeEach
-  public void prepare() {
+  void prepare() {
     pluginMinVersions = spy(new PluginsMinVersions());
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(FAKE_PLUGIN_KEY);
 

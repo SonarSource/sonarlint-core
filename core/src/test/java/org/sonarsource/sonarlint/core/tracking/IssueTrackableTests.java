@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,12 +27,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
-public class IssueTrackableTest {
+class IssueTrackableTests {
 
   private final Issue issue = mock(Issue.class);
 
   @Test
-  public void should_have_null_content_hashes_when_constructed_without_content_info() {
+  void should_have_null_content_hashes_when_constructed_without_content_info() {
     IssueTrackable trackable = new IssueTrackable(issue);
     assertThat(trackable.getTextRange()).isNull();
     assertThat(trackable.getTextRangeHash()).isNull();
@@ -40,7 +40,7 @@ public class IssueTrackableTest {
   }
 
   @Test
-  public void should_have_null_content_hashes_when_constructed_without_null_content_info() {
+  void should_have_null_content_hashes_when_constructed_without_null_content_info() {
     IssueTrackable trackable = new IssueTrackable(issue, null, null, null);
     assertThat(trackable.getTextRange()).isNull();
     assertThat(trackable.getTextRangeHash()).isNull();
@@ -48,7 +48,7 @@ public class IssueTrackableTest {
   }
 
   @Test
-  public void should_have_non_null_hashes_when_constructed_with_non_null_content_info() {
+  void should_have_non_null_hashes_when_constructed_with_non_null_content_info() {
     String textRangeContent = "text range content";
     String lineContent = "line content";
     IssueTrackable trackable = new IssueTrackable(issue, null, textRangeContent, lineContent);
@@ -61,7 +61,7 @@ public class IssueTrackableTest {
   }
 
   @Test
-  public void should_delegate_fields_to_issue() {
+  void should_delegate_fields_to_issue() {
     String severity = "dummy severity";
     when(issue.getSeverity()).thenReturn(severity);
 

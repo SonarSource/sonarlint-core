@@ -25,7 +25,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 import javax.annotation.Nullable;
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import okio.Buffer;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 

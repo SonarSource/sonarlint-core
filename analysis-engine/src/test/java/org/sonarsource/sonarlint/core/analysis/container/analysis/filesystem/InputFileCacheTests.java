@@ -32,7 +32,7 @@ class InputFileCacheTests {
   private InputFileIndex cache;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     cache = new InputFileIndex();
   }
 

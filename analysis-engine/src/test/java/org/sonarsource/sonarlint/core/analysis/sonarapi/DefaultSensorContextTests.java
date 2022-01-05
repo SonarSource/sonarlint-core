@@ -64,7 +64,7 @@ class DefaultSensorContextTests {
   private DefaultSensorContext ctx;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     MockitoAnnotations.initMocks(this);
     ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, new ProgressMonitor(null));
   }

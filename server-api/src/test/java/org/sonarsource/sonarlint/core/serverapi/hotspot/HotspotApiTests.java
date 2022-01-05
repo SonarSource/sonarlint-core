@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.util.Optional;
-import okhttp3.mockwebserver.RecordedRequest;
+import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -42,7 +42,7 @@ class HotspotApiTests {
   private HotspotApi underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()).hotspot();
   }
 

@@ -19,20 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IssueStoreFactoryTest {
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+class IssueStoreFactoryTest {
 
   @Test
-  public void testFactory() {
+  void testFactory(@TempDir Path tmp) {
     IssueStoreFactory factory = new IssueStoreFactory();
-    IssueStore store = factory.apply(temp.getRoot().toPath());
+    IssueStore store = factory.apply(tmp);
 
     assertThat(store).isInstanceOf(IssueStore.class);
   }

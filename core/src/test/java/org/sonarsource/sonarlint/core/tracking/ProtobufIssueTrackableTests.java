@@ -19,13 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ProtobufIssueTrackableTest {
+class ProtobufIssueTrackableTests {
 
   private final Trackable empty = new ProtobufIssueTrackable(Sonarlint.Issues.Issue.newBuilder().build());
 
@@ -40,37 +41,37 @@ public class ProtobufIssueTrackableTest {
   private final Trackable completeTrackable = new ProtobufIssueTrackable(completeIssue);
 
   @Test
-  public void should_return_null_serverIssueKey_when_unset() {
+  void should_return_null_serverIssueKey_when_unset() {
     assertThat(empty.getServerIssueKey()).isNull();
   }
 
   @Test
-  public void should_return_null_line_when_unset() {
+  void should_return_null_line_when_unset() {
     assertThat(empty.getLine()).isNull();
   }
 
   @Test
-  public void should_return_null_creationDate_when_unset() {
+  void should_return_null_creationDate_when_unset() {
     assertThat(empty.getCreationDate()).isNull();
   }
 
   @Test
-  public void should_have_null_textRangeHash() {
+  void should_have_null_textRangeHash() {
     assertThat(completeTrackable.getTextRangeHash()).isNull();
   }
 
-  @Test(expected = UnsupportedOperationException.class)
-  public void should_not_have_severity() {
-    completeTrackable.getSeverity();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void should_not_have_textRange() {
-    completeTrackable.getTextRange();
+  @Test
+  void should_not_have_severity() {
+    assertThrows(UnsupportedOperationException.class, () -> completeTrackable.getSeverity());
   }
 
   @Test
-  public void should_delegate_fields_to_protobuf_issue() {
+  void should_not_have_textRange() {
+    assertThrows(UnsupportedOperationException.class, () -> completeTrackable.getTextRange());
+  }
+
+  @Test
+  void should_delegate_fields_to_protobuf_issue() {
     assertThat(completeTrackable.getMessage()).isEqualTo(completeIssue.getMessage());
     assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getChecksum());
     assertThat(completeTrackable.getRuleKey()).isEqualTo(completeIssue.getRuleKey());

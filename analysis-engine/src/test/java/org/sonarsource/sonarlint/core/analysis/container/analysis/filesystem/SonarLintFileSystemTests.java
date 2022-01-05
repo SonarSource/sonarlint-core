@@ -40,7 +40,7 @@ class SonarLintFileSystemTests {
   private final InputFileIndex inputFileCache = new InputFileIndex();
 
   @BeforeEach
-  public void prepare() throws Exception {
+  void prepare() throws Exception {
     fs = new SonarLintFileSystem(AnalysisConfiguration.builder().setBaseDir(basedir).build(), inputFileCache);
   }
 

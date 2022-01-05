@@ -23,7 +23,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -58,7 +58,7 @@ class NotificationCheckerTests {
   private NotificationChecker underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new NotificationChecker(mockServer.serverApiHelper());
   }
 

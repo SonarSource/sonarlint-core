@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -47,10 +46,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-public class PartialUpdaterTest {
+class PartialUpdaterTests {
   private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
 
   private final IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
   private final IssueDownloader downloader = mock(IssueDownloader.class);
@@ -62,18 +59,18 @@ public class PartialUpdaterTest {
 
   private PartialUpdater updater;
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     updater = new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths);
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
   }
 
   @Test
-  public void update_file_issues() {
+  void update_file_issues(@TempDir Path tmp) {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
-    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
+    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(tmp);
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, "module:file", projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 
@@ -83,7 +80,7 @@ public class PartialUpdaterTest {
   }
 
   @Test
-  public void update_file_issues_for_unknown_file() {
+  void update_file_issues_for_unknown_file() {
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
     updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, projectConfiguration, "file", false, PROGRESS);
     verifyNoInteractions(downloader);
@@ -91,8 +88,8 @@ public class PartialUpdaterTest {
   }
 
   @Test
-  public void error_downloading_issues() {
-    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(temp.getRoot().toPath());
+  void error_downloading_issues(@TempDir Path tmp) {
+    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(tmp);
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, "module:file", projectConfiguration, false, null, PROGRESS)).thenThrow(IllegalArgumentException.class);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
@@ -101,11 +98,11 @@ public class PartialUpdaterTest {
   }
 
   @Test
-  public void update_file_issues_by_project() throws IOException {
+  void update_file_issues_by_project(@TempDir Path tmp) throws IOException {
     ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
-    when(projectStoragePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(temp.newFolder().toPath());
+    when(projectStoragePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(tmp);
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 

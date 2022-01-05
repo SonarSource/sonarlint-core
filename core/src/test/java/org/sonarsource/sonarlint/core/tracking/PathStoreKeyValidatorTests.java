@@ -22,26 +22,22 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PathStoreKeyValidatorTest {
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+class PathStoreKeyValidatorTests {
 
   @Test
-  public void should_return_true_if_relative_path_exists() throws IOException {
-    Path projectBaseDir = temporaryFolder.newFolder().toPath();
+  void should_return_true_if_relative_path_exists(@TempDir Path projectBaseDir) throws IOException {
     String filename = "dummy";
     Files.createFile(projectBaseDir.resolve(filename));
     assertThat(new PathStoreKeyValidator(projectBaseDir).apply(filename)).isTrue();
   }
 
   @Test
-  public void should_return_false_if_relative_path_does_not_exist() throws IOException {
-    assertThat(new PathStoreKeyValidator(temporaryFolder.newFolder().toPath()).apply("nonexistent")).isFalse();
+  void should_return_false_if_relative_path_does_not_exist(@TempDir Path projectBaseDir) throws IOException {
+    assertThat(new PathStoreKeyValidator(projectBaseDir).apply("nonexistent")).isFalse();
   }
 }

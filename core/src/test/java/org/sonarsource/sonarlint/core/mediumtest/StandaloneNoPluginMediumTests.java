@@ -26,15 +26,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
@@ -46,32 +45,30 @@ import testutils.TestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class StandaloneNoPluginMediumTest {
+class StandaloneNoPluginMediumTests {
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
   private StandaloneSonarLintEngine sonarlint;
+
+  @TempDir
   private File baseDir;
   private final Multimap<ClientLogOutput.Level, String> logs = LinkedListMultimap.create();
 
-  @Before
-  public void prepare() throws IOException {
+  @BeforeEach
+  void prepare() throws IOException {
     ClientLogOutput logOutput = (msg, level) -> logs.put(level, msg);
     sonarlint = new StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration.builder()
       .setLogOutput(logOutput)
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build());
-
-    baseDir = temp.newFolder();
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     sonarlint.stop();
   }
 
   @Test
-  public void dont_fail_and_detect_language_even_if_no_plugin() throws Exception {
+  void dont_fail_and_detect_language_even_if_no_plugin() throws Exception {
 
     assertThat(sonarlint.getPluginDetails()).isEmpty();
 

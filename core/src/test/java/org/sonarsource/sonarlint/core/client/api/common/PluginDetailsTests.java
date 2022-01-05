@@ -17,29 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
-// note: most methods of the subject are already tested by higher level uses
-public class StringStoreIndexTest {
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+import static org.assertj.core.api.Assertions.assertThat;
 
-  @Test(expected = IllegalStateException.class)
-  public void should_throw_if_cannot_read_from_index_file() throws IOException {
-    Path storeBasePath = temporaryFolder.newFolder().toPath();
-    String indexFileName = "index.pb";
-    Path indexFilePath = storeBasePath.resolve(indexFileName);
-
-    StoreIndex<String> index = new StringStoreIndex(storeBasePath, indexFileName);
-    Files.write(indexFilePath, "garbage index data".getBytes());
-
-    index.keys();
+ class PluginDetailsTests {
+  @Test
+   void testRoundTrip() {
+    PluginDetails analyzer = new PluginDetails("key", "name", "version", SkipReason.IncompatiblePluginApi.INSTANCE);
+    assertThat(analyzer.key()).isEqualTo("key");
+    assertThat(analyzer.name()).isEqualTo("name");
+    assertThat(analyzer.version()).isEqualTo("version");
+    assertThat(analyzer.skipReason()).containsInstanceOf(SkipReason.IncompatiblePluginApi.class);
   }
 }

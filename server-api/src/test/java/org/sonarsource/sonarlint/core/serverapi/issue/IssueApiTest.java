@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.issue;
 
 import java.util.List;
 import java.util.Set;
-import okhttp3.mockwebserver.MockResponse;
+import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
